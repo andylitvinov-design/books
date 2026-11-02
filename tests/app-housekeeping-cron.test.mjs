@@ -93,6 +93,7 @@ test('production scheduler invokes only the guarded daily housekeeping route', (
     { path: '/api/internal/practice-telegram-digest', schedule: '0 13,14,19,20 * * *' },
     { path: '/api/internal/council-archive-telegram', schedule: '0 16,17 * * *' },
     { path: '/api/internal/market-intel-telegram', schedule: '0 18,19 * * *' },
+    { path: '/api/internal/pr-watchdog-backstop', schedule: '*/10 * * * *' },
   ])
 })
 
@@ -122,4 +123,65 @@ test('R1 database and browser workflows verify canonical-base pull requests', ()
     assert.doesNotMatch(trigger.replace(/^    types:.*$/m,''),
       /^    types:\s*\[opened, synchronize, reopened, ready_for_review, converted_to_draft\]\s*$/m)
   }
+})
+
+
+test('independent PR Watchdog backstop dispatches only after verified inactivity', async () => {
+  const {decideWatchdogWake,runWatchdogBackstop} = await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now = Date.parse('2026-11-02T20:00:00Z')
+  const recent = {id:112,status:'completed',conclusion:'success',
+    head_branch:'codex/bootstrap-books',event:'workflow_run',
+    created_at:'2026-11-02T19:54:00Z'}
+  assert.deepEqual(decideWatchdogWake({total_count:1,workflow_runs:[recent]},now).wake,false)
+  const stale = {...recent,id:111,created_at:'2026-11-02T19:42:00Z'}
+  assert.equal(decideWatchdogWake({total_count:1,workflow_runs:[stale]},now).wake,true)
+  assert.equal(decideWatchdogWake({total_count:1,workflow_runs:[]},now).reason,'INCOMPLETE_HISTORY')
+  assert.equal(decideWatchdogWake({total_count:1,workflow_runs:[{...recent,id:null}]},now).wake,false)
+  let calls=[]
+  const fetcher=async(url,init)=>{
+    calls.push({url,method:init.method||'GET',authorization:init.headers.Authorization})
+    if (init.method==='POST') return {status:204}
+    return {status:200,headers:{get:()=> '4800'},
+      json:async()=>({total_count:1,workflow_runs:[stale]})}
+  }
+  const token='synthetic-token-for-test-only-123456'
+  const outcome=await runWatchdogBackstop({token,now,fetcher,timeout:()=>undefined})
+  assert.equal(outcome.status,202)
+  assert.equal(outcome.body.status,'dispatch_accepted')
+  assert.equal(outcome.body.executionVerified,false)
+  assert.deepEqual(calls.map(x=>x.method),['GET','POST'])
+  assert.match(calls[1].url,/hh-pr-ten-minute-watchdog.yml\\/dispatches$/)
+  assert.equal(calls[1].authorization,'Bearer '+token)
+  calls=[]
+  const missing=await runWatchdogBackstop({token:'',now,fetcher})
+  assert.equal(missing.status,503);assert.equal(calls.length,0)
+})
+test('backstop does not dispatch on recently active, unknown or rate-limited GitHub evidence', async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-02T20:00:00Z'),token='synthetic-token-for-test-only-123456'
+  const history={total_count:1,workflow_runs:[{id:30,status:'in_progress',conclusion:null,
+    head_branch:'codex/bootstrap-books',event:'workflow_dispatch',
+    created_at:'2026-11-02T19:57:00Z'}]}
+  for (const [payload,remaining,expected] of [
+    [history,4000,200],
+    [{total_count:2,workflow_runs:[]},4000,503],
+    [history,40,503]
+  ]) {
+    let posts=0
+    const result=await runWatchdogBackstop({token,now,timeout:()=>undefined,fetcher:async(url,options)=>{
+      if (options.method==='POST') {posts++; return {status:204}}
+      return {status:200,headers:{get:()=>String(remaining)},json:async()=>payload}
+    }})
+    assert.equal(result.status,expected);assert.equal(posts,0)
+  }
+})
+test('production cron route remains private and its schedule is not an Actions cron claim',()=>{
+  const route=readFileSync(root+'/app/api/internal/pr-watchdog-backstop/route.js','utf8')
+  assert.match(route,/cronAuthorized/)
+  assert.match(route,/VERCEL_ENV!=='production'/)
+  assert.match(route,/HH_PR_CRON_DISPATCH_TOKEN/)
+  assert.match(route,/PRIVATE_HEADERS/)
+  const source=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
+  assert.match(source,/workflow_dispatch/)
+  assert.doesNotMatch(source,/pulls\\/\\{pull_number\\}|update-branch|merge_pull_request|sourceChanged:true/)
 })
