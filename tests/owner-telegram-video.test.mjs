@@ -817,7 +817,7 @@ test('Dot status and existing cron reconcile only recorded IDs, never re-upload'
  assert.match(service,/row\?\.state!=='uncertain'\|\|!row\.youtube_video_id/)
  assert.match(service,/if\(row\?\.state==='uncertain'&&row\.youtube_video_id\)/)
  assert.match(service,/background:\(\)=>verifyUncertain\(/)
- assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and state='uncertain'/)
+ assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and youtube_target=\$3 and state='uncertain'/)
  assert.match(service,/callback_data:'hh-video:status'/)
  assert.doesNotMatch(service.slice(service.indexOf('async function verifyUncertain'),service.indexOf('export async function receiveOwnerTelegramVideoWebhook')),/uploadUnlistedRu|method:'PUT'|method:'POST'/)
  assert.match(cron,/runHousekeepingCron\(request/)
