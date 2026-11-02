@@ -59,13 +59,7 @@ export default async function MandalaMeditationPage({ params }: Props) {
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
-      <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
-        <Sparkles size={17} aria-hidden="true" />
-        <strong>{promo.label}</strong>
-        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}>
-          {promo.action}<ArrowRight size={17} aria-hidden="true" />
-        </Link>
-      </aside>
+
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
       <aside data-loved-voices-entry className="mx-auto my-6 max-w-3xl rounded-2xl border border-emerald-800/20 bg-emerald-50 p-4 text-center">
         <Link href={"/"+locale+"/holistic-support/loved-voices"} prefetch={false}
@@ -73,6 +67,13 @@ export default async function MandalaMeditationPage({ params }: Props) {
           {locale==="ru"?"Голоса близких · озвучить фразы":
             locale==="es"?"Voces de seres queridos · crear audio":
             "Loved Ones Voices · create a voice"}
+        </Link>
+      </aside>
+      <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
+        <Sparkles size={17} aria-hidden="true" />
+        <strong>{promo.label}</strong>
+        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}>
+          {promo.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
       </aside>
       <HolisticSupportMandalaDock locale={locale} />

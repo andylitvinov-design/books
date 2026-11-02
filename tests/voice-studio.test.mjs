@@ -190,3 +190,17 @@ test('personal meditation can attach a complete local mastered WAV to a MOVIE',(
   assert.match(movie,/attachedAudio\.nonLoop!==true/);
   assert.match(movie,/durations\.find\(value=>value>=seconds\+0\.35\)/);
 });
+
+
+test('public selected phrases reach the shared RU/EN Voice Studio without relaxing personal meditation privacy',()=>{
+  const editor=get('components/mandala-free-video-studio.tsx');
+  const cloud=get('components/mandala-cloud-voice-studio.tsx');
+  const meditation=get('components/mandala-personal-meditation.tsx');
+  assert.match(editor,/sourceText=\{currentAffirmationSpeech\} sourceIsPublic/);
+  assert.match(cloud,/sourceIsPublic\?:boolean/);
+  assert.match(cloud,/setPersonalText\(!sourceIsPublic\)/);
+  assert.match(cloud,/importedSourceRef\.current=sourceText/);
+  assert.match(cloud,/resetAudio\(\);\s*setScript\(studioExcerpt\(sourceText\)\)/);
+  assert.match(cloud,/importedSourceRef\.current=null;resetAudio\(\);setScript\(event\.currentTarget\.value\)/);
+  assert.match(meditation,/MandalaCloudVoiceStudio locale=\{locale\} sourceText=\{script\}/);
+});

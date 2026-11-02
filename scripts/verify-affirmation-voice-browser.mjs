@@ -21,12 +21,42 @@ function wav(seconds=3) {
 // The default still exercises BOTH engines for developer/manual runs.
 const requestedEngine=process.env.HH_VOICE_E2E_ENGINE||"both";
 assert.ok(["both","webkit","chromium"].includes(requestedEngine),"unknown test browser");
+// Test a real native window/compositor on macOS WebKit only; Chromium stays headless.
+// This flag never relaxes downloaded media, PCM, consent or privacy assertions.
+const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1";
+if(process.env.HH_VOICE_E2E_HEADED==="1"){
+  assert.equal(requestedEngine,"webkit","headed media acceptance is WebKit-only");
+  assert.equal(process.platform,"darwin","headed WebKit acceptance requires macOS");
+}
+// Fail closed with evidence instead of consuming the entire macOS runner quota.
+// Actual encoded 10-second voice video should not run indefinitely.
+let lastPhase="not-started";
+const phase=(engine,stage)=>{lastPhase=engine+":"+stage;console.log("VOICE_E2E_PHASE "+lastPhase);};
+// A frozen WebKit renderer can make page.evaluate or browser.close wait forever.
+// Playwright's default action timeout does NOT cover page.evaluate. Keep the
+// real-media acceptance red, but surface the original recorder failure promptly.
+const withDeadline=(work,ms,label)=>new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>reject(new Error(label+" timed out after "+ms+"ms")),ms);
+  Promise.resolve(work).then(
+    value=>{clearTimeout(timer);resolve(value);},
+    error=>{clearTimeout(timer);reject(error);}
+  );
+});
+const watchdog=setTimeout(()=>{
+  console.error("VOICE_E2E_WATCHDOG_TIMEOUT engine="+requestedEngine+" elapsed_seconds=360 last_phase="+lastPhase);
+  process.exit(1);
+},360000);
 for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   .filter(([name])=>requestedEngine==="both"||name===requestedEngine)) {
-  const browser=await browserType.launch({headless:true});
+  phase(engine,"launch");
+  const browser=await browserType.launch({headless:!(engine==="webkit" && headedWebKit)});
   try {
     const locale=engine==="webkit"?"ru":"en";
     const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
+    // Playwright has no default action timeout: an obscured iPhone control can
+    // otherwise hang until the six-minute process watchdog with no locator.
+    context.setDefaultTimeout(25000);
+    context.setDefaultNavigationTimeout(90000);
     try{
       const page=await context.newPage();
       const payloads=[];
@@ -35,6 +65,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       page.on("request",req=>{if(req.url().includes("/api/holistic-support/voice"))requests.push({method:req.method(),url:req.url()});});
       page.on("requestfailed",req=>{if(req.url().includes("/api/holistic-support/voice"))errors.push("network:"+req.method()+":"+req.failure()?.errorText);});
       page.on("pageerror",e=>errors.push(e.message));
+      page.on("console",msg=>{
+        const code=msg.text();
+        if(code.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:"))errors.push(code);
+      });
+      page.on("crash",()=>phase(engine,"page-crashed"));
       await page.route("**/api/holistic-support/voice",async route=>{
         const req=route.request();
         if(req.method()==="GET"){
@@ -45,17 +80,41 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         payloads.push(body);
         await route.fulfill({status:200,contentType:"audio/wav",body:wav()});
       });
+      phase(engine,"navigate");
       await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
-      // The approved compact mobile UI moves advanced voice and duration settings
-      // into an initially collapsed disclosure. Verify the actual user path.
-      const advanced=page.locator("[data-video-quick-legacy]");
-      assert.equal(await advanced.getAttribute("open"),null);
-      await advanced.locator(":scope > summary").click();
-      await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
+      phase(engine,"editor-ready");
+      // A real visitor sets duration in the visible Music panel, then moves to
+      // the visible Phrases workspace. The deprecated legacy disclosure is
+      // intentionally hidden; tests must not click an invisible summary.
+      await page.locator('[data-video-quick-control="video"]').click();
+      const musicSettings=page.locator("[data-video-audio-details]");
+      await musicSettings.waitFor({state:"visible",timeout:25000});
+      // A previously opened disclosure must not be toggled closed. Exercise
+      // the actual visible 10 s control, not a hidden legacy copy.
+      if(await musicSettings.getAttribute("open")===null)
+        await musicSettings.locator(":scope > summary").click();
+      const lengthButton=musicSettings.locator('[data-video-audio-length="10"]');
+      await lengthButton.waitFor({state:"visible",timeout:25000});
+      await lengthButton.click();
+      await page.locator('[data-video-quick-control="phrases"]').click();
+      const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
+      await phrases.waitFor({state:"visible"});
+      // The current Phrases workspace uses the canonical Hypno phrase cards,
+      // not the retired data-video-quick-affirmation buttons.
+      const readyPhrases=phrases.locator('[data-hypno-ready]');
+      await readyPhrases.click();
+      await expect(readyPhrases).toHaveAttribute("aria-pressed","true");
+      const chosenPhrase=phrases.locator('[data-hypno-phrase="0"]');
+      await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
+      // Exercise the real visitor's individual phrase selection twice and
+      // ensure the approved text is actually restored before TTS submission.
+      await chosenPhrase.click();
+      await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
+      await chosenPhrase.click();
+      await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
+      await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
-      await page.locator('[data-video-quick-phrases="ready"]').click();
-      await page.locator('[data-video-quick-duration="10"]').click();
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       assert.equal(await page.locator("[data-video-affirmation-voice-select] option").count(),6);
@@ -64,6 +123,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-video-generate-affirmation-audio]").click();
       try {
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
+        phase(engine,"voice-wav-ready");
       }catch(error){
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
@@ -77,15 +137,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(payloads[0].consent,true);
       assert.equal(payloads[0].language,locale);
       const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
-      // The voice attachment and downloaded filename must be visible within
-      // the disclosure opened by the user before generating the narration.
-      assert.notEqual(await advanced.getAttribute("open"),null);
-      const selectedFile=page.locator("[data-video-audio-selected] strong");
-      const attachedFile=page.locator("[data-video-audio-attached] strong");
-      await selectedFile.waitFor({state:"visible"});
-      await attachedFile.waitFor({state:"visible"});
-      assert.equal(await selectedFile.innerText(),expectedFileName);
-      assert.equal(await attachedFile.innerText(),expectedFileName);
+      // Real attached WAV is reflected on the shared live video stage, not
+      // merely in a hidden legacy audio panel or a transient preview label.
+      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
@@ -97,11 +151,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const audio=document.querySelector("[data-video-affimations-audio-ready] audio");
         return audio?.getAttribute("src") && audio.getAttribute("src")!==previous;
       },firstAudio,{timeout:25000});
+      phase(engine,"offline-remix-ready");
       assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
+      await page.locator('[data-video-quick-control="video"]').click();
+      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
-      await advanced.locator(":scope > summary").click();
-      await selectedFile.waitFor({state:"hidden"});
       // Wait for actual capture readiness; an enabled button must not silently
       // prime an unloaded HD source and require a second user click.
       const generate=page.locator("[data-video-quick-generate]");
@@ -112,12 +167,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           return !v || v.readyState>=2;
         },undefined,{timeout:25000});
         await expect(generate).toBeEnabled({timeout:30000});
+        const mediaCapabilities=await page.evaluate(()=>({
+          userAgent:navigator.userAgent,
+          canvasCapture:typeof HTMLCanvasElement.prototype.captureStream==="function",
+          supportedMimes:['video/webm;codecs="vp8,opus"','video/webm',
+            'video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4'].filter(
+              mime=>typeof MediaRecorder!=="undefined" && MediaRecorder.isTypeSupported(mime)),
+        }));
+        console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
+        phase(engine,"start-media-recorder");
         await generate.click();
+        phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        phase(engine,"waiting-for-export");
         try {
           await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
-          const uiState=await page.evaluate(()=>{
+          phase(engine,"download-control-timed-out");
+          let uiState;
+          try {
+            uiState=await withDeadline(page.evaluate(()=>{
             const video=document.querySelector("[data-mandala-master-mp4]");
             const create=document.querySelector("[data-video-quick-generate]");
             const result=document.querySelector("[data-video-result]");
@@ -131,35 +200,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
               notices:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(x=>x.textContent?.trim()).filter(Boolean).slice(0,8),
             };
-          });
-          throw new Error(engine+" recorded video never became downloadable: "+JSON.stringify(uiState),{cause:error});
+          }),4000,engine+" media-state evaluation");
+          } catch (diagnosticError) {
+            uiState={diagnosticsUnavailable:diagnosticError instanceof Error
+              ? diagnosticError.message:"WebKit renderer did not respond"};
+          }
+          phase(engine,"recording-error-reported");
+          throw new Error(engine+" recorded video never became downloadable: "+
+            JSON.stringify({...uiState,encoderFailureCodes:errors.filter(item=>
+              item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
+        phase(engine,"download-control-ready");
         const [download]=await Promise.all([
           page.waitForEvent("download",{timeout:20000}),output.click(),
         ]);
+        phase(engine,"download-started");
         const parts=[];
         for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
-          "-of","json","-"],{input:bytes,encoding:"utf8"});
+          "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
         const tracks=JSON.parse(probe.stdout).streams.map(row=>row.codec_type);
         assert.ok(tracks.includes("video"),"real video stream present");
         assert.ok(tracks.includes("audio"),"generated affirmation WAV survived into exported video");
         const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
           "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
-          {input:bytes,maxBuffer:1024*1024});
+          {input:bytes,maxBuffer:1024*1024,timeout:20000});
         assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
+        phase(engine,"encoded-audio-verified");
       }
-      // React can restore this disclosure's open state after the export rerender.
-      // Reopen only when closed, not blindly toggle an existing visible panel.
-      if((await advanced.getAttribute("open"))===null)
-        await advanced.locator(":scope > summary").click();
-      await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
-      await page.locator('[data-video-quick-phrases="ready"]').click();
+      // A real phrase edit must invalidate the old voice attachment. The
+      // visitor changes the wording in its visible workspace, then returns.
+      await page.locator('[data-video-quick-control="phrases"]').click();
+      const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
+      await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
+      await nextPhrase.click();
+      await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
+      await page.locator('[data-video-quick-control="video"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.locator(":scope > summary").click();
@@ -184,8 +265,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(typed.text,customText);
       assert.equal(typed.consent,true);
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
+      phase(engine,"all-assertions-passed");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
-    }finally{await context.close();}
-  }finally{await browser.close();}
+    }finally{phase(engine,"closing-context");await withDeadline(context.close(),10000,engine+" context.close");}
+  }finally{phase(engine,"closing-browser");await withDeadline(browser.close(),10000,engine+" browser.close");phase(engine,"closed");}
 }
-
+clearTimeout(watchdog);

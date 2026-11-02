@@ -88,8 +88,8 @@ const bedNames:Record<string,{ru:string;en:string;es:string}>={
   pulse:{ru:"Ритм",en:"Pulse",es:"Pulso"}
 };
 
-export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,onAudioReady,onAudioInvalidated}:{
-  locale:PublicLocale;sourceText?:string;ambientSrc?:string|null;
+export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=false,ambientSrc=null,onAudioReady,onAudioInvalidated}:{
+  locale:PublicLocale;sourceText?:string;sourceIsPublic?:boolean;ambientSrc?:string|null;
   onAudioReady?:(file:File)=>Promise<boolean>;
   onAudioInvalidated?:()=>void;
 }) {
@@ -130,6 +130,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const controllerRef=useRef<AbortController|null>(null);
   const attachedRef=useRef(false);
+  // Only imported, unedited text stays synchronized with its selected source.
+  const importedSourceRef=useRef<string|null>(null);
 
   useEffect(()=>{
     const abort=new AbortController();
@@ -183,6 +185,17 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     setMixedUrl("");setMixedBlob(null);setAttaching(false);setAudioUrl("");setWav(null);setLocalVoiceName("");setNotice("");
     setBusy(false);
   }
+  useEffect(()=>{
+    // A changed selection cannot silently keep an earlier voice attached to the movie.
+    if(importedSourceRef.current===null||importedSourceRef.current===sourceText)return;
+    importedSourceRef.current=sourceText;
+    resetAudio();
+    setScript(studioExcerpt(sourceText));
+    setConsent(false);
+    setNotice(locale==="ru"?"Выбранный текст изменён. Проверьте его и создайте голос заново.":
+      locale==="es"?"El texto elegido cambió. Revísalo y vuelve a crear el audio.":
+      "Selected text changed. Review it and regenerate the voice.");
+  },[sourceText]);
   function chooseLocalVoice(file:File|undefined){
     if(!file)return;
     if(!isSupportedLocalAudio(file)){setNotice(o.invalid);return;}
@@ -195,7 +208,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
   function sourceToText(){
     resetAudio();
     const excerpt=studioExcerpt(sourceText);
-    setMode("custom");setPersonalText(true);setScript(excerpt);setConsent(false);
+    importedSourceRef.current=excerpt?sourceText:null;
+    setMode("custom");setPersonalText(!sourceIsPublic);setScript(excerpt);setConsent(false);
     setNotice(excerpt?t.sourceAdded:t.noText);
   }
   async function generate(){
@@ -333,17 +347,17 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
         <legend>{t.customLabel}</legend>
         <div className={css.language} role="group" aria-label={t.customLabel}>
           <button type="button" aria-pressed={mode==="sample"}
-            onClick={()=>{resetAudio();setMode("sample");setConsent(false);}}>{t.sample}</button>
+            onClick={()=>{importedSourceRef.current=null;resetAudio();setMode("sample");setConsent(false);}}>{t.sample}</button>
           <button type="button" aria-pressed={mode==="custom"}
-            onClick={()=>{resetAudio();setMode("custom");setPersonalText(false);setConsent(false);}}>{t.custom}</button>
+            onClick={()=>{importedSourceRef.current=null;resetAudio();setMode("custom");setPersonalText(false);setConsent(false);}}>{t.custom}</button>
         </div>
         {mode==="custom"?<>
           {sourceText?<button type="button" className={css.fromMeditation} onClick={sourceToText}>
-            <Sparkles size={15} aria-hidden="true"/>{t.personal}
+            <Sparkles size={15} aria-hidden="true"/>{sourceIsPublic?(locale==="ru"?"Взять выбранные фразы":locale==="es"?"Usar frases elegidas":"Use selected phrases"):t.personal}
           </button>:null}
           <label className={css.textLabel}>{t.customLabel}
             <textarea value={script} maxLength={VOICE_STUDIO_MAX_CHARS} rows={5}
-              placeholder={t.customPlaceholder} onChange={event=>{resetAudio();setScript(event.currentTarget.value);setConsent(false);}}/>
+              placeholder={t.customPlaceholder} onChange={event=>{importedSourceRef.current=null;resetAudio();setScript(event.currentTarget.value);setConsent(false);}}/>
           </label>
           <span className={css.count}>{Array.from(script).length} / {VOICE_STUDIO_MAX_CHARS}</span>
           <label className={css.consent}><input type="checkbox" checked={consent}

@@ -11,14 +11,14 @@ test("meditation-course workspace opens the existing working composer within the
   const composer=read("components/mandala-personal-meditation.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const before=studio.indexOf("data-video-quick-controls");
-  const entry=studio.indexOf('activeWorkspace==="courses" ? <section');
+  const entry=studio.indexOf('activeWorkspace==="practices" ? <section');
   const panel=studio.indexOf("data-video-meditation-course-panel className");
-  const hypno=studio.indexOf("data-video-hypnocorrection-panel");
+  const hypno=studio.indexOf("data-video-effects-panel");
   assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
     "the course composer belongs to the existing six-tab Video Studio");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/<MandalaPersonalMeditation coursePreview/);
-  assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="courses"/,
+  assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="practices"/,
     "do not mount two visible personal meditation editors");
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
   assert.match(composer,/data-meditation-course-request/);

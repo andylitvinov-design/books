@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -88,7 +89,29 @@ export function githubReader(repo, token, transport = fetch) {
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
+}
+
+// A skipped macOS job is optional ONLY when the unchanged, trusted BASE YAML
+// excludes this exact branch. A PR cannot edit its own guard to become exempt,
+// and voice/recorder changes must still prove real encoded audio and video.
+export function optionalMandalaMacosSkip(files, branch, changed) {
+  const name = '.github/workflows/holistic-support-mandala.yml';
+  const source = files?.base?.get(name);
+  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+      typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
+      changed.includes(name) || changed.some(path =>
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+  const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
+  const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
+  if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
+  const predicates = guard.slice(fixed.length, -1).split(' || ');
+  if (!predicates.length || predicates.length > 12) return false;
+  const prefixes = predicates.map(item =>
+    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
+  if (prefixes.some(x => !x)) return false;
+  return !prefixes.some(prefix => branch.startsWith(prefix));
 }
 
 // Loose BASE is permitted only for recognizable, non-sensitive source paths.
@@ -99,11 +122,15 @@ export function githubReader(repo, token, transport = fetch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  // This exact Playwright-only QA harness is never imported by Next at runtime.
+  // Its changing selectors should not force a full rebase of an otherwise
+  // ordinary video-editor PR after an unrelated production promotion.
+  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    !ordinaryRoots.test(file) ||
+    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
     sensitiveName.test(file) ||
     sensitiveRoots.test(file)
@@ -203,7 +230,24 @@ export async function verify(api,ctx,files,options={}) {
   // BASE/HEAD workflow definitions and the actual merge snapshot stay
   // immutable even when the production target moves after the check started.
   const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
-  assertSame(pr,ctx,requireCurrentBase);
+  const approvedBaseChanges = new Set();
+  async function verifyCurrentBase(live) {
+    assertSame(live, ctx, false);
+    if (!requireCurrentBase || live.base.sha === ctx.base) return;
+    if (!pinnedChangeRows || typeof api.compare !== 'function') {
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+    }
+    if (!approvedBaseChanges.has(live.base.sha)) {
+      // Compare the exact tested base with the *current* PR base. Incomplete,
+      // unrelated, inaccessible or security-sensitive changes remain blocked.
+      const diff = await api.compare(ctx.base, live.base.sha);
+      if (!safeDocumentationAdvance(diff, ctx.base, live.base.sha, changed)) {
+        throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      approvedBaseChanges.add(live.base.sha);
+    }
+  }
+  await verifyCurrentBase(pr);
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -291,10 +335,12 @@ export async function verify(api,ctx,files,options={}) {
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
+    const optionalSkipped = run.path === '.github/workflows/holistic-support-mandala.yml' &&
+      optionalMandalaMacosSkip(files, pr.head.ref, changed) ? ['voice-webkit-macos'] : [];
+    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx,requireCurrentBase);
+  await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],

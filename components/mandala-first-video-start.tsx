@@ -154,18 +154,20 @@ export function MandalaFirstVideoStart({
   const draft = useMemo(() => {
     try {
       return buildFirstVideoDraft({locale, wish, ...prefs, variant,
-        promptOverride: mode === "local" ? "" : promptOverride}) as Draft;
+        promptOverride: mode === "local" ? "" : promptOverride,renderOptions}) as Draft;
     } catch (error) {
       if(error instanceof Error && ["no_compatible_licensed_scenes","no_compatible_cinematic_scenes","unsupported_scene_exclusion"].includes(error.message))return null;
       throw error;
     }
-  }, [locale, wish, prefs, variant, promptOverride, mode]);
+  }, [locale, wish, prefs, variant, promptOverride, mode,
+    renderOptions.quality,renderOptions.brightness,renderOptions.audioVolumePercent]);
   const shownPrompt = mode === "local" ? (draft?.prompt || "") : promptOverride;
 
   function apply(nextWish: string, nextPrefs: Preferences, nextOverride: string, nextVariant = variant) {
     try {
       const nextDraft = buildFirstVideoDraft({
         locale, wish: nextWish, ...nextPrefs, variant: nextVariant, promptOverride: nextOverride,
+        renderOptions,
       }) as Draft;
       onApply(nextDraft, nextPrefs);
     } catch (error) {

@@ -48,13 +48,14 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/psychocorrection:\{tab:"Коррекция",title:"Гипнокоррекция и установки"/);
+  assert.match(studio,/effects:\{tab:"Эффекты",title:"Гипноэффекты"/);
+  assert.match(studio,/data-workspace-section="effects"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
   assert.match(studio,/onOpenAudioEditor=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
-  assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,4);
+  assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw the real hypno overlay");
   for(const name of ['"phrases"','"audio"','"visual"','"meditation"'])assert.ok(ui.includes(name));
   for(const name of ["25-й кадр","Бинауральные ритмы","Импульс энергии и света",
     "Быстрая настройка с Wave","Сгенерировать медитацию"])assert.ok(ui.includes(name));

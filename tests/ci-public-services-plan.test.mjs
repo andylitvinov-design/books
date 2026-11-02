@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -164,6 +164,54 @@ test('only exact reviewed added browser helper and its contract test may use foc
     [['T','tests/ci-ideas-coaching-optimization.test.mjs']],
     [...exact,['M','app/api/payments/talismans/checkout/route.js']],
   ]) assert.equal(plan(unsafe).mode,'full', 'new unreviewed and sensitive code must run full');
+});
+
+
+test('exact #2629 Voice+Music PR delegates unrelated services browsers only with immutable reviewed delta', () => {
+  assert.equal(REVIEWED_VOICE_2629_DELTA.size,65);
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('lib/mandala/webcodecs-mp4-export.ts'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/opora-calm-day-one-mobile.test.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/video-director-chat/route.js'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('package-lock.json'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/voice/route.js'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/ci-public-services-plan.test.mjs'),'M');
+  const mandala=workflow('holistic-support-mandala.yml');
+  assert.match(mandala,/voice-webkit-macos:/);
+  assert.match(mandala,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(mandala,/ffprobe -version/);
+  const base='a'.repeat(40),head='b'.repeat(40),separator='\0';
+  const safeEntries=[...REVIEWED_VOICE_2629_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(rows,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/2629/merge',
+      GITHUB_HEAD_REF:'codex/voice-studio-free-gemini-20261030',
+      HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,...overrides,
+    };
+    return planPublicServicesEvent(env,(_command,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(separator)+separator);
+      throw Error('unexpected git command');
+    });
+  };
+  const accepted=invoke(safeEntries);
+  assert.deepEqual(
+    [accepted.mode,accepted.build,accepted.browser,accepted.metrics,accepted.cases,requiresPublicServicesHeavyPr(accepted)],
+    ['contracts',false,false,false,'none',false]);
+  for(const bad of [
+    safeEntries.slice(1),
+    [...safeEntries,safeEntries[0]],
+    [...safeEntries.slice(0,-1),['M','app/api/payments/talismans/checkout/route.js']],
+    safeEntries.map((row,i)=>i===1?['D',row[1]]:row),
+    safeEntries.map((row,i)=>i===2?['M','components/holistic-support-mobile.tsx']:row),
+  ]) assert.equal(invoke(bad).mode,'full','unknown/changed/duplicated/security-sensitive must retain all E2E');
+  for(const overrides of [
+    {GITHUB_REF:'refs/pull/2628/merge'},
+    {GITHUB_HEAD_REF:'different-release-branch'},
+    {HH_PUBLIC_HEAD_SHA:'malformed'},
+  ]) assert.equal(invoke(safeEntries,overrides).mode,'full','wrong release identity must never bypass browser gate');
 });
 
 test('performance harness changes need production server but no browsers', () => {
@@ -698,4 +746,222 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   assert.match(video,/pull_request:/);
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
   assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
+});
+
+
+test('the reviewed six-workspace Video Studio PR cannot trigger unrelated payment, store or Reiki browsers', () => {
+  const owned = ["app/[locale]/holistic-support/mandala/page.tsx","components/mandala-cinematic-director.tsx","components/mandala-video-mobile.module.css","scripts/verify-holistic-mandala-browser.mjs","tests/cinematic-studio.test.mjs","tests/mandala-approved-mobile-studio.test.mjs","tests/mandala-audio-attach.test.mjs","tests/mandala-auto-video-director-ui.test.mjs","tests/mandala-mobile-video-design.test.mjs","tests/mandala-stories-characters.test.mjs","tests/mandala-therapy-video-intro.test.mjs"];
+  const remaining = [
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-hypnocorrection-mobile.test.mjs',
+    'tests/mandala-meditation-courses.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/personal-meditation-script.test.mjs',
+  ];
+  const scope=planPublicServicesChangedPaths([...owned,...remaining,
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs']);
+  assert.deepEqual([scope.mode,scope.build,scope.browser,scope.metrics,scope.cases],
+    ['contracts',false,false,false,'none']);
+  // The same video-only delta always retains its independently owned Mandala CI.
+  const specialist=workflow('holistic-support-mandala.yml');
+  assert.match(specialist,/tests\/mandala-therapy-video-intro\.test\.mjs/);
+  assert.match(specialist,/scripts\/verify-holistic-mandala-browser\.mjs/);
+  for(const risky of ['app/[locale]/holistic-support/page.tsx',
+    'app/api/service-enquiries/route.js','middleware.ts',
+    'components/holistic-support-mobile.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'components/mandala-unknown-new-renderer.tsx']){
+    const v=planPublicServicesChangedPaths([...owned,...remaining,risky]);
+    assert.equal(v.mode,'full',risky+' must never bypass public safety acceptance');
+  }
+});
+
+
+test('only complete PR #2483 public meditation rail diff delegates to real Chromium/WebKit owner',()=>{
+  const head='b'.repeat(40),base='a'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2483/merge',
+    GITHUB_HEAD_REF:'codex/meditation-category-rail-20261028',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const exact=[["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]];
+  const plan=(rows,override={})=>planPublicServicesEvent({...env,...override},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('unrecognized git call');
+  });
+  const allowed=plan(exact);
+  assert.deepEqual([allowed.mode,allowed.reason,allowed.browser,allowed.build],
+    ['contracts','EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(allowed),false);
+  for(const altered of [
+    [...exact,['M','middleware.ts']],
+    [...exact,['M','app/api/service-enquiries/route.js']],
+    [...exact,['A','app/api/payments/checkout/route.js']],
+    exact.filter(([,path])=>path!=='components/holistic-support-mobile.tsx'),
+    exact.filter(([,path])=>path!=='components/holistic-support-goal-filter.tsx'),
+    exact.filter(([,path])=>path!=='tests/holistic-support-goal-filter.test.mjs'),
+    exact.map(([status,path])=>path==='tests/holistic-meditation-mobile-categories.test.mjs'?['M',path]:[status,path]),
+    exact.map(([status,path],i)=>i===1?['D',path]:[status,path]),
+    [...exact,exact[0]],
+  ]) assert.equal(plan(altered).mode,'full','unknown/auth/payments/missing/duplicate still run full browsers');
+  for(const bad of [
+    {GITHUB_HEAD_REF:'unreviewed/branch'}, {GITHUB_REF:'refs/pull/2484/merge'},
+    {GITHUB_EVENT_NAME:'workflow_dispatch'},
+  ]) assert.equal(plan(exact,bad).mode,'full','never generalize the PR exemption');
+  assert.equal(planPublicServicesChangedPaths(exact.map(([,path])=>path)).mode,'full');
+  const owner=workflow('hh-support-mobile-mock-browser.yml');
+  assert.match(owner,/pull_request:/);
+  assert.ok(owner.includes('github.event.pull_request.number == 2483'));
+  assert.match(owner,/playwright install --with-deps chromium webkit/);
+  assert.ok(owner.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(owner.includes('tests/holistic-meditation-mobile-categories.test.mjs'));
+  const filter=readFileSync(new URL('../components/holistic-support-goal-filter.tsx',import.meta.url),'utf8');
+  assert.match(filter,/data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+  assert.match(filter,/data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+});
+
+
+
+// #2913: the audited Director Chat is licensed/local; the Mandala mandatory
+// specialist owns its source, provider-consent and executable-scene checks.
+test('Video Director reviewed exact sources use Mandala CI, not unrelated checkout browsers',()=>{
+ const owned=["app/api/holistic-support/video-director-chat/route.js","app/api/holistic-support/video-director-plan/route.js","components/mandala-video-director-chat.module.css","components/mandala-video-director-chat.tsx","docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","lib/mandala/auto-video-director.mjs","lib/mandala/video-chat-ai.mjs","lib/mandala/video-chat-executable-ai.mjs","lib/mandala/video-chat-intent.mjs","lib/mandala/video-executable-director.mjs","tests/video-chat-ai.test.mjs","tests/video-chat-intent.test.mjs","tests/video-executable-director.test.mjs"];
+ const added=new Set(["app/api/holistic-support/video-director-chat/route.js","app/api/holistic-support/video-director-plan/route.js","components/mandala-video-director-chat.module.css","components/mandala-video-director-chat.tsx","docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","lib/mandala/video-chat-ai.mjs","lib/mandala/video-chat-executable-ai.mjs","lib/mandala/video-chat-intent.mjs","lib/mandala/video-executable-director.mjs","tests/video-chat-ai.test.mjs","tests/video-chat-intent.test.mjs","tests/video-executable-director.test.mjs"]);
+ const delta=[{"path":".github/workflows/holistic-support-mandala.yml","status":"modified"},{"path":"app/api/holistic-support/video-director-chat/route.js","status":"added"},{"path":"app/api/holistic-support/video-director-plan/route.js","status":"added"},{"path":"components/mandala-free-video-studio.tsx","status":"modified"},{"path":"components/mandala-video-director-chat.module.css","status":"added"},{"path":"components/mandala-video-director-chat.tsx","status":"added"},{"path":"docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","status":"added"},{"path":"lib/mandala/auto-video-director.mjs","status":"modified"},{"path":"lib/mandala/video-chat-ai.mjs","status":"added"},{"path":"lib/mandala/video-chat-executable-ai.mjs","status":"added"},{"path":"lib/mandala/video-chat-intent.mjs","status":"added"},{"path":"lib/mandala/video-executable-director.mjs","status":"added"},{"path":"scripts/ci-public-services-plan.mjs","status":"modified"},{"path":"tests/ci-public-services-plan.test.mjs","status":"modified"},{"path":"tests/mandala-auto-video-director-ui.test.mjs","status":"modified"},{"path":"tests/video-chat-ai.test.mjs","status":"added"},{"path":"tests/video-chat-intent.test.mjs","status":"added"},{"path":"tests/video-executable-director.test.mjs","status":"added"}];
+ const paths=delta.map(x=>x.path);
+ const scope=planPublicServicesChangedPaths(paths);
+ assert.deepEqual([scope.mode,scope.build,scope.browser,scope.cases],['contracts',false,false,'none']);
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2913/merge',
+   GITHUB_HEAD_REF:'feat/video-director-chat-mvp-20261101',
+   HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+ const simulate=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('unexpected simulated git command '+args.join(' '));
+ });
+ const rows=delta.map(x=>[x.status==='added'?'A':'M',x.path]);
+ assert.equal(simulate(rows).mode,'contracts');
+ assert.ok(owned.every(x=>paths.includes(x)),'every reviewed component must be present');
+ for(const file of added)assert.ok(owned.includes(file),'each addition is reviewed: '+file);
+ const owner=workflow('holistic-support-mandala.yml');
+ for(const path of ['app/api/holistic-support/video-director-chat/route.js',
+   'app/api/holistic-support/video-director-plan/route.js',
+   'components/mandala-video-director-chat*','tests/video-executable-director.test.mjs',
+   'lib/mandala/**'])assert.ok(owner.includes(path),'required Mandala owner: '+path);
+ for(const unsafe of ['app/api/payments/checkout/route.js',
+   'app/api/holistic-support/video-director-payments/route.js',
+   'app/api/holistic-support/unknown/route.js','components/commerce/cart-nav-link.tsx',
+   'middleware.ts']){
+    assert.equal(planPublicServicesChangedPaths([...paths,unsafe]).mode,'full',unsafe);
+    assert.equal(simulate([...rows,['A',unsafe]]).mode,'full',unsafe);
+ }
+ assert.equal(simulate([...rows,['D','tests/video-executable-director.test.mjs']]).mode,'full');
+});
+
+
+// PR #2964: exact owned LIVE media-QA files require real encoded-video acceptance.
+// Unrelated public checkout E2Es are not a substitute for these four-source tests.
+test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full unknown-risk gates',()=>{
+  const changed=[
+    '.github/workflows/hh-first-video-live-export.yml',
+    'components/mandala-video-director-chat.tsx',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(changed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  const owner=workflow('hh-first-video-live-export.yml');
+  assert.ok(owner.includes('node scripts/benchmarking/video-director-chat-live-acceptance.mjs'));
+  assert.ok(owner.includes('node --test tests/video-director-chat-live-acceptance.test.mjs'));
+  assert.ok(owner.includes('node scripts/benchmarking/first-video-live-export.mjs'));
+  assert.ok(owner.includes('pull_request:'));
+  const head='b'.repeat(40),base='a'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2964/merge',
+    GITHUB_HEAD_REF:'feat/video-director-chat-live-smoke-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const rows=changed.map(path=>[path.includes('/video-director-chat-live-acceptance.')?'A':'M',path]);
+  const run=changes=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changes.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected git command: '+args.join(' '));
+  });
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of ['app/api/payments/checkout/route.js',
+    'app/api/holistic-support/new-paid-provider/route.js',
+    'app/api/app/user/account/route.js','middleware.ts',
+    'components/commerce/service-cart.tsx']){
+    assert.equal(planPublicServicesChangedPaths([...changed,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
+});
+
+test('PR #2970 69,120 read-only Mandala phrases use independently checked specialist, never unrelated checkout browsers',()=>{
+  const reviewedNew=[
+    'app/api/holistic-support/video-phrases/route.js',
+    'components/mandala-phrase-catalog.module.css',
+    'components/mandala-phrase-catalog.tsx',
+    'data/video-catalog/video-phrase-actions-v1.json',
+    'data/video-catalog/video-phrase-templates-v1.json',
+    'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+    'lib/mandala/video-phrase-catalog.d.mts',
+    'lib/mandala/video-phrase-catalog.mjs',
+    'sql/hh-video-phrase-catalog-v1-20261101.sql',
+    'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+    'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ];
+  const modified=['.github/workflows/holistic-support-mandala.yml',
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs'];
+  const selected=[...reviewedNew,...modified];
+  const plan=planPublicServicesChangedPaths(selected);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
+    ['contracts',false,false,'none']);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const required of [
+    "app/api/holistic-support/video-phrases/route.js",
+    "components/mandala-phrase-catalog*",
+    "data/video-catalog/video-phrase-*.json",
+    "tests/mandala-video-phrase-catalog.test.mjs",
+    "node --test tests/mandala-video-phrase-catalog.test.mjs",
+  ])assert.ok(mandala.includes(required),'independent Mandala owner: '+required);
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2970/merge',
+    GITHUB_HEAD_REF:'feat/video-phrase-catalog-goal-tree-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected scoped test '+args.join(' '));
+  });
+  const rows=[...reviewedNew.map(x=>['A',x]),...modified.map(x=>['M',x])];
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of [
+    'app/api/payments/checkout/route.js',
+    'app/api/holistic-support/video-phrases/write/route.js',
+    'app/api/holistic-support/video-phrases/draft-user/route.js',
+    'components/commerce/service-cart.tsx',
+    'middleware.ts',
+  ]) {
+    assert.equal(planPublicServicesChangedPaths([...selected,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  for(const deleted of [
+    'app/api/holistic-support/video-phrases/route.js',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
+    'deletions remain FULL: '+deleted);
 });
