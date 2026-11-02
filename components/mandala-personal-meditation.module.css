@@ -100,31 +100,3 @@
 .courseOffer a:focus-visible{outline:3px solid #daa755;outline-offset:2px}
 .courseOffer>small{display:block;margin-top:8px;font-size:11px;line-height:1.5;color:#6b775f}
 @media(max-width:355px){.courseOutline{padding:9px}.courseDays li{grid-template-columns:46px minmax(0,1fr);padding:8px}}
-
-
-/* One focus controls the local meditation, selected practice and 8-part outline.
-   This is part of the existing Practices workspace, not a new editor. */
-.journeyFocus{margin:0 0 15px;padding:clamp(12px,3.5vw,16px);border:1px solid #b9dfce;border-radius:16px;background:linear-gradient(150deg,#f6fcf4,#eff8f2);min-width:0}
-.journeyFocus h4{margin:0 0 8px;color:#14523b;font-size:clamp(18px,4.5vw,21px);line-height:1.2}
-.journeyFocus>small{display:block;font-size:12px;color:#3d6752;margin-bottom:9px}
-.focusModeTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:12px}
-.focusModeTabs button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:46px;padding:9px 6px;border:1px solid #94c6ab;border-radius:13px;background:#fff;color:#12563d;font:inherit;font-size:clamp(13px,3.5vw,16px);font-weight:740;cursor:pointer}
-.focusModeTabs button[aria-pressed="true"]{color:#fff;border-color:#006848;background:linear-gradient(115deg,#057453,#03956d)}
-.focusModeTabs button:focus-visible,.focusPresets button:focus-visible{outline:3px solid #e8a745;outline-offset:2px}
-.focusModeTabs button:disabled,.focusPresets button:disabled{opacity:.55;cursor:not-allowed}
-.journeyFocus>p{margin:4px 0 8px;color:#557161;font-size:13px}
-.focusPresets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.focusPresets button{min-width:0;min-height:46px;padding:9px 6px;border:1px solid #c1daca;border-radius:12px;background:#fff;color:#1c5740;font:inherit;font-size:clamp(12px,3.2vw,15px);font-weight:650;cursor:pointer}
-.focusPresets button[aria-pressed="true"]{background:#d7f4e5;border-color:#0d9061;color:#076243}
-.vectorFields{display:grid;gap:12px;min-width:0}
-.vectorFields label{display:grid;gap:6px;font-size:14px;font-weight:680;color:#285b43}
-.vectorFields textarea{box-sizing:border-box;width:100%;min-height:69px;border:1px solid #b8d5c3;border-radius:12px;background:#fff;color:#234432;padding:10px;font:inherit;font-size:15px;line-height:1.45;resize:vertical}
-.vectorFields>small{font-size:12px;color:#755c2f;line-height:1.4}
-@media(min-width:620px){.focusPresets{grid-template-columns:repeat(4,minmax(0,1fr))}}
-
-/* A deliberate separate Step 4 button never silently orders or renders 8 videos. */
-.programmeAction{margin:15px 0 11px;padding:13px;border:1px solid #c3dccb;border-radius:17px;background:#fcfefb}
-.programmeAction h4{margin:0 0 10px;font-size:clamp(18px,4.3vw,22px);line-height:1.25;color:#1a523a}
-.programmeAction button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:49px;width:100%;border:1px solid #016a4a;border-radius:13px;padding:11px;background:linear-gradient(100deg,#0a7955,#008461);color:#fff;font:inherit;font-size:clamp(14px,3.6vw,17px);font-weight:800;text-align:center;cursor:pointer}
-.programmeAction button:disabled{opacity:.5;cursor:not-allowed}
-.programmeAction button:focus-visible{outline:3px solid #dba74b;outline-offset:3px}

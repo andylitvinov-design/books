@@ -187,3 +187,48 @@ test('filter updates remain drafts until approve, including same-event test prop
   const approval=ui.split('  function approvePhrases()')[1]?.split('  const selectedScene=')[0];
   assert.ok(approval.includes('onChange(next)'),'approval must be the only commit of a Wave draft');
 });
+
+
+test('Wave v2.2 reads a positive goal inside one combined video request',()=>{
+  const cases=[
+    ['ru','Боюсь выступать, но хочу беречь силы','rest','voice'],
+    ['en','I am afraid to speak, but I want to rest','rest','voice'],
+    ['es','Me siento cansada, quiero hablar menos','boundaries','voice'],
+    ['ru','Не хочу выступать, хочу отдыхать','rest','voice'],
+    ['ru','Хочу меньше говорить','boundaries','voice'],
+    ['en','I want to speak less','boundaries','voice'],
+    ['es','Quiero hablar menos','boundaries','voice'],
+    ['ru','Хочу не бояться','confidence',null],
+    ['ru','Хочу свободнее говорить','voice',null],
+    ['ru','После встреч я устаю, хочу отдохнуть','rest',null]
+  ];
+  for(const [locale,currentText,required,forbidden] of cases){
+    const parsed=interpretWaveNotes({locale,currentText});
+    assert.ok(parsed.goalKeys.includes(required),currentText+': '+JSON.stringify(parsed.goalKeys));
+    if(forbidden)assert.ok(!parsed.goalKeys.includes(forbidden),currentText);
+  }
+});
+test('explicit personal goal wins over a conflicting single-field idea',()=>{
+  for(const [locale,currentText,goalText] of [
+    ['ru','Хочу выступать','Хочу отдыхать'],
+    ['en','I want to speak','I would like to rest'],
+    ['es','Quiero hablar','Mi objetivo es descansar']]){
+    const parsed=interpretWaveNotes({locale,currentText,goalText});
+    assert.ok(parsed.goalKeys.includes('rest'),locale);
+    assert.ok(!parsed.goalKeys.includes('voice'),locale);
+    const draft=request(locale,currentText,goalText);
+    assert.ok(draft.phrases.some(x=>/отдых|сил|descans|energ|rest|pace/iu.test(x)),locale);
+  }
+});
+test('single-field Wave is deterministic, private and crisis-gated',()=>{
+  const phrase='Боюсь говорить перед группой, но хочу отдыхать CONFIDENTIAL_7252';
+  const first=request('ru',phrase,'');
+  assert.equal(first.status,'personalized');
+  assert.ok(first.goalConcepts.includes('rest'));
+  assert.ok(!first.goalConcepts.includes('voice'));
+  assert.ok(!JSON.stringify(first).includes('CONFIDENTIAL_7252'));
+  assert.deepEqual(first,request('ru',phrase,''));
+  const urgent=request('ru','Я хочу умереть, но хочу быть спокойнее','');
+  assert.equal(urgent.status,'safety_handoff');
+  assert.deepEqual(urgent.phrases,[]);
+});

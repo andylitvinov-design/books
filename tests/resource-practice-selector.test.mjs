@@ -85,31 +85,31 @@ test("untrusted locale, theme, kind and revision fall back to reviewed content",
   assert.equal(result.status, "ready");
 });
 
-test("the existing meditation and eight-day preview share one focus and show the practice in-between", async () => {
-  const root = new URL("../components/mandala-personal-meditation.tsx", import.meta.url);
-  const code = await readFile(root, "utf8");
-  assert.match(code, /data-meditation-focus-mode/);
-  assert.match(code, /data-meditation-vector-now/);
-  assert.match(code, /data-meditation-vector-desired/);
-  assert.match(code, /disabled=\{disabled\|\|Boolean\(vectorIncomplete\)\}/);
-  assert.match(code, /buildPersonalMeditationScript\(/);
-  assert.match(code, /buildAdaptiveMeditationOutline\(/);
-  assert.match(code, /<MandalaResourcePractice /);
-  assert.ok(code.indexOf("<MandalaResourcePractice ") < code.indexOf("data-meditation-eight-day-plan"));
-  assert.match(code, /isMeditationSafetyResponse\(script,locale\)/);
-  assert.match(code, /data-meditation-program-generate/);
-  assert.match(code, /showProgramme\(\)/);
-  assert.match(code, /courseDays.length===8&&planVisible/);
-  assert.match(code, /focus=\{\{\.\.\.focus,goals:\[courseFocus\|\|actualTheme\],goal:effectiveWish/);
-  assert.match(code, /focus:sharedFocus,accents:selected/);
+test("the single approved four-step workspace uses goal-aware practices",async()=>{
+  const code=await readFile(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
+  const studio=await readFile(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const anchor of ["data-guided-focus-state","data-guided-generate-meditation","data-guided-practice-step",
+    "data-guided-programme-step","data-guided-create-plan"])assert.ok(code.includes(anchor));
+  assert.match(code,/selectResourcePractice\(/);
+  assert.match(code,/practiceKind==="daily"\?"practice":practiceKind/);
+  assert.match(code,/practiceResult\.steps\.map/);
+  assert.match(code,/practiceResult\.transfer/);
+  assert.doesNotMatch(code,/practiceSets|practiceTitles/);
+  assert.match(code,/!firstScript\|\|!focusReady/);
+  assert.match(code,/currentMeditation\?<div className=\{css\.flowResult\}/);
+  assert.match(code,/currentProgramme\?<div className=\{css\.programme\}/);
+  assert.match(code,/onOmitMeditation\?\.\(\)/);
+  assert.match(code,/setApprovedSignature\(""\)/);
+  assert.match(code,/setProgrammeSignature\(""\)/);
+  assert.match(code,/needsVector/);assert.match(code,/needsState/);
+  assert.match(code,/safetyBlocked/);
+  assert.match(studio,/<MandalaGuidedCourse /);
+  assert.match(studio,/onAddMeditation=\{script=>/);
 });
-
-test("the resource component exposes working selection and bounded refresh without new network", async () => {
-  const code = await readFile(new URL("../components/mandala-resource-practice.tsx", import.meta.url), "utf8");
-  assert.match(code, /data-resource-kind=\{option\}/);
-  assert.match(code, /setKind\(option\)/);
-  assert.match(code, /data-resource-regenerate/);
-  assert.match(code, /setRevision\(value=>value\+1\)/);
-  assert.match(code, /selectResourcePractice\(/);
-  assert.doesNotMatch(code, /\bfetch\s*\(|localStorage|sessionStorage|@google\/generative-ai/);
+test("one existing film and cloud-voice handoff remain",async()=>{
+  const studio=await readFile(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/setCourseMeditationDraft\(script\)/);
+  assert.match(studio,/setCourseMeditationDraft\(""\)/);
+  assert.match(studio,/data-video-therapy-meditation-audio/);
+  assert.match(studio,/onApplyFreeVideo=\{session=>/);
 });

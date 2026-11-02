@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
-import { MandalaResourcePractice } from "./mandala-resource-practice";
 import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
@@ -120,59 +119,34 @@ const themeLabels = {
   es:{money:"Dinero",energy:"Energía",relationships:"Relaciones",goals:"Metas",life:"Sentido",health:"Bienestar"}
 } as const;
 
-const courseFocusCopy = {
-  ru: {
-    title:"Шаг 1 · Фокус практики",mode:"Выберите направление",state:"Состояние",vector:"Вектор развития",
-    now:"Моё состояние сейчас",desired:"К какому состоянию я хочу прийти",
-    nowHint:"Например: часто чувствую напряжение",desiredHint:"Например: больше устойчивости и спокойствия",
-    incomplete:"Для вектора заполните оба поля.",choose:"Можно выбрать готовую тему или описать свою",
-    presets:{calm:"Спокойствие и сон",energy:"Больше энергии",support:"Опора в себе",connection:"Близость и тепло"},
-  },
-  en: {
-    title:"Step 1 · Practice focus",mode:"Choose direction",state:"State",vector:"Growth direction",
-    now:"How I feel now",desired:"How I would like to feel",
-    nowHint:"For example: frequently tense",desiredHint:"For example: steadier and calmer",
-    incomplete:"Fill in both fields to generate your growth-direction meditation.",choose:"Choose a theme or describe it yourself",
-    presets:{calm:"Calm and sleep",energy:"More energy",support:"Inner support",connection:"Connection and warmth"},
-  },
-  es: {
-    title:"Paso 1 · Enfoque",mode:"Elige una dirección",state:"Estado",vector:"Dirección de desarrollo",
-    now:"Mi estado actual",desired:"El estado que deseo",
-    nowHint:"Por ejemplo: mucha tensión",desiredHint:"Por ejemplo: más calma y estabilidad",
-    incomplete:"Completa ambos campos para crear la meditación.",choose:"Elige un tema o describe el tuyo",
-    presets:{calm:"Calma y sueño",energy:"Más energía",support:"Apoyo interior",connection:"Cercanía y calidez"},
-  },
-} as const;
-const focusPresets = ["calm","energy","support","connection"] as const;
-
 const courseCopy={
   ru:{
-    title:"Сформировать медитацию",eyebrow:"ШАГ 2 · МЕДИТАЦИЯ",
+    title:"Курсы медитаций",eyebrow:"БЕСПЛАТНО · ПЕРВЫЙ ДЕНЬ",
     intro:"Создайте первую медитацию, настройте её и посмотрите темы следующих семи дней.",
     request:"О чём будет ваша медитация?",placeholder:"Например: хочу спокойно выражать свои желания и сохранять внутреннюю опору",
-    regenerate:"Сгенерировать заново",sequence:"Ваша программа — 8 сессий", programmeHeading:"Шаг 4 · Личная программа развития",programmeCreate:"Сформировать программу из 8 сессий",programmeClose:"Скрыть программу",
+    regenerate:"Сгенерировать заново",sequence:"Ваша программа на 8 дней",
     planHint:"Это предварительные темы. Сегодня создан только текст первой медитации; остальные семь текстов, аудио и видео не генерируются и не оплачиваются автоматически.",
-    day:"Сессия",first:"Текст первой медитации готов",next:"Тема будущей медитации",
+    day:"День",first:"Текст первой медитации готов",next:"Тема будущей медитации",
     offerTitle:"Хотите продолжить все 8 дней?",offerText:"Закажите персональный курс: восемь связанных медитаций с постепенным развитием темы и проверкой специалистом.",
     order:"Запросить курс из 8 медитаций",orderNote:"Сначала обсуждение программы и условий. Эта кнопка не проводит оплату и не оформляет заказ автоматически.",
   },
   en:{
-    title:"Create a meditation",eyebrow:"STEP 2 · MEDITATION",
+    title:"Meditation courses",eyebrow:"FREE · DAY ONE",
     intro:"Create your first meditation, adjust its settings, and preview the next seven daily topics.",
     request:"What would you like to focus on?",placeholder:"For example: speaking up calmly while staying grounded",
-    regenerate:"Generate again",sequence:"Your 8-session programme",programmeHeading:"Step 4 · Personal growth programme",programmeCreate:"Build my 8-session programme",programmeClose:"Hide programme",
+    regenerate:"Generate again",sequence:"Your 8-day meditation outline",
     planHint:"These are proposed topics. Only day one's text has been created; seven more scripts, audio and videos are not generated or purchased automatically.",
-    day:"Session",first:"Your first meditation text is ready",next:"Future meditation topic",
+    day:"Day",first:"Your first meditation text is ready",next:"Future meditation topic",
     offerTitle:"Continue for all eight days?",offerText:"Request a personal series of eight connected meditations, progressing gently through your goal and reviewed by a practitioner.",
     order:"Request the 8-meditation course",orderNote:"First discuss the plan and terms. This link does not charge you or place an order.",
   },
   es:{
-    title:"Crear una meditación",eyebrow:"PASO 2 · MEDITACIÓN",
+    title:"Cursos de meditación",eyebrow:"GRATIS · PRIMER DÍA",
     intro:"Crea tu primera meditación, ajusta sus parámetros y conoce los temas de los siete días siguientes.",
     request:"¿Qué te gustaría trabajar?",placeholder:"Por ejemplo: comunicar mis deseos con calma y sentir más apoyo",
-    regenerate:"Generar de nuevo",sequence:"Tu programa de 8 sesiones",programmeHeading:"Paso 4 · Programa de desarrollo",programmeCreate:"Crear programa de 8 sesiones",programmeClose:"Ocultar programa",
+    regenerate:"Generar de nuevo",sequence:"Tu programa de meditación de 8 días",
     planHint:"Temas preliminares: solo está creado el texto del primer día. Los otros siete guiones, audios y vídeos no se generan ni se compran automáticamente.",
-    day:"Sesión",first:"Texto del primer día preparado",next:"Tema de una futura meditación",
+    day:"Día",first:"Texto del primer día preparado",next:"Tema de una futura meditación",
     offerTitle:"¿Quieres continuar durante ocho días?",offerText:"Solicita ocho meditaciones personales conectadas y revisadas por un profesional, con un progreso suave hacia tu objetivo.",
     order:"Solicitar curso de 8 meditaciones",orderNote:"Primero se acuerdan programa y condiciones. El enlace no realiza un pago ni un pedido.",
   },
@@ -184,16 +158,9 @@ export function MandalaPersonalMeditation({
   const t=copy[locale];
   const course=courseCopy[locale];
   const [courseRequest,setCourseRequest]=useState(wish);
-  const [focusMode,setFocusMode]=useState<"state"|"vector">("state");
-  const [currentState,setCurrentState]=useState("");
-  const [desiredState,setDesiredState]=useState("");
   const [courseDays,setCourseDays]=useState<CourseDay[]>([]);
-  const [planVisible,setPlanVisible]=useState(false);
   const [courseFocus,setCourseFocus]=useState<VideoTheme|null>(null);
-  const effectiveWish=coursePreview?(focusMode==="state"?courseRequest:
-    (locale==="ru"?"Сейчас: ":locale==="es"?"Ahora: ":"Now: ")+currentState.trim()+". "+
-    (locale==="ru"?"Хочу: ":locale==="es"?"Deseo: ":"I want: ")+desiredState.trim()):wish;
-  const vectorIncomplete=coursePreview&&focusMode==="vector"&&(!currentState.trim()||!desiredState.trim());
+  const effectiveWish=coursePreview?courseRequest:wish;
   const [selected,setSelected]=useState<Accent[]>([]);
   const [image,setImage]=useState<ImageKey>("video");
   const [tone,setTone]=useState<ToneKey>("gentle");
@@ -326,19 +293,16 @@ export function MandalaPersonalMeditation({
     // A deliberate second press rotates among curated, meaningful local passages.
     // Neither the requested topic nor the selected filters are changed.
     const nextVariant=script?(variantIndex+1)%3:variantIndex;
-    const sharedFocus = coursePreview ? {...focus,goal:effectiveWish,goals:[plan?.focusTheme||actualTheme],
-      difficulty:focusMode==="vector"?currentState:focus.difficulty} : focus;
     const next=buildPersonalMeditationScript({
       locale,theme:plan?.focusTheme||actualTheme,wish:effectiveWish,
       scene:coursePreview&&plan?plan.days[0].motif:scene,
       sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-      focus:sharedFocus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
+      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
       variantIndex:nextVariant,
     });
     const safetyResponse=isMeditationSafetyResponse(next,locale);
     setVariantIndex(nextVariant);
     setScript(next);setGeneratedFor(signature);setNotice(safetyResponse?"":t.creating);
-    setPlanVisible(false);
     if(coursePreview&&!safetyResponse&&plan){
       setCourseFocus(plan.focusTheme as VideoTheme);
       setCourseDays(plan.days.map(({id,number,title,motif})=>({id,number,title,motif})));
@@ -346,19 +310,6 @@ export function MandalaPersonalMeditation({
       setCourseDays([]);setCourseFocus(null);
     }
   };
-  function showProgramme(){
-    if(disabled||!coursePreview||!script||stale||isMeditationSafetyResponse(script,locale))return;
-    // A distinct user action recomposes the same safe, local 8-stage outline.
-    // It is an outline, not a collection of generated videos.
-    const next=buildAdaptiveMeditationOutline({
-      locale,theme:actualTheme,explicitTheme:meditationTheme!=="inherit",
-      request:effectiveWish||focus.goal,difficulty:focusMode==="vector"?currentState:focus.difficulty,
-      details:focus.details,
-    });
-    setCourseFocus(next.focusTheme as VideoTheme);
-    setCourseDays(next.days.map(({id,number,title,motif})=>({id,number,title,motif})));
-    setPlanVisible(true);
-  }
   async function copyScript(){
     if(!script)return;
     try{
@@ -382,46 +333,13 @@ export function MandalaPersonalMeditation({
         <div><small>{coursePreview?course.eyebrow:t.eyebrow}</small><h3 id="personal-meditation-heading">{coursePreview?course.title:t.title}</h3></div>
       </header>
       <p className={css.intro}>{coursePreview?course.intro:t.intro}</p>
-      {coursePreview?<div className={css.journeyFocus} data-meditation-focus-step>
-        <h4>{courseFocusCopy[locale].title}</h4>
-        <small>{courseFocusCopy[locale].mode}</small>
-        <div className={css.focusModeTabs} role="group" aria-label={courseFocusCopy[locale].mode}>
-          {(["state","vector"] as const).map(mode=><button type="button" key={mode}
-            data-meditation-focus-mode={mode} aria-pressed={focusMode===mode}
-            disabled={disabled} onClick={()=>setFocusMode(mode)}>
-            {courseFocusCopy[locale][mode]}
-          </button>)}
-        </div>
-        {focusMode==="state"?<>
-          <p>{courseFocusCopy[locale].choose}</p>
-          <div className={css.focusPresets} role="group" aria-label={courseFocusCopy[locale].choose}>
-            {focusPresets.map(id=><button key={id} type="button" disabled={disabled}
-              aria-pressed={courseRequest===courseFocusCopy[locale].presets[id]}
-              onClick={()=>setCourseRequest(courseFocusCopy[locale].presets[id])}>
-              {courseFocusCopy[locale].presets[id]}
-            </button>)}
-          </div>
-          <label className={css.courseRequest} htmlFor="meditation-course-request">
-            {course.request}
-            <textarea id="meditation-course-request" data-meditation-course-request
-              rows={2} maxLength={160} disabled={disabled}
-              placeholder={course.placeholder} value={courseRequest}
-              onChange={event=>setCourseRequest(event.currentTarget.value)}/>
-          </label>
-        </>:<div className={css.vectorFields}>
-          <label>{courseFocusCopy[locale].now}
-            <textarea rows={2} maxLength={140} data-meditation-vector-now
-              value={currentState} placeholder={courseFocusCopy[locale].nowHint}
-              disabled={disabled} onChange={event=>setCurrentState(event.currentTarget.value)}/>
-          </label>
-          <label>{courseFocusCopy[locale].desired}
-            <textarea rows={2} maxLength={140} data-meditation-vector-desired
-              value={desiredState} placeholder={courseFocusCopy[locale].desiredHint}
-              disabled={disabled} onChange={event=>setDesiredState(event.currentTarget.value)}/>
-          </label>
-          {vectorIncomplete?<small role="note">{courseFocusCopy[locale].incomplete}</small>:null}
-        </div>}
-      </div>:null}
+      {coursePreview?<label className={css.courseRequest} htmlFor="meditation-course-request">
+        {course.request}
+        <textarea id="meditation-course-request" data-meditation-course-request
+          rows={2} maxLength={160} disabled={disabled}
+          placeholder={course.placeholder} value={courseRequest}
+          onChange={event=>setCourseRequest(event.currentTarget.value)}/>
+      </label>:null}
       <div className={css.context} data-meditation-context aria-label={t.filters}>
         <small>{t.filters}</small>
         <div className={css.chips}>
@@ -515,7 +433,7 @@ export function MandalaPersonalMeditation({
           </label>
         </div>
       </details>
-      <button type="button" className={css.generate} data-meditation-generate disabled={disabled||Boolean(vectorIncomplete)}
+      <button type="button" className={css.generate} data-meditation-generate disabled={disabled}
         onClick={generate}>
         {script?<RotateCcw size={19} aria-hidden="true"/>:<Sparkles size={19} aria-hidden="true"/>}
         {script?(coursePreview?course.regenerate:t.regenerate):t.generate}
@@ -581,21 +499,7 @@ export function MandalaPersonalMeditation({
         </div>
         <p className={css.helper}>{t.editHint}</p>
       </div>:null}
-      {coursePreview&&script&&!stale&&!isMeditationSafetyResponse(script,locale)?
-        <MandalaResourcePractice locale={locale} theme={courseFocus||actualTheme}
-          focus={{...focus,goals:[courseFocus||actualTheme],goal:effectiveWish||focus.goal,
-            difficulty:focusMode==="vector"?currentState:focus.difficulty}} disabled={disabled}/>:null}
-      {coursePreview&&script&&!stale&&!isMeditationSafetyResponse(script,locale)?
-        <section className={css.programmeAction} data-meditation-program-step>
-          <h4>{course.programmeHeading}</h4>
-          <button type="button" data-meditation-program-generate disabled={disabled}
-            aria-expanded={planVisible}
-            onClick={()=>planVisible?setPlanVisible(false):showProgramme()}>
-            <BookOpen size={19} aria-hidden="true"/>
-            {planVisible?course.programmeClose:course.programmeCreate}
-          </button>
-        </section>:null}
-      {coursePreview&&script&&!stale&&courseDays.length===8&&planVisible?
+      {coursePreview&&script&&!stale&&courseDays.length===8?
         <section className={css.courseOutline} data-meditation-eight-day-plan aria-labelledby="meditation-course-outline-heading">
           <div className={css.courseOutlineHeader}>
             <BookOpen size={20} aria-hidden="true"/>
