@@ -73,7 +73,11 @@ async function loadTrustedClassifier(workspace){
  const dir=path.join(workspace,'.hh-merge-policy-production');
  const classifierBase=execFileSync('git',['-C',dir,'rev-parse','HEAD'],{encoding:'utf8',timeout:10000}).trim();
  if(!SHA.test(classifierBase))throw Error('CLASSIFIER_BASE_INVALID');
- const mod=await import(pathToFileURL(path.join(dir,'scripts/ci-quick-route.mjs')).href);
+ // The production checkout may advance more than once in one event.
+ // Bind the ESM cache to the verified protected commit SHA.
+ const url=pathToFileURL(path.join(dir,'scripts/ci-quick-route.mjs'));
+ url.searchParams.set('sha',classifierBase);
+ const mod=await import(url.href);
  if(typeof mod.decideRoute!=='function')throw Error('CLASSIFIER_UNAVAILABLE');
  return {classifierBase,decideRoute:mod.decideRoute};
 }

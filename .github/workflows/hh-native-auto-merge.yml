@@ -103,7 +103,7 @@ jobs:
             }
             if (pr.state !== "open" || pr.draft || pr.base.ref !== "codex/public-book-library" ||
                 pr.head.repo?.full_name !== fullRepo || !/^[0-9a-f]{40}$/.test(pr.head.sha) ||
-                pr.mergeable !== true || pr.mergeable_state === "dirty" ||
+                pr.mergeable === false || pr.mergeable_state === "dirty" ||
                 (expectedHead && expectedHead !== pr.head.sha)) {
               log("SKIP Draft, conflict, changed HEAD, changed base or non-mergeable PR #" + number);
               return;
@@ -248,7 +248,7 @@ jobs:
             const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
             if(pr.state!=="open"||pr.draft||pr.base?.ref!=="codex/public-book-library"||
                pr.base.sha!==expectedBase||pr.head?.sha!==expectedHead||
-               pr.head.repo?.full_name!==fullRepo||pr.mergeable!==true||
+               pr.head.repo?.full_name!==fullRepo||pr.mergeable===false||
                pr.mergeable_state==="dirty"){
               core.info("CI_AUTO_MERGE: PR changed before base verification");return;
             }
@@ -266,11 +266,41 @@ jobs:
               core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
             }
             const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
-            const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
-            const freshness=await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
-              verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+            const {execFileSync}=require('node:child_process');
+            const checkout=require('node:path').join(process.env.GITHUB_WORKSPACE,'.hh-merge-policy-production');
+            let freshness={ok:false,reason:'PRODUCTION_BASE_RETRIES_EXHAUSTED'};
+            // Protected production may advance after the Core event. Refresh
+            // only the trusted production checkout, never any candidate PR code.
+            for(let attempt=1;attempt<=4;attempt++){
+              const production=(await github.rest.repos.getBranch({
+                owner,repo,branch:'codex/public-book-library'
+              })).data;
+              const base=production?.commit?.sha;
+              if(production?.protected!==true||!/^[0-9a-f]{40}$/.test(base||'')){
+                core.warning('CI_AUTO_MERGE: cannot verify protected production SHA');return;
+              }
+              const checked=execFileSync('git',['-C',checkout,'rev-parse','HEAD'],
+                {encoding:'utf8',timeout:10000}).trim();
+              if(checked!==base){
+                core.info('CI_AUTO_MERGE: refresh trusted classifier to '+base.slice(0,12));
+                // Exact protected SHA and execFileSync argument vectors: no shell.
+                execFileSync('git',['-C',checkout,'fetch','--no-tags','--depth=1','origin',base],
+                  {timeout:35000});
+                execFileSync('git',['-C',checkout,'checkout','--detach','--force',base],
+                  {timeout:15000});
+              }
+              const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+              freshness=classifier.classifierBase!==base
+                ? {ok:false,reason:'CLASSIFIER_BASE_STALE'}
+                : await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                    verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+              if(freshness.ok)break;
+              if(!['CLASSIFIER_BASE_STALE','BASE_MOVED_DURING_CHECK'].includes(freshness.reason))
+                break; // Do not retry non-transient or sensitive CI failure.
+              core.info('CI_AUTO_MERGE: production moved during check; retry '+attempt+'/4');
+            }
             if(!freshness.ok){
-              core.info("CI_AUTO_MERGE: "+freshness.reason+" for PR #"+number);return;
+              core.info('CI_AUTO_MERGE: '+freshness.reason+' for PR #'+number);return;
             }
             core.setOutput("eligible","true");
             core.setOutput("verified_base",freshness.base);
@@ -321,7 +351,7 @@ jobs:
             echo '::error::Wrong existing auto-merge method; refusing silent override' >&2
             exit 1
           fi
-          for ((attempt=1; attempt<=3; attempt++)); do
+          for ((attempt=1; attempt<=5; attempt++)); do
             fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')"
             if [[ "$fresh" != true ]]; then
               echo 'CI_AUTO_MERGE: SKIP target, state or HEAD changed before ARM'
@@ -343,10 +373,10 @@ jobs:
               exit 0
             fi
             # Denied native ARM is a blocker, never a separate direct merge.
-            if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
+            if ! grep -Eiq 'Unable to determine if workflow can be created or updated due to timeout|mergeability.*(unknown|calculat|temporar)|mergeable.*(unknown|calculat)|still calculating|please try again' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
             fi
-            if ((attempt < 3)); then sleep "$attempt"; fi
+            if ((attempt < 5)); then sleep "$((attempt * 2))"; fi
           done
           exit 1
   recover-interrupted-core:

@@ -56,3 +56,76 @@ test('successful exact-head Core event arms promptly without waiting for optiona
  assert.ok(s.includes("steps.freshness.outputs.eligible == 'true'"));
  assert.ok(s.includes('--match-head-commit "$PR_HEAD"'));
 });
+
+test('Core event refreshes a moving protected classifier and tolerates unknown mergeability',async()=>{
+ const source=workflow('hh-native-auto-merge');
+ const marker='      - name: Verify same-run unified gate and current sensitive production base';
+ const start=source.indexOf(marker),end=source.indexOf('      - name: Enable native auto-merge for this exact head',start);
+ assert.ok(start>0&&end>start);
+ let script=source.slice(start,end).split('          script: |\n')[1];
+ assert.ok(script);
+ script=script.split('\n').map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');
+ const markerFor=name=>"'"+String.fromCharCode(36)+"{{ "+name+" }}'";
+ script=script.replace(markerFor('steps.ready.outputs.pr'),"'42'")
+  .replace(markerFor('steps.ready.outputs.head'),"'b'.repeat(40)")
+  .replace(markerFor('steps.ready.outputs.base'),"'a'.repeat(40)")
+  .replace(markerFor('steps.ready.outputs.core_run'),"'99'");
+ const old='a'.repeat(40),first='c'.repeat(40),second='d'.repeat(40);
+ let production=first,checked=old,assessed=0;
+ const fetches=[],outputs={},messages=[];
+ const pr={number:42,state:'open',draft:false,base:{ref:'codex/public-book-library',sha:old},
+   head:{ref:'feature',sha:'b'.repeat(40),repo:{full_name:'o/r'}},
+   mergeable:null,mergeable_state:'unknown'};
+ const github={rest:{
+   pulls:{get:async()=>({data:pr})},
+   actions:{getWorkflowRun:async()=>({data:{id:99}}),
+     listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
+       {name:'hh-merge-check',status:'completed',conclusion:'success'},
+       {name:'hh-specialist',status:'completed',conclusion:'success'}]}})},
+   repos:{getBranch:async()=>({data:{protected:true,commit:{sha:production}}})}
+ }};
+ const fakePolicy={
+   coreRunBase:()=>old,
+   loadTrustedClassifier:async()=>({classifierBase:checked,decideRoute:()=> 'CORE'}),
+   assessBaseFreshness:async({verifiedRunBase})=>{
+     assert.equal(verifiedRunBase(),old);
+     assessed++;
+     if(assessed===1){production=second;return {ok:false,reason:'BASE_MOVED_DURING_CHECK'};}
+     return {ok:checked===production,reason:'NON_SENSITIVE_BASE_ADVANCE',base:production};
+   }
+ };
+ const fakeRequire=spec=>{
+   if(spec==='node:path')return {join:(...parts)=>parts.join('/')};
+   if(spec==='node:child_process')return {execFileSync:(_cmd,args)=>{
+     if(args[2]==='rev-parse')return checked+'\n';
+     if(args[2]==='fetch'){fetches.push(args.at(-1));return '';}
+     if(args[2]==='checkout'){checked=args.at(-1);return '';}
+     throw Error('Unexpected git');
+   }};
+   if(spec.endsWith('/scripts/ci-pr-base-freshness.cjs'))return fakePolicy;
+   throw Error('Unexpected module '+spec);
+ };
+ await vm.runInNewContext('(async()=>{\n'+script+'\n})()',{
+   context:{repo:{owner:'o',repo:'r'}},github,
+   process:{env:{GITHUB_WORKSPACE:'/work'}},require:fakeRequire,
+   core:{setOutput:(key,value)=>outputs[key]=value,info:x=>messages.push(x),warning:x=>messages.push(x)}
+ });
+ assert.equal(outputs.eligible,'true','two safe production advances cannot drop green Core');
+ assert.equal(outputs.verified_base,second);
+ assert.deepEqual(fetches,[first,second]);
+ assert.equal(assessed,2);
+ assert.ok(messages.some(x=>x.includes('production moved during check')));
+});
+test('AutoMerge does not require unrelated CI and retains protected SHA-leased native merge',()=>{
+ const source=workflow('hh-native-auto-merge');
+ const classifier=fs.readFileSync('scripts/ci-pr-base-freshness.cjs','utf8');
+ assert.ok(source.includes('pr.mergeable === false || pr.mergeable_state === "dirty"'));
+ assert.ok(source.includes('pr.mergeable===false||'));
+ assert.ok(source.includes('workflow_id: "hh-pr-core-release.yml"'));
+ assert.ok(!source.includes('listWorkflowRunsForRepo'));
+ assert.ok(source.includes("['CLASSIFIER_BASE_STALE','BASE_MOVED_DURING_CHECK']"));
+ assert.ok(source.includes('production?.protected!==true'));
+ assert.ok(source.includes('for ((attempt=1; attempt<=5; attempt++))'));
+ assert.ok(source.includes('--auto "$merge_option" --match-head-commit "$PR_HEAD"'));
+ assert.ok(classifier.includes("url.searchParams.set('sha',classifierBase)"));
+});
