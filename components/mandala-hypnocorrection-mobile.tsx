@@ -39,6 +39,7 @@ type Props = {
   onWavePreset: () => void;
   hasPhoto: boolean;
   hasVoiceFile: boolean;
+  voiceActive: boolean;
   posters: Record<GroupId,string>;
 };
 
@@ -228,7 +229,10 @@ export function MandalaHypnocorrectionMobile({
         </>:null}
         {group.id==="audio"?<>
           <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
-            active={hasVoiceFile} onToggle={onToggleVoice}
+            active={voiceActive} onToggle={()=>{
+              if(!hasVoiceFile){setShowSpeechSettings(true);return;}
+              onToggleVoice();
+            }}
             onConfigure={()=>setShowSpeechSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
           {showSpeechSettings?<div className={styles.settings} data-hypno-speech-settings>
             {voiceEditor||<p className={styles.note}>{t.voiceHint}</p>}
