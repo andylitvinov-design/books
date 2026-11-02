@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   FREE_MODELS, SAFE_EDIT_FILES, REQUIRED_CRITERIA, CONTRACT_TESTS,
   parseGauntletArgs, changedPathsFromPorcelain, checkEditScope, parseCriticVerdict,
+  allowsSyntheticActionsRun,
 } from '../../lib/benchmarking/hh-gauntlet-loop.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -19,6 +20,10 @@ const task = [
   'The protected client/practitioner inbox and real lead persistence are OUTSIDE this',
   'synthetic-only pilot; NEVER describe mocked browser writes as real CRM delivery.',
   'Keep EN/RU/ES parity and 320/390/430px usability. Protect consent and privacy.',
+  'Verified P1 regression: React exhaustive-deps warns that the resume useEffect',
+  'in components/free-express-wizard.tsx uses t.timeout without listing it.',
+  'Fix that warning without changing request semantics and add a narrow test',
+  'to the existing free-express-wizard-v2.test.mjs preventing recurrence.',
   'Allowed changes are existing wizard UI and its synthetic regression tests only.',
   'No paid APIs, provider calls, migrations, secrets, real leads or advertisements.',
 ].join(' ');
@@ -46,7 +51,7 @@ function git(args) {
 function agentEnv() {
   // Deliberately do not inherit DATABASE_URL, VERCEL_TOKEN, SUPABASE_*, etc.
   const allowed = ['HOME', 'PATH', 'LANG', 'LC_ALL', 'TERM', 'TMPDIR',
-    'XDG_CONFIG_HOME', 'OPENCODE_API_KEY'];
+    'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'];
   const env = Object.fromEntries(allowed.filter(key => process.env[key])
     .map(key => [key, process.env[key]]));
   env.OPENCODE_DISABLE_CLAUDE_CODE = '1';
@@ -56,7 +61,9 @@ function agentEnv() {
 }
 
 function preflight(model) {
-  if (process.env.CI || process.env.VERCEL) throw new Error('Model loop forbidden in CI/Vercel');
+  if (process.env.VERCEL) throw new Error('Model loop forbidden in Vercel');
+  if (process.env.CI && !allowsSyntheticActionsRun(process.env))
+    throw new Error('Model loop in CI only permitted in isolated, credential-free PR runner');
   if (process.env.OPENCODE_DISABLE_FREE_MODELS === '1')
     throw new Error('Free models are disabled by OpenCode configuration');
   const branch = git(['branch', '--show-current']);
@@ -71,7 +78,7 @@ function preflight(model) {
     '.vercel', 'supabase/.env', 'supabase/.env.local']) {
     if (existsSync(join(root, secret))) throw new Error('Private runtime file present: ' + secret);
   }
-  const models = run('opencode', ['models', 'opencode'], 40_000, agentEnv());
+  const models = run('opencode', ['models', '--standalone'], 40_000, agentEnv());
   if (!models.ok || !models.stdout.split(/\r?\n/).some(line => line.trim() === model))
     throw new Error('Chosen verified-free model not enabled in OpenCode; connect provider, never fall back to paid');
   return branch;
@@ -83,9 +90,9 @@ function summarize(out) {
 
 function deterministicGates() {
   const tests = run(process.execPath, ['--test', ...CONTRACT_TESTS], 120_000);
-  const tsc = run(join(root, 'node_modules/.bin/tsc'), ['--noEmit'], 180_000);
+  const tsc = run(join(root, 'node_modules/.bin/tsc'), ['--noEmit', '--incremental', 'false'], 180_000);
   const lint = run(join(root, 'node_modules/.bin/eslint'),
-    SAFE_EDIT_FILES.filter(path => /\.(mjs|js|jsx|ts|tsx)$/.test(path)), 120_000);
+    ['--max-warnings=0', ...SAFE_EDIT_FILES.filter(path => /\.(mjs|js|jsx|ts|tsx)$/.test(path))], 120_000);
   const whitespace = run('git', ['diff', '--check'], 20_000);
   return {
     ok: tests.ok && tsc.ok && lint.ok && whitespace.ok,
@@ -101,7 +108,7 @@ function deterministicGates() {
 
 function invoke(agent, model, prompt, ms) {
   const result = run('opencode', [
-    'run', '--auto', '--model', model, '--agent', agent,
+    'run', '--standalone', '--auto', '--model', model, '--agent', agent,
     '--format', 'json', prompt,
   ], ms, agentEnv());
   if (!result.ok) throw new Error(agent + ' failed or timed out (no paid fallback): ' +
