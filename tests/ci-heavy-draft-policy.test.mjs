@@ -63,28 +63,23 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
-test('core Draft cannot pass hh-specialist or legacy release-ready, and Ready restores full checks', () => {
-  const core = read('hh-pr-core-release.yml');
-  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
-  assert.ok(core.includes("  merge_group:"));
-  assert.ok(core.includes("  workflow_dispatch:"));
-  const scope = core.split('  scope:')[1]?.split('  code:')[0];
-  assert.ok(scope);
-  assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
-  assert.ok(core.includes("run: npm run build"));
-  const gate = core.split('  hh-specialist:')[1]?.split('  release-ready:')[0];
-  assert.ok(gate, 'the real risk-routed specialist verifier must be a separate job');
-  const legacy = core.split('  release-ready:')[1]?.split('  hh-specialists-verified:')[0];
-  assert.ok(legacy?.includes('needs: [hh-specialist]'),
-    'legacy release-ready must stay fail-closed until GitHub admin migration');
-  assert.ok(gate.includes("    if: always()"));
-  assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
-  assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
-  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
-  assert.ok(gate.includes("[[ \"$CODE_RESULT\" == success ]] || exit 1"));
-  assert.ok(gate.includes("ci-specialist-aggregate.mjs"));
-  assert.doesNotMatch(core, /continue-on-error:\s*true/);
+test('Draft cannot pass Specialist or required unified merge gate; Ready restores real validation',()=>{
+ const core=read('hh-pr-core-release.yml');
+ assert.ok(core.includes("  pull_request:\n") && core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]"));
+ assert.match(core,/^  hh-specialist:/m);
+ assert.match(core,/^  hh-merge-check:/m);
+ assert.doesNotMatch(core,/^  release-ready:|^  hh-core-verified:/m);
+ const scope=core.split('  scope:')[1]?.split('  code:')[0];
+ assert.ok(scope?.includes("github.event.pull_request.draft == false"));
+ const specialist=core.split('  hh-specialist:')[1]?.split('  hh-merge-check:')[0];
+ assert.ok(specialist.includes('ci-specialist-aggregate.mjs'));
+ assert.ok(specialist.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
+ assert.ok(specialist.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+ const merged=core.split('  hh-merge-check:')[1];
+ assert.match(merged,/PR_DRAFT/);
+ assert.match(merged,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+ assert.match(merged,/\[\[ "\$CODE_RESULT" == success \]\]/);
+ assert.match(core,/run: npm run build/);
 });
 
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
@@ -163,9 +158,12 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
+  assert.ok(core.includes("  pull_request:\n") &&
+    core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]") &&
+    core.includes("    branches: ['codex/public-book-library']"),
+    'core must rerun on Ready, metadata wake, and keep production base');
   assert.match(core,/run: npm run build/);
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/ci-specialist-aggregate\.mjs/);
   for(const [workflow,stepNames,job] of prodBuildReuse){
     const src=read(workflow);
@@ -199,7 +197,7 @@ const dedupWave2 = [
 
 test('wave 2: production Ready uses one shared full build but retains real specialist tests', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/run: npm run build/);
   const reuse="if: \${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   for(const [filename, steps, jobs] of dedupWave2){
@@ -244,7 +242,7 @@ const highCostDraftSuites = [
 ];
 test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acceptance', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/ci-specialist-aggregate\.mjs/);
   assert.match(core,/run: npm run build/);
   const trigger='    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
@@ -357,7 +355,7 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   const manualJourney = source.split('- name: Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)')[1]?.split('\n      - uses:')[0] || '';
   assert.match(manualJourney, /if: github\.event_name != 'pull_request'/);
   assert.match(manualJourney, /node scripts\/verify-ideas-mobile-browser\.mjs/);
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/run: npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
@@ -381,7 +379,7 @@ test('Holistic Support mock screenshots run after merge or on exact existing #24
     'PR source contracts must still execute');
   assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'),
     'Parity source contract must not be removed');
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
 });
 
 test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
@@ -395,13 +393,18 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))";
+  const browserGate = source.match(/^      - name: Build\n        (if: [^\n]+)$/m)?.[1];
+  assert.ok(browserGate, 'real browser Build guard missing');
+  for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
+    "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual runs cannot be cancelled by unrelated PRs');
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -430,7 +433,7 @@ test('wave 5: Support Mock delegates only duplicate production PR TypeScript to 
   const core=read('hh-pr-core-release.yml');
   const mock=read('hh-support-mobile-mock-browser.yml');
   assert.match(core, /run: npm run build/);
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(mock,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
   assert.match(mock,/^  push:/m);
   assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
@@ -580,7 +583,7 @@ test('existing heavy jobs preflight before dependency install; core release gate
     scope.indexOf('name: Classify strictly documentation-only PRs'));
   assert.ok(core.includes('scripts/ci-pr-readiness.mjs|\\'));
   assert.ok(core.includes('needs: scope'));
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /run: npm run build/);
   assert.ok(read('hh-pr-sweep-guard.yml').includes("'scripts/ci-pr-readiness.mjs'"));
 });
@@ -674,4 +677,25 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   const home=read('home-locale-switch.yml');
   assert.match(home,/^  push:/m);
   assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
+});
+
+test('Core SHA-scoped concurrency prevents older reruns from cancelling current valid builds',()=>{
+  const core=read('hh-pr-core-release.yml');
+  assert.ok(core.includes('group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}'),
+    'old and new SHA must never contend for one Core concurrency group');
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+    'keep same-SHA redundant-synchronize cancellation');
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.doesNotMatch(core,/^  release-ready:/m);
+});
+
+test('source-head concurrency also covers WebKit and Guard, not just Core',()=>{
+  for(const file of ['hh-pr-core-release.yml','holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
+    const workflow=read(file);
+    assert.ok(workflow.includes('group: '), file);
+    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+      file+' older PR rerun must never cancel a newer source HEAD');
+    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+      file+' retains exact same-head cancellation and no weakened gates');
+  }
 });

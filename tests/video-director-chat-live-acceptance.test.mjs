@@ -79,6 +79,35 @@ test('PR runs source contracts; both LIVE media exports are manual after merge',
 });
 
 
+// The new dialogue's active choices must be inside the last assistant bubble.
+// Keep the existing licensed-MP4, FFmpeg, privacy and hydration proof intact.
+test('canonical in-chat choices are checked by the real browser acceptance',()=>{
+ const src=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
+ for(const key of ['data-chat-inline-choices','data-chat-assistant-turn',
+  'data-chat-choice-stage={step}','data-video-chat-tree-choice',
+  'data-chat-hydrated={clientHydrated?', 'onClick={()=>answer(value)}'])
+   assert.ok(src.includes(key),key);
+ for(const key of ['ONE_ACTIVE_INLINE_ANSWER_PANEL_',
+  'CHOICES_NOT_INSIDE_ASSISTANT_MESSAGE_','CANONICAL_DIALOG_NOT_DEPLOYED',
+  'HH_CHAT_EXPECT_CANONICAL','SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'])
+   assert.ok(qa.includes(key),key);
+});
+
+
+test('owner chat release receives strict Chromium render and independent macOS WebKit gate',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/holistic-support-mandala.yml',import.meta.url),'utf8');
+ for(const required of [
+  'feat/video-chat-context-understanding-',
+  'HH_CHAT_EXPECT_CANONICAL=true',
+  'HH_CHAT_ALLOW_LOCAL=true',
+  'node scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'voice-webkit-macos:',
+  'hh-canonical-video-chat-',
+  'tests/video-director-chat-live-acceptance.test.mjs'
+ ])assert.ok(workflow.includes(required),'missing browser release gate: '+required);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
 test('the one-shot LIVE free-AI diagnostic uses only synthetic consented text',()=>{
  const start=workflow.indexOf('One-shot free AI synthetic opt-in diagnostic');
  const end=workflow.indexOf('PR scope summary — candidate media',start);

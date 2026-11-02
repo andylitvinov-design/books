@@ -12,7 +12,7 @@ import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -144,7 +144,11 @@ export function requiresCurrentProductionBase(changed) {
   // This exact Playwright-only QA harness is never imported by Next at runtime.
   // Its changing selectors should not force a full rebase of an otherwise
   // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
+  const isolatedBrowserHarness = file =>
+    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
+    // Real encoded-media, payments and consent remain strict, regardless
+    // of their file being an isolated browser/benchmark harness.
+    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
@@ -223,7 +227,8 @@ export function loadTrustedTypescript(base) {
 
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
-  // Only a running specialist may use the long completion deadline.
+  // Running checks use the long deadline; registered queued checks get a separate,
+  // bounded runner-capacity grace rather than the old three-minute false red.
   const boundedMs = (value, maximum, minimum = 0) => {
     const n = Number(value);
     if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
@@ -231,8 +236,12 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
-  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  // The real Actions queue can exceed three minutes during multi-PR batches.
+  // Only *registered* queued/requested/waiting runs receive this 15m grace;
+  // absent workflows still fail after missingGrace and failed runs fail at once.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
+  const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
   const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
@@ -348,21 +357,32 @@ export async function verify(api,ctx,files,options={}) {
     const nextDeadline = Math.min(deadline,
       state.missing.length ? missingDeadline : Infinity,
       notStarted.length ? queuedDeadline : Infinity);
-    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    // Discover absent workflows quickly; registered queued jobs need slower
+    // polling to avoid rate-limit amplification under CI runner pressure.
+    const interval = state.missing.length ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    const optionalSkipped = run.path === '.github/workflows/holistic-support-mandala.yml' &&
-      optionalMandalaMacosSkip(files, pr.head.ref, changed) ? ['voice-webkit-macos'] : [];
+    // Branch-conditional macOS is excluded from generic optional jobs.
+    // Admit it separately only if the immutable BASE macOS job and source
+    // scope prove this exact non-voice branch cannot execute it.
+    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
+      .filter(job => job !== 'voice-webkit-macos');
+    if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
+        optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
+      optionalSkipped.push('voice-webkit-macos');
+    }
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};

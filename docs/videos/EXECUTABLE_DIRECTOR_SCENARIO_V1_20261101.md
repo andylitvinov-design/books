@@ -74,3 +74,12 @@ A second issue was a stale AI response after the user had already confirmed the 
 - GitHub current HEAD: Mandala/TypeScript, actionlint, Core, Public Services, protected merge only after mandatory checks.
 - Browser/encoded media E2E is a separate release requirement, including Chromium/WebKit and audio sync; physical iPhone Save-to-Files is not implied by CI.
 - Watch overlapping open PR #2629 (voice/mixer) and #2938 (mobile layout) before landing: do not discard their source changes. Both may edit the same Video Director Chat or Studio component. This v2 patch deliberately leaves the Studio renderer untouched.
+
+
+## Единое дерево каталога (5 × 30 × 120) и наличие реальных источников
+
+Основной каталог уже существует в `lib/mandala/video-goal-taxonomy.mjs` с RU/EN/ES, категориями `body/business/energy/love/stress`, 30 темами и 120 сценариями (480 сценами). Новые каталоги с альтернативными ID создавать **нельзя**: в частности, нельзя заводить второе дерево с `work` вместо `business`. Подбор сценария и дальнейшая работа клиента должны использовать одну и ту же таксономию.
+
+Функция `auditVideoGoalMediaCoverage({topicId,scenarioId,locale,scenes,excludedMotifs})` добавляет безопасную диагностическую привязку: для каждого из четырёх `visualMotifId` возвращаются кандидаты из существующих 44 approved MP4 с проверенными правами и разрешённым локальным URL; исключённые мотивы не возвращаются. Сама аудиторская функция никогда не утверждает файл и всегда возвращает `canExport:false`. Четыре подтверждённых source IDs, точная сцена, длительность, звук и согласие пользователя должны отдельно пройти существующий исполняемый режиссёр и монтаж.
+
+Нет автоматического скачивания роликов, платной AI-генерации или мнимых файлов. Следующие задачи: курируемое подтверждение каждого из 480 визуальных сюжетных этапов, при необходимости пополнение базы лицензированным видео, адаптер выбора 4 уникальных источников к существующему `compileExecutableVideoScenario`, UI согласования замен и мобильная браузерная приёмка.

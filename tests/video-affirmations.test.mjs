@@ -1,4 +1,6 @@
 import test from "node:test";
+// Run the dedicated Phrases mobile approval/voice contracts in the existing specialist suite.
+import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
@@ -79,7 +81,9 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
   assert.ok(studio.includes("<MandalaHypnoCompact locale={locale} theme={theme}"),"Hypno must remain mounted across theme changes");
-  assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.doesNotMatch(read("components/mandala-hypno-compact.tsx"),/<MandalaVideoAffirmations /,
+    "a second immediate-commit editor must not bypass Approve");
+  assert.match(read("components/mandala-hypno-compact.tsx"),/onPendingChange\?\.\(hasPendingEdits\)/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
@@ -200,29 +204,34 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   assert.deepEqual(jsx.diagnostics||[],[]);
 });
 
-test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+
+test("HD master fetch starts from Play/Create, never from a background effect",()=>{
   assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
-  assert.match(studio,/setPremiumReady\(decoded\)/,
-    "already decoded HD frames must remain ready even if preload beat the effect");
-  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
-    "unready scenes must still request real media data");
+  assert.match(studio,/setPremiumReady\(decoded\)/,"reuse only an actually decoded frame");
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "an initial page view must not download the source video");
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/,
+    "the real Create gesture starts a bounded MP4 decoder");
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/,
+    "failed decoding must block export, not fabricate a downloadable file");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
 
-test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+test("iPhone photo-consent and Create both prime real media without leaving Create disabled",()=>{
   assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
   assert.match(studio,/video\.load\(\)/);
   assert.match(studio,/void video\.play\(\)\.then/);
   assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
   assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
-    "Create stays disabled until a real decoded master frame is present");
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/,
+    "Create is tappable; async media readiness is enforced inside createVideo");
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/,
+    "hidden Safari MP4 preload must never deadlock the Create button");
 });
-
 
 test("compact request flows are locally sourced, goal-first, nonclinical and localized",()=>{
   const compact=read("components/mandala-hypno-compact.tsx");
@@ -250,7 +259,7 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 
