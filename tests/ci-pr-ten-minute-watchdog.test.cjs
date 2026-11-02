@@ -632,8 +632,9 @@ test('event-driven merge and inventory respect legacy protection until admin mig
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
   assert.ok(native.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'));
-  assert.ok(native.includes('job.name === "release-ready" && job.status === "completed"'));
-  assert.ok(native.includes('job.name === "hh-core-verified"'));
+  assert.ok(native.includes('const legacyJobs=jobPage.jobs.filter(job=>job.name === "release-ready")'));
+  assert.ok(native.includes('legacyJobs.length !== 1'));
+  assert.ok(native.includes('["hh-core-verified","hh-specialist"]'));
   assert.ok(hourly.includes('const legacyReleaseMandatory=legacy.includes("release-ready")'));
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
@@ -742,7 +743,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const code=native.slice(begin+'          script: |\n'.length,end).split('\n')
     .map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');
   const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-  const preflight=new AsyncFunction('github','core','context',code);
+  const preflight=new AsyncFunction('github','core','context','require',code);
   const full='andylitvinov-design/books', head='a'.repeat(40), base='b'.repeat(40);
   const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
     base:{ref:'codex/public-book-library',sha:base},
@@ -759,7 +760,11 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const current=[coreRun,specialist,
     ...Array.from({length:98},(_,i)=>makeRun(i+3,'Workflow '+i,i+3))];
   const prior=makeRun(200,'Prior SHA',200,'success','c'.repeat(40));
-  async function decide(pages,totals) {
+  async function decide(pages,totals,jobs=[
+    {name:'hh-core-verified',status:'completed',conclusion:'success'},
+    {name:'hh-specialist',status:'completed',conclusion:'success'},
+    {name:'release-ready',status:'completed',conclusion:'success'}
+  ]) {
     const calls=[],outputs={},notes=[];
     const gh={rest:{
       pulls:{get:async()=>({data:pr}),list:async()=>({data:[pr]})},
@@ -770,10 +775,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
-          {name:'hh-core-verified',status:'completed',conclusion:'success'},
-          {name:'release-ready',status:'completed',conclusion:'success'},
-        ]}}),
+        listJobsForWorkflowRun:async()=>({data:{total_count:jobs.length,jobs}}),
       },
       repos:{getBranch:async()=>({data:{protected:true,protection:{
         required_status_checks:{contexts:['release-ready']}}}})},
@@ -781,12 +783,14 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
     const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
       payload:{pull_request:pr}};
     await preflight(gh,{info:message=>notes.push(message),
-      setOutput:(key,value)=>outputs[key]=value},context);
+      setOutput:(key,value)=>outputs[key]=value},context,()=>({loadTrustedClassifier:async()=>({}),assessBaseFreshness:async()=>({ok:true})}));
     return {ok:outputs.eligible==='true',calls,notes};
   }
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  const absent=await decide([current,[prior]],[101,101],[{name:'hh-core-verified',status:'completed',conclusion:'success'},{name:'release-ready',status:'completed',conclusion:'success'}]);
+  assert.equal(absent.ok,false,'missing actual hh-specialist blocks auto-merge');
   const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
   assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
   const incomplete=await decide([current,[]],[102,102]);
