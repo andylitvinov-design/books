@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {normalizeEnquiryAttribution} from '../lib/analytics/enquiry-attribution.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
@@ -100,7 +101,7 @@ test('contact disclosure audit enforces owner and rejects another account', {ski
    .replace(/^import .*$/gm,'').replace(/export /g,'')+'; updatePublicServiceEnquiry'
   const updateEnquiry=runInNewContext(mutationSource,{
    AppError,requireUUID,transaction,randomUUID,seal,openSealed,
-   PRACTITIONER_ID:practitioner,relayContactView,redactRelayContacts,
+   PRACTITIONER_ID:practitioner,relayContactView,redactRelayContacts,normalizeEnquiryAttribution,
    BOOKABLE_SKUS:{},validConfirmedSlot:()=>null,
   })
   const revision=(await db.query('select revision from app.public_service_enquiries where id=$1',[enquiry])).rows[0].revision

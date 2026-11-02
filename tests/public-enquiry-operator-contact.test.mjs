@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {normalizeEnquiryAttribution} from '../lib/analytics/enquiry-attribution.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
@@ -61,7 +62,7 @@ test('editing a visitor enquiry phone invalidates the old one-off consent instea
   openSealed:source=>source==='original'?visitor:source==='changed'?resealed:'Private message',
   seal:value=>{resealed=value;return 'changed'},
   relayContactView:contact=>({displayName:contact.displayName||'Client'}),
-  redactRelayContacts:message=>message,
+  redactRelayContacts:message=>message,normalizeEnquiryAttribution,
   validConfirmedSlot:()=>false,BOOKABLE_SKUS:{},
  })
  const db={query:async(sql,args)=>{
