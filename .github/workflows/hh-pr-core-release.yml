@@ -18,10 +18,9 @@ concurrency:
 jobs:
   scope:
     name: core-lint-types-build
-    # Draft PRs avoid full checkout; original full code is required after ready_for_review.
+    # One runner handles exact-HEAD classification and all applicable Core checks.
+    # This removes the serial classify -> Core runner handoff without reducing coverage.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    # Lightweight Git/Node classification: keep build-class runners available for Core.
-    # ubuntu-slim has a 15-minute hard limit; this job does no full build.
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
