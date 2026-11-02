@@ -57,7 +57,9 @@ test("one original video preview and export share the selected symbolic layer",(
   const s=read("components/mandala-free-video-studio.tsx");
   const c=read("components/mandala-stories-characters.tsx");
   const css=read("components/mandala-stories-characters.module.css");
-  assert.match(s,/import \{ MandalaStoriesCharacters \}/);
+  assert.ok(s.includes('const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));'),
+    "Characters remain an interactive panel, but only load in the PRO workspace");
+  assert.doesNotMatch(s,/import \{ MandalaStoriesCharacters \} from/, "avoid eager Characters bundle");
   assert.match(s,/data-workspace-section="pro"/);
   assert.match(s,/data-video-quick-control=\{item\.id\}/);
   assert.match(s,/activeWorkspace==="pro"/);
