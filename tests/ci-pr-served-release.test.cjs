@@ -76,6 +76,14 @@ test('served revision counts only the merged PR ancestry already on the site',as
  assert.equal(r.served_sha,sha);
  assert.equal(r.current_head_sha,head);
  assert.equal(r.live_coverage,'complete_served_revision');
+ assert.equal(r.receipt_candidate.verified_live,true);
+ assert.equal(r.receipt_candidate.production_sha,sha);
+ assert.equal(r.receipt_candidate.current_head_sha,head);
+ assert.equal(r.receipt_candidate.deployment_id,id);
+ assert.equal(r.receipt_candidate.proof_method,
+  'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY');
+ assert.ok(r.receipt_candidate.evidence_urls.includes(
+  'https://holistichouse.vercel.app/api/public/release-evidence'));
 });
 
 function vercelApiFixture({aliasProject=proof.project_id,aliasHost='holistichouse.vercel.app',
@@ -165,4 +173,10 @@ test('LIVE reporting passes existing read-only Vercel token to served-revision v
  assert.equal(r.live_confirmed_count,1);
  assert.equal(r.live_evidence,'SERVING_VERIFIED_REVISION');
  assert.equal(r.served_sha,sha);
+ assert.equal(r.receipt_candidate.verified_live,true);
+ assert.equal(r.receipt_candidate.proof_method,
+  'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY');
+ assert.ok(r.receipt_candidate.evidence_urls.includes(
+  'https://vercel.com/super10/codex-public-book-library/'+id.slice(4)));
+ assert.equal(r.receipt_candidate.evidence_urls.some(x=>x.includes('api/public/release-evidence')),false);
 });

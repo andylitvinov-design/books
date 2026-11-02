@@ -145,7 +145,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   live_coverage:'UNVERIFIED',merged_coverage:'UNVERIFIED',
   core:null,pr_to_merge_p50_minutes:null,pr_to_merge_p90_minutes:null,
   merge_to_live_observation_upper_bound_p50_minutes:null,
-  sampled_prs:[],ancestry:null,errors:[]};
+  sampled_prs:[],ancestry:null,receipt_candidate:null,errors:[]};
  const finish=async()=>{
   if(reportPath){try{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');}
     catch(err){report.errors.push('WRITE_REPORT_'+String(err.code||'error'));}}
@@ -202,6 +202,38 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     report.served_sha=actualLive.production_sha;
     report.current_head_sha=still.commit.sha;
     report.served_proof_method=actualLive.proof_method||null;
+    // The existing independent served-revision observer already checked
+    // canonical public HTML, exact Vercel status, active alias and protected
+    // production ancestry. Reuse its proof without repeating API/HTTP reads.
+    const servedMethods=[
+      'PUBLIC_RUNTIME_ALIAS_SHA_WITH_GITHUB_VERCEL_STATUS',
+      'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS'
+    ];
+    if(actualLive.reason==='SERVING_VERIFIED_REVISION' &&
+       servedMethods.includes(actualLive.proof_method) &&
+       SHA.test(actualLive.current_head_sha||'') &&
+       /^dpl_[A-Za-z0-9]{8,64}$/.test(actualLive.deployment_id||'')){
+      const canonical='https://holistichouse.vercel.app';
+      const useApi=actualLive.proof_method==='VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS';
+      report.receipt_candidate={
+        schema:'HH_LIVE_EVIDENCE_V1',checked_at:report.observed_at,
+        repo:'andylitvinov-design/books',production_branch:PROD,
+        alias:'holistichouse.vercel.app',verified_live:true,
+        reason:'LIVE_VERIFIED',production_sha:actualLive.production_sha,
+        current_head_sha:actualLive.current_head_sha,
+        deployment_id:actualLive.deployment_id,
+        proof_method:useApi
+          ?'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY'
+          :'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY',
+        evidence_urls:[
+          'https://github.com/andylitvinov-design/books/commit/'+actualLive.production_sha,
+          'https://vercel.com/super10/codex-public-book-library/'+
+            actualLive.deployment_id.slice(4),
+          ...(useApi?[]:[canonical+'/api/public/release-evidence']),
+          canonical+'/en'
+        ]
+      };
+    }
     if(proof.errors)report.errors.push('ANCESTRY_ERRORS_'+proof.errors);
     const lags=prs.filter(pr=>confirmed.has(pr.number)).map(pr=>
      elapsedMinutes(pr.merged_at,report.observed_at));
