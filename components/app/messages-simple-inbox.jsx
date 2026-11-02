@@ -108,6 +108,8 @@ export default function MessagesSimpleInbox({
   const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
   const previousRequestIdRef=useRef('')
+  // Tab navigation hides, rather than unmounts, an authorized request composer.
+  const preserveSelectionOnTabRef=useRef(false)
   const [refreshNonce,setRefreshNonce]=useState(0)
   const [offline,setOffline]=useState(false)
   useEffect(()=>{
@@ -186,7 +188,9 @@ export default function MessagesSimpleInbox({
     const previous=previousRequestIdRef.current
     previousRequestIdRef.current=routeRequestId
     if(!routeRequestId){
-      if(previous&&selectedKey.startsWith('request:')){
+      const keepSelection=preserveSelectionOnTabRef.current
+      preserveSelectionOnTabRef.current=false
+      if(!keepSelection&&previous&&selectedKey.startsWith('request:')){
         setSelectedKey('');setOpenDetail(false);setShowCard(false)
       }
       return
@@ -293,7 +297,8 @@ export default function MessagesSimpleInbox({
     // Return to the list on phones without disposing an in-flight reply or draft.
     setOpenDetail(false)
     setShowCard(false)
-    if(selectedKey.startsWith('request:'))setSelectedKey('')
+    // Removing a URL selector during tab navigation must not discard a draft.
+    if(routeRequestId)preserveSelectionOnTabRef.current=true
     const url=new URL(window.location.href)
     url.searchParams.delete('requestId')
     if(next==='requests')url.searchParams.set('tab','requests')
