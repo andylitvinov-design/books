@@ -90,7 +90,11 @@ async function downloadBytes(download) {
   return Buffer.concat(chunks);
 }
 let browser;
+let page;
 let mediaDir;
+// This test uses synthetic anonymous content; only fixed media status codes
+// and numeric decoder details are captured, never user prompts or audio.
+const safeEncoderCodes=[];
 try {
   browser=engine==='webkit'
     ?await webkit.launch({headless:!headed})
@@ -110,7 +114,11 @@ try {
     }
     return route.continue();
   });
-  const page = await context.newPage();
+  page = await context.newPage();
+  page.on('console',message=>{
+    const match=/^HH_WEBKIT_MP4_EXPORT_FAILURE:([a-z0-9_]+)$/.exec(message.text());
+    if(match && safeEncoderCodes.length<8)safeEncoderCodes.push(match[1]);
+  });
   const errors = [];
   page.on('pageerror', e => errors.push(e.name));
   const response = await page.goto(ORIGIN + '/ru/holistic-support/mandala', {
@@ -260,7 +268,47 @@ try {
   await context.close();
 } catch (error) {
   row.failure = String(error?.message || error).slice(0, 200);
+  // A missing download must remain a FAIL. On WebKit inspect only synthetic
+  // media readiness and fixed codes; page.evaluate can itself hang when the
+  // compositor is blocked, so bound this diagnostic separately to 3 seconds.
+  if(engine==='webkit' && page && /locator\.waitFor|Timeout|download/i.test(row.failure)){
+    try {
+      row.exportDiagnostic = await Promise.race([
+        page.evaluate(()=>{
+          const result=document.querySelector('[data-video-result]');
+          const clips=[...document.querySelectorAll('[data-free-film-source]')];
+          const create=document.querySelector('[data-first-video-generate]');
+          const progress=document.querySelector('[role="progressbar"]');
+          return {
+            resultVisible:Boolean(result && !result.hidden),
+            resultMode:result?.getAttribute('data-video-result-mode')||null,
+            createDisabled:create instanceof HTMLButtonElement?create.disabled:null,
+            sourceCount:clips.length,
+            sources:clips.slice(0,4).map(video=>({
+              // No src URL, scene name, user text, or image content.
+              readyState:video.readyState,
+              networkState:video.networkState,
+              errorCode:video.error?.code||null,
+              seeking:video.seeking,
+              paused:video.paused,
+              duration:Number.isFinite(video.duration)?Math.round(video.duration*100)/100:null,
+              clock:Number.isFinite(video.currentTime)?Math.round(video.currentTime*100)/100:null,
+              width:video.videoWidth,height:video.videoHeight,
+            })),
+            progress:Number(progress?.getAttribute('aria-valuenow')||0),
+            hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+          };
+        }),
+        new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
+      ]);
+    } catch {
+      row.exportDiagnostic={status:'WEBKIT_MEDIA_DIAGNOSTIC_UNAVAILABLE'};
+    }
+  }
+  if(safeEncoderCodes.length)row.encoderFailureCodes=[...safeEncoderCodes];
   console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  if(row.exportDiagnostic)console.error('WEBKIT_MOVIE_EXPORT_SAFE_DIAGNOSTIC',JSON.stringify(row.exportDiagnostic));
+  if(row.encoderFailureCodes)console.error('WEBKIT_MOVIE_ENCODER_CODES',row.encoderFailureCodes.join(','));
   process.exitCode = 1;
 } finally {
   await browser?.close();
