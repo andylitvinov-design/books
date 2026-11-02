@@ -34,6 +34,13 @@ on:
       - "components/core-service-detail.tsx"
       - "next.config.ts"
       - "package.json"
+      # Keep shared caches fresh on the exact production input changes.
+      - "package-lock.json"
+      - "scripts/generate-scenario-melodies.mjs"
+      - "scripts/generate-mandala-melodies.mjs"
+      - "lib/mandala/scenario-audio-catalog.mjs"
+      - "scripts/generate-soft-ocean-melody.mjs"
+      - ".github/workflows/hh-pr-core-release.yml"
   workflow_dispatch:
 
 permissions:
@@ -58,6 +65,22 @@ jobs:
           cache: npm
       - name: Install lockfile-pinned packages
         run: npm ci --no-audit --no-fund
+      # Production-only cache ownership. The existing static-image guard already
+      # performs a full build on relevant protected production pushes.
+      - name: Restore trusted scenario MP3 cache
+        id: ci_media_cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore trusted Next compiler cache
+        id: ci_next_cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Verify public source hashes and static lookup paths
         run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
       # Every production-targeted PR already has an unconditional exact-head
@@ -76,3 +99,20 @@ jobs:
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
+      - name: Verify all generated scenario MP3s before trusted cache publication
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_media_cache.outputs.cache-hit != 'true'
+        run: |
+          node scripts/generate-scenario-melodies.mjs --check
+          node --test tests/mandala-scenario-audio.test.mjs
+      - name: Save production-only scenario MP3 cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_media_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: ${{ steps.ci_media_cache.outputs.cache-primary-key }}
+      - name: Save production-only Next compiler cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_next_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .next/cache
+          key: ${{ steps.ci_next_cache.outputs.cache-primary-key }}

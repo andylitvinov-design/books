@@ -9,18 +9,36 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-workflow-lint-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-workflow-lint-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   validate-workflows:
     name: actionlint-changed
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 2
+      - name: Pin exact PR event base before shallow changed-workflow audit
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD^2 2>/dev/null)" == "$PR_HEAD_SHA" ]] || {
+            echo 'Unexpected PR merge checkout: changed workflow audit must be exact-head.' >&2
+            exit 1
+          }
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          git cat-file -e "$BASE_SHA^{commit}"
+          echo 'Event base pinned for exact workflow diff (no full-history clone).' >> "$GITHUB_STEP_SUMMARY"
       - name: Install checksum-verified actionlint v1.7.12
         shell: bash
         run: |
