@@ -38,6 +38,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
+      assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
+        "six present-state choices are available");
       const state=course.locator('[data-guided-focus-state="calm"]');
       await state.click();
       assert.equal(await state.getAttribute("aria-pressed"),"true");
@@ -129,10 +131,13 @@ export async function verifyGuidedPractices({browser,base,engine}){
           ?.getAttribute("aria-pressed")==="true",
         null,{timeout:15000});
       assert.equal(await modes.nth(1).getAttribute("aria-pressed"),"true");
+      assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
+        "six development directions are available");
+      await course.locator('[data-guided-focus-vector="goals"]').click();
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      assert.equal(await generate.isDisabled(),true,"vector requires both fields");
-      await course.locator("[data-video-key-goal]").fill("I would like to feel steady");
       await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      assert.equal(await course.locator("[data-video-key-goal]").count(),0,
+        "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
         "switching from state invalidates previous eight-session outline");
       await generate.click();
@@ -142,7 +147,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
         const state=await course.evaluate(el=>({
           mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
           difficulty:el.querySelector('[data-video-key-difficulty]')?.value,
-          goal:el.querySelector('[data-video-key-goal]')?.value,
+          goal:el.querySelector('[data-guided-focus-vector][aria-pressed="true"]')?.textContent?.trim(),
           disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
           resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
@@ -151,7 +156,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
       }
       await course.locator("[data-guided-create-plan]").click();
       await programme.waitFor({state:"visible"});
-      await course.locator("[data-video-key-goal]").fill("I want a calmer choice");
+      await course.locator('[data-guided-focus-vector="relationships"]').click();
       assert.equal(await course.locator("[data-guided-meditation-result]").count(),0,
         "editing a vector invalidates the previous meditation");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
