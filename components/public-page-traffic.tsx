@@ -10,7 +10,8 @@ const hasCookie = (name: string, value: string) =>
 function countAllowed() {
   // An explicit refusal (including one saved before this change) stays binding.
   // New visitors can contribute anonymous aggregates without a tracking cookie.
-  return !hasCookie("hh_public_stats_consent", "denied") &&
+  return window.location.hostname === "holistichouse.vercel.app" &&
+    !hasCookie("hh_public_stats_consent", "denied") &&
     !hasCookie("hh_public_stats_skip", "1");
 }
 
