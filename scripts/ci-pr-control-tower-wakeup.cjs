@@ -94,4 +94,70 @@ async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,
     return 'DISPATCH_ACCEPTED';
   }catch(error){log('Worker completion relay deferred: '+String(error.message||error).slice(0,160));return 'HANDOFF_UNAVAILABLE';}
 }
-module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,relayCompletionWake,DISPATCHER};
+
+// When GitHub silently delays its scheduled Watchdog, a *real* Control Tower
+// cycle can wake the same trusted workflow. Do not confuse workflow_run
+// wrappers with reconciliation, and do not create a second pending tick.
+const WATCHDOG='hh-pr-ten-minute-watchdog.yml';
+const WATCHDOG_CRON_GRACE_MS=35*60_000;
+const WATCHDOG_MANUAL_COOLDOWN_MS=11*60_000;
+function watchdogCronDecision(schedule,manual,now){
+  if(!Number.isFinite(now)||!Array.isArray(schedule)||!Array.isArray(manual)||
+     schedule.length>5||manual.length>5)return 'WATCHDOG_HISTORY_UNVERIFIED';
+  const active=new Set(['queued','in_progress','pending','requested','waiting']);
+  const valid=run=>run&&Number.isSafeInteger(run.id)&&
+    ['completed',...active].includes(run.status)&&
+    Number.isFinite(Date.parse(run.created_at||''));
+  if([...schedule,...manual].some(run=>!valid(run)))return 'WATCHDOG_HISTORY_UNVERIFIED';
+  if([...schedule,...manual].some(run=>active.has(run.status)))
+    return 'WATCHDOG_ALREADY_RUNNING';
+  const lastCron=schedule.length?Math.max(...schedule.map(r=>Date.parse(r.created_at))):null;
+  if(lastCron!==null&&(lastCron>now+60_000||now-lastCron<WATCHDOG_CRON_GRACE_MS))
+    return lastCron>now+60_000?'WATCHDOG_CLOCK_UNVERIFIED':'WATCHDOG_CRON_HEALTHY';
+  const recent=manual.some(run=>{
+    const created=Date.parse(run.created_at);
+    return created>now+60_000||
+      now-created<WATCHDOG_MANUAL_COOLDOWN_MS;
+  });
+  if(recent)return 'WATCHDOG_MANUAL_RECENT';
+  return 'WAKE_STALE_WATCHDOG';
+}
+async function wakeStaleWatchdog({github,context,summary,dryRun=false,
+  now=Date.now(),log=()=>{}}){
+  const info={decision:'NOT_ELIGIBLE',dispatchAccepted:false,cronAgeMinutes:null};
+  const report=()=>{log('HH_WATCHDOG_CRON_BACKSTOP '+JSON.stringify(info));return info;};
+  if(dryRun||context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books'||
+     context.ref!=='refs/heads/'+DEFAULT||
+     !['schedule','workflow_run','workflow_dispatch'].includes(context.eventName)||
+     !Number.isSafeInteger(summary?.production)||summary.production<1)return report();
+  const {owner,repo}=context.repo;
+  try{
+    const read=async event=>{
+      const response=await github.rest.actions.listWorkflowRuns({
+        owner,repo,workflow_id:WATCHDOG,event,per_page:5});
+      const data=response?.data;
+      if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
+         !Array.isArray(data.workflow_runs)||data.workflow_runs.length>5||
+         data.total_count<data.workflow_runs.length)
+        throw Error('INCOMPLETE_WATCHDOG_EVENT_HISTORY');
+      return data.workflow_runs;
+    };
+    const [schedule,manual]=await Promise.all([read('schedule'),read('workflow_dispatch')]);
+    const last=schedule.length?Math.max(...schedule.map(x=>Date.parse(x.created_at||''))):null;
+    if(last!==null&&Number.isFinite(last)&&last<=now)
+      info.cronAgeMinutes=Math.floor((now-last)/60_000);
+    info.decision=watchdogCronDecision(schedule,manual,now);
+    if(info.decision!=='WAKE_STALE_WATCHDOG')return report();
+    // The controller's single-writer job serializes all wake decisions.
+    // GITHUB_TOKEN workflow_dispatch is an allowed Actions recursion exception.
+    await github.rest.actions.createWorkflowDispatch({owner,repo,workflow_id:WATCHDOG,
+      ref:DEFAULT,inputs:{dry_run:'false'}});
+    info.dispatchAccepted=true;info.decision='EVENT_WATCHDOG_WAKE_ACCEPTED';
+  }catch(error){
+    info.decision='WATCHDOG_WAKE_UNAVAILABLE';
+    info.error=String(error.message||error).slice(0,150);
+  }
+  return report();
+}
+
+module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,relayCompletionWake,DISPATCHER,watchdogCronDecision,wakeStaleWatchdog};
