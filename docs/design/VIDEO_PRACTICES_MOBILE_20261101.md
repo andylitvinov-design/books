@@ -48,3 +48,24 @@
 - 05 Eight sessions: 2-column eight-stage preview, three realistic benefits, green generate, then real eight session cards and existing first-film editor handoff; seven further videos are only proposals. One consented `MeditationCourseEnquiry` request, no implied payment or video delivery.
 - Visual targets: warm ivory `#fffefa`, emerald `#078361`, 15–22px rounded cards, touch controls >=44px, font 14–19px at 320/354/390/430, EN/RU/ES, accessible focus and overflow.
 - Real browser screenshot/overlay QA of this exact route/state/viewport remains required; synthetic guest tests cannot prove signed-in CRM, iPhone Safari, paid provider delivery or clinical outcomes.
+
+
+## Focus step 01 visual correction · owner screenshots 2 Nov 2026
+
+The owner compared production screenshots in both modes and correctly identified that the previously shipped implementation was only partial: steps 03–05 had the new layout, but step 01 still had two large free-text fields in Vector mode and only four fixed choices in State mode.
+
+**Required replacement**
+- Keep the existing two mode choices: State and Development direction.
+- State mode presents six warm ivory choice cards: Calm & sleep, Inner support, Energy, Closeness & warmth, Self-confidence, Clarity & harmony.
+- Development mode presents six areas from the existing theme taxonomy: Energy/body, Money/work, Relationships, Goals/confidence, Meaning, Self-care.
+- Selecting a card sets the real desired direction and maps it to the same six existing course themes, which feed the current first-party meditation and eight-session builder.
+- Replace both former large blank textareas with one optional short context note. It is never required to generate once a desired card has been selected.
+- Keep the goals drawer, optional up-to-three detailed goal selection, source-verified saved-test opt-in, on-device preview, safety gate, invalidation of stale scripts, and explicit rendering/payment separation.
+- Mobile uses two columns (three rows) at 320–430px. Wider viewports use three columns; never four columns.
+
+**Acceptance evidence required**
+- Chromium and WebKit both confirm exactly six State and six Vector cards in RU/EN/ES.
+- Each card actually selects and enables the local meditation flow; the generated script includes the selected theme label.
+- The single note is optional. No second goal textarea or mandatory two-endpoint questionnaire remains.
+- Changing the selected direction invalidates the prior meditation and eight-session plan.
+- All eight course sessions, privacy protections and existing enquiry flow remain unchanged.
