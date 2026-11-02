@@ -12,7 +12,7 @@ import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -93,16 +93,35 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-// A skipped macOS job is optional ONLY when the unchanged, trusted BASE YAML
-// excludes this exact branch. A PR cannot edit its own guard to become exempt,
-// and voice/recorder changes must still prove real encoded audio and video.
+// Compare the actual macOS job definition, not the unrelated workflow paths.
+// The immutable tested BASE still determines when this optional job is required.
+// Changing trigger globs alone cannot turn a deliberately skipped macOS job into
+// a phantom failure, but any edit to its guard, platform or steps is refused.
+function trustedMandalaMacosJob(workflow) {
+  if (typeof workflow !== 'string') return null;
+  const header = '\n  voice-webkit-macos:\n';
+  const index = workflow.indexOf(header);
+  if (index < 0 || workflow.indexOf(header, index + header.length) >= 0) return null;
+  const source = workflow.slice(index + 1);
+  // Compare to the next job definition. Top-level workflow metadata comes
+  // before jobs: in the current supported schema.
+  const rest = source.slice(header.length - 1);
+  const boundary = /^  [a-z][a-z0-9_-]*:[ \t]*(?:#.*)?$/m.exec(rest);
+  const end = boundary ? boundary.index : rest.length;
+  return source.slice(0, header.length - 1 + end).trimEnd();
+}
+
+// A skipped macOS job is neutral only when BASE's unchanged job guard excludes
+// this exact branch and no encoded-media/voice source is modified.
 export function optionalMandalaMacosSkip(files, branch, changed) {
   const name = '.github/workflows/holistic-support-mandala.yml';
   const source = files?.base?.get(name);
-  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+  const candidate = files?.current?.get(name);
+  const baseJob = trustedMandalaMacosJob(source);
+  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
-      changed.includes(name) || changed.some(path =>
-        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+      changed.some(path => typeof path !== 'string' ||
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
@@ -125,7 +144,11 @@ export function requiresCurrentProductionBase(changed) {
   // This exact Playwright-only QA harness is never imported by Next at runtime.
   // Its changing selectors should not force a full rebase of an otherwise
   // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
+  const isolatedBrowserHarness = file =>
+    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
+    // Real encoded-media, payments and consent remain strict, regardless
+    // of their file being an isolated browser/benchmark harness.
+    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
@@ -335,15 +358,19 @@ export async function verify(api,ctx,files,options={}) {
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    const optionalSkipped = run.path === '.github/workflows/holistic-support-mandala.yml' &&
-      optionalMandalaMacosSkip(files, pr.head.ref, changed) ? ['voice-webkit-macos'] : [];
+    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
+      .filter(job => job !== 'voice-webkit-macos' ||
+        (run.path === '.github/workflows/holistic-support-mandala.yml' &&
+          optionalMandalaMacosSkip(files, pr.head.ref, changed)));
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};

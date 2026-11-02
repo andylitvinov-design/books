@@ -69,16 +69,46 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
+test('OPORA course test ownership excludes unrelated course and CI contracts', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const paths = source => {
+    const pr = source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  workflow_dispatch:|^permissions:)/m)?.[1];
+    assert.ok(pr, 'production PR trigger required');
+    return [...pr.matchAll(/^      - ['"]([^'"]+)['"]$/gm)].map(match => match[1]);
+  };
+  const oporaPaths = paths(opora), appPaths = paths(app);
+  const oporaJob = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(oporaJob, 'owned OPORA unit job is required');
+  const actual = [...new Set([...oporaJob.matchAll(/\btests\/course-[\w.-]+\.mjs/g)].map(m => m[0]))].sort();
+  assert.deepEqual(actual, ['tests/course-baseline-explainer.test.mjs', 'tests/course-compact-owner-ui.test.mjs', 'tests/course-entry-selector.test.mjs', 'tests/course-test-sequence.test.mjs']);
+  for (const file of actual) assert.ok(oporaPaths.some(p => requireGlob(file,p)), file + ' must trigger OPORA');
+  assert.equal(oporaPaths.some(p => requireGlob('tests/course-slide-recorder.test.mjs',p)), false);
+  assert.equal(appPaths.some(p => requireGlob('tests/pr-fast-lane.test.mjs',p)), false);
+  assert.ok(oporaPaths.includes('.github/workflows/opora-module-ci.yml'));
+  for (const file of ['components/opora-player.tsx', 'lib/opora/consent.ts', 'package-lock.json']) {
+    assert.ok(oporaPaths.some(p => requireGlob(file,p)), file + ' must retain OPORA acceptance');
+  }
+  assert.match(opora, /^  workflow_dispatch:/m, 'manual full acceptance remains available');
+  assert.ok(opora.includes('node scripts/verify-opora-as56-browser.mjs'));
+});
+
 test('separate fail-closed specialist gate and legacy release-ready alias protect the migration', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  merge_group:/m);
   assert.match(source, /^  release-ready:/m);
+  assert.doesNotMatch(source, /^  hh-specialists-verified:/m, 'duplicate legacy status must not consume a runner');
   assert.match(source, /^  hh-specialist:/m);
   assert.match(source, /name: hh-specialist/);
-  const alias = source.split(/^  release-ready:/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
-  assert.match(alias, /needs: \[hh-specialist\]/);
+  const specialist = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  const alias = source.split(/^  release-ready:/m)[1];
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'parallel specialist');
+  assert.doesNotMatch(specialist, /CODE_RESULT|needs\.code/);
+  assert.match(alias, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(alias, /CORE_RESULT/);
   assert.match(alias, /SPECIALIST_RESULT/);
+  assert.match(alias, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source, /^    needs: \[scope, code\]/m);
   assert.match(source, /^    if: always\(\)/m);
   assert.match(source, /git diff --no-renames --name-only -z/);
@@ -107,7 +137,8 @@ test('PR automation policy and agent entry point require specialist safety gates
   assert.match(docs, /The replacement checks are `hh-core-verified` \(Core\) and `hh-specialist`/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
-  assert.match(docs, /production advance alone does not require updating the PR branch/);
+  assert.match(docs, /when strict required checks are enabled, a production advance requires updating the PR branch/);
+  assert.doesNotMatch(docs, /GitHub uses loose required-status checks/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -366,9 +397,11 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
     const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
     assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
-    // IA self-edits retain owned security/browser checks; App R1 uses its scoped classifier.
+    // Self-edits may run only their own real acceptance, with explicit coverage.
     const focusedSelfCheck = (name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1')) ||
-      (name === 'ia-v2.yml' && s.includes('npm run test:app') && s.includes('npm run verify:ia-v2'));
+      (name === 'ia-v2.yml' && s.includes('npm run test:app') && s.includes('npm run verify:ia-v2')) ||
+      (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-support-second-screen.test.mjs') &&
+        s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
@@ -665,7 +698,17 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
   assert.match(perf,/^  push:\s*$/m);
   const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  // Public Services still compiles the entire production app, while the
+  // required Core retains unrelated prebuild coaching regression suites.
+  assert.ok(services.includes('./node_modules/.bin/next build') &&
+    services.includes('node scripts/verify-public-services-production.mjs'));
+  for (const generator of ['ensure-owner-video-renderer.mjs',
+    'cache-ancient-coaching-photos.mjs','generate-soft-ocean-melody.mjs',
+    'build-public-card-artwork.mjs','build-report-pdf-art.mjs']) {
+    assert.ok(services.includes('node scripts/' + generator),'missing prerequisite '+generator);
+  }
+  assert.ok(workflow('hh-pr-core-release.yml').includes('run: npm run build'),
+    'required Core must retain the full original prebuild suite');
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
@@ -675,7 +718,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  const guardedMediaCondition = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))";
+  const guardedMediaCondition = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))";
   for (const name of [
     'Build', 'Install isolated Chromium and WebKit (no external account)',
     'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
@@ -704,7 +747,7 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
   const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
-  const release = source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
+  const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
     assert.doesNotMatch(job, /fetch-depth:\s*0/, `${name} must avoid full-history Git fetch`);
@@ -953,15 +996,9 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
     'must query current PR branch with bounded pagination because CI head_sha may be synthetic');
   assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
-  assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
-  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
-    'must honor legacy branch protection until admin migration');
-  assert.ok(enable.includes('oldRequired && !passed("release-ready")'),
-    'must not bypass presently required release-ready');
-  assert.ok(enable.includes('specialistRequired && !passed("hh-specialist")'),
-    'a red specialist check blocks after migration');
-  assert.ok(enable.includes('const coreRequired = Array.isArray(required) && required.includes("hh-core-verified")'),
-    'must recognize migrated protection without weakening actual CI');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'must recognize unified protection');
+  assert.ok(enable.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'), 'legacy protection remains fail-closed');
+  assert.ok(enable.includes('matching.length === 1'), 'duplicate jobs cannot pass');
 
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
@@ -1098,9 +1135,10 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
         args.push(params);
         return {data: {total_count: totalCount, workflow_runs: runs}};
       }, listJobsForWorkflowRun: async () => ({data: {
-        total_count: (options.jobs || []).length || 2,
+        total_count: (options.jobs || []).length || 3,
         jobs: options.jobs || [
           {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+          {name: 'hh-specialist', status: 'completed', conclusion: 'success'},
           {name: 'release-ready', status: 'completed', conclusion: 'success'},
         ],
       }})},
@@ -1189,30 +1227,31 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
-  assert.ok(enable.includes("job.name === \"hh-core-verified\""),
-    'native merge must still verify real successful Core');
-  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
-    'retain actual legacy branch protection until admin migration');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
   assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('legacy and plural compatibility statuses cannot bypass the real hh-specialist gate',()=>{
+test('legacy release-ready requires real Core and Specialist when parallel',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
-  assert.ok(special,'must publish a named independent specialist status');
-  assert.match(special,/^    name: hh-specialists-verified$/m);
-  assert.match(special,/^    needs: \[hh-specialist\]$/m);
-  assert.match(special,/^    if: always\(\)$/m);
-  assert.match(special,/^    timeout-minutes: 3$/m);
-  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
-  assert.ok(special.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
-  assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
-  assert.ok(full,'must retain independent full specialist verifier');
-  assert.match(full,/ci-specialist-aggregate\.mjs/);
-  assert.match(full,/timeout-minutes: 45/);
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m, 'duplicate alias must not return');
+  const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  assert.ok(specialist, 'real Specialist gate must remain');
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'Specialist begins beside Core');
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.match(specialist,/timeout-minutes: 45/);
+  const legacy=source.split(/^  release-ready:\s*$/m)[1];
+  assert.ok(legacy,'required classic compatibility status remains');
+  assert.match(legacy,/^    name: release-ready$/m);
+  assert.match(legacy,/^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(legacy,/^    if: always\(\)$/m);
+  assert.match(legacy,/^    timeout-minutes: 1$/m);
+  assert.ok(legacy.includes('CORE_RESULT: ' + '$' + "{{ needs['hh-core-verified'].result }}"));
+  assert.ok(legacy.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
+  assert.ok(legacy.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
+  assert.doesNotMatch(legacy,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
@@ -1255,8 +1294,9 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
+        listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
           {name:'hh-core-verified',status:'completed',conclusion:'success'},
+          {name:'hh-specialist',status:'completed',conclusion:'success'},
           {name:'release-ready',status:'completed',conclusion:'success'},
         ]}}),
       },
@@ -1293,7 +1333,27 @@ test('one-time status migration is production-only, requires real replacement ev
   assert.match(migration, /non_fast_forward/);
   assert.match(migration, /branches\/codex%2Fpublic-book-library\/protection\/required_status_checks/);
   assert.match(migration, /--method PATCH/);
-  assert.match(merge, /const dualEnforced/);
-  assert.match(merge, /const migrated/);
-  assert.match(merge, /passed\("hh-specialist"\)/);
+  assert.match(merge, /hh-merge-check/);
+  assert.match(merge, /hh-specialist/);
+});
+
+
+test('staged single hh-merge-check never passes without current-workflow Core and Specialist', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  const newGate=source.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
+  assert.ok(newGate,'single required status must exist before changing branch protection');
+  assert.match(newGate,/^    name: hh-merge-check$/m);
+  assert.match(newGate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(newGate,/^    if: always\(\)$/m);
+  for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
+    assert.ok(newGate.includes(required),'missing fail-closed '+required);
+  assert.match(newGate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/,
+    'manual or merge_group executions must never produce a trusted PR-required green check');
+  assert.match(newGate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(newGate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.doesNotMatch(newGate,/npm ci|npm run build|npx|playwright|continue-on-error/);
+  const legacy=source.split(/^  release-ready:\s*$/m)[1];
+  assert.ok(legacy,'old Branch Protection still requires release-ready until admin readback');
+  assert.ok(legacy.includes('needs: [hh-core-verified, hh-specialist]'));
+  assert.match(legacy, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
 });

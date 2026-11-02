@@ -27,7 +27,6 @@ on:
       - 'tests/app-*.mjs'
       - 'tests/assessment-*.mjs'
       - 'tests/client-report*.mjs'
-      - 'tests/course-*.mjs'
       - 'scripts/verify-app-*.mjs'
       - 'scripts/verify-*assessment*.mjs'
       - 'scripts/verify-document-hydration*'
