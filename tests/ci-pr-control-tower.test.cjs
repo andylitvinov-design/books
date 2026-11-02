@@ -5,16 +5,17 @@ test('Control Tower skips canceled/skipped callbacks while preserving separate P
  assert.ok(s.includes("github.event.workflow_run.conclusion != 'cancelled'"));
  assert.ok(s.includes("github.event.workflow_run.conclusion != 'skipped'"));
  assert.ok(s.includes("github.event_name != 'workflow_run'"));
- assert.ok(s.includes("group: hh-control-tower-${{ github.event_name == 'pull_request'"));
+ assert.ok(s.includes("group: hh-control-contract-"));
+ assert.ok(s.includes("group: hh-control-tower-single-writer"));
 });
-const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
+const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run,workerBusyOrCooling}=require('../scripts/ci-pr-queue-dispatcher.cjs');
 const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42,payload:{inputs:{}}};
 const pr=(number,lane='repair',extra={})=>({number,title:number===1?'fix(video): broken rendering':'feat(tests): updates',
- state:'open',draft:false,user:{login:'andylitvinov-design'},
+ state:'open',draft:false,mergeable:true,mergeable_state:'clean',user:{login:'andylitvinov-design'},
  base:{ref:'codex/public-book-library'},
  head:{ref:'branch-'+number,sha:SHA,repo:{full_name:'andylitvinov-design/books'}},
  labels:[{name:lane==='repair'?'hh:repair-needed':lane==='ci'?'hh:ci-needed':'hh:conflict-repair-needed'}],
@@ -28,7 +29,8 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  const calls={dispatched:[],reserved:[],read:[],removed:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
-  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)})
+  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
+  listFiles:async()=>({data:[{filename:'src/a.js',status:'modified'}]})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
@@ -56,10 +58,25 @@ test('receipt uses exact task id and never reassigns an old claimed SHA',()=>{
 test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(16,43)),'ADMIT');
  assert.equal(admission('ci',cap(16,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',cap(18,43)),'REPAIR_QUEUE_BUSY');
+ assert.equal(admission('repair',cap(18,43)),'ADMIT');
+ assert.equal(admission('repair',cap(23,43)),'ADMIT');
+ assert.equal(admission('repair',cap(24,43)),'RUNNERS_SATURATED');
+ assert.equal(admission('repair',cap(18,60)),'RUNNERS_SATURATED');
+ assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
  assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
+
+test('repair still fails closed when runner jobs or its own worker are saturated',()=>{
+ const unrelated=Array.from({length:18},(_,i)=>({name:'Other workflow '+i}));
+ const jobs=Array.from({length:38},()=>({status:'in_progress'}));
+ assert.equal(admission('repair',computeCapacity(unrelated,[],jobs)),'JOBS_SATURATED');
+ assert.equal(admission('repair',computeCapacity(
+  [{name:'HH PR source Repair Worker'},...unrelated],[],[]
+ )),'WORKER_BUSY');
+ assert.equal(admission('conflict',cap(18,43)),'ADMIT');
+});
+
 test('only trusted default-branch repository and known workflow callbacks are handled',()=>{
  assert.equal(trustedContext(context),true);
  assert.equal(trustedContext({...context,ref:'refs/heads/codex/public-book-library'}),false);
@@ -117,16 +134,19 @@ test('more than 100 comments still preserve exact-head source proof',async()=>{
  assert.deepEqual(pages,[1,2]);
  assert.equal(result.dispatchAccepted,1);
 });
-test('over 299 comments without a completed final page stops dispatch',async()=>{
- const f=fixture([pr(1)]);
- let pages=[];
+test('more than 300 comments are fully read before exact-head dispatch',async()=>{
+ const f=fixture([pr(1)]);const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
-  pages.push(page);return {data:Array.from({length:100},()=>({body:'older note'}))};
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'older note'})):[proof()]};
  };
  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.deepEqual(pages,[1,2,3]);
- assert.equal(result.blocked.OWNER_HISTORY_INCOMPLETE,1);
- assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.dispatchAccepted,1);
+});
+test('comment history API budget exhaustion fails closed without a dispatch',async()=>{
+ const f=fixture([pr(1)]);
+ f.github.rest.issues.listComments=async()=>({data:Array.from({length:100},()=>({body:'older note'}))});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.dispatched.length,0);
 });
 test('duplicate task reservation suppresses repeated dispatch',async()=>{
  const t=taskFor(pr(1),{tier:'P1'}),body=commentBody(reservation(t,NOW,1));
@@ -277,7 +297,10 @@ test('real conflict requires a fresh dirty merge state',async()=>{
  const dirty=pr(9,'conflict',{mergeable:false,mergeable_state:'dirty'});
  const g=fixture([dirty],{});
  r=await run({github:g.github,core:core(),context,now:NOW,capacityFn:g.capacityFn});
- assert.equal(r.dispatchAccepted,1);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(g.calls.dispatched.length,0,'DIRTY does not waste an ESLint runner');
+ assert.ok(g.calls.reserved[0].body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA));
 });
 
 
@@ -346,7 +369,8 @@ test('incomplete job inventory stops without dispatch',async()=>{
 
 test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.ok(wf.includes("github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer'"));
+ assert.ok(wf.includes('hh-control-contract-'));
+ assert.ok(wf.includes('hh-control-tower-single-writer'));
  assert.ok(wf.includes('cancel-in-progress: false'));
 });
 
@@ -481,4 +505,236 @@ test('expired active foreign lease cannot be stolen by a second worker',()=>{
   JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
  assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify(old)}],NOW),'FREE');
+});
+
+test('exact-HEAD conflict receipt is idempotent and does not block a source worker',async()=>{
+ const dirty=pr(88,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const source=pr(89,'repair',{title:'fix(video): actionable source'});
+ const f=fixture([dirty,source],{comments:{89:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.manualConflictHandoffs,1);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'89');
+ const same=fixture([dirty],{comments:{88:[{
+  body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
+ }]}});
+ const second=await run({github:same.github,core:core(),context,now:NOW,
+  capacityFn:same.capacityFn});
+ assert.equal(second.manualConflictHandoffs,0);
+ assert.equal(same.calls.reserved.length,0);
+ assert.equal(same.calls.dispatched.length,0);
+});
+
+test('explicit same-owner release frees modern exact-head owner without time expiry',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const actor={login:'andylitvinov-design'};
+ const lease={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-video',lease_id:'lease-17',
+  head_sha:SHA,state:'active',expires_at:new Date(NOW-5_000).toISOString()};
+ const release={...lease,state:'released',released_at:new Date(NOW+1_000).toISOString()};
+ const body=x=>'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x);
+ const events=[{id:100,user:actor,body:body(lease)},
+  {id:101,user:actor,body:body(release)}];
+ assert.equal(externalOwnerLeaseStatus(events,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(task,events,NOW),'FREE');
+ assert.equal(reservationStatus(task,events.slice(0,1),NOW),'OWNER_LEASE_ACTIVE');
+});
+test('foreign actors, other lease IDs and fresh heartbeats cannot free source',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const actor={login:'andylitvinov-design'},stranger={login:'other-user'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-voice',lease_id:'real-lease',
+  head_sha:SHA,state:'active',expires_at:new Date(NOW-1_000).toISOString()};
+ const wrap=(lease,user=actor)=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify(lease)});
+ const release={...base,state:'released'};
+ for(const wrong of [
+  wrap(release,stranger),
+  wrap({...release,owner:'other-owner'}),
+  wrap({...release,lease_id:'other-lease'})
+ ]){
+  assert.equal(reservationStatus(task,[wrap(base),wrong],NOW),'OWNER_LEASE_ACTIVE');
+ }
+ const events=[wrap(base),wrap(release),
+  wrap({...base,state:'heartbeat',expires_at:new Date(NOW+60_000).toISOString()})];
+ assert.equal(externalOwnerLeaseStatus(events,SHA,NOW),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([...events,wrap(release)],SHA,NOW),'FREE');
+});
+test('independent active leases cannot be revoked by a release for another lease',()=>{
+ const actor={login:'andylitvinov-design'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'editor',head_sha:SHA,
+  state:'active',expires_at:new Date(NOW+10000).toISOString()};
+ const wrap=l=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(l)});
+ const records=[wrap({...base,lease_id:'a'}),wrap({...base,lease_id:'b'}),
+  wrap({...base,lease_id:'a',state:'released'})];
+ assert.equal(externalOwnerLeaseStatus(records,SHA,NOW),'OWNER_LEASE_ACTIVE');
+ records.push(wrap({...base,lease_id:'b',state:'released'}));
+ assert.equal(externalOwnerLeaseStatus(records,SHA,NOW),'FREE');
+});
+test('release may identify original HEAD using previous_head_sha, not a changed source HEAD',()=>{
+ const actor={login:'andylitvinov-design'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'editor',
+  head_sha:SHA,lease_id:'lease-previous',state:'active',
+  expires_at:new Date(NOW-30000).toISOString()};
+ const released={...base,head_sha:'b'.repeat(40),previous_head_sha:SHA,state:'released'};
+ const wrap=v=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(v)});
+ assert.equal(externalOwnerLeaseStatus([wrap(base),wrap(released)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(base),wrap(released)],'b'.repeat(40),NOW),'FREE');
+});
+test('malformed release histories remain fail-closed for all workflows',()=>{
+ const t=taskFor(pr(1),{tier:'P1'});
+ const bad=[{body:'<!-- HH_PR_SWEEP_LEASE_V1 --> not JSON'}];
+ assert.equal(externalOwnerLeaseStatus(bad,SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+ assert.equal(reservationStatus(t,bad,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
+test('live dispatcher runs syntax only; full contract stays a PR-only job',()=>{
+ const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const jobs=yml.split('\n  dispatch:\n');
+ assert.equal(jobs.length,2);
+ assert.ok(jobs[0].includes("node --test tests/ci-pr-control-tower.test.cjs"));
+ assert.ok(!jobs[1].includes('node --test '));
+ assert.ok(jobs[1].includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
+ assert.ok(yml.includes('  checks: read\n'));
+});
+test('unproven source label with exact-HEAD red product QA moves to specialist queue, never a worker',async()=>{
+ const source=pr(120,'repair',{mergeable:true,mergeable_state:'behind'});
+ const f=fixture([source],{comments:{120:[]}});
+ const changed=[];
+ const withLabel={...source,labels:[...source.labels]};
+ f.github.rest.checks={listForRef:async({ref})=>{
+  assert.equal(ref,SHA);
+  return {data:{total_count:3,check_runs:[
+   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'voice-webkit-macos',status:'completed',conclusion:'failure',app:{id:15368}}
+  ]}};
+ }};
+ f.github.rest.issues.addLabels=async({labels})=>{changed.push(['add',labels[0]]);
+  withLabel.labels.push({name:labels[0]});};
+ f.github.rest.issues.removeLabel=async({name})=>{changed.push(['remove',name]);};
+ f.github.rest.pulls.get=async()=>({data:withLabel});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.specialistReclassified,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(changed,[['add','hh:specialist-repair-needed'],['remove','hh:repair-needed']]);
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('no exact-head independent QA or live HEAD change never releases source-repair label',async()=>{
+ for(const mode of ['all-green','incomplete','moved','untrusted']){
+  const source=pr(121,'repair',{mergeable:true,mergeable_state:'behind'});
+  const f=fixture([source],{comments:{121:[]}});
+  let writes=0;
+  f.github.rest.checks={listForRef:async()=>({data:{total_count:mode==='incomplete'?4:3,check_runs:[
+   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'guard-unit',status:'completed',conclusion:mode==='all-green'?'success':'failure',
+    app:{id:mode==='untrusted'?900:15368}}
+  ]}})};
+  f.github.rest.issues.addLabels=async()=>{writes++;};
+  f.github.rest.issues.removeLabel=async()=>{writes++;};
+  if(mode==='moved')f.github.rest.pulls.get=async()=>({data:{...source,
+   head:{...source.head,sha:'b'.repeat(40)}}});
+  await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  if(mode==='moved')assert.equal(writes,0);
+  else assert.equal(writes,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
+test('dry run reports potential specialist reroute without label mutation',async()=>{
+ const source=pr(122,'repair',{mergeable:true,mergeable_state:'behind'});
+ const f=fixture([source],{comments:{122:[]}});
+ f.github.rest.checks={listForRef:async()=>({data:{total_count:3,check_runs:[
+ {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+ {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+ {id:3,name:'public-services',status:'completed',conclusion:'failure',app:{id:15368}}
+ ]}})};
+ const r=await run({github:f.github,core:core(),context,now:NOW,dryRun:true,
+  capacityFn:f.capacityFn});
+ assert.equal(r.wouldSpecialistReclassify,1);
+ assert.equal(r.specialistReclassified,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.dispatched.length,0);
+});
+
+// Preserve #3014 source preflight and fairness scenarios.
+test('source dispatch requires verified current mergeability before reservation',async()=>{
+ for(const state of [{mergeable:null,mergeable_state:'unknown'},
+  {mergeable:true,mergeable_state:'unknown'}, {mergeable:false,mergeable_state:'blocked'}]){
+  const f=fixture([pr(99,'repair',state)],{comments:{99:[proof()]}});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
+
+test('source dispatch requires a complete nonempty worker-safe changed-file scope',async()=>{
+ for(const files of [[],[{filename:'tests/only.test.js',status:'modified'}],
+   Array.from({length:100},(_,i)=>({filename:'src/'+i+'.js',status:'modified'}))]){
+  const f=fixture([pr(77)],{comments:{77:[proof()]}});
+  f.github.rest.pulls.listFiles=async()=>({data:files});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+ }
+});
+
+test('a blocked first source does not give the shared worker to conflict before another source',async()=>{
+ const first=pr(1,'repair',{title:'fix(video): verified source'}),second=pr(2,'repair',{title:'fix(video): verified source'});
+ const conflict=pr(100,'conflict',{title:'fix(video): conflict',mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([first,second,conflict],{comments:{2:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.workerRuns[0]?.lane,'repair');assert.equal(result.workerRuns[0]?.pr_number,2);
+});
+test('conflict triage has a bounded fairness turn under continuous source backlog',()=>{
+ const sources=Array.from({length:25},(_,i)=>pr(i+1,'repair'));
+ const conflict=pr(100,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const ordinary=planCandidates([...sources,conflict],NOW);
+ const fairness=planCandidates([...sources,conflict],NOW+5*600000);
+ assert.ok(ordinary.findIndex(x=>x.lane==='conflict')>ordinary.findIndex(x=>x.lane==='repair'));
+ assert.ok(fairness.findIndex(x=>x.lane==='conflict')<fairness.findIndex(x=>x.lane==='repair'));
+});
+test('rotation eventually inspects every source in a large sustained backlog',()=>{
+ const sources=Array.from({length:143},(_,i)=>pr(i+1,'repair',{title:'fix: source'}));
+ const conflict=pr(999,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const seen=new Set();for(let turn=0;turn<84;turn++)for(const task of planCandidates([...sources,conflict],NOW+turn*600000))if(task.lane==='repair')seen.add(task.pr_number);
+ assert.equal(seen.size,sources.length);
+});
+
+test('runner-capacity outage does not block a verified metadata-only DIRTY handoff',async()=>{
+ const dirty=pr(88,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([dirty]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.reason,'CONFLICT_HANDOFF_ACCEPTED');
+ assert.equal(f.calls.dispatched.length,0);
+ assert.equal(f.calls.reserved.length,1);
+});
+test('dual-labelled DIRTY does not take the source Repair Worker',async()=>{
+ const dirty=pr(77,'repair',{mergeable:false,mergeable_state:'dirty',
+  labels:[{name:'hh:repair-needed'},{name:'hh:conflict-repair-needed'}]});
+ const f=fixture([dirty]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>{throw Error('Capacity unavailable')}});
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('unknown capacity continues to reject normal source writes',async()=>{
+ const f=fixture([pr(77)],{comments:{77:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.blocked.CAPACITY_UNVERIFIED,1);
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('duplicate exact-HEAD conflict handoff remains idempotent with no runners',async()=>{
+ const dirty=pr(88,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
+ const f=fixture([dirty],{comments:{88:[{body:marker}]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+ assert.equal(r.manualConflictHandoffs,0);
+ assert.equal(r.blocked.CONFLICT_ALREADY_HANDED_OFF,1);
+ assert.equal(f.calls.reserved.length,0);
 });
