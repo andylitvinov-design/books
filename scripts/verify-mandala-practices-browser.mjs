@@ -80,8 +80,13 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await programme.waitFor({state:"visible"});
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
-      assert.ok((await programme.locator("a").last().getAttribute("href")||"").includes("/services/imagery-therapy"),
-        "enquiry opens existing course request route without initiating payment");
+      const enquiry=programme.locator("[data-meditation-course-order]");
+      assert.equal(await enquiry.count(),1,"one consented course enquiry");
+      await enquiry.click();
+      const form=programme.locator("[data-meditation-course-contact]");
+      await form.waitFor({state:"visible"});
+      assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
+        "one-off reply consent gates the real course enquiry");
       const geometry=await course.evaluate((el)=>{
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];
@@ -100,6 +105,12 @@ export async function verifyGuidedPractices({browser,base,engine}){
 
       const modes=course.locator('[data-video-therapy-focus] [role="group"]').first().locator("button");
       await modes.nth(1).click();
+      // Confirm actual React state following the WebKit click, never infer
+      // success from a sleep, missing control, or a stale aria attribute.
+      await page.waitForFunction(()=>
+        document.querySelector('[data-video-therapy-focus] [role="group"] button:nth-child(2)')
+          ?.getAttribute("aria-pressed")==="true",
+        null,{timeout:15000});
       assert.equal(await modes.nth(1).getAttribute("aria-pressed"),"true");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
       assert.equal(await generate.isDisabled(),true,"vector requires both fields");
