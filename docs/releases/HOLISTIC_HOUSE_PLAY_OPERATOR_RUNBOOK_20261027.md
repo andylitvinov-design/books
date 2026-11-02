@@ -18,12 +18,34 @@
 
 Действие с постоянным ключом и платными или юридическими регистрациями требует отдельного разрешения владельца. Текущие GitHub- и Vercel-подключения не означают, что эти ключи уже настроены.
 
+## Шифрование тестового APK до публикации
+
+Репозиторий публичный, поэтому GitHub Actions artifacts нельзя считать закрытыми. До явного одобрения пользователя workflow загружает **только зашифрованный** `.apk.age` (и необязательный `.aab.age`) и открытые контрольные суммы/метаданные. Обычный APK в Actions НЕ загружается.
+
+На своём доверенном компьютере владелец создаёт индивидуальный ключ для QA (например, после установки `age` через `brew install age`):
+
+```bash
+age-keygen -o ~/hh-apk-qa-identity.txt
+age-keygen -y ~/hh-apk-qa-identity.txt
+```
+
+Файл `~/hh-apk-qa-identity.txt` — **секретный**, его нельзя загружать в репозиторий, ChatGPT или GitHub Actions. Второй вызов выводит публичный ключ `age1...`; его нужно внести в защищённый GitHub Environment `google-play-release` как переменную `HH_APK_QA_AGE_RECIPIENT` (публичный recipient, не ключ подписи). Если переменной нет, workflow останавливается, не загружая APK. Это не дополнительный платный сервис.
+
+Скачать QA artifact `HH-Website-APK-<version_code>-ENCRYPTED-NOT-PUBLISHED` и на своём компьютере выполнить:
+
+```bash
+age --decrypt -i ~/hh-apk-qa-identity.txt -o Holistic-House-Android-vX.Y.Z.apk Holistic-House-Android-vX.Y.Z.apk.age
+shasum -a 256 Holistic-House-Android-vX.Y.Z.apk
+```
+
+Полученный SHA-256 сверить с `hh-website-apk-sha256.txt`; сам APK пока предназначен только для проверяющих. Лишь после физического Android E2E и явного одобрения владельца выпускается открытый GitHub Release. Для публичной версии файл уже не шифруется, и сайт сможет предложить его по существующему проверенному URL.
+
 ## Как получить приватный APK и проверить его
 
 1. Провести code/security review и все обязательные тесты PR #2230, затем разрешённым способом влить его **только в production** `codex/public-book-library`, не в GitHub default `codex/bootstrap-books`. Черновые/пропущенные проверки не равны успеху.
 2. Открыть [Actions → Holistic House Android Direct APK](https://github.com/andylitvinov-design/books/actions/workflows/holistic-house-play-aab.yml), выбрать `codex/public-book-library`, `version_code` выше последнего публичного Android `data/native-public-releases.json`, `version_name` например `1.0.0`, `build_play_aab=false`. Подтвердить защищённый Environment; никаких автоматических публикаций.
 3. Workflow проверяет настоящий пакет/HTTPS-origin, наличие постоянного ключа, ожидаемый отпечаток и монотонность номера версии; staged Android API 36 / AGP 8.9.1, затем `assembleRelease`. `apksigner verify --print-certs`, `aapt`, SHA-256 и fingerprint должны подтвердить именно подписанный `com.holistichouse.app`. При ошибке — остановка, а не debug-fallback.
-4. Скачать приватный GitHub Actions артефакт `HH-Website-APK-<version_code>-NOT-PUBLISHED` (7 дней): `Holistic-House-Android-vX.Y.Z.apk`, контрольная сумма, сертификат, package/version evidence. Это пакет **для проверяющих**, не клиентский релиз. Подписной ключ не входит в артефакт.
+4. Скачать GitHub Actions артефакт `HH-Website-APK-<version_code>-ENCRYPTED-NOT-PUBLISHED` (7 дней): **`Holistic-House-Android-vX.Y.Z.apk.age`**, контрольная сумма, сертификат, package/version evidence. Расшифровать только на своём компьютере, как описано выше. Исходный APK и ключ подписи не входят в Actions-артефакт.
 5. На физическом Android проверить: установку APK через браузер (разрешение установки из этого источника), запуск и возвращение из background; Google OAuth в системном браузере → защищённый HTTPS callback → `holistichouse://auth/callback` → PKCE; logout, повторный запуск, неправильный аккаунт, отсутствующую сеть; тесты, отчёты, курсы, личные сообщения, голос/видео, приватность, реальные обновления тем же сертификатом. Записать только обезличенные результаты и версию в [#1310](https://github.com/andylitvinov-design/books/issues/1310). Native FCM delivery проверять отдельно, только при наличии провайдера и разрешения.
 6. **Лишь после физического QA и явного утверждения владельца** опубликовать тот же проверенный APK в GitHub Releases с tag `hh-android-vX.Y.Z` и filename `Holistic-House-Android-vX.Y.Z.apk`. Записать фактические `sha256`, `signingCertificateSha256`, `version`, `versionCode`, ссылку на QA evidence и `ownerApproved:true` в едином `data/native-public-releases.json`. После проверенного production деплоя включить server-only `HH_NATIVE_PUBLIC_RELEASES_ENABLED=true` и подтвердить `/api/native-download/android` → одобренный APK и отображение кнопки `/ru|en|es/install`. До этого API обязан возвращать 404, а кнопки не должно быть.
 

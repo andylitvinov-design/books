@@ -166,11 +166,29 @@ test('operator release instructions keep direct website APK independent of store
   const runbook=readSource('docs/releases/HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md')
   for(const text of [
     'Google Play не требуется','build_play_aab=false','Firebase не нужен для сборки APK',
-    'HH_EXPECTED_WEBSITE_CERT_SHA256','HH-Website-APK-<version_code>-NOT-PUBLISHED',
+    'HH_EXPECTED_WEBSITE_CERT_SHA256','HH-Website-APK-<version_code>-ENCRYPTED-NOT-PUBLISHED',
     'ownerApproved:true','HH_NATIVE_PUBLIC_RELEASES_ENABLED=true','Android Developer Console'
   ])assert.ok(runbook.includes(text),'missing direct Android release contract: '+text)
   assert.ok(!runbook.includes('Verify with [Play Console]'))
   assert.ok(!runbook.includes('Fresh Play internal install'))
   assert.ok(runbook.includes('/api/native-download/android'))
   assert.ok(runbook.includes('сначала') || runbook.includes('До этого API обязан возвращать 404'))
+})
+
+test('public GitHub Actions artifacts never contain unapproved plaintext APK or AAB',()=>{
+  const workflow=readSource('.github/workflows/holistic-house-play-aab.yml')
+  assert.ok(workflow.includes('HH_APK_QA_AGE_RECIPIENT'))
+  assert.ok(workflow.includes('Missing approved age recipient: cannot publish raw QA APK'))
+  assert.ok(workflow.includes('age -r "$HH_APK_QA_AGE_RECIPIENT"'))
+  assert.ok(workflow.includes('rm -f "$apk" android/app/build/outputs/apk/release/app-release.apk'))
+  const apkSection=workflow.split('      - name: Retain ENCRYPTED website APK for owner QA (NOT public)')[1]
+    ?.split('      - name: Retain ENCRYPTED optional AAB')[0]
+  const aabSection=workflow.split('      - name: Retain ENCRYPTED optional AAB for manual Play review')[1]
+    ?.split('      - name: Remove ephemeral signing key')[0]
+  assert.ok(apkSection&&aabSection)
+  assert.ok(apkSection.includes('Holistic-House-Android-v*.apk.age'))
+  assert.ok(aabSection.includes('Holistic-House-Android-v*.aab.age'))
+  assert.ok(!apkSection.split('\n').some(x=>x.trim()==='Holistic-House-Android-v*.apk'))
+  assert.ok(!aabSection.split('\n').some(x=>x.trim()==='android/app/build/outputs/bundle/release/app-release.aab'))
+  assert.ok(readSource('docs/releases/HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md').includes('age --decrypt'))
 })
