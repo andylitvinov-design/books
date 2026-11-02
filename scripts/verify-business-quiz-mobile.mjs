@@ -1,144 +1,245 @@
-// Browser acceptance for the ACTUAL /explore/business direction journey.
-// The old photo-quiz/finder is no longer mounted on this route. Verify the
-// existing topic/intention chooser and links to the existing consented form,
-// rather than forcing a second business finder or a duplicate CRM funnel.
-// Only isolated loopback GET/navigation; no lead, messenger or payment POST.
-import assert from 'node:assert/strict'
-import { createRequire } from 'node:module'
-import { mkdir } from 'node:fs/promises'
+// Public Business direction acceptance against the CURRENT route and consented service flow.
+// Real Chromium/WebKit EN/RU/ES at 320-430px. Read-only: no customer/CRM POST or checkout.
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { mkdir } from "node:fs/promises";
 
-const require = createRequire(import.meta.url)
-const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
-const origin = process.env.HH_PUBLIC_QA_ORIGIN || 'http://127.0.0.1:3100'
-if (!/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(origin)) {
-  throw new Error('Business browser QA only on isolated loopback server')
-}
-const dir = 'artifacts/business-quiz-mobile'
-await mkdir(dir, { recursive: true })
+const require = createRequire(import.meta.url);
+const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
+if (!/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(origin))
+  throw new Error("Business mobile browser QA requires an isolated loopback server");
+const output = "artifacts/business-quiz-mobile";
+await mkdir(output, { recursive: true });
+const wishes = {
+  en: "I need a consultation about money",
+  ru: "Хочу консультацию про деньги",
+  es: "Quiero una consulta sobre dinero",
+};
+const results = [];
 
-async function assertNoOverflow(page, label) {
-  const bounds = await page.evaluate(() => ({
-    viewport: window.innerWidth,
-    content: document.documentElement.scrollWidth,
-  }))
-  assert.ok(bounds.content <= bounds.viewport + 1, label + ': horizontal overflow ' + JSON.stringify(bounds))
-}
-
-async function verify(browserType, locale, width) {
-  const browser = await browserType.launch()
-  const page = await browser.newPage({
-    viewport: { width, height: 844 },
-    deviceScaleFactor: 1, hasTouch: width <= 430, reducedMotion: 'reduce',
-  })
-  const label = browserType.name() + ':' + locale + ':' + width
-  const pageErrors = []
-  const forbiddenRequests = []
-  page.on('pageerror', error => pageErrors.push(error.message))
-  page.on('request', request => {
-    if (request.method() === 'POST' &&
-      /\/api\/(?:service-enquiries|payments|billing)\b/.test(new URL(request.url()).pathname)) {
-      forbiddenRequests.push(request.method() + ' ' + new URL(request.url()).pathname)
-    }
-  })
-
+async function verify(engine, locale, width) {
+  const browser = await engine.launch({headless:true});
+  const label = engine.name() + ":" + locale + ":" + width;
+  const context = await browser.newContext({
+    viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,
+    reducedMotion:"reduce",serviceWorkers:"block",
+  });
+  const page = await context.newPage();
+  const pageErrors = [], externalPosts = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+  page.on("request", request => {
+    if (!["GET","HEAD"].includes(request.method())) externalPosts.push({
+      method:request.method(), path:new URL(request.url()).pathname,
+    });
+  });
+  const noOverflow = async (stage) => {
+    const size = await page.evaluate(() => ({
+      viewport:document.documentElement.clientWidth,
+      content:document.documentElement.scrollWidth,
+    }));
+    assert.ok(size.content <= size.viewport+2, label+": "+stage+" mobile overflow "+JSON.stringify(size));
+  };
   try {
-    const response = await page.goto(origin + '/' + locale + '/explore/business', {
-      waitUntil: 'networkidle', timeout: 60000,
-    })
-    assert.equal(response?.status(), 200, label + ': business route')
+    // The approved Business direction now renders DirectionOffers, not the retired
+    // TopicJourneySelector/BusinessConsultationFinder fixture.
+    const response = await page.goto(origin+"/"+locale+"/explore/business", {
+      waitUntil:"domcontentloaded",timeout:45000,
+    });
+    assert.equal(response?.status(),200,label+": actual public Business direction HTTP 200");
+    const root = page.locator('[data-direction-offers="business"]');
+    await root.waitFor({state:"visible",timeout:15000});
+    await root.locator("#hh-direction-heading").waitFor({state:"visible",timeout:10000});
+    const heroImage = root.locator("[data-direction-hero] img").first();
+    await page.waitForFunction(() => {
+      const image = document.querySelector('[data-direction-offers="business"] [data-direction-hero] img');
+      return !!image && image.complete && image.naturalWidth > 50;
+    }, null, {timeout:15000});
+    assert.equal(await heroImage.count(),1,label+": real business photo rendered");
+    await noOverflow("initial");
 
-    const direction = page.locator('[data-direction-offers="business"]')
-    await direction.waitFor({ state: 'visible', timeout: 30000 })
-    assert.equal(await direction.locator('[data-direction-hero] h1').count(), 1,
-      label + ': direction hero')
-    assert.equal(await direction.locator('[data-direction-wish-form] input[type="search"]').count(), 1,
-      label + ': one optional question input (not submitted)')
-    assert.equal(await direction.locator('[data-direction-topic-finder]').count(), 1,
-      label + ': existing topic selector')
-    const focus = direction.locator('[data-direction-filter]')
-    assert.equal(await focus.count(), 5, label + ': four business topics and all')
-    assert.equal(await direction.locator('[data-direction-action-finder] [data-direction-intent]').count(),
-      4, label + ': test, advice, course and consultation choices')
-    assert.equal(await direction.locator('[data-direction-section]').count(), 3,
-      label + ': default test, course and session groups')
-
-    const session = direction.locator('[data-offer-id="primary-session"] [data-offer-action="session"]')
-    assert.equal(await session.getAttribute('href'), '/' + locale + '/services/business-consulting',
-      label + ': paid business CTA uses existing service, not a second form')
-    assert.match(await direction.locator('[data-offer-id="primary-session"]').innerText(),
-      /€50.*€100|€50|€100/, label + ': approved session-price context')
-
-    const cards = page.locator('[data-goal-support-offers][data-goal-support-theme="business"]')
-    await cards.waitFor({ state: 'visible' })
-    assert.equal(await cards.locator('[data-goal-support-card]').count(), 3,
-      label + ': free review, constellations and coaching')
-    const free = cards.locator('[data-goal-support-action="business-review"]')
-    const paid = cards.locator('[data-goal-support-action="business-coaching"]')
-    assert.equal(await free.getAttribute('href'),
-      '/' + locale + '/services/free-situation-review?topic=business')
-    assert.equal(await paid.getAttribute('href'),
-      '/' + locale + '/services/business-consulting#business-direct-request')
-    for (const [kind, action] of [['free', free], ['paid', paid]]) {
-      const box = await action.boundingBox()
-      assert.ok(box && box.height >= 44, label + ': ' + kind + ' touch target >=44px')
+    const filters = root.locator("[data-direction-topic-finder] [data-direction-filter]");
+    assert.equal(await filters.count(),5,label+": All plus four actual business topics");
+    for (const topic of ["decisions","productivity","work-stress","money-beliefs"])
+      assert.equal(await root.locator('[data-direction-filter="'+topic+'"]').count(),1,label+": topic "+topic);
+    for (const intent of ["test","course","session","advice"])
+      assert.equal(await root.locator('[data-direction-intent="'+intent+'"]').count(),1,label+": first step "+intent);
+    assert.deepEqual(await root.locator("[data-direction-section]").evaluateAll(nodes =>
+      nodes.map(node=>node.getAttribute("data-direction-section"))),
+      ["test","course","session"],label+": genuine tests, courses and sessions");
+    for (const kind of ["test","course","session"]) {
+      assert.equal(await root.locator('[data-offer-action="'+kind+'"]').count(),2,
+        label+": two usable compact "+kind+" offers");
     }
-    await assertNoOverflow(page, label + ': initial')
+    await root.locator('[data-direction-filter="work-stress"]').click();
+    assert.equal(await root.locator('[data-direction-filter="work-stress"]').getAttribute("aria-pressed"),"true",
+      label+": focus selection reacts");
+    const sessionMore = root.locator('[data-direction-show-more="session"]');
+    await sessionMore.click();
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-direction-offers="business"]');
+      return root?.querySelector('[data-direction-show-more="session"]')
+        ?.getAttribute('aria-expanded') === 'true' &&
+        root.querySelectorAll('[data-offer-action="session"]').length === 4;
+    }, null, {timeout:10000});
+    assert.equal(await root.locator('[data-offer-action="session"]').count(),4,
+      label+": show more reveals four genuine session options");
+    // Wait for the expanded list and its toggle to settle before the next
+    // genuine user click. Under loaded WebKit the newly inserted cards can
+    // shift the control while the previous pointer action is finishing.
+    // We still require one real click to collapse, not a forced state write.
+    await sessionMore.scrollIntoViewIfNeeded();
+    await sessionMore.evaluate(async node => {
+      let last = null, stable = 0;
+      for (let frame=0; frame<60; frame++) {
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        if (!node.isConnected) throw new Error("BUSINESS_SESSION_TOGGLE_REMOUNTED");
+        const rect=node.getBoundingClientRect();
+        const position=[rect.x,rect.y,rect.width,rect.height];
+        stable=last&&position.every((v,i)=>Math.abs(v-last[i])<1)?stable+1:0;
+        if (stable>=4) return;
+        last=position;
+      }
+      throw new Error("BUSINESS_SESSION_TOGGLE_UNSTABLE");
+    });
+    assert.equal(await sessionMore.getAttribute("aria-expanded"),"true",
+      label+": expanded toggle committed before the collapse click");
+    await sessionMore.click();
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-direction-offers="business"]');
+      return root?.querySelector('[data-direction-show-more="session"]')
+        ?.getAttribute('aria-expanded') === 'false' &&
+        root.querySelectorAll('[data-offer-action="session"]').length === 2;
+    }, null, {timeout:10000});
+    assert.equal(await root.locator('[data-offer-action="session"]').count(),2,
+      label+": collapse restores compact session choices");
+    await root.locator('[data-direction-filter="all"]').click();
 
-    // Actual React interactions, with no synthetic submitted enquiry.
-    await direction.locator('[data-direction-intent="session"]').click()
-    await direction.locator('[data-direction-section="session"]').waitFor({ state: 'visible' })
-    assert.equal(await direction.locator('[data-direction-section]').count(), 1,
-      label + ': selecting consultation removes unrelated results')
-    assert.equal(await direction.locator('[data-direction-intent="session"]').getAttribute('aria-pressed'),
-      'true')
-    await direction.locator('[data-direction-filter="decisions"]').click()
-    assert.equal(await direction.locator('[data-direction-filter="decisions"]').getAttribute('aria-pressed'),
-      'true', label + ': chosen business topic')
-    assert.ok(await direction.locator('[data-direction-section="session"] [data-offer-action="session"]').count() >= 1)
-    await direction.locator('[data-direction-intent="session"]').click()
-    assert.equal(await direction.locator('[data-direction-section]').count(), 3,
-      label + ': reselecting consultation restores all paths')
-
-    const details = cards.locator('[data-goal-support-details="business-coaching"]')
-    await details.click()
-    assert.equal(await details.getAttribute('aria-expanded'), 'true')
-    const description = cards.locator('#goal-support-info-business-coaching')
-    await description.waitFor({ state: 'visible' })
-    assert.match(await description.innerText(), /€50/)
-    assert.match(await description.innerText(), /€100/)
-    if (browserType === webkit && locale === 'en' && width === 390) {
-      await page.screenshot({ path: dir + '/business-current-offers-webkit-390.png', fullPage: false })
+    // Text is interpreted only in browser state, never copied to URLs, analytics
+    // or CRM. The guide must offer a real paid consultation without booking it.
+    await root.locator("#hh-direction-wish").fill(wishes[locale]);
+    await root.locator("[data-direction-wish-submit]").click();
+    const guide = root.locator('[data-direction-dialogue][data-dialog-topic="money-beliefs"][data-dialog-intent="session"]');
+    await guide.waitFor({state:"visible",timeout:12000});
+    const suggested = guide.locator('[data-dialog-offer="primary-session"]');
+    await suggested.waitFor({state:"visible"});
+    assert.equal(new URL(await suggested.getAttribute("href"),origin).pathname,
+      "/"+locale+"/services/business-consulting",label+": real approved business session");
+    assert.ok(!(await suggested.getAttribute("href")).includes(encodeURIComponent(wishes[locale])),
+      label+": private wish absent from referral URL");
+    await guide.locator("[data-dialog-close]").click();
+    assert.equal(await root.locator("[data-direction-dialogue]").count(),0,label+": guide can close");
+    const sessionIntent = root.locator('[data-direction-intent="session"]');
+    // The preceding natural-language wish may already select "session".
+    // Tapping an already-pressed toggle would deselect the intended offer.
+    if (await sessionIntent.getAttribute("aria-pressed") !== "true") {
+      await sessionIntent.click();
     }
+    // Wait for a committed React state rather than a transient pre-update DOM.
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-direction-offers="business"] [data-direction-section]')]
+      .map(node => node.getAttribute("data-direction-section")).join(",") === "session",
+      null, {timeout:10000});
+    assert.equal(await sessionIntent.getAttribute("aria-pressed"), "true",
+      label + ": business session intent remains selected");
+    assert.deepEqual(await root.locator("[data-direction-section]").evaluateAll(nodes =>
+      nodes.map(node=>node.getAttribute("data-direction-section"))),["session"],
+      label+": session focus leaves one visible section");
+    const session = root.locator('[data-offer-action="session"]').first();
+    assert.equal(new URL(await session.getAttribute("href"),origin).pathname,
+      "/"+locale+"/services/business-consulting");
+    if (engine === webkit && locale === "en" && width === 390)
+      await page.screenshot({path:output+"/business-current-direction-390.png",fullPage:false});
+    await noOverflow("filtered");
+    // Keep a genuine pointer click on the actual Next Link, but do not let a
+    // fixed iPhone navigation overlay cover its initial hit target.
+    await session.scrollIntoViewIfNeeded();
+    await session.evaluate(async node => {
+      let last = null, stable = 0;
+      for (let frame = 0; frame < 45; frame++) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (!node.isConnected) throw new Error("SESSION_LINK_REMOUNTED");
+        const rect = node.getBoundingClientRect();
+        const current = [rect.x,rect.y,rect.width,rect.height];
+        stable = last && current.every((v,i)=>Math.abs(v-last[i])<1) ? stable+1 : 0;
+        if (stable >= 3) return;
+        last = current;
+      }
+      throw new Error("SESSION_LINK_UNSTABLE");
+    });
+    const paidNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting",
+      {waitUntil:"domcontentloaded",timeout:25000});
+    await session.click();
+    await paidNavigation;
+    await page.locator('[data-business-consulting] #business-hero-title').waitFor({state:"visible",timeout:15000});
+    assert.equal(await page.locator('[data-business-offer="express"]').count(),1,
+      label+": €50 express offer");
+    assert.equal(await page.locator('[data-business-offer="full"]').count(),1,
+      label+": €100 full offer");
+    assert.match(await page.locator('[data-business-offer="express"]').innerText(),/(?:€\s*50|50\s*€)/u,
+      label+": displayed €50 express price");
+    assert.match(await page.locator('[data-business-offer="full"]').innerText(),/(?:€\s*100|100\s*€)/u,
+      label+": displayed €100 full price");
 
-    // The free review and paid service both actually resolve, without a lead.
-    if (width === 390) {
-      const freePage = await page.request.get(origin + '/' + locale +
-        '/services/free-situation-review?topic=business', { timeout: 30000 })
-      assert.equal(freePage.status(), 200, label + ': free review target')
-    }
-    await paid.click()
-    await page.waitForURL(url => url.pathname === '/' + locale + '/services/business-consulting',
-      { timeout: 30000 })
-    await page.locator('[data-business-website-enquiry]').waitFor({
-      state: 'visible', timeout: 30000,
-    })
-    assert.equal(await page.locator('[data-business-offer="express"]').count(), 1,
-      label + ': existing €50/30-min choice')
-    assert.equal(await page.locator('[data-business-offer="full"]').count(), 1,
-      label + ': existing €100/60-min choice')
-    await assertNoOverflow(page, label + ': paid-service target')
-    assert.deepEqual(forbiddenRequests, [], label + ': no lead or payment request sent')
-    assert.deepEqual(pageErrors, [], label + ': no unhandled page errors')
-    return label
+    // Real first-party request form exists, but no POST is made. Consent must
+    // remain unchecked, mandatory and submission blocked before explicit opt-in.
+    const enquiry = page.locator("[data-business-website-enquiry]");
+    await enquiry.waitFor({state:"visible",timeout:15000});
+    assert.equal(await enquiry.locator('input[type="checkbox"][required]').count(),1,
+      label+": explicit contact consent");
+    assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(),false,
+      label+": no implicit consent");
+    assert.equal(await enquiry.locator('button[type="submit"]').isDisabled(),true,
+      label+": cannot submit without consent");
+    // Wait for the express deep-link navigation before testing the independent
+    // free CTA. Otherwise WebKit can deliver the previous hash navigation after
+    // the next waitForURL has been installed, producing a false failure.
+    const directNavigation=page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting" &&
+      url.hash==="#business-direct-request",{waitUntil:"domcontentloaded",timeout:15000});
+    await page.locator('[data-business-offer="express"] [data-business-direct-option="express"]').click();
+    await directNavigation;
+    assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
+      label+": actual express SKU preselected on first-party contact form");
+    await noOverflow("paid request");
+    const freeNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
+      url.searchParams.get("topic")==="business",{waitUntil:"domcontentloaded",timeout:25000});
+    await page.locator('[data-business-cta="free-hero"]').click();
+    await freeNavigation;
+    await page.locator('main[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:25000});
+    assert.deepEqual(externalPosts,[],label+": navigation never sends lead, payment or analytics POST");
+    assert.deepEqual(pageErrors,[],label+": no unhandled page errors");
+    return label;
+  } catch (error) {
+    const state = await page.locator('[data-direction-offers="business"]').evaluate(root => ({
+      expanded: root.querySelector('[data-direction-show-more="session"]')?.getAttribute('aria-expanded'),
+      offers: root.querySelectorAll('[data-offer-action="session"]').length,
+    })).catch(() => null);
+    console.error('Business quiz failure diagnostic:', JSON.stringify({
+      label, path: new URL(page.url()).pathname, query: new URL(page.url()).search,
+      session: state, freeLink: await page.locator('[data-business-cta="free-hero"]').getAttribute('href').catch(() => null),
+    }));
+    error.message = label + ': ' + error.message + '; session state=' + JSON.stringify(state);
+    throw error;
   } finally {
-    await page.close()
-    await browser.close()
+    await context.close();
+    await browser.close();
   }
 }
 
-const done = []
-for (const locale of ['en', 'ru', 'es']) {
-  for (const width of [320, 375, 390, 430]) done.push(await verify(webkit, locale, width))
-  done.push(await verify(chromium, locale, 390))
+// Before React hydrates there is no filter handler; do not expose an enabled
+// control that can silently lose a visitor's first selection.
+{
+  const browser = await webkit.launch({headless:true});
+  const context = await browser.newContext({javaScriptEnabled:false, viewport:{width:375,height:844}});
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
+    assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
+      'The server-rendered filter must wait for its real click handler');
+  } finally { await context.close(); await browser.close(); }
 }
-console.log('Business direction → existing free/paid service browser acceptance:', done.join(', '))
+
+for (const locale of ["en","ru","es"]) {
+  for (const width of [320,375,390,430]) results.push(await verify(webkit,locale,width));
+  results.push(await verify(chromium,locale,390));
+}
+console.log("Current Business direction → consent-gated €50/€100 service browser QA:",results.join(", "));

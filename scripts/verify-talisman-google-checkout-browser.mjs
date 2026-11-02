@@ -88,13 +88,12 @@ const run = async (locale, width) => {
     await page.locator('[data-support-tool="talisman"]').click();
     const viewer = page.locator("[data-support-talisman-viewer]");
     await viewer.waitFor({state:"visible"});
-    // The full catalog is mounted only after the visitor opens it. Verify the
-    // actual read rather than assuming lazy data was fetched on first render.
+    // Published catalog ratings load only after the full catalog opens.
     const ratingsRequest = page.waitForRequest(req => {
       const url = new URL(req.url());
       return req.method() === "GET" && url.origin === origin &&
         url.pathname === "/api/catalog/ratings" && url.searchParams.get("kind") === "talisman";
-    }, {timeout:20000});
+    }, {timeout:15000});
     await viewer.locator('button[aria-controls="support-talisman-full-catalog"]').click();
     await ratingsRequest;
     await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();

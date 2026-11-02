@@ -127,7 +127,10 @@ for (const engine of [chromium, webkit]) {
             const el=document.querySelector('[data-support-video="'+videoId+'"]');
             return el?.getAttribute("aria-pressed")==="true";
           },id,{timeout:12000});
-          assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
+          // The reordered gallery can change which card is ".last()" after React commits.
+          // Assert against the exact verified video ID instead of a moving locator.
+          const committedThumb=gallery.locator('[data-support-video="'+id+'"]');
+          assert.equal(await committedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
           assert.equal(await root.locator("[data-support-video-source] a[href^='https://www.youtube.com/watch']").count(),
