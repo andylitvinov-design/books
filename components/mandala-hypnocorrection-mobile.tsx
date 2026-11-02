@@ -225,11 +225,7 @@ export function MandalaHypnocorrectionMobile({
           <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
             active={briefFrame} onToggle={()=>{toggleVisibility("frame");showNote("frame");}}
             onConfigure={()=>showNote("frame")} disabled={disabled} settings={t.settings}/>
-          <Feature icon={<Repeat2/>} title={t.repeat} help={t.repeatHelp}
-            active={false} unavailable onToggle={()=>showNote("audio")}
-            onConfigure={()=>showNote("audio")} disabled={disabled} settings={t.settings}/>
           {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
-          {note==="audio"?<p role="status" className={styles.note}>{t.pending}</p>:null}
         </>:null}
         {group.id==="audio"?<>
           <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
