@@ -73,7 +73,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           onClick={() => setSettingsOpen(open => !open)}>
           <Settings2 size={24} aria-hidden="true" /><span>{t.settings}</span>
         </button>
-        <Link href={chatOpen ? "#video-quick-heading" : "#video-director-chat"} prefetch={false}
+        <Link href={inMyTube ? "/"+locale+"/holistic-support/mandala#video-director-chat" : chatOpen ? "#video-quick-heading" : "#video-director-chat"} prefetch={false}
           onClick={() => setSettingsOpen(false)} data-support-video-ai
           aria-current={chatOpen ? "page" : undefined}
           aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>

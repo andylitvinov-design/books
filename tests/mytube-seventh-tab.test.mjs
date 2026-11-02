@@ -10,6 +10,7 @@ test("Support and Video Studio preserve AI as tab six and add MyTube as seven",(
   const s=read(path);
   assert.match(s,/data-support-video-ai/);assert.match(s,/data-support-mytube/);
   assert.ok(s.lastIndexOf("data-support-mytube")>s.lastIndexOf("data-support-video-ai"));
+  if(path.includes("mandala-dock"))assert.match(s,/inMyTube \? "\/"\+locale\+"\/holistic-support\/mandala#video-director-chat"/);
  }
  assert.match(read("components/holistic-support-mobile.module.css"),/repeat\(7,/);
  assert.match(read("components/mobile-bottom-navigation.tsx"),/mobile\|mandala\|mytube/);
