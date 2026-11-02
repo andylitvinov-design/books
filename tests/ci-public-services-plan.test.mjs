@@ -1411,11 +1411,12 @@ test('new LIVE evidence endpoint routes only audited immutable blobs to focused 
   const safe=new Set(approved.map(x=>x[0]));
   safe.add('.github/workflows/hh-app-r1.yml');
   safe.add('.github/workflows/hh-app-browser.yml');
-  const plan=planPublicServicesChangedPaths([...safe],{coreOwned:new Set(approved.map(x=>x[0]))});
+  const coreOwned=new Set([...approved.map(x=>x[0]),'.github/workflows/hh-app-r1.yml']);
+  const plan=planPublicServicesChangedPaths([...safe],{coreOwned});
   assert.equal(plan.mode,'contracts');
   assert.equal(plan.build,false);
   assert.equal(plan.browser,false);
   assert.equal(plan.releaseProof,true);
   assert.equal(planPublicServicesChangedPaths([...safe,'app/api/public/unknown/route.js'],
-    {coreOwned:new Set(approved.map(x=>x[0]))}).mode,'full');
+    {coreOwned}).mode,'full');
 });
