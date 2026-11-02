@@ -441,10 +441,10 @@ test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
  assert.equal(result.status,'already_finalized');
  assert.equal(f.log.comments,0);
 });
-test('workflow guarantees a finalizer after all three stages with explicit results',()=>{
+test('workflow guarantees a finalizer after code verification and publishing',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/  finalize:\n/);
- assert.match(wf,/needs: \[claim,fix,publish\]/);
+ assert.match(wf,/needs: \[claim,fix,code_fix,code_verify,publish\]/);
  assert.match(wf,/always\(\)/);
  assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
  assert.match(wf,/claim_status/);
@@ -596,7 +596,7 @@ test('empty ESLint candidate skips privileged publisher and finalizer routes to 
    claimResult:'success',fixResult:'success',publishResult:'skipped',
    candidateStatus:'manual_required',candidateDetail:'ESLINT_SCOPE_NOT_CONFIGURED'});
  assert.equal(outcome.state,'MANUAL');
- assert.equal(outcome.reason_code,'NO_VERIFIED_SOURCE_CHANGE');
+ assert.equal(outcome.reason_code,'CODEX_API_KEY_NOT_CONFIGURED');
  assert.equal(outcome.detail_code,'ESLINT_SCOPE_NOT_CONFIGURED');
  assert.equal(outcome.source_published,false);
  assert.equal(outcome.new_sha,null);
@@ -611,4 +611,78 @@ test('Repair no-op never launches privileged publish and retains exact-HEAD diag
  assert.match(workflow,/candidate_detail/);
  assert.match(workflow,/--print-config/);
  assert.match(workflow,/ESLINT_SCOPE_NOT_CONFIGURED/);
+});
+
+test('trusted code repair scope rejects unauthorized paths, duplicates and stale SHA',()=>{
+ const {sourceScope,validateCandidate,makePrompt}=
+   require('../scripts/ci-pr-repair-code-candidate.cjs');
+ const scope=sourceScope({REPAIR_SHA:sha,
+   REPAIR_FILES_JSON:JSON.stringify(['components/a.tsx','lib/b.js'])});
+ assert.deepEqual(scope.files,['components/a.tsx','lib/b.js']);
+ for(const files of [['.github/workflows/a.yml'],['lib/../../x.js'],
+   ['lib/a.js','lib/a.js'],Array.from({length:9},(_,i)=>'lib/a'+i+'.js')])
+   assert.throws(()=>sourceScope({REPAIR_SHA:sha,REPAIR_FILES_JSON:JSON.stringify(files)}));
+ assert.throws(()=>sourceScope({REPAIR_SHA:'stale',REPAIR_FILES_JSON:'["lib/a.js"]'}));
+ const good={head_sha:sha,repair_kind:'codex',
+   files:[{path:'components/a.tsx',original_sha:sha,base64:'ZXhwb3J0IHt9Owo='}]};
+ assert.equal(validateCandidate(good,scope).length,1);
+ assert.throws(()=>validateCandidate({...good,head_sha:newSha},scope));
+ assert.throws(()=>validateCandidate({...good,
+   files:[{...good.files[0],path:'.github/workflows/attack.yml'}]},scope));
+ assert.throws(()=>validateCandidate({...good,
+   files:[good.files[0],good.files[0]]},scope));
+ const prompt=makePrompt(scope);
+ assert.match(prompt,/Only the separately isolated verifier\/publisher/);
+ assert.match(prompt,/components\/a.tsx/);
+ assert.match(prompt,/Do not run git commit, git push/);
+});
+test('Codex source repair is isolated and independently verified before privileged publishing',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/  code_fix:\n/);
+ assert.match(wf,/  code_verify:\n/);
+ assert.match(wf,/uses: openai\/codex-action@v1/);
+ assert.match(wf,/permission-profile: ':workspace'/);
+ assert.match(wf,/safety-strategy: drop-sudo/);
+ assert.match(wf,/allow-bots: true/);
+ assert.match(wf,/code_available: \$\{\{ steps\.select\.outputs\.code_available \}\}/);
+ assert.match(wf,/HH_HAS_CODEX_TOKEN: \$\{\{ secrets\.OPENAI_API_KEY != '' \}\}/);
+ assert.match(wf,/needs\.code_verify\.outputs\.candidate_status == 'ready'/);
+ assert.match(wf,/name: hh-code-repair-verified/);
+ assert.match(wf,/HH_CODE_VERIFY_RESULT/);
+ assert.match(wf,/candidate-raw\.json/);
+ const publisher=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.doesNotMatch(wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0],
+   /HH_AUTOMERGE_TOKEN/);
+ assert.match(publisher,/HH_AUTOMERGE_TOKEN/);
+});
+test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
+   state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
+ for(const variant of [
+  {codeAvailable:true,codeResult:'failure',expected:'CODEX_JOB_FAILED_NO_SOURCE_COMMIT'},
+  {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
+    codeVerifyResult:'failure',expected:'CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
+  {codeAvailable:true,codeResult:'success',codeStatus:'no_change',
+    expected:'CODEX_NO_VERIFIED_SOURCE_CHANGE'},
+  {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
+    codeVerifyResult:'success',codeVerifyStatus:'manual_required',
+    codeVerifyDetail:'CODEX_CANDIDATE_OUT_OF_SCOPE',expected:'CODEX_CANDIDATE_REJECTED'},
+  {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
+    codeVerifyResult:'success',codeVerifyStatus:'ready',
+    expected:'CODEX_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
+ ]){
+  const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
+  const {expected,...props}=variant;
+  const result=await finalize({github:f.github,core:outcomeCore,
+   context:outcomeContext,number:11,expectedSha:sha,taskKey:receiptKey,
+   claimStatus:'claimed',claimResult:'success',fixResult:'success',
+   candidateStatus:'manual_required',publishResult:'skipped',...props});
+  assert.equal(result.reason_code,expected);
+  assert.equal(result.source_published,false);
+  assert.equal(result.new_sha,null);
+  assert.notEqual(result.state,'PUBLISHED');
+  assert.equal(f.log.commit,0);
+ }
 });

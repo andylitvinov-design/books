@@ -9,6 +9,7 @@ on:
       - '.github/workflows/hh-pr-repair-worker.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
       - 'scripts/ci-pr-repair-test-scope.cjs'
+      - 'scripts/ci-pr-repair-code-candidate.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
       - 'tests/ci-pr-direction-watcher.test.cjs'
@@ -58,6 +59,7 @@ jobs:
       task_key: ${{ steps.select.outputs.task_key }}
       claim_status: ${{ steps.select.outputs.claim_status }}
       claim_reason: ${{ steps.select.outputs.claim_reason }}
+      code_available: ${{ steps.select.outputs.code_available }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -75,6 +77,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_HAS_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          HH_HAS_CODEX_TOKEN: ${{ secrets.OPENAI_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -89,6 +92,7 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
+            core.setOutput('code_available',process.env.HH_HAS_CODEX_TOKEN==='true'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
   fix:
@@ -198,9 +202,122 @@ jobs:
           path: candidate.json
           retention-days: 1
           if-no-files-found: error
-  publish:
+  code_fix:
+    # Codex never receives a GitHub write token, owner token or deployment secret.
+    # Its output is untrusted until independently checked by code_verify.
     needs: [claim,fix]
-    if: needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready'
+    if: >-
+      needs.claim.outputs.strategy == 'lint' &&
+      needs.fix.result == 'success' &&
+      needs.fix.outputs.candidate_status == 'manual_required' &&
+      needs.claim.outputs.code_available == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    outputs:
+      candidate_status: ${{ steps.capture.outputs.candidate_status }}
+      candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - name: Checkout isolated PR source without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout trusted instructions without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies without untrusted lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prepare strict allowlist and root-cause coding instructions
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs prepare
+      - name: Codex isolated source repair (never publishes)
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .hh-code-repair-task.txt
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          allow-bots: true
+      - id: capture
+        name: Capture untrusted Codex source proposal
+        if: always()
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-code-repair-proposal
+          path: candidate-raw.json
+          retention-days: 1
+          if-no-files-found: warn
+
+  code_verify:
+    # Fresh source checkout and fresh trusted verifier: Codex cannot modify
+    # this verifier or attest its own tests, and no write credentials exist.
+    needs: [claim,fix,code_fix]
+    if: >-
+      needs.code_fix.result == 'success' &&
+      needs.code_fix.outputs.candidate_status == 'proposed'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    outputs:
+      candidate_status: ${{ steps.verify_code.outputs.candidate_status }}
+      candidate_detail: ${{ steps.verify_code.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - name: Checkout original exact PR HEAD without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout independent trusted verifier without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-code-repair-proposal
+          path: hh-code-candidate
+      - id: verify_code
+        name: Validate allowlist, exact blobs, lint, TypeScript and related tests
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hh-code-repair-verified
+          path: candidate.json
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: [claim,fix,code_fix,code_verify]
+    if: >-
+      always() &&
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.strategy == 'lint' &&
+      ((needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
+       (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'))
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     outputs:
@@ -214,7 +331,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: hh-repair-candidate
+          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-verified' }}
           path: hh-candidate
       - name: Revalidate owner + SHA; publish one source commit with existing owner token
         id: publish_source
@@ -261,7 +378,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): automated scoped ESLint repair for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='codex'?'verified Codex source repair':'automated scoped ESLint repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);
@@ -296,7 +413,7 @@ jobs:
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
-    needs: [claim,fix,publish]
+    needs: [claim,fix,code_fix,code_verify,publish]
     if: >-
       always() &&
       github.repository == 'andylitvinov-design/books' &&
@@ -325,6 +442,13 @@ jobs:
           HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
           HH_CLAIM_RESULT: ${{ needs.claim.result }}
           HH_FIX_RESULT: ${{ needs.fix.result }}
+          HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CODE_RESULT: ${{ needs.code_fix.result }}
+          HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
+          HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
+          HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
+          HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
           HH_PUBLISH_RESULT: ${{ needs.publish.result }}
           HH_PUBLISH_STATUS: ${{ needs.publish.outputs.publish_status }}
           HH_PUBLISH_SHA: ${{ needs.publish.outputs.publish_sha }}
@@ -343,6 +467,13 @@ jobs:
               claimReason:process.env.HH_CLAIM_REASON,
               claimResult:process.env.HH_CLAIM_RESULT,
               fixResult:process.env.HH_FIX_RESULT,
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:process.env.HH_CODE_RESULT,
+              codeStatus:process.env.HH_CODE_STATUS,
+              codeDetail:process.env.HH_CODE_DETAIL,
+              codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
+              codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
+              codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
               publishResult:process.env.HH_PUBLISH_RESULT,
               publishStatus:process.env.HH_PUBLISH_STATUS,
               publishSha:process.env.HH_PUBLISH_SHA,
