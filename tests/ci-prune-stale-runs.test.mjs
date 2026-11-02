@@ -5,9 +5,94 @@ import { context, eligible, prune, observeCI, summarizeJobs, client, TARGET } fr
 
 const repo = 'andylitvinov-design/books';
 const ctx = { repo, target: TARGET, number: 5 };
-const OLD = 'a'.repeat(40), NEW = 'b'.repeat(40), MERGE = 'c'.repeat(40);
-const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW, repo: { full_name: repo } }, ...x });
-const run = (x = {}) => ({ id: 100, event: 'pull_request', status: 'queued', head_sha: OLD, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
+const OLD = 'a'.repeat(40), NEW = 'b'.repeat(40), MERGE = 'c'.repeat(40), BASE = 'd'.repeat(40);
+const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET, sha: BASE }, head: { ref: 'feat/one', sha: NEW, repo: { full_name: repo } }, ...x });
+const run = (x = {}) => ({ id: 100, path: '.github/workflows/hh-pr-core-release.yml', event: 'pull_request', status: 'queued', head_sha: OLD, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
+
+test('force-cancel only after a normal cancellation remains queued and stale evidence is rechecked', async () => {
+  const actions = [];
+  let finished = false;
+  const api = {
+    list: async () => ({workflow_runs: [run()]}), pr: async () => pr(),
+    run: async () => finished ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead', ahead_by:1}),
+    workflowBlob: async () => ({type:'file',sha:BASE}),
+    jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async id => actions.push(['cancel', id]),
+    forceCancel: async id => { actions.push(['force', id]); finished = true; },
+  };
+  const result = await prune(api,ctx,{sleep:async()=>{}, settleMs:0});
+  assert.deepEqual(actions,[['cancel',100],['force',100]]);
+  assert.deepEqual(result.forced,[100]);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('normal cancellation completing during the wait does not force-cancel', async () => {
+  let cancelled = false, forced = 0;
+  const api = { list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => cancelled ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead',ahead_by:1}), workflowBlob: async () => ({type:'file',sha:BASE}), jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async () => {cancelled = true;}, forceCancel: async () => {forced++;} };
+  const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+  assert.equal(forced,0);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('other workflows do not incur the Core force-cancel wait', async () => {
+  let slept = 0;
+  const other = run({path:'.github/workflows/other.yml'});
+  const api = {list: async () => ({workflow_runs:[other]}), pr: async () => pr(),
+    run: async () => other, compare: async () => ({status:'ahead',ahead_by:1}),
+    cancel: async () => {}, forceCancel: async () => {throw Error('must not force other workflows');}};
+  const result = await prune(api,ctx,{sleep:async()=>{slept++;},settleMs:0});
+  assert.equal(slept,0);
+  assert.deepEqual(result.forced,[]);
+});
+
+test('dry-run never sleeps or invokes either cancellation endpoint', async () => {
+  const api = {list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => run(), compare: async () => ({status:'ahead',ahead_by:1}),
+    cancel: async () => {throw Error('unexpected cancel');},
+    forceCancel: async () => {throw Error('unexpected force');}};
+  const result = await prune(api,ctx,{dryRun:true,sleep:async()=>{throw Error('unexpected sleep');}});
+  assert.deepEqual(result.dryRun,[100]);
+  assert.deepEqual(result.cancelled,[]);
+  assert.deepEqual(result.forced,[]);
+});
+
+test('a competing cancellation completing before force does not produce a false error', async () => {
+  let finished = false;
+  const api = { list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => finished ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead',ahead_by:1}), workflowBlob: async () => ({type:'file',sha:BASE}), jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async () => {}, forceCancel: async () => {finished=true; throw Error('HTTP 409');} };
+  const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('never force a started, current or unverifiable run after cancellation', async () => {
+  for (const mode of ['started','current','compare-error','running-job','incomplete-jobs','unknown-job','other-workflow','changed-workflow','missing-base','base-moved','blob-error']) {
+    let afterCancel = false, forced = 0, afterReads = 0;
+    const api = {
+      list: async () => ({workflow_runs: [run(mode === 'other-workflow' ? {path:'.github/workflows/other.yml'} : {})]}),
+      pr: async () => afterCancel && mode === 'current' ? pr({head:{...pr().head,sha:OLD}}) :
+        afterCancel && mode === 'missing-base' ? pr({base:{ref:TARGET}}) :
+        afterCancel && mode === 'base-moved' && ++afterReads > 1 ? pr({base:{ref:TARGET,sha:MERGE}}) : pr(),
+      run: async () => afterCancel && mode === 'started' ? run({status:'in_progress'}) : run(mode === 'other-workflow' ? {path:'.github/workflows/other.yml'} : {}),
+      compare: async () => { if (afterCancel && mode === 'compare-error') throw Error('unavailable'); return {status:'ahead',ahead_by:1}; },
+      workflowBlob: async ref => { if (mode === 'blob-error') throw Error('unavailable'); return {type:'file',sha:mode === 'changed-workflow' && ref === OLD ? NEW : BASE}; },
+      jobs: async () => mode === 'running-job' ? ({total_count:1,jobs:[{name:'release-ready',status:'in_progress'}]}) :
+        mode === 'incomplete-jobs' ? ({total_count:2,jobs:[{name:'release-ready',status:'queued'}]}) :
+        ({total_count:1,jobs:[{name:mode === 'unknown-job' ? 'unknown-cleanup' : 'release-ready',status:'queued'}]}),
+      cancel: async () => {afterCancel = true;},
+      forceCancel: async () => {forced++;},
+    };
+    const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+    assert.equal(forced,0,mode);
+    assert.deepEqual(result.forced,[],mode);
+  }
+});
 
 test('a live-updated PR association is pruned only with proven old run ancestry', async () => {
   const linkedCurrent = [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }];
@@ -78,10 +163,12 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   const calls = [];
   const http = async (url, options) => { calls.push([url, options.method]); return { ok: true, json: async () => ({ workflow_runs: [] }) }; };
   const api = client(repo, 'fake', http);
-  await api.list(1, 'feat/one'); await api.pr(5); await api.run(100); await api.cancel(100); await api.compare(OLD, NEW);
+  await api.list(1, 'feat/one'); await api.pr(5); await api.run(100); await api.cancel(100); await api.compare(OLD, NEW); await api.forceCancel(100); await api.workflowBlob(OLD);
   assert.match(calls[0][0], /status=queued/); assert.match(calls[0][0], /branch=feat%2Fone/);
   assert.match(calls[3][0], /\/actions\/runs\/100\/cancel/); assert.equal(calls[3][1], 'POST');
   assert.ok(calls[4][0].endsWith('/compare/' + OLD + '...' + NEW)); assert.equal(calls[4][1], 'GET');
+  assert.match(calls[5][0], /\/actions\/runs\/100\/force-cancel/); assert.equal(calls[5][1], 'POST');
+  assert.ok(calls[6][0].includes('/contents/.github/workflows/hh-pr-core-release.yml?ref=' + OLD)); assert.equal(calls[6][1], 'GET');
 });
 
 test('elevated GitHub token only used for trusted production checkout, not PR HEAD', () => {
