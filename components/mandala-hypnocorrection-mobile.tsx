@@ -288,7 +288,7 @@ export function MandalaHypnocorrectionMobile({
                 disabled={disabled} onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
             </label>
           </div>:null}
-          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.meditation}
+          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.visual}
             active={false} onConfigure={onOpenScenes} disabled={disabled} settings={t.settings}/>
           <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp} poster={posters.audio}
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
