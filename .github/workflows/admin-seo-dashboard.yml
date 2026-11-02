@@ -17,24 +17,6 @@ on:
       - 'tests/acquisition-report.test.mjs'
       - 'scripts/verify-acquisition-admin.mjs'
       - '.github/workflows/admin-seo-dashboard.yml'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'app/admin/seo/**'
-      - 'lib/seo/admin-dashboard-data.mjs'
-      - 'data/seo/verified-baseline-2026-10-17.json'
-      - 'components/practitioner-cabinet.jsx'
-      - 'components/prescription-admin-header.jsx'
-      - 'tests/admin-seo-dashboard.test.mjs'
-      - 'tests/admin-seo-recommendations.test.mjs'
-      - 'lib/seo/actionable-recommendations.mjs'
-      - 'components/admin-seo-recommendations.jsx'
-      - 'app/admin/acquisition/**'
-      - 'lib/acquisition/**'
-      - 'components/admin-acquisition-links.jsx'
-      - 'tests/acquisition-report.test.mjs'
-      - 'scripts/verify-acquisition-admin.mjs'
-      - '.github/workflows/admin-seo-dashboard.yml'
 permissions:
   contents: read
 concurrency:

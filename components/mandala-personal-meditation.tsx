@@ -30,6 +30,8 @@ type Props = {
   focus:GuidedMeditationFocus;disabled:boolean;
   /** Optional standalone entry: one meditation + eight-day outline, without a purchase. */
   coursePreview?:boolean;
+  /** A locally composed user-approved course script. Never sent to a provider automatically. */
+  seedScript?:string;
   onNarrationReady?:(file:File)=>Promise<boolean>;
   onNarrationInvalidated?:()=>void;
 };
@@ -151,7 +153,7 @@ const courseCopy={
 } as const;
 
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,onNarrationReady,onNarrationInvalidated
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,seedScript,onNarrationReady,onNarrationInvalidated
 }:Props) {
   const t=copy[locale];
   const course=courseCopy[locale];
@@ -179,6 +181,7 @@ export function MandalaPersonalMeditation({
   const ambientRef=useRef<HTMLAudioElement>(null);
   const [extra,setExtra]=useState("");
   const [script,setScript]=useState("");
+  const seededScriptRef=useRef("");
   const [variantIndex,setVariantIndex]=useState(0);
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
@@ -186,6 +189,21 @@ export function MandalaPersonalMeditation({
   const signature=JSON.stringify([locale,theme,meditationTheme,effectiveWish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
     focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra,technique,attention,depth,ending,moment]);
   const stale=Boolean(script&&generatedFor!==signature);
+  useEffect(()=>{
+    if(!seedScript){
+      const previousSeed=seededScriptRef.current;
+      if(previousSeed){
+        seededScriptRef.current="";
+        setScript(current=>current===previousSeed?"":current);
+        setGeneratedFor("");
+      }
+      return;
+    }
+    if(seededScriptRef.current===seedScript)return;
+    seededScriptRef.current=seedScript;
+    setScript(seedScript);setGeneratedFor(signature);setNotice("");
+    setCourseDays([]);setCourseFocus(null);
+  },[seedScript,signature]);
   const chosenVoice=voices.find(item=>item.name===voiceName)||voices[0];
   const estimatedSeconds=script?meditationNarrationEstimate(script,rate):0;
   useEffect(()=>{

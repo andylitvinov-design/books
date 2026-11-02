@@ -97,7 +97,10 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
   assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
     "reuse the approved single phrase editor");
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/setCatalogPhraseDraft\(phrase\)/);
+  assert.match(studio,/externalPhraseDraft=\{catalogPhraseDraft\}/);
+  assert.doesNotMatch(studio,/setAffirmations\(current=>\(\{\.\.\.current,enabled:true,selected:\[\],\s*custom:phrase/,
+    "selecting catalog phrases must not update video before Approve");
 });
 
 test("closed phrase catalog does not ship 69k possible variations into the initial Video workspace",()=>{

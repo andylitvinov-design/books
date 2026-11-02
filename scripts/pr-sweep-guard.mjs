@@ -307,7 +307,13 @@ if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
       } catch (error) {
         if (!String(error?.message || '').startsWith('GitHub HTTP 404:')) throw error;
       }
-      const coreRequired = requiredCoreChecks({baseHasCore, paths});
+      // Read GitHub's effective classic protection instead of assuming the
+      // old release-ready context still exists after the admin migration.
+      const protectedBranch=await api('/branches/codex/public-book-library');
+      const requiredContexts=protectedBranch?.protection?.required_status_checks?.contexts;
+      if (!protectedBranch?.protected || !Array.isArray(requiredContexts))
+        throw new Error('CORE_GATE_PROTECTION_UNKNOWN');
+      const coreRequired = requiredCoreChecks({baseHasCore, paths, requiredContexts});
       const statuses = commitStatuses.statuses || [];
       const status = analyzeCI({pr,checks,statuses,workflowRuns,paths,required:coreRequired});
       const key = evidenceKey({pr,checks,statuses,workflowRuns,paths});
