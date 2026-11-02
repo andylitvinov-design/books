@@ -104,8 +104,12 @@ try{
  await rail.waitFor({state:"visible",timeout:30000});
  assert.equal(await rail.locator("button").count(),5);
  await rail.locator('[data-hh-ai-quick-action="video"]').click();
- await page.locator("[data-hh-agent-preview] textarea").waitFor({state:"visible"});
- assert.ok((await page.locator("[data-hh-agent-preview] textarea").inputValue()).length>10);
+ const agentComposer=page.locator("[data-hh-agent-preview] textarea");
+ await agentComposer.waitFor({state:"visible"});
+ await page.waitForFunction(()=>{
+   const field=document.querySelector("[data-hh-agent-preview] textarea");
+   return field instanceof HTMLTextAreaElement && field.value.trim().length>10;
+ },null,{timeout:10000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
