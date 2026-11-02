@@ -167,31 +167,31 @@ const workspaceCopy = {
   phrases:{tab:"Фразы и гипнокоррекция",title:"Фразы и гипнокоррекция",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
   effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
-  pro:{tab:"PRO генерация",title:"PRO генерация",desc:"Персонажи, персональные сюжеты и расширенный режиссёрский бриф."},
-  editor:{tab:"Монтаж",title:"Финальный монтаж",desc:"Порядок и длительность сцен, текст, звук и экспорт."}
+  pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
+  editor:{tab:"Монтаж",title:"Быстрая генерация",desc:"Видеостиль, фото, голос и музыка — основные настройки видео."}
  },
  en:{
   video:{tab:"Video style",title:"Video style",desc:"Real film scenes, atmosphere and visual direction."},
   phrases:{tab:"Phrases & hypnocorrection",title:"Phrases & hypnocorrection",desc:"Your intention, support phrases and optional voice or music."},
   effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
-  pro:{tab:"PRO generation",title:"PRO generation",desc:"Characters, personal scenes and detailed director settings."},
-  editor:{tab:"Montage",title:"Final montage",desc:"Scene order and timing, captions, audio and export."}
+  pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
+  editor:{tab:"Montage",title:"Quick generation",desc:"Video styles, photo, voice and music — the essential settings."}
  },
  es:{
   video:{tab:"Estilo vídeo",title:"Estilo de vídeo",desc:"Escenas reales, ambiente y estilo visual."},
   phrases:{tab:"Frases e hipnocorrección",title:"Frases e hipnocorrección",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
   effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
-  pro:{tab:"Generación PRO",title:"Generación PRO",desc:"Personajes, escenas personales y dirección avanzada."},
-  editor:{tab:"Montaje",title:"Montaje final",desc:"Orden y tiempo de las escenas, texto, sonido y exportación."}
+  pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
+  editor:{tab:"Montaje",title:"Generación rápida",desc:"Estilos de vídeo, foto, voz y música."}
  }
 } as const;
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
  {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
  {id:"effects",Icon:Sparkles},{id:"practices",Icon:Leaf},
- {id:"pro",Icon:Zap},{id:"editor",Icon:SlidersHorizontal}
+ {id:"editor",Icon:SlidersHorizontal},{id:"pro",Icon:Zap}
 ] as const;
 
 const studioCopy = {
@@ -1641,6 +1641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   // Real browser interactions are safe only after client event handlers hydrate.
   const [studioHydrated,setStudioHydrated] = useState(false);
@@ -2705,7 +2706,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopSoundPreview();
     // Ensure the original single audio dock is mounted before the user-gesture
     // play() call, including from the legacy compact first screen.
-    flushSync(()=>{if(activeWorkspace!=="phrases")setActiveWorkspace("video");setSamplePreviewId(choice);});
+    flushSync(()=>{if(activeWorkspace!=="phrases"){setActiveWorkspace("editor");setBasicPanelTab("music");}setSamplePreviewId(choice);});
     const player=audioPreviewRef.current;
     if(!player){setMusicWarning(ui.soundUnavailable);return;}
     try{
@@ -3049,23 +3050,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return false;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
-      // Outside Characters the shared consent panel lives in the Video workspace.
-      if(activeWorkspace && activeWorkspace!=="pro")setActiveWorkspace("video");
-      // Reveal the single original consent control in the relocated cover panel.
-      const coverOptions=document.querySelector<HTMLDetailsElement>("[data-video-cover-options]");
-      if(coverOptions)coverOptions.open=true;
-      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-        document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"})));
+      // Reveal the one original local photo consent panel, not a duplicate.
+      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+        const coverOptions=document.querySelector<HTMLDetailsElement>("[data-video-cover-options]");
+        if(coverOptions)coverOptions.open=true;
+        document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      }));
       return false;
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
-      document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      setActiveWorkspace("editor");setBasicPanelTab("music");
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return false;
     }
     if(uploadedAudio && !audioRights){
       setNotice(ui.audioRightsHelp);
-      document.querySelector("[data-video-audio-rights]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      setActiveWorkspace("editor");setBasicPanelTab("music");
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-audio-rights]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return false;
     }
     if(!source){onPickPhoto();return false;}
@@ -3134,22 +3139,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const reveal=()=>{
       const hash=window.location.hash.slice(1);
       const destination:Record<string,StudioWorkspace>={
-        "video-audio":"video","voice-studio":"video","video-templates":"video",
+        "video-audio":"editor","voice-studio":"editor","video-templates":"video",
         "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",
         "guided-video-series":"practices","personal-meditation":"practices",
-        "cinematic-director":"pro","video-settings":"editor",
+        "cinematic-director":"pro","video-settings":"pro",
       };
       const tab=destination[hash];if(!tab)return;
       setActiveWorkspace(tab);
+      if(hash==="video-audio")setBasicPanelTab("music");
+      if(hash==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
         setShowAdvancedVideo(true);
       setStudioMode(tab==="practices"?"therapy":"pump");
       const route=window.location.pathname+window.location.search+window.location.hash;
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
         if(route!==window.location.pathname+window.location.search+window.location.hash)return;
-        if(hash==="video-audio"||hash==="voice-studio")
+        if(hash==="video-audio"&&tab==="video")
           document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
-        document.getElementById(hash==="voice-studio"?"video-audio":hash)?.scrollIntoView({
+        document.getElementById(hash)?.scrollIntoView({
           behavior:"instant" as ScrollBehavior,block:"start",
         });
       }));
@@ -3158,11 +3165,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return()=>window.removeEventListener("hashchange",reveal);
   },[]);
   const openQuickDetailed=(anchor:string)=>{
-    const tab:StudioWorkspace=anchor==="video-audio"?"video":
+    const tab:StudioWorkspace=anchor==="video-audio"||anchor==="voice-studio"?"editor":
       anchor==="video-hypnosis"?"phrases":
       anchor==="video-hypnocorrection-mobile"?"effects":
-      anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
+      anchor==="video-settings"?"pro":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
+    if(anchor==="video-audio")setBasicPanelTab("music");
+    if(anchor==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
     // Make the *single* real audio editor visible before navigating to it.
     if(anchor==="video-audio"||anchor==="voice-studio"||anchor==="video-templates")
@@ -3184,7 +3193,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const jump=()=>{
       if(!current())return;
       setLocation(false);
-      if(anchor==="video-audio")
+      if(anchor==="video-audio"&&tab==="video")
         document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
       document.getElementById(anchor)?.scrollIntoView({
         behavior:"instant" as ScrollBehavior,block:"nearest",
@@ -3706,7 +3715,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
   );
   const deepCharacterPhotoPane = (
-          <details className={videoStyles.previewCoverOptions} data-video-cover-options>
+          <details className={videoStyles.previewCoverOptions} data-video-cover-options
+            open={activeWorkspace==="editor"&&basicPanelTab==="photo"?true:undefined}>
             <summary><Camera size={18} aria-hidden="true"/>
               {approved.preview}<ChevronDown size={18} aria-hidden="true"/></summary>
         <section className={videoStyles.quickSection} data-video-quick-section="7"
@@ -4777,7 +4787,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </p>:null}
       </section>
 
-          {activeWorkspace!=="pro" ? deepCharacterPhotoPane : null}
+          {activeWorkspace==="video" ? deepCharacterPhotoPane : null}
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-tier data-workspace-section="video" data-video-quick-section="2" aria-labelledby="quick-tier-title">
@@ -4848,34 +4858,106 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
 
+        {/* Fifth Montage: basic controls reuse existing video player, upload, voices and audio. */}
+        <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
+          data-workspace-section="editor" data-video-basic-editor aria-labelledby="video-basic-heading">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="video-basic-heading"><SlidersHorizontal size={21} aria-hidden="true"/>
+              {locale==="ru"?"Основные настройки видео":locale==="es"?"Ajustes esenciales":"Essential video settings"}</h3>
+              <p>{locale==="ru"?"Выберите видеостиль, фото, голос и музыку. Цель уже определена.":
+                locale==="es"?"Elige estilo, foto, voz y música. El objetivo ya está definido.":
+                "Choose style, photo, voice and music. Your goal was set earlier."}</p>
+            </div>
+          </div>
+          <div className={videoStyles.basicTabs} role="group" aria-label={locale==="ru"?"Базовые настройки":locale==="es"?"Opciones básicas":"Basic controls"}>
+            {([{id:"style",Icon:Film},{id:"photo",Icon:Camera},
+              {id:"voice",Icon:AudioLines},{id:"music",Icon:Music2}] as const).map((item,index)=>
+              <button key={item.id} type="button" data-video-basic-tab={item.id}
+                aria-pressed={basicPanelTab===item.id} disabled={recording||preparing}
+                onClick={()=>{setBasicPanelTab(item.id);if(item.id==="voice")setVoiceStudioActivated(true);}}>
+                <item.Icon size={25} aria-hidden="true"/>
+                <span>{(locale==="ru"?["Видеостиль","Моё фото","Голос","Музыка"]:
+                  locale==="es"?["Estilo","Mi foto","Voz","Música"]:
+                  ["Video style","My photo","Voice","Music"])[index]}</span>
+              </button>)}
+          </div>
+          {basicPanelTab==="style"?<section className={videoStyles.basicStyles} data-video-basic-styles aria-label={practiceCopy.stylesTitle}>
+            <div className={videoStyles.basicStyleHeading}>
+              <h4><Film size={20} aria-hidden="true"/>{practiceCopy.stylesTitle}</h4>
+              <button type="button" onClick={()=>openQuickDetailed("video-templates")}>
+                {locale==="ru"?"Все стили":locale==="es"?"Todos los estilos":"All styles"}<ArrowRight size={17} aria-hidden="true"/>
+              </button>
+            </div>
+            <div className={[videoStyles.quickStyles,videoStyles.basicStyleRail].join(" ")} role="group" aria-label={practiceCopy.stylesTitle}>
+              {quickStylePosters.map((poster,index)=>{
+                const sceneId=quickStyleSceneIds[theme][index];
+                const art=theme==="money"?getRealMoneyFilm(sceneId as MoneySceneId).poster:
+                  getThemedRealFilm(theme,sceneId as LocalSceneId)?.poster||quickCanvasPoster(sceneId as LocalSceneId);
+                const title=theme==="money"?moneyTemplateLabels[sceneId as MoneySceneId]?.[locale]||quick.styles[index]:
+                  otherVideoScenes[theme as OtherTheme].find(scene=>scene.id===sceneId)?.label[locale]||quick.styles[index];
+                return <button key={poster} type="button" data-video-basic-style={index}
+                  aria-pressed={quickStyleIndex===index} disabled={recording||preparing}
+                  aria-label={title} onClick={()=>quickPickStyle(index)}>
+                  <span className={videoStyles.basicStylePoster}>
+                    {/* First-party MP4 scene poster; one original preview. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={art} alt="" loading="lazy"/>
+                    <span className={videoStyles.basicStylePlay}><Play size={22} fill="currentColor" aria-hidden="true"/></span>
+                    {quickStyleIndex===index?<span className={videoStyles.basicStyleCheck}><Check size={15} aria-hidden="true"/></span>:null}
+                  </span>
+                  <span className={videoStyles.basicStyleName}>{title}</span>
+                </button>;
+              })}
+            </div>
+            <p className={videoStyles.quickHint}>{locale==="ru"?"Выбранный стиль воспроизводится в общем плеере выше.":
+              locale==="es"?"El estilo se muestra en el visor de arriba.":
+              "The selected style uses the same preview above."}</p>
+          </section>:null}
+          {basicPanelTab==="photo" ? deepCharacterPhotoPane : null}
+          {basicPanelTab==="voice" ? <details open id="voice-studio"
+            className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")} data-video-voice-studio
+            onToggle={event=>{if(event.currentTarget.open)setVoiceStudioActivated(true);}}>
+            <summary><AudioLines size={18} aria-hidden="true"/>{locale==="ru"
+              ?"Озвучить текст · голоса RU/EN":locale==="es"?"Narración · voces RU/EN":
+              "Voice narration · RU/EN voices"}</summary>
+            {voiceStudioActivated ? <MandalaCloudVoiceStudio locale={locale}
+              sourceText={currentAffirmationSpeech} sourceIsPublic
+              onAudioReady={attachMeditationNarration}
+              onAudioInvalidated={()=>setAttachedAudio(current=>
+                current?.kind==="file"&&current.nonLoop?null:current)}/> : null}
+          </details> : null}
+          {basicPanelTab==="music" ? <div className={videoStyles.basicMusicPane} data-video-music-editor>
+            {deepAudioPane}
+          </div> : null}
+          <div className={videoStyles.basicFormat} data-video-basic-format>
+            <fieldset disabled={recording||preparing}><legend><Film size={17} aria-hidden="true"/>{ui.format}</legend>
+              <div className={videoStyles.basicFormatOptions}>
+                {(["landscape","portrait","square"] as Aspect[]).map((value,index)=>
+                  <button key={value} type="button" data-video-basic-format={value}
+                    aria-pressed={aspect===value} onClick={()=>changeVideoAspect(value)}>
+                    {["16:9","9:16","1:1"][index]}</button>)}
+              </div>
+            </fieldset>
+            <fieldset disabled={recording||preparing}><legend><Clock3 size={17} aria-hidden="true"/>{ui.duration}</legend>
+              <div className={videoStyles.basicFormatOptions}>
+                {([15,20,30,60] as const).map(value=>
+                  <button key={value} type="button" data-video-basic-duration={value}
+                    aria-pressed={duration===value} onClick={()=>changeVideoDuration(value)}>
+                    {value} {ui.seconds}</button>)}
+              </div>
+            </fieldset>
+          </div>
+          <button className={videoStyles.basicPreview} type="button" disabled={!source||recording||preparing}
+            onClick={openAffirmationPreview}><Play size={18} aria-hidden="true"/>
+            {locale==="ru"?"Предпросмотр видео":locale==="es"?"Vista previa":"Video preview"}
+            <ArrowRight size={17} aria-hidden="true"/>
+          </button>
+        </section>
+
         <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
+            <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{locale==="ru"?"Сюжеты и персонажи":locale==="es"?"Historias y personajes":"Stories & characters"}</h3>
           </div>
-          <p className={videoStyles.quickHint} data-video-goal-summary>
-            {wish.trim()?wish:(locale==="ru"?"Укажите цель в Auto Video Director выше.":
-              locale==="es"?"Indica tu objetivo en Auto Video Director.":
-              "Choose your goal in the Auto Video Director above.")}
-          </p>
-          <div className={videoStyles.quickPersonalActions}>
-            <button type="button" data-video-personal-affirmations disabled={recording||preparing}
-              aria-pressed={affirmations.enabled}
-              onClick={()=>setAffirmations(current=>({...current,enabled:!current.enabled,
-                selected:current.selected.length?current.selected:[0,1,2]}))}>
-              <Sparkles size={21} aria-hidden="true"/>{approved.affirmations}
-            </button>
-            <button type="button" data-video-personal-photo disabled={recording||preparing}
-              onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
-              <Camera size={21} aria-hidden="true"/>{approved.photo}
-            </button>
-            <button type="button" data-video-personal-voice onClick={()=>openQuickDetailed("video-audio")}>
-              <AudioLines size={21} aria-hidden="true"/>{approved.voice}
-            </button>
-            <button type="button" data-video-personal-music onClick={()=>openQuickDetailed("video-audio")}>
-              <Music2 size={21} aria-hidden="true"/>{approved.music}
-            </button>
-          </div>
-          {activeWorkspace==="pro" ? deepCharacterPhotoPane : null}
           <MandalaStoriesCharacters locale={locale} theme={theme}
             disabled={recording||preparing||micRecording} applied={appliedStory}
             onApply={next=>{
@@ -4910,16 +4992,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
-        <section className={videoStyles.quickSection} data-workspace-section="editor"
-          data-video-final-editor aria-label={workspaceCopy[locale].editor.title}>
+        <section className={videoStyles.quickSection} data-workspace-section="pro"
+          data-video-final-editor aria-label={locale==="ru"?"Расширенный монтаж":locale==="es"?"Montaje avanzado":"Advanced montage"}>
           <div className={videoStyles.quickSectionHeading}>
             <h3><SlidersHorizontal size={20} aria-hidden="true"/>
-              {locale==="ru"?"Редактор готового видеопроекта":locale==="es"?"Editor del vídeo":"Your film editor"}</h3>
+              {locale==="ru"?"Расширенный монтаж":locale==="es"?"Montaje avanzado":"Advanced montage"}</h3>
           </div>
-          {activeWorkspace==="editor" ? <div className={videoStyles.musicEditorPane} data-video-music-editor>
-            {deepAudioPane}
-          </div> : null}
-          {activeWorkspace==="editor" ? deepVideoPane : null}
+          {activeWorkspace==="pro" ? <details className={videoStyles.quickExtras} data-video-pro-advanced>
+            <summary><SlidersHorizontal size={18} aria-hidden="true"/>
+              {locale==="ru"?"Профессиональные настройки":locale==="es"?"Opciones avanzadas":"Advanced visual settings"}
+              <ChevronDown size={17} aria-hidden="true"/></summary>
+            {deepVideoPane}
+          </details> : null}
           <div className={videoStyles.editorTimeline} data-video-editor-timeline>
             <strong>{locale==="ru"?"Порядок и длительность сцен":locale==="es"?
               "Orden y duración de escenas":"Scene order and duration"}</strong>
@@ -4963,7 +5047,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onClick={createQuickVideo}><Film size={17}/>{ui.create}</button>
           </div>
         </section>
-        <details className={videoStyles.quickExtras} data-workspace-section="editor" data-video-quick-extras>
+        <details className={videoStyles.quickExtras} data-workspace-section="pro" data-video-quick-extras>
           <summary><strong>{approved.extra}</strong><ChevronDown size={20} aria-hidden="true"/></summary>
           <div className={videoStyles.quickExtraActions}>
             <button type="button" onClick={()=>openQuickDetailed("video-settings")}>
@@ -5046,19 +5130,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </section>
 
-
-      <details id="voice-studio" className={videoStyles.extraControls} data-video-voice-studio
-        onToggle={event=>{if(event.currentTarget.open)setVoiceStudioActivated(true);}}>
-        <summary><AudioLines size={17} aria-hidden="true"/>{locale==="ru"
-          ?"Озвучить свой текст · 6 голосов RU/EN"
-          :locale==="es"?"Crear voz desde texto · 6 voces RU/EN"
-          :"Generate voice from text · 6 RU/EN voices"}</summary>
-        {voiceStudioActivated ? <MandalaCloudVoiceStudio locale={locale}
-          sourceText={currentAffirmationSpeech} sourceIsPublic
-          onAudioReady={attachMeditationNarration}
-          onAudioInvalidated={()=>setAttachedAudio(current=>
-            current?.kind==="file"&&current.nonLoop?null:current)}/> : null}
-      </details>
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
         open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
