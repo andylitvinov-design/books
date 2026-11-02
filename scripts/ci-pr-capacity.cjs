@@ -2,7 +2,7 @@
 const CORE_WORKFLOW='HH PR core release gate';
 const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
-const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:1,maxRepairWorkerRuns:2,
+const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:2,maxRepairWorkerRuns:2,
  maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))

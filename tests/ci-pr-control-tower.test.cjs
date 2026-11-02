@@ -79,7 +79,9 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
   'an independent PR can use the second Repair slot');
  assert.equal(admission('repair',computeCapacity([
   {name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
- assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'}],[],[])),'ADMIT');
+ assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'},
+  {name:'HH zero-cost PR CI worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
@@ -1217,5 +1219,28 @@ test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
  assert.equal(workerBusyOrCooling([scheduled],NOW,'ci'),false);
  assert.equal(workerBusyOrCooling([scheduled],NOW,'repair'),true);
  const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
- assert.equal(admission('ci',addressed),'WORKER_BUSY');
+ assert.equal(admission('ci',addressed),'ADMIT');
+ const fullCi=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'},
+  {name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'queued'}],[],[]);
+ assert.equal(admission('ci',fullCi),'WORKER_BUSY');
+});
+
+
+test('CI Worker can dispatch two independent PRs without a global cooldown',async()=>{
+ const f=fixture([pr(41,'ci'),pr(42,'ci'),pr(43,'ci')],
+  {recent:[{event:'workflow_dispatch',status:'in_progress'}]});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,2);
+ assert.equal(f.calls.dispatched.length,2);
+ assert.equal(new Set(f.calls.dispatched.map(d=>d.inputs.pr_number)).size,2);
+ assert.ok(f.calls.dispatched.every(d=>d.workflow_id==='hh-pr-ci-worker.yml'));
+ assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
+});
+test('shared source branch cannot receive two different PR writer leases',async()=>{
+ const one=pr(41),two=pr(42);
+ two.head={ref:one.head.ref,sha:one.head.sha,repo:{full_name:'andylitvinov-design/books'}};
+ const f=fixture([one,two],{comments:{41:[proof()],42:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.blocked.SHARED_HEAD_BRANCH,2);
 });
