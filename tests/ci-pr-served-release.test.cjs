@@ -18,7 +18,8 @@ function fixtures({replace={},ancestry='ahead',statusState='success',siteStatus=
  const read=[];
  const api={rest:{repos:{
   getBranch:async()=>({data:{protected:true,commit:{sha:head}}}),
-  getCombinedStatusForRef:async()=>({data:{total_count:1,statuses:[{...status,state:statusState}]}}),
+  getCombinedStatusForRef:async({ref})=>({data:{total_count:ref===sha?1:0,
+   statuses:ref===sha?[{...status,state:statusState}]:[]}}),
   compareCommits:async({base})=>({data:{status:ancestry,merge_base_commit:{sha:base}}})
  },pulls:{list:async()=>({data:[]})},
  actions:{listWorkflowRuns:async()=>({data:{total_count:0,workflow_runs:[]}})}}};
@@ -75,4 +76,93 @@ test('served revision counts only the merged PR ancestry already on the site',as
  assert.equal(r.served_sha,sha);
  assert.equal(r.current_head_sha,head);
  assert.equal(r.live_coverage,'complete_served_revision');
+});
+
+function vercelApiFixture({aliasProject=proof.project_id,aliasHost='holistichouse.vercel.app',
+ deploymentSha=sha,readyState='READY',target='production',statusState='success',
+ siteStatus=200,ancestry='ahead',moving=false}={}){
+ const f=fixtures({statusState,siteStatus,ancestry});
+ let branchReads=0;
+ f.github.rest.repos.getBranch=async()=>({data:{protected:true,commit:{
+  sha:moving&&++branchReads===2?'e'.repeat(40):head}}});
+ f.github.rest.repos.getCombinedStatusForRef=async({ref})=>({data:{
+  total_count:ref===sha?1:0,statuses:ref===sha?[{...status,state:statusState}]:[]}});
+ f.github.rest.repos.compareCommits=async({base,head:tip})=>({data:{
+  status:ancestry,merge_base_commit:{sha:base}}});
+ f.fetchImpl=async(url,opts={})=>{
+  f.read.push(url);
+  if(url.includes('release-evidence'))return {status:404,
+   url:'https://holistichouse.vercel.app/api/public/release-evidence',
+   headers:{get:()=> 'application/json'}};
+  if(url.includes('/v4/aliases/'))return {status:200,json:async()=>({
+   alias:aliasHost,projectId:aliasProject,deploymentId:id})};
+  if(url.includes('/v13/deployments/'))return {status:200,json:async()=>({
+   id,projectId:proof.project_id,readyState,target,alias:['holistichouse.vercel.app'],
+   meta:{githubCommitSha:deploymentSha,githubCommitRef:proof.branch,
+    githubOrg:'andylitvinov-design',githubRepo:'books'}})};
+  if(url==='https://holistichouse.vercel.app/en')return {status:siteStatus,
+   url:'https://holistichouse.vercel.app/en',
+   headers:{get:()=> 'text/html; charset=utf-8'},
+   text:async()=> '<html><body>verified</body></html>'};
+  throw Error('Unexpected URL in read-only LIVE test: '+url);
+ };
+ return f;
+}
+test('Vercel alias API proves an older served SHA when public identity is unavailable',async()=>{
+ const f=vercelApiFixture();
+ const r=await verifyServedRevision({github:f.github,context,fetchImpl:f.fetchImpl,
+  vercelToken:'scoped-read-only-test'});
+ assert.equal(r.verified_live,true);
+ assert.equal(r.production_sha,sha);
+ assert.equal(r.deployment_id,id);
+ assert.equal(r.current_head_sha,head);
+ assert.equal(r.reason,'SERVING_VERIFIED_REVISION');
+ assert.equal(r.proof_method,'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS');
+ assert.equal(f.read.length,4);
+});
+test('Vercel API LIVE proof requires token and rejects unknown or unsafe evidence',async()=>{
+ let f=vercelApiFixture();
+ let r=await verifyServedRevision({github:f.github,context,fetchImpl:f.fetchImpl});
+ assert.equal(r.verified_live,false);
+ assert.equal(r.reason,'SERVED_PUBLIC_RUNTIME_PROOF_UNAVAILABLE');
+ assert.equal(f.read.length,1,'no unauthenticated Vercel API requests');
+ const unsafe=[
+  {aliasProject:'another-project'},
+  {aliasHost:'preview.vercel.app'},
+  {deploymentSha:'f'.repeat(40)},
+  {readyState:'BUILDING'},
+  {target:'preview'},
+  {statusState:'failure'},
+  {siteStatus:503},
+  {ancestry:'diverged'}
+ ];
+ for(const options of unsafe){
+  f=vercelApiFixture(options);
+  r=await verifyServedRevision({github:f.github,context,fetchImpl:f.fetchImpl,
+   vercelToken:'scoped-read-only-test'});
+  assert.equal(r.verified_live,false,'unexpected proof for '+JSON.stringify(options));
+ }
+});
+test('a protected HEAD may advance during proof if served SHA remains its ancestor',async()=>{
+ const f=vercelApiFixture({moving:true});
+ const r=await verifyServedRevision({github:f.github,context,fetchImpl:f.fetchImpl,
+  vercelToken:'scoped-read-only-test'});
+ assert.equal(r.verified_live,true);
+ assert.equal(r.current_head_sha,'e'.repeat(40));
+});
+test('LIVE reporting passes existing read-only Vercel token to served-revision verifier',async()=>{
+ const f=vercelApiFixture();
+ f.github.rest.pulls.list=async()=>({data:[{number:3011,
+  base:{ref:'codex/public-book-library'},merge_commit_sha:prMerge,
+  created_at:'2026-11-01T02:00:00Z',
+  merged_at:'2026-11-02T04:00:00Z',updated_at:'2026-11-02T04:00:00Z'}]});
+ f.github.rest.repos.compareCommits=async({base})=>({data:{
+  status:'ahead',merge_base_commit:{sha:base}}});
+ const r=await run({github:f.github,core:core(),context,
+  now:Date.parse('2026-11-02T05:00:00Z'),vercelToken:'scoped-read-only-test',
+  liveEvidence:{verified_live:false,reason:'EVENT_SHA_NOT_CURRENT_PRODUCTION'},
+  fetchImpl:f.fetchImpl});
+ assert.equal(r.live_confirmed_count,1);
+ assert.equal(r.live_evidence,'SERVING_VERIFIED_REVISION');
+ assert.equal(r.served_sha,sha);
 });

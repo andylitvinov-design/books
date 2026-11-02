@@ -137,7 +137,7 @@ async function confirmedAncestry(github,{owner,repo},prs,servedSha){
   historyPages,historyCommits,historyHits,historyFailed,
   capped:prs.length>ANCESTRY_LIMIT};
 }
-async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch}){
+async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch,vercelToken=''}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
   window_hours:WINDOW_HOURS,production_branch:PROD,
   merged_count:null,live_confirmed_count:null,unverified_live_count:null,
@@ -173,9 +173,9 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
  // GitHub can advance past an earlier site deployment (for example CI-only pushes).
  // Only an independently proven canonical alias / exact served SHA can count.
  if(liveEvidence.verified_live!==true &&
-    liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE'){
+    (vercelToken||liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE')){
   try{
-   const served=await verifyServedRevision({github,context,fetchImpl});
+   const served=await verifyServedRevision({github,context,fetchImpl,vercelToken});
    if(served.verified_live){actualLive=served;report.live_evidence=served.reason;}
    else report.served_evidence_reason=served.reason;
   }catch(err){report.errors.push('SERVED_PROOF_READ_'+String(err.message||'error').slice(0,75));}

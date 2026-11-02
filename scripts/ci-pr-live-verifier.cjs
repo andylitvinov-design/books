@@ -200,4 +200,4 @@ async function run({github,core,context,vercelToken='',fetchImpl=fetch,now=Date.
 }
 module.exports={REPO,DEFAULT,PROD,ALIAS,PROJECT_ID,TEAM_ID,VERCEL_URL,
  trustedContext,latestVercelStatus,evidenceDecision,publicEvidenceDecision,
- readPublicIdentity,checkPublic,run};
+ readPublicIdentity,checkedJson,checkPublic,run};
