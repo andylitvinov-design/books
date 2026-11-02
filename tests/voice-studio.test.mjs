@@ -47,7 +47,11 @@ test('sample is server-owned; ignores attempts to inject personal text',()=>{
 });
 test('invalid languages, unknown voices, additional fields and missing consent fail closed',()=>{
   assert.throws(()=>validateStudioRequest({mode:'sample',voiceId:'alien',language:'ru'}));
-  assert.throws(()=>validateStudioRequest({mode:'sample',voiceId:'mark',language:'es'}));
+  const spanishSample=validateStudioRequest({mode:'sample',voiceId:'mark',language:'es'});
+  assert.equal(spanishSample.text,VOICE_STUDIO_SAMPLE.es);
+  assert.equal(spanishSample.consent,false);
+  assert.throws(()=>validateStudioRequest({mode:'short_text',voiceId:'mark',language:'es',text:'Private',consent:true}),
+    "short-text free guest mode remains RU/EN-only");
   assert.throws(()=>validateStudioRequest({mode:'sample',voiceId:'mark',language:'en',provider:'paid'}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'Hello',consent:false}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'Hello'}));
