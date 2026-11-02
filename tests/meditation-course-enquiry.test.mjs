@@ -33,3 +33,26 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.doesNotMatch(src,/paidAccess|checkout|wallet|spendXP|Stripe|PayPal|priceAmount/);
   assert.doesNotMatch(src,/JSON.stringify\(\{[\s\S]*?wish:/);
 });
+
+test("eight-video offer opens the existing consented CRM form instead of generic therapy checkout",()=>{
+  const guided=read("components/mandala-guided-course.tsx");
+  const form=read("components/meditation-course-enquiry.tsx");
+  assert.match(guided,/MeditationCourseEnquiry[\s\S]*courseKind="video-series"/);
+  assert.match(form,/courseKind==="video-series"\?["']?\/["']?\+locale\+["']\/holistic-support\/mandala["']/);
+  for(const locale of ["ru","en","es"]){
+    const sourcePath="/"+locale+"/holistic-support/mandala";
+    const normalized=normalizePublicServiceEnquiry({
+      operationId:"d54170d8-e973-48e4-a183-5323df5b3067",
+      serviceTitle:"Personal course: 8 videos, practices and exercises",
+      description:"Please contact me to discuss an eight-session personal video and practice programme. General direction: relationships.",
+      sourcePath,locale,
+      contact:{displayName:"Synthetic Visitor",email:"visitor@example.org",phone:""},
+      contactConsent:true,
+    });
+    assert.equal(normalized.sourcePath,sourcePath);
+    assert.equal(normalized.contactConsent,true);
+    assert.equal(normalized.bookingSku,undefined,"a request is not a booking or payment");
+    assert.equal(normalized.contact.email,"visitor@example.org");
+  }
+  assert.doesNotMatch(form,/JSON.stringify\(\{[\s\S]*?(?:keyDifficulty|keyGoal|profileEvidence|testResults|meditationScript):/);
+});

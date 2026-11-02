@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
 import { ArrowRight, BookOpen, Briefcase, Check, ChevronDown, Download, Headphones, Heart, LockKeyhole, Moon, Pause, Play, RefreshCw, ShieldCheck, Sparkles, Sun, Target } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
@@ -520,7 +521,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       </div>
       <div className={css.package}>
         <h4>{t.package}</h4><p>{t.packInfo}</p>
-        <Link href={"/"+locale+"/services/imagery-therapy"} prefetch={false}>{t.request}</Link>
+        <MeditationCourseEnquiry key={journeySignature} locale={locale} focus={activeTheme} courseKind="video-series"/>
         <small className={css.enquiryNote}>{locale==="ru"?"Откроется заявка на обсуждение курса. Оплата и создание видео не запускаются.":
           locale==="es"?"Se abre una consulta sobre el curso, sin pago ni creación automática de vídeos.":
           "Opens a course enquiry, not a payment or automatic video production."}</small>

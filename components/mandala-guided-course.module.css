@@ -57,7 +57,7 @@
 .locked{margin:10px 0 0 42px;font-size:11px;color:#7a806f}
 .package{margin-top:14px;padding:15px;background:#f1f7ef;border:1px solid #cfe1ce;border-radius:15px}
 .package p{font-size:12px;color:#476854;line-height:1.5;margin:0 0 10px}
-.package a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
+.package > a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
 .safeguard{padding:11px 12px;background:#fbf4e8;border-radius:13px;font-size:12px;line-height:1.5;color:#82633e}
 .privacy{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#5a806d;font-size:11px;line-height:1.5}
 .privacy svg{flex:none;margin-top:1px;color:#218564}
@@ -205,7 +205,7 @@
 .package{position:relative;isolation:isolate;overflow:hidden;margin-top:14px;padding:20px;border:1px solid #dbe7d8;border-radius:20px;background:linear-gradient(90deg,#fffefaf7 0%,#fffefbeb 62%,#ffffff2b 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat;box-shadow:0 8px 20px #205b3613}
 .package h4{color:#163d34;font-size:clamp(18px,4.7vw,22px);max-width:420px}
 .package p{color:#385949;max-width:400px;font-size:clamp(13px,3.5vw,15px)}
-.package a{width:100%;max-width:360px;min-height:52px;background:linear-gradient(110deg,#07765b,#0ca17a);border-radius:13px;font-size:clamp(15px,4vw,18px)}
+.package > a{width:100%;max-width:360px;min-height:52px;background:linear-gradient(110deg,#07765b,#0ca17a);border-radius:13px;font-size:clamp(15px,4vw,18px)}
 @media(max-width:355px){
   .focusCard,.flowBlock{padding:12px}
   .flowTitle{gap:7px}.flowTitle>span{min-width:38px}
@@ -222,3 +222,7 @@
   .panel{max-width:100%}
 }
 .panel button:focus-visible,.panel a:focus-visible{outline:3px solid #e7b852;outline-offset:3px}
+
+/* One existing consented CRM form replaces the generic therapy link for the 8-video offer. */
+.package [data-meditation-course-order]{min-height:54px;border-radius:13px;background:linear-gradient(112deg,#08765a,#0ca17a);font-size:clamp(16px,4.1vw,19px)}
+.package .enquiryNote{display:block;margin-top:10px;color:#557060;font-size:12px;line-height:1.45}

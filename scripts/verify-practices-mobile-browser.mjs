@@ -83,6 +83,18 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         await programmeButton.click();
         assert.equal(await course.locator("[data-guided-session]").count(),8);
         assert.equal(await course.locator("[data-guided-free-video]").count(),1);
+        const order=course.locator("[data-meditation-course-order]");
+        assert.equal(await order.count(),1,"eight-session offer uses one real CRM form");
+        await order.click();
+        const form=course.locator("[data-meditation-course-contact]");
+        await form.waitFor({state:"visible"});
+        const send=form.locator("[data-meditation-course-submit]");
+        assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
+        await form.locator('input[type="email"]').fill("synthetic@example.invalid");
+        assert.equal(await send.isDisabled(),true);
+        await form.locator('input[type="checkbox"]').check();
+        assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
+        // Deliberately do not submit: no database test account, lead or external delivery.
         await course.screenshot({
           path:"artifacts/practices-mobile/"+engine+"-"+locale+"-"+width+".png",
           animations:"disabled",timeout:30000

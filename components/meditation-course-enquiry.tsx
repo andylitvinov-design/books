@@ -40,8 +40,30 @@ const copy={
   }
 } as const;
 
-export function MeditationCourseEnquiry({locale,focus}:{locale:PublicLocale;focus:VideoTheme}){
-  const t=copy[locale];
+const videoCourseCopy={
+  ru:{
+    open:"Заказать курс",service:"Персональный курс: 8 видео, практик и упражнений",
+    description:"Прошу связаться со мной для согласования персональной программы из 8 видео и практик. Общая тема: ",
+    note:"Отправляются только общее направление и контакт для ответа. Медитации, результаты тестов и история не передаются. Оплата и создание видео не запускаются.",
+    done:"Заявка на курс сохранена. Специалист обсудит содержание, стоимость и сроки до оплаты.",
+  },
+  en:{
+    open:"Request the course",service:"Personal course: 8 videos, practices and exercises",
+    description:"Please contact me about an eight-session video and practice course. General direction: ",
+    note:"Only a general direction and reply contact are sent. Meditation text, test results and history stay private. No payment or video generation starts.",
+    done:"Course enquiry saved. The practitioner will agree content, price and delivery before payment.",
+  },
+  es:{
+    open:"Solicitar curso",service:"Curso personal: 8 vídeos, prácticas y ejercicios",
+    description:"Quisiera consultar un curso personal de ocho vídeos y prácticas. Tema general: ",
+    note:"Solo se envían el tema general y un contacto para responder. Los textos de meditación y pruebas son privados. No se cobra ni genera ningún vídeo.",
+    done:"Solicitud guardada. Se acordarán contenidos, precio y entrega antes de cualquier pago.",
+  },
+} as const;
+
+export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{locale:PublicLocale;focus:VideoTheme;courseKind?:"meditation"|"video-series"}){
+  const t={...copy[locale],...(courseKind==="video-series"?videoCourseCopy[locale]:{})};
+  const formId="meditation-course-contact-"+courseKind;
   const [open,setOpen]=useState(false);
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
@@ -67,7 +89,7 @@ export function MeditationCourseEnquiry({locale,focus}:{locale:PublicLocale;focu
           serviceTitle:t.service,
           description:t.description+focus,
           // Only an already-public first-party service path, no user details.
-          sourcePath:"/"+locale+"/services/imagery-therapy",
+          sourcePath:courseKind==="video-series"?"/"+locale+"/holistic-support/mandala":"/"+locale+"/services/imagery-therapy",
           locale,
           contact:{displayName:name.trim(),email:email.trim(),phone:phone.trim()},
           contactConsent:true,
@@ -84,9 +106,9 @@ export function MeditationCourseEnquiry({locale,focus}:{locale:PublicLocale;focu
       {t.done}{saved?<span>{t.reference}: {saved}</span>:null}
     </p>:<>
       <button type="button" className={css.open} data-meditation-course-order
-        aria-expanded={open} aria-controls="meditation-course-contact"
+        aria-expanded={open} aria-controls={formId}
         onClick={()=>setOpen(v=>!v)}>{t.open}</button>
-      {open?<form id="meditation-course-contact" className={css.form}
+      {open?<form id={formId} className={css.form}
         data-meditation-course-contact onSubmit={event=>void submit(event)} noValidate>
         <label>{t.name}<input value={name} maxLength={120} autoComplete="name"
           onChange={event=>{setName(event.target.value);operationRef.current=null;}}/></label>
