@@ -65,9 +65,13 @@ test('approved mobile entry opens one shared AI chat from free help; mandatory r
  assert.match(qa,/EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN/);
 });
 
-test('PR validates real Chat video; live legacy form is manual diagnostic only',()=>{
+test('PR runs source contracts; both LIVE media exports are manual after merge',()=>{
   assert.match(workflow,/- name: Real LIVE four-shot montage[^\n]*\n        id: legacy_export\n        if: github\.event_name == 'workflow_dispatch'/);
-  assert.match(workflow, /if: \$\{\{ always\(\) && \(github\.event_name == 'pull_request' \|\| steps\.legacy_export\.outcome == 'success'\) \}\}/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && github\.event_name == 'workflow_dispatch' \}\}/);
+  assert.match(workflow, /name: PR scope summary .* candidate media verified in Mandala CI/);
+  assert.match(workflow, /Reuse preinstalled Google Chrome; install pinned Playwright client only\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /Verify media inspection utilities\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /node --check scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(workflow,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
   assert.match(workflow,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
