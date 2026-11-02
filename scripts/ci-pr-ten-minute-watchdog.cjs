@@ -219,6 +219,27 @@ function verifiedRedSpecialist(checks) {
   return gate?.app?.id === 15368 && gate?.status === 'completed' &&
     ['failure','timed_out','startup_failure','cancelled','action_required'].includes(gate.conclusion);
 }
+const INHERITED_CORE_CHECKS=new Set([
+  'hh-core-verified','hh-specialist','hh-specialists-verified',
+  'release-ready','classify-change','core-lint-types-build'
+]);
+// A red aggregate alone can mean skipped macOS/optional QA or a changed
+// production base, NOT a broken product. Require independent same-HEAD
+// failed GitHub Actions evidence before sending work to Product Repair.
+function classifyIndependentSpecialistChecks(checks) {
+  if(!checks || !Number.isSafeInteger(checks.total_count) ||
+     checks.total_count<1 || checks.total_count>100 ||
+     !Array.isArray(checks.check_runs) ||
+     checks.check_runs.length!==checks.total_count) return 'UNKNOWN';
+  const latest=latestByName(checks.check_runs);
+  if([...latest.values()].some(check=>check.status!=='completed'))
+    return 'UNKNOWN';
+  if([...latest.values()].some(check=>
+      check.conclusion==='failure' && check.app?.id===15368 &&
+      !INHERITED_CORE_CHECKS.has(check.name)))
+    return 'PRODUCT_FAILURE';
+  return 'POLICY_OR_SKIPPED';
+}
 function needsFailedCoreCronBackstop(state) {
   // Do not multiply 16-PR scans across every failing Core CI when cron works.
   return state === 'STALE' || state === 'UNOBSERVED';
@@ -551,7 +572,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
-    staleGateReclassified:0,wouldReclassifyStaleGate:0,coreFailureUnverified:0,
+    specialistPolicyHolds:0,specialistEvidenceUnverified:0,
+    staleGateReclassified:0,wouldReclassifyStaleGate:0,
+    policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
@@ -560,6 +583,69 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),failedCoreCronState,cronBackstop,
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
+
+  // Reconcile only labels, never substitute evidence or alter protected CI.
+  // The exact-HEAD release gates remain red until the real cause is fixed.
+  const routeVerifiedSpecialist=async live=>{
+    let complete;
+    try{
+      complete=(await limited('same-head-independent-checks',()=>
+        github.rest.checks.listForRef({owner,repo,ref:live.head.sha,
+          per_page:100,filter:'latest'}))).data;
+    }catch(error){
+      summary.specialistEvidenceUnverified++;
+      log('#'+live.number+' independent specialist evidence unavailable: '+error.message);
+      return 'UNKNOWN';
+    }
+    const decision=classifyIndependentSpecialistChecks(complete);
+    if(decision==='UNKNOWN'){
+      summary.specialistEvidenceUnverified++;
+      log('#'+live.number+' specialist root not yet complete; no label mutation');
+      return decision;
+    }
+    const product=decision==='PRODUCT_FAILURE';
+    const to=product?SPECIALIST_LABEL:RELEASE_GATE_LABEL;
+    const from=product?RELEASE_GATE_LABEL:SPECIALIST_LABEL;
+    if(product)summary.specialistFailures++;
+    else {summary.specialistPolicyHolds++;summary.releaseGateOnly++;}
+    const max=product?MAX_RELEASE_GATE_LABELS:MAX_RELEASE_GATE_LABELS;
+    const count=product?summary.specialistQueued:summary.releaseGateQueued;
+    if(!hasLabel(live,to)&&count>=max)return decision;
+    const newly=await ensureQueueLabel(github,owner,repo,live,to,
+      product?'Verified independent exact-HEAD specialist failure: fix actual source/browser QA':
+      'Specialist aggregate failed without a failed independent QA check; inspect skipped/policy/base cause',
+      product?'d93f0b':'fbca04',dryRun,limited,log);
+    if(newly){
+      if(product)summary.specialistQueued++;
+      else summary.releaseGateQueued++;
+    }
+    if(!hasLabel(live,from))return decision;
+    if(dryRun){
+      if(product)summary.wouldReclassifyStaleGate++;
+      else summary.wouldPolicyRelabel++;
+      return decision;
+    }
+    // Never remove a queue label without reading back a still-open exact HEAD
+    // and the replacement label. This is not a CI result or merge permission.
+    try {
+      const current=(await limited('specialist-relabel-live-recheck',()=>
+        github.rest.pulls.get({owner,repo,pull_number:live.number}))).data;
+      if(current?.state==='open'&&!current.draft &&
+         current.head?.sha===live.head.sha&&current.base?.ref===PROD &&
+         hasLabel(current,to)&&hasLabel(current,from)){
+        await limited('specialist-retire-stale-classification',()=>
+          github.rest.issues.removeLabel({owner,repo,
+            issue_number:live.number,name:from}));
+        if(product)summary.staleGateReclassified++;
+        else summary.policyRelabeled++;
+        log((product?'REAL_SPECIALIST_RECLASSIFIED #':
+          'SPECIALIST_POLICY_RECLASSIFIED #')+live.number+' '+live.head.sha.slice(0,12));
+      }
+    }catch(error){
+      log('#'+live.number+' old specialist label retained: '+error.message);
+    }
+    return decision;
+  };
 
   // GitHub can silently omit cron events even when a workflow is ACTIVE and
   // workflow_dispatch succeeds. This is observation only: do not affect the
@@ -683,11 +769,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // Do not create repetitive CI jobs merely to rediscover outdated HEADs.
     if (mergeState === 'BEHIND') {
       summary.behindProduction++;
-      // Historical release-ready-only labels may conceal a *real* failed
-      // specialist gate. Classify a bounded number of exact-HEAD old labels
-      // before exiting the BEHIND branch; do not sync merely to recreate CI.
-      if (hasLabel(live,RELEASE_GATE_LABEL) &&
-          staleGateTriageInspected < MAX_STALE_GATE_TRIAGE && !budget.exhausted) {
+      // Reclassify held PRs only from complete independent same-HEAD QA,
+      // including correcting earlier aggregate-only Product Repair labels.
+      if ((hasLabel(live,RELEASE_GATE_LABEL)||hasLabel(live,SPECIALIST_LABEL)) &&
+          staleGateTriageInspected<MAX_STALE_GATE_TRIAGE && !budget.exhausted) {
         staleGateTriageInspected++;
         try {
           const coreChecks=(await limited('stale-gate-core',()=>
@@ -696,33 +781,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
           const specialistChecks=(await limited('stale-gate-specialist',()=>
             github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
               check_name:'hh-specialist',per_page:100,filter:'latest'}))).data;
-          if (gateIsGreen(coreChecks) && verifiedRedSpecialist(specialistChecks)) {
-            summary.specialistFailures++;
-            const newlyLabeled=await ensureQueueLabel(github,owner,repo,live,
-              SPECIALIST_LABEL,
-              'Exact-HEAD real specialist failure: fix source/browser tests; no blind rerun',
-              'd93f0b',dryRun,limited,log);
-            if(newlyLabeled)summary.specialistQueued++;
-            if(dryRun) {
-              summary.wouldReclassifyStaleGate++;
-            } else if (newlyLabeled || hasLabel(live,SPECIALIST_LABEL)) {
-              // Verify the current HEAD and committed new label before
-              // deleting an older administrative diagnosis.
-              const current=(await limited('stale-gate-recheck',()=>
-                github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
-              if(current.state==='open' && !current.draft &&
-                 current.head?.sha===pr.head.sha && current.base?.ref===PROD &&
-                 hasLabel(current,SPECIALIST_LABEL) && hasLabel(current,RELEASE_GATE_LABEL)) {
-                await limited('retire-incorrect-legacy-label',()=>
-                  github.rest.issues.removeLabel({owner,repo,issue_number:pr.number,
-                    name:RELEASE_GATE_LABEL}));
-                summary.staleGateReclassified++;
-                log('REAL_SPECIALIST_RECLASSIFIED #'+pr.number+' '+pr.head.sha.slice(0,12));
-              }
-            }
-          }
-        } catch(error) {
-          log('#'+pr.number+' stale gate classification deferred: '+String(error.message||error).slice(0,160));
+          if(gateIsGreen(coreChecks)&&verifiedRedSpecialist(specialistChecks))
+            await routeVerifiedSpecialist(live);
+        }catch(error){
+          log('#'+pr.number+' specialist classification deferred: '+String(error.message||error).slice(0,160));
         }
       }
       if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
@@ -782,12 +844,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
                 github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
                   check_name:'hh-specialist',per_page:100,filter:'latest'}))).data;
             } catch(e) { log('#'+pr.number+' specialist evidence unavailable: '+e.message); }
-            if (latestCompletedFailedGate(specialist,'hh-specialist')) {
-              summary.specialistFailures++;
-              if (summary.specialistQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted &&
-                  await ensureQueueLabel(github,owner,repo,live,SPECIALIST_LABEL,
-                    'Verified red specialist/browser QA; fix the failing test or feature before new CI',
-                    'd93f0b',dryRun,limited,log)) summary.specialistQueued++;
+            if (verifiedRedSpecialist(specialist)) {
+              await routeVerifiedSpecialist(live);
             } else if (specialist && summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS &&
                        !budget.exhausted) {
               summary.releaseGateOnly++;
@@ -870,12 +928,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         }
         log('#'+pr.number+' gate-only Core failure; no speculative source repair');
       } else if(root==='SPECIALIST_FAILED') {
-        summary.specialistFailures++;
-        if (summary.specialistQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted &&
-            await ensureQueueLabel(github,owner,repo,live,SPECIALIST_LABEL,
-              'Verified red specialist/browser QA; fix the failing test or feature before new CI',
-              'd93f0b',dryRun,limited,log)) summary.specialistQueued++;
-        log('#'+pr.number+' real specialist failure; no speculative legacy gate retry');
+        await routeVerifiedSpecialist(live);
+        log('#'+pr.number+' specialist aggregate failed; independently verified cause decides its queue');
       } else if(root==='UNVERIFIED') {
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
@@ -966,4 +1020,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
+module.exports = {classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
