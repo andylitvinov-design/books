@@ -80,7 +80,8 @@ on:
       - 'lib/practitioners/direct-*.js'
       - 'lib/practitioners/direct-*.mjs'
       - 'components/app/direct-message-inbox.*'
-      - 'app/[locale]/app/messages/**'
+      # General Messages route/layout and shared bottom dock are owned by the
+      # dedicated Messages wellness workflows; CRM-specific panels/tests remain below.
       - 'components/app/messages-simple-inbox.jsx'
       - 'tests/messages-approved-entry.test.mjs'
       - 'tests/messages-orders-clients.test.mjs'
