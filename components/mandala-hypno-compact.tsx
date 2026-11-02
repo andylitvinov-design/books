@@ -184,15 +184,17 @@ export function MandalaHypnoCompact({
   const [open,setOpen]=useState<EditPanel>(null);
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
+  const [ownIdea,setOwnIdea]=useState("");
   const problemNote=requestText.slice(0,160);
-  const goalNote="";
+  // The personal idea is a desired direction, not an inferred diagnosis.
+  // Both fields are interpreted locally by Wave; Gemini still sees enum codes only.
+  const goalNote=ownIdea.trim().slice(0,160);
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"gemini">("ready");
   const extraGoal=topicGoals[theme].includes(goalId)?goalId:topicGoals[theme][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
   const [ideaIndex,setIdeaIndex]=useState(0);
-  const [ownIdea,setOwnIdea]=useState("");
   const [gender,setGender]=useState<"female"|"male">("female");
   const ideas=locale==="ru"&&gender==="male"?["Я справлюсь","Я сильный","Я в гармонии","Я открыт новому"]:ideaCopy[locale].variants;
   const ideaText=ownIdea.trim()||ideas[ideaIndex];

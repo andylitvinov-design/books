@@ -112,3 +112,13 @@ test("mobile filters keep readable short localized chip copy at narrow iPhone wi
  assert.match(phrases,/data-video-affirmation-preview disabled=\{disabled\|\|hasPendingEdits\}/);
  assert.doesNotMatch(phrases,/setOpen\("phrases"\)/);
 });
+
+
+test("Wave interprets explicit custom idea as local goal without sending it to Gemini",()=>{
+ const source=read("components/mandala-hypno-compact.tsx");
+ assert.match(source,/const goalNote=ownIdea\.trim\(\)\.slice\(0,160\)/);
+ assert.match(source,/const requestKey=JSON\.stringify\(\[waveInput,problemNote,goalNote\]\)/);
+ assert.match(source,/currentText:problemNote,goalText:goalNote/);
+ assert.doesNotMatch(source,/const goalNote=""/);
+ assert.match(source,/body:JSON\.stringify\(\{\.\.\.waveInput,externalModelOptIn:true\}\)/);
+});
