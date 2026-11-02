@@ -49,6 +49,7 @@ permissions:
   actions: write
   issues: write
   pull-requests: write
+  checks: read
 jobs:
   contract:
     if: github.event_name == 'pull_request'
@@ -128,14 +129,14 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
           fetch-depth: 1
-      - name: Validate source contracts without a provider token
+      # The complete contract suite runs in the separate read-only PR job.
+      # A stale test assertion must not stop a 10-minute live dispatcher tick.
+      - name: Verify trusted dispatcher syntax before live work
         run: |
           node --check scripts/ci-pr-task-state.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --check scripts/ci-pr-ci-worker.cjs
-          node --check tests/ci-pr-core-priority.test.cjs
-          node --test tests/ci-pr-control-tower.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
       - name: Select one bounded PR worker per free lane and record a task receipt
         uses: actions/github-script@v7
         with:
