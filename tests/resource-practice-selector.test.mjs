@@ -133,3 +133,13 @@ test("current practice page is exercised in real mobile Chromium/WebKit, not onl
     assert.equal(child.status,0,filename+" syntax failed: "+(child.stderr||child.error?.message||""));
   }
 });
+
+test("WebKit focus transitions never wipe newly generated scripts via a delayed effect",async()=>{
+  const code=await readFile(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
+  const browser=await readFile(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+  assert.match(code,/setApprovedSignature\(current=>current===journeySignature\?current:""\)/);
+  assert.match(code,/setProgrammeSignature\(current=>current===journeySignature\?current:""\)/);
+  assert.match(code,/includedSignatureRef\.current=journeySignature/);
+  assert.match(code,/includedSignatureRef\.current!==journeySignature/);
+  assert.match(browser,/vector generated result missing/);
+});

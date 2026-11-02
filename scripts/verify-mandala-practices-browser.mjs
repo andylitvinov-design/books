@@ -108,7 +108,19 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
         "switching from state invalidates previous eight-session outline");
       await generate.click();
-      await result.waitFor({state:"visible"});
+      try{
+        await result.waitFor({state:"visible",timeout:15000});
+      }catch(error){
+        const state=await course.evaluate(el=>({
+          mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
+          difficulty:el.querySelector('[data-video-key-difficulty]')?.value,
+          goal:el.querySelector('[data-video-key-goal]')?.value,
+          disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+          note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
+          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+        }));
+        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
+      }
       await course.locator("[data-guided-create-plan]").click();
       await programme.waitFor({state:"visible"});
       await course.locator("[data-video-key-goal]").fill("I want a calmer choice");
