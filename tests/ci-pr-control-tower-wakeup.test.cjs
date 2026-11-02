@@ -159,7 +159,7 @@ test('stale watchdog cron backstop verifies queue state and dispatches at most o
   'WATCHDOG_ALREADY_RUNNING');
  assert.equal(watchdogCronDecision([{...historical,created_at:recent}],[],NOW),
   'WATCHDOG_CRON_HEALTHY');
- assert.equal(watchdogCronDecision([historical],[{...historical,id:22,created_at:recent}],NOW),
+ assert.equal(watchdogCronDecision([historical],[{...historical,id:22,created_at:recent,updated_at:recent}],NOW),
   'WATCHDOG_MANUAL_RECENT');
  assert.equal(watchdogCronDecision(null,[],NOW),'WATCHDOG_HISTORY_UNVERIFIED');
  const context={repo:{owner:'andylitvinov-design',repo:'books'},
