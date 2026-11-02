@@ -781,8 +781,10 @@ test('conflict-only queue rotates six exact-head inspections instead of repeatin
  assert.equal(first.length,6);
  assert.equal(next.length,6);
  assert.ok(first.every(t=>t.lane==='conflict'));
- assert.notEqual(first[0].pr_number,next[0].pr_number);
- assert.equal(new Set([...first,...next].map(t=>t.pr_number)).size,12);
+ assert.equal(first[0].pr_number,next[0].pr_number,'P1 fast slot remains visible');
+ assert.equal(first[1].pr_number,next[1].pr_number,'second high-priority fast slot remains visible');
+ assert.equal(new Set([...first,...next].map(t=>t.pr_number)).size,10,
+  'four rotating slots must cover eight different PRs over two cycles');
 });
 test('a denied dispatch only unlocks after an authenticated exact-task backoff receipt',()=>{
  const task=taskFor(pr(1),{tier:'P1'}),hold=reservation(task,NOW,123);

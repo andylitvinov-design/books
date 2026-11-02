@@ -98,7 +98,7 @@ test('stacked PR parent is never modified by bootstrap worker',async()=>{
   assert.equal(f.logs.source,0);
 });
 test('busy CI queue prevents all PR updates and queries',async()=>{
-  const f=fixture({active:14,queued:2});
+  const f=fixture({active:16,queued:2});
   const r=await run({github:f.github,core:core(),context,sourceGit:f.sourceGit,now});
   assert.equal(r.reason,'CI_QUEUE_BUSY');
   assert.equal(f.logs.gets,0);
