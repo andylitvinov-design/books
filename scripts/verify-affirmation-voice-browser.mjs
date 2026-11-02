@@ -254,8 +254,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
-      assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true,
-        "a pending edit may not synthesize the previously approved text");
+      await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
+      // The phrase editor propagates its pending state to the shared voice
+      // panel in a React effect. Wait for the *actual disabled control*
+      // instead of racing the next render frame.
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "unapproved phrase cannot invalidate existing sound");
       await page.locator('[data-hypno-approve]').click();
