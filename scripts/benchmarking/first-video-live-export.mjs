@@ -125,6 +125,13 @@ try {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
+  // Verify true client hydration before the very first user click in
+  // the exact local PR build. A server-rendered button has no React handler yet.
+  if(source===LOCAL_ORIGIN){
+    await page.waitForFunction(() =>
+      document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
+      undefined,{timeout:40000});
+  }
   // The approved Video Studio's *whole* extra editor is collapsed by
   // default. Open the real advanced controls on owner layout; the previously
   // deployed layout has no such toggle. Both use the same original recorder.
