@@ -29,6 +29,10 @@ on:
         description: 'Addressed queue task identity; exact-head verified by worker'
         type: string
         default: ''
+      reservation_run_id:
+        description: 'Trusted dispatcher run that reserved this exact task'
+        type: string
+        default: ''
       dry_run:
         description: 'Audit only; no claim or source writes'
         type: boolean
