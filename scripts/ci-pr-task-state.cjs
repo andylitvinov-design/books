@@ -107,6 +107,18 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    const released=status==='RELEASED'||/^released(?:_|$)/.test(status||'');
    if(released&&SHA.test(old||'')&&SHA.test(next||'')&&
       old!==headSha&&next!==headSha)continue;
+   // Some historic completed Work receipts contain only one exact source SHA,
+   // or use lease_head_sha / observed_new_head_sha. A verified past release
+   // cannot own a different HEAD; a current, ambiguous or malformed receipt
+   // MUST remain blocked. Modern active claims are unaffected.
+   const historicalHeadFields=['previous_head_sha','old_head_sha','old_head',
+    'head_sha','new_head_sha','new_head','lease_head_sha','observed_new_head_sha'];
+   const refs=historicalHeadFields.flatMap(name=>field(name));
+   if(released&&one('owner')&&one('lease_id')&&
+      Number.isFinite(Date.parse(one('released_at')||''))&&
+      refs.length>0&&
+      historicalHeadFields.every(name=>field(name).length<=1)&&
+      refs.every(sha=>SHA.test(sha)&&sha!==headSha))continue;
    return 'OWNER_LEASE_UNVERIFIED';
   }
   if(!doc||typeof doc!=='object'||Array.isArray(doc))

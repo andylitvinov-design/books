@@ -971,6 +971,37 @@ test('Control Tower summary names PRs behind lease and handoff blockers',async()
  assert.ok(examples.every(y=>Number.isSafeInteger(y.pr_number)&&y.head_sha===SHA.slice(0,12)));
  assert.equal(x.dispatchAccepted,0,'conflict-only queue does not impersonate source repair');
 });
+
+
+test('verified old single-head Work release cannot block unrelated new source work',()=>{
+ const old='b'.repeat(40),newer='c'.repeat(40);
+ const build=fields=>({user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+fields.join('\n')});
+ const common=['owner: work-repair-2607-alchemy-formats','lease_id: old-repair-lease',
+  'state: released_without_write','released_at: 2026-10-31T07:22:00Z'];
+ const single=build([...common,'head_sha: '+old]);
+ const alternate=build([...common,'lease_head_sha: '+old,
+  'observed_new_head_sha: '+newer]);
+ const t=taskFor(pr(1),{tier:'P1'});
+ assert.equal(externalOwnerLeaseStatus([single,alternate],SHA,NOW),'FREE');
+ assert.equal(reservationStatus(t,[single,alternate],NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([single],old,NOW),'OWNER_LEASE_UNVERIFIED',
+  'the same exact HEAD still requires an authenticated release/claim');
+ assert.equal(externalOwnerLeaseStatus([build([...common,'head_sha: invalid'])],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED','bad source SHA cannot release ownership');
+ assert.equal(externalOwnerLeaseStatus([build([...common,'head_sha: '+old,
+  'head_sha: '+newer])],SHA,NOW),'OWNER_LEASE_UNVERIFIED',
+  'duplicate source refs must fail closed');
+ assert.equal(externalOwnerLeaseStatus([build([...common.filter(x=>!x.startsWith('released_at:')),
+  'head_sha: '+old])],SHA,NOW),'OWNER_LEASE_UNVERIFIED',
+  'absence of release time is not a verified terminal receipt');
+ const active={user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',lease_id:'current',
+   owner:'active-editor',state:'active',head_sha:SHA})};
+ assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
+});
 test('Control Tower expires old pre-lease-id claims without stealing real owners',async()=>{
  const actor={login:'andylitvinov-design'},wrap=x=>({
   user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)
