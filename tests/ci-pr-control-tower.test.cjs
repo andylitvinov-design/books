@@ -580,3 +580,72 @@ test('malformed release histories remain fail-closed for all workflows',()=>{
  assert.equal(externalOwnerLeaseStatus(bad,SHA,NOW),'OWNER_LEASE_UNVERIFIED');
  assert.equal(reservationStatus(t,bad,NOW),'OWNER_LEASE_UNVERIFIED');
 });
+
+test('live dispatcher runs syntax only; full contract stays a PR-only job',()=>{
+ const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const jobs=yml.split('\n  dispatch:\n');
+ assert.equal(jobs.length,2);
+ assert.ok(jobs[0].includes("node --test tests/ci-pr-control-tower.test.cjs"));
+ assert.ok(!jobs[1].includes('node --test '));
+ assert.ok(jobs[1].includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
+ assert.ok(yml.includes('  checks: read\n'));
+});
+test('unproven source label with exact-HEAD red product QA moves to specialist queue, never a worker',async()=>{
+ const source=pr(120,'repair',{mergeable:true,mergeable_state:'behind'});
+ const f=fixture([source],{comments:{120:[]}});
+ const changed=[];
+ const withLabel={...source,labels:[...source.labels]};
+ f.github.rest.checks={listForRef:async({ref})=>{
+  assert.equal(ref,SHA);
+  return {data:{total_count:3,check_runs:[
+   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'voice-webkit-macos',status:'completed',conclusion:'failure',app:{id:15368}}
+  ]}};
+ }};
+ f.github.rest.issues.addLabels=async({labels})=>{changed.push(['add',labels[0]]);
+  withLabel.labels.push({name:labels[0]});};
+ f.github.rest.issues.removeLabel=async({name})=>{changed.push(['remove',name]);};
+ f.github.rest.pulls.get=async()=>({data:withLabel});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.specialistReclassified,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(changed,[['add','hh:specialist-repair-needed'],['remove','hh:repair-needed']]);
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('no exact-head independent QA or live HEAD change never releases source-repair label',async()=>{
+ for(const mode of ['all-green','incomplete','moved','untrusted']){
+  const source=pr(121,'repair',{mergeable:true,mergeable_state:'behind'});
+  const f=fixture([source],{comments:{121:[]}});
+  let writes=0;
+  f.github.rest.checks={listForRef:async()=>({data:{total_count:mode==='incomplete'?4:3,check_runs:[
+   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'guard-unit',status:'completed',conclusion:mode==='all-green'?'success':'failure',
+    app:{id:mode==='untrusted'?900:15368}}
+  ]}})};
+  f.github.rest.issues.addLabels=async()=>{writes++;};
+  f.github.rest.issues.removeLabel=async()=>{writes++;};
+  if(mode==='moved')f.github.rest.pulls.get=async()=>({data:{...source,
+   head:{...source.head,sha:'b'.repeat(40)}}});
+  await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  if(mode==='moved')assert.equal(writes,0);
+  else assert.equal(writes,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
+test('dry run reports potential specialist reroute without label mutation',async()=>{
+ const source=pr(122,'repair',{mergeable:true,mergeable_state:'behind'});
+ const f=fixture([source],{comments:{122:[]}});
+ f.github.rest.checks={listForRef:async()=>({data:{total_count:3,check_runs:[
+ {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+ {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+ {id:3,name:'public-services',status:'completed',conclusion:'failure',app:{id:15368}}
+ ]}})};
+ const r=await run({github:f.github,core:core(),context,now:NOW,dryRun:true,
+  capacityFn:f.capacityFn});
+ assert.equal(r.wouldSpecialistReclassify,1);
+ assert.equal(r.specialistReclassified,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.dispatched.length,0);
+});
