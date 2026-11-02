@@ -481,7 +481,7 @@ test('hourly full-inventory reads use per-repo token; owner PAT is reserved for 
   assert.ok(source.includes('          github-token: ${{ github.token }}'));
   assert.ok(source.includes('          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.ok(!source.includes('github-token: ${{ secrets.HH_AUTOMERGE_TOKEN'));
-  assert.ok(source.includes('if(token)'));
+  assert.ok(source.includes('if(token&&!apiPaused)'), 'privileged merge must stop after verified API quota exhaustion');
 });
 
 test('one GraphQL batch replaces sixteen per-PR REST mergeability reads',async()=>{
