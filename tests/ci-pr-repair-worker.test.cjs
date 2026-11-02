@@ -22,7 +22,8 @@ function fixture(options={}){
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
     repos:{getContent:async()=>{log.read++;return {data:{type:'file',sha:newSha}}}},
-    git:{getCommit:async()=>({data:{tree:{sha:'c'.repeat(40)}}})}
+    git:{getCommit:async()=>({data:{tree:{sha:'c'.repeat(40)}}}),
+      getRef:async()=>({data:{object:{sha:options.publishedRef||'d'.repeat(40)}}})}
   }};
   const writer={commit:async()=>{log.commit++;return {sha:'d'.repeat(40)}}};
   return {github,writer,log};
@@ -360,7 +361,41 @@ test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HE
 test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(yml.includes('finalize-failed-fix:'));
- assert.ok(yml.includes("needs.fix.result == 'failure'"));
+ assert.ok(yml.includes("needs.fix.result != 'success' || needs.publish.result != 'success'"));
  assert.ok(yml.includes("needs.claim.outputs.strategy == 'lint'"));
  assert.ok(yml.includes('worker.finalizeFailedFix({github,core,context,'));
+});
+
+test('publisher never signs PUBLISHED without exact-HEAD readback',async()=>{
+ const f=fixture({publishedRef:'e'.repeat(40)});
+ const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+   base64:Buffer.from('const a=1;\n').toString('base64')}]};
+ await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+   expectedSha:sha,candidate,writer:f.writer}),/HEAD_READBACK_UNVERIFIED/);
+ assert.equal(f.log.commit,1,'a write was attempted but has not been confirmed');
+ assert.equal(f.log.comments,0,'no false source commit success marker');
+});
+test('failed publisher is marked for coding only after authenticated same-run claim',async()=>{
+ const runId=912,current=pr(),task=taskFor(current,{tier:'P1'});
+ const signed={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'},
+   body:'<!-- '+MARKER+' '+sha+' -->\n'+commentBody({...task,state:'CLAIMED',
+     owner_run_id:String(runId)})};
+ const f=fixture({comments:[signed]});
+ const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId},
+   prNumber:11,expectedSha:sha,failureStage:'publish'});
+ assert.equal(result.status,'manual_required');
+ assert.equal(result.source_published,false);
+ assert.equal(result.outcome,'PUBLISH_JOB_NOT_COMPLETED_NO_SOURCE_COMMIT');
+ assert.equal(f.log.commit,0);
+ assert.ok(f.log.commentBodies[0].includes('PUBLISH_JOB_NOT_COMPLETED_NO_SOURCE_COMMIT'));
+ assert.ok(f.log.commentBodies[0].includes('"state":"MANUAL"'));
+});
+test('unknown terminal stage cannot publish or modify a source PR',async()=>{
+ const f=fixture();
+ const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId:912},
+   prNumber:11,expectedSha:sha,failureStage:'untrusted'});
+ assert.equal(result.reason,'UNSUPPORTED_TERMINAL_STAGE');
+ assert.equal(f.log.comments,0);
+ assert.equal(f.log.labels,0);
 });
