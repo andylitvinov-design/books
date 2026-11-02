@@ -746,9 +746,9 @@ test('stale historical Core runs do not enter one-shot CI worker queue',async()=
   assert.equal(r.ciBootstrapQueued,0);
 });
 
-// The event-driven coordinator must paginate a current source HEAD without
-// declaring a truncated 100-run page green or exhausting the GitHub API.
-test('native AutoMerge bounded CI pagination handles 100+ current runs safely',async()=>{
+// Core events must enumerate ONLY the trusted required Core workflow;
+// older same-HEAD Core runs remain paginated, unrelated PR CI is not a gate.
+test('native AutoMerge paginates trusted Core history and preserves exact-head evidence',async()=>{
   const {readFileSync}=require('node:fs');
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const begin=native.indexOf('          script: |\n',native.indexOf('  enable:\n'));
@@ -762,28 +762,26 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
     base:{ref:'codex/public-book-library',sha:base},
     head:{sha:head,ref:'feature/forty-two',repo:{full_name:full}}};
-  const makeRun=(id,name,workflowId,conclusion='success',associatedHead=head)=>({
-    id,name,workflow_id:workflowId,event:'pull_request',head_branch:pr.head.ref,
-    head_sha:'f'.repeat(40),path:'.github/workflows/'+(workflowId===1?'hh-pr-core-release.yml':'other.yml')+'@refs/pull/42/merge',
+  const makeRun=(id,conclusion='success',associatedHead=head,associatedBase=base)=>({
+    id,name:'HH PR core release gate',workflow_id:1,event:'pull_request',head_branch:pr.head.ref,
+    head_sha:'f'.repeat(40),path:'.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
     status:'completed',conclusion,created_at:new Date(1800000000000-id*1000).toISOString(),
     pull_requests:[{number:42,head:{ref:pr.head.ref,sha:associatedHead},
-      base:{ref:pr.base.ref,sha:base}}]
+      base:{ref:pr.base.ref,sha:associatedBase}}]
   });
-  const coreRun=makeRun(1,'HH PR core release gate',1);
-  const specialist=makeRun(2,'Mandatory focused browser QA',2);
-  const current=[coreRun,specialist,
-    ...Array.from({length:98},(_,i)=>makeRun(i+3,'Workflow '+i,i+3))];
-  const prior=makeRun(200,'Prior SHA',200,'success','c'.repeat(40));
+  const coreRun=makeRun(1);
+  const current=[coreRun,...Array.from({length:99},(_,i)=>makeRun(i+2))];
+  const prior=makeRun(200,'success','c'.repeat(40));
   async function decide(pages,totals,{required=['release-ready'],jobs=[
     {name:'hh-core-verified',status:'completed',conclusion:'success'},
     {name:'hh-specialist',status:'completed',conclusion:'success'},
     {name:'release-ready',status:'completed',conclusion:'success'},
-  ]}={}) {
+  ],eventRunId=null}={}) {
     const calls=[],outputs={},notes=[];
     const gh={rest:{
       pulls:{get:async()=>({data:pr}),list:async()=>({data:[pr]})},
       actions:{
-        listWorkflowRunsForRepo:async args=>{
+        listWorkflowRuns:async args=>{
           calls.push(args);
           const index=args.page-1;
           return {data:{total_count:totals[index]??totals[0],
@@ -794,38 +792,51 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
       repos:{getBranch:async()=>({data:{protected:true,protection:{
         required_status_checks:{contexts:required}}}})},
     }};
-    const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
-      payload:{pull_request:pr}};
+    const payload=eventRunId===null?{pull_request:pr}:{workflow_run:{
+      id:eventRunId,name:'HH PR core release gate',event:'pull_request',conclusion:'success',
+      repository:{full_name:full},head_repository:{full_name:full},
+      head_branch:pr.head.ref,pull_requests:[{number:42,base:{ref:pr.base.ref}}]
+    }};
+    const context={repo:{owner:'andylitvinov-design',repo:'books'},
+      eventName:eventRunId===null?'pull_request_target':'workflow_run',payload};
     await preflight(gh,{info:message=>notes.push(message),
       setOutput:(key,value)=>outputs[key]=value},context);
     return {ok:outputs.eligible==='true',calls,notes};
   }
   const valid=await decide([current,[prior]],[101,101]);
-  assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
+  assert.equal(valid.ok,true,'second page must complete current Core HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  assert.ok(valid.calls.every(c=>c.workflow_id==='hh-pr-core-release.yml'),
+    'never scan optional non-Core PR workflow runs');
+  const event=await decide([current,[prior]],[101,101],{eventRunId:coreRun.id});
+  assert.equal(event.ok,true,'completed current-HEAD Core event may activate native merge');
+  const stale=await decide([current,[prior]],[101,101],{eventRunId:999});
+  assert.equal(stale.ok,false,'stale completed Core callbacks cannot arm');
+  const movedBase=await decide([[makeRun(1,'success',head,'d'.repeat(40)),...current.slice(1)],[prior]],[101,101]);
+  assert.equal(movedBase.ok,true,'non-sensitive base changes defer to independent freshness classifier');
   const noSpecialist=await decide([current,[prior]],[101,101],{jobs:[
     {name:'hh-core-verified',status:'completed',conclusion:'success'},
     {name:'release-ready',status:'completed',conclusion:'success'},
   ]});
-  assert.equal(noSpecialist.ok,false,'legacy alias cannot replace missing real Specialist');
+  assert.equal(noSpecialist.ok,false,'missing required Specialist never qualifies');
   const single=await decide([current,[prior]],[101,101],{
     required:['hh-merge-check'],
     jobs:[{name:'hh-merge-check',status:'completed',conclusion:'success'}],
   });
-  assert.equal(single.ok,true,'new single required status accepts only actual PASS');
+  assert.equal(single.ok,true,'single branch-required status still needs real job PASS');
   const redSingle=await decide([current,[prior]],[101,101],{
     required:['hh-merge-check'],
     jobs:[{name:'hh-merge-check',status:'completed',conclusion:'failure'}],
   });
-  assert.equal(redSingle.ok,false,'red unified status can never arm AutoMerge');
-  const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
-  assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
+  assert.equal(redSingle.ok,false,'red unified status never arms native merge');
+  const newerRed=await decide([[makeRun(0,'failure'),...current.slice(0,99)],[prior]],[101,101]);
+  assert.equal(newerRed.ok,false,'newer failed Core blocks an older green Core');
   const incomplete=await decide([current,[]],[102,102]);
-  assert.equal(incomplete.ok,false,'missing second page is not success');
+  assert.equal(incomplete.ok,false,'incomplete Core pages cannot be considered green');
   const tooMany=await decide([current,current,current],[401,401,401]);
-  assert.equal(tooMany.ok,false,'three full source HEAD pages with more data must fail closed');
+  assert.equal(tooMany.ok,false,'more than 300 same-HEAD Core runs fails closed');
   assert.deepEqual(tooMany.calls.map(c=>c.page),[1,2,3]);
-  assert.ok(tooMany.notes.some(s=>s.includes('beyond bounded CI pages')));
+  assert.ok(tooMany.notes.some(line=>line.includes('beyond bounded CI pages')));
 });
 
 test('watchdog honors legacy required status and stops spurious dispatch',async()=>{
