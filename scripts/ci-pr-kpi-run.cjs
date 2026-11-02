@@ -16,7 +16,7 @@ async function run({github,core,context,now=Date.now(),deps={}}){
  // Preserve a complete short window when the 14-day inventory exceeds its
  // budget; retain older partial observations without double-counting.
  const recentMerges=await d.collectMergeEvents({...common,since:now-2*3600000,maxRequests:30});
- const historicalMerges=await d.collectMergeEvents({...common,since,maxRequests:30});
+ const historicalMerges=await d.collectMergeEvents({...common,since,maxRequests:60});
  const unique=new Map();let inconsistent=false;
  const eventKey=e=>String(e.kind)+':'+String(e.pr)+':'+String(e.mergeSha||'');
  const recentKeys=new Set((recentMerges.events||[]).map(eventKey));
