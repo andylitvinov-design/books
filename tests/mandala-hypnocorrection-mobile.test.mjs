@@ -59,8 +59,8 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
   assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw the real hypno overlay");
   for(const name of ['"phrases"','"audio"','"visual"','"meditation"'])assert.ok(ui.includes(name));
-  for(const name of ["25-й кадр","Бинауральные ритмы","Импульс энергии и света",
-    "Быстрая настройка с Wave","Сгенерировать медитацию"])assert.ok(ui.includes(name));
+  for(const name of ["25-й кадр","Бинауральные ритмы","Импульс света",
+    "Быстрая настройка с Wave","Создать личную медитацию"])assert.ok(ui.includes(name));
   assert.match(css,/font-size:18px/);
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
@@ -88,6 +88,15 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:374px\)/);
   assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
+  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number all four illustrated groups");
+  assert.match(ui,/styles\.groupNumber/, "number badge is on original photo tile");
+  assert.match(css,/\.groupNumber\{position:absolute/, "number badge remains legible on photo");
+  assert.match(css,/\.feature\{height:124px;min-height:124px;max-height:124px;/,
+    "375-430 CSS-pixel iPhone cards must be compact, not 170px high");
+  assert.match(css,/\.meditation \.meditationStart\{display:grid/,
+    "meditation action uses white card override over legacy purple button");
+  assert.match(videoCss,/scroll-margin-top:min\(44svh,390px\)/,
+    "third-tab deep-link must reveal the original header/Wave/player above groups");
   assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
     "generated video result must remain visible in third workspace");
   assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-effects-panel\]\{order:3\}/,
