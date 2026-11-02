@@ -204,6 +204,17 @@ function classifyCoreFailureJobs(jobs) {
       scope?.conclusion==='success' &&
       (build?.conclusion==='success' || build?.conclusion==='skipped'))
     return 'RELEASE_GATE_ONLY';
+  // Aggregate gates report downstream consequences, not the causal step.
+  // Treat setup/checkout failures as environment triage at any age; the
+  // separate retry policy still decides whether and when a rerun is safe.
+  const aggregate=new Set(['release-ready','hh-specialists-verified','hh-core-verified','hh-specialist']);
+  const causal=failed.filter(job=>!aggregate.has(job.name));
+  const setupStep=/^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i;
+  if(causal.length && causal.every(job=>{
+    if(['timed_out','startup_failure'].includes(job.conclusion))return true;
+    const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
+    return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
+  })) return 'CI_INFRA_OR_ENVIRONMENT';
   if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
   return 'UNVERIFIED';
 }
@@ -568,7 +579,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
-    policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,
+    policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,infraOrEnvironment:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
@@ -944,6 +955,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       } else if(root==='SPECIALIST_FAILED') {
         await routeVerifiedSpecialist(live);
         log('#'+pr.number+' specialist aggregate failed; independently verified cause decides its queue');
+      } else if(root==='CI_INFRA_OR_ENVIRONMENT') {
+        summary.infraOrEnvironment++;
+        log('#'+pr.number+' setup or infrastructure failure; no speculative source repair');
       } else if(root==='UNVERIFIED') {
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
