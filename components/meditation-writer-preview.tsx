@@ -149,7 +149,6 @@ const activityLabels:Record<Locale,{heading:string;notes:string;buttons:Record<A
     buttons:{practice:"Práctica",exercise:"Ejercicio",ritual:"Ritual"},
     practiceAction:"Elegir práctica o ritual",programmeAction:"Planificar ocho sesiones",
     programmeMethod:"Actividad prevista",selected:"Elegido según tu objetivo"},
-  },
 };
 const foci:Focus[]=["auto","stress","relationships","self_worth","meaning"];
 const stylistics:Style[]=["gentle_simple","grounded_practical","poetic_contained","contemplative"];
