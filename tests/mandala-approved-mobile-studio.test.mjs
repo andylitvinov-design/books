@@ -33,7 +33,10 @@ test("the existing public editor retains one real video renderer and the new com
       "video studio hierarchy changed at "+order[i]);
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
-  assert.match(source,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{activeWorkspace==="video" \? deepCharacterPhotoPane : null\}/);
+  assert.equal((source.match(/<details className=\{videoStyles\.previewCoverOptions\} data-video-cover-options/g)||[]).length,1,
+    "the same original photo/consent widget is reused in basic settings");
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
@@ -97,7 +100,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
 test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(s,/data-video-goal-summary/);
+  assert.match(s,/data-video-basic-editor/);
+  const fifth=s.slice(s.indexOf('data-video-basic-editor'),s.indexOf('data-video-quick-personal'));
+  assert.doesNotMatch(fifth,/data-video-goal-summary/,
+    "goal was already supplied earlier; Montage must not ask it twice");
   const auto=read("components/mandala-auto-video-director.tsx");
   assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
     "approved goal comes from the single local wish state");
@@ -105,12 +111,15 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "the same personal goal retains its strict 160-character browser limit");
   assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
-  assert.match(s,/data-video-personal-affirmations/);
-  assert.match(s,/enabled:!current\.enabled/);
+  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
+    "phrases supply the existing shared narration source");
+  assert.match(s,/setAffirmations\(/,
+    "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
-    "selected sound must reveal real attachment controls after mobile collapse");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
+    "missing audio opens the original fifth-tab attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,

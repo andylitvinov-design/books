@@ -29,7 +29,8 @@ test("therapy mode is a dedicated programme directly under the central moving vi
   assert.match(studio,/if\(!photoUrl\)setBackgroundOnly\(true\)/);
   assert.match(studio,/setAffirmations\(current=>\(\{\.\.\.defaultAffirmations,enabled:current\.enabled/);
   assert.match(guided,/data-video-key-difficulty/);
-  assert.match(guided,/data-video-key-goal/);
+  assert.match(guided,/data-guided-focus-vector/);
+  assert.doesNotMatch(guided,/data-video-key-goal/);
   assert.match(guided,/data-video-goal-accents/);
   assert.match(guided,/data-guided-create-plan/);
   assert.match(guided,/data-guided-profile-consent/);
@@ -108,5 +109,11 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   assert.match(styles,/\.personalPreview\{/);
   assert.match(styles,/\.ritualMoments\{/);
   assert.match(styles,/\.programTiles\{/);
+  assert.match(guided,/vectorOptions\.map/);
+  assert.match(guided,/stateOptions:\{calm:[\s\S]*confidence:[\s\S]*clarity:/);
+  assert.match(guided,/focusChoiceHeading/);
+  assert.match(guided,/focusNote/);
+  assert.match(styles,/\.focusChoiceHeading\{/);
+  assert.match(styles,/\.focusNote\{/);
 
 });

@@ -2762,6 +2762,183 @@
  }
  .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:5px 0 8px}
 }
+
+
+/* Holistic Light — Warm & Alive, owner-approved 02 Nov 2026.
+   Larger MOBILE controls and editorial hierarchy; keep one working player,
+   existing tabs, original renderer, safe-area dock and advanced tools. */
+.heroEyebrow{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  border:1px solid #fff8;padding:7px 11px;border-radius:999px;
+  background:#fffdf5e8;color:#075b42;font:800 12px/1.2 Arial,Helvetica,sans-serif;
+  text-shadow:none;box-shadow:0 3px 12px #2d412d18}
+.heroEyebrow svg{flex:none}
+.quickPracticeShortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;min-width:0;margin:10px 0 2px}
+.quickPracticeShortcuts button{display:flex;align-items:center;justify-content:space-between;
+  gap:9px;min-width:0;min-height:70px;padding:13px 14px;
+  border:1px solid #d7e6d8;border-radius:20px;background:#eaf6e9;
+  color:#125940;text-align:left;font:800 15px/1.25 Arial,Helvetica,sans-serif;
+  box-shadow:0 5px 17px #214b3210}
+.quickPracticeShortcuts button:nth-child(2){border-color:#f3ddcb;background:#fff0e5;color:#9c602c}
+.quickPracticeShortcuts button:nth-child(3){border-color:#e7d8ef;background:#f4eafa;color:#745185}
+.quickPracticeShortcuts button>svg{flex:none}
+.quickPracticeShortcuts button span{flex:1;min-width:0;overflow-wrap:normal}
+.quickPracticeShortcuts button:disabled{opacity:.5;cursor:not-allowed}
+.quickPracticeShortcuts button:focus-visible{outline:3px solid #c99c55;outline-offset:3px}
+
+@media(max-width:759px){
+  .studio{font-size:16px;line-height:1.4}
+  .studio .quickBuilder{gap:14px;padding-bottom:20px}
+  .studio .quickBuilder>.quickBrandBar{min-height:78px;gap:12px;padding:8px 10px}
+  .studio .quickBuilder .quickBrandBack{width:48px;height:48px}
+  .studio .quickBuilder .quickBrandBack svg{width:35px;height:35px}
+  .studio .quickBrandIdentity strong{font:700 clamp(24px,6.6vw,30px)/1.05 Georgia,serif;letter-spacing:-.025em}
+  .studio .quickBrandIdentity small{font:500 clamp(12px,3.1vw,14px)/1.35 Arial,Helvetica,sans-serif}
+  .studio .quickBrandProfile{width:48px;height:48px}
+  .studio .quickBrandProfile svg{width:23px;height:23px}
+
+  /* Full-width hero, not the former 2.78:1 strip. Actual video/Canvas stays mounted. */
+  .studio .previewStage .hero,
+  .studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:248px!important;aspect-ratio:1.54/1!important;max-height:none!important;
+    border:1px solid #e5ddcb;border-radius:25px!important;
+    box-shadow:0 12px 28px #493d2622}
+  .studio .previewStage .heroShade{
+    background:linear-gradient(90deg,#092c26c9 0%,#103c30a3 42%,#112f2815 100%),
+      linear-gradient(0deg,#0b312673,transparent 70%)}
+  .studio .heroEditorial{left:18px;right:auto;bottom:17px;max-width:67%;display:grid;gap:7px}
+  .studio .heroEditorial h2{
+    font:850 clamp(23px,6.7vw,30px)/1.08 Arial,Helvetica,sans-serif!important;
+    letter-spacing:-.035em;text-shadow:0 2px 8px #001d1780}
+  .studio .heroEditorial p{
+    font:550 clamp(12px,3.25vw,15px)/1.3 Arial,Helvetica,sans-serif!important;
+    color:#fffaf2!important;text-shadow:0 1px 7px #00251d99}
+  .studio .heroEyebrow{font-size:clamp(11px,2.8vw,13px);padding:7px 9px}
+  .studio .previewStage .heroPlay{left:81%;top:50%;width:60px;height:60px;
+    border:2px solid #fffcf0a8;background:#113d2db8;box-shadow:0 5px 24px #07372f70}
+  .studio .previewStage .heroPlay svg{width:30px;height:30px}
+  .studio .heroDuration{top:13px;right:13px;padding:8px 11px;border-radius:12px;font-size:13px}
+
+  /* Six REAL workspaces stay visible; 3×2 avoids illegible 8–10px labels. */
+  .studio .quickVideoNav{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0}
+  .studio .quickVideoNav button{
+    min-height:100px;padding:12px 7px;gap:8px;
+    border:1px solid #e6ded2;border-radius:21px;
+    background:linear-gradient(145deg,#fffcf7,#fff9f1);color:#173e34;
+    font:750 clamp(12px,3.5vw,15px)/1.18 Arial,Helvetica,sans-serif;
+    letter-spacing:0;hyphens:auto;overflow-wrap:normal;
+    box-shadow:0 4px 14px #3d4d3011}
+  .studio .quickVideoNav button svg{width:27px;height:27px;color:#087656}
+  .studio .quickVideoNav button[data-video-quick-control="phrases"] span{
+    font:750 clamp(12px,3.35vw,14px)/1.16 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;hyphens:auto}
+  .studio .quickVideoNav button[aria-pressed="true"]{
+    background:linear-gradient(135deg,#55ba80,#087e5a);border-color:#138b67;
+    color:#fff;box-shadow:0 6px 16px #08755335}
+  .studio .quickVideoNav button[aria-pressed="true"] svg{color:#fff}
+  .studio .quickVideoNav button:focus-visible{outline:3px solid #d6a653;outline-offset:3px}
+
+  /* Large numbered cards with generous gutters. */
+  .studio .quickBuilder>[data-video-quick-section="1"],
+  .studio .quickBuilder>[data-video-topic-section]{
+    padding:18px 15px 20px!important;gap:14px;border:1px solid #eee4d6;
+    border-radius:25px;background:linear-gradient(145deg,#fffefa,#fffaf5);
+    box-shadow:0 9px 25px #5c493014}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+    font:850 clamp(21px,6vw,27px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.025em}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 svg{
+    width:26px;height:26px;color:#08745a}
+  .studio .quickBuilder>[data-auto-video-director]{order:6;margin:0}
+  .studio .quickBuilder>.quickPracticeShortcuts{order:7;grid-template-columns:minmax(0,1fr);
+    gap:9px;margin:0}
+  .studio .quickPracticeShortcuts button{
+    min-height:62px;border-radius:18px;padding:12px 16px;
+    font-size:clamp(15px,4vw,17px)}
+  .studio .quickPracticeShortcuts button svg:first-child{width:25px;height:25px}
+  .studio .quickPracticeShortcuts button svg:last-child{margin-left:auto}
+  .studio .advancedVideoToggle{min-height:56px;padding:11px 15px;
+    border-radius:17px;font-size:clamp(14px,3.9vw,16px)}
+  .studio .workspaceHeading h3{font-size:clamp(22px,5.8vw,27px)}
+  .studio .workspaceHeading p{font-size:14px}
+}
+@media(min-width:760px){
+  .studio .heroEyebrow{margin-bottom:6px}
+}
+
+
+/* Owner-approved 02 Nov fifth Montage essentials and sixth PRO.
+   One source-backed player/audio editor, no new rendering engine. */
+.basicStudio{display:grid;gap:14px;min-width:0;margin:10px 0 0;padding:16px;
+  border:1px solid #e8e1d5;border-radius:22px;background:linear-gradient(155deg,#fffefa,#fff9ef);
+  box-shadow:0 8px 25px #234b3a12;color:#173d36}
+.basicStudio .quickSectionHeading h3{font:800 clamp(19px,4.7vw,25px)/1.2 Arial,Helvetica,sans-serif;color:#142c45}
+.basicStudio .quickSectionHeading p{margin:5px 0 0;color:#58746d;font-size:13px;line-height:1.45}
+.basicTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;min-width:0}
+.basicTabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  min-width:0;min-height:88px;padding:9px 5px;border:1px solid #dddcd6;border-radius:17px;
+  background:#fffdfa;color:#143b4a;font:800 clamp(11px,2.9vw,14px)/1.18 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;text-align:center}
+.basicTabs button svg{flex:none;color:#078765}
+.basicTabs button[aria-pressed=true]{background:#e4f4e8;border-color:#079d75;
+  box-shadow:inset 0 0 0 1px #0a9e76;color:#075943}
+.basicTabs button:disabled{opacity:.55}
+.basicTabs button:focus-visible,.basicStyles button:focus-visible,.basicFormat button:focus-visible,
+.basicPreview:focus-visible{outline:3px solid #d7b167;outline-offset:2px}
+.basicStyles{display:grid;gap:10px;min-width:0}
+.basicStyleHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.basicStyleHeading h4{display:flex;align-items:center;gap:7px;margin:0;
+  font:800 clamp(17px,4vw,21px)/1.15 Georgia,serif;color:#142b45}
+.basicStyleHeading h4 svg{flex:none;color:#14826b}
+.basicStyleHeading button{display:flex;align-items:center;gap:3px;min-height:44px;padding:7px 2px;
+  border:0;background:transparent;color:#087c65;font:800 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+.basicStyleRail{grid-auto-columns:clamp(145px,45%,198px);gap:12px;padding:2px 3px 10px}
+.basicStyleRail button{gap:7px;text-align:left}
+.basicStylePoster{position:relative;display:block;width:100%;aspect-ratio:1.45;overflow:hidden;
+  border:2px solid transparent;border-radius:16px;background:#e8f0df;box-shadow:0 4px 12px #153d3117}
+.basicStyleRail button .basicStylePoster img{display:block;width:100%;height:100%;
+  aspect-ratio:auto;object-fit:cover;border:0;border-radius:0}
+.basicStyleRail button[aria-pressed=true] .basicStylePoster{border-color:#0c9d77;
+  box-shadow:0 0 0 3px #c0e9d6,0 4px 12px #174b321c}
+.basicStylePlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:44px;height:44px;border:2px solid #fff;
+  border-radius:50%;background:#0a5a4eb8;color:white}
+.basicStylePlay svg{margin-left:2px}
+.basicStyleCheck{position:absolute;top:7px;right:7px;display:grid;place-items:center;
+  width:28px;height:28px;border:2px solid white;border-radius:50%;background:#009675;color:white}
+.basicStyleRail .basicStyleName{font:800 13px/1.3 Arial,Helvetica,sans-serif;color:#183d3b;min-height:36px;display:block}
+.basicMusicPane,.basicVoicePane{min-width:0;margin:0}
+.basicVoicePane[open]{background:#fffefa;border-color:#d4e3d8;padding:0 10px 10px}
+.basicMusicPane .audioSection{margin:0}
+.basicFormat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;min-width:0}
+.basicFormat fieldset{min-width:0;padding:10px 9px 12px;border:1px solid #e0e4da;
+  border-radius:16px;background:#fffdf9}
+.basicFormat legend{display:flex;align-items:center;gap:6px;padding:0 5px;
+  color:#264f46;font:800 13px/1.3 Arial,Helvetica,sans-serif}
+.basicFormat legend svg{color:#117a63}
+.basicFormatOptions{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.basicFormatOptions button{display:flex;justify-content:center;align-items:center;flex:1 1 43px;
+  min-width:0;min-height:44px;padding:8px 7px;border:1px solid #d3dfd7;border-radius:11px;
+  background:#fff;color:#2d5546;font:800 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+.basicFormatOptions button[aria-pressed=true]{border-color:#098969;background:#d8f0e1;color:#075b46}
+.basicPreview{display:flex;justify-content:center;align-items:center;gap:10px;width:100%;
+  min-height:51px;padding:10px 13px;border:1px solid #b5dbca;border-radius:14px;
+  background:#f1faf2;color:#076a52;font:800 14px/1.3 Arial,Helvetica,sans-serif}
+.basicPreview:disabled{opacity:.5}
+.studio [data-video-pro-advanced]>summary{display:flex;align-items:center;gap:8px;
+  min-height:48px;padding:10px 12px;color:#176a52;font-weight:800}
+@media(max-width:759px){
+ .studio [data-video-basic-editor]{order:4;margin:0}
+ .studio[data-active-workspace=pro] [data-video-quick-personal]{order:4}
+ .studio[data-active-workspace=pro] [data-video-final-editor]{order:5}
+ .studio[data-active-workspace=editor] [data-video-order-bar]{order:18}
+}
+@media(max-width:355px){
+ .basicStudio{gap:11px;padding:11px 8px}
+ .basicTabs{gap:5px}
+ .basicTabs button{min-height:79px;padding:7px 3px;font-size:11px}
+ .basicStyleRail{grid-auto-columns:clamp(140px,49%,170px);gap:8px}
+ .basicFormat{grid-template-columns:1fr;gap:9px}
+}
+@media(prefers-reduced-motion:reduce){.basicStudio *,.basicStyleRail{transition:none!important;scroll-behavior:auto!important}}
 /* The six working tabs remain reachable, but Effects presents them BEFORE
    the original Wave -> film -> four-group sequence, not between film/groups.
    The direct #video-hypnocorrection-mobile link lands above Wave on iPhone,

@@ -115,9 +115,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","PRO генерация","Монтаж"],
-  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","PRO generation","Montage"],
-  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Generación PRO","Montaje"],
+  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","Монтаж","PRO"],
+  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","Montage","PRO"],
+  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -220,4 +220,65 @@ test("audio guidance remains actionable from both the compact Video screen and S
  assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+});
+
+
+test("Holistic Light mobile overrides the legacy small-card grid without adding a second renderer",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ const autoCss=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
+ assert.match(css,/Holistic Light — Warm & Alive, owner-approved 02 Nov 2026/);
+ assert.match(css,/aspect-ratio:1\.54\/1!important/,"hero no longer uses a narrow 2.78:1 strip");
+ assert.match(css,/\.studio \.quickVideoNav\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);gap:9px/,
+   "six real workspaces form 3×2, not an unreadable row");
+ assert.match(autoCss,/\.goalPanel \.goalChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
+   "four photo goals form 2×2");
+ assert.match(autoCss,/\.topicChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:9px/,
+   "the six local topic chips are readable in two columns");
+ assert.match(autoCss,/\.storyChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
+   "four real licensed film stories form 2×2");
+ assert.match(autoCss,/\.topicInput input\{\s*height:60px;min-height:60px/,
+   "real editable local topic input is tall enough for iPhone");
+ assert.match(autoCss,/\.storyChoices button\{\s*gap:7px;min-height:194px/,
+   "film posters and labels remain readable");
+ assert.match(autoCss,/\.confirm\{\s*width:100%;min-height:70px/,
+   "original support-and-audio CTA is prominent and touch-safe");
+ assert.match(studio,/className=\{videoStyles\.heroEyebrow\}/);
+ assert.match(studio,/Создавайте видео для поддержки, баланса и развития/);
+ assert.equal((studio.match(/data-video-practice-shortcuts/g)||[]).length,1);
+ assert.match(studio,/data-video-practice-shortcut=\{kind\}/);
+ assert.match(studio,/setActiveWorkspace\("practices"\);setStudioMode\("therapy"\)/,
+   "all three entry points reuse the existing guided course");
+ for(const selector of ["data-guided-meditation-step","data-guided-practice-step","data-guided-programme-step","data-video-therapy-focus"])
+   assert.ok(studio.includes(selector));
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1,
+   "do not duplicate the recorder or stage");
+ assert.equal((studio.match(/<MandalaGuidedCourse /g)||[]).length,1,
+   "create meditation, ritual and course with the existing one module");
+});
+
+
+test("owner-approved fifth Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/\{id:"editor",Icon:SlidersHorizontal\},\{id:"pro",Icon:Zap\}/);
+ assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
+ assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
+ assert.match(studio,/data-video-basic-editor/);
+ for(const id of ["style","photo","voice","music"])assert.ok(studio.includes('id:"'+id+'"'));
+ assert.match(studio,/data-video-basic-style=\{index\}/);
+ assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+ assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
+ assert.match(studio,/basicPanelTab==="music" \? <div className=\{videoStyles.basicMusicPane\}/);
+ assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1,
+   "only the original voice panel is mounted in fifth");
+ assert.equal((studio.match(/id="video-audio"/g)||[]).length,1,
+   "single shared audio editor and native playback dock");
+ assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaStoriesCharacters /g)||[]).length,1);
+ assert.match(studio,/data-video-basic-format=\{value\}/);
+ assert.match(studio,/data-video-basic-duration=\{value\}/);
+ assert.match(studio,/data-video-final-editor/);
+ assert.match(studio,/data-video-pro-advanced/);
+ assert.match(studio,/data-video-quick-generate/);
+ assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });

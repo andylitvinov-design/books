@@ -42,7 +42,7 @@ const COPY={
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
-const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Messenger'}
+const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
 const fmtDate=(value,locale)=>{
   const ms=Date.parse(value||'')
@@ -91,7 +91,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
   locale='en',accountId,requests=[],businessEnquiries=[],telegramUrl='',
-  websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
+  websiteLoading=false,websiteUnavailable=false,onReload,initialDirectThreadId='',embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
 }){
   const t=COPY[locale]||COPY.en
   const routeRequestId=normalizeMessagesRequestId(useSearchParams().get('requestId'))
@@ -107,6 +107,7 @@ export default function MessagesSimpleInbox({
   const [openDetail,setOpenDetail]=useState(false)
   const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
+  const openedLinkRef=useRef('')
   const [refreshNonce,setRefreshNonce]=useState(0)
   const [offline,setOffline]=useState(false)
   useEffect(()=>{
@@ -175,6 +176,19 @@ export default function MessagesSimpleInbox({
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
+
+  // Lock-screen deep links open only after the signed-in account's own
+  // verified inbox contains the thread, never from the URL UUID alone.
+  useEffect(()=>{
+    if(!accountId||!initialDirectThreadId)return
+    const opening=accountId+':'+initialDirectThreadId
+    if(openedLinkRef.current===opening)return
+    const key='direct:'+initialDirectThreadId
+    if(!rows.some(row=>row.key===key))return
+    openedLinkRef.current=opening
+    setTab('chats');setSearch('');setSelectedKey(key);setOpenDetail(true);setShowCard(false)
+  },[accountId,initialDirectThreadId,rows])
+
 
   useEffect(()=>{
     setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:crmEnabled,error:false,threads:[],partial:false})
