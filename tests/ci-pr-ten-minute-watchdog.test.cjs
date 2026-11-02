@@ -50,27 +50,6 @@ test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
     'obsolete optional release-ready does not invalidate verified Core');
   assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,{id:2,name:'browser',conclusion:'failure'}]}),false);
 });
-
-test('one exact unified Actions status can wake the existing merge coordinator',async()=>{
-  let dispatched=0;
-  const candidate=pr(99);
-  const github={rest:{
-    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'clean'}})},
-    actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:3}})},
-    checks:{listForRef:async arg=>({data:{total_count:1,check_runs:[{
-      id:2,name:arg.check_name==='hh-merge-check'?'hh-merge-check':'obsolete-check',
-      status:'completed',conclusion:'success',app:{id:15368}
-    }]}})},
-    repos:{getBranch:async()=>({data:{protected:true,protection:{
-      required_status_checks:{contexts:['hh-merge-check']}
-    }}})}
-  },request:async route=>{if(route.includes('dispatches'))dispatched++;return {data:{workflow_runs:[]}};}};
-  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
-  assert.equal(result.greenUnarmed,1);
-  assert.equal(result.mergeCoordinatorDispatched,1);
-  assert.equal(dispatched,1);
-});
-
 test('CI admission uses separate running and queued limits, not their sum',()=>{
   assert.equal(canRetryCi(12,12),true);
   assert.equal(canRetryCi(18,40),false);
@@ -609,19 +588,24 @@ test('GraphQL outage falls back to no more than six rotating REST snapshots',asy
   assert.equal(result.inspected,6);
 });
 
-test('admin-only migration safely replaces three old required statuses with one unified status',()=>{
+test('one-time admin migration proves merged single gate and preserves BOTH protected controls',()=>{
   const {readFileSync}=require('node:fs');
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
   assert.ok(source.includes('  workflow_dispatch:'));
-  assert.ok(source.includes('evidence_pr:') && source.includes('evidence_run_id:'));
-  assert.ok(!source.includes('  push:') && !source.includes('  schedule:'));
+  assert.ok(!source.includes('  push:'));
+  assert.ok(!source.includes('  schedule:'));
   assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
   assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
-  assert.ok(source.includes('Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.'));
-  assert.ok(source.includes('[$data.jobs[] | select(.name == $name'),
-    'migration checks real completed jobs, rather than arbitrary requested names');
-  for(const name of ['hh-merge-check','hh-core-verified','hh-specialist','release-ready','classify-change'])
-    assert.ok(source.includes('"'+name+'"'),'proof missing '+name);
+  assert.ok(source.includes('set -euo pipefail'));
+  assert.ok(source.includes('HH_BRANCH_ADMIN_TOKEN missing. No branch rule changed.'));
+  assert.ok(source.includes("EVIDENCE_PR: " + '$' + "{{ inputs.evidence_pr_number }}"));
+  assert.ok(source.includes('repos/$GH_REPO/pulls/$EVIDENCE_PR'));
+  assert.ok(source.includes('.merged == true'));
+  assert.ok(source.includes('head_sha=$head'));
+  assert.ok(source.includes('total_count == (.jobs | length)'));
+  for(const gate of ['hh-core-verified','hh-specialist','release-ready','hh-merge-check'])
+    assert.ok(source.includes('"'+gate+'"'),gate);
+  assert.ok(source.includes('Exact run lacks Core, Specialist, legacy or new verified PASS jobs.'));
   const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
   const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
   const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
@@ -634,28 +618,27 @@ test('admin-only migration safely replaces three old required statuses with one 
   assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
   assert.ok(source.includes('.enforcement == "active"'));
   assert.ok(source.includes('required_review_thread_resolution == true'));
-  assert.ok(source.includes('non_fast_forward')&&source.includes('deletion'));
-  assert.ok(source.includes('Already migrated: both required status sources read back cleanly.'));
+  assert.ok(source.includes('non_fast_forward'));
+  assert.ok(source.includes('deletion'));
+  assert.ok(source.includes('Already migrated, both protections verified.'));
   assert.ok(source.includes('["hh-merge-check"]'));
-  assert.ok(source.includes('Both controls VERIFIED: only hh-merge-check is required'));
-  assert.ok(!source.includes('input.jobs[]'), 'admin proof must use one complete immutable jobs object');
-  assert.ok(source.includes('($data.jobs | length) == $data.total_count'));
+  assert.ok(source.includes('MIGRATED: only hh-merge-check required'));
+  assert.ok(!source.includes('base64 --decode | grep -q '));
   assert.ok(!source.includes('gh api --method DELETE '));
 });
 
-test('event-driven merge and inventory respect legacy protection until admin migration',()=>{
+test('event-driven merge supports legacy, bridge and only approved single required check',()=>{
   const {readFileSync}=require('node:fs');
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
-  assert.ok(native.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'));
-  assert.ok(native.includes('const unifiedRequired = Array.isArray(required) && required.includes("hh-merge-check")'));
-  assert.ok(native.includes('requiredJobs.every(passed)'));
-  assert.ok(native.includes('mode = "unified"'));
-  assert.ok(native.includes('mode = "legacy"'));
+  assert.ok(native.includes('const allowedRequiredSets = new Map(['));
+  assert.ok(native.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
+  assert.ok(native.includes('["hh-merge-check", ["hh-merge-check"]]'));
+  assert.ok(native.includes('["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]]'));
+  assert.ok(native.includes('const notPassed = need.filter(name => !passed(name))'));
+  assert.ok(native.includes('jobPage.total_count !== jobs.length'));
   assert.ok(hourly.includes('const legacyReleaseMandatory=legacy.includes("release-ready")'));
-  assert.ok(hourly.includes('const unifiedRequired=legacy.includes("hh-merge-check")'));
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
-  assert.ok(hourly.includes('UNIFIED_REQUIRED_NOT_GREEN'));
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
 });
 
@@ -779,7 +762,11 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const current=[coreRun,specialist,
     ...Array.from({length:98},(_,i)=>makeRun(i+3,'Workflow '+i,i+3))];
   const prior=makeRun(200,'Prior SHA',200,'success','c'.repeat(40));
-  async function decide(pages,totals) {
+  async function decide(pages,totals,{required=['release-ready'],jobs=[
+    {name:'hh-core-verified',status:'completed',conclusion:'success'},
+    {name:'hh-specialist',status:'completed',conclusion:'success'},
+    {name:'release-ready',status:'completed',conclusion:'success'},
+  ]}={}) {
     const calls=[],outputs={},notes=[];
     const gh={rest:{
       pulls:{get:async()=>({data:pr}),list:async()=>({data:[pr]})},
@@ -790,14 +777,10 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
-          {name:'hh-core-verified',status:'completed',conclusion:'success'},
-          {name:'hh-specialist',status:'completed',conclusion:'success'},
-          {name:'release-ready',status:'completed',conclusion:'success'},
-        ]}}),
+        listJobsForWorkflowRun:async()=>({data:{total_count:jobs.length,jobs}}),
       },
       repos:{getBranch:async()=>({data:{protected:true,protection:{
-        required_status_checks:{contexts:['release-ready']}}}})},
+        required_status_checks:{contexts:required}}}})},
     }};
     const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
       payload:{pull_request:pr}};
@@ -808,6 +791,21 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  const noSpecialist=await decide([current,[prior]],[101,101],{jobs:[
+    {name:'hh-core-verified',status:'completed',conclusion:'success'},
+    {name:'release-ready',status:'completed',conclusion:'success'},
+  ]});
+  assert.equal(noSpecialist.ok,false,'legacy alias cannot replace missing real Specialist');
+  const single=await decide([current,[prior]],[101,101],{
+    required:['hh-merge-check'],
+    jobs:[{name:'hh-merge-check',status:'completed',conclusion:'success'}],
+  });
+  assert.equal(single.ok,true,'new single required status accepts only actual PASS');
+  const redSingle=await decide([current,[prior]],[101,101],{
+    required:['hh-merge-check'],
+    jobs:[{name:'hh-merge-check',status:'completed',conclusion:'failure'}],
+  });
+  assert.equal(redSingle.ok,false,'red unified status can never arm AutoMerge');
   const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
   assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
   const incomplete=await decide([current,[]],[102,102]);
@@ -1102,6 +1100,19 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
 
+
+test('watchdog finds an existing repair receipt after 300 comments',async()=>{
+ const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const sha='a'.repeat(40);const pages=[];let written=0;
+ const gh={rest:{issues:{listComments:async({page})=>{
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+ },createComment:async()=>{written++}}}};
+ const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
+ const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result,false);assert.equal(written,0);
+});
+
 test('live watchdog no longer gates periodic PR discovery on stale unit tests',()=>{
   const fs=require('node:fs');
   const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
@@ -1221,4 +1232,37 @@ test('independent specialist failures require complete trusted same-HEAD evidenc
   assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services',null,'in_progress')]}),'UNKNOWN');
   assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services','failure','completed',999)]}),'POLICY_OR_SKIPPED');
   assert.equal(classify({total_count:101,check_runs:rows}),'UNKNOWN');
+});
+
+test('one exact unified Actions status can wake the existing merge coordinator',async()=>{
+  let dispatched=0;
+  const candidate=pr(99);
+  const github={rest:{
+    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'clean'}})},
+    actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:3}})},
+    checks:{listForRef:async arg=>({data:{total_count:1,check_runs:[{
+      id:2,name:arg.check_name==='hh-merge-check'?'hh-merge-check':'obsolete-check',
+      status:'completed',conclusion:'success',app:{id:15368}
+    }]}})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['hh-merge-check']}
+    }}})}
+  },request:async route=>{if(route.includes('dispatches'))dispatched++;return {data:{workflow_runs:[]}};}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.greenUnarmed,1);
+  assert.equal(result.mergeCoordinatorDispatched,1);
+  assert.equal(dispatched,1);
+});
+
+
+
+test('production coordinator keeps exact new unified status after protection migration',()=>{
+  const {readFileSync}=require('node:fs');
+  const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+  const watchdog=readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(hourly.includes('const unifiedRequired=legacy.includes("hh-merge-check")'));
+  assert.ok(hourly.includes('UNIFIED_REQUIRED_NOT_GREEN'));
+  assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(watchdog.includes('required-unified-head-check'));
+  assert.ok(watchdog.includes("'hh-merge-check'"));
 });

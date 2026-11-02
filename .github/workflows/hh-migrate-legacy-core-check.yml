@@ -1,19 +1,16 @@
-# One-time manual migration to ONE real required GitHub Actions status.
-# Run only after the staging production PR and its hh-merge-check are verified.
-# Requires a TEMPORARY fine-grained Administration:write PAT in
-# HH_BRANCH_ADMIN_TOKEN; NEVER grant admin to the regular AutoMerge token.
-name: HH manual unified merge-check required status migration
+# One-time administrative migration for the existing protected production branch.
+# Must be run from trusted default branch AFTER a real production PR emits
+# hh-merge-check SUCCESS and is safely merged under legacy release-ready.
+# No runtime PR token receives Administration permissions.
+name: HH manual Core + Specialist required status migration
 on:
   workflow_dispatch:
     inputs:
-      evidence_pr:
-        description: 'Merged production PR number proving real hh-merge-check'
+      evidence_pr_number:
+        description: 'Merged production PR proving the new hh-merge-check (default #3054)'
         required: true
         type: string
-      evidence_run_id:
-        description: 'Successful HH PR core release gate run ID on that PR HEAD'
-        required: true
-        type: string
+        default: '3054'
 permissions:
   contents: read
   actions: read
@@ -27,102 +24,116 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - name: Verify unified gate evidence, admin access and BOTH protections
+      - name: Verify merged exact-head Core+Specialist+new status and patch BOTH protections
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.HH_BRANCH_ADMIN_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ inputs.evidence_pr }}
-          RUN_ID: ${{ inputs.evidence_run_id }}
+          EVIDENCE_PR: ${{ inputs.evidence_pr_number }}
         run: |
           set -euo pipefail
           [[ -n "$GH_TOKEN" ]] || {
-            echo '::error::Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.' >&2
+            echo '::error::Temporary scoped HH_BRANCH_ADMIN_TOKEN missing. No branch rule changed.' >&2
             exit 1
           }
-          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ && "$RUN_ID" =~ ^[1-9][0-9]*$ ]] || {
-            echo '::error::Invalid immutable evidence PR/run IDs; no protection changed.' >&2
+          [[ "$EVIDENCE_PR" =~ ^[1-9][0-9]{0,7}$ ]] || {
+            echo '::error::Invalid proof PR number; no branch rule changed.' >&2
             exit 1
           }
           temp="$(mktemp -d)"
           trap 'rm -rf "$temp"' EXIT
-          gh api "repos/$GH_REPO/pulls/$PR_NUMBER" > "$temp/pr.json"
-          gh api "repos/$GH_REPO/actions/runs/$RUN_ID" > "$temp/run.json"
-          jq -e --argjson number "$PR_NUMBER" --arg repo "$GH_REPO" '
-            .number == $number and .state == "closed" and .merged == true and
-            .merged_at != null and .merge_commit_sha != null and
+          gh api "repos/$GH_REPO/pulls/$EVIDENCE_PR" > "$temp/pr.json"
+          jq -e --arg repo "$GH_REPO" '
+            .state == "closed" and .merged == true and
             .base.ref == "codex/public-book-library" and
-            .head.repo.full_name == $repo and (.head.sha | test("^[0-9a-f]{40}$"))
+            .head.repo.full_name == $repo and .base.repo.full_name == $repo and
+            (.head.sha | test("^[a-f0-9]{40}$")) and
+            (.merge_commit_sha | test("^[a-f0-9]{40}$")) and
+            (.merged_at != null)
           ' "$temp/pr.json" >/dev/null || {
-            echo '::error::Evidence PR must be merged on actual production with unchanged source.' >&2
+            echo '::error::Proof PR is not a merged exact production source PR.' >&2
             exit 1
           }
-          pr_head="$(jq -r '.head.sha' "$temp/pr.json")"
-          pr_branch="$(jq -r '.head.ref' "$temp/pr.json")"
-          jq -e --arg repo "$GH_REPO" --arg head "$pr_head" --arg branch "$pr_branch" '
-            .name == "HH PR core release gate" and
-            .path == ".github/workflows/hh-pr-core-release.yml" and
-            .event == "pull_request" and .status == "completed" and
-            .conclusion == "success" and .run_attempt >= 1 and
-            .repository.full_name == $repo and .head_repository.full_name == $repo and
-            .head_sha == $head and .head_branch == $branch
-          ' "$temp/run.json" >/dev/null || {
-            echo '::error::Evidence run must be successful, immutable and source-HEAD matched.' >&2
+          head="$(jq -r '.head.sha' "$temp/pr.json")"
+          source_branch="$(jq -r '.head.ref' "$temp/pr.json")"
+          merged_at="$(jq -r '.merged_at' "$temp/pr.json")"
+          # The current source HEAD is immutable after merge. Enumerate this
+          # SHA's real Core runs, never treat a stale branch-name-only run as proof.
+          gh api "repos/$GH_REPO/actions/workflows/hh-pr-core-release.yml/runs?event=pull_request&head_sha=$head&per_page=100" > "$temp/runs.json"
+          jq -e --arg head "$head" --arg branch "$source_branch" --arg repo "$GH_REPO" --arg merged "$merged_at" '
+            .total_count > 0 and .total_count <= 100 and
+            ([.workflow_runs[] | select(
+              .event == "pull_request" and .status == "completed" and .conclusion == "success" and
+              .name == "HH PR core release gate" and
+              ((.path | split("@")[0]) == ".github/workflows/hh-pr-core-release.yml") and
+              .repository.full_name == $repo and .head_repository.full_name == $repo and
+              .head_sha == $head and .head_branch == $branch and
+              .created_at <= $merged
+            )] | length) >= 1
+          ' "$temp/runs.json" >/dev/null || {
+            echo '::error::No completed successful trusted Core run for the exact merged PR source SHA.' >&2
             exit 1
           }
-          gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs?per_page=100&filter=latest" > "$temp/jobs.json"
+          run_id="$(jq -r --arg head "$head" --arg branch "$source_branch" --arg merged "$merged_at" '
+            [.workflow_runs[] | select(
+              .head_sha == $head and .head_branch == $branch and
+              .name == "HH PR core release gate" and
+              .event == "pull_request" and .status == "completed" and
+              .conclusion == "success" and .created_at <= $merged
+            )] | max_by(.id) | .id
+          ' "$temp/runs.json")"
+          [[ "$run_id" =~ ^[1-9][0-9]+$ ]] || exit 1
+          gh api "repos/$GH_REPO/actions/runs/$run_id/jobs?per_page=100" > "$temp/jobs.json"
           jq -e '
-            . as $data |
-            ($data.total_count > 0 and $data.total_count <= 100 and
-             ($data.jobs | length) == $data.total_count) and
-            (["classify-change","hh-core-verified","hh-specialist","hh-merge-check","release-ready"] |
+            .total_count <= 100 and .total_count == (.jobs | length) and
+            (.jobs as $jobs |
+              ["hh-core-verified","hh-specialist","release-ready","hh-merge-check"] |
               all(. as $name |
-                ([$data.jobs[] | select(.name == $name and
-                  .status == "completed" and .conclusion == "success")] | length) == 1))
+                ([$jobs[] | select(.name == $name and .status == "completed" and .conclusion == "success")] | length) == 1))
           ' "$temp/jobs.json" >/dev/null || {
-            echo '::error::Actual Core/Unified/Specialist/Legacy job proof not verified; no protection changed.' >&2
+            echo '::error::Exact run lacks Core, Specialist, legacy or new verified PASS jobs.' >&2
             exit 1
           }
-          echo "Source PR #$PR_NUMBER and exact Core run $RUN_ID have a genuine successful unified check." >> "$GITHUB_STEP_SUMMARY"
-
-          # Both administration reads must succeed before ANY status mutation.
+          # Read BOTH effective protection sources before ANY write. Admin 403
+          # is a real blocker; do not borrow the everyday AutoMerge token.
           gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"
           gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic.json"
           jq -e '
-            .target == "branch" and .enforcement == "active" and
+            .id == 26269892 and .target == "branch" and .enforcement == "active" and
             .conditions.ref_name.include == ["refs/heads/codex/public-book-library"] and
-            .conditions.ref_name.exclude == [] and (.bypass_actors | length) == 0 and
+            .conditions.ref_name.exclude == [] and .bypass_actors == [] and
             ([.rules[].type] | sort) == ["deletion","non_fast_forward","pull_request","required_status_checks"] and
             ([.rules[] | select(.type == "pull_request") |
-              (.parameters.required_review_thread_resolution == true and
-               (.parameters.allowed_merge_methods | index("squash") != null))] == [true]) and
+              .parameters.required_review_thread_resolution] == [true]) and
             ([.rules[] | select(.type == "required_status_checks") |
-              (.parameters.do_not_enforce_on_create == false and
-               ([.parameters.required_status_checks[]?.context] | all(
-                 . == "release-ready" or . == "hh-core-verified" or
-                 . == "hh-specialist" or . == "hh-merge-check")))] == [true])
-          ' "$temp/rules.json" >/dev/null
+              .parameters.required_status_checks[]?.context] |
+              all(. == "release-ready" or . == "hh-merge-check"))
+          ' "$temp/rules.json" >/dev/null || {
+            echo '::error::Unexpected hosted rule shape or context; no protection change.' >&2
+            exit 1
+          }
           jq -e '
             (.strict | type) == "boolean" and
             ([.checks[]?.context] + [.contexts[]?] |
-              all(. == "release-ready" or . == "hh-core-verified" or
-                  . == "hh-specialist" or . == "hh-merge-check"))
-          ' "$temp/classic.json" >/dev/null
-          # Idempotent readback: never reapply a completed migration.
+              all(. == "release-ready" or . == "hh-merge-check"))
+          ' "$temp/classic.json" >/dev/null || {
+            echo '::error::Unexpected classic rule shape or status; no protection change.' >&2
+            exit 1
+          }
           if jq -e '
-             ([.rules[] | select(.type == "required_status_checks") |
-               .parameters.required_status_checks[]?.context] | sort) == ["hh-merge-check"] and
-             ([.rules[] | select(.type == "required_status_checks") |
-               .parameters.strict_required_status_checks_policy] == [false])
+            ([.rules[] | select(.type == "required_status_checks") |
+              .parameters.required_status_checks[]?.context] | unique) == ["hh-merge-check"] and
+            ([.rules[] | select(.type == "required_status_checks") |
+              .parameters.strict_required_status_checks_policy] == [false])
           ' "$temp/rules.json" >/dev/null && jq -e '
-             ([.checks[]?.context] + [.contexts[]?] | unique | sort) == ["hh-merge-check"] and
-             .strict == false
+            ([.checks[]?.context] + [.contexts[]?] | unique) == ["hh-merge-check"] and
+            .strict == false
           ' "$temp/classic.json" >/dev/null; then
-            echo 'Already migrated: both required status sources read back cleanly.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Already migrated, both protections verified. No API writes.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # FIRST add the single real required check on hosted ruleset. If
-          # classic patch later fails, legacy status is STILL required.
+          # First make the new proven status mandatory in the hosted ruleset.
+          # Until classic changes, legacy release-ready also remains required.
           jq '{
             name, target, enforcement, conditions, bypass_actors,
             rules: (.rules | map(
@@ -141,14 +152,17 @@ jobs:
             (.rules | any(.type == "non_fast_forward")) and
             (.rules | any(.type == "pull_request" and .parameters.required_review_thread_resolution == true)) and
             ([.rules[] | select(.type == "required_status_checks") |
-              .parameters.required_status_checks[]?.context] | sort) == ["hh-merge-check"]
+              .parameters.required_status_checks[]?.context] | unique) == ["hh-merge-check"]
           ' "$temp/rules-after.json" >/dev/null
-          # SECOND patch ONLY classic required statuses, not push or review rules.
-          jq -n '{strict:false,checks:[{"context":"hh-merge-check","app_id":15368}]}' > "$temp/classic-patch.json"
+          jq -n '{
+            strict: false,
+            checks: [{"context":"hh-merge-check","app_id":15368}]
+          }' > "$temp/classic-patch.json"
           gh api --method PATCH "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" --input "$temp/classic-patch.json" >/dev/null
           gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic-after.json"
           jq -e '
-            ([.checks[]?.context] + [.contexts[]?] | unique | sort) == ["hh-merge-check"] and
+            ([.checks[]?.context] + [.contexts[]?] | unique) == ["hh-merge-check"] and
             .strict == false
           ' "$temp/classic-after.json" >/dev/null
-          echo 'Both controls VERIFIED: only hh-merge-check is required; old aliases are NOT required; deletion, force-push and review protections retained.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'MIGRATED: only hh-merge-check required, old three contexts no longer mandatory.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Preserved: no force-push, no deletion, PR reviews/threads, no bypass; strict base update disabled.' >> "$GITHUB_STEP_SUMMARY"

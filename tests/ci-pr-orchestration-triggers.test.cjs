@@ -180,3 +180,26 @@ test('hourly native merge requires explicit verified release for modern active o
  assert.ok(yml.includes('l.historical_expiry_allowed!==true'));
  assert.ok(!yml.includes('force:true'));
 });
+
+test('staged single-release-check policy preserves legacy until proven administrative cutover',()=>{
+  const auto=read('hh-native-auto-merge');
+  assert.ok(auto.includes('const allowedRequiredSets = new Map(['));
+  assert.ok(auto.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
+  assert.ok(auto.includes('["hh-merge-check", ["hh-merge-check"]]'));
+  assert.ok(auto.includes('["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]]'));
+  assert.ok(auto.includes('const notPassed = need.filter(name => !passed(name))'));
+  assert.ok(auto.includes('jobPage.total_count !== jobs.length'));
+  assert.ok(auto.includes('required.length !== new Set(required).size || !need'));
+  assert.ok(!auto.includes("oldRequired === coreRequired"));
+  const m=read('hh-migrate-legacy-core-check');
+  assert.ok(m.includes('HH_BRANCH_ADMIN_TOKEN'));
+  assert.ok(m.includes('head_sha=$head'));
+  assert.ok(m.includes('["hh-core-verified","hh-specialist","release-ready","hh-merge-check"]'));
+  assert.ok(m.includes('.parameters.required_status_checks = ['));
+  assert.ok(m.includes('"context":"hh-merge-check","integration_id":15368'));
+  assert.ok(m.includes('"context":"hh-merge-check","app_id":15368'));
+  assert.ok(m.includes('gh api --method PUT'));
+  assert.ok(m.includes('gh api --method PATCH'));
+  assert.ok(m.includes("Already migrated, both protections verified"));
+  assert.ok(m.includes('strict: false'));
+});
