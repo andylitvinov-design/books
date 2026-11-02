@@ -4,7 +4,7 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles, resolveUnknownMergeability, rotateConflictSample } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles, resolveUnknownMergeability, rotateConflictSample, conflictRotationOffset } from '../lib/ci/pr-sweep-guard.mjs';
 import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
@@ -140,7 +140,7 @@ async function reportConflictRoutes(repo,token) {
   }
   const unresolved=first.rows.filter(p=>p.mergeable!==true&&p.mergeable!==false).length;
   const inventory=await resolveUnknownMergeability(first.rows,n=>get('/pulls/'+n),
-    {limit:35,offset:unresolved?(Math.floor(Date.now()/600000)*35)%unresolved:0});
+    {limit:35,offset:unresolved?conflictRotationOffset(unresolved,35,Date.now()):0});
   const dirty=inventory.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
   const sample=rotateConflictSample(dirty,35,Date.now());
   let cursor=0;

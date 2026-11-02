@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability, rotateConflictSample } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability, rotateConflictSample, conflictRotationOffset } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -577,7 +577,7 @@ test('production conflict route probes unknown PRs and rechecks before grouping'
   const m=String(url).match(/\/pulls\/(\d+)(\/files\?.*)?$/);assert.ok(m,url);
   return response(m[2]?[{filename:'components/shared.jsx'}]:{number:Number(m[1]),state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}});
  };
- const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,rotateConflictSample,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,rotateConflictSample,conflictRotationOffset,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
  await fn('andylitvinov-design/books','test-token');
  assert.equal(out[0].dirty_total,2);assert.equal(out[0].dirty_total_complete,true);
  assert.equal(out[0].groups.length,1);assert.equal(out[0].groups[0].blocked_pr_count,2);
@@ -587,7 +587,7 @@ test('production conflict route probes unknown PRs and rechecks before grouping'
 
 test('bounded conflict sampling rotates over all dirty PRs',()=>{
  const rows=Array.from({length:136},(_,number)=>({number:number+1}));const seen=new Set();
- for(let turn=0;turn<4;turn++)for(const row of rotateConflictSample(rows,35,turn*600000))seen.add(row.number);
+ for(let turn=0;turn<4;turn++)for(const row of rotateConflictSample(rows,35,turn*3600000))seen.add(row.number);
  assert.equal(seen.size,136);assert.equal(rotateConflictSample(rows,35,0).length,35);
 });
 
@@ -610,4 +610,15 @@ test('conflict snapshot retries a transient GitHub 502 but not a client error',a
  const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{fetch,AbortSignal,Date,setTimeout:fn=>fn()});
  assert.equal((await fn('andylitvinov-design/books','test-token')).total,0);assert.equal(calls,2);
  calls=0;status=403;await assert.rejects(fn('andylitvinov-design/books','test-token'),/SWEEP_GRAPHQL_HTTP_403/);assert.equal(calls,1);
+});
+
+test('hourly conflict scans rotate through a backlog divisible by the ten-minute stride',()=>{
+ const rows=Array.from({length:210},(_,number)=>({number:number+1}));const seen=new Set();
+ for(let hour=0;hour<6;hour++)for(const row of rotateConflictSample(rows,35,hour*3600000))seen.add(row.number);
+ assert.equal(seen.size,210);
+});
+
+test('push-triggered conflict scans rotate within the same hour',()=>{
+ const rows=Array.from({length:210},(_,number)=>({number:number+1}));
+ assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
 });
