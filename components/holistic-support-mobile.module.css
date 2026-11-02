@@ -168,8 +168,8 @@
 .bottomNav > :is(a,button) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 50px; min-width: 0; padding: 3px 2px; border: 0; background: transparent; color: #69716e; font-size: 13px; line-height: 1.15; text-align: center; text-decoration: none; }
 .bottomNav > :is(a,button):hover { color: #078362; }
 .bottomNav > :is(a,button):first-child { color: #078362; font-weight: 800; }
-.bottomNav [data-support-video-ai] { color: #117c64; font-weight: 800; }
-.bottomNav [data-support-video-ai][aria-current="page"] { border-radius: 14px; background: #e2f5ea; color: #08785f; }
+.bottomNav [data-support-video-ai] {color:#117c64;font-weight:800}
+.bottomNav [data-support-video-ai][aria-current="page"] {border-radius:14px;background:#e2f5ea;color:#08785f}
 .settingsPanel { position: fixed; z-index: 59; right: max(9px, env(safe-area-inset-right)); bottom: calc(79px + env(safe-area-inset-bottom)); width: min(365px, calc(100vw - 18px)); padding: 19px; border: 1px solid #e0d8c9; border-radius: 21px; background: #fffdfa; color: #23382d; box-shadow: 0 9px 35px #122f2b44; }
 .settingsPanel h2 { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 21px; }
 .settingsPanel p { font-size: 15px; line-height: 1.45; }
@@ -723,14 +723,14 @@
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
 }
 
-/* Reiki filtering must not turn the shared six-button viewport dock into page content. */
+/* Filtering must never push the shared dock into the page scroll. */
 @media (max-width: 640px) {
-  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
-    padding-bottom: calc(135px + env(safe-area-inset-bottom));
-    scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container{
+    padding-bottom:calc(135px + env(safe-area-inset-bottom));
+    scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom));
   }
-  .page:has([data-support-reiki-central][data-active-tab="filter"]) [data-support-reiki-apply] {
-    scroll-margin-bottom: calc(100px + env(safe-area-inset-bottom));
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) [data-support-reiki-apply]{
+    scroll-margin-bottom:calc(100px + env(safe-area-inset-bottom));
   }
 }
 
@@ -850,7 +850,7 @@
   }
 }
 
-/* The approved one-screen mobile support dock has five destinations, including
+/* The approved one-screen mobile support dock has six destinations, including
    the EXISTING authenticated Messages page. Keep every target usable at 320px. */
 .bottomNav > :is(a,button) span { display: block; max-width: 100%; overflow-wrap: anywhere; }
 @media (max-width: 350px) {
@@ -1200,4 +1200,15 @@
   .videoFeedItem { grid-template-columns: 100px minmax(0, 1fr); gap: 7px; padding: 6px; }
   .videoFeedFooter > small { font-size: 10px; }
   .videoFeedChoose { font-size: 11px; }
+}
+
+/* A native mobile touch must land on the actual source-backed thumbnail, not
+   on its overlaid image/caption or the fixed app dock during auto-scrolling. */
+@media(max-width:640px){
+  .videoSection .videoCard{
+    scroll-margin-block-start:65px;
+    scroll-margin-block-end:calc(125px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  .videoSection .videoCard > :is(img,span){pointer-events:none}
 }
