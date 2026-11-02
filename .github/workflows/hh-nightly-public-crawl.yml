@@ -8,6 +8,9 @@ on:
     - cron: '7 5 * * *'
       timezone: 'America/Toronto'
   workflow_dispatch:
+  pull_request:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-nightly-public-crawl.yml']
 permissions:
   contents: read
 concurrency:
@@ -15,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
-    if: ${{ github.event_name != 'schedule' || github.event.schedule == '15 7 * * *' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '15 7 * * *' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -146,3 +149,37 @@ jobs:
           path: artifacts/holistic-light-design-qa/
           if-no-files-found: warn
           retention-days: 3
+
+  validate-design-schedule:
+    if: \${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install checksum-verified actionlint v1.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 \
+            'https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz' \
+            --output "$archive"
+          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/hh-nightly-public-crawl.yml
+      - name: Verify original nightly crawl plus daily Toronto issue handoff
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const w=fs.readFileSync(".github/workflows/hh-nightly-public-crawl.yml","utf8");
+            for(const text of ["15 7 * * *","7 5 * * *","America/Toronto",
+              "scripts/holistic-light-design-qa.mjs","scripts/holistic-light-qa-handoff.mjs",
+              "issues: write","persist-credentials: false","hh-design-bible-daily"])
+              assert.ok(w.includes(text),text);
+            assert.match(w,/github\.event_name == .workflow_dispatch. \|\| github\.event\.schedule == .15 7/);
+          '
