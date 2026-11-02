@@ -159,7 +159,11 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
         </div>
         <button type="button" data-support-search className={styles.search}
           aria-controls="holistic-inline-results" aria-expanded={searched}
-          onClick={() => setSearched(true)}>{t.search}<span aria-hidden="true">→</span></button>
+          onClick={() => {
+            // React may briefly paint a stale consultation while the new
+            // request effect clears old results. Reset in this same user event.
+            setMasters(null); setConsultations(null); setSearched(true);
+          }}>{t.search}<span aria-hidden="true">→</span></button>
         <p className={styles.note}>{t.note}</p>
       </div>}
       <div id="holistic-inline-results" className={styles.results} hidden={!searched}>
