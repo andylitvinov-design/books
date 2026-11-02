@@ -2816,9 +2816,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           locale==="es"?"Efectos de audio desactivados.":"Audio effects are off.");
         return;
       }
-      if(!previousHypnoAudioRef.current){
-        previousHypnoAudioRef.current={audio:attachedAudio,rights:audioRights};
-      }
+      const previousAudio=previousHypnoAudioRef.current??{audio:attachedAudio,rights:audioRights};
       const file=await createHypnoAudioEffectFile({
         speechFile:hypnoSpeechSource,
         durationSeconds:duration,
@@ -2829,6 +2827,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         whisperGain:(next.whisperGain??hypnoWhisperGain)/100,
       });
       if(recording||preparing)return;
+      if(!previousHypnoAudioRef.current)previousHypnoAudioRef.current=previousAudio;
       const entry=chooseAudioFile(file);
       if(!entry)throw new Error("AUDIO_FILE_REJECTED");
       setAudioRights(true);setSoundVolume(100);
@@ -3143,7 +3142,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   const startFromHero=()=>{
-    if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    if(recording||preparing||hypnoAudioBusy||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
     if(phrasePending){
       setNotice(locale==="ru"?"Сначала утвердите фразы в разделе «Фразы поддержки».":locale==="es"?"Confirma las frases en el apartado «Frases de apoyo».":"Approve the selected phrases before creating a video.");
       setActiveWorkspace("phrases");
@@ -4400,7 +4399,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing}
+          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={setHypnoLight}
             posters={{
