@@ -1293,7 +1293,11 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
 });
 
 test('retired administration migrator cannot restore old protected contexts',()=>{
-  assert.equal(existsSync(join(root,'.github','workflows','hh-loose-release-ready-once.yml')),false);
+  const migration=workflow('hh-loose-release-ready-once.yml');
+  assert.match(migration,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(migration,/^  push:|^  pull_request:|^  schedule:/m);
+  assert.match(migration,/hh-merge-check/);
+  assert.doesNotMatch(migration,/HH_AUTOMERGE_TOKEN|--method PUT|--method PATCH|HH_STATUS_MIGRATION_ONE_TIME/);
   const prune=workflow('hh-ci-stale-run-prune.yml');
   assert.doesNotMatch(prune,/HH_STATUS_MIGRATION_ONE_TIME|--method PATCH/);
   const native=workflow('hh-native-auto-merge.yml');
