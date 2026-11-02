@@ -340,7 +340,8 @@ jobs:
           echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
   hh-specialist:
     name: hh-specialist
-    needs: [scope, code]
+    # Run independent specialist CI while Core builds; both results gate release-ready.
+    needs: [scope]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -349,31 +350,23 @@ jobs:
       actions: read
       pull-requests: read
     steps:
-      - name: Fail closed on missing, cancelled or failing required core jobs
+      - name: Fail closed when scope is missing or draft; run specialists in parallel with Core
         shell: bash
         env:
           SCOPE_RESULT: ${{ needs.scope.result }}
-          CODE_RESULT: ${{ needs.code.result }}
-          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
-          ROUTE: ${{ needs.scope.outputs.route }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: core checks deferred; hh-specialist must remain red until Ready is fully validated.' >&2
+            echo 'Draft: specialist checks deferred until Ready is fully validated.' >&2
             exit 1
           fi
-          [[ "$SCOPE_RESULT" == success ]] || exit 1
-          if [[ "$DOCS_ONLY" == true ]]; then
-            [[ "$CODE_RESULT" == skipped ]] || exit 1
-          elif [[ "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
-            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || exit 1
-            echo "Trusted quick route $ROUTE: no Next.js build needed" >> "$GITHUB_STEP_SUMMARY"
-          else
-            [[ "$CODE_RESULT" == success ]] || exit 1
-          fi
-          echo 'Core routing passed; exact-head risk-routed specialist validation follows on PR events.' >> "$GITHUB_STEP_SUMMARY"
+          [[ "$SCOPE_RESULT" == success ]] || {
+            echo 'Cannot validate specialists without a verified scope.' >&2
+            exit 1
+          }
+          echo 'Specialist validation can overlap Core; final release-ready requires both checks.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -444,7 +437,8 @@ jobs:
   # Remove this legacy job in a separate PR ONLY after protection readback.
   release-ready:
     name: release-ready
-    needs: [hh-specialist]
+    # Preserve the legacy required context, but never make Specialist wait for Core.
+    needs: [hh-core-verified, hh-specialist]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -454,20 +448,21 @@ jobs:
       - name: Preserve legacy fail-closed status until admin switch
         shell: bash
         env:
+          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
           SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
         run: |
           set -euo pipefail
-          [[ "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Migration not yet finalized; hh-specialist is not green.' >&2
+          [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Core or specialist validation is missing, cancelled or failed.' >&2
             exit 1
           }
-          echo 'Legacy compatibility passed by delegated hh-specialist.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Legacy compatibility passed: Core and Specialist on the same workflow.' >> "$GITHUB_STEP_SUMMARY"
 
   # Keep the pre-existing plural alias as a nonrequired compatibility context.
   # It delegates to the real hh-specialist check; no duplicate expensive work.
   hh-specialists-verified:
     name: hh-specialists-verified
-    needs: [hh-specialist]
+    needs: [hh-core-verified, hh-specialist]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -476,12 +471,13 @@ jobs:
     steps:
       - name: Require full specialist aggregate on the same Core workflow
         env:
+          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
           SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Specialist validation missing, cancelled or failed; refusing a green status' >&2
+          [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Core or specialist validation missing, cancelled or failed; refusing green' >&2
             exit 1
           }
-          echo 'Full specialist aggregation succeeded; safe required status propagated.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Core and specialist validation both succeeded; compatibility status propagated.' >> "$GITHUB_STEP_SUMMARY"
