@@ -117,10 +117,13 @@ const copy = {
 const flowCopy = {
   ru:{
     focus:"Фокус практики",state:"Состояние",vector:"Вектор развития",
-    stateHint:"Выберите состояние, которое хотите поддержать. Можно уточнить цели ниже.",
-    vectorHint:"От состояния сейчас → к желаемому состоянию",
-    focusRequired:"Выберите состояние или цель.",vectorRequired:"Укажите состояние сейчас и желаемое.",transferLabel:"В повседневной жизни",
-    stateOptions:{calm:"Спокойствие и сон",support:"Опора в себе",energy:"Больше энергии",connection:"Близость и тепло"},
+    stateQuestion:"Как вы хотите себя чувствовать?",vectorQuestion:"В каком направлении хотите изменений?",
+    stateHint:"Выберите желаемое состояние. Можно уточнить его своими словами ниже.",
+    vectorHint:"Выберите область развития. Текущие обстоятельства можно добавить ниже.",
+    contextLabel:"Что сейчас важно учесть? · необязательно",
+    contextPlaceholder:"Например: после рабочего дня сложно переключиться и отдохнуть",
+    focusRequired:"Выберите желаемое состояние.",vectorRequired:"Выберите направление развития.",transferLabel:"В повседневной жизни",
+    stateOptions:{calm:"Спокойствие и сон",support:"Опора в себе",energy:"Больше энергии",connection:"Близость и тепло",confidence:"Уверенность в себе",clarity:"Ясность и гармония"},
     meditation:"Сформировать медитацию",generateMeditation:"Сгенерировать медитацию",meditationText:"Текст медитации",
     include:"Добавить медитацию к видео",omit:"Не добавлять",included:"Текст передан в редактор озвучки ниже. Озвучка и видео создаются только после отдельных подтверждений.",
     omitted:"Медитация останется отдельным текстом, в видео она не добавляется.",local:"Персональный текст формируется на устройстве без отправки результатов тестов внешнему ИИ.",
@@ -153,10 +156,12 @@ const flowCopy = {
   },
   en:{
     focus:"Practice focus",state:"Present state",vector:"Development direction",
-    stateHint:"Choose a state to nurture. You can refine your goals below.",
-    vectorHint:"From how you feel now → to how you want to feel",
-    focusRequired:"Choose a state or a goal first.",vectorRequired:"Fill in both your current and desired states.",transferLabel:"Everyday transfer",
-    stateOptions:{calm:"Calm and sleep",support:"Inner support",energy:"More energy",connection:"Closeness and warmth"},
+    stateQuestion:"How would you like to feel?",vectorQuestion:"Which area would you like to develop?",
+    stateHint:"Choose the state you want to nurture. Add a personal note below if useful.",
+    vectorHint:"Choose a development area. Your current circumstances are optional.",
+    contextLabel:"What should we keep in mind? · optional",contextPlaceholder:"For example: it is hard to switch off and rest after work",
+    focusRequired:"Choose a desired state first.",vectorRequired:"Choose a development direction first.",transferLabel:"Everyday transfer",
+    stateOptions:{calm:"Calm and sleep",support:"Inner support",energy:"More energy",connection:"Closeness and warmth",confidence:"Self-confidence",clarity:"Clarity and harmony"},
     meditation:"Create your meditation",generateMeditation:"Generate meditation",meditationText:"Meditation script",
     include:"Add meditation to video",omit:"Do not add",included:"Script sent to the narration editor below. Voice and video require separate explicit actions.",
     omitted:"Your meditation stays as a separate text and will not be in the video.",local:"Script is assembled on this device; test results are not sent to outside AI.",
@@ -189,10 +194,12 @@ const flowCopy = {
   },
   es:{
     focus:"Enfoque de la práctica",state:"Estado",vector:"Dirección de desarrollo",
-    stateHint:"Elige un estado que quieras cultivar. Puedes afinar tus metas abajo.",
-    vectorHint:"De tu estado actual → al estado que deseas",
-    focusRequired:"Elige un estado o una meta.",vectorRequired:"Completa el estado actual y el deseado.",transferLabel:"En la vida diaria",
-    stateOptions:{calm:"Calma y descanso",support:"Apoyo interior",energy:"Más energía",connection:"Cercanía y calidez"},
+    stateQuestion:"¿Cómo te gustaría sentirte?",vectorQuestion:"¿En qué área quieres avanzar?",
+    stateHint:"Elige el estado que deseas cultivar. Puedes añadir una nota personal abajo.",
+    vectorHint:"Elige un área de desarrollo. Tu situación actual es opcional.",
+    contextLabel:"¿Qué debemos tener en cuenta? · opcional",contextPlaceholder:"Por ejemplo: me cuesta desconectar y descansar después del trabajo",
+    focusRequired:"Elige primero un estado deseado.",vectorRequired:"Elige primero una dirección de desarrollo.",transferLabel:"En la vida diaria",
+    stateOptions:{calm:"Calma y descanso",support:"Apoyo interior",energy:"Más energía",connection:"Cercanía y calidez",confidence:"Confianza en mí",clarity:"Claridad y armonía"},
     meditation:"Crear meditación",generateMeditation:"Generar meditación",meditationText:"Texto de meditación",
     include:"Añadir meditación al vídeo",omit:"No añadir",included:"Texto enviado al editor de voz. La voz y el vídeo requieren acciones y consentimientos separados.",
     omitted:"Tu meditación seguirá siendo un texto separado.",local:"El texto se crea en tu dispositivo; las pruebas no se envían a una IA externa.",
@@ -228,7 +235,17 @@ const stateOptions = [
   {id:"calm",theme:"health" as VideoTheme,Icon:Moon},
   {id:"support",theme:"goals" as VideoTheme,Icon:Briefcase},
   {id:"energy",theme:"energy" as VideoTheme,Icon:Sun},
-  {id:"connection",theme:"relationships" as VideoTheme,Icon:Heart}
+  {id:"connection",theme:"relationships" as VideoTheme,Icon:Heart},
+  {id:"confidence",theme:"goals" as VideoTheme,Icon:Target},
+  {id:"clarity",theme:"life" as VideoTheme,Icon:Flower2}
+] as const;
+const vectorOptions = [
+  {id:"energy",theme:"energy" as VideoTheme,Icon:Sun},
+  {id:"money",theme:"money" as VideoTheme,Icon:Briefcase},
+  {id:"relationships",theme:"relationships" as VideoTheme,Icon:Heart},
+  {id:"goals",theme:"goals" as VideoTheme,Icon:Target},
+  {id:"life",theme:"life" as VideoTheme,Icon:Flower2},
+  {id:"health",theme:"health" as VideoTheme,Icon:Moon}
 ] as const;
 type PracticeKind = "ritual" | "exercise" | "daily";
 const ritualMoments = ["morning","evening","transition","recovery"] as const;
@@ -259,7 +276,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
   const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
-  const activeTheme:VideoTheme=focusMode==="vector"?vectorTheme:(goals[0]||theme);
+  const activeTheme:VideoTheme=goals[0]||(focusMode==="vector"?vectorTheme:theme);
   const actualGoals=useMemo(()=>goals.length?goals:[activeTheme],[goals,activeTheme]);
   const detailLabels=useMemo(()=>detailGoals.flatMap(id=>
     affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label)),[detailGoals,locale]);
@@ -274,7 +291,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }),[locale,activeTheme,keyDifficulty,keyGoal,actualGoals,detailLabels]);
   const safetyBlocked=practiceResult.status==="blocked"||isMeditationSafetyResponse(safetyProbe,locale);
   const safetyMessage=practiceResult.status==="blocked"?practiceResult.message:safetyBlocked?safetyProbe:"";
-  const needsVector=focusMode==="vector"&&(!keyDifficulty.trim()||!keyGoal.trim());
+  const needsVector=focusMode==="vector"&&!selectedState;
   const needsState=focusMode==="state"&&!selectedState&&!keyGoal.trim()&&!goals.length;
   const focusReady=!safetyBlocked&&!needsVector&&!needsState;
   const journeySignature=JSON.stringify([focusMode,selectedState,activeTheme,goals,detailGoals,keyDifficulty,keyGoal,profileEvidence,selfRatings]);
@@ -321,7 +338,11 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
-    setKeyDifficulty("");resetGeneratedMeditation();
+    resetGeneratedMeditation();
+  };
+  const selectVector=(id:(typeof vectorOptions)[number]["id"],goalTheme:VideoTheme)=>{
+    setSelectedState("vector-"+id);setGoals([goalTheme]);setKeyGoal(t.themes[goalTheme]);
+    resetGeneratedMeditation();
   };
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
@@ -439,27 +460,28 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         <button type="button" aria-pressed={focusMode==="vector"} disabled={disabled}
           onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
       </div>
+      <p className={css.focusChoiceHeading}>{focusMode==="state"?f.stateQuestion:f.vectorQuestion}</p>
       {focusMode==="state"?<div className={css.stateGrid} role="group" aria-label={f.state}>
         {stateOptions.map(({id,theme:goalTheme,Icon})=><button key={id} type="button" disabled={disabled}
           aria-pressed={selectedState===id} data-guided-focus-state={id}
           onClick={()=>selectState(id,goalTheme)}>
-          <Icon size={22} aria-hidden="true"/>{f.stateOptions[id]}
+          <Icon size={22} aria-hidden="true"/><span>{f.stateOptions[id]}</span>
           {selectedState===id?<Check size={18} aria-hidden="true"/>:null}
         </button>)}
-      </div>:<div className={css.focusFields}>
-        <label htmlFor="therapy-key-difficulty">
-          <span>{t.difficultyLabel}</span>
-          <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
-            data-video-key-difficulty value={keyDifficulty} placeholder={t.difficultyPlaceholder}
-            disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);setSelectedState(null);resetGeneratedMeditation();}}/>
-        </label>
-        <label htmlFor="therapy-key-goal">
-          <span>{t.goalLabel}</span>
-          <textarea id="therapy-key-goal" rows={2} maxLength={140}
-            data-video-key-goal value={keyGoal} placeholder={t.goalPlaceholder}
-            disabled={disabled} onChange={event=>{setKeyGoal(event.currentTarget.value);setSelectedState(null);resetGeneratedMeditation();}}/>
-        </label>
+      </div>:<div className={css.stateGrid} role="group" aria-label={f.vector}>
+        {vectorOptions.map(({id,theme:goalTheme,Icon})=><button key={id} type="button" disabled={disabled}
+          aria-pressed={selectedState==="vector-"+id} data-guided-focus-vector={id}
+          onClick={()=>selectVector(id,goalTheme)}>
+          <Icon size={22} aria-hidden="true"/><span>{t.themes[goalTheme]}</span>
+          {selectedState==="vector-"+id?<Check size={18} aria-hidden="true"/>:null}
+        </button>)}
       </div>}
+      <div className={css.focusNote}><label htmlFor="therapy-key-difficulty">
+        <span>{f.contextLabel}</span>
+        <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
+          data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
+          disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);resetGeneratedMeditation();}}/>
+      </label></div>
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
       {safetyBlocked?<p role="alert" className={css.profileNotice}>{safetyMessage}</p>:
         (needsVector||needsState)?<p role="note" className={css.profileNotice}>
