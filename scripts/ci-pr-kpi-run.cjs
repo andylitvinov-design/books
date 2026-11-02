@@ -13,18 +13,21 @@ async function run({github,core,context,now=Date.now(),deps={}}){
  const common={github,owner,repo,minRemaining:500};const since=now-14*86400000;
  const backlog=await d.collectBacklog({...common,maxRequests:12});
  const recentReceipts=await d.collectReceiptEvents({...common,since:now-2*3600000,maxRequests:20});
+ const dailyReceipts=await d.collectReceiptEvents({...common,since:now-48*3600000,maxRequests:35});
  const historicalReceipts=await d.collectReceiptEvents({...common,since,maxRequests:40});
- const receiptEvents=new Map(),recentReceiptKeys=new Set((recentReceipts.events||[]).map(e=>JSON.stringify(e)));
- let receiptsChanged=false;
- for(const e of historicalReceipts.events||[]){const at=Date.parse(e?.at||'');
-  if(recentReceipts.complete===true&&Number.isFinite(recentReceipts.since)&&Number.isFinite(at)&&
-     at>recentReceipts.since&&at<=now&&!recentReceiptKeys.has(JSON.stringify(e)))receiptsChanged=true;
+ const receiptSnapshots=[recentReceipts,dailyReceipts,historicalReceipts],receiptEvents=new Map();let receiptsChanged=false;
+ for(let i=0;i<receiptSnapshots.length;i++){
+  const shorter=receiptSnapshots[i];if(shorter.complete!==true||!Number.isFinite(shorter.since))continue;
+  const keys=new Set((shorter.events||[]).map(e=>JSON.stringify(e)));
+  for(const later of receiptSnapshots.slice(i+1))for(const e of later.events||[]){const at=Date.parse(e?.at||'');
+   if(Number.isFinite(at)&&at>shorter.since&&at<=now&&!keys.has(JSON.stringify(e)))receiptsChanged=true;
+  }
  }
- for(const e of [...(recentReceipts.events||[]),...(historicalReceipts.events||[])])receiptEvents.set(JSON.stringify(e),e);
+ for(const snapshot of receiptSnapshots)for(const e of snapshot.events||[])receiptEvents.set(JSON.stringify(e),e);
  const receipts={...historicalReceipts,complete:historicalReceipts.complete===true&&!receiptsChanged,
   reason:receiptsChanged?'RECEIPT_SNAPSHOTS_DIFFER':historicalReceipts.reason,
-  reads:Number.isSafeInteger(recentReceipts.reads)&&Number.isSafeInteger(historicalReceipts.reads)?recentReceipts.reads+historicalReceipts.reads:null,
-  events:[...receiptEvents.values()],segments:[recentReceipts,historicalReceipts].map(x=>({since:x.since,
+  reads:receiptSnapshots.every(x=>Number.isSafeInteger(x.reads))?receiptSnapshots.reduce((n,x)=>n+x.reads,0):null,
+  events:[...receiptEvents.values()],segments:receiptSnapshots.map(x=>({since:x.since,
    complete:x.complete===true&&!receiptsChanged,reason:receiptsChanged?'RECEIPT_SNAPSHOTS_DIFFER':x.reason}))};
  // Preserve a complete short window when the 14-day inventory exceeds its
  // budget; retain older partial observations without double-counting.
