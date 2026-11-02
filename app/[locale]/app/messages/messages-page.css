@@ -94,3 +94,15 @@
   display:none!important
  }
 }
+
+
+/* Last rule on the actual Messages route: reserve the measured Safari-visible
+   dock height + browser-toolbar displacement, including after Google login. */
+@media(max-width:760px){
+  .hh-app.hh-messages-page{
+    padding-bottom:max(
+      calc(100px + env(safe-area-inset-bottom)),
+      calc(var(--hh-app-mobile-nav-height,84px) + var(--hh-app-dock-usable-inset,0px) + 20px)
+    );
+  }
+}
