@@ -38,6 +38,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
+  issues: read
+  pull-requests: read
 concurrency:
   group: hh-watchdog-contract-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -45,7 +48,7 @@ jobs:
   watchdog-contract:
     name: watchdog-contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,3 +84,16 @@ jobs:
           persist-credentials: false
       - name: Verify production classifier integration without write credentials
         run: node --test tests/ci-pr-base-classifier-integration.test.cjs
+
+      - name: Probe real KPI evidence without write credentials
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          startsWith(github.head_ref, 'codex/control-tower-kpi-')
+        timeout-minutes: 4
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const kpi=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-kpi-run.cjs');
+            await kpi.run({github,core,context});
