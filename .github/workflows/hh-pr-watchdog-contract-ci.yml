@@ -18,6 +18,8 @@ on:
       - '.github/workflows/hh-pr-full-inventory.yml'
       - 'scripts/ci-pr-live-verifier.cjs'
       - 'scripts/ci-pr-release-outcomes.cjs'
+      - 'scripts/ci-pr-served-release.cjs'
+      - 'tests/ci-pr-served-release.test.cjs'
       - 'tests/ci-pr-release-outcomes.test.cjs'
       - 'scripts/ci-pr-release-kpi.cjs'
       - 'tests/ci-pr-release-kpi.test.cjs'
@@ -69,6 +71,7 @@ jobs:
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-live-verifier.cjs
           node --check scripts/ci-pr-release-outcomes.cjs
+          node --check scripts/ci-pr-served-release.cjs
           node --check scripts/ci-pr-release-kpi.cjs
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs

@@ -2,6 +2,7 @@
 // Read-only 24h CI→merge→LIVE observability. Null means not verified, never failure.
 const fs=require('node:fs');
 const {trustedContext}=require('./ci-pr-live-verifier.cjs');
+const {verifyServedRevision}=require('./ci-pr-served-release.cjs');
 const PROD='codex/public-book-library', SHA=/^[0-9a-f]{40}$/i;
 const HOUR=3600000, WINDOW_HOURS=24, PAGE_LIMIT=5, ANCESTRY_LIMIT=40;
 const round=n=>Math.round(n*10)/10;
@@ -90,7 +91,7 @@ async function confirmedAncestry(github,{owner,repo},prs,productionSha){
  return {confirmed:new Set(evidence),comparisons,errors,
   complete:prs.length<=ANCESTRY_LIMIT && errors===0};
 }
-async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath=''}){
+async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
   window_hours:WINDOW_HOURS,production_branch:PROD,
   merged_count:null,live_confirmed_count:null,unverified_live_count:null,
@@ -122,19 +123,35 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
  try{report.core=await recentCoreRuns(github,{owner,repo},sinceMs);}
  catch(err){report.errors.push('CORE_READ_'+String(err.message||'error').slice(0,75));}
  let confirmed=new Set();
- if(prs.length>0 && liveEvidence.verified_live===true &&
-    liveEvidence.reason==='LIVE_VERIFIED' && SHA.test(liveEvidence.production_sha||'')){
+ let actualLive=liveEvidence;
+ // GitHub can advance past an earlier site deployment (for example CI-only pushes).
+ // Only an independently proven canonical alias / exact served SHA can count.
+ if(liveEvidence.verified_live!==true &&
+    liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE'){
   try{
-   const proof=await confirmedAncestry(github,{owner,repo},prs,liveEvidence.production_sha);
+   const served=await verifyServedRevision({github,context,fetchImpl});
+   if(served.verified_live){actualLive=served;report.live_evidence=served.reason;}
+   else report.served_evidence_reason=served.reason;
+  }catch(err){report.errors.push('SERVED_PROOF_READ_'+String(err.message||'error').slice(0,75));}
+ }
+ if(prs.length>0 && actualLive.verified_live===true &&
+    ['LIVE_VERIFIED','SERVING_VERIFIED_REVISION'].includes(actualLive.reason) &&
+    SHA.test(actualLive.production_sha||'')){
+  try{
+   const proof=await confirmedAncestry(github,{owner,repo},prs,actualLive.production_sha);
    const still=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
-   if(still?.commit?.sha!==liveEvidence.production_sha){
+   if(still?.commit?.sha !== (actualLive.current_head_sha||actualLive.production_sha)){
     report.errors.push('PRODUCTION_HEAD_CHANGED');
    }else{
     confirmed=proof.confirmed;
     report.live_confirmed_count=confirmed.size;
     report.unverified_live_count=prs.length-confirmed.size;
     report.live_coverage=proof.complete && report.merged_coverage==='complete'
-      ?'complete_current_head':'partial_ancestry';
+      ?(actualLive.current_head_sha?'complete_served_revision':'complete_current_head')
+      :'partial_ancestry';
+    report.served_sha=actualLive.production_sha;
+    report.current_head_sha=still.commit.sha;
+    report.served_proof_method=actualLive.proof_method||null;
     if(proof.errors)report.errors.push('ANCESTRY_ERRORS_'+proof.errors);
     const lags=prs.filter(pr=>confirmed.has(pr.number)).map(pr=>
      elapsedMinutes(pr.merged_at,report.observed_at));
