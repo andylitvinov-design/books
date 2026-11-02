@@ -582,7 +582,14 @@ try {
             await expect(book).toHaveCount(1);
             await book.click();
             await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
-            await expect(pricing.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveCount(1);
+            // Reply permission is required; source analytics remains independent and optional.
+            const contactStep = pricing.locator('[data-booking-step="contact"]');
+            await expect(contactStep.locator('input[type="checkbox"][required]')).toHaveCount(1);
+            await expect(contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]')).toHaveCount(1);
+            assert.equal(await contactStep.locator('input[type="checkbox"][required]').isChecked(), false,
+              "Contact reply permission must not be preselected");
+            assert.equal(await contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').isChecked(), false,
+              "Enquiry source attribution must be independently opted into");
             assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
               "No cart or payment method before a server-confirmed booking");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
@@ -632,7 +639,7 @@ try {
           await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false);
+          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false);
         } else if (kind === "dao") {
           await visible(hero.locator("img"));
           await visible(main.locator("#what-you-get"));
@@ -640,8 +647,11 @@ try {
             "The compact Wu Xing journey does not repeat an unused process slide");
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
-            "Consent must remain an explicit, unchecked action");
+          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false,
+            "Reply consent must remain an explicit, unchecked action");
+          const stats=capture.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          if(await stats.count())assert.equal(await stats.isChecked(),false,
+            "Source attribution must remain an independent opt-in");
         } else {
           // The former three-offer widget was replaced by the express review.
           // Verify the real current funnel without submitting any visitor data.

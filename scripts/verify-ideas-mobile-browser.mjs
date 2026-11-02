@@ -271,7 +271,14 @@ async function verify(browserType, browser, locale, width) {
     await readingOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
     assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible input[type="checkbox"]').count(), 1, label + ": reply consent");
+    // Reply consent and optional source-analytics consent serve distinct purposes.
+    // Reject a missing, duplicate or silently prechecked optional consent.
+    const inlineForm = daoResult.locator('[data-inline-offer-form]:visible');
+    const optionalAttribution = inlineForm.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+    assert.equal(await optionalAttribution.count(), 1, label + ": exactly one optional source attribution consent");
+    assert.equal(await optionalAttribution.isChecked(), false, label + ": analytics stays off by default");
+    assert.equal(await inlineForm.locator('input[type="checkbox"]').count(), 2,
+      label + ": one reply consent plus one separately optional attribution consent");
     await giftOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
     assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");
