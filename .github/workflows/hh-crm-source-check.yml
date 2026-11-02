@@ -82,7 +82,6 @@ on:
       - 'components/app/direct-message-inbox.*'
       - 'app/[locale]/app/messages/**'
       - 'components/app/messages-simple-inbox.jsx'
-      - 'components/app/messages-bottom-navigation.jsx'
       - 'tests/messages-approved-entry.test.mjs'
       - 'tests/messages-orders-clients.test.mjs'
       - 'tests/messages-simple-inbox.test.mjs'
