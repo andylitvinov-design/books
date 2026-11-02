@@ -1219,3 +1219,34 @@ test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
  const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
  assert.equal(admission('ci',addressed),'WORKER_BUSY');
 });
+
+test('verified out-of-sandbox source failure is handed to PR owner once, never dispatched',async()=>{
+ const {github,calls,capacityFn}=fixture([pr(1)],{comments:{1:[proof()]}});
+ github.rest.pulls.listFiles=async()=>({data:[{filename:'.github/workflows/ci.yml',status:'modified'}]});
+ const assigned=[];
+ github.rest.issues.addAssignees=async arg=>{assigned.push(arg);return {data:{}};};
+ const result=await run({github,core:core(),context,capacityFn,now:NOW});
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(calls.dispatched.length,0);
+ assert.ok(calls.reserved.some(x=>x.body.includes('HH_CONTROL_SCOPE_OWNER_V1')));
+ assert.ok(calls.reserved.some(x=>x.body.includes('"state":"MANUAL"')));
+ assert.ok(calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.ok(calls.removed.some(x=>x.name==='hh:repair-needed'));
+ assert.equal(assigned[0].assignees[0],'andylitvinov-design');
+});
+test('manual owner safety handoff cannot label a newly advanced PR head',async()=>{
+ const current=pr(1);
+ const {github,calls,capacityFn}=fixture([current],{comments:{1:[proof()]}});
+ github.rest.pulls.listFiles=async()=>({data:[{filename:'.github/workflows/ci.yml',status:'modified'}]});
+ let read=0;
+ github.rest.pulls.get=async()=>({data:++read===1?current:{
+  ...current,head:{...current.head,sha:'b'.repeat(40)}
+ }});
+ const result=await run({github,core:core(),context,capacityFn,now:NOW});
+ assert.equal(result.manualSourceEscalations,0);
+ assert.equal(result.blocked.SCOPE_OWNER_HEAD_CHANGED,1);
+ assert.equal(calls.reserved.length,0);
+ assert.equal(calls.labels.length,0);
+ assert.equal(calls.dispatched.length,0);
+});
