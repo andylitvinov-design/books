@@ -81,9 +81,11 @@ test('long PR association and comment history fail closed; no missing evidence i
 test('receipt API failures remain visible and cannot be counted as LIVE by this worker',async()=>{
  const v=f();v.github.rest.issues.createComment=async()=>{throw Error('denied');};
  const summary={addHeading(){return this},addCodeBlock(){return this},async write(){}};
- const info=[];const core={info:s=>info.push(s),summary};
+ const info=[],failed=[];const core={info:s=>info.push(s),setFailed:s=>failed.push(s),summary};
  const result=await run({github:v.github,context:ctx,core,liveReport:proof});
  assert.equal(result.receipt.state,'RECEIPT_FAILED');
+ assert.equal(result.receipt.stage,'PR_COMMENT_CREATE');
+ assert.match(failed[0],/HH_LIVE_RECEIPT_WRITE_FAILED stage=PR_COMMENT_CREATE/);
  assert.deepEqual(v.mutations,[]);
  assert.ok(info.some(x=>x.startsWith('HH_LIVE_RECEIPTS ')));
 });
@@ -145,4 +147,25 @@ test('Vercel API-backed served revision can issue a historical LIVE receipt with
  const noStatus={...served,
   evidence_urls:served.evidence_urls.filter(x=>!x.includes('vercel.com'))};
  assert.equal(certified(noStatus),false);
+});
+
+test('GitHub 403 on PR comment is explicit and never reports green LIVE receipts',async()=>{
+ const v=f();const denied=Object.assign(new Error('Resource not accessible by integration'),{status:403});
+ v.github.rest.issues.createComment=async()=>{throw denied;};
+ const failed=[],core={info(){},setFailed:s=>failed.push(s),
+  summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+ const r=await run({github:v.github,context:ctx,core,liveReport:proof});
+ assert.deepEqual(r.receipt,{state:'RECEIPT_FAILED',stage:'PR_COMMENT_CREATE',
+  http_status:403,error:'Resource not accessible by integration'});
+ assert.match(failed[0],/status=403/);
+ assert.deepEqual(v.mutations,[]);
+});
+
+test('unverified LIVE does not cause misleading receipt failure',async()=>{
+ const v=f(),failed=[],core={info(){},setFailed:s=>failed.push(s),
+  summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+ const r=await run({github:v.github,context:ctx,core,
+  liveReport:{...proof,verified_live:false}});
+ assert.equal(r.receipt.state,'LIVE_UNVERIFIED');
+ assert.deepEqual(failed,[]);
 });
