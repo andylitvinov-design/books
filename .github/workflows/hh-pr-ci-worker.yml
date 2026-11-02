@@ -19,6 +19,10 @@ on:
       task_key:
         type: string
         default: ''
+      reservation_run_id:
+        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'
+        type: string
+        default: ''
   push:
     branches: ['codex/bootstrap-books']
     paths:

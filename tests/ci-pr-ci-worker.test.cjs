@@ -200,3 +200,16 @@ test('legacy zero-Core bootstrap accepts a mergeable PR blocked only by checks',
   assert.equal(validPR(makePR(43,{mergeable_state:'dirty'}),repo),false);
   assert.equal(validPR(makePR(43,{mergeable:false,mergeable_state:'blocked'}),repo),false);
 });
+
+test('CI Worker workflow accepts the exact Control Tower reservation identity',()=>{
+ const fs=require('node:fs');
+ const yaml=fs.readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ const inputs=yaml.split('  workflow_dispatch:\n')[1]?.split('\n  push:')[0];
+ assert.ok(inputs,'CI Worker dispatch inputs must be defined');
+ for(const key of ['pr_number','expected_sha','task_key','reservation_run_id']){
+  assert.ok(inputs.split('\n').includes('      '+key+':'),key+' must be declared');
+ }
+ assert.ok(inputs.includes("      reservation_run_id:\n        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'\n        type: string\n        default: ''"));
+ const dispatcher=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
+});
