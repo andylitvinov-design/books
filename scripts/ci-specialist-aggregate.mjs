@@ -93,16 +93,35 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-// A skipped macOS job is optional ONLY when the unchanged, trusted BASE YAML
-// excludes this exact branch. A PR cannot edit its own guard to become exempt,
-// and voice/recorder changes must still prove real encoded audio and video.
+// Compare the actual macOS job definition, not the unrelated workflow paths.
+// The immutable tested BASE still determines when this optional job is required.
+// Changing trigger globs alone cannot turn a deliberately skipped macOS job into
+// a phantom failure, but any edit to its guard, platform or steps is refused.
+function trustedMandalaMacosJob(workflow) {
+  if (typeof workflow !== 'string') return null;
+  const header = '\n  voice-webkit-macos:\n';
+  const index = workflow.indexOf(header);
+  if (index < 0 || workflow.indexOf(header, index + header.length) >= 0) return null;
+  const source = workflow.slice(index + 1);
+  // Compare to the next job definition. Top-level workflow metadata comes
+  // before jobs: in the current supported schema.
+  const rest = source.slice(header.length - 1);
+  const boundary = /^  [a-z][a-z0-9_-]*:[ \t]*(?:#.*)?$/m.exec(rest);
+  const end = boundary ? boundary.index : rest.length;
+  return source.slice(0, header.length - 1 + end).trimEnd();
+}
+
+// A skipped macOS job is neutral only when BASE's unchanged job guard excludes
+// this exact branch and no encoded-media/voice source is modified.
 export function optionalMandalaMacosSkip(files, branch, changed) {
   const name = '.github/workflows/holistic-support-mandala.yml';
   const source = files?.base?.get(name);
-  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+  const candidate = files?.current?.get(name);
+  const baseJob = trustedMandalaMacosJob(source);
+  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
-      changed.includes(name) || changed.some(path =>
-        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+      changed.some(path => typeof path !== 'string' ||
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
