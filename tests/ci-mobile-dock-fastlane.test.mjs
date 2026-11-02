@@ -54,8 +54,9 @@ test('exact merge gate requires same PR HEAD, production base ancestry and merge
     rows:[{status:'M',filename:nav},{status:'M',filename:workspace}],
   };
   assert.equal(isExactMobileDockMerge(good), true);
+  assert.equal(isExactMobileDockMerge({...good,firstParent:sha('d'),baseIsAncestor:true}), true);
   assert.equal(isExactMobileDockMerge({...good,secondParent:sha('d')}), false);
-  assert.equal(isExactMobileDockMerge({...good,baseIsAncestor:false}), false);
+  assert.equal(isExactMobileDockMerge({...good,firstParent:sha('d'),baseIsAncestor:false}), false);
   assert.equal(isExactMobileDockMerge({...good,baseRef:'main'}), false);
   assert.equal(isExactMobileDockMerge({...good,eventName:'push'}), false);
   assert.equal(isExactMobileDockMerge({...good,mergeSha:'bad'}), false);
