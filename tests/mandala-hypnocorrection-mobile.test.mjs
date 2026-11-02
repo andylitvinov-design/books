@@ -61,7 +61,7 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   for(const name of ['"phrases"','"audio"','"visual"'])assert.ok(ui.includes(name));
   assert.doesNotMatch(ui,/posters\.meditation/,"the removed personal-meditation group must not leave a stale poster lookup");
   for(const name of ["25-й кадр","Бинауральные ритмы","Импульс света",
-    "Быстрая настройка с Wave","Создать личную медитацию"])assert.ok(ui.includes(name));
+    "Быстрая настройка с Wave"])assert.ok(ui.includes(name));
   assert.match(css,/font-size:18px/);
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
