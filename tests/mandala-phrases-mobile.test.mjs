@@ -98,7 +98,12 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
 test("TTS never speaks an outdated script when phrases are staged",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(studio,/disabled=\{recording\|\|preparing\|\|phrasePending\} onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.match(studio,/disabled=\\{recording\\|\\|preparing\\} approvalPending=\\{phrasePending\\} onAttach=\\{attachGeneratedAffirmationAudio\\}/);
+  // An unapproved draft must block private narration, not comparisons of public voice samples.
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/disabled=\\{!languageAvailable\\|\\|!speechText\\|\\|!consent\\|\\|busy\\|\\|mixing\\|\\|disabled\\|\\|approvalPending\\}/);
+  assert.match(voice,/if\\(!languageAvailable\\|\\|disabled\\|\\|approvalPending\\|\\|busy/);
+  assert.match(voice,/data-video-affirmation-voice-preview=\\{v\\.id\\}/);
   assert.match(studio,/data-video-voice-approval-required/);
   assert.match(compact,/const customPhraseText=externalPhraseDraft\?\?customDraft\?\?settings\.custom/);
   assert.match(compact,/setCustomDraft\(custom\);onExternalPhraseClear\?\.\(\)/);
