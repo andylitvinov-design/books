@@ -137,7 +137,7 @@ async function confirmedAncestry(github,{owner,repo},prs,servedSha){
   historyPages,historyCommits,historyHits,historyFailed,
   capped:prs.length>ANCESTRY_LIMIT};
 }
-async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch}){
+async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch,vercelToken=''}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
   window_hours:WINDOW_HOURS,production_branch:PROD,
   merged_count:null,live_confirmed_count:null,unverified_live_count:null,
@@ -173,9 +173,9 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
  // GitHub can advance past an earlier site deployment (for example CI-only pushes).
  // Only an independently proven canonical alias / exact served SHA can count.
  if(liveEvidence.verified_live!==true &&
-    liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE'){
+    (vercelToken||liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE')){
   try{
-   const served=await verifyServedRevision({github,context,fetchImpl});
+   const served=await verifyServedRevision({github,context,fetchImpl,vercelToken});
    if(served.verified_live){actualLive=served;report.live_evidence=served.reason;}
    else report.served_evidence_reason=served.reason;
   }catch(err){report.errors.push('SERVED_PROOF_READ_'+String(err.message||'error').slice(0,75));}
@@ -202,15 +202,19 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     report.served_sha=actualLive.production_sha;
     report.current_head_sha=still.commit.sha;
     report.served_proof_method=actualLive.proof_method||null;
-    // The existing independent served-revision verifier has already checked
-    // canonical public runtime proof, Vercel success for the exact served SHA,
-    // production ancestry and a stable GitHub HEAD. Hand that one proof to
-    // the existing receipt writer instead of repeating browser/Vercel reads.
+    // The existing independent served-revision observer already checked
+    // canonical public HTML, exact Vercel status, active alias and protected
+    // production ancestry. Reuse its proof without repeating API/HTTP reads.
+    const servedMethods=[
+      'PUBLIC_RUNTIME_ALIAS_SHA_WITH_GITHUB_VERCEL_STATUS',
+      'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS'
+    ];
     if(actualLive.reason==='SERVING_VERIFIED_REVISION' &&
-       actualLive.proof_method==='PUBLIC_RUNTIME_ALIAS_SHA_WITH_GITHUB_VERCEL_STATUS' &&
+       servedMethods.includes(actualLive.proof_method) &&
        SHA.test(actualLive.current_head_sha||'') &&
        /^dpl_[A-Za-z0-9]{8,64}$/.test(actualLive.deployment_id||'')){
       const canonical='https://holistichouse.vercel.app';
+      const useApi=actualLive.proof_method==='VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS';
       report.receipt_candidate={
         schema:'HH_LIVE_EVIDENCE_V1',checked_at:report.observed_at,
         repo:'andylitvinov-design/books',production_branch:PROD,
@@ -218,12 +222,15 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
         reason:'LIVE_VERIFIED',production_sha:actualLive.production_sha,
         current_head_sha:actualLive.current_head_sha,
         deployment_id:actualLive.deployment_id,
-        proof_method:'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY',
+        proof_method:useApi
+          ?'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY'
+          :'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY',
         evidence_urls:[
           'https://github.com/andylitvinov-design/books/commit/'+actualLive.production_sha,
           'https://vercel.com/super10/codex-public-book-library/'+
             actualLive.deployment_id.slice(4),
-          canonical+'/api/public/release-evidence',canonical+'/en'
+          ...(useApi?[]:[canonical+'/api/public/release-evidence']),
+          canonical+'/en'
         ]
       };
     }
