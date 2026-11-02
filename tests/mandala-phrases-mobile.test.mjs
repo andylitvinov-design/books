@@ -65,7 +65,9 @@ test("single approved phrases workspace with voice/music before the final Create
 
 test("the six-voice chooser appears once below approved phrases and soundtrack cannot erase TTS",()=>{
  const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),studio.indexOf('data-workspace-section="effects"'));
- assert.match(section,/data-hypno-voice[\s\S]*data-hypno-music/);
+ assert.match(section,/\{deepHypnoPane\}/,"single visible workspace mounts canonical editor");
+ const definition=studio.slice(studio.indexOf("const deepHypnoPane = ("),studio.indexOf("const deepVideoPane",studio.indexOf("const deepHypnoPane = (")));
+ assert.match(definition,/data-hypno-voice[\s\S]*data-hypno-music/,"voice and music are inside shared editor in the right order");
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
@@ -100,4 +102,13 @@ test("TTS never speaks an outdated script when phrases are staged",()=>{
   assert.match(studio,/data-video-voice-approval-required/);
   assert.match(compact,/const customPhraseText=externalPhraseDraft\?\?customDraft\?\?settings\.custom/);
   assert.match(compact,/setCustomDraft\(custom\);onExternalPhraseClear\?\.\(\)/);
+});
+
+test("mobile filters keep readable short localized chip copy at narrow iPhone width",()=>{
+ assert.match(phrases,/const smallFilterLabels=/);
+ assert.match(phrases,/className=\{css\.mobileText\}/);
+ assert.match(style,/\.overview \.filterRow\{display:grid;grid-template-columns:minmax\(0,1fr\);gap:7px\}/);
+ assert.match(style,/\.overview \.ideaGender\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(phrases,/data-video-affirmation-preview disabled=\{disabled\|\|hasPendingEdits\}/);
+ assert.doesNotMatch(phrases,/setOpen\("phrases"\)/);
 });

@@ -143,6 +143,11 @@ const hypnoExtra = {
   aiPrivacy:"Wave funciona localmente. Gemini no recibe notas personales.",
   catalog:"La selección usa las opciones elegidas. Tu texto queda en el dispositivo."}
 } as const;
+const smallFilterLabels={
+  ru:{roles:["Опора","Шанс","Действие"],tones:["Бережно","Ровно","Бодро"],focuses:["Опора","Смелость","Действие"]},
+  en:{roles:["Support","Potential","Action"],tones:["Gentle","Balanced","Uplift"],focuses:["Support","Confidence","Action"]},
+  es:{roles:["Apoyo","Posible","Acción"],tones:["Suave","Equilibrado","Motiva"],focuses:["Apoyo","Confianza","Acción"]},
+} as const;
 const ideaCopy={
  ru:{title:"1. Идея",hint:"Главная мысль вашего видео",own:"Своя идея (по желанию)",profile:"Подобрать по моему профилю",update:"Обновить профиль",apply:"Подобрать фразы",gender:"Форма обращения",female:"Женщина",male:"Мужчина",variants:["Я справлюсь","Я сильная","Я в гармонии","Я открыт новому"]},
  en:{title:"1. Idea",hint:"The central thought of your video",own:"My own idea (optional)",profile:"Suggest from my profile",update:"Update profile",apply:"Find phrases",gender:"Addressing",female:"Woman",male:"Man",variants:["I can manage","I am strong","I feel balanced","I welcome change"]},
@@ -224,7 +229,7 @@ export function MandalaHypnoCompact({
   const chosen=draft?.selected??readyDraft?.selected??settings.selected;
   const customPhraseText=externalPhraseDraft??customDraft??settings.custom;
   const selectedCount=chosen.length;
-  const hasPendingEdits=Boolean(draft||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending);
+  const hasPendingEdits=Boolean(draftState||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!hasPendingEdits&&Boolean(approvalKey&&signature===approvalKey);
   useEffect(()=>{onPendingChange?.(hasPendingEdits);},[hasPendingEdits,onPendingChange]);
@@ -475,19 +480,19 @@ export function MandalaHypnoCompact({
           <div className={css.filterRow} data-hypno-filter-type role="group" aria-label={extra.role}>
             <strong>{extra.role}</strong><div>
               {(["support","possibility","action"] as const).map((id,i)=><button type="button" key={id}
-                aria-pressed={kind===id} disabled={disabled} onClick={()=>{setKind(id);filtered(theme,problemIndex,extraGoal,{kind:id});}}>{extra.roles[i]}</button>)}
+                aria-label={extra.roles[i]} aria-pressed={kind===id} disabled={disabled} onClick={()=>{setKind(id);filtered(theme,problemIndex,extraGoal,{kind:id});}}><span className={css.fullText}>{extra.roles[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].roles[i]}</span></button>)}
             </div>
           </div>
           <div className={css.filterRow} data-hypno-filter-tone role="group" aria-label={extra.tone}>
             <strong>{extra.tone}</strong><div>
               {(["gentle","balanced","uplifting"] as const).map((id,i)=><button type="button" key={id}
-                aria-pressed={tone===id} disabled={disabled} onClick={()=>{setTone(id);filtered(theme,problemIndex,extraGoal,{tone:id});}}>{extra.tones[i]}</button>)}
+                aria-label={extra.tones[i]} aria-pressed={tone===id} disabled={disabled} onClick={()=>{setTone(id);filtered(theme,problemIndex,extraGoal,{tone:id});}}><span className={css.fullText}>{extra.tones[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].tones[i]}</span></button>)}
             </div>
           </div>
           <div className={css.filterRow} data-hypno-filter-focus role="group" aria-label={extra.focus}>
             <strong>{extra.focus}</strong><div>
               {(["support","confidence","action"] as const).map((id,i)=><button type="button" key={id}
-                aria-pressed={focus===id} disabled={disabled} onClick={()=>{setFocus(id);filtered(theme,problemIndex,extraGoal,{focus:id});}}>{extra.focuses[i]}</button>)}
+                aria-label={extra.focuses[i]} aria-pressed={focus===id} disabled={disabled} onClick={()=>{setFocus(id);filtered(theme,problemIndex,extraGoal,{focus:id});}}><span className={css.fullText}>{extra.focuses[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].focuses[i]}</span></button>)}
             </div>
           </div>
           <div className={css.filterRow} data-hypno-filter-length role="group" aria-label={extra.length}>
@@ -553,7 +558,7 @@ export function MandalaHypnoCompact({
             data-hypno-position={value} aria-pressed={position===value}
             onClick={()=>onChange({...settings,position:value})}>{ui.placements[i]}</button>)}</div>
           <small className={css.contextNote}>{ui.additional}</small>
-          <button type="button" className={css.secondaryAction} onClick={()=>setOpen("phrases")}>{ui.change} · {ui.additional}<ChevronRight size={14}/></button>
+          <button type="button" className={css.secondaryAction} onClick={()=>document.getElementById("hypno-phrase-filter-options")?.scrollIntoView({block:"center",behavior:"smooth"})}>{ui.change} · {ui.additional}<ChevronRight size={14}/></button>
         </fieldset>}
       </section>
 
@@ -614,7 +619,7 @@ export function MandalaHypnoCompact({
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
           <span>{settings.selected.length}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview disabled={disabled} aria-label={ui.previewButton}
+        <button type="button" data-video-affirmation-preview disabled={disabled||hasPendingEdits} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
       {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>

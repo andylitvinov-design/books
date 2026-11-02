@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, hasVideoChatFilter, isGenericVideoRequest, parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs';
+import {readFileSync} from 'node:fs';
+import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, goalFirstVideoChatDraft, hasVideoChatFilter, isGenericVideoRequest, parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs';
 
 test('RU composite prompt fills known filters but leaves optional questions', () => {
   const item = parseVideoChatIntent('Сделай вертикальный ролик о любви на 30 секунд с музыкой и фразами');
@@ -90,4 +91,42 @@ test("chat intent reads 800-character visual request rather than truncating at 1
   assert.equal(interpreted.text.length,story.length);
   assert.equal(interpreted.duration,30);
   assert.equal(interpreted.music,"none");
+});
+
+test('one meaningful goal immediately gives a reviewable plan without five questions',()=>{
+  const ru=goalFirstVideoChatDraft('Любовь и близость','relationships');
+  assert.ok(ru);
+  assert.equal(ru.goal,'Любовь и близость');
+  assert.deepEqual([ru.mood,ru.aspect,ru.duration,ru.music,ru.phrases],
+    ['slow','portrait',30,'love',false]);
+  assert.equal(nextVideoChatStep(ru),'review');
+  const en=goalFirstVideoChatDraft('A calm 20 seconds landscape film without music or captions','health');
+  assert.equal(en.duration,20);
+  assert.equal(en.aspect,'landscape');
+  assert.equal(en.music,'none');
+  assert.equal(en.phrases,false);
+  assert.equal(nextVideoChatStep(en),'review');
+  const es=goalFirstVideoChatDraft('Vídeo sobre amor horizontal 60 segundos sin música','relationships');
+  assert.equal(es.aspect,'landscape');
+  assert.equal(es.duration,60);
+  assert.equal(es.music,'none');
+  assert.equal(nextVideoChatStep(es),'review');
+});
+test('generic request still asks for a real goal; explicit selections win',()=>{
+  for(const goal of ['','Видео','Сделай видео','I want a video','Vídeo'])
+    assert.equal(goalFirstVideoChatDraft(goal,'energy'),null,goal);
+  const film=goalFirstVideoChatDraft('Сделай ролик про спокойствие на 10 секунд без фраз','health');
+  assert.equal(film.duration,10);
+  assert.equal(film.phrases,false);
+  assert.equal(film.music,'meditation');
+  assert.equal(nextVideoChatStep(film),'review');
+});
+test('one-message plan uses the same confirmation/render and optional filter chips',()=>{
+  const ui=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
+  assert.match(ui,/goalFirstVideoChatDraft\(value,recommended.theme\)/);
+  assert.match(ui,/setStep\("review"\);addLine\("assistant",t.review\)/);
+  assert.match(ui,/data-video-chat-change-filter=\{key\}/);
+  assert.match(ui,/data-video-chat-confirm/);
+  assert.match(ui,/data-video-chat-create/);
+  assert.match(ui,/onConfirm\(\{scenario:executable\}\)/);
 });
