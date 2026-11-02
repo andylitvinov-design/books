@@ -369,8 +369,10 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
     const script=block[1].replace(/^          /gm,'')
       .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
     const output=join(dir,'output'),summary=join(dir,'summary');
+    const testedBase=git('rev-parse','HEAD^1');
     const checked=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
@@ -379,7 +381,12 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
+    const unverified=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:join(dir,'unverified'),GITHUB_STEP_SUMMARY:summary});
+    assert.notEqual(unverified.status,0,'missing trusted ancestry proof must fail closed');
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
     const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
@@ -818,6 +825,24 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('Core old PR base beyond shallow depth is checked by API, never mistaken for code failure', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const scope = source.split('  scope:\n')[1]?.split('  code:\n')[0];
+  const code = source.split('  code:\n')[1]?.split('  hh-specialist:\n')[0];
+  for (const job of [scope, code]) {
+    assert.ok(job.includes('GH_TOKEN: ${{ github.token }}'), 'read-only GitHub token required');
+    assert.ok(job.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+      'old production ancestry must be verified by GitHub');
+    assert.ok(job.includes('ahead) ;;'), 'only a proven ancestor can continue');
+    assert.ok(job.includes('identical) [['), 'identical status must require equal SHAs');
+    assert.ok(job.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'));
+    assert.ok(job.includes('HH_TESTED_BASE_VERIFIED=$tested_base'));
+  }
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$HH_EVENT_BASE_SHA" "$tested_base"'));
+  assert.ok(!code.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
 });
 
 test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
