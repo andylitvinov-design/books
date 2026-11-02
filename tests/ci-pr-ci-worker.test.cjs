@@ -17,7 +17,7 @@ const makePR=(number=10,options={})=>({
 function fixture(options={}){
   const p=options.pr||makePR();
   const items=options.items||[{number:p.number,pull_request:{url:'https://api.github.com/test'}}];
-  const logs={gets:0,labels:0,remove:0,source:0,runs:0,children:0,claims:0};
+  const logs={gets:0,labels:0,remove:0,source:0,runs:0,children:0,claims:0,receipts:[]};
   let latest=p;
   const github={rest:{
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{
@@ -26,10 +26,12 @@ function fixture(options={}){
     issues:{
       listForRepo:async()=>({data:items}),
       addLabels:async()=>{logs.labels++;if(options.claimError)throw Object.assign(Error('claim'),{status:403});latest={...latest,labels:[...(latest.labels||[]),{name:ATTEMPTED}]};return {data:[]}},
-      removeLabel:async()=>{logs.remove++;return {data:[]}}
+      removeLabel:async()=>{logs.remove++;return {data:[]}},
+      createComment:async arg=>{logs.receipts.push(arg);return {data:{id:123}}}
     },
     pulls:{
-      get:async()=>{logs.gets++;return {data:options.changedOnRefresh&&logs.gets>1?
+      get:async()=>{logs.gets++;return {data:(options.changedOnRefresh&&logs.gets>1)||
+        (options.changedAfterBootstrap&&logs.source>0)?
         {...latest,head:{...latest.head,sha:'f'.repeat(40)}}:latest};},
       list:async()=>{logs.children++;return {data:options.children||[]};}
     }
@@ -135,6 +137,43 @@ test('owner token exception does not create a duplicate commit',async()=>{
   assert.equal(r.started,0);
   assert.equal(r.failed,1);
   assert.equal(f.logs.labels,1);
+});
+
+
+test('owner-token HTTP 403 produces a verified failure receipt, never successful bootstrap',async()=>{
+ const f=fixture();
+ f.sourceGit.bootstrap=async()=>{f.logs.source++;throw Object.assign(
+  Error('Dedicated owner token HTTP 403: Resource not accessible by personal access token'),
+  {status:403});};
+ const result=await run({github:f.github,core:core(),context:{...context,runId:777},sourceGit:f.sourceGit,now});
+ assert.equal(result.started,0);
+ assert.equal(result.failed,1);
+ assert.equal(result.terminalFailure,true);
+ assert.equal(result.reason,'OWNER_SOURCE_TOKEN_PERMISSION_DENIED');
+ assert.equal(result.sourceRefUnchanged,true);
+ assert.equal(result.diagnosticReceiptWritten,true);
+ assert.equal(f.logs.labels,1);
+ assert.equal(f.logs.receipts.length,1);
+ assert.equal(f.logs.receipts[0].issue_number,10);
+ assert.match(f.logs.receipts[0].body,/HH_CI_BOOTSTRAP_TOKEN_DENIED_V1/);
+ assert.match(f.logs.receipts[0].body,/No source commit or Core check was created/);
+});
+test('denied token with changed source head never asserts no code was written',async()=>{
+ const f=fixture({changedAfterBootstrap:true});
+ f.sourceGit.bootstrap=async()=>{f.logs.source++;throw Object.assign(
+  Error('Dedicated owner token HTTP 403: Resource not accessible by personal access token'),
+  {status:403});};
+ const result=await run({github:f.github,core:core(),context,sourceGit:f.sourceGit,now});
+ assert.equal(result.started,0);
+ assert.equal(result.terminalFailure,true);
+ assert.equal(result.sourceRefUnchanged,false);
+ assert.equal(result.diagnosticReceiptWritten,false);
+ assert.equal(f.logs.receipts.length,0);
+});
+test('GitHub worker marks a definitively denied token as a failed job',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ assert.ok(workflow.includes('if(result.terminalFailure)'));
+ assert.ok(workflow.includes('core.setFailed'));
 });
 
 test('pre-claimed queue items do not starve fresh PRs',async()=>{
