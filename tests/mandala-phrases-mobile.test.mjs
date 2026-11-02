@@ -71,7 +71,8 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
- assert.match(studio,/activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\)/);
+ assert.match(studio,/if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}/,
+   "music preview returns to the shared real audio editor without replacing approved TTS");
  assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/);
  assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
  assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);

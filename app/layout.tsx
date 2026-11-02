@@ -16,6 +16,7 @@ import { NativeExternalLinks } from "@/components/native-external-links";
 import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
 import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
+import "./holistic-light-tokens.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
 import "./unified-mobile-dock.css";

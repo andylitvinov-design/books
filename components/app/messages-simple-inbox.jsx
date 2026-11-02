@@ -42,7 +42,7 @@ const COPY={
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
-const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Messenger'}
+const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
 const fmtDate=(value,locale)=>{
   const ms=Date.parse(value||'')
@@ -236,9 +236,7 @@ export default function MessagesSimpleInbox({
       delete windowElement.dataset.keyboardOpen
       const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
       const top=windowElement.getBoundingClientRect().top
-      const sharedDock=document.querySelector('[data-hh-unified-dock]')
-       const nav=sharedDock&&window.getComputedStyle(sharedDock).display!=='none'
-         ?sharedDock:document.querySelector('.hh-mobile-app-nav')
+      const nav=document.querySelector('.hh-mobile-app-nav')
       const navVisible=nav&&window.getComputedStyle(nav).display!=='none'
       const navTop=navVisible&&!focused?nav.getBoundingClientRect().top:null
       const height=availableInboxHeight({
