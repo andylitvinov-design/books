@@ -171,7 +171,12 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.ok(s.includes("if: github.event_name != 'repository_dispatch'"));
  assert.ok(s.includes("github.event.client_payload.environment == 'production'"));
  assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
- assert.ok(s.includes("vercel-event' || 'periodic'"));
+ assert.ok(s.includes("format('vercel-sha-{0}', github.event.client_payload.git.sha || github.run_id)"));
+ assert.ok(s.includes("|| 'periodic'"));
+ assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'repository_dispatch' }}"));
+ // Same-SHA Vercel events can supersede, but different SHA values must retain
+ // independent leases. Unknown SHA must not cancel another deployment.
+ assert.doesNotMatch(s, /'vercel-event' \|\| 'periodic'/);
 });
 
 test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
