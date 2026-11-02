@@ -256,6 +256,26 @@ const HARNESS_CASES = new Map([
   ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
+// Complex PRs still run real Chromium/WebKit for the affected sensitive
+// funnel. The immutable BASE owner selects only relevant cases; missing,
+// added, removed, unknown or mixed critical paths continue to run all 13.
+const VERIFIED_CRITICAL_PUBLIC_CASES = [
+  [/^app\/api\/payments\/talismans\/checkout\/route\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^lib\/commerce\/talisman-checkout\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^components\/commerce\/(?:service-cart|personal-cart|consultation-cart-entry|cart-nav-link)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/contact-channel-chooser(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/(?:compact-lead-capture|phone-country-input|consultation-choice-capture|public-consultation-cta|free-diagnosis-offers|business-website-enquiry|free-resource-enquiry)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^app\/api\/service-enquiries\/route\.(?:js|ts)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/academy-course-capture(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/alchemy-soul-lead-form(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+];
+export function verifiedCriticalPublicCases(file, baseTrigger) {
+  if (typeof file !== 'string' || !baseTrigger || file.includes('..') ||
+      file.includes('\0') || file.includes('\n') || !matchesTrigger(baseTrigger,[file])) return null;
+  const owner = VERIFIED_CRITICAL_PUBLIC_CASES.find(([pattern]) => pattern.test(file));
+  return owner ? owner[1] : null;
+}
+
 // Cross-domain browser matrix is NOT a default requirement for changes that
 // the immutable BASE Mandala workflow independently owns. Any mixed checkout,
 // auth, payment, service-enquiry or unknown change still routes to full QA.
@@ -285,15 +305,20 @@ function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
 
-export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set(), coreOwned = new Set() } = {}) {
+export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map() } = {}) {
   if (!Array.isArray(files) || files.length === 0 ||
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
   }
   const selected = new Set();
-  let performance = false, ownPublicTests = false;
+  let performance = false, ownPublicTests = false, protectedPublic = false;
   for (const file of files) {
+    if (publicOwned.has(file)) {
+      for (const name of publicOwned.get(file)) selected.add(name);
+      protectedPublic = true;
+      continue;
+    }
     if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
@@ -332,7 +357,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
       build: true, browser: false, metrics: true, cases: 'none' };
   }
   if (selected.size) {
-    return { mode: 'focused', reason: 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
+    return { mode: 'focused', reason: protectedPublic ? 'PROTECTED_PUBLIC_OWNER_CASES' : 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
       build: true, browser: true, metrics: false,
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
@@ -606,8 +631,8 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build: false, browser: false, metrics: false, cases: 'none' };
     }
     const changed = [];
-    const mandalaOwned = new Set(), coreOwned = new Set();
-    let mandalaTrigger = null, guardTrigger = null;
+    const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
+    let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;
     try {
       const baseline = String(git('git',
         ['show',diffBase+':.github/workflows/holistic-support-mandala.yml'],options));
@@ -618,19 +643,28 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
         ['show',diffBase+':.github/workflows/hh-pr-sweep-guard.yml'],options));
       guardTrigger=parsePrTrigger(guardBaseline,'.github/workflows/hh-pr-sweep-guard.yml');
     } catch { /* Unknown BASE guard is not release proof. */ }
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/hh-public-services-production.yml'],options));
+      publicTrigger = parsePrTrigger(baseline,'.github/workflows/hh-public-services-production.yml');
+    } catch { /* Unknown BASE owner never waives browser QA. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
       if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
+      if (status === 'M') {
+        const cases = verifiedCriticalPublicCases(file, publicTrigger);
+        if (cases) publicOwned.set(file,cases);
+      }
       if (status !== 'M' && !(status === 'A' &&
         (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
          IDEAS_SCOPED_ADDITIONS.has(file) || MANDALA_REVIEWED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
-    return planPublicServicesChangedPaths(changed,{mandalaOwned,coreOwned});
+    return planPublicServicesChangedPaths(changed,{mandalaOwned,coreOwned,publicOwned});
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
@@ -647,7 +681,7 @@ const SAFE_FOCUSED_PR_CASES = new Set([
   'verify-holistic-support-recommendations-mobile.mjs',
 ]);
 export function requiresPublicServicesHeavyPr(plan) {
-  if (!plan || plan.mode === 'full') return true;
+  if (!plan || plan.mode === 'full' || plan.reason === 'PROTECTED_PUBLIC_OWNER_CASES') return true;
   if (plan.mode === 'focused') {
     const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
     return !cases.length || cases.some(name => !SAFE_FOCUSED_PR_CASES.has(name));
