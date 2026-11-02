@@ -8,6 +8,7 @@ on:
       - feat/hh-professional-mp3-first-wave-20261102
     paths:
       - .github/workflows/hh-curated-music-one-off.yml
+      - scripts/acquire-curated-music-wave.mjs
 
 permissions:
   contents: write
