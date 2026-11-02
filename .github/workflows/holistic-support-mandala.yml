@@ -63,6 +63,7 @@ on:
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/verify-practices-mobile-browser.mjs'
       - 'scripts/benchmarking/video-scene-match.mjs'
       - 'tests/video-scene-match.test.mjs'
       - 'scripts/verify-hypno-wave-browser.mjs'
@@ -245,6 +246,8 @@ jobs:
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
             node scripts/benchmarking/first-video-live-export.mjs
+          # Verify approved five-step guest course in Chromium and WebKit, no provider writes.
+          node scripts/verify-practices-mobile-browser.mjs
           # On this owner-approved conversation PR, prove actual category ->
           # scenario -> phrase taps and a real downloaded moving movie.
           # No external provider, payment, photo or client payload is sent.
@@ -284,7 +287,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots
-          path: artifacts/hypno-compact/*.png
+          path: |
+            artifacts/hypno-compact/*.png
+            artifacts/practices-mobile/*.png
           if-no-files-found: ignore
           retention-days: 3
 
