@@ -90,14 +90,15 @@ test("approved courses & practices mobile flow preserves consent and reverses me
     "data-guided-create-plan","data-guided-free-video"]){
     assert.ok(guided.includes(marker),`real interaction exists: ${marker}`);
   }
-  assert.match(guided,/onOmitMeditation\\?\\.\\(\\)/,"skip must call the parent");
-  assert.match(guided,/resetGeneratedMeditation/,"changing focus invalidates stale script");
-  assert.match(studio,/onOmitMeditation=\\{\\(\\)=>\\{/);
-  assert.match(studio,/setCourseMeditationDraft\\(""\\)/);
-  assert.match(studio,/current\\?\\.kind==="file"&&current\\.nonLoop\\?null:current/);
-  assert.match(studio,/data-video-therapy-meditation-audio/);
-  assert.match(meditation,/seedScript/);
-  assert.match(meditation,/current===previousSeed\\?"":current/);
-  assert.match(styles,/\\.sessionList\\{display:grid;grid-template-columns:1fr;grid-auto-flow:row/);
-  assert.match(studio,/services\\/imagery-therapy|MandalaGuidedCourse/);
+  assert.ok(guided.includes("onOmitMeditation?.()"),"skip must call the parent");
+  assert.ok(guided.includes("resetGeneratedMeditation"),"changing focus invalidates stale script");
+  assert.ok(studio.includes("onOmitMeditation={()=>{"));
+  assert.ok(studio.includes('setCourseMeditationDraft("")'));
+  assert.ok(studio.includes('current?.kind==="file"&&current.nonLoop?null:current'));
+  assert.ok(studio.includes("data-video-therapy-meditation-audio"));
+  assert.ok(meditation.includes("seedScript"));
+  assert.ok(meditation.includes('current===previousSeed?"":current'));
+  assert.ok(styles.includes(".sessionList{display:grid;grid-template-columns:1fr;grid-auto-flow:row"));
+  assert.ok(studio.includes("MandalaGuidedCourse"));
+
 });
