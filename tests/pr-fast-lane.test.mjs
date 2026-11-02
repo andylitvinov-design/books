@@ -1311,6 +1311,8 @@ test('staged single hh-merge-check never passes without current-workflow Core an
   assert.match(newGate,/^    if: always\(\)$/m);
   for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(newGate.includes(required),'missing fail-closed '+required);
+  assert.match(newGate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/,
+    'manual or merge_group executions must never produce a trusted PR-required green check');
   assert.match(newGate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(newGate,/\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(newGate,/npm ci|npm run build|npx|playwright|continue-on-error/);

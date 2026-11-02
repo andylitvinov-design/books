@@ -464,7 +464,11 @@ jobs:
           ROUTE: ${{ needs.scope.outputs.route }}
         run: |
           set -euo pipefail
-          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request checks can authorize a merge; manual or merge_group jobs do not verify PR specialists.' >&2
+            exit 1
+          }
+          if [[ "$PR_DRAFT" == true ]]; then
             echo 'Draft PR cannot pass the unified merge check' >&2
             exit 1
           fi
