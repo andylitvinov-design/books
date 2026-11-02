@@ -136,3 +136,10 @@ test("Wave theme switch and explicit crisis cannot bypass approved video phrases
  assert.match(src,/if\(disabled\|\|!geminiConsent\|\|safetyBlocked\)return/);
  assert.doesNotMatch(src,/else if\(geminiConsent\)void generateGemini\(\)/);
 });
+
+test("Wave retains the chosen idea when a filtered five-phrase list needs fallback entries",()=>{
+ const local=phrases.slice(phrases.indexOf("function createWaveDraft("),phrases.indexOf("function filtered("));
+ assert.match(local,/const completed=\[\.\.\.phrases,\.\.\.fallbackPhrases\.filter\(line=>!phrases\.includes\(line\)\)\]\.slice\(0,5\)/);
+ assert.match(local,/phrases:completed\.length===5\?completed:fallbackPhrases/);
+ assert.match(phrases,/data-hypno-own-phrase aria-label=\{extra\.add\}/);
+});
