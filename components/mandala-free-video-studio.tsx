@@ -4450,10 +4450,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>document.getElementById("video-hypnosis")?.scrollIntoView({block:"nearest",behavior:"smooth"}));
             }}
             onOpenScenes={()=>openQuickDetailed("video-templates")}
-            onOpenMeditation={()=>{
-              setActiveWorkspace("practices");setStudioMode("therapy");
-              window.requestAnimationFrame(()=>document.querySelector('[data-video-meditation-course-panel]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
-            }}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
             onPreview={openAffirmationPreview}
