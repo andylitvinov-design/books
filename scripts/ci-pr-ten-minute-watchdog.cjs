@@ -907,7 +907,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // A signed real Core association already exists on this exact source HEAD.
     // Never leave its old hh:ci-needed hint monopolizing the CI queue. A
     // separate live read protects concurrent HEAD/label changes.
-    if(hasLabel(live,CI_BOOTSTRAP_LABEL)&&
+    const coreStarted=latest.status==='in_progress'||
+      (latest.status==='completed'&&['success','failure','timed_out'].includes(latest.conclusion));
+    if(coreStarted&&hasLabel(live,CI_BOOTSTRAP_LABEL)&&
        summary.verifiedCiHintsCleared+summary.wouldClearVerifiedCiHints<
          MAX_VERIFIED_CI_HINT_CLEARS&&!budget.exhausted){
       try{

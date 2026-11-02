@@ -1455,6 +1455,8 @@ test('watchdog removes CI hint only for a real Core run on the same PR and HEAD'
   const matching={id:42,name:'HH PR core release gate',event:'pull_request',head_branch:'test-402',head_sha:SHA,
     pull_requests:[{number:402,head:{sha:SHA,ref:'test-402'}}],status:'in_progress',created_at:new Date(NOW).toISOString()};
   assert.equal(await check(matching),1);
+  assert.equal(await check({...matching,status:'queued'}),0);
+  assert.equal(await check({...matching,status:'completed',conclusion:'startup_failure'}),0);
   assert.equal(await check({...matching,head_sha:'c'.repeat(40)}),0);
   assert.equal(await check({...matching,pull_requests:[{number:403,head:{sha:SHA,ref:'test-402'}}]}),0);
   assert.equal(await check(matching,{head:{...pr(402).head,sha:'c'.repeat(40)}}),0);
