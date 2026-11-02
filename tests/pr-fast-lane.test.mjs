@@ -124,8 +124,12 @@ test('single post-migration status requires actual Core and Specialist without l
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   const unified=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(specialist && unified,'real specialist and unified status required');
-  assert.match(specialist,/^    needs: \[scope\]$/m);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.doesNotMatch(specialist,/^    needs:/m,'specialist must be queued concurrently with scope');
+  assert.match(specialist,/^    if: always\(\)$/m);
+  assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
+  assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
