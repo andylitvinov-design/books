@@ -307,11 +307,13 @@ export function MandalaPersonalMeditation({
     // A deliberate second press rotates among curated, meaningful local passages.
     // Neither the requested topic nor the selected filters are changed.
     const nextVariant=script?(variantIndex+1)%3:variantIndex;
+    const sharedFocus = coursePreview ? {...focus,goal:effectiveWish,goals:[plan?.focusTheme||actualTheme],
+      difficulty:focusMode==="vector"?currentState:focus.difficulty} : focus;
     const next=buildPersonalMeditationScript({
       locale,theme:plan?.focusTheme||actualTheme,wish:effectiveWish,
       scene:coursePreview&&plan?plan.days[0].motif:scene,
       sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
+      focus:sharedFocus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
       variantIndex:nextVariant,
     });
     const safetyResponse=isMeditationSafetyResponse(next,locale);
@@ -548,7 +550,7 @@ export function MandalaPersonalMeditation({
       </div>:null}
       {coursePreview&&script&&!stale&&!isMeditationSafetyResponse(script,locale)?
         <MandalaResourcePractice locale={locale} theme={courseFocus||actualTheme}
-          focus={{...focus,goal:effectiveWish||focus.goal,
+          focus={{...focus,goals:[courseFocus||actualTheme],goal:effectiveWish||focus.goal,
             difficulty:focusMode==="vector"?currentState:focus.difficulty}} disabled={disabled}/>:null}
       {coursePreview&&script&&!stale&&courseDays.length===8?
         <section className={css.courseOutline} data-meditation-eight-day-plan aria-labelledby="meditation-course-outline-heading">
