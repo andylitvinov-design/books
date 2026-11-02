@@ -1,7 +1,10 @@
 name: HH PR core release gate
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Metadata-only backfill: a PAT-authored PR body edit runs REAL exact-HEAD
+    # Core and Specialist jobs without a no-op source commit. Ordinary PR
+    # edits also receive the full fail-closed release gate; no skipped required jobs.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]

@@ -65,7 +65,7 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
 
 test('Draft cannot pass Specialist or required unified merge gate; Ready restores real validation',()=>{
  const core=read('hh-pr-core-release.yml');
- assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]"));
+ assert.ok(core.includes("  pull_request:\n") && core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]"));
  assert.match(core,/^  hh-specialist:/m);
  assert.match(core,/^  hh-merge-check:/m);
  assert.doesNotMatch(core,/^  release-ready:|^  hh-core-verified:/m);
@@ -158,7 +158,10 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
+  assert.ok(core.includes("  pull_request:\n") &&
+    core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]") &&
+    core.includes("    branches: ['codex/public-book-library']"),
+    'core must rerun on Ready, metadata wake, and keep production base');
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/ci-specialist-aggregate\.mjs/);
