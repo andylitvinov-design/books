@@ -218,3 +218,23 @@ test('staged single-release-check policy preserves legacy until proven administr
   assert.ok(m.includes("Already migrated, both protections verified"));
   assert.ok(m.includes('strict: false'));
 });
+
+test('live workers avoid duplicate unit suites while changes retain the full contract gate',()=>{
+  const contract=read('hh-pr-watchdog-contract-ci');
+  for(const file of [
+    'ci-pr-slot-wakeup','ci-pr-priority','ci-pr-ci-worker',
+    'ci-pr-repair-worker','ci-pr-repair-test-scope','ci-pr-orchestration-triggers'
+  ])assert.ok(contract.includes('tests/'+file+'.test.cjs'),file+' contract coverage');
+
+  const slot=read('hh-pr-ten-minute-watchdog').split('\n  core-slot-wakeup:\n')[1];
+  assert.ok(slot && !slot.includes('node --test'),'slot wake remains lightweight');
+  assert.ok(slot.includes('scripts/ci-pr-slot-wakeup.cjs'));
+
+  const ci=read('hh-pr-ci-worker');
+  assert.ok(!ci.includes('node --test'),'CI worker live job does not rerun unit tests');
+  assert.ok(ci.includes('node --check scripts/ci-pr-ci-worker.cjs'));
+  const repairClaim=read('hh-pr-repair-worker').split('\n  fix:\n')[0];
+  assert.ok(!repairClaim.includes('node --test'),'repair claim does not rerun unit tests');
+  assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-worker.cjs'));
+  assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-test-scope.cjs'));
+});
