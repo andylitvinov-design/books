@@ -83,7 +83,7 @@ test("existing Studio remains the sole Canvas renderer and uses source-clock val
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.match(source,/resolveLicensedSourceFrame\(/);
   assert.match(source,/assessLicensedSourceFrame\(/);
-  assert.match(source,/const frame=resolveLicensedSourceFrame/);
+  assert.match(source,/const framePosition=resolveLicensedSourceFrame/);
   assert.match(source,/if\(assessment\.status!=="ready"\)return null/);
   assert.match(source,/paintCinematicFrame\(/);
   assert.match(source,/new MediaRecorder\(/);
