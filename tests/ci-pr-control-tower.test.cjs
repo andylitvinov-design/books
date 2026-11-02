@@ -1094,7 +1094,7 @@ test('complete historical previous_head/new_head releases never poison a newer u
    state:'released_after_concurrent_equivalent_fix',previous_head:old,new_head:next,
    released_at:'2026-11-02T16:15:00Z'};
  const actor={login:'andylitvinov-design'};
- const wrap=x=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+JSON.stringify(x)});
+ const wrap=x=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
  assert.equal(externalOwnerLeaseStatus([wrap(doc)],SHA,NOW),'FREE');
  assert.equal(externalOwnerLeaseStatus([wrap({...doc,new_head:'invalid'})],SHA,NOW),
    'OWNER_LEASE_UNVERIFIED','incomplete historical release remains untrusted');
@@ -1119,10 +1119,10 @@ test('real workers run addressed dispatches rather than competing cron and push 
  for(const path of ['.github/workflows/hh-pr-repair-worker.yml',
                      '.github/workflows/hh-pr-ci-worker.yml']){
   const content=fs.readFileSync(path,'utf8');
-  const triggers=content.slice(content.indexOf('\\non:\\n'),content.indexOf('\\npermissions:\\n'));
+  const triggers=content.slice(content.indexOf('\non:\n'),content.indexOf('\npermissions:\n'));
   assert.match(triggers,/workflow_dispatch:/);
-  assert.doesNotMatch(triggers,/\\n  schedule:/);
-  assert.doesNotMatch(triggers,/\\n  push:/);
+  assert.doesNotMatch(triggers,/\n  schedule:/);
+  assert.doesNotMatch(triggers,/\n  push:/);
   assert.match(content,/cancel-in-progress: false/);
  }
 });
