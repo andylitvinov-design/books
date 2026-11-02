@@ -19,7 +19,11 @@ test('report materials and public video drafts are distinct in Practice',()=>{
  assert.match(panel,/tab==='files'/)
  const privateView=read('components/app/practice-report-materials.jsx')
  assert.match(privateView,/preload="none"/)
- assert.match(privateView,/controls playsInline/)
+ // Video player appears only after the visitor opens a private preview.
+ // Audio never autoplays; the video uses user-initiated expansion.
+ assert.ok(privateView.includes("const expanded=item.kind==='video'&&openVideoId===item.id"))
+ assert.ok(privateView.includes('onToggle={()=>setOpenVideoId(expanded?null:item.id)}'))
+ assert.ok(privateView.includes('<video controls autoPlay playsInline preload="metadata" src={mediaUrl}'))
  assert.match(privateView,/<audio controls preload="none"/)
  assert.doesNotMatch(privateView,/<audio[^>]+autoPlay/)
  assert.match(privateView,/\/api\/app\/practice\/report-materials\//)
