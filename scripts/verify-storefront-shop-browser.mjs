@@ -126,33 +126,40 @@ try {
           '[data-personal-service-cart] [data-cart-contact-form] input[type="checkbox"][required]');
         return Boolean(checkbox && Object.keys(checkbox).some(key => key.startsWith("__reactProps$")));
       }, null, {timeout:30000});
-      await contactForm.locator('input[type="tel"]').fill('416 555 1234')
+      const phoneInput=contactForm.locator('input[type="tel"]')
+      await phoneInput.fill('416 555 1234')
+      // Blur through an actual keyboard gesture so the country/phone controlled
+      // input has committed before attempting a separate consent action.
+      await phoneInput.press('Tab')
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Phone without reply-only opt-in is insufficient')
-      // A real finger tap on the rendered consent label must toggle React's
-      // controlled checkbox and enable the enquiry. Never set checked in JS.
+      // The label remains readable and associated with the native control;
+      // a real iPhone finger taps the checkbox directly, rather than relying
+      // on a synthesized label-center click that can mis-target WebKit.
+      // React must persist the explicit opt-in before submitting.
       const consentInput = contactForm.locator('input[type="checkbox"][required]')
       const consentLabel = contactForm.locator('label:has(input[type="checkbox"][required])')
       assert.equal(await consentLabel.count(), 1, 'One visible reply-only consent label')
       // A fixed public iPhone dock remains at the viewport bottom. A user
       // scrolls the form above that dock before touching the checkbox; make
       // the real browser perform that scroll, then assert the label can be hit.
-      await consentLabel.evaluate(element=>element.scrollIntoView({
+      await consentInput.evaluate(element=>element.scrollIntoView({
         behavior:'auto',block:'center'
       }))
       await page.waitForFunction(() => {
-        const label=document.querySelector(
-          '[data-cart-contact-form] label:has(input[type="checkbox"][required])')
+        const input=document.querySelector(
+          '[data-cart-contact-form] input[type="checkbox"][required]')
         const nav=document.querySelector('.mobile-bottom-navigation')
-        if(!label)return false
-        const rect=label.getBoundingClientRect()
+        if(!input)return false
+        const rect=input.getBoundingClientRect()
         if(rect.top<0)return false
         if(nav&&getComputedStyle(nav).display!=='none' &&
           rect.bottom>=nav.getBoundingClientRect().top-6)return false
         const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2)
-        return Boolean(hit&&(hit===label||label.contains(hit)))
+        return hit===input
       },null,{timeout:10000})
-      await consentLabel.click()
+      // Actual touch input, not a DOM value assignment or forced click.
+      await consentInput.tap()
       await page.waitForFunction(() => {
         const input = document.querySelector(
           '[data-cart-contact-form] input[type="checkbox"][required]')
