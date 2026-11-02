@@ -188,7 +188,8 @@ test('useful worker completion wakes only the existing serialized dispatcher wit
  assert.ok(dispatcher.includes('relayCompletionWake'));
  assert.ok(dispatcher.includes('worker_run_id:'));
  assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
- assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+ assert.ok(dispatcher.includes('const summary=await run({github,core,context,dryRun})'));
+ assert.ok(dispatcher.includes('await wakeStaleWatchdog({github,context,summary,dryRun'));
 });
 
 test('hourly native merge requires explicit verified release for modern active ownership',()=>{
