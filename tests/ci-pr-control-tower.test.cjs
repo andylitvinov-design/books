@@ -1002,3 +1002,13 @@ test('verified old single-head Work release cannot block unrelated new source wo
  assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
   'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
 });
+
+test('old denied CI bootstrap reconciliation is isolated from dispatch and fail-closed',()=>{
+ const s=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(s.includes("reconcileLegacyCiDenial({"));
+ assert.ok(s.includes("summary.legacyCiRecovery="));
+ assert.ok(s.includes("dryRun,limited"));
+ assert.ok(workflow.includes("node --test tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs"));
+ assert.ok(workflow.includes("node --check scripts/ci-pr-ci-legacy-recovery.cjs"));
+});
