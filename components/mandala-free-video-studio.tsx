@@ -3165,6 +3165,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(route!==window.location.pathname+window.location.search+window.location.hash)return;
         if(hash==="video-audio"&&tab==="video")
           document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
+        if(hash==="video-settings")
+          document.querySelector<HTMLDetailsElement>("[data-video-pro-advanced]")?.setAttribute("open","");
         // The third workspace opens at Wave; fifth audio/voice open their actual panes.
         const target=hash==="video-hypnocorrection-mobile"
           ?document.querySelector<HTMLElement>("[data-video-hypno-scroll-start]")
@@ -3206,6 +3208,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setLocation(false);
       if(anchor==="video-audio"&&tab==="video")
         document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
+      if(anchor==="video-settings")
+        document.querySelector<HTMLDetailsElement>("[data-video-pro-advanced]")?.setAttribute("open","");
       document.getElementById(anchor)?.scrollIntoView({
         behavior:"instant" as ScrollBehavior,block:"nearest",
       });

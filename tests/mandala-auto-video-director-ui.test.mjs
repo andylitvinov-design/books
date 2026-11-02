@@ -115,9 +115,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","PRO генерация","Монтаж"],
-  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","PRO generation","Montage"],
-  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Generación PRO","Montaje"],
+  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","Монтаж","PRO"],
+  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","Montage","PRO"],
+  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
