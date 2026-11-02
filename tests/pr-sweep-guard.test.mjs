@@ -622,3 +622,35 @@ test('push-triggered conflict scans rotate within the same hour',()=>{
  const rows=Array.from({length:210},(_,number)=>({number:number+1}));
  assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
 });
+
+
+test('optional conflict snapshot keeps transient GitHub 5xx from blocking guarded PR CI',()=>{
+ const wf=readFileSync(new URL('../.github/workflows/hh-pr-sweep-guard.yml',import.meta.url),'utf8');
+ const marker='      - name: Probe real conflict inventory with a read-only token';
+ const part=wf.split(marker)[1]?.split('        run: |\n')[1];
+ assert.ok(part,'read-only observational probe must exist');
+ const script=part.split('\n').map(line=>line.startsWith('          ')?line.slice(10):line).join('\n');
+ assert.match(script,/SWEEP_GRAPHQL_HTTP_\(502\|503\|504\)/);
+ assert.match(script,/exit "\$status"/);
+ const check=(code)=>{
+  const dir=mkdtempSync(join(tmpdir(),'hh-conflict-telemetry-'));
+  const summary=join(dir,'summary.md');
+  const command='node(){ printf "SWEEP_GRAPHQL_HTTP_'+code+'\\n"; return 2; }\n'+script;
+  try {
+   const result=spawnSync('bash',['-c',command],{
+    env:{...process.env,GITHUB_STEP_SUMMARY:summary},
+    encoding:'utf8',timeout:8000,
+   });
+   return {status:result.status,stdout:result.stdout||'',stderr:result.stderr||'',
+    summary:result.status===0?readFileSync(summary,'utf8'):''};
+  } finally {rmSync(dir,{recursive:true,force:true});}
+ };
+ for(const code of [502,503,504]){
+  const result=check(code);
+  assert.equal(result.status,0,'transient HTTP '+code+' is degraded telemetry only: '+result.stderr);
+  assert.match(result.summary,/DEGRADED/);
+ }
+ const forbidden=check(403);
+ assert.equal(forbidden.status,2,'authorization errors must still fail closed');
+ assert.match(forbidden.stderr,/SWEEP_GRAPHQL_HTTP_403/);
+});

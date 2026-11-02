@@ -59,4 +59,23 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Diagnostic only. GitHub 502/503/504 is a transient upstream error,
+          # NOT evidence the PR has merge conflicts. Preserve failing unit,
+          # auth, wrong-base and non-transient API errors as blockers.
+          report="$(mktemp)"
+          if node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY" > "$report" 2>&1; then
+            cat "$report"
+          else
+            status=$?
+            if [[ "$status" -eq 2 ]] && grep -Eq '^SWEEP_GRAPHQL_HTTP_(502|503|504) "$report"; then
+              echo "::warning::Optional conflict snapshot degraded by GitHub upstream 5xx; source and safety tests still govern merge"
+              echo 'Conflict inventory: DEGRADED (GitHub GraphQL transient 5xx, no mergeability verdict)' >> "$GITHUB_STEP_SUMMARY"
+            else
+              cat "$report" >&2
+              exit "$status"
+            fi
+          fi
+          rm -f "$report"
