@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","effects","practices","pro","editor"]);
+ assert.deepEqual(ids,["video","phrases","effects","practices","editor","pro"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -17,7 +17,8 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  assert.match(studio,/Фразы и гипнокоррекция/);
  assert.match(studio,/Гипноэффекты/);
  assert.match(studio,/Курс практик/);
- assert.match(studio,/pro:\{tab:"PRO генерация",title:"PRO генерация"/);
+ assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
+ assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
@@ -42,8 +43,11 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
- assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="editor" \? deepVideoPane : null\}/);
+ assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
+   "fifth Montage reuses one original photo editor");
+ assert.match(studio,/\{activeWorkspace==="pro" \? <details className=\{videoStyles.quickExtras\} data-video-pro-advanced>/,
+   "advanced visual settings are in the sixth PRO workspace");
+ assert.match(studio,/\{deepVideoPane\}/);
 });
 test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
@@ -63,30 +67,38 @@ test("mobile has six compact navigation columns, without removing old player or 
 import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 const source=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8');
-const workspaces=[null,'video','phrases','effects','practices','pro','editor'];
+const workspaces=[null,'video','phrases','effects','practices','editor','pro'];
 function exercise(input,workspace,overrides={}){
  const ast=ts.createSourceFile('studio.tsx',input,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  let handler;const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)==='startFromHero')handler=n.initializer;ts.forEachChild(n,visit);};visit(ast);
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- let active=workspace,queued=workspace,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
+ let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
  const state={recording:false,preparing:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
- const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,visible:cover.open&&(!active||active==='video'||active==='pro')})};
- runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+ const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
+   visible:cover.open&&(active==='video'||active==='editor')})};
+ runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
+   setBasicPanelTab:value=>{basicTab=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
- return {workspace:active,open:cover.open,scrolls,notices,renders,picks};
+ return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
-test('current source mounts one shared consent pane in Video or Characters without old Style disclosure',()=>{
- assert.match(source,/activeWorkspace!=="pro" \? deepCharacterPhotoPane : null/);
- assert.match(source,/activeWorkspace==="pro" \? deepCharacterPhotoPane : null/);
+test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
+ assert.match(source,/activeWorkspace==="video" \? deepCharacterPhotoPane : null/);
+ assert.match(source,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
  assert.equal((source.match(/<input type="checkbox" data-video-photo-consent/g)||[]).length,1);
  assert.doesNotMatch(source,/styleLibraryRef|data-video-style-more/);
 });
 test('actual hero handler reveals consent in all six workspaces and legacy layout',()=>{
- for(const workspace of workspaces){const r=exercise(source,workspace);assert.deepEqual(r.scrolls,[{open:true,workspace:workspace&&workspace!=='pro'?'video':workspace,visible:true}],String(workspace));assert.equal(r.renders,0);assert.deepEqual(r.notices,['Consent required']);}
+ for(const workspace of workspaces){
+  const r=exercise(source,workspace),target=workspace==='video'?'video':'editor';
+  assert.deepEqual(r.scrolls,[{open:true,workspace:target,visible:true}],String(workspace));
+  assert.equal(r.basicTab,workspace==='video'?null:'photo');
+  assert.equal(r.renders,0);
+  assert.deepEqual(r.notices,['Consent required']);
+ }
 });
 test('recording/preparing locks, consent, background, missing photo and audio gates are retained',()=>{
  for(const workspace of workspaces){
@@ -97,8 +109,14 @@ test('recording/preparing locks, consent, background, missing photo and audio ga
  }
 });
 test('negative control rejects previous handler in four nonowner workspaces',()=>{
- const line='      if(activeWorkspace && activeWorkspace!=="pro")setActiveWorkspace("video");';assert.equal(source.split(line).length,2);
- for(const workspace of ['phrases','effects','practices','editor']){const r=exercise(source.replace(line,''),workspace);assert.equal(r.scrolls[0].visible,false);assert.equal(r.renders,0);assert.throws(()=>assert.equal(r.scrolls[0].visible,true));}
+ const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}';
+ assert.equal(source.split(line).length,2);
+ for(const workspace of ['phrases','effects','practices','pro']){
+  const r=exercise(source.replace(line,''),workspace);
+  assert.equal(r.scrolls[0].visible,false);
+  assert.equal(r.renders,0);
+  assert.throws(()=>assert.equal(r.scrolls[0].visible,true));
+ }
 });
 
 // Approved iPhone mock: show one simple path without losing advanced functionality.
@@ -163,7 +181,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
   const expected=['tab:"Стиль видео"','tab:"Фразы и гипнокоррекция"','tab:"Гипноэффект"',
-    'tab:"Курс практик"','tab:"PRO генерация"','tab:"Монтаж"'];
+    'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/setActiveWorkspace\(item.id\)/);

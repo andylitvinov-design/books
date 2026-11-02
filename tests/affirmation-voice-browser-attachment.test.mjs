@@ -34,9 +34,9 @@ test("voice release encodes audible video in both Chromium and WebKit, never pre
 
 test("disclosure acceptance retains provider privacy, real exported audio and stale narration gates",()=>{
   for(const assertion of [
-    'assert.equal(payloads.length,1)',
-    'assert.equal(payloads[0].text,transcript)',
-    'assert.equal(payloads[0].consent,true)',
+    'assert.equal(affirmationRequests.length,1)',
+    'assert.equal(affirmationRequests[0].text,transcript)',
+    'assert.equal(affirmationRequests[0].consent,true)',
     'tracks.includes("video")',
     'tracks.includes("audio")',
     'pcm.stdout.some(value=>value!==0)',

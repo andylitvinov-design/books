@@ -34,7 +34,7 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
@@ -49,6 +49,7 @@ const setupText={
     pilotKeys:'For a safe Telegram pilot also set',
     globalKeys:'For real-client sending after testing, explicitly review',
     connectReady:'After setup, select Connect to verify your account.',
+    instagramSetup:'@tao.ideas only · switch to Professional, enable Connected Tools message access, authorize the Meta Instagram Business Login messaging permission, subscribe messages on the official app, then Connect. DMs and story replies are not Instagram comments. Older chats are not guaranteed to sync.',
   },
   ru:{
     intro:'Пока нет подключённых каналов. Подготовьте их здесь — сообщения клиентам не отправляются.',
@@ -63,6 +64,7 @@ const setupText={
     pilotKeys:'Для безопасного Telegram-теста дополнительно задайте',
     globalKeys:'Для отправки клиентам после теста отдельно согласуйте',
     connectReady:'После настройки нажмите «Подключить» для проверки аккаунта.',
+    instagramSetup:'Только @tao.ideas · профессиональный аккаунт, доступ к сообщениям для Connected Tools, разрешение Meta Instagram Business Login на Direct, подписка приложения на messages. Затем «Подключить». Комментарии не являются Direct; история старых переписок не гарантирована.',
   },
   es:{
     intro:'Aún no hay canales conectados. Prepáralos aquí sin enviar mensajes a clientes.',
@@ -77,6 +79,7 @@ const setupText={
     pilotKeys:'Para un piloto seguro en Telegram configura también',
     globalKeys:'Para clientes reales, revisa por separado',
     connectReady:'Después de configurar, pulsa Conectar para verificar la cuenta.',
+    instagramSetup:'Solo @tao.ideas · cuenta profesional, acceso a mensajes para Connected Tools, permiso de mensajes de Instagram Business Login y suscripción a messages. Después pulsa Conectar. Los comentarios no son DMs y el historial antiguo no está garantizado.',
   },
 }
 const officialPortal={
@@ -178,6 +181,8 @@ const workflowErrors={
   INVALID_FOLLOWUP:{en:'Check the task type and date.',ru:'Проверьте вид действия и дату.',es:'Comprueba el tipo de tarea y la fecha.'},
   INVALID_MESSAGE:{en:'Check the text and length.',ru:'Проверьте текст и его длину.',es:'Comprueba el texto y la longitud.'},
   CRM_CONTACT_ARCHIVED:{en:'This contact is archived.',ru:'Контакт находится в архиве.',es:'Contacto archivado.'},
+  INSTAGRAM_ACCOUNT_MISMATCH:{en:'The token is not for the verified @tao.ideas professional account.',ru:'Токен не принадлежит подтверждённому профессиональному аккаунту @tao.ideas.',es:'El token no corresponde a la cuenta profesional @tao.ideas.'},
+  INSTAGRAM_MESSAGES_NOT_SUBSCRIBED:{en:'Subscribe the Instagram account to messages in Meta developer settings.',ru:'Подпишите аккаунт Instagram на события messages в Meta Developers.',es:'Suscribe la cuenta de Instagram a messages en Meta Developers.'},
   MESSENGER_DAILY_LIMIT:{en:'Daily message limit reached.',ru:'Достигнут суточный лимит сообщений.',es:'Límite diario de mensajes alcanzado.'},
 }
 function torontoTomorrow(now=new Date()){
@@ -540,6 +545,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               <div className={styles.guideBody}>
                 <a href={officialPortal[channel.channel]} target="_blank" rel="noopener noreferrer">{guide.openPortal}</a>
                 {channel.channel==='telegram'&&<p>{guide.telegramCaution}</p>}
+                {channel.channel==='instagram'&&<p>{guide.instagramSetup} <a href="https://www.instagram.com/tao.ideas/" target="_blank" rel="noopener noreferrer">@tao.ideas</a></p>}
                 <p>{guide.notVerified}</p>
                 <strong>{guide.channelKeys}</strong>
                 {missing.length?<ul>{missing.map(key=><li key={key}><code>{key}</code></li>)}</ul>:
@@ -550,7 +556,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                   <code>HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true</code>
                   <code>HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID</code>
                 </div>}
-                {!channel.liveApproved&&<p>{guide.globalKeys} <code>HH_CRM_MSG_PRODUCTION_APPROVED=true</code>.</p>}
+                {!channel.liveApproved&&<p>{guide.globalKeys} <code>{channel.channel==='instagram'?'HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED=true':'HH_CRM_MSG_PRODUCTION_APPROVED=true'}</code>.</p>}
                 <span>{guide.testHint}</span>
                 <code className={styles.callbackUrl}>{channel.callbackUrl||'https://holistichouse.vercel.app/api/app/crm/messenger/webhook/'+channel.channel}</code>
                 <button type="button" className={styles.copyButton} onClick={()=>copyWebhook(channel.channel)}>

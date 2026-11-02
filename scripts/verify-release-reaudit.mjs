@@ -452,8 +452,11 @@ async function exercise(engine, browserType, width) {
             await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
             await expect(submit).toBeDisabled();
             await receiptPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-            await form.locator('input[type="checkbox"]').check();
-            await expect(form.locator('input[type="checkbox"]')).toBeChecked();
+            const replyConsent = form.locator('input[type="checkbox"][required]');
+            await expect(replyConsent).toHaveCount(1);
+            await replyConsent.check();
+            await expect(replyConsent).toBeChecked();
+            await expect(form.locator('input[type="checkbox"]:not([required])')).not.toBeChecked();
             await submit.click();
             await expect(receiptPage).toHaveURL(origin + `/${locale}/thank-you`);
             await expect(receiptPage.locator('[data-service-thank-you]')).toContainText('HH-ABCD1234EF56');

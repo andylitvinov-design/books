@@ -212,7 +212,9 @@ const runEngine = async ([engine, browserType]) => {
             await deepPage.locator("[data-mandala-free-video]").waitFor({
               state:"visible",timeout:30000,
             });
-            await expect(deepPage.locator('[data-video-quick-control="video"]'))
+            await expect(deepPage.locator('[data-video-quick-control="editor"]'))
+              .toHaveAttribute("aria-pressed","true",{timeout:20000});
+            await expect(deepPage.locator('[data-video-basic-tab="music"]'))
               .toHaveAttribute("aria-pressed","true",{timeout:20000});
             const audioPane=deepPage.locator("[data-video-audio-section]");
             await expect(audioPane).toBeVisible();
