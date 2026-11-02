@@ -7,10 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       evidence_pr_number:
-        description: 'Merged production PR proving the new hh-merge-check (default #3054)'
+        description: 'Actually merged production PR with successful hh-merge-check on its exact HEAD'
         required: true
         type: string
-        default: '3054'
 permissions:
   contents: read
   actions: read

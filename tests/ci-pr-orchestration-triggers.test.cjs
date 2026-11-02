@@ -205,6 +205,10 @@ test('staged single-release-check policy preserves legacy until proven administr
   const m=read('hh-migrate-legacy-core-check');
   assert.ok(m.includes('HH_BRANCH_ADMIN_TOKEN'));
   assert.ok(m.includes('head_sha=$head'));
+  assert.ok(m.includes('evidence_pr_number:'));
+  assert.ok(m.includes('required: true'));
+  assert.ok(!m.includes("default: '3054'"),'closed unmerged proof PR must not be silently preselected');
+  assert.ok(m.includes('Actually merged production PR with successful hh-merge-check'));
   assert.ok(m.includes('["hh-core-verified","hh-specialist","release-ready","hh-merge-check"]'));
   assert.ok(m.includes('.parameters.required_status_checks = ['));
   assert.ok(m.includes('"context":"hh-merge-check","integration_id":15368'));
