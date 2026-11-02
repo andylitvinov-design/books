@@ -10,7 +10,10 @@ function computeCapacity(active,queued,jobs){
  const activeWorker={};for(const name of Object.values(WORKFLOWS))activeWorker[name]=0;
  // A transitioning Actions snapshot can include a completed run in a queued
  // page. It is not an active worker lease; keep overall capacity conservative.
- const occupiesSlot=x=>!x.status||['in_progress','queued','waiting','pending','requested'].includes(x.status);
+ const occupiesSlot=x=>(!x.status||['in_progress','queued','waiting','pending','requested'].includes(x.status))&&
+  // Scheduled/push CI probes never edit PR metadata. They have an independent
+  // workflow concurrency group and must not reserve the addressed CI lane.
+  !(x.name===WORKFLOWS.ci&&['schedule','push'].includes(x.event));
  for(const x of [...active,...queued])if(Object.prototype.hasOwnProperty.call(activeWorker,x.name)&&occupiesSlot(x))
   activeWorker[x.name]++;
  const runningJobs=jobs.filter(x=>x.status==='in_progress').length;

@@ -1,6 +1,8 @@
 name: HH zero-cost PR CI worker
 on:
-  # Only exact-HEAD tasks enter the CI worker, no empty cron/push probe.
+  schedule:
+    - cron: '4,14,24,34,44,54 * * * *'
+  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
   workflow_dispatch:
     inputs:
       dry_run:
@@ -26,13 +28,28 @@ on:
         description: 'Authenticated dispatcher reservation run ID; exact HEAD, bot identity and task key required'
         type: string
         default: ''
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-ci-worker.yml'
+      - 'scripts/ci-pr-ci-worker.cjs'
+      - 'scripts/ci-pr-core-metadata-wake.cjs'
+      - 'tests/ci-pr-core-metadata-wake.test.cjs'
+      - 'scripts/ci-pr-owner-token-probe.cjs'
+      - 'scripts/ci-pr-priority.cjs'
+      - '.github/hh-pr-directions.json'
+      - 'tests/ci-pr-direction-watcher.test.cjs'
+      - 'tests/ci-pr-priority.test.cjs'
+      - 'tests/ci-pr-ci-worker.test.cjs'
 permissions:
   contents: read
   actions: write
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-pr-ci-worker
+  # Scheduled/push backstops only read queue metadata. Do not occupy the
+  # addressed, exact-HEAD CI worker's globally serialized job lease.
+  group: hh-pr-ci-worker-${{ github.event_name == 'workflow_dispatch' && 'addressed' || 'background' }}
   cancel-in-progress: false
 jobs:
   bootstrap:

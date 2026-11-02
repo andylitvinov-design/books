@@ -1153,3 +1153,14 @@ test('complete previous_head + new_head owner release cannot block unrelated fut
  assert.equal(externalOwnerLeaseStatus([event,actual],SHA,NOW),'OWNER_LEASE_ACTIVE',
   'old release cannot steal a current writer lock');
 });
+
+test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
+ const meta=computeCapacity([{name:'HH zero-cost PR CI worker',event:'schedule',status:'in_progress'}],[],[]);
+ assert.equal(meta.activeWorker['HH zero-cost PR CI worker'],0);
+ assert.equal(admission('ci',meta),'ADMIT');
+ const scheduled={event:'schedule',status:'in_progress',created_at:new Date(NOW).toISOString()};
+ assert.equal(workerBusyOrCooling([scheduled],NOW,'ci'),false);
+ assert.equal(workerBusyOrCooling([scheduled],NOW,'repair'),true);
+ const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
+ assert.equal(admission('ci',addressed),'WORKER_BUSY');
+});

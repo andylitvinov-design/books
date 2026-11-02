@@ -14,20 +14,25 @@ test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
 });
-for(const file of ['hh-pr-ci-worker','hh-pr-repair-worker']){
-  test(file+' accepts addressed tasks without cron/push worker lease contention',()=>{
-    const s=read(file);
-    assert.ok(s.includes('workflow_dispatch:'));
-    assert.ok(!s.includes('  schedule:'));
-    assert.ok(!s.includes('  push:'));
-    assert.ok(!s.includes('  workflow_run:'));
-    assert.ok(s.includes('cancel-in-progress: false'));
-    assert.ok(s.includes('default: false'));
-    assert.ok(s.includes('reservation_run_id:'));
-    assert.ok(s.includes('expected_sha:'));
-    assert.ok(s.includes('task_key:'));
-  });
-}
+test('source Repair Worker is addressed only; no empty cron consumes its publish lease',()=>{
+ const s=read('hh-pr-repair-worker');
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(!s.includes('  schedule:'));
+ assert.ok(!s.includes('  push:'));
+ assert.ok(!s.includes('  workflow_run:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('expected_sha:'));
+ assert.ok(s.includes('task_key:'));
+});
+test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
+ const s=read('hh-pr-ci-worker');
+ assert.ok(s.includes("cron: '4,14,24,34,44,54 * * * *'"));
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes("github.event_name == 'workflow_dispatch' && 'addressed' || 'background'"));
+ assert.ok(s.includes('reservation_run_id:'));
+});
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
 });
