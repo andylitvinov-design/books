@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import "./mandala-therapy-video-intro.test.mjs";
+import "./resource-practice-selector.test.mjs";
 import {readFileSync} from "node:fs";
 import {buildPersonalImageryCourse} from "../lib/mandala/personal-guided-course.mjs";
 
@@ -74,4 +75,31 @@ test("focus is bounded and source verified test claims remain absent by default"
   const source=read("components/mandala-guided-course.tsx");
   assert.match(source,/if\(consent && !\["ready","empty"\]\.includes\(profileStatus\)\)void loadPrivateProfile\(\)/);
   assert.match(source,/if\(!consent \|\| disabled/);
+});
+
+test("approved courses & practices mobile flow preserves consent and reverses meditation inclusion",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const guided=read("components/mandala-guided-course.tsx");
+  const meditation=read("components/mandala-personal-meditation.tsx");
+  const styles=read("components/mandala-guided-course.module.css");
+  for(const locale of ["ru","en","es"]){
+    assert.match(guided,new RegExp(`\\b${locale}:\\s*\\{`));
+  }
+  for(const marker of ["data-guided-focus-state","data-guided-generate-meditation",
+    "data-guided-add-meditation","data-guided-skip-meditation",
+    "data-guided-practice-step","data-guided-programme-step",
+    "data-guided-create-plan","data-guided-free-video"]){
+    assert.ok(guided.includes(marker),`real interaction exists: ${marker}`);
+  }
+  assert.ok(guided.includes("onOmitMeditation?.()"),"skip must call the parent");
+  assert.ok(guided.includes("resetGeneratedMeditation"),"changing focus invalidates stale script");
+  assert.ok(studio.includes("onOmitMeditation={()=>{"));
+  assert.ok(studio.includes('setCourseMeditationDraft("")'));
+  assert.ok(studio.includes('current?.kind==="file"&&current.nonLoop?null:current'));
+  assert.ok(studio.includes("data-video-therapy-meditation-audio"));
+  assert.ok(meditation.includes("seedScript"));
+  assert.ok(meditation.includes('current===previousSeed?"":current'));
+  assert.ok(styles.includes(".sessionList{display:grid;grid-template-columns:1fr;grid-auto-flow:row"));
+  assert.ok(studio.includes("MandalaGuidedCourse"));
+
 });

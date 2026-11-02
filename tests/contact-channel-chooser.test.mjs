@@ -96,3 +96,15 @@ test("primary capture components render channel chooser after service selection 
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
 });
+
+test("cart form is inert until real hydration, with phone and explicit consent still required", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
+  assert.match(ui, /cartContact && !cartFormHydrated/);
+  assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(ui, /\!consent/);
+  assert.match(qa, /form\[data-contact-hydrated="true"\]/);
+  assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
+  assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
+});
