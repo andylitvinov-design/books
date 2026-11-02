@@ -68,7 +68,9 @@ function externalOwnerLeaseStatus(comments,headSha,now){
  const activeStates=new Set(['active','claim','heartbeat']);
  for(const {entry,index} of sorted){
   const body=String(entry?.body||'');
-  if(!body.includes('HH_PR_SWEEP_LEASE_V1'))continue;
+  // Match only a real receipt header, not an incidental mention of the
+  // lease name in a diagnostic or conflict-handoff comment.
+  if(!/^\s*(?:<!--\s*HH_PR_SWEEP_LEASE_V1\s*-->|HH_PR_SWEEP_LEASE_V1)(?=\s|$)/.test(body))continue;
   let doc;
   try{
    const fence=String.fromCharCode(96).repeat(3);
@@ -85,27 +87,57 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    }
    doc=JSON.parse(source);
   }catch{
-   // Older sweep receipts used key=value instead of JSON. Only ignore a
-   // clearly released record when both its endpoints are valid, unambiguous
-   // SHA values and neither can refer to the current HEAD. Never treat this
-   // legacy format as proof that a current owner's lease has been released.
-   const field=name=>[...body.matchAll(new RegExp('^'+name+'=([^\\r\\n]+)$','gm'))].map(m=>m[1].trim());
-   const old=field('old_head'),next=field('new_head'),status=field('status');
-   if(old.length===1&&next.length===1&&status.length===1&&status[0]==='RELEASED'&&
-      SHA.test(old[0])&&SHA.test(next[0])&&old[0]!==headSha&&next[0]!==headSha)continue;
+   // Historical Work/Codex comments also used key:value lines (and older
+   // key=value receipts), not JSON. They are NOT an active owner of a new
+   // HEAD when both full SHA endpoints prove an unrelated completed release.
+   // A malformed, incomplete, or current-HEAD receipt still fails closed.
+   const field=name=>[...body.matchAll(
+    new RegExp('^'+name+'\\s*[:=]\\s*([^\\r\\n]+)$','gm')
+   )].map(m=>m[1].trim());
+   const one=name=>{const values=field(name);return values.length===1?values[0]:null;};
+   const status=one('state')||one('status');
+   const old=one('previous_head_sha')||one('old_head_sha')||one('old_head');
+   const next=one('head_sha')||one('new_head_sha')||one('new_head');
+   const released=status==='RELEASED'||/^released(?:_|$)/.test(status||'');
+   if(released&&SHA.test(old||'')&&SHA.test(next||'')&&
+      old!==headSha&&next!==headSha)continue;
+   // Some historic completed Work receipts contain only one exact source SHA,
+   // or use lease_head_sha / observed_new_head_sha. A verified past release
+   // cannot own a different HEAD; a current, ambiguous or malformed receipt
+   // MUST remain blocked. Modern active claims are unaffected.
+   const historicalHeadFields=['previous_head_sha','old_head_sha','old_head',
+    'head_sha','new_head_sha','new_head','lease_head_sha','observed_new_head_sha'];
+   const refs=historicalHeadFields.flatMap(name=>field(name));
+   if(released&&one('owner')&&one('lease_id')&&
+      Number.isFinite(Date.parse(one('released_at')||''))&&
+      refs.length>0&&
+      historicalHeadFields.every(name=>field(name).length<=1)&&
+      refs.every(sha=>SHA.test(sha)&&sha!==headSha))continue;
    return 'OWNER_LEASE_UNVERIFIED';
   }
   if(!doc||typeof doc!=='object'||Array.isArray(doc))
    return 'OWNER_LEASE_UNVERIFIED';
-  const oldPair=SHA.test(doc.old_head||'')&&SHA.test(doc.new_head||'')&&
-   /^released(?:_|$)/.test(String(doc.state||''));
+  // Older released records sometimes store old_head_sha/new_head_sha
+  // without a head_sha, or abbreviate the new commit SHA. A past completed
+  // release for *other* heads must not poison every future PR revision.
+  // An abbreviated prefix matching THIS head stays unverified, never free.
+  const released=/^released(?:_|$)/.test(String(doc.state||''))||
+   (!doc.state&&/^release(?:_|$)/.test(String(doc.last_action||'')));
+  const oldHead=doc.old_head_sha||doc.old_head;
+  const newHead=doc.new_head_sha||doc.new_head;
+  const oldPair=released&&SHA.test(oldHead||'')&&SHA.test(newHead||'');
+  const shortReleased=released&&SHA.test(doc.previous_head_sha||'')&&
+   typeof doc.head_sha==='string'&&/^[0-9a-f]{8,39}$/i.test(doc.head_sha);
+  const prefixCouldMatch=shortReleased&&
+   headSha.toLowerCase().startsWith(doc.head_sha.toLowerCase());
   const related=doc.head_sha===headSha||doc.previous_head_sha===headSha||
-   (oldPair&&(doc.old_head===headSha||doc.new_head===headSha));
+   (oldPair&&(oldHead===headSha||newHead===headSha))||prefixCouldMatch;
   if(!related){
-   if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||'')&&!oldPair)
-    return 'OWNER_LEASE_UNVERIFIED';
+   if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||'')&&
+      !oldPair&&!shortReleased)return 'OWNER_LEASE_UNVERIFIED';
    continue;
   }
+  if(prefixCouldMatch)return 'OWNER_LEASE_UNVERIFIED';
   if(!doc.schema){
    // Historic Codex sweeps had only run_id + lease_expires. Unlike
    // modern exact-head source edits, these expire with a proven clock.

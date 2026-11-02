@@ -439,6 +439,39 @@ test('JSON legacy old_head/new_head receipts only affect their own heads',()=>{
  assert.equal(externalOwnerLeaseStatus([active,receipt],old,NOW),'FREE');
 });
 
+test('narrative mention of a sweep lease is not a lease receipt',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const note={body:'Conflict investigator reports no active \`HH_PR_SWEEP_LEASE_V1\` claim; this is only a handoff.'};
+ assert.equal(externalOwnerLeaseStatus([note],SHA,NOW),'FREE');
+ assert.equal(reservationStatus(task,[note],NOW),'FREE');
+ const malformed={body:'<!-- HH_PR_SWEEP_LEASE_V1 --> not JSON'};
+ assert.equal(externalOwnerLeaseStatus([malformed],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
+test('completed historical lease formats do not strand an unrelated exact HEAD',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const historicYaml={user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nstate: released_after_atomic_commit\nowner: old-codex\nlease_id: old-1\nprevious_head_sha: '+old+'\nhead_sha: '+next+'\n'};
+ const historicJson={user:{login:'andylitvinov-design'},body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-codex',lease_id:'old-2',
+   state:'released_after_atomic_commit',old_head_sha:old,new_head_sha:next})};
+ const shortRelease={user:{login:'andylitvinov-design'},body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-codex',
+   state:'released_after_atomic_commit',previous_head_sha:old,
+   head_sha:'ccccccccc'})};
+ const history=[historicYaml,historicJson,shortRelease];
+ assert.equal(externalOwnerLeaseStatus(history,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(taskFor(pr(1),{tier:'P1'}),history,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([historicYaml],old,NOW),'OWNER_LEASE_UNVERIFIED');
+ assert.equal(externalOwnerLeaseStatus([shortRelease],next,NOW),'OWNER_LEASE_UNVERIFIED',
+  'matching abbreviated HEAD must not unlock a possible active writer');
+ assert.equal(externalOwnerLeaseStatus([{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nstate: released\nprevious_head_sha: '+old+'\nhead_sha: invalid'
+ }],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
 test('CI capacity is rechecked once when the first inventory is partial',async()=>{
  const f=fixture([pr(8,'ci')]);let reads=0;
  const partial={...cap(),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:1};
@@ -937,4 +970,35 @@ test('Control Tower summary names PRs behind lease and handoff blockers',async()
  assert.ok(examples.length>0&&examples.length<=3);
  assert.ok(examples.every(y=>Number.isSafeInteger(y.pr_number)&&y.head_sha===SHA.slice(0,12)));
  assert.equal(x.dispatchAccepted,0,'conflict-only queue does not impersonate source repair');
+});
+
+
+test('verified old single-head Work release cannot block unrelated new source work',()=>{
+ const old='b'.repeat(40),newer='c'.repeat(40);
+ const build=fields=>({user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+fields.join('\n')});
+ const common=['owner: work-repair-2607-alchemy-formats','lease_id: old-repair-lease',
+  'state: released_without_write','released_at: 2026-10-31T07:22:00Z'];
+ const single=build([...common,'head_sha: '+old]);
+ const alternate=build([...common,'lease_head_sha: '+old,
+  'observed_new_head_sha: '+newer]);
+ const t=taskFor(pr(1),{tier:'P1'});
+ assert.equal(externalOwnerLeaseStatus([single,alternate],SHA,NOW),'FREE');
+ assert.equal(reservationStatus(t,[single,alternate],NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([single],old,NOW),'OWNER_LEASE_UNVERIFIED',
+  'the same exact HEAD still requires an authenticated release/claim');
+ assert.equal(externalOwnerLeaseStatus([build([...common,'head_sha: invalid'])],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED','bad source SHA cannot release ownership');
+ assert.equal(externalOwnerLeaseStatus([build([...common,'head_sha: '+old,
+  'head_sha: '+newer])],SHA,NOW),'OWNER_LEASE_UNVERIFIED',
+  'duplicate source refs must fail closed');
+ assert.equal(externalOwnerLeaseStatus([build([...common.filter(x=>!x.startsWith('released_at:')),
+  'head_sha: '+old])],SHA,NOW),'OWNER_LEASE_UNVERIFIED',
+  'absence of release time is not a verified terminal receipt');
+ const active={user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',lease_id:'current',
+   owner:'active-editor',state:'active',head_sha:SHA})};
+ assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
 });

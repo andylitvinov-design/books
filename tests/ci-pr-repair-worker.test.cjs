@@ -99,7 +99,8 @@ test('conflicting source is assigned to owner but never unsafe-merged',async()=>
   assert.equal(f.log.commit,0);
 });
 test('active external lease blocks concurrent worker',async()=>{
-  // The current parser requires the canonical lease header, not an inline mention.
+  // A real ownership receipt starts with the canonical header; incidental
+  // embedded mention must not be used as exclusive source-writer evidence.
   const lease={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
     schema:'HH_PR_SWEEP_LEASE_V1',owner:'verified-owner',head_sha:sha,
     state:'active',expires_at:'2099-01-01T00:00:00Z'}),user:{login:'andylitvinov-design'}};
