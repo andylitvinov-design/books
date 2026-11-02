@@ -3925,14 +3925,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal")}</h3>
+            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{locale==="ru"?"Выберите цель видео":locale==="es"?"Elige el objetivo del vídeo":"Choose your video goal"}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
           <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
-          <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
+          <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced>
             <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
-            {(activeWorkspace==="effects"?effectsThemeOrder:quickThemeOrder).map(value=>{
+            {quickThemeOrder.map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
@@ -3949,7 +3949,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={poster} alt="" loading="lazy"/>
                 <span className={videoStyles.quickThemeIcon}><Icon size={23} aria-hidden="true"/></span>
-                <span className={videoStyles.quickThemeName}>{activeWorkspace==="effects"?effectsThemeNames[locale][value]:approved.themes[value]}</span>
+                <span className={videoStyles.quickThemeName}>{approved.themes[value]}</span>
               </button>;
             })}
           </div>
