@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -312,4 +312,82 @@ test('source Repair ignores a release from another GitHub commenter',()=>{
   {user:{login:'unrelated'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
     JSON.stringify({...item,state:'released'})}];
  assert.equal(activeSweepLease(events,sha,now),true);
+});
+
+const outcomeCore={...core,warning:()=>{},summary:{
+ addHeading(){return this;},addCodeBlock(){return this;},async write(){}
+}};
+const outcomeContext={...context,runId:41350000123};
+const receiptKey='f'.repeat(32);
+test('finalizer verifies a real parented source commit on the PR HEAD',async()=>{
+ const original=pr(),f=fixture({pr:pr({head:{...original.head,sha:newSha}})});
+ f.github.rest.git.getCommit=async()=>({data:{parents:[{sha}]}});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',publishResult:'success',
+  publishStatus:'committed',publishSha:newSha});
+ assert.equal(result.state,'PUBLISHED');
+ assert.equal(result.source_published,true);
+ assert.equal(result.new_sha,newSha);
+ assert.equal(f.log.labels,0);
+ assert.match(f.log.commentBodies.at(-1),/SOURCE_COMMIT_VERIFIED_ON_PR_HEAD/);
+ assert.match(f.log.commentBodies.at(-1),/HH_PR_REPAIR_OUTCOME_V1/);
+});
+test('failed isolated fix emits terminal step-level diagnostic and manual owner handoff',async()=>{
+ const f=fixture();
+ f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+  {name:'fix',conclusion:'failure',steps:[{name:'Install dependencies',conclusion:'failure'}]}
+ ]}})};
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'failure',publishResult:'skipped'});
+ assert.equal(result.state,'FAILED');
+ assert.equal(result.reason_code,'FIX_JOB_FAILURE');
+ assert.equal(result.failed_step,'Install dependencies');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.match(f.log.commentBodies.at(-1),/FIX_JOB_FAILURE/);
+});
+test('skipped claim due missing token produces explicit rejection, not a fake completion',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'skipped',
+  claimReason:'HH_AUTOMERGE_TOKEN_MISSING',claimResult:'success',
+  fixResult:'skipped',publishResult:'skipped'});
+ assert.equal(result.state,'REJECTED');
+ assert.equal(result.reason_code,'HH_AUTOMERGE_TOKEN_MISSING');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,0,'an unclaimed task must not change owner labels');
+});
+test('head movement is recorded as superseded without touching fresh source',async()=>{
+ const original=pr(),f=fixture({pr:pr({head:{...original.head,sha:newSha}})});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',publishResult:'success',
+  publishStatus:'skipped_stale_head'});
+ assert.equal(result.state,'SUPERSEDED');
+ assert.equal(result.reason_code,'SOURCE_HEAD_MOVED_BEFORE_PUBLISH');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,0);
+});
+test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
+ const marker='<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' '+outcomeContext.runId+' -->';
+ const f=fixture({comments:[{body:marker,
+  user:{id:41898282,login:'github-actions[bot]'},
+  performed_via_github_app:{id:15368}}]});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'failure'});
+ assert.equal(result.status,'already_finalized');
+ assert.equal(f.log.comments,0);
+});
+test('workflow guarantees a finalizer after all three stages with explicit results',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/  finalize:\n/);
+ assert.match(wf,/needs: \[claim,fix,publish\]/);
+ assert.match(wf,/always\(\)/);
+ assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
+ assert.match(wf,/claim_status/);
+ assert.match(wf,/publish_status/);
 });
