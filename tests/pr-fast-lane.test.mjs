@@ -1340,3 +1340,23 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.doesNotMatch(gate,/npm ci|npm run build|npx|playwright|continue-on-error/);
   assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
 });
+
+test('legacy PR CI backfill accepts PAT-authored edited event without skipping required checks',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
+  assert.ok(match,'Core must stay attached to a genuine PR event');
+  assert.match(match[1],/\bedited\b/,'metadata edit must produce genuine pull_request CI');
+  assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
+  assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
+    'required CI must not be skipped by a path filter');
+  const scope=source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0]??'';
+  const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
+  const gate=source.split(/^  hh-merge-check:/m)[1]??'';
+  assert.match(scope,/github\.event\.pull_request\.draft == false/,
+    'real scope must execute on non-draft edited PR');
+  assert.match(specialist,/if: always\(\)/);
+  assert.match(gate,/if: always\(\)/,
+    'required status must run and reject failed Core/Specialist');
+  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true/);
+});
