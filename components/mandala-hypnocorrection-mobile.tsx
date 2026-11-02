@@ -26,10 +26,14 @@ type Props = {
   whisperEnabled: boolean;
   binauralEnabled: boolean;
   beatHz: number;
+  repeatEverySeconds: number;
+  whisperGain: number;
   audioEffectBusy: boolean;
   onToggleWhisper: () => void;
   onToggleBinaural: () => void;
   onBeatHzChange: (value: number) => void;
+  onRepeatEveryChange: (value: number) => void;
+  onWhisperGainChange: (value: number) => void;
   onOpenScenes: () => void;
   onOpenMeditation: () => void;
   onPickPhoto: () => void;
@@ -159,7 +163,9 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
 export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenScenes,onOpenMeditation,
-  onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,posters,
+  onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
+  voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
+  onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
   const t=copy[locale];
   const [open,setOpen]=useState<GroupId[]>(["audio","visual","meditation","phrases"]);
@@ -234,7 +240,7 @@ export function MandalaHypnocorrectionMobile({
               onToggleVoice();
             }}
             onConfigure={()=>setShowSpeechSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
-          {showSpeechSettings?<div className={styles.settings} data-hypno-speech-settings>
+          {showSpeechSettings?<div className={styles.settings} data-hypno-speech-settings style={{gridColumn:"1 / -1"}}>
             {voiceEditor||<p className={styles.note}>{t.voiceHint}</p>}
           </div>:null}
           <Feature icon={<AudioLines/>} title={t.whisper} help={t.whisperHelp}
@@ -243,13 +249,21 @@ export function MandalaHypnocorrectionMobile({
               onToggleWhisper();
             }} onConfigure={()=>setShowWhisperSettings(value=>!value)}
             disabled={disabled||audioEffectBusy} settings={t.settings}/>
-          {showWhisperSettings?<div className={styles.settings} data-hypno-whisper-settings>
-            <p className={styles.note}>{hasVoiceFile?t.pending:t.voiceHint}</p>
+          {showWhisperSettings?<div className={styles.settings} data-hypno-whisper-settings style={{gridColumn:"1 / -1"}}>
+            <label>{locale==="ru"?"Пауза между повторами":locale==="es"?"Pausa entre repeticiones":"Pause between repetitions"} · {repeatEverySeconds} {locale==="ru"?"сек":"sec"}
+              <input type="range" min="4" max="20" step="1" value={repeatEverySeconds}
+                disabled={disabled||audioEffectBusy} onChange={event=>onRepeatEveryChange(Number(event.currentTarget.value))}/>
+            </label>
+            <label>{locale==="ru"?"Громкость повторов":locale==="es"?"Volumen de repeticiones":"Repetition volume"} · {whisperGain}%
+              <input type="range" min="5" max="30" step="1" value={whisperGain}
+                disabled={disabled||audioEffectBusy} onChange={event=>onWhisperGainChange(Number(event.currentTarget.value))}/>
+            </label>
+            <p className={styles.note}>{hasVoiceFile?locale==="ru"?"Фразы повторяются тихо, с паузой после каждой полной фразы.":locale==="es"?"Las frases se repiten suavemente, con una pausa después de cada frase completa.":"Phrases repeat quietly, with a pause after each complete phrase.":t.voiceHint}</p>
           </div>:null}
           <Feature icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
             active={binauralEnabled} onToggle={onToggleBinaural}
             onConfigure={()=>setShowBinauralSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
-          {showBinauralSettings?<div className={styles.settings} data-hypno-binaural-settings>
+          {showBinauralSettings?<div className={styles.settings} data-hypno-binaural-settings style={{gridColumn:"1 / -1"}}>
             <label>{locale==="ru"?"Частота биения":locale==="es"?"Frecuencia del pulso":"Beat frequency"} · {beatHz} Hz
               <input type="range" min="1" max="12" step="1" value={beatHz}
                 disabled={disabled||audioEffectBusy} onChange={event=>onBeatHzChange(Number(event.currentTarget.value))}/>
