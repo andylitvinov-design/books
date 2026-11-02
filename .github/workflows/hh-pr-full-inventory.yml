@@ -20,9 +20,12 @@ permissions:
   issues: read
   pull-requests: read
 concurrency:
-  # Vercel event storms never displace the independent hourly inventory lease.
-  group: hh-pr-full-inventory-${{ github.event_name == 'repository_dispatch' && 'vercel-event' || 'periodic' }}
-  cancel-in-progress: false
+  # Keep the independent periodic inventory alive. Only duplicate Vercel
+  # callbacks for the *same* deployment SHA supersede one another.
+  # Missing SHA receives a unique per-run lease and cannot cancel another
+  # deployment. Verify-LIVE's existing single-writer remains serialized.
+  group: hh-pr-full-inventory-${{ github.event_name == 'repository_dispatch' && format('vercel-sha-{0}', github.event.client_payload.git.sha || github.run_id) || 'periodic' }}
+  cancel-in-progress: ${{ github.event_name == 'repository_dispatch' }}
 jobs:
   reconcile:
     # Vercel callbacks verify LIVE only, never scan/merge PRs.
