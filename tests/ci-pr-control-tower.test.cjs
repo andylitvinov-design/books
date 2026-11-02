@@ -26,7 +26,7 @@ const cap=(active=0,queued=0)=>computeCapacity(
  [{status:'in_progress'}]);
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
- const calls={dispatched:[],reserved:[],read:[],removed:[]};
+ const calls={dispatched:[],reserved:[],read:[],removed:[],labels:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
   get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
@@ -34,6 +34,7 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
+  addLabels:async arg=>{calls.labels.push(arg);return {data:{}};},
   removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}
  },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};}}},
  request:async()=>({data:{workflow_runs:recent}})};
@@ -54,6 +55,9 @@ test('receipt uses exact task id and never reassigns an old claimed SHA',()=>{
  assert.equal(reservationStatus(t,[{body:'<!-- HH_PR_REPAIR_WORKER_V1 '+SHA+' -->'}],NOW),'ALREADY_HANDLED');
  assert.equal(reservationStatus(t,[{body:'<!-- HH_PR_TASK_V1 -->\n```json\nmalformed\n```'}],NOW),'UNVERIFIED_HISTORY');
  assert.equal(reservationStatus(t,[],NOW),'FREE');
+ assert.equal(reservationStatus(t,[{body:commentBody({...t,state:'CLAIMED'})}],NOW),'CLAIMED_AWAITING_OUTCOME');
+ for(const state of ['FAILED','REJECTED','SUPERSEDED','VERIFY_REQUIRED','PUBLISHED'])
+  assert.equal(reservationStatus(t,[{body:commentBody({...t,state})}],NOW),'ALREADY_HANDLED');
 });
 test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(16,43)),'ADMIT');
@@ -301,6 +305,9 @@ test('real conflict requires a fresh dirty merge state',async()=>{
  assert.equal(r.manualConflictHandoffs,1);
  assert.equal(g.calls.dispatched.length,0,'DIRTY does not waste an ESLint runner');
  assert.ok(g.calls.reserved[0].body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA));
+ assert.equal(r.conflictQueueReleased,1);
+ assert.ok(g.calls.labels.some(x=>x.issue_number===9&&x.labels.includes('hh:repair-manual')));
+ assert.ok(g.calls.removed.some(x=>x.issue_number===9&&x.name==='hh:conflict-repair-needed'));
 });
 
 
@@ -528,6 +535,7 @@ test('exact-HEAD conflict receipt is idempotent and does not block a source work
  const second=await run({github:same.github,core:core(),context,now:NOW,
   capacityFn:same.capacityFn});
  assert.equal(second.manualConflictHandoffs,0);
+ assert.equal(second.conflictQueueReleased,1,'previously handed-off conflict is cleaned up without reposting');
  assert.equal(same.calls.reserved.length,0);
  assert.equal(same.calls.dispatched.length,0);
 });
@@ -794,4 +802,43 @@ test('ambiguous failed dispatch retains the safety reservation for manual reconc
  assert.equal(r.dispatchAccepted,0);
  assert.equal(r.definitiveDispatchRejections,0);
  assert.equal(f.calls.reserved.length,1);
+});
+
+test('source receives first scheduling priority and DIRTY cleanup does not reserve Repair',async()=>{
+ const dirty=pr(77,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const clean=pr(78,'repair');
+ const f=fixture([dirty,clean],{comments:{78:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.conflictQueueReleased,1);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'78');
+ assert.ok(f.calls.labels.some(x=>x.issue_number===77&&x.labels.includes('hh:repair-manual')));
+});
+
+test('orphaned accepted Repair handoff receives one terminal diagnostic, not a replay',async()=>{
+ const item=pr(70),task=taskFor(item,{tier:'P1'});
+ const created=NOW-61*60_000;
+ const reserved={body:commentBody(reservation(task,created,25)),
+  created_at:new Date(created).toISOString()};
+ const f=fixture([item],{comments:{70:[proof(),reserved]},recent:[]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.unconfirmedHandoffs,1);
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_HANDOFF_UNCONFIRMED_V1')));
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('NO_VERIFIED_WORKER_OUTCOME_AFTER_60_MINUTES')));
+ assert.ok(f.calls.labels.some(x=>x.issue_number===70&&x.labels.includes('hh:repair-manual')));
+ assert.ok(f.calls.removed.some(x=>x.issue_number===70&&x.name==='hh:repair-needed'));
+});
+test('orphan reconciliation does not interrupt an active Repair Worker',async()=>{
+ const item=pr(70),task=taskFor(item,{tier:'P1'});
+ const created=NOW-61*60_000;
+ const reserved={body:commentBody(reservation(task,created,25)),
+  created_at:new Date(created).toISOString()};
+ const f=fixture([item],{comments:{70:[proof(),reserved]},
+  recent:[{status:'in_progress',event:'workflow_dispatch'}]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.unconfirmedHandoffs,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.labels.length,0);
 });

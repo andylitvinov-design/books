@@ -1,6 +1,6 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
-const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
@@ -91,7 +91,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
-  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,conflictQueueReleased:0,unconfirmedHandoffs:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
@@ -177,7 +177,72 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
-  if(status!=='FREE'){blocked(status);continue;}
+  if(status!=='FREE'){
+   blocked(status);
+   // A reserved/claimed HEAD with no terminal result must not be reported
+   // as repaired. After a bounded grace, verify the worker is no longer
+   // active and append one diagnostic receipt rather than redispatching
+   // an ambiguous source-writing task.
+   if(task.lane==='repair'&&
+      ['RESERVED_REQUIRES_REVIEW','CLAIMED_AWAITING_OUTCOME'].includes(status)&&
+      summary.unconfirmedHandoffs<2){
+    const pending=comments.flatMap(comment=>{
+     const records=parseRecords([comment]);
+     return (records||[]).filter(r=>r.task_key===task.task_key&&
+      r.head_sha===task.head_sha&&['RESERVED','CLAIMED'].includes(r.state))
+      .map(r=>Date.parse(comment.created_at||r.created_at||''));
+    }).filter(Number.isFinite);
+    const newest=pending.length?Math.max(...pending):NaN;
+    if(Number.isFinite(newest)&&now-newest>60*60_000){
+     const marker='<!-- HH_CONTROL_HANDOFF_UNCONFIRMED_V1 '+task.task_key+' -->';
+     if(comments.some(x=>String(x.body||'').includes(marker))){
+      blocked('HANDOFF_UNCONFIRMED_ALREADY_RECORDED');continue;
+     }
+     let runs;
+     try{
+      runs=(await limited('orphan-repair-worker-history',()=>github.request(
+       'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+        owner,repo,workflow_id:WORKER_PATH.repair,per_page:20}))).data?.workflow_runs;
+     }catch(error){blocked('ORPHAN_WORKER_HISTORY_UNAVAILABLE');continue;}
+     if(!Array.isArray(runs)||runs.some(r=>r.status!=='completed')){
+      blocked('ORPHAN_WORKER_STILL_ACTIVE_OR_UNVERIFIED');continue;
+     }
+     if(dryRun){summary.wouldUnconfirmedHandoffs=(summary.wouldUnconfirmedHandoffs||0)+1;continue;}
+     try{
+      const latest=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
+      if(!latest||reservationStatus(task,latest,now)!==status){
+       blocked('ORPHAN_OUTCOME_CHANGED');continue;
+      }
+      const live=(await limited('orphan-head-recheck',()=>github.rest.pulls.get({
+       owner,repo,pull_number:task.pr_number}))).data;
+      if(live?.head?.sha!==task.head_sha||live?.state!=='open'){
+       blocked('ORPHAN_HEAD_MOVED');continue;
+      }
+      await limited('orphan-diagnostic',()=>github.rest.issues.createComment({
+       owner,repo,issue_number:task.pr_number,
+       body:marker+'\n'+commentBody({...task,state:'UNCONFIRMED',
+        reason_code:'NO_VERIFIED_WORKER_OUTCOME_AFTER_60_MINUTES',
+        source_published:false,owner_run_id:String(context.runId||'unknown'),
+        observed_at:new Date(now).toISOString()})
+      }));
+      summary.unconfirmedHandoffs++;
+      log('UNCONFIRMED_SOURCE_HANDOFF #'+task.pr_number+' '+task.head_sha.slice(0,12));
+      // Preserve the source HEAD; park automatic retries for source-level
+      // triage, rather than letting a missing worker outcome loop forever.
+      await limited('orphan-manual-label',()=>github.rest.issues.addLabels({
+       owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+      }));
+      try{await limited('orphan-retire-source-label',()=>github.rest.issues.removeLabel({
+       owner,repo,issue_number:task.pr_number,name:'hh:repair-needed'
+      }));}catch(error){if(error?.status!==404)throw error;}
+     }catch(error){
+      blocked('ORPHAN_DIAGNOSTIC_WRITE_FAILED');
+      log('Orphaned handoff #'+task.pr_number+': '+error.message);
+     }
+    }
+   }
+   continue;
+  }
   if(task.lane==='conflict'&&!(fresh.mergeable===false&&fresh.mergeable_state==='dirty')){
    // A resolved conflict label is only a stale work-queue hint. The legacy
    // Repair Worker could clear it, but Control Tower never dispatches it to
@@ -218,12 +283,51 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty'&&
     (task.lane==='conflict'||fresh.labels?.some(l=>l.name==='hh:conflict-repair-needed'));
   if(isVerifiedDirty){
-   // A genuine DIRTY merge cannot be fixed by the ESLint-only Repair Worker.
-   // Hand it to the existing human/Codex conflict queue as an exact-HEAD
-   // issue receipt, without reserving a runner or starving CI/source workers.
+   // Conflicts cannot be repaired by the ESLint worker. Hand off once per
+   // exact HEAD, then retire the queue labels under a manual owner blocker.
+   // A retry may finish cleanup, but MUST NOT repost the handoff.
    const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+task.head_sha+' -->';
+   const releaseManualQueue=async()=>{
+    if(dryRun)return false;
+    try{
+     const before=(await limited('conflict-release-precheck',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(before?.head?.sha!==task.head_sha||before?.state!=='open'||
+        before.mergeable!==false||before.mergeable_state!=='dirty'||
+        before.head?.repo?.full_name!==REPO||before.base?.ref!==PROD){
+      blocked('CONFLICT_RELEASE_RECHECK_CHANGED');return false;
+     }
+     await limited('conflict-manual-owner-label',()=>github.rest.issues.addLabels({
+      owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+     }));
+     // Revalidate after the label mutation; do not delete newer-HEAD work.
+     const after=(await limited('conflict-release-postcheck',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(after?.head?.sha!==task.head_sha||after?.state!=='open'||
+        after.head?.repo?.full_name!==REPO||after.base?.ref!==PROD){
+      blocked('CONFLICT_RELEASE_HEAD_MOVED');return false;
+     }
+     for(const name of ['hh:repair-needed','hh:conflict-repair-needed']){
+      if(!after.labels?.some(l=>l.name===name))continue;
+      try{await limited('retire-conflict-queue-label',()=>
+       github.rest.issues.removeLabel({owner,repo,issue_number:task.pr_number,name}));}
+      catch(error){
+       if(error?.status!==404)throw error;
+      }
+     }
+     summary.conflictQueueReleased++;
+     log('CONFLICT_MANUAL_QUEUE_RELEASED #'+task.pr_number+' '+task.head_sha.slice(0,12));
+     return true;
+    }catch(error){
+     blocked('CONFLICT_RELEASE_FAILED');
+     log('Conflict queue release #'+task.pr_number+': '+error.message);
+     return false;
+    }
+   };
    if(comments.some(c=>String(c.body||'').includes(marker))){
-    blocked('CONFLICT_ALREADY_HANDED_OFF');continue;
+    blocked('CONFLICT_ALREADY_HANDED_OFF');
+    await releaseManualQueue();
+    continue;
    }
    if(summary.manualConflictHandoffs+summary.wouldManualConflictHandoffs>=MAX_MANUAL_CONFLICT_HANDOFFS){
     blocked('CONFLICT_HANDOFF_LIMIT');continue;
@@ -234,14 +338,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      owner,repo,issue_number:task.pr_number,
      body:marker+'\nConflict repair task for the existing Chat/Codex Conflict Repair lane. '+
       'Verified DIRTY against '+PROD+' at exact HEAD '+task.head_sha+'. '+
-      'Resolve conflicts in the PR source branch, batch changes, and let normal '+
-      'required CI run on the new HEAD. No automatic or unverified merge.'
+      'Resolve source conflicts in the same PR branch and rerun required CI. '+
+      'Handoff is NOT a source commit, a completed repair or approval to merge.'
     }));
     summary.manualConflictHandoffs++;
     log('CONFLICT_TO_CODEX_QUEUE #'+task.pr_number+' '+task.head_sha.slice(0,12));
-   }catch(err){
+    await releaseManualQueue();
+   }catch(error){
     blocked('CONFLICT_HANDOFF_UNAVAILABLE');
-    log('Conflict handoff #'+task.pr_number+': '+err.message);
+    log('Conflict handoff #'+task.pr_number+': '+error.message);
    }
    continue;
   }
