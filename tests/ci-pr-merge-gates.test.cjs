@@ -53,3 +53,9 @@ test('hourly coordinator rejects incomplete or uncounted check pages',async()=>{
  response={total_count:1,check_runs:[{id:1,name:'hh-core-verified'}]};
  assert.equal((await latest('a'.repeat(40))).size,1);
 });
+test('native writer never falls back to a separate direct merge command',()=>{
+ const s=workflow('hh-native-auto-merge');
+ assert.doesNotMatch(s,/checked-direct-merge-error|normal protected merge confirmed/);
+ const invocations=s.split('\n').filter(line=>/\bgh pr merge\s+"\$PR_NUMBER"/.test(line));
+ assert.ok(invocations.length>0);assert.ok(invocations.every(line=>line.includes('--auto')&&line.includes('--match-head-commit')));
+});
