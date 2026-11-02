@@ -1696,6 +1696,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [hypnoWhisperEnabled,setHypnoWhisperEnabled] = useState(false);
   const [hypnoBinauralEnabled,setHypnoBinauralEnabled] = useState(false);
   const [hypnoBeatHz,setHypnoBeatHz] = useState(4);
+  const [hypnoRepeatEvery,setHypnoRepeatEvery] = useState(7);
+  const [hypnoWhisperGain,setHypnoWhisperGain] = useState(16);
   const [hypnoAudioBusy,setHypnoAudioBusy] = useState(false);
   const previousHypnoAudioRef = useRef<{audio:AttachedAudio|null;rights:boolean}|null>(null);
   const [micRecording,setMicRecording] = useState(false);
@@ -2791,7 +2793,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
   }
-  async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number}){
+  async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number;repeatEverySeconds?:number;whisperGain?:number}){
     if(recording||preparing||hypnoAudioBusy)return;
     if(next.whisper&&!hypnoSpeechSource){
       setNotice(locale==="ru"?"Сначала создайте озвучку фраз в блоке «Озвучка фраз».":
@@ -2823,8 +2825,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         whisperEnabled:next.whisper,
         binauralEnabled:next.binaural,
         beatHz:next.beatHz,
-        repeatEverySeconds:7,
-        whisperGain:.16,
+        repeatEverySeconds:next.repeatEverySeconds??hypnoRepeatEvery,
+        whisperGain:(next.whisperGain??hypnoWhisperGain)/100,
       });
       if(recording||preparing)return;
       const entry=chooseAudioFile(file);
@@ -4418,12 +4420,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&audioRights)}
             voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
             whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
-            beatHz={hypnoBeatHz} audioEffectBusy={hypnoAudioBusy}
+            beatHz={hypnoBeatHz} repeatEverySeconds={hypnoRepeatEvery}
+            whisperGain={hypnoWhisperGain} audioEffectBusy={hypnoAudioBusy}
             onToggleVoice={toggleHypnoVoice} onToggleWhisper={toggleHypnoWhisper}
             onToggleBinaural={toggleHypnoBinaural}
             onBeatHzChange={value=>{
               setHypnoBeatHz(value);
               if(hypnoBinauralEnabled)void applyHypnoAudioEffects({whisper:hypnoWhisperEnabled,binaural:true,beatHz:value});
+            }}
+            onRepeatEveryChange={value=>{
+              setHypnoRepeatEvery(value);
+              if(hypnoWhisperEnabled)void applyHypnoAudioEffects({whisper:true,binaural:hypnoBinauralEnabled,beatHz:hypnoBeatHz,repeatEverySeconds:value});
+            }}
+            onWhisperGainChange={value=>{
+              setHypnoWhisperGain(value);
+              if(hypnoWhisperEnabled)void applyHypnoAudioEffects({whisper:true,binaural:hypnoBinauralEnabled,beatHz:hypnoBeatHz,whisperGain:value});
             }}
             hasPhoto={!backgroundOnly&&Boolean(photoUrl)}
             onOpenPhraseEditor={()=>{
