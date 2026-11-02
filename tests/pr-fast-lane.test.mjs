@@ -1300,3 +1300,19 @@ test('one-time status migration is production-only, requires real replacement ev
   assert.match(merge, /const migrated/);
   assert.match(merge, /passed\("hh-specialist"\)/);
 });
+
+test('consolidated merge status delegates to real Core AND Specialist without duplicate tests', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  const block=source.split(/^  hh-merge-check:\s*$/m)[1];
+  assert.ok(block, 'migration needs a real emitted hh-merge-check context');
+  assert.match(block, /^    name: hh-merge-check$/m);
+  assert.match(block, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(block, /^    if: always\(\)$/m);
+  assert.match(block, /CORE_RESULT:.*needs\['hh-core-verified'\]\.result/);
+  assert.match(block, /SPECIALIST_RESULT:.*needs\['hh-specialist'\]\.result/);
+  assert.match(block, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(block, /PR_DRAFT/);
+  assert.doesNotMatch(block, /actions\/checkout|npm ci|npm run build|ci-specialist-aggregate\.mjs/);
+  assert.match(source, /^  release-ready:\s*$/m,
+    'never remove the currently required legacy check before admin readback');
+});

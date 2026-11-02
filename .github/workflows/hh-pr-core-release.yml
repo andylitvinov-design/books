@@ -462,4 +462,35 @@ jobs:
             exit 1
           }
           echo 'Legacy compatibility passed by delegated hh-specialist.' >> "$GITHUB_STEP_SUMMARY"
+  
+  # New unified mandatory context. During migration keep the three existing
+  # compatibility jobs until BOTH GitHub protection sources require this status.
+  # This is only a read-only reducer over the SAME trusted PR workflow run.
+  hh-merge-check:
+    name: hh-merge-check
+    needs: [hh-core-verified, hh-specialist]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Require real Core and relevant Specialist PASS on this exact workflow
+        shell: bash
+        env:
+          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft PR: final release gate is not ready.' >&2
+            exit 1
+          fi
+          [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
+            echo 'hh-merge-check: actual Core or applicable Specialist validation missing/failed.' >&2
+            exit 1
+          }
+          echo 'hh-merge-check: Core and Specialist passed in this exact PR workflow; no tests rerun.' >> "$GITHUB_STEP_SUMMARY"
 

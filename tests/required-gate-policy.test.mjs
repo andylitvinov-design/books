@@ -83,3 +83,22 @@ test('one complete latest-checks page safely replaces multiple per-name reads', 
   assert.equal(observationsFromCompletePage(policy,{...page,total_count:4}),null);
   assert.equal(assessRequiredGates({head:H,policy,observations:observationsFromCompletePage(policy,{total_count:0,check_runs:[]})}).state,'UNKNOWN');
 });
+
+test('new consolidated merge status is strict and bridge requires BOTH historical and replacement checks', () => {
+  const one=[rule('hh-merge-check')];
+  assert.deepEqual(resolveRequiredGatePolicy(one),
+    {mode:'consolidated',contexts:['hh-merge-check'],appId:APP});
+  assert.equal(run(one,observe(['hh-merge-check',[check('hh-merge-check')]])).state,'SUCCESS');
+  assert.equal(run(one,observe(['hh-merge-check',[check('hh-merge-check',{conclusion:'failure'})]])).state,'FAILED');
+  assert.equal(run(one,observe(['hh-merge-check',[]])).state,'UNKNOWN');
+  assert.equal(run(one,observe(['hh-merge-check',[check('hh-merge-check',{head_sha:'b'.repeat(40)})]])).state,'UNKNOWN');
+  const bridge=[rule('release-ready'),rule('hh-merge-check')];
+  assert.equal(resolveRequiredGatePolicy(bridge).mode,'bridge');
+  assert.equal(run(bridge,observe(
+    ['hh-merge-check',[check('hh-merge-check')]],['release-ready',[check('release-ready')]]
+  )).state,'SUCCESS');
+  assert.equal(run(bridge,observe(
+    ['hh-merge-check',[check('hh-merge-check')]],['release-ready',[check('release-ready',{conclusion:'failure'})]]
+  )).state,'FAILED');
+  assert.throws(()=>resolveRequiredGatePolicy([rule('hh-merge-check','hh-specialist')]),/PARTIAL_MIGRATION/);
+});
