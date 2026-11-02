@@ -57,6 +57,15 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
+ // iOS Safari moves the visual viewport when its URL bar appears/dismisses;
+ // keep the six buttons on the visible bottom WITHOUT replacing left centering.
+ assert.match(css,/translate3d\(-50%,var\(--hh-unified-dock-offset,0px\),0\)/);
+ assert.match(dock,/viewport\.offsetTop \+ viewport\.height/);
+ assert.match(dock,/visualBottom - rect\.bottom/);
+ assert.match(dock,/resetDockCorrection/);
+ assert.match(dock,/window\.addEventListener\("scroll", update/);
+ assert.match(dock,/window\.removeEventListener\("scroll", update/);
+ assert.match(dock,/hideForKeyboard/);
  assert.match(css,/min-height:52px/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])

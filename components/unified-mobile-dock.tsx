@@ -31,24 +31,46 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
   useEffect(() => {
     if (!visible) return;
     let frame = 0;
+    let translation = 0;
     const viewport = window.visualViewport;
+    // Preserve left:50% centering; only translate the measured vertical gap
+    // when Safari's visual viewport detaches from the fixed layout viewport.
+    const resetDockCorrection = () => {
+      translation = 0;
+      navRef.current?.style.removeProperty("--hh-unified-dock-offset");
+    };
     const update = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         const node = navRef.current;
-        if (!node) return;
-        document.body.style.setProperty("--hh-unified-nav-height", node.getBoundingClientRect().height + "px");
+        if (!node || !node.isConnected) return;
+        const rect = node.getBoundingClientRect();
+        if (rect.height > 0)
+          document.body.style.setProperty("--hh-unified-nav-height", rect.height + "px");
         const focused = document.activeElement as HTMLElement | null;
         const editing = focused?.matches("input, textarea, [contenteditable=true]") || focused?.isContentEditable;
         const visualBottom = viewport ? viewport.offsetTop + viewport.height : innerHeight;
-        setKeyboardOpen(Boolean(editing && innerHeight - visualBottom > 140));
+        const hideForKeyboard = Boolean(editing && innerHeight - visualBottom > 140);
+        setKeyboardOpen(hideForKeyboard);
+        const style = window.getComputedStyle(node);
+        if (hideForKeyboard || style.display === "none" || style.visibility === "hidden" ||
+            style.position !== "fixed" || rect.height < 1) {
+          resetDockCorrection();
+          return;
+        }
+        const gap = visualBottom - rect.bottom;
+        if (Number.isFinite(gap) && Math.abs(gap) > 1) {
+          translation += gap;
+          node.style.setProperty("--hh-unified-dock-offset", translation + "px");
+        }
       });
     };
     update();
     const observer = navRef.current ? new ResizeObserver(update) : null;
     if (observer && navRef.current) observer.observe(navRef.current);
     window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("pageshow", update);
     document.addEventListener("focusin", update);
     document.addEventListener("focusout", update);
@@ -58,11 +80,13 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       observer?.disconnect();
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
       window.removeEventListener("pageshow", update);
       document.removeEventListener("focusin", update);
       document.removeEventListener("focusout", update);
       viewport?.removeEventListener("resize", update);
       viewport?.removeEventListener("scroll", update);
+      resetDockCorrection();
       document.body.style.removeProperty("--hh-unified-nav-height");
     };
   }, [visible, pathname]);

@@ -30,9 +30,19 @@ async function inspect(browserType,locale,width){
   assert.ok(bounds.every(b=>b.height>=44),id+" 44px touch targets");
   assert.ok(bounds.every((b,i)=>i===0||b.left>=bounds[i-1].right-1),id+" no dock overlap");
   const geometry=await dock.evaluate(el=>{
-   const r=el.getBoundingClientRect();return {bottom:r.bottom,innerHeight:innerHeight};
+   const r=el.getBoundingClientRect(),v=window.visualViewport;
+   return {bottom:r.bottom,visibleBottom:v?v.offsetTop+v.height:innerHeight,
+     position:getComputedStyle(el).position};
   });
-  assert.ok(Math.abs(geometry.bottom-geometry.innerHeight)<=3,id+" footer must be pinned");
+  assert.equal(geometry.position,"fixed",id+" six-tab dock must never scroll in page flow");
+  assert.ok(Math.abs(geometry.bottom-geometry.visibleBottom)<=3,id+" footer must be pinned to Safari visual viewport");
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  await page.waitForFunction(()=>{
+    const el=document.querySelector("[data-hh-unified-dock]");
+    if(!el)return false;
+    const v=window.visualViewport;
+    return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
+  },null,{timeout:10000});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<=2,id+" horizontal overflow "+overflow);
   assert.equal(await page.locator("[data-video-life-area]").count(),4,id);
@@ -55,7 +65,8 @@ async function inspect(browserType,locale,width){
   await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').first().waitFor({timeout:12000});
   if(browserType===webkit&&locale==="ru"&&width===390)
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
-  results.push({id,bottom:geometry.bottom,overflow,publishedCards:await cards.count(),playerClick:true});
+  results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
+   overflow,publishedCards:await cards.count(),playerClick:true});
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){
