@@ -157,7 +157,43 @@ jobs:
             const dryRun=context.eventName==='push'||input;
             // Trust checks inside run() and exact-HEAD check before each mutation.
             // Push is audit-only; cron and completed trusted worker events are live.
-            await run({github,core,context,dryRun});
+            const report=await run({github,core,context,dryRun});
+            // Public KPI snapshot for the PR monitor. Never affects dispatch or release gates.
+            // Do not publish audit-only runs, PR contracts, or unverified owner data.
+            if (!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
+                context.repo.owner==='andylitvinov-design' && context.repo.repo==='books') {
+              try {
+                const issueNumber=3128;
+                const issue=(await github.rest.issues.get({owner:context.repo.owner,
+                  repo:context.repo.repo,issue_number:issueNumber})).data;
+                const marker='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
+                if (issue.state!=='open' || issue.pull_request ||
+                    !issue.body?.startsWith(marker)) throw Error('MONITOR_FEED_MARKER_MISSING');
+                const number=(value)=>Number.isSafeInteger(value)&&value>=0?value:null;
+                const snapshot={schema:'HH_CONTROL_DISPATCH_METRICS_V1',
+                  checked_at:report.checkedAt,run_id:context.runId,source_dry_run:false,
+                  source_schema:report.schema,
+                  counts:{candidates:number(report.candidates),
+                    unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
+                    worker_dispatches:number(report.dispatchAccepted)},
+                  reason:typeof report.reason==='string'?report.reason:null};
+                if(Object.values(snapshot.counts).some(value=>value===null) ||
+                   !Number.isFinite(Date.parse(snapshot.checked_at))) throw Error('BAD_MONITOR_COUNTS');
+                const sourceUrl='https://github.com/andylitvinov-design/books/actions/runs/'+context.runId;
+                const body=[marker,'## Control Tower — public read-only snapshot',
+                  'Live dispatcher receipt only; never a dry-run or proof of completed code repair.',
+                  'worker_dispatches counts accepted worker dispatches, not finished Worker jobs.',
+                  '', '```json',JSON.stringify(snapshot,null,2),'```','',
+                  'Источник: '+sourceUrl,''].join('\n');
+                if(issue.body!==body){await github.rest.issues.update({
+                  owner:context.repo.owner,repo:context.repo.repo,
+                  issue_number:issueNumber,body});}
+                core.info('HH_CONTROL_MONITOR_KPI_PUBLISHED #'+issueNumber);
+              }catch(error){
+                core.warning('HH_CONTROL_MONITOR_KPI_UNAVAILABLE status='+
+                  (Number(error.status)||'unknown'));
+              }
+            }
             // Single-writer event fallback: once per 11+ minute inactivity,
             // never if Direction Watcher is queued/running. Does not create PR
             // checks, edit source or pretend that GitHub cron delivered events.
