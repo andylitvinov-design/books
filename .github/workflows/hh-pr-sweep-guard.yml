@@ -56,7 +56,11 @@ jobs:
       - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs
 
       - name: Probe real conflict inventory with a read-only token
+        # The GitHub GraphQL service can return 502/503/504 during CI.
+        # This inventory probe is READ-ONLY operational telemetry; core guard
+        # tests above remain mandatory and continue to block code failures.
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"

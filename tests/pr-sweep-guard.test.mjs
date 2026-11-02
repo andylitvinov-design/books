@@ -622,3 +622,10 @@ test('push-triggered conflict scans rotate within the same hour',()=>{
  const rows=Array.from({length:210},(_,number)=>({number:number+1}));
  assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
 });
+
+test('external conflict probe is advisory only while PR sweep guard contracts remain mandatory', () => {
+  const yaml=readFileSync(new URL('../.github/workflows/hh-pr-sweep-guard.yml',import.meta.url),'utf8');
+  assert.match(yaml,/run: node --test tests\/pr-sweep-guard\.test\.mjs/);
+  assert.match(yaml,/- name: Probe real conflict inventory with a read-only token[\s\S]*?continue-on-error: true[\s\S]*?run: node scripts\/pr-sweep-guard\.mjs route-conflicts/);
+  assert.doesNotMatch(yaml,/guard-unit:[\s\S]*?continue-on-error: true\s*\n\s*runs-on:/);
+});
