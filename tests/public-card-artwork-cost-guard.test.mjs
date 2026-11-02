@@ -120,7 +120,11 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  assert.match(core, /^  release-ready:/m);
+  // The verified production Core job is now 'code', and hh-merge-check is
+  // the single mandatory umbrella, which must also require the real specialist.
+  assert.match(core, /^  code:\s*\n\s*name: core-lint-types-build/m);
+  assert.match(core, /^  hh-merge-check:\s*\n\s*name: hh-merge-check/m);
+  assert.match(core, /needs: \[scope, code, hh-specialist\]/);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
