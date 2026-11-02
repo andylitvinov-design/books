@@ -169,3 +169,52 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
  assert.ok(s.includes("vercel-event' || 'periodic'"));
 });
+
+test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
+ const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker'),dispatcher=read('hh-pr-queue-dispatcher');
+ assert.ok(repair.includes("kind:'repair',status:result.status"));
+ assert.ok(ci.includes("kind:'ci',status:result.started>0?'started':'skipped'"));
+ assert.ok(dispatcher.includes('completion_wake:'));
+ assert.ok(dispatcher.includes('relayCompletionWake'));
+ assert.ok(dispatcher.includes('worker_run_id:'));
+ assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
+ assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+});
+
+test('hourly native merge requires explicit verified release for modern active ownership',()=>{
+ const yml=read('hh-pr-full-inventory');
+ assert.ok(yml.includes('leases.delete(key)'));
+ assert.ok(yml.includes('lease.previous_head_sha!==c.head'));
+ assert.ok(yml.includes('const key=actor+":"+owner+":"+leaseId'));
+ assert.ok(yml.includes('Untrusted release author'));
+ assert.ok(yml.includes('lease.historical_expiry_allowed=true'));
+ assert.ok(yml.includes('l.historical_expiry_allowed!==true'));
+ assert.ok(!yml.includes('force:true'));
+});
+
+test('staged single-release-check policy preserves legacy until proven administrative cutover',()=>{
+  const auto=read('hh-native-auto-merge');
+  assert.ok(auto.includes('const allowedRequiredSets = new Map(['));
+  assert.ok(auto.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
+  assert.ok(auto.includes('["hh-merge-check", ["hh-merge-check"]]'));
+  assert.ok(auto.includes('["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]]'));
+  assert.ok(auto.includes('const notPassed = need.filter(name => !passed(name))'));
+  assert.ok(auto.includes('jobPage.total_count !== jobs.length'));
+  assert.ok(auto.includes('required.length !== new Set(required).size || !need'));
+  assert.ok(!auto.includes("oldRequired === coreRequired"));
+  const m=read('hh-migrate-legacy-core-check');
+  assert.ok(m.includes('HH_BRANCH_ADMIN_TOKEN'));
+  assert.ok(m.includes('head_sha=$head'));
+  assert.ok(m.includes('evidence_pr_number:'));
+  assert.ok(m.includes('required: true'));
+  assert.ok(!m.includes("default: '3054'"),'closed unmerged proof PR must not be silently preselected');
+  assert.ok(m.includes('Actually merged production PR with successful hh-merge-check'));
+  assert.ok(m.includes('["hh-core-verified","hh-specialist","release-ready","hh-merge-check"]'));
+  assert.ok(m.includes('.parameters.required_status_checks = ['));
+  assert.ok(m.includes('"context":"hh-merge-check","integration_id":15368'));
+  assert.ok(m.includes('"context":"hh-merge-check","app_id":15368'));
+  assert.ok(m.includes('gh api --method PUT'));
+  assert.ok(m.includes('gh api --method PATCH'));
+  assert.ok(m.includes("Already migrated, both protections verified"));
+  assert.ok(m.includes('strict: false'));
+});

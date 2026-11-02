@@ -16,7 +16,7 @@ function fixture(options={}){
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
-      listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
+      listComments:async()=>({data:options.comments ?? [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
       createComment:async({body})=>{log.comments++;log.commentBodies.push(body)},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
@@ -59,21 +59,26 @@ test('Repair Worker reads owner lease and exact-head source receipt beyond page 
  f.github.rest.issues.listComments=async({page,per_page})=>{
   assert.equal(per_page,100);pages.push(page);
   return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):
-   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  core.outputs={};
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.deepEqual(pages,[1,2]);
  assert.equal(result.status,'claimed');assert.equal(f.log.comments,1);
 });
-test('Repair Worker fails closed when history cannot be fully paginated',async()=>{
- const f=fixture();
- let pages=[];
+test('Repair Worker reads source receipt beyond 300 comments',async()=>{
+ const f=fixture();const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
-  pages.push(page);return {data:Array.from({length:100},()=>({body:'old'}))};
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
- assert.deepEqual(pages,[1,2,3]);
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.status,'claimed');
+});
+test('Repair Worker fails closed when comment history exhausts the API budget',async()=>{
+ const f=fixture();
+ f.github.rest.issues.listComments=async()=>({data:Array.from({length:100},()=>({body:'old'}))});
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
 });
 test('dry run and absent owner token never claim or modify source',async()=>{
@@ -163,7 +168,7 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
     lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
   assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
-  const f=fixture({comments:[{body:wrap(old)},{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
+  const f=fixture({comments:[{body:wrap(old)},{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
@@ -205,7 +210,7 @@ test('current mergeability overrides stale conflict labels for exact-head source
   assert.equal(f.log.comments,1);
 });
 test('a source label without a trusted receipt for exact HEAD never edits newer code',async()=>{
-  const f=fixture({comments:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
+  const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
   assert.equal(hasVerifiedSourceHandoff([{body:'not verified'}],sha),false);
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'skipped');
@@ -280,4 +285,31 @@ test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
  assert.match(yml,/status:'skipped_stale_head',reason:'STALE_HEAD_ABORTED'/);
  assert.match(yml,/source_published:false/);
  assert.match(yml,/if \(error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'\) throw error/);
+});
+
+test('forged source receipt cannot authorize a repair claim',async()=>{
+ const forged={body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}};
+ assert.equal(hasVerifiedSourceHandoff([forged],sha),false);
+ const f=fixture({comments:[forged]});
+ assert.equal((await claim({github:f.github,core,context,hasToken:true,number:11})).status,'skipped');
+ assert.equal(f.log.comments,0);
+});
+
+test('source Repair uses same explicit-release interpretation as the single Dispatcher',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z'),user={login:owner};
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'repair-lock',
+  head_sha:sha,state:'heartbeat',expires_at:'2026-11-01T21:00:00Z'};
+ const wrap=x=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ const events=[wrap(item),wrap({...item,state:'released'})];
+ assert.equal(activeSweepLease(events,sha,now),false);
+ assert.equal(activeSweepLease(events.slice(0,1),sha,now),true);
+});
+test('source Repair ignores a release from another GitHub commenter',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z');
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'lock',
+  head_sha:sha,state:'active',expires_at:'2026-11-01T21:00:00Z'};
+ const events=[{user:{login:owner},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(item)},
+  {user:{login:'unrelated'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+    JSON.stringify({...item,state:'released'})}];
+ assert.equal(activeSweepLease(events,sha,now),true);
 });
