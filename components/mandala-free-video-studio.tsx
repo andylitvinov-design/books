@@ -49,6 +49,7 @@ import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenari
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
+import { resolveLicensedSourceFrame, assessLicensedSourceFrame } from "@/lib/mandala/free-film-source-clock.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -2105,8 +2106,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[result,playbackStatus]);
 
 
-  // Switch actual HTMLVideoElement decoders on the identical storyboard clock
-  // used for both live preview and the final MediaRecorder capture.
+  // The SAME project-to-source clock drives both live preview and the final
+  // MediaRecorder/WebCodecs painter. A previously viewed scene must not leak
+  // an old frame into a new stage merely because readyState is nonzero.
   function freeFilmVideoAt(seconds:number):HTMLVideoElement|null {
     if(cinematicPlan?.version!==FREE_FILM_PLAN_VERSION)return null;
     const elapsed=cinematicPreviewSeconds(cinematicPlan,Math.max(0,seconds));
@@ -2115,18 +2117,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!shot)return null;
     const video=freeFilmPlayerRefs.current[shot.sceneId];
     if(!video)return null;
-    if(activeFreeFilmShotRef.current!==shot.sceneId){
+    const enteringShot=activeFreeFilmShotRef.current!==shot.sceneId;
+    if(enteringShot){
       Object.entries(freeFilmPlayerRefs.current).forEach(([id,other])=>{
         if(id!==shot.sceneId && !other.paused)other.pause();
       });
       activeFreeFilmShotRef.current=shot.sceneId;
     }
-    if(video.readyState>=2&&video.paused&&
-      (previewPlaying||recording||preparingRef.current||Boolean(jobRef.current))){
+    let frame;
+    try{
+      const framePosition=resolveLicensedSourceFrame(cinematicPlan,elapsed,video.duration);
+      if(framePosition.sceneId!==shot.sceneId)return null;
+      frame=framePosition;
+    }catch{return null;} // Missing media duration or invalid shot: no fabricated frame.
+    const assessment=assessLicensedSourceFrame(video,frame);
+    if(enteringShot&&assessment.status==="drift"&&!video.seeking){
+      // Stage entry is a *bounded* seek, not a seek on every encoded frame.
+      // Rendering waits for the native decoder to finish, else the existing
+      // 500ms media gap watchdog cancels the exported film.
+      try{video.pause();video.currentTime=frame.expectedSourceSeconds;}
+      catch{/* The existing media timeout handles an unseekable source. */}
+      return null;
+    }
+    if(assessment.status!=="ready")return null;
+    if(video.paused&&
+      (previewPlaying||recording||preparingRef.current||Boolean(jobRef.current)||Boolean(webCodecJobRef.current))){
       video.muted=true;
       void video.play().catch(()=>{});
     }
-    return video.readyState>=2&&video.videoWidth>0?video:null;
+    return video;
   }
   function updateFreeFilmReadiness(){
     if(cinematicPlan?.version!==FREE_FILM_PLAN_VERSION){
