@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -71,6 +71,49 @@ test('general BASE-owned Mandala routing works for all PRs, never for payment/pr
   assert.match(workflow('hh-public-services-production.yml'),
     /steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE'/);
 });
+test('any verified complex PR uses its real owner browser cases instead of all 13',()=>{
+  const trigger=parsePrTrigger(workflow('hh-public-services-production.yml'));
+  const cases=[
+    ['app/api/payments/talismans/checkout/route.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['lib/commerce/talisman-checkout.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['components/commerce/service-cart.tsx',['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+    ['components/contact-channel-chooser.tsx',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['app/api/service-enquiries/route.ts',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['components/alchemy-soul-lead-form.tsx',['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+    ['components/academy-course-capture.tsx',['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const simulate=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(workflow('hh-public-services-production.yml'));
+    if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+    throw Error('Unexpected command '+args[0]);
+  });
+  for(const [path,expected] of cases){
+    assert.deepEqual(verifiedCriticalPublicCases(path,trigger),expected,path);
+    const plan=simulate([['M',path]]);
+    assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser],
+      ['focused','PROTECTED_PUBLIC_OWNER_CASES',true,true],path);
+    assert.deepEqual(plan.cases.split(',').sort(),[...expected].sort(),path);
+    assert.equal(requiresPublicServicesHeavyPr(plan),true,path+' must run real browser QA');
+    assert.equal(planPublicServicesChangedPaths([path]).mode,'full','no BASE owner requires all QA');
+    assert.equal(simulate([['A',path]]).mode,'full','new path is unreviewed');
+  }
+  for(const path of [
+    'middleware.ts','package.json','app/api/payments/other/route.js',
+    'components/holistic-support-mobile.tsx','components/mandala-payment-checkout.tsx',
+  ]){
+    assert.equal(verifiedCriticalPublicCases(path,trigger),null,path);
+    assert.equal(simulate([['M',path]]).mode,'full',path);
+    assert.equal(simulate([['M','components/commerce/service-cart.tsx'],['M',path]]).mode,'full','mixed critical changes require all cases');
+  }
+  assert.equal(verifiedCriticalPublicCases('components/commerce/service-cart.tsx',null),null);
+  assert.equal(simulate([['D','components/commerce/service-cart.tsx']]).mode,'full');
+});
+
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.equal(PUBLIC_BROWSER_CASES.length, 13);
