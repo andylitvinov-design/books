@@ -24,3 +24,13 @@ Warm ivory surfaces, nearly-white cards, forest-green headings, green main CTAs,
 
 ## Release blockers
 Do not claim live solely from a green unit test, HTTP 200 or GitHub merge. Do not buy video/API credits, start real paid AI rendering or send visitor material to external providers without consent. Existing `#3113` six-button dock and other open PRs are independent; preserve their work and reconcile against current production before merge.
+
+## Owner-approved update: Montage 5 / PRO 6 (2 Nov 2026)
+
+- Existing six workspaces reordered to video, phrases, effects, practices, editor, pro; user-facing fifth is Montage with Quick generation title, sixth is PRO.
+- Fifth offers four actual shared-state panes: Video style, My photo, Voice, Music. Existing licensed MP4 style posters/quickPickStyle, original consented photo picker, MandalaCloudVoiceStudio and one deepAudioPane; no duplicated rendered video or audio player.
+- Existing format 16:9 / 9:16 / 1:1 and duration 15/20/30/60 stay connected to changeVideoAspect/changeVideoDuration. Shared preview and original createQuickVideo export CTA are preserved.
+- No repeat goal/content prompt. Sixth contains only MandalaStoriesCharacters, MandalaCinematicDirector, deepVideoPane and original reorder/retime timeline; five character/story/place/symbol/event categories preserved.
+- #video-audio and #voice-studio navigate to fifth; #video-settings and #cinematic-director navigate to sixth. Missing consent/audio rights directs to the original visible controls.
+- Warm ivory/green design matching owner reference. Chromium/WebKit at 320/354/390/430 should click all four fifth panes, original photo/audio controls, format/duration and both PRO panels.
+- Keep provider/paid releases disabled. Genuine voice preview remains subject to independent PR #3142 integration. Required exact-head Core, Mandala, media browser and hh-merge-check must pass before merging or LIVE claims.

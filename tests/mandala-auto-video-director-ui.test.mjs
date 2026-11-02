@@ -255,3 +255,30 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
  assert.equal((studio.match(/<MandalaGuidedCourse /g)||[]).length,1,
    "create meditation, ritual and course with the existing one module");
 });
+
+
+test("owner-approved fifth Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/\{id:"editor",Icon:SlidersHorizontal\},\{id:"pro",Icon:Zap\}/);
+ assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
+ assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
+ assert.match(studio,/data-video-basic-editor/);
+ for(const id of ["style","photo","voice","music"])assert.ok(studio.includes('id:"'+id+'"'));
+ assert.match(studio,/data-video-basic-style=\{index\}/);
+ assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+ assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
+ assert.match(studio,/basicPanelTab==="music" \? <div className=\{videoStyles.basicMusicPane\}/);
+ assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1,
+   "only the original voice panel is mounted in fifth");
+ assert.equal((studio.match(/id="video-audio"/g)||[]).length,1,
+   "single shared audio editor and native playback dock");
+ assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaStoriesCharacters /g)||[]).length,1);
+ assert.match(studio,/data-video-basic-format=\{value\}/);
+ assert.match(studio,/data-video-basic-duration=\{value\}/);
+ assert.match(studio,/data-video-final-editor/);
+ assert.match(studio,/data-video-pro-advanced/);
+ assert.match(studio,/data-video-quick-generate/);
+ assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+});
