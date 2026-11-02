@@ -2851,10 +2851,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function toggleHypnoVoice(){
     if(!hypnoSpeechSource)return;
-    if(attachedAudio?.kind==="file"&&(attachedAudio.narration||hypnoWhisperEnabled||hypnoBinauralEnabled)){
+    if(attachedAudio?.kind==="file"&&audioRights){
       setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);previousHypnoAudioRef.current=null;
       clearUploadedAudio();setAttachedAudio(null);
-      setNotice(locale==="ru"?"Озвучка выключена. Исходная дорожка сохранена в настройках блока.":"Voice track disabled; its source remains available in the editor.");
+      setNotice(locale==="ru"?"Озвучка выключена. Исходная запись сохранена в редакторе фраз.":"Voice track disabled; its source remains available in the phrase editor.");
     }else{
       const entry=chooseAudioFile(hypnoSpeechSource);
       if(entry){setAudioRights(true);setSoundVolume(100);setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true});}
@@ -3632,9 +3632,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           enabled={affirmations.enabled} durationSeconds={duration}
           disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>{
+            const hasHypnoTrack=Boolean(hypnoSpeechSource||hypnoWhisperEnabled||hypnoBinauralEnabled);
             setHypnoSpeechSource(null);setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
             previousHypnoAudioRef.current=null;
-            setAttachedAudio(current=>current?.kind==="file"&&current.narration?null:current);
+            if(hasHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
         {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
@@ -4413,6 +4414,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
             hasVoiceFile={Boolean(hypnoSpeechSource)}
+            voiceActive={Boolean(attachedAudio?.kind==="file"&&audioRights)}
             voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
             whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
             beatHz={hypnoBeatHz} audioEffectBusy={hypnoAudioBusy}
