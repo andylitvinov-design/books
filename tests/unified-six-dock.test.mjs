@@ -59,9 +59,12 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/safe-area-inset-bottom/);
  // iOS Safari moves the visual viewport when its URL bar appears/dismisses;
  // keep the six buttons on the visible bottom WITHOUT replacing left centering.
- assert.match(css,/translate3d\(-50%,var\(--hh-unified-dock-offset,0px\),0\)/);
+ assert.match(css,/translate3d\(-50%,0,0\)/);
+ assert.match(css,/bottom:max\(0px,var\(--hh-unified-viewport-inset,0px\),calc\(100vh - 100dvh\)\)/);
  assert.match(dock,/viewport\.offsetTop \+ viewport\.height/);
- assert.match(dock,/visualBottom - rect\.bottom/);
+ assert.match(dock,/mobileVisualBottomGap\(/);
+ assert.match(dock,/--hh-unified-viewport-inset/);
+ assert.match(hide,/--hh-unified-viewport-inset/);
  assert.match(dock,/resetDockCorrection/);
  assert.match(dock,/window\.addEventListener\("scroll", update/);
  assert.match(dock,/window\.removeEventListener\("scroll", update/);
