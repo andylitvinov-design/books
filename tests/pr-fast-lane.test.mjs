@@ -857,9 +857,8 @@ test('Core cancels superseded first attempts, never manually rerun current HEAD'
 test('central CI utilities isolate non-PR runs and cancel only newer first attempts', () => {
   for (const [file, prefix] of [['hh-actionlint.yml', 'hh-workflow-lint'], ['hh-pr-sweep-guard.yml', 'hh-pr-sweep-guard']]) {
     const source = workflow(file);
-    const attemptScoped = file === 'hh-actionlint.yml';
-    const groupCond = attemptScoped ? "github.event_name == 'pull_request' && github.run_attempt == 1" : "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
-    const cancelCond = attemptScoped ? "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after" : "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const groupCond = "github.event_name == 'pull_request' && github.run_attempt == 1";
+    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
     assert.ok(source.includes("group: " + prefix + "-${{ " + groupCond + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
     assert.ok(source.includes("cancel-in-progress: ${{ " + cancelCond + " }}"), file);
   }
@@ -1424,4 +1423,26 @@ test('required hh-merge-check uses lightweight runner and keeps fail-closed Core
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\] \|\|/);
   assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\] \|\|/);
   assert.doesNotMatch(gate, /continue-on-error:\s*true/);
+});
+
+test('universal actionlint and Guard use lightweight runner without weakening exact-head audits', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const guard = workflow('hh-pr-sweep-guard.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const lintJob = lint.split(/^  validate-workflows:\s*$/m)[1];
+  const guardJob = guard.split(/^  guard-unit:\s*$/m)[1];
+  assert.ok(lintJob && guardJob);
+  assert.match(lintJob, /^    runs-on: ubuntu-slim$/m);
+  assert.match(guardJob, /^    runs-on: ubuntu-slim$/m);
+  assert.match(lint, /fetch-depth: 2/);
+  assert.doesNotMatch(lint, /fetch-depth: 0/);
+  assert.ok(lint.includes('git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA"'));
+  assert.ok(lint.includes('git rev-parse HEAD^2'));
+  assert.ok(lint.includes('actionlint -shellcheck= -color'));
+  assert.ok(lint.includes('actionlint -color "${files[@]}"'));
+  assert.ok(guard.includes('npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund'));
+  assert.ok(guard.includes('node --test tests/pr-sweep-guard.test.mjs'));
+  assert.doesNotMatch(guard, /github\.event\.pull_request\.head\.sha \|\| github\.sha/);
+  assert.match(core.split(/^  code:\s*$/m)[1].split(/^  hh-specialist:\s*$/m)[0], /^    runs-on: ubuntu-24\.04$/m);
+  for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
