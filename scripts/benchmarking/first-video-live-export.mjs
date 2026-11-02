@@ -123,6 +123,14 @@ try {
   // this real export acceptance with a source-only or mocked pass.
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
+  // The disclosure is server-rendered, but its onToggle handler mounts
+  // MandalaFirstVideoStart only after React hydration. A pre-hydration click
+  // would open an empty details element and falsely fail an unrelated video.
+  await page.waitForFunction(()=>{
+    const chat=document.querySelector('[data-video-director-chat]');
+    const hydrated=chat?.getAttribute('data-chat-hydrated');
+    return hydrated==='true'||(!chat&&document.readyState==='complete');
+  },undefined,{timeout:45000});
   if(await advanced.getAttribute('open')===null)
     await advanced.locator(':scope > summary').click();
   assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');

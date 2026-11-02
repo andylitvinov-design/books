@@ -238,7 +238,9 @@ test("unavailable literal subject stays an explicit unmet visual, not fabricated
 test("chat commands confirm and create the currently approved AI cut without silently reverting",()=>{
   const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
   const start=chat.indexOf("const answer=(raw:string)=>");
-  const end=chat.indexOf('if(step==="goal")',start);
+  // The editor now enters the canonical goal-tree branch instead of the
+  // retired single `goal` branch; retain the actual action-order assertion.
+  const end=chat.indexOf('if(VIDEO_CHAT_TREE_STEPS.includes(step))',start);
   assert.ok(start>=0&&end>start,"actual messenger command handler must exist");
   const handler=chat.slice(start,end);
   const action=handler.indexOf("const action=parseVideoChatAction(value,step)");

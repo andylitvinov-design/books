@@ -53,6 +53,15 @@ test('chat hydration readiness is explicit and preserves early mobile input',()=
  assert.match(qa,/hydration==='true'/);
 });
 
+test('legacy first-video disclosure waits for React hydration before opening lazy form',()=>{
+ const legacy=readFileSync(new URL('../scripts/benchmarking/first-video-live-export.mjs',
+   import.meta.url),'utf8');
+ assert.match(legacy,/data-chat-hydrated/);
+ assert.match(legacy,/hydrated==='true'/);
+ assert.ok(legacy.indexOf("data-chat-hydrated")<
+   legacy.indexOf("advanced.locator(':scope > summary').click()"));
+});
+
 test('canonical five-level dialogue browser check works on the new release while preserving legacy LIVE gates',()=>{
  assert.match(qa,/entryStep==='category'/);
  assert.match(qa,/entryStep==='goal'|\['goal','category'\]/);
