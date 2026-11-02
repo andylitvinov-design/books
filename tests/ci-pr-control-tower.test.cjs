@@ -975,6 +975,13 @@ test('plain-text releases on older source heads no longer starve new PR work',()
   ].join('\n')}
  ];
  const task=taskFor(pr(1),{tier:'P1'});
+ assert.equal(externalOwnerLeaseStatus([{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+[
+   'owner: work-repair-mobile','lease_id: prior-single-head',
+   'head_sha: '+old,'state: released_without_write',
+   'released_at: 2026-10-31T07:22:00Z'
+  ].join('\n')
+ }],SHA,NOW),'FREE','Older single-HEAD release cannot lock an unrelated current SHA');
  assert.equal(externalOwnerLeaseStatus(history,SHA,NOW),'FREE');
  assert.equal(reservationStatus(task,history,NOW),'FREE');
  assert.equal(externalOwnerLeaseStatus(history,old,NOW),'OWNER_LEASE_UNVERIFIED',
