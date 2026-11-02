@@ -5,8 +5,9 @@
 .form{display:grid;gap:10px;padding:12px;border:1px solid #d9e6d7;border-radius:12px;background:#fffefb}
 .form>label:not(.consent){display:grid;gap:5px;color:#295c45;font-size:12px;font-weight:780}
 .form input[type=email],.form input[type=tel],.form label:not(.consent) input{box-sizing:border-box;min-width:0;width:100%;min-height:44px;padding:8px 10px;border:1px solid #c9dbcb;border-radius:10px;background:#fff;color:#214b3a;font:500 14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.consent{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;color:#355f4c}
-.consent input{width:18px;height:18px;flex:none;accent-color:#087e5e;margin:1px 0 0}
+.consent{display:flex;align-items:center;gap:8px;min-height:52px;padding:8px 6px;border-radius:9px;font-size:12px;line-height:1.45;color:#355f4c;cursor:pointer;
+  scroll-margin-block-start:80px;scroll-margin-block-end:calc(128px + env(safe-area-inset-bottom))}
+.consent input{width:20px;height:20px;flex:none;accent-color:#087e5e;margin:0;scroll-margin-block-end:calc(128px + env(safe-area-inset-bottom))}
 .form small{font-size:11px;line-height:1.5;color:#627964}
 .form>button:disabled{opacity:.55;cursor:not-allowed}
 .success{margin:0;padding:12px;border-radius:12px;background:#e8f5eb;color:#17694d;font-size:13px;font-weight:750;line-height:1.5}
