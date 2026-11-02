@@ -8,12 +8,16 @@ const ctx={repo:{owner:'andylitvinov-design',repo:'books'},
  eventName:'schedule',ref:'refs/heads/codex/bootstrap-books'};
 const core=()=>({info(){},summary:{addHeading(){return this},
  addCodeBlock(){return this},async write(){}}});
-function makeGithub({mergeCount=1,headSha=sha,compare='ahead'}={}){
+function makeGithub({mergeCount=1,controlCount=0,headSha=sha,compare='ahead'}={}){
  const prs=Array.from({length:mergeCount},(_,i)=>({
   number:3000+i,base:{ref:'codex/public-book-library'},
   merged_at:'2026-11-02T04:00:00.000Z',created_at:'2026-11-01T04:00:00.000Z',
   updated_at:'2026-11-02T04:01:00.000Z',merge_commit_sha:mergedSha}));
- return {rest:{pulls:{list:async()=>({data:prs})},
+ const controls=Array.from({length:controlCount},(_,i)=>({
+  number:7000+i,base:{ref:'codex/bootstrap-books'},
+  merged_at:'2026-11-02T04:00:00.000Z',created_at:'2026-11-01T04:00:00.000Z',
+  updated_at:'2026-11-02T04:01:00.000Z',merge_commit_sha:'d'.repeat(40)}));
+ return {rest:{pulls:{list:async({base})=>({data:base==='codex/bootstrap-books'?controls:prs})},
   actions:{listWorkflowRuns:async()=>({data:{total_count:2,workflow_runs:[
    {id:1,event:'pull_request',head_branch:'feature',head_sha:sha,
     created_at:'2026-11-02T04:00:00.000Z',run_started_at:'2026-11-02T04:01:00.000Z',
@@ -29,6 +33,12 @@ test('merge and Core metrics are deterministic and deduplicate repeated source e
  const result=await m.run({github:makeGithub(),core:core(),context:ctx,now,
   liveEvidence:{verified_live:true,reason:'LIVE_VERIFIED',production_sha:sha}});
  assert.equal(result.merged_count,1);
+ assert.equal(result.control_branch,'codex/bootstrap-books');
+ assert.equal(result.production_branch,'codex/public-book-library');
+ assert.equal(result.public_alias,'holistichouse.vercel.app');
+ assert.equal(result.merged_scope,'PRODUCTION_BRANCH_ONLY');
+ assert.equal(result.control_plane_merged_count,0);
+ assert.equal(result.sampled_prs[0].delivery_state,'PRODUCTION_LIVE_VERIFIED');
  assert.equal(result.live_confirmed_count,1);
  assert.equal(result.unverified_live_count,0);
  assert.equal(result.live_coverage,'complete_current_head');
@@ -139,4 +149,29 @@ test('malformed Git history never manufactures LIVE; ambiguous compare yields pa
  assert.equal(result.comparisons,1);
  assert.equal(result.complete,false);
  assert.equal(result.errors,1);
+});
+
+test('control-plane merges are tracked separately and never called missing LIVE',async()=>{
+ const r=await m.run({github:makeGithub({mergeCount:0,controlCount:2}),
+  core:core(),context:ctx,now,
+  liveEvidence:{verified_live:false,reason:'PUBLIC_RUNTIME_PROOF_UNAVAILABLE'}});
+ assert.equal(r.merged_count,0);
+ assert.equal(r.control_plane_merged_count,2);
+ assert.equal(r.control_plane_merge_coverage,'complete');
+ assert.equal(r.control_plane_sample.length,2);
+ assert.equal(r.control_plane_sample[0].delivery_state,
+  'CONTROL_MERGED_RUNTIME_NOT_APPLICABLE');
+ assert.equal(r.live_confirmed_count,null);
+ assert.equal(r.receipt_candidate,null);
+});
+
+test('production PR does not need ancestry in the GitHub default branch',async()=>{
+ const r=await m.run({github:makeGithub({mergeCount:1,controlCount:1}),
+  core:core(),context:ctx,now,
+  liveEvidence:{verified_live:true,reason:'LIVE_VERIFIED',production_sha:sha}});
+ assert.equal(r.merged_count,1);
+ assert.equal(r.control_plane_merged_count,1);
+ assert.equal(r.sampled_prs[0].delivery_state,'PRODUCTION_LIVE_VERIFIED');
+ assert.equal(r.control_plane_sample[0].delivery_state,
+  'CONTROL_MERGED_RUNTIME_NOT_APPLICABLE');
 });

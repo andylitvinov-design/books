@@ -50,7 +50,7 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const {owner, repo} = context.repo;
-            const PROD="codex/public-book-library", fullRepo=owner+"/"+repo;
+            const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
@@ -66,6 +66,10 @@ jobs:
             }
             const all=[...found.values()];
             const production=all.filter(p=>p.base?.ref===PROD);
+            const control=all.filter(p=>p.base?.ref===CONTROL);
+            // Stacked PRs can legitimately target a feature branch. Do not
+            // mistake those or control-plane PRs for failed site releases.
+            const other=all.filter(p=>![PROD,CONTROL].includes(p.base?.ref));
             const nonDraft=production.filter(p=>!p.draft);
             const armed=nonDraft.filter(p=>p.auto_merge);
             const pending=nonDraft.filter(p=>!p.auto_merge&&p.head?.repo?.full_name===fullRepo);
@@ -293,7 +297,7 @@ jobs:
                  errors.push("#"+c.number+": "+(result.stderr||result.stdout||"native denied").slice(0,180));continue;
                }
                const after=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
-               if(after.merged&&after.merged_at){merged++;log("MERGED #"+c.number+" "+(after.merge_commit_sha||"UNKNOWN"));}
+               if(after.merged&&after.merged_at){merged++;log("MERGED_PRODUCTION #"+c.number+" "+(after.merge_commit_sha||"UNKNOWN"));}
                else if(after.state==="open"&&after.head.sha===c.head&&
                  String(after.auto_merge?.merge_method||"").toLowerCase()===c.method){
                  autoArmed++;log("ARMED #"+c.number+" "+c.method);
@@ -302,12 +306,15 @@ jobs:
              }
             }else log("AUDIT_ONLY: dedicated HH_AUTOMERGE_TOKEN missing; no action with push-suppressing fallback token");
             const report=[
-             "Open: "+all.length+"; pages: "+pages+"; production: "+production.length+
-             "; non-Draft: "+nonDraft.length+"; other-base: "+(all.length-production.length),
+             "Open: "+all.length+"; pages: "+pages+"; production-base: "+production.length+
+             "; non-Draft: "+nonDraft.length+"; control-base: "+control.length+
+             "; other/stacked-base: "+other.length,
+             "Delivery routes: GitHub default="+CONTROL+" (control automation), "+
+             "Vercel runtime="+PROD+" (website); LIVE requires served deployment proof",
              "Already armed: "+armed.length+"; non-Draft candidates: "+pending.length+
              "; QA inspected: "+checksRead+"; independently verified eligible: "+eligible.length+
              " (independent QA fallback: "+eligible.filter(x=>x.via==="INDEPENDENT_QA").length+")",
-             "New confirmed ARMED: "+autoArmed+"; MERGED: "+merged+
+             "New confirmed ARMED: "+autoArmed+"; MERGED_PRODUCTION: "+merged+
              "; unattempted eligible: "+Math.max(0,eligible.length-attempts),
              "Inventory: COMPLETE; details: "+(detailErrors?"PARTIAL ("+detailErrors+" errors)":"COMPLETE"),
              "Writer: "+(token?"dedicated token":"audit only"),

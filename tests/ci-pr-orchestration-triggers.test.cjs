@@ -242,3 +242,14 @@ test('live workers avoid duplicate unit suites while changes retain the full con
   assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-worker.cjs'));
   assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-test-scope.cjs'));
 });
+
+test('inventory reports both valid merge destinations without false main-branch warnings',()=>{
+ const source=read('hh-pr-full-inventory');
+ assert.ok(source.includes('CONTROL="codex/bootstrap-books"'));
+ assert.ok(source.includes('production-base: '));
+ assert.ok(source.includes('control-base: '));
+ assert.ok(source.includes('other/stacked-base: '));
+ assert.ok(source.includes('MERGED_PRODUCTION'));
+ assert.ok(source.includes('LIVE requires served deployment proof'));
+ assert.ok(!source.includes('other-base: "+(all.length-production.length)'));
+});
