@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
@@ -14,7 +14,6 @@ import {
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
 import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
-import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import css from "./mandala-hypno-compact.module.css";
 
 type SceneOption = { id:string; label:string; symbol:string; poster:string|null };
@@ -167,11 +166,13 @@ const profileDirections:Record<string,HypnoTestProposal>={
 };
 export function MandalaHypnoCompact({
   locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
+  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange,
   onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
   scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
+  externalPhraseDraft?:string|null; onExternalPhraseClear?:()=>void; onPendingChange?:(pending:boolean)=>void;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
@@ -202,6 +203,7 @@ export function MandalaHypnoCompact({
   const [note,setNote]=useState("");
   const [approvalKey,setApprovalKey]=useState("");
   const [model,setModel]=useState<HypnoModel>("wave");
+  const [ideaPending,setIdeaPending]=useState(false);
   const [readyDraft,setReadyDraft]=useState<{selected:number[];resetPreset:boolean}|null>(null);
   const [customDraft,setCustomDraft]=useState<string|null>(null);
   const [draftState,setDraftState]=useState<HypnoDraft|null>(null);
@@ -220,10 +222,12 @@ export function MandalaHypnoCompact({
     ?suggestedVideoAffirmations[locale][theme]
     :settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
   const chosen=draft?.selected??readyDraft?.selected??settings.selected;
-  const customPhraseText=customDraft??settings.custom;
+  const customPhraseText=customDraft??externalPhraseDraft??settings.custom;
   const selectedCount=chosen.length;
+  const hasPendingEdits=Boolean(draft||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
-  const approved=!draft&&!readyDraft&&customDraft===null&&Boolean(approvalKey&&signature===approvalKey);
+  const approved=!hasPendingEdits&&Boolean(approvalKey&&signature===approvalKey);
+  useEffect(()=>{onPendingChange?.(hasPendingEdits);},[hasPendingEdits,onPendingChange]);
   const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
   // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
   // to third-party models or written to account state. Existing approved
@@ -286,7 +290,7 @@ export function MandalaHypnoCompact({
   function addCustom(){
     if(!ownText.trim())return;
     const custom=compactCustomAffirmationInput([customPhraseText,ownText.trim()].filter(Boolean).join("\n"));
-    setCustomDraft(custom);setOwnText("");setApprovalKey("");
+    setCustomDraft(custom);onExternalPhraseClear?.();setOwnText("");setApprovalKey("");
   }
   function toggleSelected(i:number){
     if(draft)setDraftState({...draft,selected:draft.selected.includes(i)?
@@ -356,20 +360,27 @@ export function MandalaHypnoCompact({
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
   function approvePhrases(){
+    // A changed idea or addressing form must first generate its own suggested
+    // text. Never silently approve the old wording for a newly selected idea.
+    if(ideaPending&&!draft)return;
     if(draft){
       if(!draft.selected.length)return;
       const next={...settings,enabled:true,presetOverride:draft.phrases,selected:draft.selected,custom:customPhraseText};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);setCustomDraft(null);
-    }else if(readyDraft||customDraft!==null){
-      const selected=readyDraft?.selected??settings.selected;
+      setSelectionSource(model==="gemini"?"gemini":"smart");
+      setDraftState(null);setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      onExternalPhraseClear?.();
+    }else if(readyDraft||customDraft!==null||externalPhraseDraft!==null){
+      const selected=readyDraft?.selected??(externalPhraseDraft!==null?[]:settings.selected);
       if(!selected.length&&!customPhraseText.trim())return;
-      const next={...settings,enabled:true,selected,presetOverride:readyDraft?.resetPreset?undefined:settings.presetOverride,
-        custom:customPhraseText};
+      const next={...settings,enabled:true,selected,
+        presetOverride:externalPhraseDraft!==null||readyDraft?.resetPreset?undefined:settings.presetOverride,
+        custom:customPhraseText,visibility:externalPhraseDraft!==null?["large" as const]:settings.visibility};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setReadyDraft(null);setCustomDraft(null);
+      setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      onExternalPhraseClear?.();
     }else setApprovalKey(signature);
   }
 
@@ -384,19 +395,19 @@ export function MandalaHypnoCompact({
         <div className={css.ideaRail} role="group" aria-label={ideaCopy[locale].title}>
           {ideas.map((text,index)=><button key={index} type="button" data-hypno-idea-choice={index}
             disabled={disabled} aria-pressed={ideaIndex===index&&!ownIdea.trim()} onClick={()=>{
-              setIdeaIndex(index);setOwnIdea("");setDraftState(null);setReadyDraft(null);setApprovalKey("");
+              setIdeaIndex(index);setOwnIdea("");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);
             }}>{ideaIndex===index&&!ownIdea.trim()?<Check size={18} aria-hidden="true"/>:null}{text}</button>)}
         </div>
         <label className={css.ideaOwn}>
           <span>{ideaCopy[locale].own}</span>
           <input type="text" value={ownIdea} maxLength={36} disabled={disabled}
             data-hypno-idea-own placeholder={ideaCopy[locale].own}
-            onChange={event=>{setOwnIdea(event.target.value);setDraftState(null);setReadyDraft(null);setApprovalKey("");}}/>
+            onChange={event=>{setOwnIdea(event.target.value);setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}/>
         </label>
         <div className={css.ideaGender} role="group" aria-label={ideaCopy[locale].gender}>
           <span>{ideaCopy[locale].gender}</span>
-          <button type="button" aria-pressed={gender==="female"} disabled={disabled} onClick={()=>{setGender("female");setDraftState(null);setReadyDraft(null);setApprovalKey("");}}>{ideaCopy[locale].female}</button>
-          <button type="button" aria-pressed={gender==="male"} disabled={disabled} onClick={()=>{setGender("male");setDraftState(null);setReadyDraft(null);setApprovalKey("");}}>{ideaCopy[locale].male}</button>
+          <button type="button" aria-pressed={gender==="female"} disabled={disabled} onClick={()=>{setGender("female");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}>{ideaCopy[locale].female}</button>
+          <button type="button" aria-pressed={gender==="male"} disabled={disabled} onClick={()=>{setGender("male");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}>{ideaCopy[locale].male}</button>
         </div>
         <div className={css.ideaActions}>
           <button type="button" className={css.profilePrimary} data-hypno-suggest-tests disabled={disabled||testBusy}
@@ -449,8 +460,9 @@ export function MandalaHypnoCompact({
           <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
           <div className={css.heading}><h4>{extra.support}</h4><p>{ui.phraseHint}</p></div>
           <button type="button" className={css.edit} data-hypno-phrases-edit
-            disabled={disabled} aria-expanded={open==="phrases"} aria-controls="hypno-phrase-options"
-            onClick={()=>toggle("phrases")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+            disabled={disabled} aria-controls="hypno-phrase-filter-options"
+            onClick={()=>document.getElementById("hypno-phrase-filter-options")?.scrollIntoView({block:"center",behavior:"smooth"})}>
+            {ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
 
         <div className={css.modeRail} role="group" aria-label={extra.support}>
@@ -498,18 +510,14 @@ export function MandalaHypnoCompact({
         {customPhraseText.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
           <button type="button" disabled={disabled} onClick={()=>setOwnOpen(v=>!v)}>{extra.add}<ChevronDown size={14}/></button>
-          <button type="button" disabled={disabled} onClick={()=>toggle("phrases")}>{extra.additional}<ChevronRight size={14}/></button>
         </div>
         {ownOpen&&<div className={css.shortNote+" "+css.miniOwn}>
           <input value={ownText} data-hypno-own-phrase disabled={disabled} maxLength={36} placeholder={extra.add}
             onChange={e=>setOwnText(e.target.value)}/>
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
-        {open==="phrases"&&<div className={css.legacyEditor} id="hypno-phrase-options" data-hypno-phrase-editor>
-          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
-            onTestPersonalization={()=>setSelectionSource("tests")}/>
-        </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(!selectedCount&&!customPhraseText.trim()))}
+
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(ideaPending&&!draft)||(draft?!draft.selected.length:(!selectedCount&&!customPhraseText.trim()))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
@@ -595,7 +603,7 @@ export function MandalaHypnoCompact({
       </details>
       {children}
       <label className={css.enable}>
-        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
+        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled||hasPendingEdits}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
         <span>{ui.use}</span>
         {!settings.enabled&&<small>{ui.enabledNote}</small>}
@@ -604,12 +612,15 @@ export function MandalaHypnoCompact({
         <div>
           <small>{ui.preview}</small>
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
-          <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
+          <span>{settings.selected.length}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
         <button type="button" data-video-affirmation-preview disabled={disabled} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
+      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>
+        {locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
+      </p>}
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>

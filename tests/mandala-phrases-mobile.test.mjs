@@ -76,3 +76,19 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  assert.match(phrases,/setCustomDraft\(custom\)/);
  assert.match(phrases,/if\(readyDraft\|\|customDraft!==null\)/);
 });
+
+test("all phrase changes including catalog and idea are staged until explicit Approve; Create fails closed",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const compact=read("components/mandala-hypno-compact.tsx");
+ for(const marker of ["ideaPending","hasPendingEdits","setCatalogPhraseDraft(phrase)","onPendingChange={setPhrasePending}","externalPhraseDraft={catalogPhraseDraft}"])
+   assert.ok((compact+studio).includes(marker),marker);
+ assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
+ assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
+ assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
+ assert.match(studio,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/);
+ assert.match(studio,/if\(phrasePending\)\{/);
+ assert.match(compact,/if\(ideaPending&&!draft\)return/);
+ assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);
+ assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]*?setCatalogPhraseDraft\(phrase\)/);
+ assert.doesNotMatch(studio,/custom:phrase,visibility:\["large"\]/);
+});

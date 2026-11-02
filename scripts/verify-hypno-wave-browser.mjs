@@ -86,6 +86,16 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   assert.notEqual(proposed,before,'test must exercise a distinct suggestion');
   await pane.locator('[data-hypno-approve]').click();
   assert.equal(await preview.innerText(),proposed,'approved suggestion must be active');
+  const approvedCreate=pane.locator('[data-hypno-create-video]');
+  await pane.locator('[data-hypno-idea-choice="1"]').click();
+  assert.equal(await preview.innerText(),proposed,'a changed idea must not change the approved movie');
+  assert.equal(await approvedCreate.isDisabled(),true,'Create remains gated while the idea is not regenerated');
+  assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,
+    'new idea requires a new set of phrases, not approval of the old text');
+  await pane.locator('[data-hypno-apply-request]').click();
+  assert.equal(await approvedCreate.isDisabled(),true,'draft still needs explicit approval');
+  await pane.locator('[data-hypno-approve]').click();
+  assert.equal(await approvedCreate.isDisabled(),false,'Create reopens only after approving the regenerated text');
   await wish.fill('I want to kill myself');
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,'urgent input must not be approved as phrases');
