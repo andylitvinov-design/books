@@ -120,13 +120,14 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  // The protected production ruleset now requires the single exact-HEAD
-  // hh-merge-check, not the retired release-ready compatibility wrapper.
-  assert.match(core, /^  hh-merge-check:/m);
-  assert.match(core, /needs: \[scope, code, hh-specialist\]/);
+  // Unified protected gate replaces the obsolete release-ready wrapper.
+  // The aggregate must consume real Scope, Core and Specialist results.
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]\n    if: always\(\)/m);
   assert.match(core, /- name: Require real Core and specialist results from this workflow/);
   assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
   assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(core, /if \[\[ "\$DOCS_ONLY" == true \|\| "\$ROUTE" == ASSETS \|\| "\$ROUTE" == TEXT \]\]; then/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$CODE_RESULT" == skipped \]\]/);
   assert.match(core, /\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(core, /^  release-ready:/m);
   assert.match(core, /run: npm run build/);
