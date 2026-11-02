@@ -115,10 +115,10 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => ['energy', 'love', 'business', 'library', 'events'].includes(item.id),
+    item => ['energy', 'love', 'business', 'library', 'events', 'temple'].includes(item.id),
   );
 
-  // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
+  // MyTube takes the seventh compact tab; Holistic Support, Temple Insights and Services remain discoverable in More.
   extraMenuItems.push(
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
     { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },

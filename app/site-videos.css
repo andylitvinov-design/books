@@ -309,3 +309,19 @@
   .site-video-player { break-inside: avoid; box-shadow: none; }
   .site-video-player .site-video-caption { padding: 12px; }
 }
+
+/* MyTube is a public video channel, not a second video catalog. */
+.mytube-shell{
+  width:min(100%,1390px);
+  box-sizing:border-box;
+  min-height:100dvh;
+  margin:0 auto;
+  padding:clamp(14px,3vw,32px);
+  padding-bottom:calc(var(--ia222-bottom-height,76px) + env(safe-area-inset-bottom,0px) + 26px);
+  background:#fbfdfb;
+}
+.mytube-shell .section-site-header{margin-bottom:18px}
+@media(max-width:640px){
+  .mytube-shell{padding:12px 12px calc(var(--ia222-bottom-height,76px) + env(safe-area-inset-bottom,0px) + 22px)}
+  .mytube-shell .section-site-header{margin-bottom:10px}
+}

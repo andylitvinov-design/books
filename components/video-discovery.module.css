@@ -44,3 +44,32 @@
  .lifeAreas{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  .lifeAreas button{min-height:62px;padding:11px 8px;font-size:15px}
 }
+
+/* Dedicated MyTube channel: warm, bright YouTube-style browsing with the
+ * existing reviewed-video taxonomy and zero third-party loads before play. */
+.myTube{width:100%;max-width:none}
+.myTube .panel{gap:17px;margin:0 0 24px;padding:clamp(16px,2.5vw,26px);border:1px solid #d7e8dc;border-radius:23px;background:linear-gradient(135deg,#f2fbf5 0%,#ffffff 63%,#fffdf7 100%);box-shadow:0 5px 30px rgba(28,97,69,.055)}
+.myTube .intro h1{display:flex;align-items:center;gap:10px;margin:0;color:#16714f;font:800 clamp(31px,4.5vw,42px)/1.1 var(--font-sans,Arial,sans-serif);letter-spacing:-.045em}
+.myTube .intro h1 svg{flex-shrink:0;color:#18865e}
+.myTube .intro p{margin:7px 0 0;color:#547363;font-size:clamp(15px,2.2vw,17px);line-height:1.45}
+.myTubeSearch{display:flex;align-items:center;gap:10px;min-height:52px;width:100%;max-width:860px;padding:0 16px;border:1px solid #bcdac8;border-radius:14px;background:#fff;color:#4d9072;box-shadow:0 2px 12px rgba(23,81,55,.035)}
+.myTubeSearch input{height:50px;min-width:0;flex:1;border:0;outline:0;background:transparent;color:#1f4433;font:inherit;font-size:16px}
+.myTubeSearch:focus-within{border-color:#268b64;outline:3px solid #b0e2cc;outline-offset:1px}
+.screenReaderOnly{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important}
+.myTube .lifeAreas button{min-height:56px;font-size:clamp(13px,1.5vw,16px);background:#fff}
+.myTube .lifeAreas button[aria-pressed=true]{background:#146449;color:#fff}
+.myTube .groupHeading{color:#2f634f;font-size:15px}
+.myTube .advanced{padding-top:8px}
+.myTube .advanced summary{min-height:44px;padding:10px 0;color:#127651;font-size:15px}
+.myTube .results{margin:0 0 18px;color:#285b48;font-size:16px}
+.myTube .empty{padding:30px 16px;text-align:center}
+@media(max-width:640px){
+  .myTube .panel{padding:17px 13px;gap:13px;margin:0 0 20px;border-radius:18px}
+  .myTube .intro h1{font-size:32px}
+  .myTube .intro p{font-size:15px}
+  .myTubeSearch{min-height:52px;padding:0 12px}
+  .myTube .lifeAreas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .myTube .lifeAreas button{min-height:56px;font-size:15px}
+  .myTube .goals button{font-size:15px}
+  .myTube .advanced summary{font-size:14px}
+}

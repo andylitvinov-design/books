@@ -81,7 +81,7 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
 }
 
 export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false,
-  preserveOrder = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
+  preserveOrder = false, youtubeLayout = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
   saveText = "Save", unsaveText = "Unsave", dismissText = "Not for me",
 }: {
   locale: PublicLocale;
@@ -90,6 +90,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   guidesOnly?: boolean;
   timeline?: boolean;
   preserveOrder?: boolean;
+  youtubeLayout?: boolean;
   savedVideoIds?: string[];
   onToggleSaved?: (id: string) => void;
   onDismissVideo?: (id: string) => void;
@@ -143,8 +144,8 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
     { id: "guide", label: copy.filterGuides },
   ] as const;
 
-  return <section className={[styles.feed, timeline && styles.timeline].filter(Boolean).join(" ")} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
-    <div className={styles.toolbar}>
+  return <section className={[styles.feed, timeline && styles.timeline, youtubeLayout && styles.youtubeFeed].filter(Boolean).join(" ")} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
+    {!youtubeLayout && <div className={styles.toolbar}>
       {!videosOnly && !guidesOnly && <div className={styles.filters} role="group" aria-label={copy.latest}>
         {filters.map(filter => <button type="button" key={filter.id}
           aria-pressed={kind === filter.id}
@@ -158,9 +159,9 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         <input type="search" value={query} maxLength={100} placeholder={copy.searchPlaceholder}
           onChange={event => { setQuery(event.target.value); setLimit(8); setPlayingId(null); }} />
       </label>
-    </div>
+    </div>}
 
-    {videosOnly && seriesChoices.length > 0 ? (
+    {videosOnly && !youtubeLayout && seriesChoices.length > 0 ? (
       <div className={styles.seriesFilters} role="group" aria-label={copy.seriesTitle}>
         <strong>{copy.seriesTitle}</strong>
         <button type="button" aria-pressed={selectedSeries === "all"} onClick={() => {
@@ -184,7 +185,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         const date = dateLabel(item.publishedAt, locale);
         const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : copy.watch;
         return <Fragment key={item.id}>
-          {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
+          {!youtubeLayout && item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
             <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
               <div><span>{copy.seriesTitle}</span><h3>{item.seriesTitle}</h3></div>
               {item.seriesHref ? <Link href={item.seriesHref}>{copy.seriesDetails}<ArrowUpRight size={14} aria-hidden="true" /></Link> : null}

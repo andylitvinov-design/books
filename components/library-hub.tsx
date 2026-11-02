@@ -321,12 +321,13 @@ export function buildLibraryFeedItems(
   return { feedItems, guideFeed };
 }
 
-export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
+export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [], myTube = false }: {
   locale: PublicLocale;
   view?: LibraryView;
   publishedVideos?: LibraryPublicVideo[];
   articles?: LibraryPublicArticle[];
   approvedMeditations?: LibraryFeedItem[];
+  myTube?: boolean;
 }) {
   const text = libraryCopy[locale];
   const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
@@ -356,25 +357,25 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
   ]);
 
   return (
-    <main className="library-shell" lang={locale}>
+    <main className={myTube ? "mytube-shell" : "library-shell"} lang={locale}>
       <PublicSiteHeader locale={locale} />
-      <header className="library-heading">
+      {!myTube && <header className="library-heading">
         <h1>{text.title}</h1>
         <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : view === "dao" ? text.leadDao : text.lead}</p>
-      </header>
-      <nav className="library-media-switch" aria-label={text.title}>
+      </header>}
+      {!myTube && <nav className="library-media-switch" aria-label={text.title}>
         <Link aria-current={view === "latest" ? "page" : undefined} href={"/" + locale + "/library"}>{text.latestTab}</Link>
         <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/library?view=videos"}>{text.videosTab}</Link>
         <Link aria-current={view === "books" ? "page" : undefined} href={"/" + locale + "/library?view=books"}>{text.booksTab}</Link>
         <Link aria-current={view === "dao" ? "page" : undefined} href={"/" + locale + "/library?view=dao"}>{text.daoTab}</Link>
-      </nav>
-      {view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> :
+      </nav>}
+      {myTube ? <VideoDiscovery locale={locale} videos={videoItems} variant="mytube" /> : view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> :
         view === "videos" ? <VideoDiscovery locale={locale} videos={videoItems} /> : (
         <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
           guidesOnly={view === "books"} />
       )}
-      <p className="library-note">{text.note}</p>
-      <PublicConsultationCta locale={locale} />
+      {!myTube && <p className="library-note">{text.note}</p>}
+      {!myTube && <PublicConsultationCta locale={locale} />}
     </main>
   );
 }
