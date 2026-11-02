@@ -75,7 +75,8 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
   'single short source worker may use bounded overflow without multiplying optional CI');
  assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'ADMIT');
+ assert.equal(admission('repair',computeCapacity(Array.from({length:2},()=>({name:'HH PR source Repair Worker'})),[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
@@ -109,7 +110,7 @@ test('repair still fails closed when runner jobs or its own worker are saturated
  const jobs=Array.from({length:38},()=>({status:'in_progress'}));
  assert.equal(admission('repair',computeCapacity(unrelated,[],jobs)),'JOBS_SATURATED');
  assert.equal(admission('repair',computeCapacity(
-  [{name:'HH PR source Repair Worker'},...unrelated],[],[]
+  [{name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'},...unrelated],[],[]
  )),'WORKER_BUSY');
  assert.equal(admission('conflict',cap(18,43)),'ADMIT');
 });
@@ -244,14 +245,24 @@ test('source repair is allowed during ordinary CI overload but CI bootstrap is n
  assert.equal(r.dispatchAccepted,1);assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
  assert.equal(r.blocked.CI_QUEUE_BUSY,1);
 });
-test('deduplicates a worker lane within one cycle and refuses a stacked parent',async()=>{
- const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
+test('dispatches independent PRs in one scan, but rejects shared and stacked source branches',async()=>{
+ const f=fixture([pr(1),pr(2),pr(3)],{comments:{1:[proof()],2:[proof()],3:[proof()]},
+  recent:[{event:'workflow_dispatch',status:'in_progress'}]});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(r.dispatchAccepted,1);
+ assert.equal(r.dispatchAccepted,2);
+ assert.deepEqual(f.calls.dispatched.map(x=>x.inputs.pr_number),['1','2']);
+ assert.equal(f.calls.reserved.length,2);
+ assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  const child=pr(3,'repair',{base:{ref:'branch-1'}});
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
  assert.equal(y.dispatchAccepted,0);
+ const duplicate=pr(2,'repair',{head:{ref:'branch-1',sha:SHA,
+   repo:{full_name:'andylitvinov-design/books'}}});
+ const shared=fixture([pr(1),duplicate],{comments:{1:[proof()],2:[proof()]}});
+ const z=await run({github:shared.github,core:core(),context,now:NOW,capacityFn:shared.capacityFn});
+ assert.equal(z.dispatchAccepted,0);
+ assert.equal(z.blocked.SHARED_HEAD_BRANCH,2);
 });
 test('resolved conflict label is cleared after two consistent SHA/base reads',async()=>{
  const baseSha='b'.repeat(40),clean=pr(92,'conflict',{
@@ -342,17 +353,16 @@ test('completed push audit cannot starve a ready source-repair dispatch',async()
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
 });
-test('running audit or recent real completion still blocks source dispatch',async()=>{
+test('unrelated worker activity or cooldown never delays a different PR task',async()=>{
  for(const recent of [
   [{event:'push',status:'in_progress',created_at:new Date(NOW-5000).toISOString()}],
   [{event:'workflow_dispatch',status:'completed',conclusion:'success',
-    updated_at:new Date(NOW-10000).toISOString()}]
+   updated_at:new Date(NOW-10000).toISOString()}]
  ]){
   const f=fixture([pr(1)],{comments:{1:[proof()]},recent});
-  const r=await run({github:f.github,core:core(),context,now:NOW,
-   capacityFn:f.capacityFn});
-  assert.equal(r.dispatchAccepted,0);
-  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN,1);
+  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(r.dispatchAccepted,1);
+  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  }
 });
 test('real conflict requires a fresh dirty merge state',async()=>{
@@ -1130,7 +1140,7 @@ test('completed transition snapshots cannot reserve a worker slot',()=>{
  assert.equal(stale.coreQueuedRuns,0);
  assert.equal(admission('repair',stale),'ADMIT');
  const live=computeCapacity([{name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
- assert.equal(admission('repair',live),'WORKER_BUSY');
+ assert.equal(admission('repair',live),'ADMIT');
 });
 
 test('source Repair Worker only runs addressed tasks, with no cron or push lease contention',()=>{
@@ -1157,7 +1167,7 @@ test('completed Action wrapper does not occupy a live repair worker lease',()=>{
  assert.equal(admission('repair',capx),'ADMIT');
  const queued=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'}],[]);
  assert.equal(queued.activeWorker['HH PR source Repair Worker'],1);
- assert.equal(admission('repair',queued),'WORKER_BUSY');
+ assert.equal(admission('repair',queued),'ADMIT');
 });
 test('complete previous_head + new_head owner release cannot block unrelated future source HEAD',()=>{
  const old='b'.repeat(40),newHead='c'.repeat(40);
@@ -1182,5 +1192,20 @@ test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
  assert.equal(workerBusyOrCooling([scheduled],NOW,'ci'),false);
  assert.equal(workerBusyOrCooling([scheduled],NOW,'repair'),true);
  const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
- assert.equal(admission('ci',addressed),'WORKER_BUSY');
+ assert.equal(admission('ci',addressed),'ADMIT');
+});
+
+
+test('Worker concurrency is per PR and unaddressed fallback remains serialized',()=>{
+ const fs=require('node:fs');
+ const repair=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const ci=fs.readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ assert.ok(repair.includes('group: hh-real-repair-worker-'));
+ assert.ok(ci.includes('group: hh-pr-ci-worker-'));
+ for(const content of [repair,ci]){
+  assert.ok(content.includes("format('pr-{0}', inputs.pr_number)"));
+  assert.ok(content.includes("'unaddressed'"));
+  assert.ok(content.includes('cancel-in-progress: false'));
+ }
+ assert.ok(ci.includes("'background'"));
 });

@@ -37,6 +37,8 @@ function trustedContext(context){
  return ['schedule','push','workflow_dispatch'].includes(context.eventName);
 }
 /**
+ * Legacy read-only diagnostic only; addressed tasks must not use global
+ * worker history as an execution lease.
  * A completed PUSH of the trusted Repair/CI workflow is audit-only, so it
  * must not occupy the 2-minute post-worker cooldown. Unknown/active runs
  * still fail closed. Successful real worker completions get a short
@@ -58,6 +60,14 @@ function workerBusyOrCooling(runs,now,lane=null){
   const cooldown=r.conclusion==='success'?30_000:120_000;
   return now-completed<cooldown;
  });
+}
+// Conservatively reserve projected capacity immediately after a dispatch.
+// Actions can take time to expose the new queued run in its global snapshot.
+function projectWorkerCapacity(capacity,worker){
+ if(!capacity?.known)return;
+ capacity.activeWorker[worker]++;
+ capacity.queuedRuns++;
+ capacity.queuedJobs++;
 }
 function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
@@ -197,7 +207,6 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   unknownActiveRuns:capacity.unknownActiveRuns||0,
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
- const usedWorkers=new Set();
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
  for(const task of ordered){
@@ -213,11 +222,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
    const permission=admission(task.lane,capacity);
    if(permission!=='ADMIT'){blocked(permission);continue;}
-   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   }
-  // A parent PR with open stacked children cannot be rewritten safely.
+  // A stacked parent or branch shared by open PRs is never an exclusive
+  // write target, even when individual PR lease keys are different.
   if(prs.some(pr=>pr.number!==task.pr_number&&pr.base?.ref===task.head_ref)){
    blocked('STACKED_PARENT');continue;
+  }
+  if(prs.some(pr=>pr.number!==task.pr_number&&pr.state==='open'&&
+     pr.head?.repo?.full_name===REPO&&pr.head?.ref===task.head_ref)){
+   blocked('SHARED_HEAD_BRANCH');continue;
   }
   let fresh;
   try{fresh=(await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;}
@@ -407,7 +420,6 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
    const permission=admission(task.lane,capacity);
    if(permission!=='ADMIT'){blocked(permission);continue;}
-   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
@@ -467,18 +479,12 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    const safe=safeFiles(files);
    if(!safe||!safe.length){blocked('SOURCE_SCOPE_NOT_ACTIONABLE');continue;}
   }
-  let recent;
-  try{const r=(await limited('worker-history',()=>github.request(
-    'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-     owner,repo,workflow_id:WORKER_PATH[task.lane],per_page:5}))).data;
-   if(!Array.isArray(r?.workflow_runs)){blocked('WORKER_HISTORY_INCOMPLETE');continue;}
-   recent=r.workflow_runs;
-  }catch(err){blocked('WORKER_HISTORY_UNAVAILABLE');continue;}
-  if(workerBusyOrCooling(recent,now,task.lane)){
-   blocked('WORKER_BUSY_OR_COOLDOWN');continue;
-  }
+  // Workflow-level history and cooldowns are shared by every PR. Do NOT
+  // delay an independently leased task because a different PR has a worker.
+  // Signed exact-HEAD reservation + per-PR Action concurrency guard the writer.
   if(dryRun){summary.wouldDispatch++;summary.workerRuns.push({task_key:task.task_key,
-   pr_number:task.pr_number,lane:task.lane,outcome:'WOULD_DISPATCH'});usedWorkers.add(worker);continue;}
+   pr_number:task.pr_number,lane:task.lane,outcome:'WOULD_DISPATCH'});
+   projectWorkerCapacity(capacity,worker);continue;}
   // The trusted single writer reserves the exact task before dispatch.
   // On interrupted dispatch this reservation fails closed pending a human
   // inspection of worker history: never duplicate a possible source write.
@@ -498,7 +504,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    summary.workerRuns.push({task_key:task.task_key,pr_number:task.pr_number,
     head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
     sourceCommitConfirmed:false});
-   usedWorkers.add(worker);
+   projectWorkerCapacity(capacity,worker);
    log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
   }catch(err){
    blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);

@@ -48,8 +48,9 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  # Real signed CI tasks and read-only scheduled backstops use separate lanes.
-  group: hh-pr-ci-worker-${{ github.event_name == 'workflow_dispatch' && 'addressed' || 'background' }}
+  # Addressed CI metadata wakes for different PRs never share a lock.
+  # Unaddressed manual dispatch stays serial; schedule/push is read-only.
+  group: hh-pr-ci-worker-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number != '0' && format('pr-{0}', inputs.pr_number) || github.event_name == 'workflow_dispatch' && 'unaddressed' || 'background' }}
   cancel-in-progress: false
 jobs:
   bootstrap:

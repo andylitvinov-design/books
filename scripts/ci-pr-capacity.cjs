@@ -2,7 +2,7 @@
 const CORE_WORKFLOW='HH PR core release gate';
 const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
-const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:1,
+const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:2,
  maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
@@ -36,7 +36,7 @@ function admission(lane,capacity){
    return 'PARTIAL_CAPACITY_CI_BLOCKED';
  if(capacity.activeWorker[worker]>=LIMIT.maxWorkerRuns)return 'WORKER_BUSY';
  // Optional CI retains the strict 60-run global stop (and its own 6-run
- // limit). Admit at most ONE exact-head source Repair Worker into a modest
+ // limit). Admit at most TWO independent exact-head source Repair Workers into a modest
  // overflow window when most queued runs are unrelated/no-op wrappers.
  // Never infer a free runner or bypass a current Core result from this.
  const queueLimit=lane==='repair'?LIMIT.maxRepairQueuedRuns:LIMIT.maxQueuedRuns;
@@ -54,8 +54,8 @@ function admission(lane,capacity){
    return 'CORE_PRIORITY_PENDING';
  // CI bootstrap competes with Core and gets a stricter queue budget.
  if(lane==='ci'&&(capacity.activeRuns>=LIMIT.maxOptionalCiActiveRuns||capacity.queuedRuns>=6))return 'CI_QUEUE_BUSY';
- // A single bounded Repair claim must not starve behind unrelated CI runs.
- // Hard runner/queue/job-pressure limits above and the one-active-worker cap
+ // Bounded PR-scoped Repair claims must not starve behind unrelated CI runs.
+ // Hard runner/queue/job-pressure limits above and the two-worker cap
  // still hold. The dispatcher independently checks the exact worker history,
  // task ownership and SHA before reserving and starting this lane.
  return 'ADMIT';

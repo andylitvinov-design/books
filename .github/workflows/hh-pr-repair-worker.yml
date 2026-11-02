@@ -30,7 +30,9 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-real-repair-worker
+  # Serialize source writes for the same PR, including stale vs newer HEADs.
+  # Unaddressed manual queue scans remain one serialized fallback lane.
+  group: hh-real-repair-worker-${{ inputs.pr_number != '0' && format('pr-{0}', inputs.pr_number) || 'unaddressed' }}
   cancel-in-progress: false
 jobs:
   claim:
