@@ -11,7 +11,7 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
  // coverage. A successful receipt inventory alone cannot prove absent claims.
  const covers=(x,start)=>(valid(x)&&Number.isFinite(x.since)&&x.since<=start)||
   (Array.isArray(x?.segments)&&x.segments.some(y=>valid(y)&&Number.isFinite(y.since)&&y.since<=start));
- const coverageAt=start=>({tasks:covers(receipts,start)&&taskHistoryVerified===true,
+ const coverageAt=start=>({receipt_records:covers(receipts,start),tasks:covers(receipts,start)&&taskHistoryVerified===true,
   merges:covers(merges,start),ci:covers(actions,start)&&valid(ci),jobs:covers(actions,start),live:false});
  const blockers=(start,end)=>{
   const result={};
@@ -44,6 +44,7 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
   sources:{receipts:source(receipts),merges:source(merges),actions:source(actions),dispatch:source(dispatch),ci:source(ci)},
   limitations:['GitHub reads are non-atomic; stable inventories are checked twice.',
    'Actionable backlog requires separate current-head ownership and evidence checks.',
+   'Receipt coverage describes available authenticated records, not proof every worker emitted a receipt.',
    'Missing historical receipt or job coverage remains partial; samples are not totals.',
    'LIVE conversion requires feature-specific smoke evidence for each comparable production merge.'],windows};
 }

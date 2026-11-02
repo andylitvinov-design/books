@@ -88,7 +88,8 @@ function summarizeWindow({events,jobs,coverage={},now=Date.now(),windowMs}){
  const tasksComplete=coverage.tasks===true&&validEvents&&validTasks,ciComplete=coverage.ci===true&&validEvents,
   mergesComplete=coverage.merges===true&&validEvents,liveComplete=coverage.live===true&&validEvents,
   jobsComplete=coverage.jobs===true&&validJobs;
- return {coverage:{tasks:tasksComplete,ci:ciComplete,merges:mergesComplete,live:liveComplete,jobs:jobsComplete},observed,
+ return {coverage:{receipt_records:coverage.receipt_records===true&&validEvents&&validTasks,
+  tasks:tasksComplete,ci:ciComplete,merges:mergesComplete,live:liveComplete,jobs:jobsComplete},observed,
   kpi:{repair_conversion:ratio(published.length,terminal.length,tasksComplete),
    ci_first_pass:ratio(paired.filter(x=>x.outcome.kind==='ci_first_pass').length,paired.length,tasksComplete&&ciComplete),
    green_to_merge:ratio(greenMerged.length,greenTerminal.length,ciComplete&&mergesComplete),

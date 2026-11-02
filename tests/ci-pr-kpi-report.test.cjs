@@ -46,3 +46,10 @@ test('a complete short source covers only windows inside its own lookback',()=>{
  assert.equal(r.windows['24h'].current.coverage.merges,false);
  assert.equal(r.windows['7d'].trend.production_merges,null);
 });
+test('complete receipt records are distinct from complete task history',()=>{
+ const input=data();input.receipts={complete:false,events:[],segments:[{complete:true,since:NOW-2*3600000}]};
+ const r=buildReport(input);
+ assert.equal(r.windows['1h'].current.coverage.receipt_records,true);
+ assert.equal(r.windows['1h'].current.coverage.tasks,false);
+ assert.equal(r.windows['24h'].current.coverage.receipt_records,false);
+});

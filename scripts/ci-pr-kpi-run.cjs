@@ -12,7 +12,20 @@ async function run({github,core,context,now=Date.now(),deps={}}){
  const d={collectBacklog,collectReceiptEvents,collectMergeEvents,collectCompletedJobs,collectDispatcherEvents,normalizeCoreEvidence,...deps};
  const common={github,owner,repo,minRemaining:500};const since=now-14*86400000;
  const backlog=await d.collectBacklog({...common,maxRequests:12});
- const receipts=await d.collectReceiptEvents({...common,since,maxRequests:40});
+ const recentReceipts=await d.collectReceiptEvents({...common,since:now-2*3600000,maxRequests:20});
+ const historicalReceipts=await d.collectReceiptEvents({...common,since,maxRequests:40});
+ const receiptEvents=new Map(),recentReceiptKeys=new Set((recentReceipts.events||[]).map(e=>JSON.stringify(e)));
+ let receiptsChanged=false;
+ for(const e of historicalReceipts.events||[]){const at=Date.parse(e?.at||'');
+  if(recentReceipts.complete===true&&Number.isFinite(recentReceipts.since)&&Number.isFinite(at)&&
+     at>recentReceipts.since&&at<=now&&!recentReceiptKeys.has(JSON.stringify(e)))receiptsChanged=true;
+ }
+ for(const e of [...(recentReceipts.events||[]),...(historicalReceipts.events||[])])receiptEvents.set(JSON.stringify(e),e);
+ const receipts={...historicalReceipts,complete:historicalReceipts.complete===true&&!receiptsChanged,
+  reason:receiptsChanged?'RECEIPT_SNAPSHOTS_DIFFER':historicalReceipts.reason,
+  reads:Number.isSafeInteger(recentReceipts.reads)&&Number.isSafeInteger(historicalReceipts.reads)?recentReceipts.reads+historicalReceipts.reads:null,
+  events:[...receiptEvents.values()],segments:[recentReceipts,historicalReceipts].map(x=>({since:x.since,
+   complete:x.complete===true&&!receiptsChanged,reason:receiptsChanged?'RECEIPT_SNAPSHOTS_DIFFER':x.reason}))};
  // Preserve a complete short window when the 14-day inventory exceeds its
  // budget; retain older partial observations without double-counting.
  const recentMerges=await d.collectMergeEvents({...common,since:now-2*3600000,maxRequests:30});
