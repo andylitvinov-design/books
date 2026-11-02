@@ -343,7 +343,8 @@ jobs:
             const outcomes=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-release-outcomes.cjs');
             await outcomes.run({github,core,context,liveEvidence,
-              reportPath:process.env.HH_PR_METRICS_PATH||''});
+              reportPath:process.env.HH_PR_METRICS_PATH||'',
+               vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
             // No second Vercel check, no additional workflow or runner.
             // This only records proof already certified by the read-only verifier.
             const receipts=require(process.env.GITHUB_WORKSPACE+
