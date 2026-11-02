@@ -43,7 +43,7 @@ function receiptBody(report) {
   return marker + '\n' +
     'LIVE observed at ' + (report.checked_at || 'independently verified time') +
     ' for protected production merge commit ' + report.production_sha +
-    '. This is a historical deployment observation, not a promise that the same SHA remains the latest version.\\n\\n' +
+    '. This is a historical deployment observation, not a promise that the same SHA remains the latest version.\n\n' +
     'Vercel production deployment: ' + report.deployment_id + '. Verified public alias: ' +
     'https://' + report.alias + '/en. Method: ' + (report.proof_method || 'VERIFIED') + '.\n\n' +
     evidence.map(url => '- ' + url).join('\n') + '\n';
