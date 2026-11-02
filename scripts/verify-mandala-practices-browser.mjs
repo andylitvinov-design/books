@@ -134,6 +134,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      assert.equal(await generate.isEnabled(),true,
+        "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
       await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
