@@ -25,8 +25,9 @@ export function eligible(run, pr, ctx) {
       run.head_repository?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo ||
       run.head_branch !== pr.head?.ref || run.pull_requests[0]?.head?.ref !== run.head_branch ||
       !sha40(run.head_sha) || !sha40(run.pull_requests[0]?.head?.sha) || !sha40(pr.head?.sha)) return false;
-  // GitHub PR run.head_sha can be a synthetic merge SHA, not the actual PR head.
-  return pr.state === 'open' && run.pull_requests[0].head.sha.toLowerCase() !== pr.head.sha.toLowerCase();
+  // The association can report today's PR head, not the run's original head.
+  // A different run SHA is only a candidate: ancestry is proved before cancel.
+  return pr.state === 'open' && run.head_sha.toLowerCase() !== pr.head.sha.toLowerCase();
 }
 
 export async function prune(api, ctx, { limit = 300, dryRun = false } = {}) {
@@ -55,8 +56,18 @@ export async function prune(api, ctx, { limit = 300, dryRun = false } = {}) {
     summary.candidates++;
     // Read BOTH objects again before POST: a queued run may have started and a PR HEAD may have moved.
     const [freshRun, freshPR] = await Promise.all([api.run(run.id), api.pr(n)]);
-    if (!eligible(freshRun, freshPR, ctx) ||
-        freshRun.pull_requests[0].head.sha.toLowerCase() !== run.pull_requests[0].head.sha.toLowerCase()) continue;
+    if (!eligible(freshRun, freshPR, ctx) || freshRun.head_sha !== run.head_sha) continue;
+    // Only an ancestor of the live branch HEAD is provably obsolete. Synthetic
+    // merge commits and rewritten histories are held unless ancestry proves it.
+    let relation;
+    try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
+    catch { summary.partial = true; continue; }
+    if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1) continue;
+    // Re-read after the network compare: neither a new HEAD nor a started job
+    // may be acted on using stale evidence.
+    const [verifiedRun, verifiedPR] = await Promise.all([api.run(run.id), api.pr(n)]);
+    if (!eligible(verifiedRun, verifiedPR, ctx) || verifiedRun.head_sha !== freshRun.head_sha ||
+        verifiedPR.head.sha !== freshPR.head.sha) continue;
     if (dryRun) { summary.dryRun.push(run.id); continue; }
     try { await api.cancel(run.id); summary.cancelled.push(run.id); }
     catch (e) {
@@ -144,6 +155,7 @@ export function client(repo, token, transport = fetch) {
     pr: (n) => call('/pulls/' + n),
     run: (id) => call('/actions/runs/' + id),
     cancel: (id) => call('/actions/runs/' + id + '/cancel', 'POST'),
+    compare: (base, head) => call('/compare/' + base + '...' + head),
     recent: (page, since) => call('/actions/runs?' + new URLSearchParams({ event: 'pull_request', created: '>=' + since, per_page: '100', page: String(page) })),
     jobs: id => call('/actions/runs/' + id + '/jobs?per_page=100&page=1'),
     list: (page, branch) => {

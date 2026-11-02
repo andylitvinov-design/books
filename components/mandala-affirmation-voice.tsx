@@ -21,7 +21,7 @@ const durationChoices=[10,20,30,60] as const;
 const copy={
   ru:{
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
-    voice:"Голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
+    voice:"Голос",female:"Женские голоса (3)",male:"Мужские голоса (3)",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
     consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
     generate:"Создать аудиодорожку",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
@@ -33,7 +33,7 @@ const copy={
   },
   en:{
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
-    voice:"Voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
+    voice:"Voice",female:"Female voices (3)",male:"Male voices (3)",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
     consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
     generate:"Generate voice track",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
@@ -45,7 +45,7 @@ const copy={
   },
   es:{
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
-    voice:"Voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
+    voice:"Voz",female:"Voces femeninas (3)",male:"Voces masculinas (3)",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
     consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
     generate:"Generar pista de voz",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
@@ -88,6 +88,7 @@ export function MandalaAffirmationVoice({
   const speechText=enabled?affirmationNarrationText(lines):"";
   const [language,setLanguage]=useState<SpeechLanguage>(locale);
   const [voiceId,setVoiceId]=useState("maya");
+  const [voiceGender,setVoiceGender]=useState<"female"|"male">("female");
   const [bed,setBed]=useState<Bed>("none");
   const [voiceLevel,setVoiceLevel]=useState(90);
   const [musicLevel,setMusicLevel]=useState(12);
@@ -237,13 +238,24 @@ export function MandalaAffirmationVoice({
       <small>{t.preview} · {t.review}</small>
       <p data-video-affirmation-spoken-text>{speechText}</p>
     </div>:<p className={css.hint} role="status">{t.enable}</p>}
+    <div className={css.voiceChoices} data-video-affirmation-voice-select role="group" aria-label={t.voice}>
+      <div className={css.genderTabs} role="group" aria-label={t.voice}>
+        {(["female","male"] as const).map(id=><button type="button" key={id}
+          data-video-affirmation-gender={id} aria-pressed={voiceGender===id}
+          disabled={busy||disabled} onClick={()=>{
+            setVoiceGender(id);setVoiceId(id==="female"?"maya":"mark");setConsent(false);
+          }}>{id==="female"?t.female:t.male}</button>)}
+      </div>
+      <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
+        {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><button type="button" key={v.id}
+          data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
+          disabled={busy||disabled} onClick={()=>{setVoiceId(v.id);setConsent(false);}}>
+          <span><strong>{v.name[locale]}</strong><small>{v.description[locale]}</small></span>
+          <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
+        </button>)}
+      </div>
+    </div>
     <div className={css.controls}>
-      <label>{t.voice}
-        <select data-video-affirmation-voice-select value={voiceId} disabled={busy||disabled}
-          onChange={event=>{setVoiceId(event.currentTarget.value);setConsent(false);}}>
-          {VOICE_STUDIO_VOICES.map(v=><option key={v.id} value={v.id}>{v.name[locale]} · {v.description[locale]}</option>)}
-        </select>
-      </label>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
           onChange={event=>{setLanguage(event.currentTarget.value as SpeechLanguage);setConsent(false);}}>

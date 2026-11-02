@@ -15,22 +15,6 @@ on:
       - 'lib/wealth-video-local.ts'
       - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
-  push:
-    branches: [codex/public-book-library]
-    paths:
-      - 'lib/kling-video.mjs'
-      - 'lib/kling-avatar.mjs'
-      - 'app/admin/videos/**'
-      - 'components/kling-scene-studio.tsx'
-      - 'components/kling-avatar-studio.tsx'
-      - 'app/api/admin/kling-avatar/**'
-      - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
-      - 'app/site-video-admin.css'
-      - 'tests/kling-video.test.mjs'
-      - 'lib/wealth-video-local.ts'
-      - 'tests/kling-avatar.test.mjs'
-      - '.github/workflows/hh-kling-video.yml'
-
 permissions:
   contents: read
 
