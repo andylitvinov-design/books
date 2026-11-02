@@ -27,6 +27,17 @@ export type LibraryFeedItem = {
   curation?: "verified" | "published";
   sourceGroup?: string;
   sourceLabel?: string;
+  sourceApproved?: boolean;
+  source_kind?: string;
+  editorial_status?: string;
+  embed_status?: string;
+  rights_status?: string;
+  content_checked_at?: string;
+  lifeAreas?: string[];
+  contentType?: string | null;
+  directions?: string[];
+  traditions?: string[];
+  provenance?: string[];
 };
 
 const words = {

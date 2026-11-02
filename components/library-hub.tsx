@@ -11,6 +11,7 @@ import { greekVideoSeries } from "@/data/academy/greek-video-series";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
+import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -278,6 +279,7 @@ export function buildLibraryFeedItems(
     title: video.title, description: video.description,
     youtubeId: video.youtubeId, href: video.url,
     publishedAt: video.publishedAt,
+    curation: "published", sourceApproved: true, sourceGroup: "owner-library",
   }));
   const articleFeed: LibraryFeedItem[] = articles.map(article => ({
     id: "article-" + article.id, kind: "article",
@@ -292,6 +294,7 @@ export function buildLibraryFeedItems(
       id: video.id, kind: "video" as const, title: video.title,
       description: video.description, image: video.image,
       youtubeId, href: youtubeId ? "https://www.youtube.com/watch?v=" + youtubeId : video.href,
+      curation: "published" as const, sourceApproved: true, sourceGroup: "site-introduction",
     }];
   });
   const topicPictures: Record<string,string> = {
@@ -318,11 +321,12 @@ export function buildLibraryFeedItems(
   return { feedItems, guideFeed };
 }
 
-export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [] }: {
+export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;
   publishedVideos?: LibraryPublicVideo[];
   articles?: LibraryPublicArticle[];
+  approvedMeditations?: LibraryFeedItem[];
 }) {
   const text = libraryCopy[locale];
   const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
@@ -345,14 +349,11 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
         topicTags: discoveryTags[series.logicalId] || ["practices"],
       })))
     : [];
-  const seenDiscoveryIds = new Set<string>();
-  const videoItems = [...seriesItems, ...approvedAcademyDiscoveryVideos(locale),
-    ...feedItems.filter(item => item.kind === "video")].filter(item => {
-      const key = item.youtubeId || item.id;
-      if (seenDiscoveryIds.has(key)) return false;
-      seenDiscoveryIds.add(key);
-      return true;
-    });
+  const videoItems = buildPublishedVideoIndex([...seriesItems,
+    ...approvedAcademyDiscoveryVideos(locale),
+    ...approvedMeditations,
+    ...feedItems.filter(item => item.kind === "video"),
+  ]);
 
   return (
     <main className="library-shell" lang={locale}>
