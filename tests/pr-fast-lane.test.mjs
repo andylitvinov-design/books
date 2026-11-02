@@ -1262,7 +1262,18 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
     required: [], 
   }), false, 'unprotected status list cannot authorize native merge');
 
-  assert.equal(await decide([good, {...specialist, conclusion: 'failure'}]), false, 'red specialist blocks ARM');
+  const slowOptional = {...specialist, name: 'HH benchmark public browser',
+    path: '.github/workflows/hh-benchmark-public-browser.yml@refs/pull/42/merge',
+    status: 'in_progress', conclusion: null};
+  assert.equal(await decide([good, slowOptional], live, event, 2, {
+    required: ['hh-merge-check'],
+    jobs: [{name: 'hh-merge-check', status: 'completed', conclusion: 'success'}],
+  }), true, 'optional diagnostic queued after the protected gate must not delay merge');
+  const failedOptional = {...slowOptional, status: 'completed', conclusion: 'failure'};
+  assert.equal(await decide([good, failedOptional], live, event, 2, {
+    required: ['hh-merge-check'],
+    jobs: [{name: 'hh-merge-check', status: 'completed', conclusion: 'success'}],
+  }), true, 'non-required diagnostic failure cannot override the protected Core/Specialist gate');
   assert.equal(await decide([{...good, pull_requests: []}]), false, 'missing association fails closed');
   assert.equal(await decide([{...good, pull_requests: [{
     number: 42, head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base
@@ -1380,8 +1391,10 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
-  const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
-  assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
+  const failedOptionalRun={...makeRun(199,'HH benchmark public browser',199,'failure'),
+    path:'.github/workflows/hh-benchmark-public-browser.yml@refs/pull/42/merge'};
+  const failed=await decide([current,[failedOptionalRun,prior]],[102,102]);
+  assert.equal(failed.ok,true,'non-required second-page diagnostic does not block the protected gate');
   const incomplete=await decide([current,[]],[102,102]);
   assert.equal(incomplete.ok,false,'missing second page is not success');
   const tooMany=await decide([current,current,current],[401,401,401]);
