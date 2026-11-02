@@ -2092,6 +2092,23 @@ const runEngine = async ([engine, browserType]) => {
             await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
             await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
           }
+          if(id==="phrases"){
+            const first=page.locator('[data-video-phrase-editor-first]');
+            await expect(first).toBeVisible();
+            await expect(first.locator('[data-hypno-overview]')).toBeVisible();
+            assert.equal(await page.locator('[data-hypno-overview]').count(),1,
+              "shared Hypno editor must not be duplicated");
+            const positions=await page.evaluate(()=>{
+              const bounds=q=>document.querySelector(q)?.getBoundingClientRect();
+              return {nav:bounds('[data-video-quick-controls]'),
+                editor:bounds('[data-video-phrase-editor-first]'),
+                voice:bounds('[data-video-phrase-audio-shortcut]')};
+            });
+            assert.ok(positions.nav&&positions.editor&&positions.voice&&
+              positions.editor.top>=positions.nav.bottom&&
+              positions.voice.top>=positions.editor.bottom-2,
+              engine+" "+locale+" "+width+" Hypnocorrection editor must come first");
+          }
           assert.equal(await page.evaluate(()=>window.location.hash),originalHash,
             "workspace taps must not navigate to a legacy hash");
           const geometry=await page.evaluate(()=>{
