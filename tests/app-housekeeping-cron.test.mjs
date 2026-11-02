@@ -150,7 +150,7 @@ test('independent PR Watchdog backstop dispatches only after verified inactivity
   assert.equal(outcome.body.status,'dispatch_accepted')
   assert.equal(outcome.body.executionVerified,false)
   assert.deepEqual(calls.map(x=>x.method),['GET','POST'])
-  assert.match(calls[1].url,/hh-pr-ten-minute-watchdog.yml\\/dispatches$/)
+  assert.ok(calls[1].url.endsWith('/hh-pr-ten-minute-watchdog.yml/dispatches'))
   assert.equal(calls[1].authorization,'Bearer '+token)
   calls=[]
   const missing=await runWatchdogBackstop({token:'',now,fetcher})
@@ -183,5 +183,6 @@ test('production cron route remains private and its schedule is not an Actions c
   assert.match(route,/PRIVATE_HEADERS/)
   const source=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
   assert.match(source,/workflow_dispatch/)
-  assert.doesNotMatch(source,/pulls\\/\\{pull_number\\}|update-branch|merge_pull_request|sourceChanged:true/)
+  assert.doesNotMatch(source,/update-branch|merge_pull_request|sourceChanged:true/)
+  assert.equal(source.includes('pulls/{pull_number}'),false)
 })
