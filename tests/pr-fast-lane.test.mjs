@@ -822,21 +822,20 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
 
 test('Core old PR base beyond shallow depth is checked by API, never mistaken for code failure', () => {
   const source = workflow('hh-pr-core-release.yml');
-  const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const scope = source.split('  scope:\n')[1]?.split('  code:\n')[0];
+  const code = source.split('  code:\n')[1]?.split('  hh-specialist:\n')[0];
   for (const job of [scope, code]) {
-    assert.match(job, /GH_TOKEN: \\\$\\{\\{ github\\.token \\}\\}/,
-      'the ancestry check needs the dedicated read-only GitHub token');
-    assert.match(job, /gh api "repos\\/\\$GITHUB_REPOSITORY\\/compare\\/\\$EVENT_BASE_SHA\\.\\.\\.\\$tested_base"/,
-      'old production base must be verified by the trusted GitHub compare API');
-    assert.match(job, /ahead\\) ;;/, 'only a verified descendant may continue');
-    assert.match(job, /identical\\) \\[\\[ "\\$EVENT_BASE_SHA" == "\\$tested_base" \\]\\]/);
-    assert.match(job, /HH_EVENT_BASE_VERIFIED=\\$EVENT_BASE_SHA/);
-    assert.match(job, /HH_TESTED_BASE_VERIFIED=\\$tested_base/);
+    assert.ok(job.includes('GH_TOKEN: ${{ github.token }}'), 'read-only GitHub token required');
+    assert.ok(job.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+      'old production ancestry must be verified by GitHub');
+    assert.ok(job.includes('ahead) ;;'), 'only a proven ancestor can continue');
+    assert.ok(job.includes('identical) [['), 'identical status must require equal SHAs');
+    assert.ok(job.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'));
+    assert.ok(job.includes('HH_TESTED_BASE_VERIFIED=$tested_base'));
   }
-  assert.doesNotMatch(scope, /git merge-base --is-ancestor "\\$BASE_SHA" "\\$first_parent"/);
-  assert.doesNotMatch(scope, /git merge-base --is-ancestor "\\$HH_EVENT_BASE_SHA" "\\$tested_base"/);
-  assert.doesNotMatch(code, /git merge-base --is-ancestor "\\$BASE_SHA" "\\$first_parent"/);
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$HH_EVENT_BASE_SHA" "$tested_base"'));
+  assert.ok(!code.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
 });
 
 test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
