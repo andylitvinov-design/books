@@ -642,18 +642,15 @@ test('event-driven merge supports legacy, bridge and only approved single requir
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
 });
 
-test('previously armed green PR receives a normal protected exact-head merge attempt without bypass',()=>{
+test('previously armed green PR remains native-only without direct merge fallback',()=>{
   const native=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const begin=native.indexOf('if [[ "$current_method" == "$HH_EXPECTED_MERGE_METHOD" ]]; then');
   const end=native.indexOf('if [[ "$current_method" != NONE ]]; then',begin);
   assert.ok(begin>=0&&end>begin,'expected already-armed native merge branch');
   const branch=native.slice(begin,end);
-  assert.ok(branch.includes('if [[ "$HH_HAS_AUTOMERGE_TOKEN" == true ]]; then'));
-  assert.ok(branch.includes('gh pr merge "$PR_NUMBER" --repo "$GH_REPO" "$merge_option" --match-head-commit "$PR_HEAD"'));
-  assert.ok(branch.includes('CI_AUTO_MERGE: MERGED previously armed PR'));
-  assert.ok(branch.includes('native AutoMerge remains armed'));
+  assert.ok(branch.includes('already armed; never issue direct merge'));
+  assert.ok(!branch.includes('gh pr merge'));
   assert.ok(!branch.includes('--admin'));
-  assert.ok(!branch.includes('gh pr merge "$PR_NUMBER" --auto'));
 });
 
 test('watchdog directly dispatches one free CI worker for a truly missing Core run',async()=>{
@@ -754,7 +751,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const {readFileSync}=require('node:fs');
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const begin=native.indexOf('          script: |\n',native.indexOf('  enable:\n'));
-  const end=native.indexOf('      - name: Enable native auto-merge for this exact head',begin);
+  const end=native.indexOf('      - name: Verify same-run unified gate and current sensitive production base',begin);
   assert.ok(begin>0&&end>begin,'missing trusted preflight');
   const code=native.slice(begin+'          script: |\n'.length,end).split('\n')
     .map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');

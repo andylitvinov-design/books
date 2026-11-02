@@ -10,7 +10,7 @@ test('migrated single mandatory status remains exact-head release gate',()=>{
 test('actual Specialist and unified gate pass in same workflow run',()=>{
  const s=workflow('hh-native-auto-merge');
  assert.ok(s.includes('!passed("hh-merge-check")||!passed("hh-specialist")'));
- assert.ok(s.includes('coreRun(run,pr,fullRepo,run.check_suite_id)'));
+ assert.ok(s.includes('coreRunBase(run,pr,fullRepo,run.check_suite_id)'));
  assert.ok(s.includes("steps.freshness.outputs.eligible == 'true'"));
 });
 test('hourly observed check inventory is complete and owned by Actions',async()=>{
