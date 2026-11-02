@@ -2701,3 +2701,27 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+
+/* Practices: uplifting editorial hero and optional advanced tools. */
+.studio[data-active-workspace="practices"] .workspaceHeading{min-height:150px;padding:19px 17px 23px;border:1px solid #f2ebd9;border-radius:22px;background:linear-gradient(90deg,#fffdfa 0%,#fffcf5ee 49%,#fff5e13d 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat;box-shadow:0 10px 23px #52643d12;align-content:center}
+.studio[data-active-workspace="practices"] .workspaceHeading small{color:#377a53;letter-spacing:.13em}
+.studio[data-active-workspace="practices"] .workspaceHeading h3{font:750 clamp(26px,6.3vw,37px)/1.12 Georgia,serif;color:#143e33;letter-spacing:-.03em}
+.studio[data-active-workspace="practices"] .workspaceHeading p{max-width:460px;color:#29483b;font-size:clamp(14px,3.6vw,16px);font-weight:550;line-height:1.5}
+.studio[data-active-workspace="practices"] .therapyCourse{margin-top:10px}
+.therapyAudioDetails,.therapyRelatedDetails{box-sizing:border-box;min-width:0;margin:12px 0;border:1px solid #dfeadd;border-radius:18px;background:#fffefa;color:#184b3d;overflow:hidden}
+.therapyAudioDetails>summary,.therapyRelatedDetails>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:55px;padding:12px 15px;color:#12674f;cursor:pointer;font-size:clamp(14px,3.65vw,16px);font-weight:800;list-style:none}
+.therapyAudioDetails>summary::-webkit-details-marker,.therapyRelatedDetails>summary::-webkit-details-marker{display:none}
+.therapyAudioDetails>summary svg,.therapyRelatedDetails>summary svg{flex:none;transition:transform .2s ease}
+.therapyAudioDetails[open]>summary svg,.therapyRelatedDetails[open]>summary svg{transform:rotate(180deg)}
+.therapyAudioDetails>div,.therapyRelatedDetails>div{padding:10px}
+@media(max-width:430px){
+ .studio[data-active-workspace="practices"] .workspaceHeading{min-height:155px;padding:17px 14px 20px;background-position:58% center}
+ .studio[data-active-workspace="practices"] .workspaceHeading h3{font-size:clamp(25px,7vw,31px)}
+ .studio[data-active-workspace="practices"] .workspaceHeading p{font-size:14px;max-width:295px}
+ .studio[data-active-workspace="practices"] .therapyCourse{margin:10px 0}
+}
+
+/* Unified actual TTS selector below approved phrase rows, inside the numbered voice card. */
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice]{margin:5px 0;padding:13px;border:1px solid #e0e8df;border-radius:14px;background:#fffefa}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection .phraseVoiceNotice{font-size:clamp(13px,3.7vw,15px);line-height:1.4}

@@ -1,5 +1,7 @@
 import {chromium,webkit} from '@playwright/test';
 import assert from 'node:assert/strict';
+import {mkdirSync} from 'node:fs';
+import {join} from 'node:path';
 for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,{}]]){
  const browser=await driver.launch({headless:true,...options});
  try {for(const [locale,width,now,goal] of [
@@ -43,8 +45,37 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   // Six-workspace Studio exposes this genuine Hypno editor under Phrases.
   await page.locator('[data-video-quick-control="phrases"]').click();
   const pane=page.locator('[data-hypno-overview]');await pane.waitFor({state:'visible'});
+  const layout=await pane.evaluate(el=>{
+    const rects=['[data-hypno-idea]','[data-hypno-phrases]','[data-hypno-voice]','[data-hypno-music]']
+      .map(sel=>el.querySelector(sel)?.getBoundingClientRect());
+    const firstPhrase=el.querySelector('[data-hypno-phrase="0"]');
+    return {tops:rects.map(r=>r?.top),visible:rects.every(r=>r&&r.width>0),
+      font:firstPhrase?parseFloat(getComputedStyle(firstPhrase).fontSize):0,
+      height:firstPhrase?.getBoundingClientRect().height,scroll:el.scrollWidth,width:el.clientWidth};
+  });
+  assert.equal(layout.visible,true,'four ordered sections');
+  assert.ok(layout.tops.every((top,i,a)=>i===0||top>a[i-1]),'Idea → phrases → voice → music');
+  assert.ok(layout.font>=15.5&&layout.height>=44,'readable text and touch controls');
+  assert.ok(layout.scroll<=layout.width+3,'no horizontal overflow');
+  const voice=pane.locator('[data-hypno-voice] [data-video-affirmation-voice]');
+  await voice.waitFor({state:'visible'});
+  assert.equal(await voice.locator('[data-video-affirmation-voice-card]').count(),3);
+  await voice.locator('[data-video-affirmation-gender="male"]').click();
+  assert.equal(await voice.locator('[data-video-affirmation-voice-card]').count(),3);
+  await voice.locator('[data-video-affirmation-gender="female"]').click();
+  await pane.locator('[data-hypno-music] [data-phrase-music-play]').first().click();
+  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),'true',
+    'music preview cannot navigate away');
+  const dir=process.env.HH_HYPNO_SCREENSHOT_DIR;
+  if(dir){mkdirSync(dir,{recursive:true});
+    await pane.screenshot({path:join(dir,engine+'-'+locale+'-'+width+'.png'),animations:'disabled'});}
   const activePreview=pane.locator('[data-hypno-preview] strong');
   const beforeSmart=await activePreview.innerText();
+  const firstReady=pane.locator('[data-hypno-phrase="0"]');
+  await firstReady.click();
+  assert.equal(await activePreview.innerText(),beforeSmart,'ready selection stays pending before approval');
+  await firstReady.click();
+  assert.equal(await activePreview.innerText(),beforeSmart,'staged restore keeps video unchanged');
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await activePreview.innerText(),beforeSmart,'smart suggestions must await approval');
   // The current Phrases workspace reuses the visitor's optional goal input.
@@ -62,9 +93,22 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   assert.notEqual(proposed,before,'test must exercise a distinct suggestion');
   await pane.locator('[data-hypno-approve]').click();
   assert.equal(await preview.innerText(),proposed,'approved suggestion must be active');
+  const approvedCreate=pane.locator('[data-hypno-create-video]');
+  await pane.locator('[data-hypno-idea-choice="1"]').click();
+  assert.equal(await preview.innerText(),proposed,'a changed idea must not change the approved movie');
+  assert.equal(await approvedCreate.isDisabled(),true,'Create remains gated while the idea is not regenerated');
+  assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,
+    'new idea requires a new set of phrases, not approval of the old text');
+  await pane.locator('[data-hypno-apply-request]').click();
+  assert.equal(await approvedCreate.isDisabled(),true,'draft still needs explicit approval');
+  await pane.locator('[data-hypno-approve]').click();
+  assert.equal(await approvedCreate.isDisabled(),false,'Create reopens only after approving the regenerated text');
   await wish.fill('I want to kill myself');
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,'urgent input must not be approved as phrases');
+  assert.equal(await approvedCreate.isDisabled(),true,'crisis request must block video creation');
+  assert.equal(await pane.locator('[data-video-affirmation-preview]').isDisabled(),true,'crisis request must block preview');
+  assert.equal(await pane.locator('[data-hypno-model="gemini"]').isDisabled(),true,'crisis input must not be sent to Gemini');
   assert.deepEqual(writes,[],'personal notes must not be sent');
   console.log(`${engine}/${locale}/${width}: PASS scene click, local proposal, approval, safety and no writes`);
   await page.close();
