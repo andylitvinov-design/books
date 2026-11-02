@@ -145,7 +145,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   live_coverage:'UNVERIFIED',merged_coverage:'UNVERIFIED',
   core:null,pr_to_merge_p50_minutes:null,pr_to_merge_p90_minutes:null,
   merge_to_live_observation_upper_bound_p50_minutes:null,
-  sampled_prs:[],ancestry:null,errors:[]};
+  sampled_prs:[],ancestry:null,receipt_candidate:null,errors:[]};
  const finish=async()=>{
   if(reportPath){try{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');}
     catch(err){report.errors.push('WRITE_REPORT_'+String(err.code||'error'));}}
@@ -202,6 +202,31 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     report.served_sha=actualLive.production_sha;
     report.current_head_sha=still.commit.sha;
     report.served_proof_method=actualLive.proof_method||null;
+    // The existing independent served-revision verifier has already checked
+    // canonical public runtime proof, Vercel success for the exact served SHA,
+    // production ancestry and a stable GitHub HEAD. Hand that one proof to
+    // the existing receipt writer instead of repeating browser/Vercel reads.
+    if(actualLive.reason==='SERVING_VERIFIED_REVISION' &&
+       actualLive.proof_method==='PUBLIC_RUNTIME_ALIAS_SHA_WITH_GITHUB_VERCEL_STATUS' &&
+       SHA.test(actualLive.current_head_sha||'') &&
+       /^dpl_[A-Za-z0-9]{8,64}$/.test(actualLive.deployment_id||'')){
+      const canonical='https://holistichouse.vercel.app';
+      report.receipt_candidate={
+        schema:'HH_LIVE_EVIDENCE_V1',checked_at:report.observed_at,
+        repo:'andylitvinov-design/books',production_branch:PROD,
+        alias:'holistichouse.vercel.app',verified_live:true,
+        reason:'LIVE_VERIFIED',production_sha:actualLive.production_sha,
+        current_head_sha:actualLive.current_head_sha,
+        deployment_id:actualLive.deployment_id,
+        proof_method:'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY',
+        evidence_urls:[
+          'https://github.com/andylitvinov-design/books/commit/'+actualLive.production_sha,
+          'https://vercel.com/super10/codex-public-book-library/'+
+            actualLive.deployment_id.slice(4),
+          canonical+'/api/public/release-evidence',canonical+'/en'
+        ]
+      };
+    }
     if(proof.errors)report.errors.push('ANCESTRY_ERRORS_'+proof.errors);
     const lags=prs.filter(pr=>confirmed.has(pr.number)).map(pr=>
      elapsedMinutes(pr.merged_at,report.observed_at));
