@@ -13,7 +13,7 @@ import {
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
-import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
+import { buildWaveNarrativeDraft, interpretWaveNotes } from "@/lib/mandala/hypno-wave-engine.mjs";
 import css from "./mandala-hypno-compact.module.css";
 
 type SceneOption = { id:string; label:string; symbol:string; poster:string|null };
@@ -189,6 +189,7 @@ export function MandalaHypnoCompact({
   // The personal idea is a desired direction, not an inferred diagnosis.
   // Both fields are interpreted locally by Wave; Gemini still sees enum codes only.
   const goalNote=ownIdea.trim().slice(0,160);
+  const safetyBlocked=interpretWaveNotes({locale,currentText:problemNote,goalText:goalNote}).status==="safety_handoff";
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"gemini">("ready");
   const extraGoal=topicGoals[theme].includes(goalId)?goalId:topicGoals[theme][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
@@ -231,11 +232,14 @@ export function MandalaHypnoCompact({
   const chosen=draft?.selected??readyDraft?.selected??settings.selected;
   const customPhraseText=externalPhraseDraft??customDraft??settings.custom;
   const selectedCount=chosen.length;
-  const hasPendingEdits=Boolean(draftState||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending);
+  const hasPendingEdits=Boolean(draftState||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending||safetyBlocked);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!hasPendingEdits&&Boolean(approvalKey&&signature===approvalKey);
   useEffect(()=>{onPendingChange?.(hasPendingEdits);},[hasPendingEdits,onPendingChange]);
-  const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
+  const summary=safetyBlocked
+    ?buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,
+      round:generation,fallbackStrategy:"",fallbackPhrases:[]}).strategy
+    :model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
   // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
   // to third-party models or written to account state. Existing approved
   // video phrases remain unchanged until the visitor explicitly approves.
@@ -325,23 +329,28 @@ export function MandalaHypnoCompact({
   const changeTheme=(next:VideoTheme)=>{
     if(next===theme)return;
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setReadyDraft(null);setGeminiBusy(false);setGeminiNotice("");
+    const nextProblem=0,nextGoal=topicGoals[next][0],nextRound=generation+1;
+    // Switching categories proposes new phrases, never overwrites approved video text.
+    const nextDraft=createWaveDraft(nextRound,next,nextProblem,nextGoal);
+    setModel("wave");setDraftState(nextDraft);setReadyDraft(null);
+    setGeminiBusy(false);setGeminiNotice("");
     onSelectTheme(next);
-    onChange({...settings,enabled:settings.enabled,presetOverride:undefined,selected:[0,1,2]});
-    setSelectionSource("ready");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
+    setGeneration(nextRound);
+    setSelectionSource("smart");setApprovalKey("");
+    setGoalId(nextGoal);setProblemIndex(nextProblem);
     setOpen("request");
   };
 
   function switchModel(next:HypnoModel){
-    if(disabled||next===model)return;
+    if(disabled||next===model||(next==="gemini"&&safetyBlocked))return;
     pending.current?.abort();runId.current++;
     setGeminiBusy(false);setGeminiNotice("");setApprovalKey("");
     setModel(next);setDraftState(null);setReadyDraft(null);
     if(next==="wave")setDraftState(createWaveDraft(generation+1));
-    else if(geminiConsent)void generateGemini();
+    // Switching model does not trigger external requests; a separate click is required.
   }
   async function generateGemini(){
-    if(disabled||!geminiConsent)return;
+    if(disabled||!geminiConsent||safetyBlocked)return;
     pending.current?.abort();
     const controller=new AbortController();pending.current=controller;
     const number=++runId.current,key=requestKey;
@@ -367,6 +376,7 @@ export function MandalaHypnoCompact({
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
   function approvePhrases(){
+    if(safetyBlocked)return;
     // A changed idea or addressing form must first generate its own suggested
     // text. Never silently approve the old wording for a newly selected idea.
     if(ideaPending&&!draft)return;
@@ -443,7 +453,7 @@ export function MandalaHypnoCompact({
           <button type="button" data-hypno-model="wave" aria-pressed={model==="wave"}
             disabled={disabled} onClick={()=>switchModel("wave")}>{extra.wave}</button>
           <button type="button" data-hypno-model="gemini" aria-pressed={model==="gemini"}
-            disabled={disabled} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
+            disabled={disabled||safetyBlocked} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
         </div>
         <p className={css.strategySummary} aria-live="polite" data-hypno-strategy-summary>{summary}</p>
         {model==="gemini"&&<div className={css.geminiControls}>
@@ -524,7 +534,7 @@ export function MandalaHypnoCompact({
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
 
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(ideaPending&&!draft)||(draft?!draft.selected.length:(!selectedCount&&!customPhraseText.trim()))}
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||safetyBlocked||(ideaPending&&!draft)||(draft?!draft.selected.length:(!selectedCount&&!customPhraseText.trim()))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
@@ -625,7 +635,7 @@ export function MandalaHypnoCompact({
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
       {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>
-        {locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
+        {safetyBlocked?summary:locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
       </p>}
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
