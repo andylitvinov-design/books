@@ -109,11 +109,11 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   assert.match(styles,/\.personalPreview\{/);
   assert.match(styles,/\.ritualMoments\{/);
   assert.match(styles,/\.programTiles\{/);
-  assert.match(guided,/vectorOptions\\.map/);
-  assert.match(guided,/stateOptions:\\{calm:[\\s\\S]*confidence:[\\s\\S]*clarity:/);
+  assert.match(guided,/vectorOptions\.map/);
+  assert.match(guided,/stateOptions:\{calm:[\s\S]*confidence:[\s\S]*clarity:/);
   assert.match(guided,/focusChoiceHeading/);
   assert.match(guided,/focusNote/);
-  assert.match(styles,/\\.focusChoiceHeading\\{/);
-  assert.match(styles,/\\.focusNote\\{/);
+  assert.match(styles,/\.focusChoiceHeading\{/);
+  assert.match(styles,/\.focusNote\{/);
 
 });
