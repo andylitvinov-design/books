@@ -143,7 +143,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       }
       const viewport=window.visualViewport
       const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight
-      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const nav=sharedDock&&getComputedStyle(sharedDock).display!=='none'
+        ?sharedDock:document.querySelector('.hh-messages-page .hh-mobile-app-nav')
       const editing=pane.contains(document.activeElement)&&
         /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
       const navTop=nav&&!editing&&getComputedStyle(nav).display!=='none'

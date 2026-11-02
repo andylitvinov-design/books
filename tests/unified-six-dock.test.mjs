@@ -75,6 +75,15 @@ test("AI is the existing video director; top tabs preserve actual private Orders
  assert.match(privateMessages,/holistic-support\/mandala#video-director-chat/);
  assert.match(privateMessages,/role="tab"/);
 });
+test("both private message composers reserve the real visible dock boundary without spoofed chat delivery",()=>{
+ const orders=read("components/app/messages-orders-clients.jsx");
+ const clients=read("components/app/messages-simple-inbox.jsx");
+ assert.match(orders,/querySelector\('\[data-hh-unified-dock\]'\)/);
+ assert.match(orders,/getBoundingClientRect\(\).top/);
+ assert.match(clients,/querySelector\('\[data-hh-unified-dock\]'\)/);
+ assert.match(clients,/availableInboxHeight\(/);
+ assert.match(clients,/navigationTop:navTop/);
+});
 test("Practice has real Courses and Services choices and Ideas linked to existing editorial route",()=>{
  const support=read("components/holistic-support-mobile.tsx");
  assert.match(support,/data-support-practice-tabs/);
@@ -113,4 +122,13 @@ test("MyTube unified branch triggers real macOS WebKit, without hiding specialis
  assert.doesNotMatch(guard,/if:\s*\$\{\{\s*always\(\)/);
  assert.match(workflow,/runs-on: macos-15/);
  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+});
+
+
+test("same-page Video to AI click opens the original hidden details instead of relying on hashchange",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ assert.match(dock,/onClick=\{id === "ai" \? \(\) =>/);
+ assert.match(dock,/pathname\.endsWith\("\/holistic-support\/mandala"\)/);
+ assert.match(dock,/if \(detail && !detail\.open\) detail\.open = true/);
+ assert.match(dock,/setHash\("#video-director-chat"\)/);
 });
