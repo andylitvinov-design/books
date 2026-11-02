@@ -873,30 +873,6 @@ export function publicPlaywrightEngines(plan) {
     ? 'chromium' : 'chromium webkit';
 }
 
-function main() {
-  const plan = planPublicServicesEvent();
-  const summary = 'Public Services impact: ' + plan.mode +
-    ' (' + plan.reason + '); build=' + plan.build +
-    ', browser=' + plan.browser + ', metrics=' + plan.metrics +
-    ', cases=' + plan.cases;
-  console.log(summary);
-  if (process.env.GITHUB_OUTPUT) {
-    appendFileSync(process.env.GITHUB_OUTPUT,
-      ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
-        'browser=' + plan.browser, 'metrics=' + plan.metrics,
-        'release_proof=' + (plan.releaseProof === true),
-        'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
-        'engines=' + publicPlaywrightEngines(plan),
-        'cases=' + plan.cases].join('\n') + '\n');
-  }
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Public Services exact-PR scope\n' +
-      summary + '\n' +
-      'Unclassified, payment, middleware, manifest and application changes always run full E2E.\n');
-  }
-}
-
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) main();
 
 // Reusable domain ownership: private practitioner-created meditation media is
 // independently checked by protected Core, IA v2 (auth/RLS), practitioner
@@ -982,3 +958,27 @@ export function planPrivatePractitionerMediaRows(rows) {
     build:true,browser:true,metrics:false,cases:'verify-public-services-production.mjs'};
 }
 
+function main() {
+  const plan = planPublicServicesEvent();
+  const summary = 'Public Services impact: ' + plan.mode +
+    ' (' + plan.reason + '); build=' + plan.build +
+    ', browser=' + plan.browser + ', metrics=' + plan.metrics +
+    ', cases=' + plan.cases;
+  console.log(summary);
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT,
+      ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
+        'browser=' + plan.browser, 'metrics=' + plan.metrics,
+        'release_proof=' + (plan.releaseProof === true),
+        'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
+        'engines=' + publicPlaywrightEngines(plan),
+        'cases=' + plan.cases].join('\n') + '\n');
+  }
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Public Services exact-PR scope\n' +
+      summary + '\n' +
+      'Unclassified, payment, middleware, manifest and application changes always run full E2E.\n');
+  }
+}
+
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) main();

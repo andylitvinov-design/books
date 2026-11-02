@@ -1452,3 +1452,12 @@ test('private practitioner meditation is publicly smoke-tested without unrelated
   assert.equal(run(['M','components/practice-showcase.jsx']).cases,'verify-public-services-production.mjs');
   assert.equal(run(['M','components/consultation-choice-capture.tsx']).mode,'full');
 });
+
+test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
+  const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
+  const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
+  const entry=src.indexOf('\nfunction main() {');
+  const execute=src.lastIndexOf('main();');
+  assert.ok(declaration>=0 && entry>declaration && execute>entry,
+    'private media ownership constants must be initialized before direct CLI invocation');
+});
