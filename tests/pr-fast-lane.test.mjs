@@ -131,7 +131,7 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
-  for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
+  for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source,/ci-specialist-aggregate\.mjs/);
   assert.match(source,/run: npm run build/);
@@ -801,8 +801,8 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
 
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
-  const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const scope = source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const code = scope;
   const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
@@ -1410,7 +1410,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
+  for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
