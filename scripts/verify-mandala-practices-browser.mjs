@@ -77,9 +77,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
         return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
       },null,{timeout:15000});
       assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
+      // Revoke the seeded narration completely before a visitor reopens the
+      // existing details. A rapid re-open must not race React's seed cleanup.
+      await page.waitForFunction(()=>
+        !document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"),
+        null,{timeout:15000});
       await voice.locator(":scope > summary").click();
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
-      await page.waitForFunction(()=>!document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"));
+      await page.waitForFunction(()=>
+        document.querySelector("[data-video-therapy-meditation-audio]")?.open===true,
+        null,{timeout:15000});
+      assert.equal(await voice.locator("[data-meditation-script]").count(),0,
+        "skipped narration remains absent after reopening");
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
