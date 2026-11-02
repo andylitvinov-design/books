@@ -58,3 +58,14 @@ test('checkout and Reiki acceptance preserve consent, data isolation and genuine
  assert.match(storefront,/serviceWorkers: 'block'/)
  assert.doesNotMatch(storefront,/\.check\(\{force:true\}\)|dispatchEvent\(/)
 })
+
+test('WebKit mobile disclosure stays accessible and unused Next routes are not prefetched',()=>{
+ const script=read('scripts/verify-holistic-support-recommendations-mobile.mjs')
+ const gallery=read('components/holistic-support-master-gallery.tsx')
+ assert.match(script,/makerFilter\.tap\(\)/)
+ assert.match(script,/makerNote\.waitFor\(\{state:"visible",timeout:12000\}\)/)
+ assert.match(script,/makerFilter\.getAttribute\("aria-expanded"\)/)
+ assert.match(gallery,/href=\{reikiLearningPath\} prefetch=\{false\}/)
+ assert.match(gallery,/href=\{profileLink\} prefetch=\{false\}/)
+ assert.match(gallery,/href=\{"\/" \+ locale \+ "\/masters"\} prefetch=\{false\}/)
+});

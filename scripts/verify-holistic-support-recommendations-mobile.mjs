@@ -173,8 +173,16 @@ for (const engine of [chromium, webkit]) {
           await page.waitForFunction(() =>
             (document.querySelector("[data-support-talisman-categories]")?.scrollLeft ?? 0) > 0,
             null, { timeout: 4000 });
-          await viewer.locator('[data-support-talisman-filter="master"]').click();
-          assert.equal(await viewer.locator("#talisman-master-note").isVisible(), true,
+          const makerFilter=viewer.locator('[data-support-talisman-filter="master"]');
+          await makerFilter.scrollIntoViewIfNeeded();
+          await makerFilter.tap();
+          const makerNote=viewer.locator("#talisman-master-note");
+          // On mobile WebKit, a genuine touch can resolve before React commits
+          // the explanatory disclosure. Do not waive the real visibility check.
+          await makerNote.waitFor({state:"visible",timeout:12000});
+          assert.equal(await makerFilter.getAttribute("aria-expanded"),"true",
+            label + " maker filter expands after a real touch");
+          assert.equal(await makerNote.isVisible(), true,
             label + " unknown maker is disclosed, not fabricated");
           await viewer.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
           await viewer.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
