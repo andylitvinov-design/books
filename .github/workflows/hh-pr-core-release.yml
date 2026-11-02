@@ -235,7 +235,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify Source Preflight unit contracts
-        run: node --test tests/ci-source-preflight.test.mjs
+        run: node --test tests/ci-source-preflight.test.mjs tests/public-deployment-proof.test.mjs
       - name: Source Preflight — syntax and TypeScript before costly Next build
         id: source_preflight
         shell: bash
