@@ -30,6 +30,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Checkout trusted default-branch merge policy
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Checkout protected production classifier
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
       - name: Full pagination and guarded native auto-merge
         uses: actions/github-script@v7
         env:
@@ -40,6 +51,8 @@ jobs:
           script: |
             const {owner, repo} = context.repo;
             const PROD="codex/public-book-library", fullRepo=owner+"/"+repo;
+            const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
+            const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
             const skip=k=>skipped.set(k,(skipped.get(k)||0)+1);
             const found=new Map(); let pages=0;
@@ -81,7 +94,8 @@ jobs:
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
               const runs=(await github.rest.checks.listForRef({owner,repo,ref:sha,per_page:100})).data;
-              if(!Array.isArray(runs.check_runs)||runs.total_count>100)return null;
+              if(!Array.isArray(runs.check_runs)||!Number.isSafeInteger(runs.total_count)||
+                 runs.total_count>100||runs.total_count!==runs.check_runs.length)return null;
               const names=new Map();
               for(const check of [...runs.check_runs].sort((a,b)=>b.id-a.id)){
                 if(!names.has(check.name))names.set(check.name,check);
@@ -111,7 +125,7 @@ jobs:
                 return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};
               if(unifiedRequired){
                 if(!gate||gate.status!=="completed"||gate.conclusion!=="success"||
-                   gate.app?.slug!=="github-actions")
+                   gate.app?.slug!=="github-actions"||gate.app?.id!==15368)
                   return {ok:false,reason:"UNIFIED_REQUIRED_NOT_GREEN"};
                 if(rows.some(([name,c])=>quality.test(name)&&!obsolete.has(name)&&
                    c.status!=="completed"))
@@ -175,6 +189,10 @@ jobs:
                   const namedSafety=[...checks.entries()].some(([name,c])=>/auth|security|privacy|consent|billing|payment|rls|database|guard/i.test(name)&&c.conclusion==="success");
                   if(sensitive&&!namedSafety){skip("SENSITIVE_SPECIALIST_QA_MISSING");continue;}
                 }
+                const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
+                  verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
+                    check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")})});
+                if(!freshness.ok){skip(freshness.reason);continue;}
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
@@ -194,7 +212,8 @@ jobs:
                  skip("CHANGED_BEFORE_ARM");continue;
                }
                // Never rely on a stale success while the full inventory was being scanned.
-               if(!assess(await latestChecks(c.head)).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
+               const freshChecks=await latestChecks(c.head);
+               if(!assess(freshChecks).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
                const comments=await github.paginate(github.rest.issues.listComments,{
                  owner,repo,issue_number:c.number,per_page:100
                });
@@ -261,6 +280,10 @@ jobs:
                    Date.parse(l.expires_at||"")>Date.now()))){
                  skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
                }
+               const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
+                 verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
+                   check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")})});
+               if(!freshness.ok){skip(freshness.reason);continue;}
                attempts++;
                const result=await exec.getExecOutput("gh",[
                  "pr","merge",String(c.number),"--repo",fullRepo,"--auto",

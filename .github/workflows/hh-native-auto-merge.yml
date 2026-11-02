@@ -34,6 +34,17 @@ jobs:
     steps:
       # This privileged workflow executes trusted base/default-branch code only.
       # Never checkout or execute code from the PR head with this token.
+      - name: Checkout trusted default-branch merge policy
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Checkout protected production classifier
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
       - name: Verify live PR and completed exact-head CI
         id: ready
         uses: actions/github-script@v7
@@ -212,13 +223,57 @@ jobs:
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");
             core.setOutput("pr", String(number));
+            core.setOutput("core_run", String(coreRun.id));
             core.setOutput("head", pr.head.sha);
             core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
               " after " + observed.length + " latest exact-head PR workflows");
-      - name: Enable native auto-merge for this exact head
+      - name: Verify same-run unified gate and current sensitive production base
+        id: freshness
         if: steps.ready.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo}=context.repo,fullRepo=owner+"/"+repo;
+            const number=Number('${{ steps.ready.outputs.pr }}');
+            const expectedHead='${{ steps.ready.outputs.head }}';
+            const expectedBase='${{ steps.ready.outputs.base }}';
+            const runId=Number('${{ steps.ready.outputs.core_run }}');
+            if(!Number.isSafeInteger(runId)||runId<1)return;
+            const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+            if(pr.state!=="open"||pr.draft||pr.base?.ref!=="codex/public-book-library"||
+               pr.base.sha!==expectedBase||pr.head?.sha!==expectedHead||
+               pr.head.repo?.full_name!==fullRepo||pr.mergeable!==true||
+               pr.mergeable_state==="dirty"){
+              core.info("CI_AUTO_MERGE: PR changed before base verification");return;
+            }
+            const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
+            const page=(await github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:runId,per_page:100,filter:"latest"
+            })).data;
+            if(!Number.isSafeInteger(page.total_count)||page.total_count>100||
+               !Array.isArray(page.jobs)||page.jobs.length!==page.total_count)return;
+            const passed=name=>{
+              const match=page.jobs.filter(j=>j.name===name);
+              return match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success";
+            };
+            if(!passed("hh-merge-check")||!passed("hh-specialist")){
+              core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
+            }
+            const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
+            const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            const freshness=await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
+              verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+            if(!freshness.ok){
+              core.info("CI_AUTO_MERGE: "+freshness.reason+" for PR #"+number);return;
+            }
+            core.setOutput("eligible","true");
+            core.setOutput("verified_base",freshness.base);
+            core.setOutput("requires_current_base",String(freshness.reason==="SENSITIVE_BASE_VERIFIED"));
+      - name: Enable native auto-merge for this exact head
+        if: steps.ready.outputs.eligible == 'true' && steps.freshness.outputs.eligible == 'true'
         env:
           # A repo-scoped token lets resulting merges trigger push workflows.
           # Preserve native auto-merge if the optional credential is absent.
@@ -229,6 +284,8 @@ jobs:
           PR_HEAD: ${{ steps.ready.outputs.head }}
           PR_BASE_SHA: ${{ steps.ready.outputs.base }}
           PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}
+          PR_REQUIRES_CURRENT_BASE: ${{ steps.freshness.outputs.requires_current_base }}
+          PR_VERIFIED_BASE: ${{ steps.freshness.outputs.verified_base }}
         run: |
           set -euo pipefail
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
@@ -254,27 +311,7 @@ jobs:
             exit 0
           fi
           if [[ "$current_method" == "$HH_EXPECTED_MERGE_METHOD" ]]; then
-            # A previously armed PR can remain open even after current-head Core
-            # and specialists pass. Try a normal GitHub-protected merge once:
-            # the server still enforces rules, reviews, and the exact HEAD lease.
-            # No admin override, force update, duplicate CI, or extra source commit.
-            if [[ "$HH_HAS_AUTOMERGE_TOKEN" == true ]]; then
-              if gh pr merge "$PR_NUMBER" --repo "$GH_REPO" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/armed-protected-merge-error"; then
-                if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state --jq '.state' 2>/dev/null)" == MERGED ]]; then
-                  echo "CI_AUTO_MERGE: MERGED previously armed PR #$PR_NUMBER after verified CI" >> "$GITHUB_STEP_SUMMARY"
-                  exit 0
-                fi
-                echo '::warning::Protected merge accepted but GitHub readback did not confirm MERGED' >&2
-                exit 1
-              fi
-              if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state --jq '.state' 2>/dev/null)" == MERGED ]]; then
-                echo 'CI_AUTO_MERGE: PR merged concurrently by GitHub'
-                exit 0
-              fi
-              echo 'CI_AUTO_MERGE: GitHub denied immediate protected merge; native AutoMerge remains armed'
-              exit 0
-            fi
-            echo 'CI_AUTO_MERGE: already armed; dedicated push-capable token absent, no direct merge'
+            echo 'CI_AUTO_MERGE: already armed; never issue direct merge'
             exit 0
           fi
           if [[ "$current_method" != NONE ]]; then
@@ -282,6 +319,18 @@ jobs:
             exit 1
           fi
           for ((attempt=1; attempt<=3; attempt++)); do
+            fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')"
+            if [[ "$fresh" != true ]]; then
+              echo 'CI_AUTO_MERGE: SKIP target, state or HEAD changed before ARM'
+              exit 0
+            fi
+            if [[ "$PR_REQUIRES_CURRENT_BASE" == true ]]; then
+              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
+              if [[ "$current_base" != "$PR_VERIFIED_BASE" ]]; then
+                echo 'CI_AUTO_MERGE: SKIP production advanced since sensitive CI verification'
+                exit 0
+              fi
+            fi
             if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
               echo "CI_AUTO_MERGE: GitHub accepted ARM for PR #$PR_NUMBER at $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
               exit 0
@@ -290,36 +339,7 @@ jobs:
             if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
             fi
-            # GitHub can reject --auto as "unstable" when hosted required
-            # contexts are empty, even after verified current-HEAD CI is green.
-            # Only then use normal GitHub-protected merge: no admin or bypass.
-            if grep -Eq 'Pull request is in (clean|unstable) status' "$RUNNER_TEMP/auto-merge-error"; then
-              ruleset="$(gh api "repos/$GH_REPO/rulesets/26269892" --jq '[.enforcement, ([.rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[]?] | length)] | @tsv')"
-              IFS=$'\t' read -r enforcement required_count <<< "$ruleset"
-              if [[ "$enforcement" != active || "$required_count" != 0 ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; hosted required contexts active or ruleset changed' >&2
-                exit 1
-              fi
-              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
-              if [[ "$current_base" != "$PR_BASE_SHA" ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; production advanced since CI evaluation' >&2
-                exit 1
-              fi
-              fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library") and (.autoMergeRequest == null)')"
-              if [[ "$fresh" != true ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; live PR or ARM already changed'
-                exit 0
-              fi
-              # The trusted preflight confirmed successful Core and all latest
-              # started applicable exact-HEAD PR workflows. GitHub still
-              # enforces classic branch protection and the hosted ruleset.
-              if gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/checked-direct-merge-error"; then
-                echo "CI_AUTO_MERGE: normal protected merge confirmed, PR #$PR_NUMBER HEAD $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
-                exit 0
-              fi
-              cat "$RUNNER_TEMP/checked-direct-merge-error" >&2
-              exit 1
-            fi
+            # Denied native ARM is a blocker, never a separate direct merge.
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
             fi
