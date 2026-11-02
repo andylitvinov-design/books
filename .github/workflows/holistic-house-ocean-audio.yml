@@ -17,23 +17,6 @@ on:
       - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'components/ocean-practice-audio.ts'
-      - 'components/app/opora-ocean-outro.jsx'
-      - 'components/app/course-guided-timer.jsx'
-      - 'components/energywork-ai-learner.tsx'
-      - 'components/app/opora-experience-player.jsx'
-      - 'components/app/opora-experience-player.module.css'
-      - 'tests/opora-midlesson-music.test.mjs'
-      - 'tests/opora-ocean-outro.test.mjs'
-      - 'tests/opora-as56-experience-first.test.mjs'
-      - 'public/audio/**'
-      - 'scripts/generate-soft-ocean-melody.mjs'
-      - 'package.json'
-      - 'tests/ocean-practice-audio*.test.mjs'
-      - '.github/workflows/holistic-house-ocean-audio.yml'
   workflow_dispatch:
 
 permissions:

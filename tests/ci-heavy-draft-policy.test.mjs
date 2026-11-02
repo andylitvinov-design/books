@@ -54,7 +54,12 @@ test('production post-merge push and explicit manual verification are not disabl
 test('short CI contract tests run even when expensive browser gates are draft-skipped', () => {
   const guard = read('hh-pr-sweep-guard.yml');
   assert.match(guard, /tests\/ci-heavy-draft-policy\.test\.mjs/);
-  assert.match(guard, /node --test tests\/pr-sweep-guard\.test\.mjs tests\/ci-heavy-draft-policy\.test\.mjs/);
+  const command = guard.match(/^\s*-\s*run: node --test ([^\n]+)/m)?.[1];
+  assert.ok(command, 'fast Guard must execute its own unit command');
+  for (const name of ['tests/pr-sweep-guard.test.mjs', 'tests/required-gate-policy.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs']) {
+    assert.ok(command.split(/\s+/).includes(name), name+' must execute in Guard CI');
+  }
   assert.match(guard, /^  pull_request:/m);
 });
 
@@ -68,16 +73,20 @@ test('core Draft cannot pass hh-specialist or legacy release-ready, and Ready re
   assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
   assert.ok(core.includes("run: npm run build"));
-  const gate = core.split('  hh-specialist:')[1]?.split('  release-ready:')[0];
+  const gate = core.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(gate, 'the real risk-routed specialist verifier must be a separate job');
-  const legacy = core.split('  release-ready:')[1]?.split('  hh-specialists-verified:')[0];
-  assert.ok(legacy?.includes('needs: [hh-specialist]'),
-    'legacy release-ready must stay fail-closed until GitHub admin migration');
+  const legacy = core.split('  release-ready:')[1];
+  assert.ok(legacy?.includes('needs: [hh-core-verified, hh-specialist]'),
+    'legacy compatibility must wait for both real jobs');
+  assert.ok(legacy.includes('CORE_RESULT') && legacy.includes('SPECIALIST_RESULT'));
   assert.ok(gate.includes("    if: always()"));
   assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
   assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
-  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
-  assert.ok(gate.includes("[[ \"$CODE_RESULT\" == success ]] || exit 1"));
+  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success \]\] \|\| \{[\s\S]*?exit 1\s*\}/,
+    'an unsuccessful scope must fail the parallel specialist job');
+  assert.ok(gate.includes("    needs: [scope]"), 'Specialist runs parallel to Core');
+  assert.doesNotMatch(gate,/CODE_RESULT|needs\.code/);
+  assert.ok(legacy.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
   assert.ok(gate.includes("ci-specialist-aggregate.mjs"));
   assert.doesNotMatch(core, /continue-on-error:\s*true/);
 });
@@ -390,7 +399,8 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
+  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))";
+  assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));

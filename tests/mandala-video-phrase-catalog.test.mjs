@@ -92,6 +92,79 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(widget,/data-video-phrase-audioguide/);
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.doesNotMatch(studio,/quickSupportPhrases/);
-  assert.match(studio,/onOpenAudio=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/data-video-phrase-catalog-details/);
+  assert.match(studio,/setPhraseAudioExpanded\(true\)/);
+  assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
+  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
+    "reuse the approved single phrase editor");
+  assert.match(studio,/setCatalogPhraseDraft\(phrase\)/);
+  assert.match(studio,/externalPhraseDraft=\{catalogPhraseDraft\}/);
+  assert.doesNotMatch(studio,/setAffirmations\(current=>\(\{\.\.\.current,enabled:true,selected:\[\],\s*custom:phrase/,
+    "selecting catalog phrases must not update video before Approve");
+});
+
+test("closed phrase catalog does not ship 69k possible variations into the initial Video workspace",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/const MandalaPhraseCatalog = dynamic\(\(\) => import\("\.\/mandala-phrase-catalog"\)/);
+  assert.doesNotMatch(studio,/import \{ MandalaPhraseCatalog \} from/, "large phrase taxonomy should be loaded on demand");
+  assert.match(studio,/const \[phraseCatalogActivated,setPhraseCatalogActivated\] = useState\(false\)/);
+  assert.match(studio,/if\(event\.currentTarget\.open\)setPhraseCatalogActivated\(true\)/);
+  assert.match(studio,/\{phraseCatalogActivated \? <MandalaPhraseCatalog/);
+  // Once opened, keep the panel mounted to preserve manually chosen story/idea filters.
+  assert.doesNotMatch(studio,/onToggle=\{event=>setPhraseCatalogActivated\(event\.currentTarget\.open\)\}/);
+});
+
+test("each tone keeps distinct wording for the same selected story/idea",()=>{
+  for(const scenario of VIDEO_GOAL_SCENARIOS)
+    for(const locale of VIDEO_PHRASE_LOCALES){
+      for(const idea of listVideoPhraseIdeas(scenario.id,locale))
+        for(const speaker of VIDEO_PHRASE_SPEAKERS)
+          for(const length of VIDEO_PHRASE_LENGTHS){
+            const all=VIDEO_PHRASE_TONES.flatMap(tone=>listPreparedVideoPhrases({
+              scenarioId:scenario.id,ideaId:idea.id,locale,tone,speaker,length,
+            }).map(x=>x.text));
+            assert.equal(new Set(all).size,12,
+              `duplicate tone phrase for ${scenario.id}/${idea.id}/${locale}/${speaker}/${length}`);
+          }
+    }
+});
+
+test("all four stories have distinct, actionable idea titles for each topic and language",()=>{
+  const topicMap=new Map();
+  for(const scenario of VIDEO_GOAL_SCENARIOS){
+    const group=topicMap.get(scenario.topicId)||[];
+    group.push(scenario.id);
+    topicMap.set(scenario.topicId,group);
+  }
+  assert.equal(topicMap.size,30);
+  for(const storyIds of topicMap.values()){
+    assert.equal(storyIds.length,4);
+    for(const locale of VIDEO_PHRASE_LOCALES){
+      const titles=storyIds.flatMap(id=>listVideoPhraseIdeas(id,locale).map(x=>x.title));
+      assert.equal(titles.length,16);
+      assert.equal(new Set(titles).size,16,"four stories must visibly change the phrasing");
+    }
+  }
+});
+test("manual phrase-path selection survives locale switching without a state-reset effect",()=>{
+  const picker=readFileSync(new URL("../components/mandala-phrase-catalog.tsx",import.meta.url),"utf8");
+  assert.match(picker,/const intentKey=JSON\.stringify\(\[wish,theme\]\)/);
+  assert.match(picker,/selection\?\.intentKey===intentKey\?selection\.path/);
+  assert.doesNotMatch(picker,/useEffect\(\(\)=>\{if\(recommended\)setPath\(recommended\)/);
+  assert.match(picker,/const scenarioKey=path\.scenarioId\+"\:"\+locale/);
+});
+
+test("public phrase SQL preserves strict RLS and read-only grants, without patient input",()=>{
+  const seed=readFileSync(new URL("../sql/hh-video-phrase-catalog-v1-20261101.sql",import.meta.url),"utf8");
+  const revisions=["hh-video-phrase-tone-copy-revision-v1-20261101.sql",
+    "hh-video-phrase-story-arc-copy-v1-20261101.sql"].map(file=>
+      readFileSync(new URL("../sql/"+file,import.meta.url),"utf8"));
+  assert.match(seed,/alter table public\.hh_video_phrase_catalog_v1 enable row level security/i);
+  assert.match(seed,/revoke all on table public\.hh_video_phrase_catalog_v1 from public,anon,authenticated/i);
+  assert.match(seed,/grant select on table public\.hh_video_phrase_catalog_v1 to anon,authenticated/i);
+  assert.match(seed,/for select to anon,authenticated\s+using \(true\)/i);
+  assert.match(seed,/hh_video_phrase_filter_v1_idx/);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/grant\s+(insert|update|delete|all)\s+on\s+table\s+public\.hh_video_phrase_catalog_v1\s+to\s+(?:anon|authenticated)/i);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/security\s+definer/i);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/public\.profiles|auth\.users|patient_id|user_id\s*=|client_email/i);
 });

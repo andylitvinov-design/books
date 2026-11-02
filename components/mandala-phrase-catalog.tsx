@@ -29,7 +29,7 @@ const copy={
     gentle:"Бережно",confident:"Уверенно",grounded:"Спокойно",inspiring:"Вдохновляюще",
     self:"От себя: «Я»",support:"Поддержка: «Ты»",
     short:"Короткие",extended:"Развёрнутые",
-    note:"Выбранные слова появятся в видео. При необходимости их можно изменить.",
+    note:"Выбранные слова — черновик. Нажмите «Утвердить фразы» выше, чтобы добавить их в видео.",
     empty:"Для этого сочетания фразы пока не найдены.",
     audio:"Настроить аудиогид, музыку и голос",
   },
@@ -41,7 +41,7 @@ const copy={
     gentle:"Gentle",confident:"Confident",grounded:"Grounded",inspiring:"Inspiring",
     self:"From me: ‘I’",support:"Support: ‘You’",
     short:"Short",extended:"Extended",
-    note:"Your chosen words will appear in the video. You can edit them afterwards.",
+    note:"Your chosen words are a draft. Select Approve phrases above to add them to the video.",
     empty:"No ready phrases for these choices.",
     audio:"Set up audio guide, music and voice",
   },
@@ -53,7 +53,7 @@ const copy={
     gentle:"Suave",confident:"Segura",grounded:"Serena",inspiring:"Inspiradora",
     self:"Desde mí: «Yo»",support:"Apoyo: «Tú»",
     short:"Cortas",extended:"Ampliadas",
-    note:"Las palabras elegidas aparecerán en el vídeo. Luego puedes cambiarlas.",
+    note:"Las palabras son un borrador. Pulsa Confirmar frases arriba antes de añadirlas al vídeo.",
     empty:"No hay frases para esta selección.",
     audio:"Configurar audioguía, música y voz",
   },
@@ -69,10 +69,17 @@ export function MandalaPhraseCatalog({
   const recommended=useMemo(()=>suggestVideoPhrasePath({
     request:wish,legacyTheme:theme,locale,
   }),[wish,theme,locale]);
-  const [path,setPath]=useState<Path>(()=>recommended||{
-    categoryId:"body",topicId:"body-release",
-    scenarioId:"body-release-s1",ideaId:"body-release-s1-i1",
-  });
+  // Key the user's deliberate path to the original video intent, not the
+  // UI locale. Changing filters or switching RU/EN/ES must preserve it.
+  const intentKey=JSON.stringify([wish,theme]);
+  const [selection,setSelection]=useState<{intentKey:string;path:Path}|null>(null);
+  const path:Path=selection?.intentKey===intentKey?selection.path:
+    recommended||{categoryId:"body",topicId:"body-release",
+      scenarioId:"body-release-s1",ideaId:"body-release-s1-i1"};
+  const setPath=(value:Path|((previous:Path)=>Path))=>{
+    const next=typeof value==="function"?value(path):value;
+    setSelection({intentKey,path:next});
+  };
   const [tone,setTone]=useState<VideoPhraseTone>("gentle");
   const [speaker,setSpeaker]=useState<VideoPhraseSpeaker>("self");
   const [length,setLength]=useState<VideoPhraseLength>("short");
@@ -80,7 +87,6 @@ export function MandalaPhraseCatalog({
   const scenarioKey=path.scenarioId+":"+locale;
   useEffect(()=>{
     const controller=new AbortController();
-    setRemote(null);
     const params=new URLSearchParams({scenarioId:path.scenarioId,locale});
     fetch("/api/holistic-support/video-phrases?"+params.toString(),{
       method:"GET",signal:controller.signal,
@@ -92,9 +98,8 @@ export function MandalaPhraseCatalog({
       }).catch(()=>{});
     return ()=>controller.abort();
   },[path.scenarioId,locale,scenarioKey]);
-  // If the client changes the primary goal, suggest the correct topic again;
-  // changes to tone/voice/length never reset their selected story or idea.
-  useEffect(()=>{if(recommended)setPath(recommended);},[recommended]);
+  // A changed video goal automatically updates the derived recommended path;
+  // no state-reset effect can overwrite a visitor's intentional selection.
   const categories=useMemo(()=>listVideoGoalCategories(locale),[locale]);
   const topics=useMemo(()=>listVideoGoalTopics(path.categoryId,locale),[path.categoryId,locale]);
   const scenarios=useMemo(()=>listVideoGoalScenarios(path.topicId,locale),[path.topicId,locale]);

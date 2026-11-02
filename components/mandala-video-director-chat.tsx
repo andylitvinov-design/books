@@ -264,6 +264,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const planKey=JSON.stringify([goalForPlan,draft.categoryId,draft.topicId,draft.scenarioId,
    draft.ideaId,draft.phraseId,draft.phraseText,chosenId,draft.duration,draft.aspect,draft.music,
    draft.mood,draft.phrases,renderOptions.quality,renderOptions.brightness,renderOptions.volumePercent]);
+ // Ignore late AI scene responses when the visitor changes the request.
+ const currentPlanKeyRef=useRef(planKey);
+ currentPlanKeyRef.current=planKey;
  const currentAiCut=aiCut?.key===planKey?aiCut.value:null;
  const executable=useMemo(()=>{
    if(!canPlan||!selected)return null;
@@ -288,7 +291,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  // Approval is bound to actual scene assets/timings, not only the chosen filters.
  const executionKey=JSON.stringify([planKey,executable?.edit.clipIds,
    executable?.edit.durationSecondsByStage]);
- const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(goalForPlan).specificVisual);
+ const needSymbolic=Boolean(proposal?.requiresNewAiFootage||executable?.requiresNovelFootage||parseVideoChatIntent(goalForPlan).specificVisual);
  const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
  const choices:readonly (readonly [string,string])[]=VIDEO_CHAT_TREE_STEPS.includes(step)?
@@ -584,10 +587,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      });
      if(!response.ok)throw Error("VIDEO_PLAN_UNAVAILABLE");
      const payload:unknown=await response.json();
-     if(controller.signal.aborted||!payload||typeof payload!=="object"||
+     if(controller.signal.aborted||requestKey!==currentPlanKeyRef.current||
+       currentStepRef.current!=="review"||!payload||typeof payload!=="object"||
        !("suggestion" in payload))return;
      const accepted=parseAiVideoCutSuggestion(payload.suggestion,{
-       candidateSceneIds:executable.candidateSceneIds,
+       goal:goalForPlan,candidateSceneIds:executable.candidateSceneIds,
        durationSeconds:executable.durationSeconds,scenes,
        excludedMotifs:executable.edit.excludedMotifs,
      });
@@ -736,7 +740,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          </button>
          {!canCreate&&!disabled?(assetWaitLong?<div className={css.warning} role="alert">
            <p>{t.assetTimeout}</p>
-           {options.length>1?<button type="button" onClick={()=>{setAlternative(n=>(n+1)%options.length);setStep("review");}}>{t.alternate}</button>:null}
+           {options.length>1?<button type="button" onClick={()=>{
+             cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+             onInvalidate();setAlternative(n=>(n+1)%options.length);setStep("review");
+             addLine("assistant",t.review);
+           }}>{t.alternate}</button>:null}
            <button type="button" onClick={onOpenEditor}>{t.editor}</button>
          </div>:<small className={css.loading}>{t.loading}</small>):null}
        </div>:null}

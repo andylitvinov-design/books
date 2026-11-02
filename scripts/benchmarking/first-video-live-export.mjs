@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * On-demand, unauthenticated first-party LIVE video export acceptance.
- * Real browser → real Canvas/MediaRecorder → real downloaded bytes → ffprobe,
+ * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → download → ffprobe,
  * decoded audio and moving pixels. Never uses personal media, an AI API or POST.
- * This is desktop Chromium at a mobile viewport, NOT physical iPhone Safari.
+ * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
@@ -24,8 +24,14 @@ if (!driver || !driver.startsWith('/') ||
   throw new Error('LIVE_VIDEO_SMOKE_CONFIG_UNSAFE');
 }
 const ORIGIN=source;
-const {chromium} = await import(driver);
-const row = {target: ORIGIN, engine: 'chromium', viewport: '390x844',
+const engine=process.env.HH_LIVE_VIDEO_ENGINE||'chromium';
+if(!['chromium','webkit'].includes(engine))throw new Error('LIVE_VIDEO_ENGINE_INVALID');
+const headed=process.env.HH_LIVE_VIDEO_HEADED==='1';
+if(engine==='webkit' && (source!==LOCAL_ORIGIN || !requireLicensed || process.platform!=='darwin' || !headed))
+  throw new Error('LIVE_VIDEO_WEBKIT_REQUIRES_LOCAL_HEADED_MACOS');
+if(engine!=='webkit' && headed)throw new Error('LIVE_VIDEO_HEADED_REQUIRES_WEBKIT');
+const {chromium,webkit} = await import(driver);
+const row = {target: ORIGIN, engine, viewport: '390x844',
   origin: source===LIVE_ORIGIN?'anonymous-public':'anonymous-local', method: 'local-canvas-export',
   paidVideoProviderUsed: false, aiPromptRequested: false,
   physicalIPhoneVerified: false, licensedShotVerificationRequested: requireLicensed,
@@ -84,9 +90,15 @@ async function downloadBytes(download) {
   return Buffer.concat(chunks);
 }
 let browser;
+let page;
 let mediaDir;
+// This test uses synthetic anonymous content; only fixed media status codes
+// and numeric decoder details are captured, never user prompts or audio.
+const safeEncoderCodes=[];
 try {
-  browser = await chromium.launch({headless: true, channel: 'chrome'});
+  browser=engine==='webkit'
+    ?await webkit.launch({headless:!headed})
+    :await chromium.launch({headless:true,channel:'chrome'});
   const context = await browser.newContext({
     viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true,
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
@@ -102,13 +114,56 @@ try {
     }
     return route.continue();
   });
-  const page = await context.newPage();
+  page = await context.newPage();
+  page.on('console',message=>{
+    const match=/^HH_WEBKIT_MP4_EXPORT_FAILURE:([a-z0-9_]+)$/.exec(message.text());
+    if(match && safeEncoderCodes.length<8)safeEncoderCodes.push(match[1]);
+  });
   const errors = [];
   page.on('pageerror', e => errors.push(e.name));
   const response = await page.goto(ORIGIN + '/ru/holistic-support/mandala', {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
+  // Verify true client hydration before the very first user click in
+  // the exact local PR build. A server-rendered button has no React handler yet.
+  if(source===LOCAL_ORIGIN){
+    await page.waitForFunction(() =>
+      document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
+      undefined,{timeout:40000});
+  }
+  // The approved Video Studio's *whole* extra editor is collapsed by
+  // default. Open the real advanced controls on owner layout; the previously
+  // deployed layout has no such toggle. Both use the same original recorder.
+  const ownerAdvanced=page.locator('[data-video-advanced-toggle]');
+  if(await ownerAdvanced.count()){
+    // Server HTML can receive a click before React has hydrated the editor.
+    // Retry only a real, bounded user gesture; never set UI state from tests.
+    await page.waitForLoadState('load',{timeout:30000});
+    let expanded=false;
+    for(let attempt=0;attempt<3;attempt++){
+      if(await ownerAdvanced.getAttribute('aria-expanded')==='true'){
+        expanded=true;break;
+      }
+      await ownerAdvanced.click({timeout:15000});
+      expanded=await page.waitForFunction(()=>{
+        const button=document.querySelector('[data-video-advanced-toggle]');
+        const studio=document.querySelector('[data-mandala-free-video]');
+        return button?.getAttribute('aria-expanded')==='true' &&
+          studio?.getAttribute('data-video-advanced-open')==='true';
+      },undefined,{timeout:2500}).then(()=>true,error=>{
+        if(!/Timeout/i.test(String(error)))throw error;
+        return false;
+      });
+      if(expanded)break;
+    }
+    assert.ok(expanded,'FIRST_VIDEO_ADVANCED_TOGGLE_NOT_INTERACTIVE');
+  }
+  const advanced=page.locator('[data-video-first-video-advanced]');
+  await advanced.waitFor({state:'visible',timeout:40000});
+  if(await advanced.getAttribute('open')===null)
+    await advanced.locator(':scope > summary').click();
+  assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
@@ -243,7 +298,47 @@ try {
   await context.close();
 } catch (error) {
   row.failure = String(error?.message || error).slice(0, 200);
+  // A missing download must remain a FAIL. On WebKit inspect only synthetic
+  // media readiness and fixed codes; page.evaluate can itself hang when the
+  // compositor is blocked, so bound this diagnostic separately to 3 seconds.
+  if(engine==='webkit' && page && /locator\.waitFor|Timeout|download/i.test(row.failure)){
+    try {
+      row.exportDiagnostic = await Promise.race([
+        page.evaluate(()=>{
+          const result=document.querySelector('[data-video-result]');
+          const clips=[...document.querySelectorAll('[data-free-film-source]')];
+          const create=document.querySelector('[data-first-video-generate]');
+          const progress=document.querySelector('[role="progressbar"]');
+          return {
+            resultVisible:Boolean(result && !result.hidden),
+            resultMode:result?.getAttribute('data-video-result-mode')||null,
+            createDisabled:create instanceof HTMLButtonElement?create.disabled:null,
+            sourceCount:clips.length,
+            sources:clips.slice(0,4).map(video=>({
+              // No src URL, scene name, user text, or image content.
+              readyState:video.readyState,
+              networkState:video.networkState,
+              errorCode:video.error?.code||null,
+              seeking:video.seeking,
+              paused:video.paused,
+              duration:Number.isFinite(video.duration)?Math.round(video.duration*100)/100:null,
+              clock:Number.isFinite(video.currentTime)?Math.round(video.currentTime*100)/100:null,
+              width:video.videoWidth,height:video.videoHeight,
+            })),
+            progress:Number(progress?.getAttribute('aria-valuenow')||0),
+            hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+          };
+        }),
+        new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
+      ]);
+    } catch {
+      row.exportDiagnostic={status:'WEBKIT_MEDIA_DIAGNOSTIC_UNAVAILABLE'};
+    }
+  }
+  if(safeEncoderCodes.length)row.encoderFailureCodes=[...safeEncoderCodes];
   console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  if(row.exportDiagnostic)console.error('WEBKIT_MOVIE_EXPORT_SAFE_DIAGNOSTIC',JSON.stringify(row.exportDiagnostic));
+  if(row.encoderFailureCodes)console.error('WEBKIT_MOVIE_ENCODER_CODES',row.encoderFailureCodes.join(','));
   process.exitCode = 1;
 } finally {
   await browser?.close();
