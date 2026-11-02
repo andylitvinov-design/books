@@ -15,6 +15,7 @@ import { ServicesFreeRecommendations } from "@/components/services-free-recommen
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
 import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 
 type Locale = "en" | "ru" | "es";
 type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean;image?:string};
@@ -247,6 +248,15 @@ export function ServicesSmartDiscovery({
 }) {
   const locale: Locale = givenLocale === "ru" || givenLocale === "es" ? givenLocale : "en";
   const t = COPY[locale];
+  const remoteOfferingId = services.find(service=>service.slug==="remote-energy-support")?.id;
+  const editorialRatingKey = useCallback((id:string) => id==="remote-energy-support"
+    ? remoteOfferingId ?? null : "editorial:" + id,[remoteOfferingId]);
+  const stars = useCatalogRatings("service", [
+    ...services.map(item => item.id),
+    ...editorialOffers.map(item=>editorialRatingKey(item.id)).filter((key):key is string=>Boolean(key)),
+  ]);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
   const [query,setQuery] = useState("");
   const [submitted,setSubmitted] = useState("");
   const [activeCategory,setActiveCategory] = useState("");
@@ -269,7 +279,8 @@ export function ServicesSmartDiscovery({
   // These constraints apply to both locally-ranked and AI-ranked published services.
   const eligible=useCallback((service:PublicService)=>serviceMatchesDiscoveryFacets(service,{
     format,city,language,price:budget,
-  }),[format,city,language,budget]);
+  }) && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[service.id],minimumStars)),
+    [format,city,language,budget,stars.loading,stars.unavailable,stars.ratings,minimumStars]);
   const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:budget==="free"?10:4,includeAllAreas:budget==="free"}),[submitted,services,activeCategory,eligible,budget]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
@@ -287,9 +298,19 @@ export function ServicesSmartDiscovery({
     // Editorial cards have no validated physical city or numeric price data.
     // Preserve the default online suggestions, and only narrow to known free offers.
     if (format==="in_person" || (language && language!==locale) || (budget && budget!=="free")) return [];
-    const offers=budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers;
+    const offers=(budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers)
+      .filter(item=>stars.loading || stars.unavailable || matchesStarFilter(
+        stars.ratings[editorialRatingKey(item.id) ?? ""],minimumStars));
     return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:budget==="free"?10:suggestions.length?2:4});
-  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget]);
+  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget,
+    stars.loading,stars.unavailable,stars.ratings,minimumStars,editorialRatingKey]);
+
+  const suggestedByStars = (sortRated
+    ? sortByStars(suggestions, entry => entry.service.id, stars.ratings) : suggestions)
+    .filter(entry => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[entry.service.id], minimumStars));
+  const editorialByStars = (sortRated
+    ? sortByStars(editorial, item => editorialRatingKey(item.id) ?? "", stars.ratings) : editorial)
+    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[editorialRatingKey(item.id) ?? ""], minimumStars));
 
   // Scroll only after a new selection has rendered. AI updates should not
   // unexpectedly pull the visitor back to the results while they read.
@@ -512,9 +533,16 @@ export function ServicesSmartDiscovery({
           </div>
           <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setFormat("online");setCity("toronto");setLanguage(locale);setBudget("")}}>{t.clear} ×</button>
         </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:14,alignItems:"center",margin:"10px 0"}}>
+          <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars}/>
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13}}>
+            <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>
+            {locale==="ru"?"Сначала лучшие оценки":locale==="es"?"Mejor valorados primero":"Highest rated first"}
+          </label>
+        </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
-        {suggestions.length>0?<div className={styles.suggestionGrid}>
-          {suggestions.map(({service,reasonKey})=>{
+        {suggestedByStars.length>0?<div className={styles.suggestionGrid}>
+          {suggestedByStars.map(({service,reasonKey})=>{
             const mainArea=DISCOVERY_AREAS.find(a=>a.key===service.areaKey);
             return <article className={styles.suggestion} key={service.id} data-service-funnel-card>
               <ServiceFunnelImpression serviceId={service.id}/>
@@ -523,6 +551,7 @@ export function ServicesSmartDiscovery({
               </div>
               <div className={styles.suggestionTop}><span>{mainArea?.label[locale]||t.service}</span><strong>{formatPrice(service,locale,t)}</strong></div>
               <h3>{service.copy.title}</h3>
+              <CatalogStarRating locale={locale} summary={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} unavailable={stars.unavailable} compact/>
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
@@ -544,11 +573,12 @@ export function ServicesSmartDiscovery({
               </div>
             </article>;
           })}
-        </div>:editorial.length===0?<p className={styles.message}>{t.noDirect}</p>:null}
-        {editorial.length>0&&<div className={styles.editorial}>
+        </div>:editorialByStars.length===0?<p className={styles.message}>{minimumStars ? (locale==="ru"?"Нет услуг с такой оценкой":locale==="es"?"No hay servicios con esa valoración":"No services match this star rating") : t.noDirect}</p>:null}
+        {editorialByStars.length>0&&<div className={styles.editorial}>
           <h3>{t.curated}</h3>
-          <div className={styles.editorialList}>{editorial.map(item=>{
+          <div className={styles.editorialList}>{editorialByStars.map(item=>{
             const id = "editorial:"+item.id;
+            const ratingId = editorialRatingKey(item.id);
             const expanded = expandedCard===id;
             const ordering = orderingCard===id;
             const whatsappUrl = editorialEnquiryUrl(item,locale);
@@ -563,6 +593,7 @@ export function ServicesSmartDiscovery({
               </div>
               <div className={styles.editorialCardCopy}>
                 <h4>{item.title}</h4>
+                <CatalogStarRating locale={locale} summary={ratingId?stars.ratings[ratingId]:undefined} onRate={ratingId?value=>stars.rate(ratingId,value):undefined} unavailable={stars.unavailable} compact/>
                 <p>{item.promise}</p>
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>

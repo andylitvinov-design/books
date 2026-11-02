@@ -23,6 +23,7 @@ const copy = {
     "temple": "Temple Support",
     "services": "All services",
     "courses": "All courses",
+    "testGuide": "How free self-checks work",
     "help": "Not sure? Ask a question"
   },
   "ru": {
@@ -35,6 +36,7 @@ const copy = {
     "temple": "Temple Support",
     "services": "Все услуги",
     "courses": "Все курсы",
+    "testGuide": "Как работают бесплатные тесты",
     "help": "Не знаете, что выбрать? Спросите"
   },
   "es": {
@@ -47,6 +49,7 @@ const copy = {
     "temple": "Temple Support",
     "services": "Todos los servicios",
     "courses": "Todos los cursos",
+    "testGuide": "Cómo funcionan las pruebas",
     "help": "¿Dudas? Haz una pregunta"
   }
 } as const;
@@ -71,6 +74,7 @@ export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {
         <nav className={styles.catalog} aria-label={locale === "ru" ? "Каталоги" : locale === "es" ? "Catálogos" : "Browse catalogues"}>
           <Link href={"/" + locale + "/services"} prefetch={false} className={styles.catalogLink} data-home-topic-filter="services">{t.services}<span aria-hidden="true">↗</span></Link>
           <Link href={"/" + locale + "/academy"} prefetch={false} className={styles.catalogLink} data-home-topic-filter="courses">{t.courses}<span aria-hidden="true">↗</span></Link>
+          <Link href={"/" + locale + "/tests"} prefetch={false} className={styles.catalogLink} data-home-test-guide>{t.testGuide}<span aria-hidden="true">↗</span></Link>
         </nav>
         <details className={styles.ask} data-home-more-deferred="true"
           onToggle={event => setExpanded(event.currentTarget.open)}>

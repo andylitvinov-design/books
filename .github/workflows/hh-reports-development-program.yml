@@ -1,7 +1,7 @@
 name: Reports development programme isolated verification
 on:
   push:
-    branches: ['codex/reports-development-program-20261017']
+    branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']
     paths:
       - '.github/workflows/hh-reports-development-program.yml'
       - 'components/app/development-program*'
@@ -18,6 +18,19 @@ on:
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
       - 'package.json'
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
+      - 'components/client-session-page.jsx'
+      - 'components/client-session.module.css'
+      - 'public/images/holistic-house/report-lighthouse-coast.svg'
+      - 'tests/client-report-coastal-v2.test.mjs'
+      - '.github/workflows/hh-client-report-coastal-v2.yml'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
@@ -31,11 +44,26 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
+      - '.github/workflows/hh-reports-development-program.yml'
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
+      - 'components/client-session-page.jsx'
+      - 'components/client-session.module.css'
+      - 'public/images/holistic-house/report-lighthouse-coast.svg'
+      - 'tests/client-report-coastal-v2.test.mjs'
+      - '.github/workflows/hh-client-report-coastal-v2.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-development-program-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-development-program-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   isolated-unit-lint-build:
     runs-on: ubuntu-latest
@@ -51,7 +79,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test development programme and canonical sector calculations
         run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs tests/goal-profile-journey.test.mjs
+      - name: Check saved client report progress, before/after diagrams and safe republish
+        run: node --test tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs tests/client-report-coastal-v2.test.mjs
       - name: Lint newly created feature files
         run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js lib/profile/goal-profile.js components/app/goal-profile-panel.jsx tests/profile-portrait-test-suggestions.test.mjs tests/goal-profile-journey.test.mjs
       - name: Verify production Next.js build without preview deployment
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref != 'refs/heads/codex/public-book-library') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'codex/public-book-library') }}
         run: npm run build

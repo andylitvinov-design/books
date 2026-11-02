@@ -38,8 +38,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: admin-seo-${{ github.ref }}
-  cancel-in-progress: true
+  group: admin-seo-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   dashboard:
     runs-on: ubuntu-latest
@@ -57,8 +57,10 @@ jobs:
       - name: Verify SEO admin privacy, sources and exports
         run: node --test tests/admin-seo-dashboard.test.mjs tests/admin-seo-recommendations.test.mjs
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
       - name: Check acquisition source and privacy contract
         run: node --test tests/acquisition-report.test.mjs

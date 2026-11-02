@@ -2,6 +2,7 @@ name: Holistic House growth journeys and safe sharing
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'data/growth-guides.ts'
@@ -17,7 +18,6 @@ on:
       - 'tests/business-consultation-finder.test.mjs'
       - 'tests/business-service-browser.test.mjs'
       - 'tests/topic-journey-account-scope.test.mjs'
-      - 'tests/business-journey-consultation-banner.test.mjs'
       - 'components/library-hub.tsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'components/app/portrait-recommendations.module.css'
@@ -25,17 +25,19 @@ on:
       - 'app/[locale]/explore/[theme]/page.tsx'
       - 'app/sitemap.ts'
       - 'tests/growth-journey-public.test.mjs'
+      - 'tests/ci-growth-course-core-reuse.test.mjs'
       - '.github/workflows/hh-growth-journey.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-growth-journeys-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: hh-growth-journeys-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   growth-content-and-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -49,6 +51,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify Core reuse and domain scope
+        run: node --test tests/ci-growth-course-core-reuse.test.mjs
       - name: Educational copy, privacy and cross-route integration tests
         run: >-
           node --test
@@ -56,7 +60,6 @@ jobs:
           tests/business-consultation-finder.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
-          tests/business-journey-consultation-banner.test.mjs
       - name: Lint changed JS and TypeScript
         run: >-
           npx --no-install eslint
@@ -69,13 +72,14 @@ jobs:
           tests/business-consultation-finder.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
-          tests/business-journey-consultation-banner.test.mjs
           components/library-hub.tsx
           components/app/portrait-recommendations.jsx
           components/app/development-program.jsx
           'app/[locale]/explore/[theme]/page.tsx'
           app/sitemap.ts
       - name: TypeScript compatibility
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

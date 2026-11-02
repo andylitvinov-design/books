@@ -70,8 +70,11 @@
 .videoMedia :global(.site-video-player){max-width:100%}
 .videoNote{grid-column:1/-1;margin:0;color:#c9eee7;font-size:11px;line-height:1.5}
 
-/* One full-width testimonial row per person, stacked vertically. */
-.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px}
+/* One full-width testimonial row per person, stacked vertically. Preserve all 12
+   source-backed videos but bound this chapter to one screen, with an accessible
+   internal scroll rather than a 4,000px mobile page section. */
+.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px;max-height:clamp(280px,48svh,520px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.reviewStack:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
 .reviewCard{display:grid;grid-template-columns:minmax(132px,160px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
 .reviewVideo{min-width:0;position:relative;border-radius:11px;overflow:hidden;align-self:center;background:#e7f4f1}
 .reviewVideo :global(.site-video-player){width:100%;min-width:0;margin:0}
@@ -632,5 +635,60 @@
    on the shortest 320x568 iPhone viewport without clipping the form. */
 @media(max-width:350px) and (max-height:650px){
  .page[lang="es"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
+ .page[lang="ru"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
  .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
+}
+
+
+/* Narrative service feedback is separate from Alchemy video testimonials. Never reuse .reviewSection. */
+.serviceReviewWrap{display:block;box-sizing:border-box;min-width:0;width:100%;max-width:1120px;margin:22px auto;padding:0}
+
+/* RU short-phone request panel: recover 4px of confirmed overflow without shrinking 44px inputs. */
+@media(max-width:350px) and (max-height:650px){
+  .page[lang="ru"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
+  .page[lang="ru"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
+}
+
+/* 320–350px tall phones were missing both prior compact breakpoints:
+   the 351px rule did not apply and the 650px-tall rule was too narrow.
+   Keep the three prices and real booking action visible; the native,
+   keyboard-accessible disclosure preserves every format description. */
+@media(max-width:350px) and (min-height:651px){
+  .optionsSection{padding:8px 9px 10px}
+  .optionsSection>.panelPhoto{height:44px;margin-bottom:4px}
+  .optionsSection .sectionHeading{margin-bottom:5px}
+  .optionsSection .sectionHeading .eyebrow{margin-bottom:2px;font-size:9px}
+  .optionsSection .sectionHeading h2{font-size:21px}
+  .optionsSection .optionGrid{gap:6px}
+  .optionsSection .optionCard{padding:7px 6px}
+  .optionsSection .optionTime{font-size:10px}
+  .optionsSection .optionCard strong{font-size:23px;margin-top:3px}
+  .optionsSection .optionName{font-size:15px;margin-top:3px;line-height:1.1}
+  .optionsSection .optionDescription{display:none}
+  .optionsSection .monthlyText,.optionsSection .monthlyCard small{display:none}
+  .optionsSection .monthlyCard{min-height:48px;margin-top:5px;padding:7px 8px}
+  .optionsSection .monthlyName{font-size:16px}
+  .optionsSection .formatMore{display:block}
+  .optionsSection .formatMore summary{display:flex;min-height:32px;padding-block:4px}
+  .optionsSection .formatHint{display:none}
+  .optionsSection .optionsOrder{margin-top:4px}
+  .optionsSection .paymentDisclosure{margin-top:4px}
+  .optionsSection .freeOption{margin-top:4px;font-size:10px;line-height:1.2}
+}
+
+/* 351–680px short-phone Alchemy formats: preserve every price, description
+   and consented booking CTA, and keep the approved photograph visible.
+   Real Chromium/WebKit one-screen assertions enforce the height budget. */
+@media (min-width:351px) and (max-width:680px) and (max-height:850px){
+  .optionsSection>.panelPhoto{height:50px;margin-bottom:6px}
+  .optionsSection .sectionHeading{margin-bottom:6px}
+  .optionsSection .monthlyCard{margin-top:3px}
+  .optionsSection .formatHint{margin-top:3px}
+  .optionsSection .freeOption{margin-top:3px}
+}
+
+/* P0 App R1: narrow mobile overflow may scroll inside its accessible formats region without truncating any price, description, consent or booking action. */
+@media(max-width:680px) and (min-height:651px){
+  .optionsSection{max-height:calc(100svh - 80px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+  .optionsSection:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
 }

@@ -231,7 +231,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
             </button>;
       })}
     </nav>
-    <section id="tests-coaching-detail" ref={detailRef} tabIndex={-1} className={styles.detail} hidden={!path} aria-live="polite" aria-label={path ? t.paths[path].name : undefined}>
+    <section id="tests-coaching-detail" ref={detailRef} tabIndex={-1} className={styles.detail} data-selected-path={path || undefined} hidden={!path} aria-live="polite" aria-label={path ? t.paths[path].name : undefined}>
       {path ? <>
         <div className={styles.detailHeader}>
           <h2>{t.paths[path].name}</h2>

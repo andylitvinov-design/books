@@ -62,3 +62,33 @@ test('on-site/private reply composers do not zoom or disappear either',()=>{
   assert.match(direct,/\.shell\[data-simple-detail="true"\] \.send\{min-height:44px/)
   assert.match(practice,/\.chat\[data-inline="true"\] \.compose textarea\{font:400 16px/)
 })
+
+test('selected client conversation is full screen and follows visualViewport when keyboard appears',()=>{
+  const jsx=read('components/app/messages-simple-inbox.jsx')
+  const css=read('components/app/messages-simple-inbox.module.css')
+  const crm=read('components/app/crm-messenger.module.css')
+  const app=read('app/[locale]/app/messages/messages-page.css')
+  assert.match(jsx,/if\(openDetail\)\{/)
+  assert.match(jsx,/Math\.floor\(visual\?\.height\|\|window\.innerHeight\)/)
+  assert.match(jsx,/Math\.floor\(visual\?\.offsetTop\|\|0\)/)
+  assert.match(jsx,/--hh-mobile-window-top/)
+  assert.match(jsx,/windowElement\.dataset\.keyboardOpen=focused/)
+  assert.match(css,/\.shell\[data-detail-open="true"\] \.window,[\s\S]*?position:fixed;z-index:4000/)
+  assert.match(css,/top:var\(--hh-mobile-window-top,0px\)/)
+  assert.match(css,/window\[data-keyboard-open="true"\] \.personBar/)
+  assert.match(app,/data-simple-messages\]\[data-detail-open="true"\]\) \.hh-mobile-app-nav/)
+  assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot\{[\s\S]*?position:relative/)
+  assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot \[role="region"\]\{[\s\S]*?position:static/)
+  assert.match(crm,/min-height:44px;height:44px/)
+})
+
+// The full request card must hide the pane rather than unmounting the private
+// conversation and dropping a draft or uncertain in-flight operation.
+test('request composer stays mounted behind client card and the hidden pane takes no space',()=>{
+  const jsx=read('components/app/messages-simple-inbox.jsx')
+  const css=read('components/app/messages-simple-inbox.module.css')
+  assert.match(jsx,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}>/)
+  assert.doesNotMatch(jsx,/!showCard&&selected\?\.kind==='request'&&<div/)
+  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
+  assert.match(jsx,/key=\{selected\.id\} inline autoOpen/)
+})

@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Run the new metadata contract suite inside the existing owner-video CI command.
+import './owner-telegram-youtube-metadata.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
@@ -9,9 +11,9 @@ import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStar
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
-import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
+import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu,waitForUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
-import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
+import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
 import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
 import {OWNER_AI_COMMANDS,ownerScopedTelegramCommands} from '../lib/practitioners/owner-ai-telegram.mjs'
@@ -470,8 +472,9 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_edit','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video_edit').description,/Название и описание/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
    .find(x=>x.url==='https://t.me/Andydotbot?start=video')
@@ -505,8 +508,8 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
 test('private /video command remains registered if Owner AI is disabled',()=>{
  const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
- assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','video_edit','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','video_edit','materials','track'])
  assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
@@ -594,3 +597,229 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  // direct client route, token, unreviewed upload or bypass.
  assert.equal(typeof trimOwnerTelegramVideo,'function')
 });
+
+
+test('YouTube owner OAuth start restores an expired/missing admin browser session without leaking Google credentials', async () => {
+  const [ts,vm,crypto]=await Promise.all([
+    import('typescript'),import('node:vm'),import('node:crypto')
+  ])
+  const source=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+  let authorized=false, configured=true, issued=0
+  const modules={
+    'next/server':{NextResponse:{redirect(location,options={}){
+      const response={url:String(location),status:options.status??307,
+        headers:options.headers,cookies:{set(name,value,opts){issued++;response.cookie={name,value,opts}}}}
+      return response
+    }}},
+    'node:crypto':crypto,
+    '@/lib/prescriptions/admin':{async requireAdminRequest(){return authorized}},
+    '@/lib/app/config':{getAppConfig(){return {}}},
+    '@/lib/app/crypto':{seal(){return 'sealed-with-private-server-key'}},
+    '@/data/app-services':{PRACTITIONER_ID:'synthetic-owner-id'},
+    '@/lib/practitioners/owner-telegram-video-service':{ownerVideoOauthConfigured(){return configured}},
+  }
+  const result=ts.default.transpileModule(source,{
+    compilerOptions:{module:ts.default.ModuleKind.CommonJS,target:ts.default.ScriptTarget.ES2022}
+  }).outputText
+  const sandbox={exports:{},require(name){
+    assert.ok(Object.hasOwn(modules,name),'Unexpected OAuth import: '+name)
+    return modules[name]
+  },URL,URLSearchParams,Response,process:{env:{HH_OWNER_VIDEO_GOOGLE_CLIENT_ID:'synthetic-public.apps.googleusercontent.com'}}}
+  vm.default.runInNewContext(result,sandbox)
+
+  const anonymous=await sandbox.exports.GET()
+  assert.equal(anonymous.status,303)
+  assert.equal(anonymous.url,'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect')
+  assert.equal(anonymous.headers['cache-control'],'no-store')
+  assert.equal(issued,0,'no anonymous Google state cookie is issued')
+
+  authorized=true
+  configured=false
+  const unavailable=await sandbox.exports.GET()
+  assert.equal(unavailable.status,503,'missing Google configuration fails closed')
+  assert.equal(issued,0)
+  configured=true
+  const connected=await sandbox.exports.GET()
+  assert.equal(connected.status,307)
+  const google=new URL(connected.url)
+  assert.equal(google.origin,'https://accounts.google.com')
+  assert.equal(google.searchParams.get('redirect_uri'),'https://holistichouse.vercel.app/api/admin/telegram-video/youtube/callback')
+  assert.equal(google.searchParams.get('access_type'),'offline')
+  assert.match(google.searchParams.get('scope'),/youtube\.upload/)
+  assert.match(google.searchParams.get('scope'),/youtube\.readonly/)
+  assert.equal(connected.cookie.name,'hh_tgvideo_oauth_state')
+  assert.equal(connected.cookie.opts.httpOnly,true)
+  assert.equal(connected.cookie.opts.sameSite,'lax')
+  assert.equal(issued,1,'only an owner-verified request creates a sealed Google state')
+})
+
+test('YouTube owner auth recovery uses fixed destinations across admin, practitioner and Supabase Google callback', () => {
+  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+  const login=read('app/admin/login/page.js')
+  const entry=read('components/practitioner-auto-entry.jsx')
+  const access=read('lib/app/practitioner-access.js')
+  const auth=read('app/api/app/[...path]/route.js')
+  assert.match(login,/['"]youtubeConnect['"]\]\.includes\(params\?\.destination\)/)
+  assert.match(login,/requireAdminRequest\(\)/)
+  assert.match(entry,/youtubeConnect: '\/api\/admin\/telegram-video\/youtube\/start'/)
+  assert.match(entry,/response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)
+  assert.match(access,/youtubeConnect: '\/api\/admin\/telegram-video\/youtube\/start'/)
+  assert.equal(auth.split("'practitioner-youtubeConnect'").length-1,3,
+    'OAuth start allowlist, callback allowlist and destination mapping are all pinned')
+  assert.match(auth,/continueTo === 'practitioner-youtubeConnect'\s*\? \`\$\{origin\}\/admin\/login\?destination=youtubeConnect`/)
+  assert.match(auth,/!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
+  assert.match(auth,/issueTrustedAdminSession\(response/)
+})
+
+test('private MP4 cut selector binds both owner UUIDs and rejects path traversal',()=>{
+ const job='b6e8526e-c251-4dd5-a9ca-2886c430f912'
+ const cut='7798ea59-ef42-4dd4-a236-41ba9d697894'
+ const path='telegram-slides/'+job+'-cut-'+cut+'.mp4'
+ assert.equal(ownerVideoCutPath(job,cut),path)
+ assert.equal(ownerVideoCutId(job,path),cut)
+ assert.equal(ownerVideoCutPath(job,'../../path'),null)
+ assert.equal(ownerVideoCutId(job,path+'.bak'),null)
+ assert.equal(ownerVideoCutId('wrong',path),null)
+ assert.equal(ownerVideoCutId(job,'https://example.com/video.mp4'),null)
+ assert.deepEqual(ownerVideoByteRange('bytes=0-1',12617528),{status:206,start:0,end:1})
+ assert.equal(ownerVideoByteRange('bytes=99999999-',12617528),null)
+})
+test('manual YouTube handoff reads current exact private cut, not an unsigned public URL',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const service=read('lib/practitioners/owner-telegram-video-service.js')
+ const playback=read('app/api/admin/telegram-video/drafts/[id]/file/route.js')
+ const listing=read('app/api/admin/telegram-video/drafts/route.js')
+ const ui=read('components/admin-telegram-videos.jsx')
+ assert.match(playback,/ownerMaterialRequest\(request/)
+ assert.match(listing,/ownerMaterialRequest\(request/)
+ assert.match(service,/ownerVideoCutId\(job\.job_id,job\.storage_path\)/)
+ assert.match(service,/row\?\.state!=='preview'\|\|row\.storage_path!==expected/)
+ assert.match(service,/ownerVideoCutPath\(id,cutId\)/)
+ assert.match(service,/download'\)==='1'/)
+ assert.match(service,/Cache-Control':'private, no-store/)
+ assert.match(ui,/data-owner-selected-cut/)
+ assert.match(ui,/studio\.youtube\.com/)
+ assert.doesNotMatch(ui,/metricool\.com\/api/)
+})
+
+
+test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite target key',()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const start=service.indexOf('export async function saveOwnerVideoYoutubeConsent(')
+ const end=service.indexOf('export async function ownerVideoYoutubeConnected(',start)
+ assert.ok(start>=0&&end>start)
+ const oauth=service.slice(start,end)
+ // Production has PRIMARY KEY (practitioner_id,target). An old single-column
+ // ON CONFLICT silently makes owner-approved Google callback return failed.
+ assert.ok(oauth.includes('(practitioner_id,target,channel_id,token_ciphertext)'))
+ assert.ok(oauth.includes("values($1,'ru',$2,$3)"))
+ assert.ok(oauth.includes('on conflict(practitioner_id,target) do update set'))
+ assert.ok(oauth.includes("where practitioner_id=$1 and target='ru'"))
+ assert.ok(oauth.includes('[PRACTITIONER_ID,channelId,encrypted]'))
+ assert.ok(oauth.includes('channelId!==VIDEO_RU_CHANNEL_ID'))
+ assert.ok(oauth.includes('seal({refreshToken,visibility:visibility===true},ENCRYPTION_CONTEXT,config)'))
+ assert.ok(oauth.includes('openSealed(row.token_ciphertext,ENCRYPTION_CONTEXT,config)'))
+ assert.ok(!oauth.includes('on conflict(practitioner_id) do update set'))
+ // Never delete/re-pair the unrelated English consent when reconnecting RU.
+ assert.ok(!oauth.includes('delete from app_private.telegram_owner_video_oauth'))
+})
+
+
+test('private MP4 playback streams byte slices without 4.5MB buffered response', async()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const start=service.indexOf('export async function getOwnerTelegramVideoDraftFile')
+ const end=service.indexOf('const oauthConfig=',start)
+ const block=service.slice(start,end)
+ assert.ok(start>0&&end>start)
+ assert.ok(block.includes('return new Response(part.stream(),{status:range.status,headers})'))
+ assert.ok(block.includes('const part=data.slice(range.start,range.end+1'))
+ assert.ok(!block.includes('await data.arrayBuffer()'))
+ assert.ok(block.includes("'Cache-Control':'private, no-store"))
+ assert.ok(block.includes("if(request.method==='HEAD')"))
+ const blob=new Blob([Buffer.alloc(5000000,97)],{type:'video/mp4'})
+ const range=ownerVideoByteRange('bytes=4000000-4500000',blob.size)
+ assert.equal(range.status,206)
+ const response=new Response(blob.slice(range.start,range.end+1).stream(),{
+   status:range.status,headers:{'Content-Type':'video/mp4','Content-Length':String(range.end-range.start+1)}
+ })
+ assert.equal(response.status,206)
+ assert.equal((await response.arrayBuffer()).byteLength,500001)
+})
+
+
+test('YouTube asynchronous processing is polled by receipt ID without second POST or PUT',async()=>{
+ let init=0,put=0,reads=0,sleeps=0
+ const saved=[]
+ const fetcher=async(url,opt={})=>{
+   if(String(url).includes('/channels?'))return Response.json({
+     items:[{id:VIDEO_RU_CHANNEL_ID}]
+   })
+   if(opt.method==='POST'){
+     init++
+     return new Response('',{status:200,headers:{
+       location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=once'
+     }})
+   }
+   if(opt.method==='PUT'){put++;return Response.json({id:'Yt123456abc'})}
+   reads++
+   return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID,title:'Verified'},
+     status:{privacyStatus:'unlisted',uploadStatus:reads<3?'uploaded':'processed'}
+   }]})
+ }
+ const media=Buffer.alloc(2048);media.write('ftyp',4)
+ const result=await uploadUnlistedRu(media,'token'.repeat(9),{
+   fetcher,onUploaded:id=>saved.push(id),
+   processingDelays:[0,0],
+   sleep:async()=>{sleeps++}
+ })
+ assert.equal(result.id,'Yt123456abc')
+ assert.equal(result.uploadStatus,'processed')
+ assert.equal(init,1)
+ assert.equal(put,1)
+ assert.equal(reads,3)
+ assert.equal(sleeps,2)
+ assert.deepEqual(saved,['Yt123456abc'])
+})
+
+test('YouTube readback polling fails closed on wrong channel and exhausted processing',async()=>{
+ let reads=0
+ const sameId=async()=>{reads++;return Response.json({items:[{
+   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+   status:{privacyStatus:'unlisted',uploadStatus:'uploaded'}
+ }]})}
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:sameId,delays:[0,0],sleep:async()=>{}
+ }),/VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
+ assert.equal(reads,3)
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:async()=>Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:'UCaaaaaaaaaaaaaaaaaaaaaa'},
+     status:{privacyStatus:'unlisted',uploadStatus:'uploaded'}
+   }]}),delays:[0,0],sleep:async()=>{throw Error('must-not-wait')}
+ }),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:async()=>Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+     status:{privacyStatus:'private',uploadStatus:'uploaded'}
+   }]}),delays:[0,0],sleep:async()=>{throw Error('must-not-wait')}
+ }),/VIDEO_YOUTUBE_PRIVACY_HOLD/)
+})
+
+test('Dot status and existing cron reconcile only recorded IDs, never re-upload',()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const cron=readFileSync(new URL('../app/api/internal/housekeeping/route.js',import.meta.url),'utf8')
+ assert.match(service,/export async function reconcilePendingOwnerYoutubeVideo/)
+ assert.match(service,/knownVideoId=videoId/)
+ assert.match(service,/knownVideoId\s*\?'⏳ YouTube получил видео/)
+ assert.match(service,/row\?\.state!=='uncertain'\|\|!row\.youtube_video_id/)
+ assert.match(service,/if\(row\?\.state==='uncertain'&&row\.youtube_video_id\)/)
+ assert.match(service,/background:\(\)=>verifyUncertain\(/)
+ assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and state='uncertain'/)
+ assert.match(service,/callback_data:'hh-video:status'/)
+ assert.doesNotMatch(service.slice(service.indexOf('async function verifyUncertain'),service.indexOf('export async function receiveOwnerTelegramVideoWebhook')),/uploadUnlistedRu|method:'PUT'|method:'POST'/)
+ assert.match(cron,/runHousekeepingCron\(request/)
+ assert.match(cron,/HH_OWNER_VIDEO_ENABLED==='true'/)
+ assert.match(cron,/await reconcilePendingOwnerYoutubeVideo\(config\)/)
+ assert.doesNotMatch(cron,/unconditional.*upload|uploadUnlistedRu/)
+})

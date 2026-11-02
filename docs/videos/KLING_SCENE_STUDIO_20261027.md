@@ -116,3 +116,37 @@ Before Kling receives the public portrait, the owner explicitly confirms the
 image is theirs and suitable for a third-party provider. Never send photos
 from protected client records. Provider task result must be reviewed before any
 independent Drive master, YouTube or website publication.
+
+## 2026-10-27 iPhone flow after owner screenshots — no API credits
+
+- On iPhone, the Kling scene studio has a compact layout: four mutually
+  exclusive scene buttons, visible `aria-pressed` selection, direct public
+  owner portrait thumbnail (original aspect ratio, `height:auto`), and
+  free actions **before** hidden advanced settings/task lookup.
+- Owner wealth scene can be deep-linked at
+  `/admin/videos?klingScene=wealth#kling-scene-studio`. Query selection
+  presets `image`, approved public `andy-about.png`, Kling 2.5 Turbo STD,
+  5 seconds, 720p. It does **not** mark media rights or paid consent checked.
+- **New local no-credit option:** `Create free 12s video` creates a silent
+  9:16 short in the owner's browser from the existing public portrait and
+  synthetic geometric golden coins. It preserves the full photo aspect ratio,
+  keeps the face unobscured, draws an affirmation (EN/RU/ES), and uses the
+  browser's `canvas.captureStream` / `MediaRecorder` with MP4 preferred and
+  WebM fallback, then shows a local preview and explicit download link.
+  The feature is lazy-loaded on click. It does **not** POST photos or video,
+  call Kling, spend credits, use a voice clone, archive masters, or publish.
+  The temporary `blob:` URL is revoked when replaced or the owner leaves.
+- In-app browser capability varies. If capture/MP4 is unsupported or a
+  recorder fails, the user sees an explicit message and retains the
+  no-charge **Save portrait + Copy prompt + Open Kling Web** workflow.
+  Do not call client recorder support a verified on-device iPhone E2E
+  until tested on actual 320–430px phone/browser.
+- The cost gate remains OFF in Vercel. **Do not** enable
+  `HH_KLING_PAID_GENERATION_ENABLED`, avatar or premium flags,
+  create a paid render, or auto-publish as a workaround to a disabled button.
+  Browser-rendered or free-web imagery must be QA-reviewed and checked
+  for publication rights before use in ads.
+- Local output is a symbolic self-reflection video, **not** a statement of
+  real income, guaranteed prosperity, or any financial result. To add a voice,
+  reuse the owner's own recording and existing Telegram photo/audio FFmpeg
+  editor, rather than paying for AI speech or creating a new publisher.

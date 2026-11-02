@@ -1,0 +1,149 @@
+/* New guided-imagery programme belongs to the original Holistic House
+   cream / emerald video studio. No separate editor or generic dashboard. */
+.panel{margin:15px 0;padding:clamp(12px,3vw,19px);border:1px solid #cde3d4;border-radius:22px;background:#fffdf6;color:#234e3c;box-shadow:0 5px 18px rgb(24 75 51 / 5%);min-width:0}
+.header{display:flex;align-items:center;gap:10px;min-width:0}
+.emblem{display:grid;place-items:center;flex:none;width:38px;height:38px;background:#e5f5e9;color:#078662;border:1px solid #a6d8be;border-radius:13px}
+.heading{min-width:0}.heading small{display:block;color:#5e8670;font-size:10px;font-weight:800;letter-spacing:.085em}
+.heading h3{font-size:clamp(19px,4.2vw,25px);line-height:1.2;font-weight:800;letter-spacing:-.025em;color:#174c3a;margin:3px 0}
+.intro{font-size:13px;line-height:1.5;color:#526b5d;margin:9px 0 14px}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.actions button,.planButton,.profileActions button,.goalChips button,.apply,.secondaryActions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:44px;padding:9px 11px;border:1px solid #c5d9cc;background:#f5faf4;border-radius:12px;color:#295a43;font-size:12px;line-height:1.35;font-weight:750;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.actions button svg,.planButton svg,.goalChips svg,.profileActions svg,.apply svg,.secondaryActions svg{flex:none}
+.actions .primary,.planButton,.apply{background:#087e5e;color:white;border-color:#087e5e}
+.actions button:disabled,.planButton:disabled,.profileActions button:disabled,.apply:disabled{opacity:.52;cursor:not-allowed}
+.actions button:focus-visible,.planButton:focus-visible,.profileActions button:focus-visible,.goalChips button:focus-visible,.apply:focus-visible,.secondaryActions button:focus-visible,.consent input:focus-visible,.script summary:focus-visible{outline:3px solid #42b997;outline-offset:2px}
+.goalsPanel{margin-top:12px;padding:12px;border:1px solid #d4e6d8;border-radius:16px;background:#f6faf4;min-width:0}
+.goalsPanel>strong{font-size:14px;line-height:1.4;color:#234b37}
+.goalsPanel>p{margin:6px 0 9px;color:#587765;font-size:12px;line-height:1.4}
+.goalChips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.goalChips button{padding:7px;min-height:44px;font-size:12px}
+.goalChips button[aria-pressed=true]{color:#fff;background:#087e5e;border-color:#087e5e}
+.consent{display:flex;gap:9px;align-items:flex-start;margin:13px 0 10px;padding:11px;border-radius:12px;background:#fff;cursor:pointer;font-size:12px;line-height:1.45;color:#345645}
+.consent input{flex:none;margin:2px 0 0;width:18px;height:18px;accent-color:#087e5e}
+.profileActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px}
+.profileActions button{background:#fdf9e9;min-height:40px}
+.profileActions small{font-size:11px;line-height:1.4;color:#6c755e;flex:1 1 145px}
+.goalsPanel a{font-size:12px;color:#087e5e;font-weight:800;text-decoration:underline}
+.suggestions{margin:10px 0;padding:10px;border:1px solid #c7dfc9;border-radius:12px;background:#ecf5ea;display:grid;gap:7px}
+.suggestions>small{font-size:11px;line-height:1.4;color:#54765c}
+.suggestions>div{display:flex;flex-wrap:wrap;gap:5px}
+.suggestions>div>span{background:#fffdf7;border:1px solid #d4e5d3;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:750;color:#2e654a}
+.suggestions>button{justify-self:start;min-height:42px;padding:7px 12px;background:#087e5e;border:1px solid #087e5e;color:white;font-size:12px;font-weight:800;border-radius:11px;cursor:pointer}
+.suggestions>button:focus-visible{outline:3px solid #42b997;outline-offset:2px}
+.sources{padding-left:20px;list-style:disc;max-width:100%;overflow-wrap:anywhere;margin:10px 0 6px;font-size:11px;line-height:1.5;color:#537261}
+.sources li{list-style:disc}.self{display:block;color:#687d6b;line-height:1.4;margin-top:10px;font-size:11px}
+.planButton{width:100%;margin:13px 0 0;font-size:13px;min-height:46px}
+.programme{padding-top:14px;min-width:0}
+.programme>h4,.package h4{margin:0 0 12px;font-size:16px;line-height:1.3;color:#174c3a}
+.sessionList{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.sessionCard{min-width:0;padding:12px;border:1px solid #dde8df;border-radius:15px;background:#fff}
+.sessionHeader{display:grid;grid-template-columns:33px minmax(0,1fr) 18px;align-items:flex-start;gap:9px}
+.number{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#e7f4e9;color:#087e5e;font-size:14px;font-weight:850}
+.sessionHeader small{display:block;color:#607c66;font-size:11px}
+.sessionHeader h5{margin:3px 0 3px;color:#25563f;font-size:14px;line-height:1.25;font-weight:800}
+.sessionHeader p{margin:0;color:#64806e;font-size:12px;line-height:1.3}
+.sessionHeader>svg{color:#69977d}
+.first{margin:13px 0 0 0;border-top:1px solid #e0eae2;padding-top:12px}
+.free{display:inline-block;padding:4px 8px;border-radius:99px;background:#e6f2df;color:#426c31;font-size:11px;font-weight:800}
+.first>p{font-size:12px;line-height:1.55;color:#486655}
+.apply{margin-top:3px;min-height:45px;width:100%}
+.help{color:#547a68!important;font-size:11px!important}
+.script{margin-top:9px;border:1px solid #d8e5da;border-radius:11px;padding:9px 11px;color:#2c6048}
+.script summary{cursor:pointer;font-size:12px;font-weight:800}
+.script p{white-space:pre-wrap;color:#345946;font-size:12px;line-height:1.65}
+.secondaryActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.secondaryActions button{font-size:11px;min-height:43px}
+.first>small{display:block;margin-top:7px;font-size:11px;color:#69806d;line-height:1.4}
+.locked{margin:10px 0 0 42px;font-size:11px;color:#7a806f}
+.package{margin-top:14px;padding:15px;background:#f1f7ef;border:1px solid #cfe1ce;border-radius:15px}
+.package p{font-size:12px;color:#476854;line-height:1.5;margin:0 0 10px}
+.package a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
+.safeguard{padding:11px 12px;background:#fbf4e8;border-radius:13px;font-size:12px;line-height:1.5;color:#82633e}
+.privacy{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#5a806d;font-size:11px;line-height:1.5}
+.privacy svg{flex:none;margin-top:1px;color:#218564}
+@media(max-width:360px){.panel{padding:11px}.actions button{font-size:11px;padding:8px 6px}.goalChips{grid-template-columns:repeat(2,minmax(0,1fr))}.secondaryActions button{font-size:10.5px}}
+@media(min-width:740px){.sessionList{grid-template-columns:repeat(2,minmax(0,1fr))}.sessionCard:first-child{grid-column:1/-1}.actions{max-width:530px}}
+@media(prefers-reduced-motion:reduce){.panel button,.panel a{transition:none}}
+
+
+/* Dedicated Video Therapy composer — intentional focus, not a lengthy questionnaire. */
+.panel{margin:12px 0 5px;padding:clamp(13px,3.8vw,22px);border:1px solid #c9e1d6;border-radius:24px;background:linear-gradient(160deg,#fffef9,#f4f9f2 78%,#fff9ec);box-shadow:0 15px 32px rgba(19,72,54,.07)}
+.header{gap:11px}
+.emblem{width:44px;height:44px;border-radius:15px;background:#dff5e9;border-color:#b2dcca}
+.heading h3{font-size:clamp(20px,5vw,27px);line-height:1.15;letter-spacing:-.035em}
+.heading small{font-size:10px;letter-spacing:.11em}
+.stageBadge{flex:none;align-self:flex-start;padding:6px 8px;border-radius:99px;background:#eaf5e9;border:1px solid #d5e9d9;color:#328468;font-size:11px;font-weight:850;letter-spacing:.06em}
+.intro{margin:10px 1px 15px;font-size:12.5px;line-height:1.5}
+.focusCard{padding:15px;border:1px solid #d3e6da;border-radius:19px;background:linear-gradient(145deg,#f3f9f4,#fffefa);box-shadow:inset 0 1px 0 #fff}
+.focusHeading{display:grid;gap:3px;margin-bottom:13px}
+.focusHeading>small{display:flex;align-items:center;gap:6px;color:#158262;font-size:10px;font-weight:850;letter-spacing:.095em}
+.focusHeading h4{margin:3px 0;color:#174a3d;font-size:clamp(18px,4.2vw,23px);line-height:1.2;font-weight:850}
+.focusHeading p{margin:0;color:#688174;font-size:12px;line-height:1.5}
+.focusFields{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.focusFields label{display:grid;gap:6px;min-width:0;color:#355f4d;font-size:12px;font-weight:800}
+.focusFields textarea{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:76px;padding:12px;border:1px solid #d1e1d5;border-radius:13px;resize:vertical;background:#fff;color:#193f33;box-shadow:0 2px 8px #1b61460a;font:500 14px/1.45 Arial,Helvetica,sans-serif}
+.focusFields textarea::placeholder{color:#92a59b;font-weight:450}
+.focusFields textarea:focus-visible{outline:3px solid #88d1b3;outline-offset:1px;border-color:#198869}
+.focusFields textarea:disabled{opacity:.55}
+.goalActions{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:13px}
+.goalReview{display:inline-flex;align-items:center;justify-content:space-between;gap:9px;min-height:48px;width:100%;padding:10px 13px;border:1px solid #b9d8c8;border-radius:13px;background:#fffdf8;color:#176e54;font-size:13px;font-weight:850;text-align:left;cursor:pointer}
+.goalReview svg:last-child{margin-left:auto;transition:transform .2s ease}
+.goalReview[aria-expanded="true"] svg:last-child{transform:rotate(180deg)}
+.goalReview:focus-visible{outline:3px solid #76c9aa;outline-offset:2px}
+.goalSelection{font-size:11px;line-height:1.4;color:#739080}
+.goalsPanel{margin:12px 0 1px;padding:13px;background:#f6faf4}
+.goalChips{gap:7px}
+.goalChips button{min-height:45px}
+.planButton{display:flex;gap:12px;justify-content:center;width:100%;min-height:75px;margin:15px 0 0;padding:12px;border:1px solid #087455;border-radius:16px;background:linear-gradient(115deg,#056a50,#0e9973);box-shadow:0 9px 19px rgba(6,114,82,.2);color:#fff}
+.planButton svg{flex:none;width:23px;height:23px}
+.planButton span{display:grid;gap:4px;min-width:0}
+.planButton strong{font-size:clamp(15px,4vw,18px);line-height:1.15;font-weight:850}
+.planButton small{display:block;color:#d5f6e9;font-size:11px;font-weight:600;line-height:1.35}
+.planButton:disabled{box-shadow:none}
+.profileNotice{margin:10px 2px 0;font-size:12px;color:#557464;line-height:1.5}
+.profileNotice a{color:#067e5c;font-weight:850;text-decoration:underline}
+.programme{margin-top:18px;padding-top:17px;border-top:1px solid #dceade}
+.sequenceHeader{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:0 0 12px}
+.sequenceHeader small{display:block;color:#468a70;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+.sequenceHeader h4{margin:3px 0 0;color:#194e3d;font-size:19px;line-height:1.2}
+.sequenceHeader>span{flex:none;color:#39856b;font-size:12px;font-weight:850}
+.sessionTrack{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.sessionTrack span{display:grid;place-items:center;min-width:0;height:33px;border:1px solid #dce8d9;border-radius:9px;background:#f1f5ee;color:#8aa294;font-size:11px;font-weight:850}
+.sessionTrack .trackActive{background:#06815f;border-color:#06815f;color:white;box-shadow:0 3px 8px #0a7c5826}
+.sessionList{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(246px,83%);gap:11px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scroll-padding-inline:3px;padding:3px 2px 11px;scrollbar-width:thin;scrollbar-color:#b5d9c7 transparent}
+.sessionCard{scroll-snap-align:start;border-color:#d9e8dd;border-radius:16px;min-height:125px;box-shadow:0 3px 11px rgba(24,69,45,.04)}
+.sessionCard:first-child{border-color:#a7d7be;box-shadow:0 5px 15px rgba(9,113,72,.09)}
+.number{background:#e7f4ea}
+.first .apply{min-height:48px;border-radius:12px}
+.package{margin-top:13px}
+.safeguard{margin-top:13px}
+@media(min-width:650px){
+  .focusFields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .goalActions{grid-template-columns:auto minmax(0,1fr);align-items:center}
+  .goalReview{width:auto;min-width:194px}
+  .goalSelection{padding-left:8px}
+  .sessionList{grid-auto-columns:minmax(270px,32%)}
+}
+@media(min-width:740px){.sessionCard:first-child{grid-column:auto}}
+@media(max-width:355px){
+  .panel{padding:12px}
+  .focusCard{padding:11px}
+  .sessionList{grid-auto-columns:minmax(225px,90%)}
+  .sessionTrack{gap:3px}
+  .sessionTrack span{font-size:10px;height:29px}
+  .planButton strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){.goalReview svg:last-child{transition:none}.sessionList{scroll-behavior:auto}}
+
+/* The detailed goal chips share the same twelve-item catalog as Hypnoaffirmations. */
+.detailPanel{display:grid;gap:8px;margin-top:13px;padding:12px 0 2px;border-top:1px solid #d5e6d9}
+.detailPanel>strong{color:#205642;font-size:13px;font-weight:850}
+.detailPanel>small{color:#688673;font-size:11px;line-height:1.4}
+.detailChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.detailChips button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:40px;padding:7px 8px;border:1px solid #d0e3d5;border-radius:12px;background:#fffefc;color:#416456;font-size:11.5px;font-weight:750;line-height:1.2;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.detailChips button svg{flex:none}
+.detailChips button[aria-pressed="true"]{border-color:#078a66;background:#e0f4e7;color:#087554;box-shadow:inset 0 0 0 1px #078a6629}
+.detailChips button:disabled{opacity:.45;cursor:not-allowed}
+.detailChips button:focus-visible{outline:3px solid #81c9a8;outline-offset:2px}
+@media(min-width:740px){.detailChips{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:350px){.detailChips{gap:5px}.detailChips button{padding:6px;font-size:10.5px}}

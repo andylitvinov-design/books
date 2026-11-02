@@ -24,8 +24,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-gauntlet-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-gauntlet-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   offline-contract:

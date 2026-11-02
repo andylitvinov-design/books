@@ -1,28 +1,73 @@
 name: Holistic House IA v2 checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/ia-v2.yml'
+      - 'tests/pr-fast-lane.test.mjs'
+      - 'scripts/verify-ia-v2.mjs'
+      - 'scripts/ia-v2-loopback-proxy.mjs'
+      - 'scripts/ia-public-navigation-diagnostics.mjs'
+      - 'lib/clients/**'
+      - 'lib/prescriptions/**'
+      - 'lib/site-navigation-model.js'
+      - 'app/api/app/**'
+      - 'app/api/auth/**'
+      - 'app/**/app/**'
+      - 'app/**/client/**'
+      - 'components/app/**'
+      - 'components/site-navigation*'
+      - 'components/csp-navigation*'
+      - 'lib/app/**'
+      - 'lib/security/**'
+      - 'lib/ia/**'
+      - 'lib/encryption/**'
+      - 'lib/practitioners/**'
+      - 'tests/ia-*.mjs'
+      - 'tests/app-auth-*.mjs'
+      - 'tests/app-migration-*.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      # Public practitioner directory/checkout use Public Services acceptance,
+      # not synthetic encrypted owner/client IA with Redis and two browsers.
+      - '!lib/practitioners/public-*'
+      - '!lib/practitioners/taoist-talisman-cart.js'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: ia-v2-${{ github.ref }}
-  cancel-in-progress: true
+  group: ia-v2-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   verify:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres -d hh_app_test" --health-interval 5s --health-timeout 3s --health-retries 10
       redis:
         image: redis:7-alpine
         ports: ['6379:6379']
         options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
     env:
       NEXT_TELEMETRY_DISABLED: '1'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -42,13 +87,90 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
+      # Keep IA-owned auth, encryption, ownership and navigation contracts on
+      # every PR. The unrelated repository-wide inventory remains available
+      # on manual runs; it must not prevent the real IA browser acceptance.
+      - name: IA security, ownership and navigation contracts
+        run: >-
+          node --conditions=react-server --test
+          tests/ia-v2.test.mjs tests/ia-preview-verifier.test.mjs tests/admin-session-lifecycle.test.mjs
+          tests/ia-v2-loopback-proxy.test.mjs
+          tests/ia-public-navigation-diagnostics.test.mjs tests/app-auth-pkce.integration.mjs
+          tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs
+          tests/app-http-security.test.mjs tests/prescriptions.test.mjs
+          tests/prescription-access.test.mjs tests/client-account-document-save.test.mjs
+          tests/practitioner-private-relay.test.mjs tests/admin-login-security.test.mjs
+          tests/remote-support-privacy-contract.test.mjs tests/client-session-recorder-auth.test.mjs
+          tests/practitioner-preview-auth.test.mjs tests/admin-auth-refresh.test.mjs
+          tests/oauth-public-pages.test.mjs tests/public-security-headers.test.mjs
+          tests/crm-security-contract.test.mjs tests/session-delivery-security.test.mjs
+          tests/practice-telegram-auth-fetch.test.mjs tests/crm-consent.test.mjs
+          tests/manual-billing-security.test.mjs
+      - name: Application, CRM and billing functional contracts
+        run: npm run test:app
+      - name: Guest test access and privacy contracts
+        run: >-
+          node --conditions=react-server --test
+          --test-name-pattern='public picker transparently|public selector sends|guest results display'
+          tests/public-tests-auth-transparency.test.mjs
+      # Only isolate the Messenger scopes after GitHub PR HEAD and base match.
+      # Ambiguous changes retain FULL IA. Auth, CRM/RLS, browser, native/PWA,
+      # source validators, and production build remain separately required.
+      - name: Select exact-merge Messenger fast lane (fail closed)
+        id: messenger-scope
+        env:
+          HH_PR_EVENT: ${{ github.event_name }}
+          HH_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          HH_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import {execFileSync} from 'node:child_process'
+          import {appendFileSync} from 'node:fs'
+          const allowed=[
+            /^app\/\[locale\]\/app\/messages\//,
+            /^components\/app\/(?:messages-|crm-messenger|crm-salesbot-assist)/,
+            /^lib\/app\/messages-inbox-tabs\.mjs$/,
+            /^scripts\/verify-messages-wellness-browser\.mjs$/,
+            /^scripts\/verify-ia-v2\.mjs$/,
+            /^tests\/messages-[^/]+\.test\.mjs$/,
+            /^docs\/crm\/EXTERNAL_TO_PRACTITIONER_MESSENGER_20261031\.md$/,
+            /^docs\/design\/MESSAGES_[^/]+\.md$/,
+            /^\.github\/workflows\/ia-v2\.yml$/,
+          ]
+          let messengerOnly=false
+          if(process.env.HH_PR_EVENT==='pull_request'){
+            try{
+              const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim()
+              const base=git('rev-parse','HEAD^1')
+              const head=git('rev-parse','HEAD^2')
+              const files=git('diff','--name-only','HEAD^1','HEAD').split('\n').filter(Boolean)
+              messengerOnly=base===process.env.HH_EXPECTED_BASE &&
+                head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
+                files.every(file=>allowed.some(pattern=>pattern.test(file)))
+              console.log(JSON.stringify({base,head,files,messengerOnly}))
+            }catch(err){
+              console.error('Messenger scoped classification unavailable; keeping full IA',err.message)
+            }
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\n')
+          JS
+      - name: Relevant Messenger, CRM and private-media IA unit contracts
+        if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
+        run: |
+          node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs
+          # Server-only imports have React Server conditional exports in Next.js.
+          # Execute the full private-media policy tests with their real server condition.
+          node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
-      - run: npm run lint
+      - name: Full lint outside production PR (core release-ready owns production lint)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm run lint
       - run: npm run native:check && npm run pwa:check
       - run: npm run build
-      - run: npx --no-install tsc --noEmit
+      - name: Full TypeScript outside production PR (core release-ready owns production typing)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
@@ -57,10 +179,16 @@ jobs:
           /tmp/ia222-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
           sudo apt-get update -qq && sudo apt-get install -y redis-tools
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/ia222-key.pem -out /tmp/ia222-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+      - name: Initialize disposable owner database with real app migrations
+        run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Synthetic encrypted-store and owner/client browser acceptance
         run: npm run verify:ia-v2
         env:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
+          HH_IA_MESSENGER_ONLY: ${{ steps.messenger-scope.outputs.messenger_only }}
+      - name: Full unit inventory outside production PR
+        if: ${{ github.event_name != 'pull_request' }}
+        run: npm run test:unit
       - uses: actions/upload-artifact@v4
         if: always()
         with:

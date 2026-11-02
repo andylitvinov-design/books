@@ -7,6 +7,7 @@ import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
 import { DaoHexagramLibrarySection } from "@/components/dao-hexagram-library-section";
 import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
+import { greekVideoSeries } from "@/data/academy/greek-video-series";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -271,6 +272,25 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
 }) {
   const text = libraryCopy[locale];
   const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
+  // The RU Video Blogs view reuses the same verified Academy media, but groups
+  // the original Greek channel recordings by series rather than publication date.
+  const seriesItems: LibraryFeedItem[] = view === "videos"
+    ? greekVideoSeries(locale).flatMap(series => series.lessons.map(lesson => ({
+        id: "source-series-" + series.id + "-" + lesson.id,
+        kind: "video" as const,
+        title: lesson.title,
+        description: series.title + " · выпуск " + lesson.order + " из " + series.lessons.length,
+        youtubeId: lesson.id,
+        href: "https://www.youtube.com/watch?v=" + lesson.id,
+        seriesId: series.id,
+        seriesTitle: series.title,
+        seriesOrder: lesson.order,
+        seriesHref: series.href,
+      })))
+    : [];
+  const seriesVideoIds = new Set(seriesItems.map(item => item.youtubeId));
+  const videoItems = [...seriesItems, ...feedItems.filter(item =>
+    item.kind !== "video" || !item.youtubeId || !seriesVideoIds.has(item.youtubeId))];
 
   return (
     <main className="library-shell" lang={locale}>
@@ -286,7 +306,7 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
         <Link aria-current={view === "dao" ? "page" : undefined} href={"/" + locale + "/library?view=dao"}>{text.daoTab}</Link>
       </nav>
       {view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> : (
-        <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
+        <LibraryFeed locale={locale} items={view === "books" ? guideFeed : view === "videos" ? videoItems : feedItems}
           videosOnly={view === "videos"} guidesOnly={view === "books"} />
       )}
       <p className="library-note">{text.note}</p>

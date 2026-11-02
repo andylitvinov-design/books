@@ -45,13 +45,16 @@ export async function GET(request){
      body:payload,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(12000)})
    if(!response.ok)return result('failed')
    const token=await response.json().catch(()=>null)
+   const granted=new Set(String(token?.scope||'').split(/\s+/))
+   const editing=sealed.visibility===true
    if(!token||typeof token.refresh_token!=='string'||token.refresh_token.length<10||
      typeof token.access_token!=='string'||token.access_token.length<20||
-     !String(token.scope||'').includes('youtube.upload')||
-     !String(token.scope||'').includes('youtube.readonly'))
+     !granted.has('https://www.googleapis.com/auth/youtube.upload')||
+     !granted.has('https://www.googleapis.com/auth/youtube.readonly')||
+     (editing&&!granted.has('https://www.googleapis.com/auth/youtube.force-ssl')))
      return result('failed')
    const channel=await verifyYoutubeRuOwner(token.access_token)
-   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel)
+   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing})
    return result('connected')
  }catch{return result('failed')}
 }

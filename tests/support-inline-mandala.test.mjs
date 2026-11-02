@@ -13,7 +13,7 @@ const logic = read("lib/holistic-support/mandala-progress.js");
 test("new personal mandala unfolds below existing video in the SAME Support mobile flow", () => {
   assert.match(host, /data-support-player data-playing=/);
   const videoEnd = host.indexOf('<div className={styles.mandalaEntry}>');
-  const gallery = host.indexOf('<div className={styles.videoSection}>', videoEnd);
+  const gallery = host.indexOf('id="support-meditation-gallery"', videoEnd);
   assert.ok(videoEnd >= 0 && gallery > videoEnd, "mandala sits between video hero and the recording gallery");
   assert.match(host, /data-support-generate-mandala/);
   assert.match(host, /aria-expanded=\{mandalaExpanded\}/);

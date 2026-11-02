@@ -54,12 +54,17 @@ const baseCallback=({
 })
 
 test('message-attached V2 and legacy V1 buttons render above text composer without slash labels',()=>{
-  assert.deepEqual(telegramInlineMarkup([
-    ['Да, начинаем','Не сейчас'],
-  ],'ru'),{inline_keyboard:[[
-    {text:'Да, начинаем',callback_data:'hhv2:ru:yes'},
-    {text:'Не сейчас',callback_data:'hhv2:ru:notNow'},
-  ]]})
+  assert.deepEqual(telegramInlineMarkup([['Да, начинаем']],'ru'),{
+    inline_keyboard:[[{text:'Да, начинаем',callback_data:'hhv2:ru:yes'}]],
+  })
+  assert.deepEqual(telegramInlineMarkup([["Yes, let's begin"]],'en'),{
+    inline_keyboard:[[{text:"Yes, let's begin",callback_data:'hhv2:en:yes'}]],
+  })
+  assert.deepEqual(telegramInlineMarkup([['Sí, empezamos']],'es'),{
+    inline_keyboard:[[{text:'Sí, empezamos',callback_data:'hhv2:es:yes'}]],
+  })
+  // Older two-button messages must remain readable even though Not now is hidden.
+  assert.equal(telegramInlineCallbackSelection('hhv2:ru:notNow')?.rawText,'Не сейчас')
   assert.deepEqual(telegramInlineMarkup([['деньги/ работа','энергия/ здоровье'],['отношения','другое']], 'ru'),{
     inline_keyboard:[
       [{text:'деньги/ работа',callback_data:'hhv2:ru:business'},
@@ -183,12 +188,12 @@ test('provider sends six owner text replies with INLINE markup, acknowledges but
   await mockedBotApi(async calls=>{
     const pushed=await sendTelegramDiagnosticPrompt({
       to:'123456789',text:'Подходит, начинаем?',
-      keyboard:[['Да, начинаем','Не сейчас']],locale:'ru',
+      keyboard:[['Да, начинаем']],locale:'ru',
     },env)
     assert.equal(pushed.status,'accepted')
     const msg=calls.find(x=>x.method==='sendMessage')?.body
     assert.deepEqual(msg.reply_markup.inline_keyboard[0].map(x=>x.text),
-      ['Да, начинаем','Не сейчас'])
+      ['Да, начинаем'])
     assert.equal(msg.reply_markup.keyboard,undefined)
     assert.equal(JSON.stringify(msg).includes(env.HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET),false)
     assert.equal(JSON.stringify(msg).includes(env.HH_CRM_MSG_TELEGRAM_TOKEN),false)

@@ -138,6 +138,12 @@ export default function PractitionerClientProfiles({items=[],services=[],account
     return ()=>abort.abort()
   },[isOwner,accountId,manualRetry])
   const selected=groups.find(item=>item.key===selectedKey)
+  // Current focus comes only from authenticated, practitioner-owned requests.
+  // Never fabricate a consultation, payment, medical summary or follow-up date.
+  const currentRequest=selected?.items.find(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))||selected?.items[0]||null
+  const linkedService=services.find(item=>item.id===currentRequest?.serviceId)
+  const currentTitle=linkedService?.localizedCopy?.[lang]?.title||linkedService?.copy?.title||
+    currentRequest?.serviceTitle||t.service
   const currentDay=torontoToday()
   const queue=useMemo(()=>buildPractitionerWorkQueue(groups,practitionerTasks,currentDay,practitionerTaskSummary),
     [groups,practitionerTasks,currentDay,practitionerTaskSummary])
@@ -291,8 +297,14 @@ export default function PractitionerClientProfiles({items=[],services=[],account
       </aside>
       {selected&&<div className={styles.profile}>
         <>
-          <div className={styles.profileHead}>
-            <h3>{selected.name}</h3>
+          <div className={styles.profileHead} data-practice-client-card>
+            <div className={styles.profileIdentity}>
+              <span className={styles.largeAvatar} aria-hidden="true">{selected.name.slice(0,1).toUpperCase()}</span>
+              <div><h3>{selected.name}</h3>
+                <small>{selected.open>0?(lang==='ru'?'В работе':lang==='es'?'En curso':'In progress'):
+                  (lang==='ru'?'История обращений':lang==='es'?'Historial':'Request history')}</small>
+              </div>
+            </div>
             <button type="button" onClick={()=>{setSelectedKey('');setTaskFocus(null)}}>{t.closeProfile}</button>
           </div>
           <dl className={styles.facts}>
@@ -300,13 +312,27 @@ export default function PractitionerClientProfiles({items=[],services=[],account
             <div><dt>{t.requests}</dt><dd>{selected.items.length}</dd></div>
             <div><dt>{t.pending}</dt><dd>{selected.open}</dd></div>
           </dl>
+          {currentRequest&&<section className={styles.currentFocus} data-client-current-request aria-label={lang==='ru'?'Текущая заявка':lang==='es'?'Solicitud actual':'Current request'}>
+            <div className={styles.focusHeading}><span>{lang==='ru'?'ТЕКУЩАЯ ЗАЯВКА':lang==='es'?'SOLICITUD ACTUAL':'CURRENT REQUEST'}</span>
+              <small>{currentRequest.status==='requested'?t.requested:
+                currentRequest.status==='contacted'?t.contacted:currentRequest.status}</small>
+            </div>
+            <strong>{currentTitle}</strong>
+            <p>{currentRequest.remoteBooking
+              ?currentRequest.remoteBooking.duration+' min · '+(lang==='ru'?'Дистанционно':lang==='es'?'A distancia':'Remote')+
+                 ' · '+(lang==='ru'?'Время подтверждается отдельно':lang==='es'?'Horario por confirmar':'Time to confirm')
+              :(lang==='ru'?'Условия и время обсуждаются до записи.':lang==='es'?'Condiciones y horario por confirmar.':'Terms and timing are confirmed before booking.')}</p>
+            <a className={styles.focusAction} href={'#client-request-'+currentRequest.id}>
+              {lang==='ru'?'Открыть заявку':lang==='es'?'Abrir solicitud':'Open request'} →
+            </a>
+          </section>}
           <p className={styles.hint}>{t.noPortal}</p>
-          <h4>{t.history}</h4>
+          <h4 id="client-request-history">{t.history}</h4>
           <div className={styles.history}>
             {selected.items.map(request=>{
               const service=services.find(item=>item.id===request.serviceId)
               const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||request.serviceTitle||t.service
-              return <article className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
+              return <article id={'client-request-'+request.id} className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
                   <small>{labelDate(request.createdAt,lang)} · {
