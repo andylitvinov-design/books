@@ -89,3 +89,15 @@ Pixel fidelity requires the same route + locale + role + auth state + viewport +
 ## 8. UI PR acceptance contract
 
 Identify canonical view and page owner; read AGENTS.md and visual-to-code skill. Reuse existing components and tokens, avoid duplicate navigation or independent color constants. Include route-specific screenshots at 320/390/430 + WebKit, substantive click/disabled/error states, EN/RU/ES, actual data/role flows and Design QA score. Record automated findings separately from manual visual review and real E2E. Merge only with required exact-HEAD checks, then verify production READY, source SHA, canonical domain and real interactions. Existing custom themes remain explicit exceptions.
+
+## 9. Daily 05:07 Toronto audit -> actual repair (not reports alone)
+
+The canonical public-only QA is scheduled daily at **05:07 America/Toronto**, in GitHub default branch `codex/bootstrap-books` through the EXISTING `.github/workflows/hh-nightly-public-crawl.yml`. GitHub Actions native timezone handles EST/EDT. The separate 07:15 UTC nightly SEO crawl stays intact. See dependent default-branch PR #3145.
+
+The daily workflow checks out real production branch `codex/public-book-library`, runs `scripts/holistic-light-design-qa.mjs` as a guest-only read, and records screenshot/DOM evidence. Its trusted `scripts/holistic-light-qa-handoff.mjs` ranks findings by severity and creates/updates **one** issue labeled `hh:design-qa` titled `[Design QA] Holistic Light — daily action queue`. Repeated defects, including EN/RU/ES variants, must not spawn parallel issues. For failed captures, report an infrastructure blocker, never a false clean bill.
+
+The **already existing** Chat Product Repair hourly :35 worker uses one special 06:35 Toronto run to inspect the fresh daily issue and execute up to one safe, confirmed source fix. It must first reuse existing PRs/lease; only create a new scoped PR when no matching PR exists and the source problem is reproduced. It may not invent a patch to make a report look actionable. Honor runner-capacity policy and production protections.
+
+Required independently verified receipts: AUDIT_RUN -> ACTION_QUEUE_ISSUE -> (CLAIM or BLOCKER) -> SOURCE_COMMIT -> PR -> exact-head CI -> MERGE_SHA -> real serving Vercel READY_SHA -> LIVE browser action. Absence of an item cannot be silently called success. Automatic CSS audits are advisory on human visual warmth and cannot prove private/auth/provider E2E.
+
+Priority order: broken app/route and protected data first; reproducible overflow/contrast and first-screen CTA next; muted-green image/style review only after an approved screenshot and same-view comparison. Existing My Course teal and Business wood themes remain explicit approved exceptions.
