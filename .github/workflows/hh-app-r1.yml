@@ -48,7 +48,6 @@ on:
       - 'tests/profile-*.mjs'
       - 'tests/course-immersive-start-ui.test.mjs'
       - 'tests/my-course*.mjs'
-      - 'tests/opora-*.mjs'
       - 'tests/personal-video-cloud.test.mjs'
       - 'supabase/migrations/**'
       - 'middleware.ts'
