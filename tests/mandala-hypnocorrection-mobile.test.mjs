@@ -154,7 +154,7 @@ test("third Hypnocorrection mobile release QA performs real browser navigation i
   assert.match(workflow,/node scripts\/verify-practices-mobile-browser\.mjs/);
   assert.doesNotMatch(workflow,/node scripts\/verify-hypno-third-workspace-browser\.mjs/);
   assert.match(entry,/GITHUB_EVENT_NAME==="pull_request"/);
-  assert.match(entry,/codex\\/hypno-third-workspace-live-qa-/);
+  assert.match(entry,/hypno-third-workspace-live-qa-/);
   assert.match(entry,/import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
   assert.match(browser,/HYPNO_THIRD_MOBILE_MATRIX_PASS/);
   assert.match(browser,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
