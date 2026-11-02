@@ -4406,7 +4406,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
               audio:"/images/holistic-house/support-reference-avatar.webp",
               visual:getThemedRealFilm("energy",otherVideoScenes.energy[1].id)?.poster||quickCanvasPoster(otherVideoScenes.energy[1].id),
-              meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
             hasVoiceFile={Boolean(hypnoSpeechSource)}
             voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights)}
