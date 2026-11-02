@@ -58,6 +58,32 @@ function parseRecords(comments){
  * same-owner, same-lease release can free modern ownership of this HEAD.
  * Unknown/malformed history fails closed. Legacy records retain TTL.
  */
+
+/**
+ * An incidental marker mention in PR discussion cannot claim an owner lease.
+ * Only standalone receipts participate in source-ownership arbitration.
+ */
+function sweepLeasePayload(body){
+ const marker=/(?:^|\n)[ \t]*(?:<!--[ \t]*HH_PR_SWEEP_LEASE_V1[ \t]*-->|HH_PR_SWEEP_LEASE_V1)[ \t]*(?:\r?\n|$)/.exec(body);
+ return marker?body.slice(marker.index+marker[0].length):null;
+}
+// Legacy pre-JSON releases may be ignored only when they prove release on
+// other exact HEADs. An active/current or ambiguous record still fails closed.
+function unrelatedLegacyRelease(payload,headSha){
+ const fields=new Map();
+ for(const match of payload.matchAll(/^([a-z_]+):[ \t]*([^\r\n]*)$/gm)){
+  if(fields.has(match[1]))return false;
+  fields.set(match[1],match[2].trim());
+ }
+ const refs=['previous_head_sha','old_head_sha','head_sha','lease_head_sha',
+  'new_head_sha','observed_new_head_sha']
+  .map(key=>fields.get(key)).filter(Boolean);
+ return /^released(?:_|$)/.test(fields.get('state')||'') &&
+  Boolean(fields.get('owner')&&fields.get('lease_id')) &&
+  Number.isFinite(Date.parse(fields.get('released_at')||'')) &&
+  refs.length>=2 && refs.every(ref=>SHA.test(ref)&&ref!==headSha);
+}
+
 function externalOwnerLeaseStatus(comments,headSha,now){
  if(!Array.isArray(comments)||!SHA.test(headSha||'')||!Number.isFinite(now))
    return 'OWNER_LEASE_UNVERIFIED';
@@ -68,20 +94,21 @@ function externalOwnerLeaseStatus(comments,headSha,now){
  const activeStates=new Set(['active','claim','heartbeat']);
  for(const {entry,index} of sorted){
   const body=String(entry?.body||'');
-  if(!body.includes('HH_PR_SWEEP_LEASE_V1'))continue;
+  const payload=sweepLeasePayload(body);
+  if(payload===null)continue;
   let doc;
   try{
    const fence=String.fromCharCode(96).repeat(3);
-   const open=body.indexOf(fence+'json');
+   const open=payload.indexOf(fence+'json');
    let source;
    if(open>=0){
-    const start=open+fence.length+4,end=body.indexOf(fence,start);
+    const start=open+fence.length+4,end=payload.indexOf(fence,start);
     if(end<0)throw Error('Unclosed lease JSON');
-    source=body.slice(start,end);
+    source=payload.slice(start,end);
    }else{
-    const start=body.indexOf('{'),end=body.lastIndexOf('}');
+    const start=payload.indexOf('{'),end=payload.lastIndexOf('}');
     if(start<0||end<=start)throw Error('Missing lease JSON');
-    source=body.slice(start,end+1);
+    source=payload.slice(start,end+1);
    }
    doc=JSON.parse(source);
   }catch{
@@ -89,18 +116,21 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    // clearly released record when both its endpoints are valid, unambiguous
    // SHA values and neither can refer to the current HEAD. Never treat this
    // legacy format as proof that a current owner's lease has been released.
-   const field=name=>[...body.matchAll(new RegExp('^'+name+'=([^\\r\\n]+)$','gm'))].map(m=>m[1].trim());
+   const field=name=>[...payload.matchAll(new RegExp('^'+name+'=([^\\r\\n]+)$','gm'))].map(m=>m[1].trim());
    const old=field('old_head'),next=field('new_head'),status=field('status');
    if(old.length===1&&next.length===1&&status.length===1&&status[0]==='RELEASED'&&
       SHA.test(old[0])&&SHA.test(next[0])&&old[0]!==headSha&&next[0]!==headSha)continue;
+   if(unrelatedLegacyRelease(payload,headSha))continue;
    return 'OWNER_LEASE_UNVERIFIED';
   }
   if(!doc||typeof doc!=='object'||Array.isArray(doc))
    return 'OWNER_LEASE_UNVERIFIED';
-  const oldPair=SHA.test(doc.old_head||'')&&SHA.test(doc.new_head||'')&&
+  const oldHead=doc.old_head||doc.old_head_sha;
+  const newHead=doc.new_head||doc.new_head_sha;
+  const oldPair=SHA.test(oldHead||'')&&SHA.test(newHead||'')&&
    /^released(?:_|$)/.test(String(doc.state||''));
   const related=doc.head_sha===headSha||doc.previous_head_sha===headSha||
-   (oldPair&&(doc.old_head===headSha||doc.new_head===headSha));
+   (oldPair&&(oldHead===headSha||newHead===headSha));
   if(!related){
    if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||'')&&!oldPair)
     return 'OWNER_LEASE_UNVERIFIED';
