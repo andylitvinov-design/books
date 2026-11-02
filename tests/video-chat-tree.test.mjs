@@ -159,6 +159,22 @@ test("one-click shortcut fills missing nodes and filters without overwriting cho
   assert.equal(nextVideoChatTreeStep({...next,mood:"slow",duration:30}),"review");
 });
 
+test("automatic director preserves the chosen catalog phrase and custom wording",()=>{
+  let current=pick(pick(pick(pick(draft(),"category","love"),"topic","love-trust"),
+    "scenario","love-trust-s3"),"idea","love-trust-s3-i2");
+  const options=videoChatTreeOptions(current,"phrase","ru");
+  current=pick(current,"phrase",options[2].id);
+  const preserved=autocompleteVideoChatTree({...current,aspect:"square"},
+    "relationships","ru");
+  assert.equal(preserved?.phraseId,options[2].id);
+  assert.equal(preserved?.phraseText,options[2].label);
+  assert.equal(preserved?.aspect,"square");
+  const personal=chooseCustomVideoChatPhrase(current,"Я выбираю свой путь.");
+  const personalAuto=autocompleteVideoChatTree(personal,"relationships","ru");
+  assert.equal(personalAuto?.phraseId,"custom");
+  assert.equal(personalAuto?.phraseText,"Я выбираю свой путь.");
+});
+
 test("auto-selected extended phrase keeps both sentences for two actual scene captions",()=>{
   const selected=pick(pick(draft(),"category","love"),"topic","love-trust");
   const auto=autocompleteVideoChatTree({...selected,length:"extended"},
