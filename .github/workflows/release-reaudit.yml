@@ -65,7 +65,10 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Full Chromium + WebKit, mobile + desktop CSP/reader acceptance exceeded
+    # the previous 20m job cap after a real Next build on PR #3113.
+    # Preserve all assertions and browsers; allow them to finish fail-closed.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
