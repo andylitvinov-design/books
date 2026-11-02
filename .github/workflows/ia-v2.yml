@@ -128,6 +128,7 @@ jobs:
           node --input-type=module <<'JS'
           import {execFileSync} from 'node:child_process'
           import {appendFileSync} from 'node:fs'
+          import {isPrivateMeditationRelease} from './scripts/ci-practitioner-meditation-scope.mjs'
           const allowed=[
             /^app\/\[locale\]\/app\/messages\//,
             /^components\/app\/(?:messages-|crm-messenger|crm-salesbot-assist)/,
@@ -149,6 +150,7 @@ jobs:
           const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
           let operatorOnly=false
           let messengerOnly=false
+          let practitionerMeditationOnly=false
           if(process.env.HH_PR_EVENT==='pull_request'){
             try{
               const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim()
@@ -178,12 +180,15 @@ jobs:
                 head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
                 (files.every(file=>allowed.some(pattern=>pattern.test(file)))||operatorOnly)
               operatorOnly=operatorOnly&&messengerOnly
-              console.log(JSON.stringify({base,head,files,operatorOnly,messengerOnly}))
+              practitionerMeditationOnly=baseValid &&
+                head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
+                isPrivateMeditationRelease(files)
+              console.log(JSON.stringify({base,head,files,operatorOnly,messengerOnly,practitionerMeditationOnly}))
             }catch(err){
               console.error('Messenger scoped classification unavailable; keeping full IA',err.message)
             }
           }
-          appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\n')
+          appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\npractitioner_meditation_only='+practitionerMeditationOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
@@ -197,6 +202,12 @@ jobs:
         run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
       # Original IA security/app contracts above remain mandatory for every PR.
       # Repository-wide historical inventory stays on explicit maintenance/manual runs.
+      # An additional exact-HEAD private-media suite; existing IA auth, RLS,
+      # guest browser and production build remain mandatory and unchanged.
+      - name: Private meditation owner, authentication, media and safe course contracts
+        if: ${{ steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
+        run: |
+          node --test tests/practitioner-meditation-studio.test.mjs tests/practitioner-preview-auth.test.mjs tests/practitioner-bridge.test.mjs tests/admin-login-security.test.mjs tests/course-slide-recorder.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/ci-practitioner-meditation-scope.test.mjs
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - name: Full lint outside production PR (core release-ready owns production lint)
