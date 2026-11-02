@@ -1,0 +1,25 @@
+name: HH PR conflict inventory diagnostic (manual only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: hh-manual-conflict-inventory-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  inspect-conflicts:
+    name: read-only conflict inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect real conflicts (GitHub GraphQL may be transiently unavailable)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"

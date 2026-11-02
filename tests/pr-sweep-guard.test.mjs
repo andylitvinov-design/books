@@ -10,6 +10,19 @@ const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
 
+test('GraphQL conflict inventory is a separate manual diagnostic, not an obligated PR check',()=>{
+  const guard=readFileSync('.github/workflows/hh-pr-sweep-guard.yml','utf8');
+  const diagnostic=readFileSync('.github/workflows/hh-pr-conflict-inventory-diagnostic.yml','utf8');
+  assert.match(guard,/node --test tests\/pr-sweep-guard\.test\.mjs/);
+  assert.doesNotMatch(guard,/route-conflicts|GH_TOKEN|inspect-conflicts/);
+  assert.match(guard,/^  pull_request:$/m);
+  assert.match(diagnostic,/^  workflow_dispatch:$/m);
+  assert.doesNotMatch(diagnostic,/^  pull_request:$/m);
+  assert.match(diagnostic,/route-conflicts/);
+  assert.match(diagnostic,/pull-requests: read/);
+  assert.doesNotMatch(diagnostic,/continue-on-error:\s*true/);
+});
+
 test('deep stale triage accepts only latest exact-head required-app gate failure',()=>{
   const gate=(id,conclusion,overrides={})=>({id,name:'release-ready',status:'completed',conclusion,head_sha:sha('a'),app:{id:15368},started_at:`2026-10-31T12:00:0${id}Z`,...overrides});
   const assess=(checks,total=checks.length)=>assessRequiredGate({head:sha('a'),appId:15368,checks,total});

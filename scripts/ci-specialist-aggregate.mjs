@@ -98,10 +98,26 @@ export function githubReader(repo, token, transport = fetch) {
 // and voice/recorder changes must still prove real encoded audio and video.
 export function optionalMandalaMacosSkip(files, branch, changed) {
   const name = '.github/workflows/holistic-support-mandala.yml';
-  const source = files?.base?.get(name);
-  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+  const source = files?.base?.get(name), current = files?.current?.get(name);
+  // The optional macOS job may be skipped only when the complete job block,
+  // including its exact branch condition and real media steps, is byte-for-byte
+  // unchanged from immutable production. Non-job YAML changes still get actionlint,
+  // Core and specialist ownership checks; a PR cannot weaken its own Safari gate.
+  const jobBlock = yaml => {
+    if (typeof yaml !== 'string') return null;
+    const marker = '\n  voice-webkit-macos:\n';
+    const start = yaml.indexOf(marker);
+    if (start < 0 || yaml.indexOf(marker,start+marker.length) >= 0) return null;
+    const suffix = yaml.slice(start);
+    const remainder = suffix.slice(marker.length);
+    const next = remainder.search(/\n(?:(?:  )?[a-zA-Z][\w-]*):/);
+    return next < 0 ? suffix : suffix.slice(0,marker.length+next);
+  };
+  const trusted = jobBlock(source);
+  if (typeof source !== 'string' || !source || typeof current !== 'string' ||
+      !trusted || trusted !== jobBlock(current) ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
-      changed.includes(name) || changed.some(path =>
+      changed.some(path =>
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";

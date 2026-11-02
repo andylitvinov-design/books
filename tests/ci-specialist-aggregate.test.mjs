@@ -1083,6 +1083,18 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
   assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
   assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[path,workflow+'# modified']])},'codex/perf-video-studio-lazy-panels-20261101',ui),false);
+  // Generic CI policy/trigger updates remain eligible only when the complete
+  // immutable Safari job is untouched. This prevents redundant skipped-job reds.
+  const updatedTrigger = workflow.replace("paths: ['components/mandala-*']",
+    "paths: ['components/mandala-*','tests/mandala-*.test.mjs']");
+  const sameSafariJob={base:files.base,current:new Map([[path,updatedTrigger]])};
+  assert.equal(optionalMandalaMacosSkip(sameSafariJob,
+    'codex/ci-risk-scoped-release-rules-20261101',[...ui,path]),true);
+  const alteredSafariJob=workflow.replace('runs-on: macos-15','runs-on: ubuntu-latest');
+  assert.equal(optionalMandalaMacosSkip({base:files.base,current:new Map([[path,alteredSafariJob]])},
+    'codex/ci-risk-scoped-release-rules-20261101',[...ui,path]),false);
+  assert.equal(optionalMandalaMacosSkip(sameSafariJob,
+    'codex/ci-risk-scoped-release-rules-20261101',[...ui,path,'app/api/holistic-support/voice/route.js']),false);
   const jobs = [{name:'focused-unit-types-build',status:'completed',conclusion:'success'},
     {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'}];
   assert.throws(()=>inspectJobs(jobs,path),/UNSUCCESSFUL_SPECIALIST_JOB/);
