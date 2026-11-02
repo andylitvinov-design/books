@@ -10,7 +10,13 @@ function fixture({status={},pr=base,throwAt='',owner='andylitvinov-design'}={}){
   const calls=[],reported=[];
   const github={rest:{pulls:{get:async()=>({data:pr})}}};
   const fetcher=async(url,opts)=>{
-    assert.equal(opts.method,'GET');
+    assert.ok(['GET','POST'].includes(opts.method));
+    if(opts.method==='POST'){
+      assert.ok(url.endsWith('/git/blobs'));
+      assert.deepEqual(JSON.parse(opts.body),{content:'HH_OWNER_TOKEN_WRITE_PROBE_V1\n',encoding:'utf-8'});
+      calls.push('GIT_BLOB_WRITE');
+      return {status:status.GIT_BLOB_WRITE??201,json:async()=>({sha:TREE})};
+    }
     assert.equal(opts.headers.Authorization,'Bearer '+TOKEN);
     assert.ok(url.startsWith('https://api.github.com/'));
     const stage=url.endsWith('/user')?'TOKEN_OWNER':url.endsWith('/books')?'REPOSITORY_METADATA':
@@ -24,7 +30,7 @@ function fixture({status={},pr=base,throwAt='',owner='andylitvinov-design'}={}){
       return {tree:{sha:TREE}};
     }};
   };
-  const run=()=>probeOwnerToken({github,fetcher,ownerToken:TOKEN,prNumber:2169,
+  const run=(writeProbe=false)=>probeOwnerToken({github,fetcher,ownerToken:TOKEN,prNumber:2169,writeProbe,
     report:x=>reported.push(x)});
   return {run,calls,reported};
 }
@@ -80,4 +86,21 @@ test('CI worker offers dedicated read-only probe without new write token or job'
   assert.match(y,/HH_OWNER_TOKEN_PROBE /);
   assert.match(y,/READ_OK_WRITE_UNVERIFIED/);
   assert.match(y,/context\.eventName==='push'/);
+});
+
+test('scoped blob write succeeds without modifying branch or creating a commit',async()=>{
+  const f=fixture();const r=await f.run(true);
+  assert.equal(r.status,'GIT_OBJECT_WRITE_OK_REF_UNVERIFIED');
+  assert.equal(r.writePermissionVerified,false);
+  assert.equal(r.sourceChanged,false);
+  assert.equal(r.stages.at(-1).http_status,201);
+  assert.equal(f.calls.at(-1),'GIT_BLOB_WRITE');
+  assert.ok(!JSON.stringify(r).includes(TOKEN));
+});
+test('HTTP 403 on minimal blob write is diagnosed without any ref mutation',async()=>{
+  const f=fixture({status:{GIT_BLOB_WRITE:403}});const r=await f.run(true);
+  assert.equal(r.status,'GIT_BLOB_WRITE_DENIED');
+  assert.equal(r.stages.at(-1).http_status,403);
+  assert.equal(r.sourceChanged,false);
+  assert.ok(!JSON.stringify(f.reported).includes(TOKEN));
 });
