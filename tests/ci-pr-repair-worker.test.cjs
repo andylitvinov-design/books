@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
@@ -708,4 +708,64 @@ test('trusted Repair finalization fast paths preserve independent Codex verifica
  for(const untrusted of [fix,codeFix,codeVerify]) assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN/);
  assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
  assert.doesNotMatch(pub,/contents: write/);
+});
+
+
+test('trusted failed Core/TypeScript source routes directly to Code Repair',async()=>{
+ const body='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\n'+
+   'Core CI failed on exact HEAD.\nFailed jobs: core-lint-types-build, release-ready.\n';
+ const signed={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},body};
+ assert.equal(verifiedCoreCodeFailure([signed],sha),true);
+ assert.equal(verifiedCoreCodeFailure([{...signed,user:{login:'attacker'}}],sha),false);
+ assert.equal(verifiedCoreCodeFailure([signed],newSha),false);
+ assert.equal(verifiedCoreCodeFailure([{...signed,body:body.replace('core-lint-types-build','hh-specialist')}],sha),false);
+ assert.equal(verifiedCoreCodeFailure([{...signed,body:'quoted '+body}],sha),false);
+ const f=fixture({comments:[signed]});core.outputs={};
+ const r=await claim({github:f.github,core,context,hasToken:true,number:11});
+ assert.equal(r.status,'claimed');
+ assert.equal(core.outputs.strategy,'code');
+ assert.equal(r.strategy,'code');
+ assert.match(f.log.commentBodies[0],/verified Core\/TypeScript code repair/);
+});
+
+test('direct Code Repair with missing API key never claims a published source SHA',async()=>{
+ const f=fixture();
+ const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'code',fixResult:'skipped',
+  codeAvailable:false,codeResult:'skipped',publishResult:'skipped'});
+ assert.equal(r.state,'MANUAL');
+ assert.equal(r.strategy,'code');
+ assert.equal(r.reason_code,'CODEX_API_KEY_NOT_CONFIGURED');
+ assert.equal(r.source_published,false);
+ assert.equal(f.log.commit,0);
+});
+
+test('direct code publisher requires verified parent commit on current PR HEAD',async()=>{
+ const original=pr(),f=fixture({pr:pr({head:{...original.head,sha:newSha}})});
+ f.github.rest.git.getCommit=async()=>({data:{parents:[{sha}]}});
+ const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'code',fixResult:'skipped',
+  codeAvailable:true,codeResult:'success',codeStatus:'proposed',
+  codeVerifyResult:'success',codeVerifyStatus:'ready',
+  publishResult:'success',publishStatus:'committed',publishSha:newSha});
+ assert.equal(r.state,'PUBLISHED');
+ assert.equal(r.repair_kind,'codex');
+ assert.equal(r.new_sha,newSha);
+});
+
+test('direct Core workflow routes to isolated code verifier and protected publish',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
+ assert.match(wf,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
+ assert.match(wf,/!cancelled\(\) &&\s+needs\.code_fix\.result == 'success'/);
+ assert.match(wf,/strategy:process\.env\.HH_REPAIR_STRATEGY\|\|'lint'/);
+ assert.match(wf,/HH_REPAIR_STRATEGY: /);
+ assert.match(wf,/needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
+ assert.match(wf,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.match(wf,/uses: openai\/codex-action@v1/);
+ assert.match(wf,/uses: actions\/download-artifact@v4/);
+ assert.doesNotMatch(wf,/force: true/);
 });
