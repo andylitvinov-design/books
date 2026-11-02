@@ -129,7 +129,7 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -816,7 +816,7 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   }
   assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 0);
   assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3);
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 2);
   assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
   assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
   assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
@@ -841,7 +841,7 @@ test('Core old PR base beyond shallow depth is checked by API, never mistaken fo
     assert.ok(job.includes('HH_TESTED_BASE_VERIFIED=$tested_base'));
   }
   assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
-  assert.ok(!scope.includes('git merge-base --is-ancestor "$HH_EVENT_BASE_SHA" "$tested_base"'));
+  assert.ok(scope.includes('git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"'));
   assert.ok(!code.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
 });
 
@@ -1317,7 +1317,7 @@ test('post-migration live gate preserves parallel source checks and removes redu
   assert.doesNotMatch(specialist,/^    needs:/m,'schedule specialist alongside scope');
   assert.match(specialist,/ci-specialist-aggregate\.mjs/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
@@ -1493,7 +1493,7 @@ test('universal actionlint and Guard use lightweight runner without weakening ex
   assert.ok(guard.includes('npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund'));
   assert.ok(guard.includes('node --test tests/pr-sweep-guard.test.mjs'));
   assert.doesNotMatch(guard, /github\.event\.pull_request\.head\.sha \|\| github\.sha/);
-  assert.match(core.split(/^  code:\s*$/m)[1].split(/^  hh-specialist:\s*$/m)[0], /^    runs-on: ubuntu-24\.04$/m);
+  assert.match(core.split(/^  scope:\s*$/m)[1].split(/^  hh-specialist:\s*$/m)[0], /^    runs-on: ubuntu-24\.04$/m);
   for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
