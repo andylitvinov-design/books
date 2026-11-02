@@ -1233,3 +1233,36 @@ test('independent specialist failures require complete trusted same-HEAD evidenc
   assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services','failure','completed',999)]}),'POLICY_OR_SKIPPED');
   assert.equal(classify({total_count:101,check_runs:rows}),'UNKNOWN');
 });
+
+test('one exact unified Actions status can wake the existing merge coordinator',async()=>{
+  let dispatched=0;
+  const candidate=pr(99);
+  const github={rest:{
+    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'clean'}})},
+    actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:3}})},
+    checks:{listForRef:async arg=>({data:{total_count:1,check_runs:[{
+      id:2,name:arg.check_name==='hh-merge-check'?'hh-merge-check':'obsolete-check',
+      status:'completed',conclusion:'success',app:{id:15368}
+    }]}})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['hh-merge-check']}
+    }}})}
+  },request:async route=>{if(route.includes('dispatches'))dispatched++;return {data:{workflow_runs:[]}};}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.greenUnarmed,1);
+  assert.equal(result.mergeCoordinatorDispatched,1);
+  assert.equal(dispatched,1);
+});
+
+
+
+test('production coordinator keeps exact new unified status after protection migration',()=>{
+  const {readFileSync}=require('node:fs');
+  const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+  const watchdog=readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(hourly.includes('const unifiedRequired=legacy.includes("hh-merge-check")'));
+  assert.ok(hourly.includes('UNIFIED_REQUIRED_NOT_GREEN'));
+  assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(watchdog.includes('required-unified-head-check'));
+  assert.ok(watchdog.includes("'hh-merge-check'"));
+});
