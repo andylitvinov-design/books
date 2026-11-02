@@ -104,3 +104,13 @@ test("MyTube projects ONLY published public Academy/Library sources; never fabri
  assert.equal(rankDiscoveryVideos(rows,{area:"energy_health",goal:"stress"}).length,1);
  assert.equal(rankDiscoveryVideos(rows,{area:"business"}).length,0);
 });
+
+test("MyTube unified branch triggers real macOS WebKit, without hiding specialist failures",()=>{
+ const workflow=read(".github/workflows/holistic-support-mandala.yml");
+ const guard=workflow.split("  voice-webkit-macos:")[1]?.split("    runs-on:")[0]||"";
+ assert.match(guard,/github.event.pull_request.draft == false/);
+ assert.match(guard,/startsWith\(github.head_ref, 'feat\/mytube-unified-six-bottom-'\)/);
+ assert.doesNotMatch(guard,/if:\s*\$\{\{\s*always\(\)/);
+ assert.match(workflow,/runs-on: macos-15/);
+ assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+});
