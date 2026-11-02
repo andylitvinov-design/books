@@ -61,7 +61,9 @@ defaults:
 
 jobs:
   native-current-contracts:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # Secret-free source contracts must run on DRAFT PRs too, so the signing
+    # implementation is reviewed with executed evidence before becoming Ready.
+    # Draft still blocks Core/Release and never enables production signing.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
