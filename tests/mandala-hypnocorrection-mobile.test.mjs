@@ -99,7 +99,7 @@ test("owner's third workspace exposes three image-led groups in approved order a
   assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:374px\)/);
   assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
-  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number all four illustrated groups");
+  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number all three approved illustrated groups");
   assert.match(ui,/styles\.groupNumber/, "number badge is on original photo tile");
   assert.match(css,/\.groupNumber\{position:absolute/, "number badge remains legible on photo");
   assert.match(css,/\.feature\{height:124px;min-height:124px;max-height:124px;/,
@@ -119,7 +119,7 @@ test("owner's third workspace exposes three image-led groups in approved order a
   assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
   assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
   for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
-  assert.doesNotMatch(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
+  assert.doesNotMatch(ui,/unavailable onToggle=/, "no dead placeholder remains in the three live groups");
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
 
@@ -139,7 +139,8 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.match(css,/\.feature,.feature\[data-photo=true\]\{position:relative/);
   assert.match(css,/\.feature\[data-photo=true\] \.featurePoster\{position:absolute/);
   assert.match(css,/\.switch\{grid-column:1;grid-row:1;z-index:3/);
-  assert.match(ui,/data-hypno-meditation-action/);
+  assert.doesNotMatch(ui,/data-hypno-meditation-action/, "personal meditation action belongs to Practices");
+  assert.doesNotMatch(ui,/id:"meditation"|styles\.meditation/);
   assert.equal((ui.match(/data-hypno-create/g)||[]).length,1,"one original local recording callback");
   assert.match(ui,/onClick=\{onCreate\}/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);
