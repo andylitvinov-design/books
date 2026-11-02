@@ -81,7 +81,7 @@ function unrelatedLegacyRelease(payload,headSha){
  return /^released(?:_|$)/.test(fields.get('state')||'') &&
   Boolean(fields.get('owner')&&fields.get('lease_id')) &&
   Number.isFinite(Date.parse(fields.get('released_at')||'')) &&
-  refs.length>=2 && refs.every(ref=>SHA.test(ref)&&ref!==headSha);
+  refs.length>=1 && refs.every(ref=>SHA.test(ref)&&ref!==headSha);
 }
 
 function externalOwnerLeaseStatus(comments,headSha,now){
