@@ -154,8 +154,9 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
   for(const issue of candidates){
     if(summary.apiPause)break;
     summary.examined++;
+    let pr=null;
     try{
-      let pr=(await limited('live-pr',()=>github.rest.pulls.get({
+      pr=(await limited('live-pr',()=>github.rest.pulls.get({
         owner,repo,pull_number:issue.number
       }))).data;
       if(pr.number!==issue.number || !validPR(pr,fullRepo))continue;
