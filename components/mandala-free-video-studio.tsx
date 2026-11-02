@@ -3081,7 +3081,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
           if(details)details.open=true;
           window.requestAnimationFrame(()=>
-            document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"));
+            document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"}));
         });
       }else{
         document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
