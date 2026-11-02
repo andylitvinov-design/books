@@ -1716,6 +1716,11 @@ const runEngine = async ([engine, browserType]) => {
             programmeLayout.hero.bottom<=programmeLayout.course.top &&
             programmeLayout.course.bottom<=programmeLayout.nav.top,
             "therapy programme must follow its own player directly before extra video settings");
+          // The approved practice page starts in State mode; the two text fields
+          // exist only after a real visitor selects the Development Vector tab.
+          await page.locator('[data-video-therapy-focus] [role="group"]').first().locator("button").nth(1).click();
+          assert.equal(await page.locator("[data-guided-generate-meditation]").isDisabled(),true,
+            "the vector cannot generate content before both fields are filled");
           await page.locator("[data-video-key-difficulty]").fill("Мне трудно расслабиться");
           await page.locator("[data-video-key-goal]").fill("Я хочу больше спокойствия");
           await page.locator("[data-video-goal-accents]").click();

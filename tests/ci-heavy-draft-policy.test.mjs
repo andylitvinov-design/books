@@ -397,7 +397,7 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(browserGate, 'real browser Build guard missing');
   for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
     "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
-    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
     assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));

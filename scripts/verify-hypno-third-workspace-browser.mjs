@@ -41,9 +41,31 @@ for(const [engine,driver] of [['chromium',playwright.chromium],['webkit',playwri
         assert.equal(await page.locator('[data-hypno-wave]').count(),1,'one Wave control');
         assert.equal(await page.locator('[data-hypno-mobile]').count(),1,'one original editor');
         const player=page.locator('[data-video-mandala-hero]');
-        const [waveBox,playerBox]=await Promise.all([wave.boundingBox(),player.boundingBox()]);
-        assert.ok(waveBox&&playerBox&&waveBox.y+waveBox.height<playerBox.y,
-          'Wave must appear above original film player');
+        // The lazy portal and its font/layout can settle after the Wave button
+        // becomes visible, especially on mobile WebKit. Verify the real pixels,
+        // not merely DOM order; do not waive a persistent layout regression.
+        await page.evaluate(()=>document.fonts.ready);
+        try {
+          await page.waitForFunction(()=>{
+            const wave=document.querySelector('[data-hypno-intro-slot] [data-hypno-wave]');
+            const hero=document.querySelector('[data-video-mandala-hero]');
+            if(!wave||!hero)return false;
+            const w=wave.getBoundingClientRect(),p=hero.getBoundingClientRect();
+            return w.height>=44&&p.height>0&&w.bottom<=p.top+1;
+          },undefined,{timeout:14000,polling:200});
+        } catch (error) {
+          const geometry=await page.evaluate(()=>{
+            const w=document.querySelector('[data-hypno-intro-slot] [data-hypno-wave]');
+            const p=document.querySelector('[data-video-mandala-hero]');
+            const slot=document.querySelector('[data-hypno-intro-slot]');
+            const stage=p?.closest('[data-video-live-stage]');
+            return {waveBottom:w?.getBoundingClientRect().bottom,
+              playerTop:p?.getBoundingClientRect().top,
+              slotOrder:slot?getComputedStyle(slot).order:null,
+              stageOrder:stage?getComputedStyle(stage).order:null};
+          });
+          throw new Error('Wave must appear above original film player: '+JSON.stringify(geometry),{cause:error});
+        }
         const effects=page.locator('[data-hypno-mobile]');
         const groups=effects.locator('[data-hypno-group]');
         assert.deepEqual(await groups.evaluateAll(nodes=>nodes.map(x=>x.getAttribute('data-hypno-group'))),
