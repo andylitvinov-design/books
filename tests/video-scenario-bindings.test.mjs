@@ -13,7 +13,9 @@ const catalog=JSON.parse(readFileSync(new URL(
 const verified=scene=>({
   id:scene.id,path:scene.video,status:'technical_ready',technicalVerified:true,
   sha256:'a'.repeat(64),codec:'h264',width:720,height:1280,fps:24,
-  durationSeconds:5,frameDecoded:true,rightsScope:'collection_only',
+  durationSeconds:5,frameDecoded:true,
+  rightsScope:scene.rightsReference?.kind==='dareful_cc_by_4_0'
+    ?'individual_record':'collection_only',
 });
 const evidence=scenes=>({
   schemaVersion:'hh-verified-assets-v1',status:'pass',
