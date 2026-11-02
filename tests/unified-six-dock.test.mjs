@@ -141,3 +141,11 @@ test("same-page Video to AI click opens the original hidden details instead of r
  assert.match(dock,/if \(detail && !detail\.open\) detail\.open = true/);
  assert.match(dock,/setHash\("#video-director-chat"\)/);
 });
+
+// Real WebKit checks still drive the accordion; this source guard prevents a
+// later refactor from letting deferred omission override explicit manual intent.
+test("manual narration disclosure cancels deferred course omission close",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.ok(studio.includes('<summary onClick={()=>{meditationDisclosureEpochRef.current++;}}>'));
+ assert.match(studio,/if\(epoch!==meditationDisclosureEpochRef\.current\)return;/);
+});
