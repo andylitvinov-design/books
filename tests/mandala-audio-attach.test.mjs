@@ -247,7 +247,8 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
   assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
     "only the active workspace mounts the shared native audio editor");
-  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
+  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}setSamplePreviewId\(choice\);\}\)/,
+    "playing a track synchronously mounts the one real native player in fifth Montage");
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
 });
@@ -257,7 +258,9 @@ test("direct audio URL reveals its existing workspace instead of hidden advanced
   const s=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(s,/const reveal=\(\)=>\{/);
-  assert.match(s,/"video-audio":"video"/);
+  assert.match(s,/"video-audio":"editor"/);
+  assert.match(s,/setBasicPanelTab\("music"\)/,
+    "deep link shows the actual shared audio editor, not a hidden old tab");
   assert.match(s,/setActiveWorkspace\(tab\)/);
   assert.match(s,/window\.addEventListener\("hashchange",reveal\)/);
   assert.match(s,/window\.removeEventListener\("hashchange",reveal\)/);
