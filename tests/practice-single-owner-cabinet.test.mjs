@@ -51,6 +51,7 @@ test('Google owner tool transition is allowlisted end-to-end with no open redire
   assert.match(access,/tools: '\/admin\/tools'/)
   assert.match(login,/\['growth', 'seo', 'acquisition', 'tools', 'youtubeConnect'\]\.includes/)
   assert.match(login,/\? params\.destination : 'cabinet'/)
+  assert.doesNotMatch(login,/redirect\(params\?\.destination\)/)
   assert.match(login,/practitionerDestination\[destination\]/)
   assert.match(entry,/tools: '\/admin\/tools'/)
   assert.match(entry,/response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)
