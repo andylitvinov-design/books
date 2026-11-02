@@ -140,7 +140,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                         event="service_request_start" className={styles.contactButton}
                         attributes={{ "data-business-format": offer.kind }} />
                     )}
-                    <AcquisitionEventLink className={styles.offerDirectLink}
+                    <AcquisitionEventLink className={styles.offerDirectLink} nativeNavigation
                       href="#business-direct-request" event="service_request_start" prefetch={false}
                       attributes={{ "data-business-direct-option": offer.kind }}>
                       {siteRequestLabel}<ArrowRight size={15} aria-hidden="true" />
