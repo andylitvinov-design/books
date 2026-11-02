@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -87,6 +87,16 @@ export function PersonalExpressEnquiry({
   const [expanded, setExpanded] = useState(false);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeDisclosure = useCallback(() => {
+    // A delayed hashchange after Escape can re-open the folded form in WebKit.
+    // Remove only our form anchor; never clear search params or client identity.
+    if (window.location.hash === "#request-free-review") {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
+    setExpanded(false);
+  }, []);
 
   // The compact mobile capture begins at the top of the visible card after opening.
   useEffect(() => {
@@ -136,13 +146,13 @@ export function PersonalExpressEnquiry({
     if (!expanded) return;
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && panelRef.current?.contains(document.activeElement)) {
-        setExpanded(false);
+        closeDisclosure();
         revealRef.current?.focus();
       }
     };
     document.addEventListener("keydown", onEscape);
     return () => document.removeEventListener("keydown", onEscape);
-  }, [expanded]);
+  }, [expanded, closeDisclosure]);
   const whatsappUrl = whatsappEnquiryUrl({
     locale, service: t.service, request: t.request, pagePath: pathname,
     // Deliberately omit the selected focus and all health/personal information
@@ -167,7 +177,7 @@ export function PersonalExpressEnquiry({
           <button ref={revealRef} type="button" className={styles.reveal}
             data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
             aria-label={expanded ? t.close : t.secureAlternative}
-            onClick={() => setExpanded(open => !open)}>
+            onClick={() => { if (expanded) closeDisclosure(); else setExpanded(true); }}>
             {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
             <span>{expanded ? t.close : t.secureAlternative}</span>
             <ChevronDown className={styles.revealChevron} size={16} aria-hidden="true" />

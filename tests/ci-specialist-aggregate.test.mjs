@@ -274,10 +274,18 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  // One additional metadata-only trusted workflow enables native auto-merge.
-  // Production has 95 reviewed suites after Meditation Writer; avoid a 96th.
-  assert.ok(names.includes('hh-language-agent.yml'), 'Reviewed Meditation Writer specialist must remain');
-  assert.ok(names.length <= 95, 'Workflow budget exceeded: reuse an existing domain suite');
+  // 2 Nov 2026 reviewed CI architecture: one scoped language-agent suite was
+  // added to the previous 94-workflow production catalog. Preserve the exact
+  // ceiling (95), require its dedicated domain tests, and reject future growth.
+  assert.ok(names.length <= 95, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  if(names.length > 94){
+    assert.ok(names.includes('hh-language-agent.yml'),'Only the reviewed Language Agent may use the 95th workflow slot');
+    const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
+    assert.match(language,/language-contract:/,'Language Agent must retain focused privacy contracts');
+    assert.match(language,/typed-ui:/,'Language Agent must retain independent TypeScript check');
+    assert.match(language,/holistic-language-agent\.test\.mjs/,'Language Agent must retain privacy tests');
+    assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
+  }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
