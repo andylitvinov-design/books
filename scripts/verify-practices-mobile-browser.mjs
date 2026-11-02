@@ -58,8 +58,22 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         await primary.click();
         const result=course.locator("[data-guided-meditation-result]");
         await result.waitFor({state:"visible"});
+        const personal=course.locator("[data-guided-personal-meditation-step]");
+        assert.equal(await personal.count(),1,"personal meditation reuses one existing editor");
+        await personal.locator("[data-guided-open-personal-meditation]").click();
+        const existingEditor=page.locator("[data-video-therapy-meditation-audio]");
+        assert.equal(await existingEditor.getAttribute("open"),"",
+          "personal meditation CTA opens the existing editor");
+        await existingEditor.evaluate(el=>{el.open=false;});
         const practice=course.locator("[data-guided-practice-step]");
         await practice.waitFor({state:"visible"});
+        const moments=practice.locator("[data-guided-ritual-moment]");
+        assert.equal(await moments.count(),4,"four ritual moment cards");
+        await practice.locator('[data-guided-ritual-moment="evening"]').click();
+        assert.equal(await practice.locator('[data-guided-ritual-moment="evening"]').getAttribute("aria-pressed"),"true");
+        await practice.locator("[data-guided-create-ritual]").click();
+        assert.ok((await practice.locator("ol").innerText()).length>20,
+          "ritual button shows generated meaningful steps");
         const kinds=practice.locator('[role="group"] button');
         assert.equal(await kinds.count(),3);
         const names=[];
