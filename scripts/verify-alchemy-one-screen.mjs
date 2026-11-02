@@ -81,6 +81,15 @@ try {
         };
       });
       const issues = [];
+      if (locale === "es" && width === 320 && height === 568) {
+        const controlHeights = await root.locator('[data-alchemy-panel="request"] select, [data-alchemy-panel="request"] button')
+          .evaluateAll(nodes => nodes.filter(node => {
+            const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
+            return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
+          }).map(node => node.getBoundingClientRect().height));
+        if (controlHeights.some(height => height < 44))
+          issues.push("short Spanish request controls must remain at least 44px tall");
+      }
       if (data.documentWidth > width + 1) issues.push("horizontal document overflow " + data.documentWidth);
       if (data.panels.length !== chapters.length) issues.push("expected ten chapters, got " + data.panels.length);
       for (let i=0;i<data.panels.length;i++) {
