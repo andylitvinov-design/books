@@ -217,7 +217,14 @@ test("goal-matched ritual, exercise, practice and eight-session plans share appr
       PSYCHOLOGY_VIDEO_SKILLS[expected].steps[locale].forEach((step,i)=>
         assert.ok(card.steps[i].includes(step)));
     }
-    const prepared=plan(focus,goal,locale);
+    // An eight-session course starts from the reviewed first session only.
+    // Keep this explicit: the planner must still reject unnumbered or future drafts.
+    const prepared=prepareMeditationCreativeBrief({
+      program,
+      request:request(focus,goal,locale),
+      consent:{resourceImagery:true},
+      sessionNumber:1,
+    });
     assert.equal(prepared.status,"brief_ready");
     const outline=buildEightDayCourseOutline({program,prepared});
     assert.equal(outline.status,"ready");
