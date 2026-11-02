@@ -58,11 +58,13 @@ SHA-256 отпечаток **ожидаемого постоянного сер�
 node scripts/verify-hh-direct-apk-qa.mjs \
   --apk ./Holistic-House-Android-v1.0.0.apk \
   --sha-file ./hh-website-apk-sha256.txt \
-  --expected-cert <64-символьный-SHA256-отпечаток-сертификата> \
+  --expected-cert "PASTE_APPROVED_CERTIFICATE_SHA256_HERE" \
   --version 1.0.0 \
   --version-code 2 \
   --out ./hh-apk-static-qa.json
 ```
+
+Замените значение `PASTE_APPROVED_CERTIFICATE_SHA256_HERE` на настоящий 64-значный SHA-256 сертификата из вашего защищённого реестра или `keytool`; это не пароль и не закрытый ключ. Не вводите здесь `<>`, поскольку оболочка воспринимает их как специальные операторы.
 
 Если SDK вне `ANDROID_HOME`, передайте абсолютные пути к инструментам через
 `--apksigner` и `--aapt`. Команда проверяет SHA-256 реального APK против

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -241,4 +242,53 @@ test('offline Android APK QA recomputes signed payload evidence and never claims
   assert.match(code,/spawnSync\(exe,args,\{shell:false/)
   assert.match(code,/ownerApprovedForPublication: false/)
   assert.doesNotMatch(code,/fetch\(|https:\/\/api\.github\.com|gh release create|upload-release-asset/)
+})
+
+test('offline APK QA command validates actual file stream with safe tools and refuses false receipt',()=>{
+  const root=mkdtempSync(join(tmpdir(),'hh-apk-static-qa-'))
+  try{
+    const version='1.0.0',cert='b'.repeat(64)
+    const filename='Holistic-House-Android-v'+version+'.apk'
+    const apk=join(root,filename),hashFile=join(root,'hh-website-apk-sha256.txt')
+    const bytes=Buffer.from('synthetic binary for QA command plumbing; NOT an Android application')
+    writeFileSync(apk,bytes)
+    const digest=createHash('sha256').update(bytes).digest('hex')
+    writeFileSync(hashFile,digest+'  '+filename+'\n')
+    const signer=join(root,'qa-fake-apksigner')
+    const aapt=join(root,'qa-fake-aapt')
+    writeFileSync(signer,'#!/usr/bin/env node\n'+
+      "if(process.argv.slice(2,5).join(' ')!=='verify --verbose --print-certs')process.exit(3);\n"+
+      "process.stdout.write('Verifies\\nVerified using v2 scheme (APK Signature Scheme v2): true\\nSigner #1 certificate SHA-256 digest: "+cert+"\\n');\n",
+      {mode:0o755})
+    writeFileSync(aapt,'#!/usr/bin/env node\n'+
+      "if(process.argv.slice(2,4).join(' ')!=='dump badging')process.exit(3);\n"+
+      "process.stdout.write(\"package: name='com.holistichouse.app' versionCode='2' versionName='1.0.0'\\napplication-label:'Holistic House'\\ntargetSdkVersion:'36'\\n\");\n",
+      {mode:0o755})
+    const script=new URL('../scripts/verify-hh-direct-apk-qa.mjs',import.meta.url).pathname
+    const invoke=(expectedCert,shaPath,out,signerTool=signer)=>spawnSync(
+      process.execPath,[script,'--apk',apk,'--sha-file',shaPath,
+        '--expected-cert',expectedCert,'--version',version,'--version-code','2',
+        '--apksigner',signerTool,'--aapt',aapt,'--out',out],
+      {encoding:'utf8',timeout:15000})
+    const output=join(root,'static-pass.json')
+    const good=invoke(cert,hashFile,output)
+    assert.equal(good.status,0,good.stderr)
+    assert.ok(existsSync(output))
+    const receipt=JSON.parse(readFileSync(output,'utf8'))
+    assert.equal(receipt.sha256,digest)
+    assert.equal(receipt.physicalDeviceE2E,'NOT_CHECKED')
+    assert.equal(receipt.ownerApprovedForPublication,false)
+    const mismatch=join(root,'mismatch.json')
+    const badSigner=invoke('c'.repeat(64),hashFile,mismatch)
+    assert.notEqual(badSigner.status,0)
+    assert.match(badSigner.stderr,/HH_APK_QA_CERTIFICATE_MISMATCH/)
+    assert.ok(!existsSync(mismatch),'Never write false PASS for unexpected signing certificate')
+    const missingTool=join(root,'missing-tool.json')
+    assert.notEqual(invoke(cert,hashFile,missingTool,join(root,'not-installed-apksigner')).status,0)
+    assert.ok(!existsSync(missingTool),'Missing SDK must not create a receipt')
+    writeFileSync(hashFile,'0'.repeat(64)+'  '+filename+'\n')
+    const badChecksum=join(root,'bad-checksum.json')
+    assert.notEqual(invoke(cert,hashFile,badChecksum).status,0)
+    assert.ok(!existsSync(badChecksum),'Incorrect APK bytes cannot produce a receipt')
+  }finally{rmSync(root,{recursive:true,force:true})}
 })
