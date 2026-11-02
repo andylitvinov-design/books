@@ -1002,6 +1002,52 @@ test('verified old single-head Work release cannot block unrelated new source wo
  assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
   'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
 });
+test('Control Tower expires old pre-lease-id claims without stealing real owners',async()=>{
+ const actor={login:'andylitvinov-design'},wrap=x=>({
+  user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)
+ });
+ const legacy={schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-chat',head_sha:SHA,
+  last_action:'claimed',expires_at:new Date(NOW-60000).toISOString()};
+ assert.equal(externalOwnerLeaseStatus([wrap(legacy)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(legacy)],SHA,NOW-120000),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,last_action:'heartbeat'})],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,expires_at:undefined})],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED','no deadline cannot be silently ignored');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,state:'active'})],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','modern active lease cannot expire without release');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,lease_id:'L',state:'claimed'})],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','modern lease ID always protects its current writer');
+ const f=fixture([pr(1)],{comments:{1:[proof(),wrap(legacy)]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1,'valid source worker is admitted after old claim expires');
+});
+test('malformed unrelated historic JSON does not freeze the next HEAD',()=>{
+ const wrap=x=>({body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+x});
+ const old='b'.repeat(40);
+ assert.equal(externalOwnerLeaseStatus([wrap('{"head_sha":"'+old+'","state":')],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap('{"head_sha":"'+SHA+'","state":')],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED');
+ assert.equal(externalOwnerLeaseStatus([wrap('not JSON')],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+test('old Codex claim with no run id must carry a verifiable expiry',()=>{
+ const legacy={owner:'Codex',head_sha:SHA,last_action:'heartbeat',
+  lease_expires:new Date(NOW-30000).toISOString()};
+ const comment={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(legacy)};
+ assert.equal(externalOwnerLeaseStatus([comment],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([comment],SHA,NOW-60000),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify({...legacy,lease_expires:undefined})}],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+test('an expired legacy claim cannot delete another owner active state',()=>{
+ const actor={login:'andylitvinov-design'},wrap=x=>({user:actor,
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ const active={schema:'HH_PR_SWEEP_LEASE_V1',owner:'same-owner',head_sha:SHA,
+  state:'active',expires_at:new Date(NOW-90000).toISOString()};
+ const old={schema:'HH_PR_SWEEP_LEASE_V1',owner:'same-owner',head_sha:SHA,
+  last_action:'claimed',expires_at:new Date(NOW-90000).toISOString()};
+ assert.equal(externalOwnerLeaseStatus([wrap(active),wrap(old)],SHA,NOW),
+  'OWNER_LEASE_ACTIVE');
+});
 
 test('old denied CI bootstrap reconciliation is isolated from dispatch and fail-closed',()=>{
  const s=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');

@@ -14,7 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment}=require('./ci-pr-task-state.cjs');
+const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -29,7 +29,8 @@ function eligible(pr, fullRepo) {
     pr.head?.repo?.full_name === fullRepo &&
     SHA.test(pr.head?.sha || '') && validBranch(pr.head?.ref) &&
     pr.labels?.some(l => [SOURCE, CONFLICT].includes(l.name)) &&
-    !pr.labels?.some(l => l.name===MANUAL || l.name==='hh:hold'));
+    !pr.labels?.some(l => [MANUAL,'hh:hold','hh:blocked',
+      'hh:worker-claimed','hh:direction-override:invalid'].includes(l.name)));
 }
 function activeSweepLease(comments,sha,now){
  // The trusted Dispatcher and Repair must see the same exact-HEAD owner.
@@ -87,7 +88,7 @@ function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES){
   return [...first,...manual];
 }
 
-async function claim({github,core,context,number=0,expectedSha='',taskKey='',dryRun=false,hasToken=false,now=Date.now()}) {
+async function claim({github,core,context,number=0,expectedSha='',taskKey='',reservationRunId='',dryRun=false,hasToken=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
   const skip = reason => { log('SKIP ' + reason); return {status:'skipped',reason}; };
@@ -104,26 +105,32 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
   if (fullRepo !== 'andylitvinov-design/books') return skip('WRONG_REPOSITORY');
   if (!dryRun && !hasToken) return skip('HH_AUTOMERGE_TOKEN_MISSING');
   if(taskKey && (!/^[a-f0-9]{32}$/i.test(taskKey) || !SHA.test(expectedSha) ||
-      !Number.isSafeInteger(number) || number<1))return skip('INVALID_ADDRESSED_REPAIR_TASK');
+      !Number.isSafeInteger(number) || number<1 ||
+      !/^[1-9][0-9]{0,18}$/.test(reservationRunId) ||
+      context.eventName!=='workflow_dispatch'))return skip('INVALID_ADDRESSED_REPAIR_TASK');
   try {
   let candidates = [];
-  // Watchdog explicitly targets the highest-priority eligible PR. If its
-  // exact HEAD is already leased, conflicted or stale, fall through to the
-  // next direction-ranked queue candidate in the SAME worker cycle.
-  const found = await Promise.all([SOURCE,CONFLICT].map(labels =>
-    limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
-      sort:'updated',direction:'asc',per_page:40}))));
-  if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
-  const queued=prioritizedRepairCandidates(found[0].data,found[1].data,now);
-  if(taskKey)candidates=[{number}];
-  else if (Number.isSafeInteger(number) && number > 0)
-    candidates=[{number},...queued.filter(x=>x.number!==number)].slice(0,MAX_CANDIDATES);
-  else candidates=queued;
+  if(taskKey){
+    // Control Tower selected an exact HEAD; a global queue scan here can
+    // consume API budget or hide a valid authorized addressed task.
+    candidates=[{number}];
+  }else{
+    // Cron is a source-fix fallback, not a second manual conflict dispatcher.
+    // Handed-off DIRTY source conflicts belong to semantic Chat/Codex work.
+    const listed=await limited('source-queue',()=>github.rest.issues.listForRepo({
+      owner,repo,state:'open',labels:SOURCE,sort:'updated',direction:'asc',per_page:40}));
+    if(!Array.isArray(listed?.data))return skip('INCOMPLETE_QUEUE');
+    const queued=prioritizedRepairCandidates(listed.data,[],now);
+    candidates=Number.isSafeInteger(number)&&number>0
+      ?[{number},...queued.filter(x=>x.number!==number)].slice(0,MAX_CANDIDATES)
+      :queued;
+  }
   for (const item of candidates) {
     const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
     if (!eligible(pr,fullRepo) ||
         (expectedSha && item.number===number && pr.head.sha !== expectedSha)) continue;
-    if(taskKey && taskFor(pr,priorityFor(pr,now))?.task_key!==taskKey){
+    const task=taskFor(pr,priorityFor(pr,now));
+    if(!task || (taskKey&&task.task_key!==taskKey)){
       log('REFUSE_STALE_OR_FOREIGN_TASK #'+pr.number);continue;
     }
     // If the branch is a parent of another open PR, never modify its history.
@@ -132,10 +139,28 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
     // Incomplete history cannot prove ownership. Bounded pagination avoids
     // indefinitely blocking mature PRs as they pass 100 issue comments.
     const comments = await readCompleteIssueComments(github,owner,repo,pr.number,limited);
-    if (!comments) continue;
-    const marker = '<!-- ' + MARKER + ' ' + pr.head.sha + ' -->';
-    if (comments.some(c => (c.body || '').includes(marker)) ||
-        activeSweepLease(comments,pr.head.sha,now)) continue;
+    if(!comments)continue;
+    const marker='<!-- '+MARKER+' '+pr.head.sha+' -->';
+    if(comments.some(c=>(c.body||'').includes(marker)))continue;
+    if(taskKey){
+      // Exact signed reservation from the trusted single writer is mandatory.
+      // A stale, foreign, unsigned or superseded reservation never claims.
+      const signed=parseRecords(comments.filter(trustedControlComment));
+      const relevant=signed?.filter(r=>r.task_key===taskKey&&
+        r.head_sha===expectedSha&&r.pr_number===number);
+      const latest=relevant?.at(-1);
+      if(!latest||latest.state!=='RESERVED'||latest.lane!=='repair'||
+         latest.owner_run_id!==reservationRunId){
+        log('REFUSE_UNSIGNED_OR_SUPERSEDED_RESERVATION #'+pr.number);continue;
+      }
+      if(activeSweepLease(comments,pr.head.sha,now))continue;
+    }else{
+      // Periodic work must not race an accepted dispatcher reservation.
+      const state=reservationStatus(task,comments,now);
+      if(state!=='FREE'){
+        log('SKIP_RESERVED_OR_HANDLED #'+pr.number+' '+state);continue;
+      }
+    }
     const mode=repairMode(pr);
     if(mode==='stale_conflict'){
       // A resolved conflict must not consume the manual repair slot forever.
@@ -156,6 +181,9 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
     }
     if(mode==='unverified' || mode==='not_queued')continue;
     const conflict=mode==='conflict';
+    if(conflict&&!taskKey&&number===0){
+      log('SKIP_CRON_MANUAL_CONFLICT #'+pr.number);continue;
+    }
     // A source label from an older HEAD is not permission to edit new code.
     // The trusted Watchdog must have diagnosed this exact HEAD as source-red.
     if(!conflict && !hasVerifiedSourceHandoff(comments,pr.head.sha)){
@@ -175,7 +203,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
     }
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
-    const receipt=taskFor(pr,priorityFor(pr,now));
+    const receipt=task;
     const workerRunUrl=Number.isSafeInteger(context.runId)?
       'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',

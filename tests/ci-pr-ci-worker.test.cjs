@@ -209,7 +209,7 @@ test('CI Worker workflow accepts the exact Control Tower reservation identity',(
  for(const key of ['pr_number','expected_sha','task_key','reservation_run_id']){
   assert.ok(inputs.split('\n').includes('      '+key+':'),key+' must be declared');
  }
- assert.ok(inputs.includes("      reservation_run_id:\n        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'\n        type: string\n        default: ''"));
+ assert.ok(inputs.includes("      reservation_run_id:\n        description: 'Authenticated dispatcher reservation run ID; exact HEAD, bot identity and task key required'\n        type: string\n        default: ''"));
  const dispatcher=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });
