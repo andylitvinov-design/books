@@ -122,3 +122,17 @@ test("Wave interprets explicit custom idea as local goal without sending it to G
  assert.doesNotMatch(source,/const goalNote=""/);
  assert.match(source,/body:JSON\.stringify\(\{\.\.\.waveInput,externalModelOptIn:true\}\)/);
 });
+
+
+test("Wave theme switch and explicit crisis cannot bypass approved video phrases",()=>{
+ const src=read("components/mandala-hypno-compact.tsx");
+ const change=src.slice(src.indexOf("const changeTheme=("),src.indexOf("function switchModel("));
+ assert.match(change,/setDraftState\(nextDraft\)/);
+ assert.match(change,/createWaveDraft\(nextRound,next,nextProblem,nextGoal\)/);
+ assert.doesNotMatch(change,/onChange\(/,"theme switch cannot replace prior video wording");
+ assert.match(src,/const safetyBlocked=interpretWaveNotes\(\{locale,currentText:problemNote,goalText:goalNote\}\)\.status==="safety_handoff"/);
+ assert.match(src,/hasPendingEdits=Boolean\([^;]*\|\|safetyBlocked\)/);
+ assert.match(src,/function approvePhrases\(\)\{\s*if\(safetyBlocked\)return/);
+ assert.match(src,/if\(disabled\|\|!geminiConsent\|\|safetyBlocked\)return/);
+ assert.doesNotMatch(src,/else if\(geminiConsent\)void generateGemini\(\)/);
+});
