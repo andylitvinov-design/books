@@ -74,23 +74,17 @@ test('separate fail-closed specialist gate and legacy release-ready alias protec
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  merge_group:/m);
   assert.match(source, /^  release-ready:/m);
+  assert.doesNotMatch(source, /^  hh-specialists-verified:/m, 'duplicate legacy status must not consume a runner');
   assert.match(source, /^  hh-specialist:/m);
   assert.match(source, /name: hh-specialist/);
   const specialist = source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
-  const alias = source.split(/^  release-ready:/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
-  const plural = source.split(/^  hh-specialists-verified:/m)[1];
-  // The slow specialist aggregation starts after Scope, in parallel with Core.
-  assert.match(specialist, /^    needs: \[scope\]$/m);
-  assert.doesNotMatch(specialist, /needs\.code|CODE_RESULT/);
-  // Neither the classic required context nor its plural compatibility alias
-  // may turn green without BOTH the current Core and Specialist results.
-  for (const gate of [alias, plural]) {
-    assert.match(gate, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
-    assert.match(gate, /CORE_RESULT/);
-    assert.match(gate, /SPECIALIST_RESULT/);
-    assert.match(gate, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
-    assert.match(gate, /^    if: always\(\)$/m);
-  }
+  const alias = source.split(/^  release-ready:/m)[1];
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'parallel specialist');
+  assert.doesNotMatch(specialist, /CODE_RESULT|needs\.code/);
+  assert.match(alias, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(alias, /CORE_RESULT/);
+  assert.match(alias, /SPECIALIST_RESULT/);
+  assert.match(alias, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source, /^    needs: \[scope, code\]/m);
   assert.match(source, /^    if: always\(\)/m);
   assert.match(source, /git diff --no-renames --name-only -z/);
@@ -1210,22 +1204,25 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('legacy and plural compatibility statuses cannot bypass the real hh-specialist gate',()=>{
+test('legacy release-ready requires real Core and Specialist when parallel',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
-  assert.ok(special,'must publish a named independent specialist status');
-  assert.match(special,/^    name: hh-specialists-verified$/m);
-  assert.match(special,/^    needs: \[hh-core-verified, hh-specialist\]$/m);
-  assert.match(special,/^    if: always\(\)$/m);
-  assert.match(special,/^    timeout-minutes: 3$/m);
-  assert.ok(special.includes('CORE_RESULT: ' + '$' + "{{ needs['hh-core-verified'].result }}"));
-  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
-  assert.ok(special.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
-  assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
-  assert.ok(full,'must retain independent full specialist verifier');
-  assert.match(full,/ci-specialist-aggregate\.mjs/);
-  assert.match(full,/timeout-minutes: 45/);
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m, 'duplicate alias must not return');
+  const specialist=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
+  assert.ok(specialist, 'real Specialist gate must remain');
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'Specialist begins beside Core');
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.match(specialist,/timeout-minutes: 45/);
+  const legacy=source.split(/^  release-ready:\s*$/m)[1];
+  assert.ok(legacy,'required classic compatibility status remains');
+  assert.match(legacy,/^    name: release-ready$/m);
+  assert.match(legacy,/^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(legacy,/^    if: always\(\)$/m);
+  assert.match(legacy,/^    timeout-minutes: 1$/m);
+  assert.ok(legacy.includes('CORE_RESULT: ' + '$' + "{{ needs['hh-core-verified'].result }}"));
+  assert.ok(legacy.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
+  assert.ok(legacy.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
+  assert.doesNotMatch(legacy,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 

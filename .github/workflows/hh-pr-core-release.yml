@@ -340,7 +340,8 @@ jobs:
           echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
   hh-specialist:
     name: hh-specialist
-    # Run independent specialist CI while Core builds; both results gate release-ready.
+    # Start BASE-trusted specialist evidence while Core builds.
+    # release-ready requires BOTH independent completed jobs.
     needs: [scope]
     if: always()
     runs-on: ubuntu-24.04
@@ -350,7 +351,7 @@ jobs:
       actions: read
       pull-requests: read
     steps:
-      - name: Fail closed when scope is missing or draft; run specialists in parallel with Core
+      - name: Verify trusted scope and Ready before independent specialist validation
         shell: bash
         env:
           SCOPE_RESULT: ${{ needs.scope.result }}
@@ -359,14 +360,14 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: specialist checks deferred until Ready is fully validated.' >&2
+            echo 'Draft: specialists remain deferred.' >&2
             exit 1
           fi
           [[ "$SCOPE_RESULT" == success ]] || {
-            echo 'Cannot validate specialists without a verified scope.' >&2
+            echo 'Trusted PR scope not successful.' >&2
             exit 1
           }
-          echo 'Specialist validation can overlap Core; final release-ready requires both checks.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Parallel specialist preflight passed; release-ready still checks Core.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -437,11 +438,10 @@ jobs:
   # Remove this legacy job in a separate PR ONLY after protection readback.
   release-ready:
     name: release-ready
-    # Preserve the legacy required context, but never make Specialist wait for Core.
     needs: [hh-core-verified, hh-specialist]
     if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 1
     permissions:
       contents: read
     steps:
@@ -453,31 +453,8 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Core or specialist validation is missing, cancelled or failed.' >&2
+            echo 'Core or Specialist failed; legacy compatibility cannot pass.' >&2
             exit 1
           }
-          echo 'Legacy compatibility passed: Core and Specialist on the same workflow.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Both real Core and Specialist validations passed.' >> "$GITHUB_STEP_SUMMARY"
 
-  # Keep the pre-existing plural alias as a nonrequired compatibility context.
-  # It delegates to the real hh-specialist check; no duplicate expensive work.
-  hh-specialists-verified:
-    name: hh-specialists-verified
-    needs: [hh-core-verified, hh-specialist]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    permissions:
-      contents: read
-    steps:
-      - name: Require full specialist aggregate on the same Core workflow
-        env:
-          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
-          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Core or specialist validation missing, cancelled or failed; refusing green' >&2
-            exit 1
-          }
-          echo 'Core and specialist validation both succeeded; compatibility status propagated.' >> "$GITHUB_STEP_SUMMARY"
