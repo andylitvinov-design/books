@@ -139,3 +139,69 @@ test('a completed real dispatch cools down from exit, not creation',()=>{
  assert.equal(readyHistory([{...run,updated_at:new Date(NOW-180000).toISOString()}],NOW),true);
 });
 
+
+
+test('audit and PR contract runs cannot suppress an actionable dispatcher wake',()=>{
+ const recent=new Date(NOW-10000).toISOString();
+ assert.equal(readyHistory([{id:1,event:'pull_request',status:'in_progress',created_at:recent}],NOW),true);
+ assert.equal(readyHistory([{id:2,event:'push',status:'completed',created_at:recent}],NOW),true);
+ assert.equal(readyHistory([{id:3,event:'schedule',status:'in_progress',created_at:recent}],NOW),false);
+ assert.equal(readyHistory([{id:4,event:'workflow_dispatch',status:'completed',
+  created_at:new Date(NOW-30*60_000).toISOString(),updated_at:recent}],NOW),false);
+});
+test('stale watchdog cron backstop verifies queue state and dispatches at most one real tick',async()=>{
+ const {watchdogCronDecision,wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const old=new Date(NOW-40*60_000).toISOString();
+ const recent=new Date(NOW-5*60_000).toISOString();
+ const historical={id:21,status:'completed',created_at:old,updated_at:old};
+ assert.equal(watchdogCronDecision([historical],[],NOW),'WAKE_STALE_WATCHDOG');
+ assert.equal(watchdogCronDecision([{...historical,status:'queued'}],[],NOW),
+  'WATCHDOG_ALREADY_RUNNING');
+ assert.equal(watchdogCronDecision([{...historical,created_at:recent}],[],NOW),
+  'WATCHDOG_CRON_HEALTHY');
+ assert.equal(watchdogCronDecision([historical],[{...historical,id:22,created_at:recent}],NOW),
+  'WATCHDOG_MANUAL_RECENT');
+ assert.equal(watchdogCronDecision(null,[],NOW),'WATCHDOG_HISTORY_UNVERIFIED');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ const calls=[];
+ const github={rest:{actions:{
+  listWorkflowRuns:async({event})=>{
+   calls.push(event);
+   return {data:{total_count:1,workflow_runs:[historical]}};
+  },
+  createWorkflowDispatch:async x=>{calls.push(x);return {status:204};}
+ }}};
+ const outcome=await wakeStaleWatchdog({github,context,summary:{production:42},now:NOW});
+ assert.equal(outcome.decision,'EVENT_WATCHDOG_WAKE_ACCEPTED');
+ assert.equal(outcome.dispatchAccepted,true);
+ assert.deepEqual(calls.slice(0,2),['schedule','workflow_dispatch']);
+ assert.equal(calls[2].workflow_id,'hh-pr-ten-minute-watchdog.yml');
+ assert.equal(calls[2].inputs.dry_run,'false');
+ const before=calls.length;
+ const dry=await wakeStaleWatchdog({github,context,summary:{production:42},now:NOW,dryRun:true});
+ assert.equal(dry.decision,'NOT_ELIGIBLE');
+ assert.equal(calls.length,before);
+});
+test('existing queued Watchdog or malformed schedule inventory blocks fallback',async()=>{
+ const {wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run'};
+ let dispatches=0;
+ const github={rest:{actions:{
+  listWorkflowRuns:async({event})=>({data:{total_count:event==='schedule'?0:1,
+   workflow_runs:event==='schedule'?[]:[{id:3,status:'queued',
+    created_at:new Date(NOW-60*60_000).toISOString()}]}}),
+  createWorkflowDispatch:async()=>{dispatches++;}
+ }}};
+ const o=await wakeStaleWatchdog({github,context,summary:{production:7},now:NOW});
+ assert.equal(o.decision,'WATCHDOG_ALREADY_RUNNING');
+ assert.equal(dispatches,0);
+ const malformed={rest:{actions:{
+  listWorkflowRuns:async()=>({data:{total_count:1,workflow_runs:[]}}),
+  createWorkflowDispatch:async()=>{dispatches++;}
+ }}};
+ const m=await wakeStaleWatchdog({github:malformed,context,summary:{production:7},now:NOW});
+ assert.equal(m.decision,'WATCHDOG_WAKE_UNAVAILABLE');
+ assert.equal(dispatches,0);
+});
