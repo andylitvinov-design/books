@@ -34,18 +34,28 @@ on:
         type: boolean
         default: true
         required: false
+      completion_wake:
+        description: 'Delay a worker-completion wake until its slot is released'
+        type: boolean
+        default: false
+        required: false
+      worker_run_id:
+        description: 'Originating trusted worker run for completion wake'
+        type: string
+        default: ''
+        required: false
 permissions:
   contents: read
   actions: write
   issues: write
   pull-requests: write
   checks: read
-concurrency:
-  group: hh-control-tower-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer' }}
-  cancel-in-progress: false
 jobs:
   contract:
     if: github.event_name == 'pull_request'
+    concurrency:
+      group: hh-control-contract-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -65,18 +75,53 @@ jobs:
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-core-priority.test.cjs
           node --test tests/ci-pr-control-tower.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
+  completion-wait:
+    # Wait outside the writer lease: a later schedule event must not replace
+    # a queued completion wake before the worker has actually exited.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.completion_wake == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    concurrency:
+      group: hh-control-wait-${{ github.event.inputs.worker_run_id }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout trusted completion handoff
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Wait for actual worker completion and relay one wake
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {relayCompletionWake}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            const result=await relayCompletionWake({github,context,log:core.warning});
+            core.info('HH_WORKER_COMPLETION_RELAY '+result);
+            if(result!=='DISPATCH_ACCEPTED')core.warning('Refill deferred: '+result);
   dispatch:
     # Ignore non-actionable upstream completions without reserving a runner.
     # An independent per-PR contract concurrency lane is retained above.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
+      !(github.event_name == 'workflow_dispatch' && github.event.inputs.completion_wake == 'true') &&
       (github.event_name != 'workflow_run' ||
        (github.event.workflow_run.status == 'completed' &&
         github.event.workflow_run.conclusion != 'cancelled' &&
         github.event.workflow_run.conclusion != 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
+    concurrency:
+      group: hh-control-tower-single-writer
+      cancel-in-progress: false
     steps:
       - name: Checkout only trusted default branch
         uses: actions/checkout@v4
