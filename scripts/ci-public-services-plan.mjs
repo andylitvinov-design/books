@@ -51,9 +51,13 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
 // Runtime, privacy, auth, checkout and unknown files still fail closed.
 const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/hh-public-services-production.yml',
+  // Production-only pinned browser cache seed, never app runtime.
+  '.github/workflows/hh-public-playwright-cache.yml',
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // CI-only regression verified by protected Core and actionlint.
+  'tests/pr-fast-lane.test.mjs',
   // Independent Site Video CI policy and source-only E2E contracts cannot
   // change public services runtime, consent or payment. Protected Core/actionlint
   // and its exact-head Site Video job still validate these files.
@@ -65,6 +69,8 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
   'tests/ci-heavy-impact.test.mjs',
   'tests/pr-fast-lane.test.mjs',
+  // Workflow syntax, Core and BASE-owned App suite cover this exact CI YAML.
+  '.github/workflows/hh-app-browser.yml',
   // Read-only PR conflict inventory/contract only; Public Services never reads
   // this telemetry or writes to checkout, bookings, consent or payment APIs.
   '.github/workflows/hh-pr-sweep-guard.yml',
@@ -84,6 +90,17 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   // Another mandatory exact-HEAD specialist owns the Ideas/Coaching workflow.
   '.github/workflows/hh-ideas-coaching-public.yml',
 ]);
+// Immutable blob identity prevents broad exemptions for public APIs.
+// ONLY these reviewed added CI-observability files are delegated to their
+// exact Node contract (and Core); subsequent edits fall back to FULL E2E.
+export const EXACT_RELEASE_PROOF_BLOBS = new Map([
+  ['app/api/public/release-evidence/route.js','90763743dd6bb5458d5a67a878d276b8fa8be477'],
+  ['lib/ci/public-release-evidence.mjs','f5c123613fe779d6b158fddb1191c3a60d13d586'],
+  ['tests/ci-public-release-evidence.test.mjs','f9a7f661921b9ad5b7d4f6e86cfbc1054ae87550'],
+]);
+export const exactReleaseProofAddition = (path,status,blob) =>
+  status === 'A' && EXACT_RELEASE_PROOF_BLOBS.get(path) === blob;
+
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
 // Scoped PR #2702: these EXACT files are owned by the independent Mandala
 // workflow (source, Node/TS, same-origin/consent tests and true encoded-media
@@ -446,7 +463,8 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
   return { mode: 'contracts', reason: ownPublicTests ? 'EXISTING_NODE_SOURCE_TESTS_ONLY' : 'INDEPENDENT_OWNER_OR_CORE',
-    build: false, browser: false, metrics: false, cases: 'none' };
+    build: false, browser: false, metrics: false, cases: 'none',
+    releaseProof: files.includes('app/api/public/release-evidence/route.js') };
 }
 
 // Exact, temporary reviewed #2629 Voice+Music+WebKit release path set is
@@ -790,6 +808,15 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     } catch { /* Unknown BASE owner never waives browser QA. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
+      // A new public API is otherwise FULL. This independently reviewed,
+      // exact-blob CI proof is owned by Core plus a mandatory focused Node test.
+      // Changed, deleted, unknown, and mixed runtime/API changes fail closed.
+      if(EXACT_RELEASE_PROOF_BLOBS.has(file)){
+        const blob=read(['rev-parse','HEAD:'+file]);
+        if(!exactReleaseProofAddition(file,status,blob))
+          return full('UNREVIEWED_PUBLIC_RELEASE_PROOF');
+        coreOwned.add(file);changed.push(file);continue;
+      }
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
@@ -855,6 +882,7 @@ function main() {
     appendFileSync(process.env.GITHUB_OUTPUT,
       ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
+        'release_proof=' + (plan.releaseProof === true),
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
         'cases=' + plan.cases].join('\n') + '\n');
