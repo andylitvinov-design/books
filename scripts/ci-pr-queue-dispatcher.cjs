@@ -4,7 +4,7 @@ const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,rese
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
-const MAX_DISPATCH=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
+const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
 function trustedContext(context){
  if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
@@ -68,7 +68,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
-  staleConflictCleared:0,wouldClearStaleConflict:0,blocked:{},
+  staleConflictCleared:0,wouldClearStaleConflict:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,blocked:{},
   workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  const blocked=reason=>{summary.blocked[reason]=(summary.blocked[reason]||0)+1;};
@@ -172,6 +173,34 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     blocked(err?.status===404?'STALE_CONFLICT_ALREADY_CLEARED':
       'STALE_CONFLICT_CLEAR_DENIED');
     log('Stale conflict label cleanup #'+task.pr_number+': '+err.message);
+   }
+   continue;
+  }
+  if(task.lane==='conflict'){
+   // A genuine DIRTY merge cannot be fixed by the ESLint-only Repair Worker.
+   // Hand it to the existing human/Codex conflict queue as an exact-HEAD
+   // issue receipt, without reserving a runner or starving CI/source workers.
+   const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+task.head_sha+' -->';
+   if(comments.some(c=>String(c.body||'').includes(marker))){
+    blocked('CONFLICT_ALREADY_HANDED_OFF');continue;
+   }
+   if(summary.manualConflictHandoffs+summary.wouldManualConflictHandoffs>=MAX_MANUAL_CONFLICT_HANDOFFS){
+    blocked('CONFLICT_HANDOFF_LIMIT');continue;
+   }
+   if(dryRun){summary.wouldManualConflictHandoffs++;continue;}
+   try{
+    await limited('conflict-owner-handoff',()=>github.rest.issues.createComment({
+     owner,repo,issue_number:task.pr_number,
+     body:marker+'\nConflict repair task for the existing Chat/Codex Conflict Repair lane. '+
+      'Verified DIRTY against '+PROD+' at exact HEAD '+task.head_sha+'. '+
+      'Resolve conflicts in the PR source branch, batch changes, and let normal '+
+      'required CI run on the new HEAD. No automatic or unverified merge.'
+    }));
+    summary.manualConflictHandoffs++;
+    log('CONFLICT_TO_CODEX_QUEUE #'+task.pr_number+' '+task.head_sha.slice(0,12));
+   }catch(err){
+    blocked('CONFLICT_HANDOFF_UNAVAILABLE');
+    log('Conflict handoff #'+task.pr_number+': '+err.message);
    }
    continue;
   }

@@ -277,7 +277,10 @@ test('real conflict requires a fresh dirty merge state',async()=>{
  const dirty=pr(9,'conflict',{mergeable:false,mergeable_state:'dirty'});
  const g=fixture([dirty],{});
  r=await run({github:g.github,core:core(),context,now:NOW,capacityFn:g.capacityFn});
- assert.equal(r.dispatchAccepted,1);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(g.calls.dispatched.length,0,'DIRTY does not waste an ESLint runner');
+ assert.ok(g.calls.reserved[0].body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA));
 });
 
 
@@ -481,4 +484,23 @@ test('expired active foreign lease cannot be stolen by a second worker',()=>{
   JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
  assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify(old)}],NOW),'FREE');
+});
+
+test('exact-HEAD conflict receipt is idempotent and does not block a source worker',async()=>{
+ const dirty=pr(88,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const source=pr(89,'repair',{title:'fix(video): actionable source'});
+ const f=fixture([dirty,source],{comments:{89:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.manualConflictHandoffs,1);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'89');
+ const same=fixture([dirty],{comments:{88:[{
+  body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
+ }]}});
+ const second=await run({github:same.github,core:core(),context,now:NOW,
+  capacityFn:same.capacityFn});
+ assert.equal(second.manualConflictHandoffs,0);
+ assert.equal(same.calls.reserved.length,0);
+ assert.equal(same.calls.dispatched.length,0);
 });
