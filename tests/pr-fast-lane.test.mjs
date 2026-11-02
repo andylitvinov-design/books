@@ -1282,9 +1282,10 @@ test('post-migration live gate preserves parallel source checks and removes redu
   const source=workflow('hh-pr-core-release.yml');
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(specialist);
-  assert.match(specialist,/^    needs: \[scope\]$/m);
+  assert.doesNotMatch(specialist,/^    needs:/m,'schedule specialist alongside scope');
   assert.match(specialist,/ci-specialist-aggregate\.mjs/);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
