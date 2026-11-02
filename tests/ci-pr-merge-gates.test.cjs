@@ -39,3 +39,20 @@ test('native writer never falls back to direct protected merge',()=>{
  const commands=s.split('\n').filter(line=>/\bgh pr merge\s+"\$PR_NUMBER"/.test(line));
  assert.ok(commands.length>0&&commands.every(line=>line.includes('--auto')&&line.includes('--match-head-commit')));
 });
+
+test('successful exact-head Core event arms promptly without waiting for optional PR CI',()=>{
+ const s=workflow('hh-native-auto-merge');
+ assert.ok(s.includes("github.event.workflow_run.conclusion == 'success'"));
+ assert.ok(s.includes('github.rest.actions.listWorkflowRuns({'));
+ assert.ok(s.includes('workflow_id: "hh-pr-core-release.yml"'));
+ assert.ok(!s.includes('listWorkflowRunsForRepo'));
+ assert.ok(s.includes('completedRunId && !observed.some(run => run.id === completedRunId)'));
+ assert.ok(s.includes('coreRun.status !== "completed" || coreRun.conclusion !== "success"'));
+ assert.ok(s.includes('for (const delayMs of [1500, 3000, 5000, 8000])'));
+ assert.ok(s.includes('item.base?.ref === "codex/public-book-library"'));
+ assert.ok(!s.includes('item.base?.sha === pr.base.sha'));
+ assert.ok(!s.includes('const blocked = observed.find('));
+ assert.ok(s.includes('!passed("hh-merge-check")||!passed("hh-specialist")'));
+ assert.ok(s.includes("steps.freshness.outputs.eligible == 'true'"));
+ assert.ok(s.includes('--match-head-commit "$PR_HEAD"'));
+});
