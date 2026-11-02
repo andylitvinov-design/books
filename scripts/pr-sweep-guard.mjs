@@ -22,9 +22,14 @@ async function collectRouteSnapshot(repo, token) {
   const rows=[];
   let cursor=null, total=null, productionBase=null;
   for (let page=0;page<25;page++) {
-    const response=await fetch('https://api.github.com/graphql',{method:'POST',
-      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({query,variables:{owner,name,cursor}}),signal:AbortSignal.timeout(20000)});
+    let response;
+    for(let attempt=0;attempt<3;attempt++){
+      response=await fetch('https://api.github.com/graphql',{method:'POST',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({query,variables:{owner,name,cursor}}),signal:AbortSignal.timeout(20000)});
+      if(response.ok||![502,503,504].includes(response.status)||attempt===2)break;
+      await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
+    }
     if (!response.ok) throw Error('SWEEP_GRAPHQL_HTTP_'+response.status);
     const body=await response.json();
     const prs=body.data?.repository?.pullRequests;

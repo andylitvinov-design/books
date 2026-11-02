@@ -600,3 +600,14 @@ test('conflict snapshot uses current production ref, not a PR base snapshot',asy
  const result=await fn('andylitvinov-design/books','test-token');
  assert.equal(result.rows[0].base.sha,sha('c'));assert.equal(result.rows[0].reported_base_sha,sha('b'));
 });
+
+test('conflict snapshot retries a transient GitHub 502 but not a client error',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function collectRouteSnapshot(repo, token) {'),end=source.indexOf('async function reportRoutes(',start);
+ let calls=0,status=502;
+ const success={data:{repository:{ref:{target:{oid:sha('c')}},pullRequests:{totalCount:0,pageInfo:{hasNextPage:false},nodes:[]}}}};
+ const fetch=async()=>++calls===1?{ok:false,status}:{ok:true,json:async()=>success};
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{fetch,AbortSignal,Date,setTimeout:fn=>fn()});
+ assert.equal((await fn('andylitvinov-design/books','test-token')).total,0);assert.equal(calls,2);
+ calls=0;status=403;await assert.rejects(fn('andylitvinov-design/books','test-token'),/SWEEP_GRAPHQL_HTTP_403/);assert.equal(calls,1);
+});
