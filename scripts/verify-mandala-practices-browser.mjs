@@ -50,9 +50,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
         const details=await course.evaluate(el=>({
           selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute('data-guided-focus-state'),
           mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
-          disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+          generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
-          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
         }));
         throw new Error(engine+" "+locale+" "+width+" state Generate unavailable "+JSON.stringify(details),{cause:error});
       }
@@ -157,9 +157,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
           mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
           difficulty:el.querySelector('[data-video-key-difficulty]')?.value,
           goal:el.querySelector('[data-video-key-goal]')?.value,
-          disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+          generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
-          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
         }));
         throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
       }
