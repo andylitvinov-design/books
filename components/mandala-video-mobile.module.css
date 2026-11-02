@@ -2762,3 +2762,15 @@
  }
  .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:5px 0 8px}
 }
+/* The six working tabs remain reachable, but Effects presents them BEFORE
+   the original Wave -> film -> four-group sequence, not between film/groups.
+   The direct #video-hypnocorrection-mobile link lands above Wave on iPhone,
+   instead of hiding the headline and the only existing video player. */
+@media(max-width:759px){
+  .studio[data-active-workspace="effects"] .quickBuilder>.quickBrandBar{order:-1}
+  .studio[data-active-workspace="effects"] .quickBuilder>.quickVideoNav{order:0}
+  .studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{order:1}
+  .studio[data-active-workspace="effects"] .quickBuilder>.previewStage{order:2}
+  .studio[data-active-workspace="effects"] [data-video-hypnocorrection-panel]{
+    scroll-margin-top:min(44svh,390px)}
+}
