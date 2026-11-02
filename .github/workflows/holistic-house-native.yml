@@ -7,8 +7,10 @@ on:
       - 'scripts/prepare-holistic-house-native.mjs'
       - 'scripts/prepare-holistic-house-play-release.mjs'
       - 'scripts/verify-hh-direct-apk-candidate.mjs'
+      - 'scripts/bootstrap-hh-apk-signing.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
+      - 'tests/hh-apk-signing-bootstrap.test.mjs'
       - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
       - '.github/workflows/holistic-house-native.yml'
@@ -44,8 +46,10 @@ on:
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-play-release.mjs'
       - 'scripts/verify-hh-direct-apk-candidate.mjs'
+      - 'scripts/bootstrap-hh-apk-signing.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
+      - 'tests/hh-apk-signing-bootstrap.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -75,7 +79,7 @@ jobs:
       - name: Verify native source, consent, ownership and account isolation
         run: |
           npm run native:check
-          node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+          node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
           node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Report native contract job completion
         if: always()
@@ -117,7 +121,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
@@ -221,7 +225,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
