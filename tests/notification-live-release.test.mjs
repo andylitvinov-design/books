@@ -36,6 +36,15 @@ test('private push dispatch remains manual, cron paths are unique and housekeepi
    assert.ok(start>=0&&start<=end&&end<=23,'invalid cron hour range')
    for(let hour=start;hour<=end;hour+=step)hours.add(hour)
   }
-  assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
+  if(cron.path==='/api/internal/direct-message-push'){
+   // Reviewed Vercel Pro exception: bounded, private five-minute recovery only.
+   // All other jobs retain the existing no-hourly policy.
+   assert.equal(cron.schedule,'*/5 * * * *','reviewed phone-push cadence is exact')
+   const pushRoute=readFileSync('app/api/internal/direct-message-push/route.js','utf8')
+   assert.match(pushRoute,/cronAuthorized\\(request,process\\.env\\)/)
+   assert.match(pushRoute,/VERCEL_ENV==='preview'/)
+   assert.match(pushRoute,/status:401/)
+   assert.match(pushRoute,/PRIVATE_HEADERS/)
+  }else assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
  }
 })
