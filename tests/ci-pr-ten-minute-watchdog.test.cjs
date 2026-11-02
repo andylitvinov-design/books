@@ -1164,6 +1164,18 @@ test('cron telemetry explicitly differentiates schedule from workflow dispatch',
   assert.ok(source.includes('HH_CRON_LIVENESS'));
 });
 
+test('dispatch-only Repair Worker is never reported as a failed cron',()=>{
+  const fs=require('node:fs');
+  const worker=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  const trigger=worker.slice(worker.indexOf('\non:\n'),worker.indexOf('\npermissions:\n'));
+  assert.ok(trigger.includes('  workflow_dispatch:'));
+  assert.ok(!trigger.includes('  schedule:'));
+  assert.ok(source.includes("states.splice(2,0,'repair:DISPATCH_ONLY')"));
+  assert.ok(source.includes("lastSeen.splice(2,0,'repair:NOT_SCHEDULED')"));
+  assert.ok(!source.includes("['repair','hh-pr-repair-worker.yml',35]"));
+});
+
 test('highest available direction wins; manually owned PRs do not monopolize fast slots',()=>{
   const prs=Array.from({length:170},(_,i)=>pr(i+1));
   prs[9].title='fix(video): owner has manual merge conflict';
