@@ -15,8 +15,9 @@ export async function POST(request) {
   try {
     const config=getAppConfig()
     requireSameOrigin(request,config)
-    // The standalone first-party opt-in is independent from the GA4/Meta hold.
-    if (request.cookies.get('hh_public_stats_consent')?.value !== 'v1')
+    // No analytics identity or tracking cookie is required for aggregates.
+    // Honor previous and future explicit refusals; GA4/Meta remain off.
+    if (request.cookies.get('hh_public_stats_consent')?.value === 'denied')
       return new NextResponse(null,{status:204,headers:{'Cache-Control':'no-store'}})
     const {exclude,verifiedOwner}=await publicStatsExclusion(request,config)
     if (exclude) {
