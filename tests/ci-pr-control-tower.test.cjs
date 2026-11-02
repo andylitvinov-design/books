@@ -78,7 +78,7 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
 test('Core backpressure still protects mandatory CI when Repair gets bounded headroom',()=>{
  const x=cap(12,64);
  assert.equal(admission('repair',x),'ADMIT');
- assert.equal(admission('ci',x),'CI_QUEUE_BUSY');
+ assert.equal(admission('ci',x),'RUNNERS_SATURATED');
  assert.equal(admission('conflict',x),'RUNNERS_SATURATED');
  const manyCore=computeCapacity(
   Array.from({length:12},(_,i)=>({name:'misc runner '+i})),
@@ -98,7 +98,7 @@ test('queue above optional cap is still completely verified before one Repair ad
  assert.equal(state.known,true);
  assert.equal(state.queuedRuns,64);
  assert.equal(admission('repair',state),'ADMIT');
- assert.equal(admission('ci',state),'CI_QUEUE_BUSY');
+ assert.equal(admission('ci',state),'RUNNERS_SATURATED');
 });
 test('repair still fails closed when runner jobs or its own worker are saturated',()=>{
  const unrelated=Array.from({length:18},(_,i)=>({name:'Other workflow '+i}));
