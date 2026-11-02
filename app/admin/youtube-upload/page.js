@@ -7,6 +7,8 @@ import AdminYoutubePublications from '@/components/admin-youtube-publications'
 import HeygenEnYoutubePublisher from '@/components/heygen-en-youtube-publisher'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
+import {meditationApprovedHandoff} from '@/lib/practitioners/meditation-studio-service'
+import {getAppConfig} from '@/lib/app/config'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId, resolvePhoneYoutubeClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
@@ -24,6 +26,10 @@ export default async function YoutubeUploadPage({searchParams}) {
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
   const params=await searchParams
   const importTelegramCut=params?.import==='telegramCut'
+  let approvedMeditation=null
+  if(typeof params?.meditation==='string'&&/^[0-9a-f-]{36}$/i.test(params.meditation))try{
+    approvedMeditation=await meditationApprovedHandoff(getAppConfig(),params.meditation)
+  }catch{/* Do not expose unavailable or unapproved private media. */}
   const heygenVideoId=/^[a-f0-9]{32}$/i.test(params?.heygen||'')?params.heygen:''
   const initialHeygenTitle=typeof params?.title==='string'?params.title.slice(0,100):''
   const initialHeygenDescription=typeof params?.description==='string'?params.description.slice(0,3000):''
@@ -153,6 +159,7 @@ export default async function YoutubeUploadPage({searchParams}) {
     <AdminYoutubePublications locale={locale}/>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
-      initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
+      initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}
+      approvedMeditation={approvedMeditation}/>
   </main>
 }

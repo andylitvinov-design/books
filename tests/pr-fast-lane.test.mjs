@@ -69,40 +69,80 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
-test('one unconditional fail-closed release-ready gate protects core code validation', () => {
-  const source = workflow('hh-pr-core-release.yml');
-  assert.match(source, /^  pull_request:/m);
-  assert.match(source, /^  merge_group:/m);
-  assert.match(source, /^  release-ready:/m);
-  assert.match(source, /^    needs: \[scope, code\]/m);
-  assert.match(source, /^    if: always\(\)/m);
-  assert.match(source, /git diff --no-renames --name-only -z/);
-  assert.match(source, /docs\/\*\.md\|README\.md/);
-  assert.match(source, /npm ci --no-audit --no-fund/);
-  assert.match(source, /eslint/);
-  assert.match(source, /run: npm run build/);
-  assert.match(source, /npm run build/);
-  assert.match(source, /ci-specialist-aggregate\.mjs/);
-  assert.match(source, /git show/);
-  assert.match(source, /HH_HEAD_REPO/);
-  assert.match(source, /HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs/);
-  assert.match(source, /HH_HEAD_SHA/);
-  assert.match(source, /HH_BASE_SHA/);
-  assert.match(source, /actions: read/);
-  assert.match(source, /pull-requests: read/);
-  assert.match(source, /timeout-minutes: 45/);
-  assert.match(source, /\[\[ "\$SCOPE_RESULT" == success \]\]/);
-  assert.match(source, /\[\[ "\$CODE_RESULT" == success \]\]/);
-  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+test('OPORA course test ownership excludes unrelated course and CI contracts', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const paths = source => {
+    const pr = source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  workflow_dispatch:|^permissions:)/m)?.[1];
+    assert.ok(pr, 'production PR trigger required');
+    return [...pr.matchAll(/^      - ['"]([^'"]+)['"]$/gm)].map(match => match[1]);
+  };
+  const oporaPaths = paths(opora), appPaths = paths(app);
+  const oporaJob = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(oporaJob, 'owned OPORA unit job is required');
+  const actual = [...new Set([...oporaJob.matchAll(/\btests\/course-[\w.-]+\.mjs/g)].map(m => m[0]))].sort();
+  assert.deepEqual(actual, ['tests/course-baseline-explainer.test.mjs', 'tests/course-compact-owner-ui.test.mjs', 'tests/course-entry-selector.test.mjs', 'tests/course-test-sequence.test.mjs']);
+  for (const file of actual) assert.ok(oporaPaths.some(p => requireGlob(file,p)), file + ' must trigger OPORA');
+  assert.equal(oporaPaths.some(p => requireGlob('tests/course-slide-recorder.test.mjs',p)), false);
+  assert.equal(appPaths.some(p => requireGlob('tests/pr-fast-lane.test.mjs',p)), false);
+  assert.ok(oporaPaths.includes('.github/workflows/opora-module-ci.yml'));
+  for (const file of ['components/opora-player.tsx', 'lib/opora/consent.ts', 'package-lock.json']) {
+    assert.ok(oporaPaths.some(p => requireGlob(file,p)), file + ' must retain OPORA acceptance');
+  }
+  assert.match(opora, /^  workflow_dispatch:/m, 'manual full acceptance remains available');
+  assert.ok(opora.includes('node scripts/verify-opora-as56-browser.mjs'));
+});
+
+test('OPORA test-only edits do not start the unrelated App R1 suite', () => {
+  const paths = name => {
+    const pr = workflow(name).match(/^  pull_request:\s*\n([\s\S]*?)(?=^  workflow_dispatch:|^permissions:)/m)?.[1];
+    assert.ok(pr, name + ' PR trigger required');
+    return [...pr.matchAll(/^      - ['"]([^'"]+)['"]$/gm)].map(m => m[1]);
+  };
+  const app = paths('hh-app-r1.yml'), opora = paths('opora-module-ci.yml');
+  const covers = (patterns, file) => patterns.some(pattern => requireGlob(file, pattern));
+  for (const file of ['tests/opora-support-second-screen.test.mjs', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(opora, file), true, file + ' must run OPORA acceptance');
+    assert.equal(covers(app, file), false, file + ' must not run unrelated App R1');
+  }
+  for (const file of ['components/app/example.tsx', 'components/my-course-player.tsx', 'tests/course-immersive-start-ui.test.mjs', 'package-lock.json']) {
+    assert.equal(covers(app, file), true, file + ' must retain App R1');
+  }
+  assert.ok(workflow('hh-app-r1.yml').includes('node --test tests/course-immersive-start-ui.test.mjs'));
+});
+
+
+test('single post-migration status requires actual Core and Specialist without legacy wrapper runners', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  assert.match(source,/^  pull_request:/m);
+  assert.match(source,/^  merge_group:/m);
+  assert.match(source,/^  hh-specialist:/m);
+  assert.match(source,/^  hh-merge-check:/m);
+  assert.doesNotMatch(source,/^  release-ready:/m);
+  assert.doesNotMatch(source,/^  hh-core-verified:/m);
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m);
+  const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  const unified=source.split(/^  hh-merge-check:/m)[1];
+  assert.ok(specialist && unified,'real specialist and unified status required');
+  assert.match(specialist,/^    needs: \[scope\]$/m);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
+  for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
+  assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(source,/ci-specialist-aggregate\.mjs/);
+  assert.match(source,/run: npm run build/);
+  assert.match(source,/git diff --no-renames --name-only -z/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
 test('PR automation policy and agent entry point require specialist safety gates', () => {
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-  assert.match(docs, /sole required GitHub status is `release-ready`/);
+  assert.match(docs, /both require \*\*only `hh-merge-check`\*\*/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
-  assert.match(docs, /production advance alone does not require updating the PR branch/);
+  assert.match(docs, /when strict required checks are enabled, a production advance requires updating the PR branch/);
+  assert.doesNotMatch(docs, /GitHub uses loose required-status checks/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -337,7 +377,7 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
-    const lint=source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+    const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
       'changed-file lint must also exclude unrelated target-branch updates');
   } finally {
@@ -354,15 +394,18 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
   assert.match(actionlint, /^      - '\.github\/workflows\/\*\*'$/m);
   assert.match(actionlint, /actionlint -color/);
   assert.match(core, /^  pull_request:/m);
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /node --test tests\/pr-fast-lane\.test\.mjs/);
   for (const name of scoped) {
     const s = workflow(name);
     const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
     const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
     assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
-    // App R1 explicitly routes its own YAML edits to cheap policy checks; other suites remain path-filtered.
-    const focusedSelfCheck = name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1');
+    // Self-edits may run only their own real acceptance, with explicit coverage.
+    const focusedSelfCheck = (name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1')) ||
+      (name === 'ia-v2.yml' && s.includes('npm run test:app') && s.includes('npm run verify:ia-v2')) ||
+      (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-support-second-screen.test.mjs') &&
+        s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
@@ -393,7 +436,12 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   ]) {
     assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
   }
-  assert.match(ia, /run: npm run test:unit/);
+  assert.match(ia, /name: IA security, ownership and navigation contracts/);
+  assert.match(ia, /run: npm run test:app/);
+  for (const file of ['ia-v2.test.mjs', 'ia-preview-verifier.test.mjs', 'admin-session-lifecycle.test.mjs', 'ia-v2-loopback-proxy.test.mjs', 'ia-public-navigation-diagnostics.test.mjs', 'app-auth-pkce.integration.mjs', 'app-migration-contract.test.mjs', 'app-guest-report-migration.test.mjs', 'app-http-security.test.mjs', 'prescriptions.test.mjs', 'prescription-access.test.mjs', 'client-account-document-save.test.mjs', 'practitioner-private-relay.test.mjs', 'admin-login-security.test.mjs', 'remote-support-privacy-contract.test.mjs', 'client-session-recorder-auth.test.mjs', 'practitioner-preview-auth.test.mjs', 'admin-auth-refresh.test.mjs', 'oauth-public-pages.test.mjs', 'public-security-headers.test.mjs', 'crm-security-contract.test.mjs', 'session-delivery-security.test.mjs', 'practice-telegram-auth-fetch.test.mjs', 'crm-consent.test.mjs', 'manual-billing-security.test.mjs', 'public-tests-auth-transparency.test.mjs']) {
+    assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
+  }
+  assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
   assert.match(ia, /run: npm run build/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
@@ -606,7 +654,7 @@ test('Reports Development Programme keeps its focused verification and separate 
   const core = workflow('hh-pr-core-release.yml');
   const reports = workflow('hh-reports-development-program.yml');
   const gate = "if: $" + "{{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref != 'refs/heads/codex/public-book-library') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'codex/public-book-library') }}";
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.match(reports, /^  pull_request:/m);
   assert.match(reports, /^  push:/m);
@@ -654,17 +702,74 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
   assert.match(perf,/^  push:\s*$/m);
   const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  // Public Services still compiles the entire production app, while the
+  // required Core retains unrelated prebuild coaching regression suites.
+  assert.ok(services.includes('./node_modules/.bin/next build') &&
+    services.includes('node scripts/verify-public-services-production.mjs'));
+  for (const generator of ['ensure-owner-video-renderer.mjs',
+    'cache-ancient-coaching-photos.mjs','generate-soft-ocean-melody.mjs',
+    'build-public-card-artwork.mjs','build-report-pdf-art.mjs']) {
+    assert.ok(services.includes('node scripts/' + generator),'missing prerequisite '+generator);
+  }
+  assert.ok(workflow('hh-pr-core-release.yml').includes('run: npm run build'),
+    'required Core must retain the full original prebuild suite');
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
-test('Mandala PR runs focused source contracts and manual dispatch owns exhaustive media engines', () => {
+test('Mandala PR retains focused source checks plus protected Voice or manual media engines', () => {
   const yaml = workflow('holistic-support-mandala.yml');
   const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  assert.ok(yaml.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"), 'full media browser must be manual-only');
+  // Validate mandatory behavior and consistent browser scopes instead of a literal OR chain.
+  const mediaIfFor = name => {
+    const token = '- name: '+name+'\n        if: ';
+    const parts = yaml.split(token);
+    assert.equal(parts.length, 2, 'missing or ambiguous media action '+name);
+    return parts[1].split('\n')[0];
+  };
+  const mediaCondition = mediaIfFor('Build');
+  assert.match(mediaCondition, /^steps\.impact\.outputs\.browser == 'true' && /);
+  assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
+  assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
+  const requiredPrefixes = [
+    'codex/voice-studio-', 'codex/voice-mix-', 'fix/video-', 'fix/webkit-',
+    'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
+    'feat/video-chat-context-understanding-'
+  ];
+  for (const prefix of requiredPrefixes)
+    assert.ok(mediaCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'browser gate skips required PR prefix '+prefix);
+  for (const name of [
+    'Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px'
+  ]) assert.equal(mediaIfFor(name), mediaCondition,
+    'real media step must share the protected build guard: '+name);
+  assert.equal(mediaIfFor('Upload synthetic audio-only iPhone screenshots'),
+    'always() && '+mediaCondition, 'artifact step needs the same guard plus always()');
+  const macos=yaml.split(/^  voice-webkit-macos:\s*$/m)[1];
+  assert.ok(macos, 'mandatory macOS WebKit acceptance missing');
+  const macosCondition=macos.match(/^    if: (.+)$/m)?.[1];
+  assert.ok(macosCondition?.includes("github.event_name == 'pull_request' && github.event.pull_request.draft == false"),
+    'macOS WebKit requires a non-Draft PR');
+  for (const prefix of requiredPrefixes)
+    assert.ok(macosCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'macOS WebKit may not skip '+prefix);
+  for (const contract of [
+    'runs-on: macos-15', 'HH_VOICE_E2E_ENGINE: webkit',
+    "HH_VOICE_E2E_HEADED: '1'", 'node scripts/verify-affirmation-voice-browser.mjs',
+    'HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1',
+    'node scripts/benchmarking/first-video-live-export.mjs',
+    'ffprobe', 'ffmpeg'
+  ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
+  const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
+  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
+    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);
@@ -686,16 +791,21 @@ test('Mandala PR runs focused source contracts and manual dispatch owns exhausti
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
-  const release = source.split(/^  release-ready:/m)[1];
+  const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
-    assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
+    assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
+    assert.doesNotMatch(job, /fetch-depth:\s*0/, `${name} must avoid full-history Git fetch`);
     assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
-    assert.doesNotMatch(job, /fetch-depth:\s*2/);
+    assert.match(job, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/,
+      `${name} must deepen only the verified first parent when ancestry is shallow`);
+    assert.match(job, /tested_head="\$\(git rev-parse HEAD\^2\)"/,
+      `${name} must verify the second parent is exact PR HEAD`);
+    assert.match(job, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
   }
-  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 2);
+  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 0);
   assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 1);
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3);
   assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
   assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
   assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
@@ -830,7 +940,7 @@ test('five other specialists delegate TypeScript/build while Public Journey sing
   const core = workflow('hh-pr-core-release.yml');
   assert.match(core, /name: Exact proposed release production build and TypeScript check/);
   assert.match(core, /run: npm run build/);
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   for (const [file, name, command] of [
     ['hh-growth-studio.yml','Next.js build','npm run build'],
@@ -880,7 +990,7 @@ test('Practice visual PR does not repeat Google-auth browser or old Chromium/Web
     'current visual tooling source contracts must still run');
   assert.ok(!source.includes('tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs'),
     'Google auth source tests have a distinct owner');
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
 });
 
 test('native CI interruption recovery is one-time, exact-head and never bypasses failing code', () => {
@@ -906,7 +1016,7 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
   assert.match(repair,/actions: write/);
   assert.match(repair,/concurrency:/);
   assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
-  assert.match(repair,/new release-ready SUCCESS still required/);
+  assert.match(repair,/current verified Core and specialist CI still required/);
 });
 
 test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
@@ -926,9 +1036,15 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('pr.head.repo?.full_name !== fullRepo'), 'must skip forks');
   assert.ok(enable.includes('pr.mergeable !== true'), 'must refuse conflicted PRs');
   assert.ok(enable.includes('expectedHead !== pr.head.sha'), 'must reject stale PR events');
-  assert.ok(enable.includes('head_sha: pr.head.sha'), 'must use exact HEAD');
-  assert.ok(enable.includes('completedRunId && !response.data.workflow_runs.some'), 'must reject stale CI events');
+  assert.ok(enable.includes('branch: pr.head.ref,') &&
+    enable.includes('per_page: pageSize, page: pageNumber'),
+    'must query current PR branch with bounded pagination because CI head_sha may be synthetic');
+  assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'must recognize unified protection');
+  assert.ok(enable.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'), 'legacy protection remains fail-closed');
+  assert.ok(enable.includes('matching.length === 1'), 'duplicate jobs cannot pass');
+
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
   assert.ok(enable.includes('"$current_method" == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
@@ -995,20 +1111,293 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
   assert.ok(source.includes('recover-interrupted-core:'));
 });
 
-test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
+test('unified status replaces old aliases while independently requiring real Core+Specialist results',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
-  assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
-  assert.match(coreSection,/^    name: hh-core-verified$/m);
-  assert.match(coreSection,/^    needs: \[scope, code\]$/m);
-  assert.match(coreSection,/^    if: always\(\)$/m);
-  assert.match(coreSection,/^    timeout-minutes: 3$/m);
-  assert.match(coreSection,/\[\[ "\$SCOPE_RESULT" == success \]\]/);
-  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == success \]\]/);
-  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == skipped \]\]/);
-  assert.match(coreSection,/PR_DRAFT: \$\{\{ github\.event\.pull_request\.draft \}\}/);
-  assert.doesNotMatch(coreSection,/ci-specialist-aggregate\.mjs|gh api|checkout@v4/);
-  // A green Core result alone must NOT remove the old release specialist gate.
-  assert.match(source,/^  release-ready:/m);
-  assert.match(source,/ci-specialist-aggregate\.mjs/);
+  const gate=source.match(/^  hh-merge-check:\n[\s\S]*$/m)?.[0];
+  assert.ok(gate);
+  assert.match(gate,/^    name: hh-merge-check$/m);
+  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    if: always\(\)$/m);
+  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
+  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:/m);
+});
+
+test('production-base impact analyzer runs CI-only contracts without unrelated Next build',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const allow=source.split('# CI-only allowlist')[1]?.split('esac')[0];
+  assert.ok(allow?.includes('lib/ci/production-base-impact.mjs'),'pure CI module must use CI-only route');
+  assert.ok(allow?.includes('tests/ci-growth-course-core-reuse.test.mjs'),'pure Core-reuse CI contracts must avoid an unrelated Next production build');
+  assert.match(source,/node --test tests\/ci-workflow-globs\.test\.mjs tests\/workflow-next-route-filters\.test\.mjs tests\/ci-specialist-aggregate\.test\.mjs/);
+  assert.ok(source.includes("if: needs.scope.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
+});
+
+test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
+  const native = workflow('hh-native-auto-merge.yml');
+  const begin = native.indexOf('          script: |\n', native.indexOf('  enable:\n'));
+  const end = native.indexOf('      - name: Enable native auto-merge for this exact head', begin);
+  assert.ok(begin > 0 && end > begin, 'trusted preflight script missing');
+  const lines = native.slice(begin + '          script: |\n'.length, end).split('\n');
+  const code = lines.map(line => line.startsWith('            ') ? line.slice(12) : line).join('\n');
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const preflight = new AsyncFunction('github', 'core', 'context', code);
+  const repoName = 'andylitvinov-design/books';
+  const head = 'a'.repeat(40), base = 'b'.repeat(40), synthetic = 'f'.repeat(40);
+  const live = {
+    number: 42, state: 'open', draft: false, mergeable: true, mergeable_state: 'clean',
+    base: {ref: 'codex/public-book-library', sha: base},
+    head: {sha: head, ref: 'feature/safe', repo: {full_name: repoName}},
+  };
+  const good = {
+    id: 103, workflow_id: 31, event: 'pull_request', head_branch: live.head.ref,
+    head_sha: synthetic, name: 'HH PR core release gate',
+    path: '.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
+    status: 'completed', conclusion: 'success', created_at: '2026-11-01T14:00:00Z',
+    pull_requests: [{number: 42, head: {ref: live.head.ref, sha: head},
+      base: {ref: live.base.ref, sha: base}}],
+  };
+  const specialist = {...good, id: 104, workflow_id: 32, name: 'Holistic Support mandala release checks',
+    path: '.github/workflows/holistic-support-mandala.yml@refs/pull/42/merge'};
+  const event = {
+    repo: {owner: 'andylitvinov-design', repo: 'books'},
+    eventName: 'workflow_run',
+    payload: {workflow_run: {id: 103, event: 'pull_request', conclusion: 'success',
+      repository: {full_name: repoName}, head_repository: {full_name: repoName},
+      head_branch: live.head.ref, pull_requests: [{number: 42,
+        base: {ref: live.base.ref}}]}},
+  };
+  async function decide(runs, testedLive = live, expectedEvent = event, totalCount = runs.length, options = {}) {
+    const outputs = {}, args = [];
+    const github = {rest: {
+      pulls: {get: async () => ({data: testedLive}),
+        list: async () => ({data: [testedLive]})},
+      actions: {listWorkflowRunsForRepo: async params => {
+        args.push(params);
+        return {data: {total_count: totalCount, workflow_runs: runs}};
+      }, listJobsForWorkflowRun: async () => ({data: {
+        total_count: (options.jobs || []).length || 3,
+        jobs: options.jobs || [
+          {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+          {name: 'hh-specialist', status: 'completed', conclusion: 'success'},
+          {name: 'release-ready', status: 'completed', conclusion: 'success'},
+        ],
+      }})},
+      repos: {getBranch: async () => ({data: {
+        protected: true, protection: {required_status_checks: {
+          contexts: options.required || ['release-ready'],
+        }},
+      }})},
+    }};
+    await preflight(github, {setOutput: (k, v) => { outputs[k] = v; }, info: () => {}}, expectedEvent);
+    if (args.length) {
+      assert.equal(args[0].branch, live.head.ref, 'query must be branch-scoped');
+      assert.equal(args[0].head_sha, undefined, 'synthetic workflow SHA is not source SHA');
+    }
+    return outputs.eligible === 'true';
+  }
+  assert.equal(await decide([good, specialist]), true, 'exact source association accepts synthetic CI SHA');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified', 'hh-specialist'],
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'hh-specialist', status: 'completed', conclusion: 'success'},
+    ],
+  }), true, 'new branch protection requires both real Core and Specialist successes');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified', 'hh-specialist'],
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'hh-specialist', status: 'completed', conclusion: 'failure'},
+    ],
+  }), false, 'red Specialist must block migration');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified'],
+    jobs: [{name: 'hh-core-verified', status: 'completed', conclusion: 'success'}],
+  }), false, 'Core alone cannot count as a completed migration');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'release-ready', status: 'completed', conclusion: 'failure'},
+    ],
+  }), false, 'legacy required release-ready failure must block merging');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['release-ready', 'hh-core-verified'],
+  }), false, 'unknown mixed branch-protection state must block merging');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: [], 
+  }), false, 'unprotected status list cannot authorize native merge');
+
+  assert.equal(await decide([good, {...specialist, conclusion: 'failure'}]), false, 'red specialist blocks ARM');
+  assert.equal(await decide([{...good, pull_requests: []}]), false, 'missing association fails closed');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base
+  }]}]), false, 'old source SHA cannot authorize new HEAD');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: live.base.ref, sha: 'c'.repeat(40)}
+  }]}]), false, 'old production base cannot authorize ARM');
+  assert.equal(await decide([good, specialist], {...live, draft: true}), false, 'Draft does not ARM');
+  assert.equal(await decide([good, specialist], {...live, mergeable: false, mergeable_state: 'dirty'}), false,
+    'conflicted PR does not ARM');
+  assert.equal(await decide([good, specialist], live, {...event, payload: {
+    workflow_run: {...event.payload.workflow_run, id: 999},
+  }}), false, 'stale completion event cannot ARM');
+  const historical = Array.from({length: 98}, (_, i) => ({
+    ...good, id: 200 + i, pull_requests: [{number: 42,
+      head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base}],
+  }));
+  assert.equal(await decide([good, specialist, ...historical], live, event, 220), true,
+    'more than 100 total historical runs does not hide current complete HEAD evidence');
+  assert.equal(await decide(Array.from({length: 100}, (_, i) => ({
+    ...good, id: 300 + i,
+  })), live, event, 102), false, 'truncated current-head checks fail closed');
+});
+
+test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate synchronize triggers', () => {
+  const native = workflow('hh-native-auto-merge.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
+  assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review\]/);
+  assert.doesNotMatch(nativeEvents, /synchronize/,
+    'new source commits must not start an extra privileged native AutoMerge workflow');
+  assert.match(native, /^  workflow_run:\s*$/m);
+  assert.ok(native.includes("      - 'HH PR core release gate'"),
+    'successful exact-HEAD Core CI must still wake the trusted native listener');
+  const enable = native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
+    'the current source run association must not be weakened');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
+    'Core CI MUST still rerun for every source push');
+  assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
+});
+
+test('post-migration live gate preserves parallel source checks and removes redundant wrappers',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  assert.ok(specialist);
+  assert.match(specialist,/^    needs: \[scope\]$/m);
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  const gate=source.split(/^  hh-merge-check:/m)[1];
+  assert.ok(gate);
+  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialists-verified:/m);
+});
+
+// The event-driven coordinator must paginate a current source HEAD without
+// declaring a truncated 100-run page green or exhausting the GitHub API.
+test('native AutoMerge bounded CI pagination handles 100+ current runs safely',async()=>{
+  const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const begin=native.indexOf('          script: |\n',native.indexOf('  enable:\n'));
+  const end=native.indexOf('      - name: Enable native auto-merge for this exact head',begin);
+  assert.ok(begin>0&&end>begin,'missing trusted preflight');
+  const code=native.slice(begin+'          script: |\n'.length,end).split('\n')
+    .map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const preflight=new AsyncFunction('github','core','context',code);
+  const full='andylitvinov-design/books', head='a'.repeat(40), base='b'.repeat(40);
+  const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
+    base:{ref:'codex/public-book-library',sha:base},
+    head:{sha:head,ref:'feature/forty-two',repo:{full_name:full}}};
+  const makeRun=(id,name,workflowId,conclusion='success',associatedHead=head)=>({
+    id,name,workflow_id:workflowId,event:'pull_request',head_branch:pr.head.ref,
+    head_sha:'f'.repeat(40),path:'.github/workflows/'+(workflowId===1?'hh-pr-core-release.yml':'other.yml')+'@refs/pull/42/merge',
+    status:'completed',conclusion,created_at:new Date(1800000000000-id*1000).toISOString(),
+    pull_requests:[{number:42,head:{ref:pr.head.ref,sha:associatedHead},
+      base:{ref:pr.base.ref,sha:base}}]
+  });
+  const coreRun=makeRun(1,'HH PR core release gate',1);
+  const specialist=makeRun(2,'Mandatory focused browser QA',2);
+  const current=[coreRun,specialist,
+    ...Array.from({length:98},(_,i)=>makeRun(i+3,'Workflow '+i,i+3))];
+  const prior=makeRun(200,'Prior SHA',200,'success','c'.repeat(40));
+  async function decide(pages,totals) {
+    const calls=[],outputs={},notes=[];
+    const gh={rest:{
+      pulls:{get:async()=>({data:pr}),list:async()=>({data:[pr]})},
+      actions:{
+        listWorkflowRunsForRepo:async args=>{
+          calls.push(args);
+          const index=args.page-1;
+          return {data:{total_count:totals[index]??totals[0],
+            workflow_runs:pages[index]??[]}};
+        },
+        listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
+          {name:'hh-core-verified',status:'completed',conclusion:'success'},
+          {name:'hh-specialist',status:'completed',conclusion:'success'},
+          {name:'release-ready',status:'completed',conclusion:'success'},
+        ]}}),
+      },
+      repos:{getBranch:async()=>({data:{protected:true,protection:{
+        required_status_checks:{contexts:['release-ready']}}}})},
+    }};
+    const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
+      payload:{pull_request:pr}};
+    await preflight(gh,{info:message=>notes.push(message),
+      setOutput:(key,value)=>outputs[key]=value},context);
+    return {ok:outputs.eligible==='true',calls,notes};
+  }
+  const valid=await decide([current,[prior]],[101,101]);
+  assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
+  assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
+  assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
+  const incomplete=await decide([current,[]],[102,102]);
+  assert.equal(incomplete.ok,false,'missing second page is not success');
+  const tooMany=await decide([current,current,current],[401,401,401]);
+  assert.equal(tooMany.ok,false,'three full source HEAD pages with more data must fail closed');
+  assert.deepEqual(tooMany.calls.map(c=>c.page),[1,2,3]);
+  assert.ok(tooMany.notes.some(s=>s.includes('beyond bounded CI pages')));
+});
+
+test('retired administration migrator cannot restore old protected contexts',()=>{
+  const migration=workflow('hh-loose-release-ready-once.yml');
+  assert.match(migration,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(migration,/^  push:|^  pull_request:|^  schedule:/m);
+  assert.match(migration,/hh-merge-check/);
+  assert.doesNotMatch(migration,/HH_AUTOMERGE_TOKEN|--method PUT|--method PATCH|HH_STATUS_MIGRATION_ONE_TIME/);
+  const prune=workflow('hh-ci-stale-run-prune.yml');
+  assert.doesNotMatch(prune,/HH_STATUS_MIGRATION_ONE_TIME|--method PATCH/);
+  const native=workflow('hh-native-auto-merge.yml');
+  assert.match(native,/hh-merge-check/);
+  assert.match(native,/hh-specialist/);
+});
+
+test('single hh-merge-check never passes without exact-current workflow Core and Specialist', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  const gate=source.split(/^  hh-merge-check:\s*$/m)[1];
+  assert.ok(gate,'single required status must exist following admin readback');
+  assert.match(gate,/^    name: hh-merge-check$/m);
+  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    if: always\(\)$/m);
+  for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
+    assert.ok(gate.includes(required),'missing fail-closed '+required);
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
+  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.doesNotMatch(gate,/npm ci|npm run build|npx|playwright|continue-on-error/);
+  assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
+});
+
+test('legacy PR CI backfill accepts PAT-authored edited event without skipping required checks',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
+  assert.ok(match,'Core must stay attached to a genuine PR event');
+  assert.match(match[1],/\bedited\b/,'metadata edit must produce genuine pull_request CI');
+  assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
+  assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
+    'required CI must not be skipped by a path filter');
+  const scope=source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0]??'';
+  const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
+  const gate=source.split(/^  hh-merge-check:/m)[1]??'';
+  assert.match(scope,/github\.event\.pull_request\.draft == false/,
+    'real scope must execute on non-draft edited PR');
+  assert.match(specialist,/if: always\(\)/);
+  assert.match(gate,/if: always\(\)/,
+    'required status must run and reject failed Core/Specialist');
+  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });

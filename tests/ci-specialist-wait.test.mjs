@@ -28,13 +28,70 @@ test('waits for a running exact-head specialist and still fails on an unsuccessf
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
 });
 
+
+test('a registered specialist can remain queued beyond three minutes and must subsequently PASS', async () => {
+  let elapsed = 0, jobsRead = 0, polls = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => {
+      polls++;
+      if (elapsed < 4*60_000) return [run('queued', null)];
+      if (elapsed < 4*60_000 + 30_000) return [run('in_progress', null)];
+      return [run('completed', 'success')];
+    },
+    jobs: async () => {
+      jobsRead++;
+      return [{ name: 'mobile', status: 'completed', conclusion: 'success' }];
+    },
+  };
+  const sleep = async ms => {
+    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    elapsed += ms;
+  };
+  const result = await verify(api, ctx, sources, { now: () => elapsed, sleep });
+  assert.ok(elapsed >= 4*60_000, 'must not accept before a real completed check');
+  assert.ok(elapsed < 6*60_000, 'registered queued check eventually finishes within the bounded grace');
+  assert.ok(polls > 5);
+  assert.equal(jobsRead, 1);
+  assert.equal(result.executed.length, 1);
+});
+
+test('registered queue still fails closed after a bounded startup budget', async () => {
+  let elapsed = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run('queued', null)],
+    jobs: async () => { throw Error('unstarted specialist cannot supply successful jobs'); },
+  };
+  const sleep = async ms => {
+    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    elapsed += ms;
+  };
+  await assert.rejects(
+    () => verify(api, ctx, sources, {
+      now: () => elapsed, sleep, maxWaitMs: 35*60_000,
+      queuedGraceMs: 5*60_000, pollMs: 30_000,
+    }),
+    /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/,
+  );
+  assert.equal(elapsed, 5*60_000);
+});
+
 test('loose base reuse is limited to normal public changes; privacy and policy require current base', () => {
   for (const files of [
     ['components/public-faq.js'], ['app/[locale]/academy/page.tsx'], ['public/images/new-image.webp'], ['docs/guide.md'],
+    ['components/video-editor.tsx','scripts/verify-video-editor-browser.mjs'],
+    ['scripts/benchmarking/video-timing.mjs'],
+    ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
+    ['scripts/verify-affirmation-voice-browser.mjs'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
+    ['scripts/verify-payment-browser.mjs'], ['scripts/new-auth-guard.mjs'],
+    ['scripts/benchmarking/first-video-live-export.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],

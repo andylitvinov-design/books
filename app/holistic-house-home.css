@@ -1314,7 +1314,7 @@ a.service-home-start-card:hover {
   }
   .house-header--services .site-cabinet-entry__compact { display: none; }
   .house-header--services .site-cabinet-entry svg { display: block; }
-  .house-header--services .site-main-menu-trigger { width: 40px; min-width: 40px; }
+  .house-header--services .site-main-menu-trigger { width: 44px; min-width: 44px; }
 }
 @media (max-width: 359px) {
   .house-header--services .house-wordmark { font-size: 17px; }
@@ -1324,7 +1324,7 @@ a.service-home-start-card:hover {
   }
   .house-header--services .site-cabinet-entry__compact { display: none; }
   .house-header--services .site-cabinet-entry svg { display: block; }
-  .house-header--services .site-main-menu-trigger { width: 40px; min-width: 40px; }
+  .house-header--services .site-main-menu-trigger { width: 44px; min-width: 44px; }
 }
 
 /* Sitewide My Space trigger: visible wording even on 320px mobile layouts.

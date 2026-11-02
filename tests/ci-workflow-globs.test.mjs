@@ -135,7 +135,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
     'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
   assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
   assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(s, /fetch-depth: 0/);
+  assert.match(s, /fetch-depth: 2/);
   assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
   assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
   assert.match(s, /HH_PUBLIC_CASES/);
@@ -144,10 +144,29 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    'npm run build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"
   ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+
+test('Core scope uses bounded shallow checkout while preserving exact PR merge parent and base verification', () => {
+  const s=workflow('hh-pr-core-release.yml');
+  const scope=s.split('\n  scope:')[1]?.split('\n  code:')[0];
+  assert.ok(scope, 'Core scope job must exist');
+  assert.match(scope, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
+  assert.doesNotMatch(scope, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
+  assert.match(scope, /Verify bounded shallow scope ancestry before PR routing/);
+  assert.match(scope, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
+  assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
+  assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
+  assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
+  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" \|\|/);
+  assert.match(scope, /Verify live PR readiness before costly CI/);
+  assert.match(scope, /Classify strictly documentation-only PRs/);
+  assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
+  assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
 });

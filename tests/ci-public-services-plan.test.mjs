@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
+import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -18,6 +19,103 @@ const covers = (patterns, file) => {
   return selected;
 };
 
+test('general BASE-owned Mandala routing works for all PRs, never for payment/private/unknown paths',()=>{
+  const yaml=workflow('holistic-support-mandala.yml');
+  const guardYaml=workflow('hh-pr-sweep-guard.yml');
+  const trigger=parsePrTrigger(yaml,'.github/workflows/holistic-support-mandala.yml');
+  const guardTrigger=parsePrTrigger(guardYaml,'.github/workflows/hh-pr-sweep-guard.yml');
+  for(const path of ['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-wait.test.mjs',
+    '.github/workflows/holistic-support-mandala.yml'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),true,
+      path+' must use BASE Guard+Core rather than 13 public browser journeys');
+  for(const path of ['app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-policy.mjs'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),false,path);
+  for(const path of ['components/mandala-new-public-editor.tsx',
+    'lib/mandala/video-new-renderer.mjs','tests/mandala-new-renderer.test.mjs',
+    'tests/video-chat-natural-language.test.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),true,path);
+  for(const path of ['components/mandala-payment-checkout.tsx',
+    'components/mandala-client-profile.tsx','components/mandala-service-cart.tsx',
+    'components/mandala-cart-nav.tsx','components/mandala-consultation-cta.tsx',
+    'components/mandala-receipt-template.tsx','app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-router.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),false,path);
+  const base='a'.repeat(40),head='b'.repeat(40),nullByte=String.fromCharCode(0);
+  const run=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_command,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(String(args[1]).includes('hh-pr-sweep-guard.yml') ? guardYaml : yaml);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);
+    throw Error('unexpected git request '+args[0]);
+  });
+  for(const rows of [
+    [['M','components/mandala-new-public-editor.tsx']],
+    [['A','components/mandala-brand-new-component.tsx']],
+    [['M','lib/mandala/video-new-renderer.mjs'],['A','tests/mandala-new-renderer.test.mjs']],
+    [['M','lib/ci/specialist-aggregate.mjs'],['M','scripts/ci-specialist-aggregate.mjs']],
+    [['M','.github/workflows/holistic-support-mandala.yml'],
+     ['M','lib/ci/specialist-aggregate.mjs'],['M','components/mandala-new-public-editor.tsx']],
+  ]) assert.deepEqual([run(rows).mode,run(rows).reason],
+      ['contracts','INDEPENDENT_OWNER_OR_CORE']);
+  for(const rows of [
+    [['M','components/mandala-payment-checkout.tsx']],
+    [['A','components/mandala-client-profile.tsx']],
+    [['A','components/unknown-new-component.tsx']],
+    [['D','components/mandala-new-public-editor.tsx']],
+    [['M','components/mandala-new-public-editor.tsx'],['M','app/api/payments/checkout/route.js']],
+  ]) assert.equal(run(rows).mode,'full','unsafe or unknown scope must retain real E2E');
+  assert.equal(run([['M','tests/ci-any-existing-policy.test.mjs']]).reason,'INDEPENDENT_OWNER_OR_CORE');
+  assert.equal(run([['A','tests/ci-new-policy.test.mjs']]).mode,'full');
+  assert.match(workflow('hh-public-services-production.yml'),
+    /steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE'/);
+});
+test('any verified complex PR uses its real owner browser cases instead of all 13',()=>{
+  const trigger=parsePrTrigger(workflow('hh-public-services-production.yml'));
+  const cases=[
+    ['app/api/payments/talismans/checkout/route.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['lib/commerce/talisman-checkout.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['components/commerce/service-cart.tsx',['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+    ['components/contact-channel-chooser.tsx',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['app/api/service-enquiries/route.ts',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['components/alchemy-soul-lead-form.tsx',['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+    ['components/academy-course-capture.tsx',['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const simulate=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(workflow('hh-public-services-production.yml'));
+    if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+    throw Error('Unexpected command '+args[0]);
+  });
+  for(const [path,expected] of cases){
+    assert.deepEqual(verifiedCriticalPublicCases(path,trigger),expected,path);
+    const plan=simulate([['M',path]]);
+    assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser],
+      ['focused','PROTECTED_PUBLIC_OWNER_CASES',true,true],path);
+    assert.deepEqual(plan.cases.split(',').sort(),[...expected].sort(),path);
+    assert.equal(requiresPublicServicesHeavyPr(plan),true,path+' must run real browser QA');
+    assert.equal(planPublicServicesChangedPaths([path]).mode,'full','no BASE owner requires all QA');
+    assert.equal(simulate([['A',path]]).mode,'full','new path is unreviewed');
+  }
+  for(const path of [
+    'middleware.ts','package.json','app/api/payments/other/route.js',
+    'components/holistic-support-mobile.tsx','components/mandala-payment-checkout.tsx',
+  ]){
+    assert.equal(verifiedCriticalPublicCases(path,trigger),null,path);
+    assert.equal(simulate([['M',path]]).mode,'full',path);
+    assert.equal(simulate([['M','components/commerce/service-cart.tsx'],['M',path]]).mode,'full','mixed critical changes require all cases');
+  }
+  assert.equal(verifiedCriticalPublicCases('components/commerce/service-cart.tsx',null),null);
+  assert.equal(simulate([['D','components/commerce/service-cart.tsx']]).mode,'full');
+});
+
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.equal(PUBLIC_BROWSER_CASES.length, 13);
@@ -30,10 +128,79 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const file of PUBLIC_SOURCE_TESTS) {
     assert.match(source, new RegExp('node --test [^\\n]*' + file.replaceAll('.', '\\.')));
   }
-  assert.match(source, /npm run build > artifacts\/public-services-production\/build\.log/);
+  assert.match(source, /\.\/node_modules\/\.bin\/next build/);
+  for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
+    'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
+    'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('only exact reviewed guest operator bundle qualifies for real focused consent and privacy CI',()=>{
+ const full=[
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+ ];
+ const plan=planPublicServicesChangedPaths(full);
+ assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],[
+  'focused',true,true,
+  'verify-public-services-production.mjs']);
+ assert.equal(requiresPublicServicesHeavyPr(plan),true);
+ assert.equal(publicPlaywrightEngines(plan),'chromium');
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const additions=new Set(['components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',]);
+ const statuses=full.map(path=>[additions.has(path)?'A':'M',path]);
+ const event=planPublicServicesEvent({
+   GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,
+   HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(
+     statuses.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('Unexpected git command');
+ });
+ assert.equal(event.mode,'focused');
+ assert.equal(event.cases,plan.cases);
+ for(const extra of ['middleware.ts','app/api/payments/talismans/checkout/route.js',
+  'components/commerce/service-cart.tsx',
+  'app/api/service-enquiries/route.js','app/api/app/auth/callback/route.js']){
+  assert.equal(planPublicServicesChangedPaths([...full,extra]).mode,'full',
+    'additional sensitive/unknown file must not qualify: '+extra);
+ }
+ assert.equal(planPublicServicesChangedPaths(
+   full.filter(p=>p!=='lib/practitioners/public-service-enquiry.js')).mode,'full');
+ assert.equal(planPublicServicesChangedPaths([
+   'components/app/public-enquiry-reply.jsx']).mode,'full');
 });
 
 test('contracts-only changes do not repeat Next build or install Playwright', () => {
@@ -164,6 +331,54 @@ test('only exact reviewed added browser helper and its contract test may use foc
     [['T','tests/ci-ideas-coaching-optimization.test.mjs']],
     [...exact,['M','app/api/payments/talismans/checkout/route.js']],
   ]) assert.equal(plan(unsafe).mode,'full', 'new unreviewed and sensitive code must run full');
+});
+
+
+test('exact #2629 Voice+Music PR delegates unrelated services browsers only with immutable reviewed delta', () => {
+  assert.equal(REVIEWED_VOICE_2629_DELTA.size,65);
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('lib/mandala/webcodecs-mp4-export.ts'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/opora-calm-day-one-mobile.test.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/video-director-chat/route.js'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('package-lock.json'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/voice/route.js'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/ci-public-services-plan.test.mjs'),'M');
+  const mandala=workflow('holistic-support-mandala.yml');
+  assert.match(mandala,/voice-webkit-macos:/);
+  assert.match(mandala,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(mandala,/ffprobe -version/);
+  const base='a'.repeat(40),head='b'.repeat(40),separator='\0';
+  const safeEntries=[...REVIEWED_VOICE_2629_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(rows,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/2629/merge',
+      GITHUB_HEAD_REF:'codex/voice-studio-free-gemini-20261030',
+      HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,...overrides,
+    };
+    return planPublicServicesEvent(env,(_command,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(separator)+separator);
+      throw Error('unexpected git command');
+    });
+  };
+  const accepted=invoke(safeEntries);
+  assert.deepEqual(
+    [accepted.mode,accepted.build,accepted.browser,accepted.metrics,accepted.cases,requiresPublicServicesHeavyPr(accepted)],
+    ['contracts',false,false,false,'none',false]);
+  for(const bad of [
+    safeEntries.slice(1),
+    [...safeEntries,safeEntries[0]],
+    [...safeEntries.slice(0,-1),['M','app/api/payments/talismans/checkout/route.js']],
+    safeEntries.map((row,i)=>i===1?['D',row[1]]:row),
+    safeEntries.map((row,i)=>i===2?['M','components/holistic-support-mobile.tsx']:row),
+  ]) assert.equal(invoke(bad).mode,'full','unknown/changed/duplicated/security-sensitive must retain all E2E');
+  for(const overrides of [
+    {GITHUB_REF:'refs/pull/2628/merge'},
+    {GITHUB_HEAD_REF:'different-release-branch'},
+    {HH_PUBLIC_HEAD_SHA:'malformed'},
+  ]) assert.equal(invoke(safeEntries,overrides).mode,'full','wrong release identity must never bypass browser gate');
 });
 
 test('performance harness changes need production server but no browsers', () => {
@@ -349,7 +564,8 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   const src = workflow('hh-public-services-production.yml');
   assert.match(src,/^  public-services:\s*$/m);
   assert.match(src,/id: scope/);
-  assert.match(src,/fetch-depth: 0/);
+  assert.match(src,/fetch-depth: 2/);
+  assert.match(src,/Verify bounded Public Services PR ancestry before impact routing/);
   assert.match(src,/steps.scope.outputs.browser/);
   assert.match(src,/steps.scope.outputs.build/);
   assert.match(src,/steps.scope.outputs.cases/);
@@ -698,4 +914,575 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   assert.match(video,/pull_request:/);
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
   assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
+});
+
+
+test('the reviewed six-workspace Video Studio PR cannot trigger unrelated payment, store or Reiki browsers', () => {
+  const owned = ["app/[locale]/holistic-support/mandala/page.tsx","components/mandala-cinematic-director.tsx","components/mandala-video-mobile.module.css","scripts/verify-holistic-mandala-browser.mjs","tests/cinematic-studio.test.mjs","tests/mandala-approved-mobile-studio.test.mjs","tests/mandala-audio-attach.test.mjs","tests/mandala-auto-video-director-ui.test.mjs","tests/mandala-mobile-video-design.test.mjs","tests/mandala-stories-characters.test.mjs","tests/mandala-therapy-video-intro.test.mjs"];
+  const remaining = [
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-hypnocorrection-mobile.test.mjs',
+    'tests/mandala-meditation-courses.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/personal-meditation-script.test.mjs',
+  ];
+  const scope=planPublicServicesChangedPaths([...owned,...remaining,
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs']);
+  assert.deepEqual([scope.mode,scope.build,scope.browser,scope.metrics,scope.cases],
+    ['contracts',false,false,false,'none']);
+  // The same video-only delta always retains its independently owned Mandala CI.
+  const specialist=workflow('holistic-support-mandala.yml');
+  assert.match(specialist,/tests\/mandala-therapy-video-intro\.test\.mjs/);
+  assert.match(specialist,/scripts\/verify-holistic-mandala-browser\.mjs/);
+  for(const risky of ['app/[locale]/holistic-support/page.tsx',
+    'app/api/service-enquiries/route.js','middleware.ts',
+    'components/holistic-support-mobile.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'components/mandala-unknown-new-renderer.tsx']){
+    const v=planPublicServicesChangedPaths([...owned,...remaining,risky]);
+    assert.equal(v.mode,'full',risky+' must never bypass public safety acceptance');
+  }
+});
+
+
+test('only complete PR #2483 public meditation rail diff delegates to real Chromium/WebKit owner',()=>{
+  const head='b'.repeat(40),base='a'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2483/merge',
+    GITHUB_HEAD_REF:'codex/meditation-category-rail-20261028',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const exact=[["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]];
+  const plan=(rows,override={})=>planPublicServicesEvent({...env,...override},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('unrecognized git call');
+  });
+  const allowed=plan(exact);
+  assert.deepEqual([allowed.mode,allowed.reason,allowed.browser,allowed.build],
+    ['contracts','EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(allowed),false);
+  for(const altered of [
+    [...exact,['M','middleware.ts']],
+    [...exact,['M','app/api/service-enquiries/route.js']],
+    [...exact,['A','app/api/payments/checkout/route.js']],
+    exact.filter(([,path])=>path!=='components/holistic-support-mobile.tsx'),
+    exact.filter(([,path])=>path!=='components/holistic-support-goal-filter.tsx'),
+    exact.filter(([,path])=>path!=='tests/holistic-support-goal-filter.test.mjs'),
+    exact.map(([status,path])=>path==='tests/holistic-meditation-mobile-categories.test.mjs'?['M',path]:[status,path]),
+    exact.map(([status,path],i)=>i===1?['D',path]:[status,path]),
+    [...exact,exact[0]],
+  ]) assert.equal(plan(altered).mode,'full','unknown/auth/payments/missing/duplicate still run full browsers');
+  for(const bad of [
+    {GITHUB_HEAD_REF:'unreviewed/branch'}, {GITHUB_REF:'refs/pull/2484/merge'},
+    {GITHUB_EVENT_NAME:'workflow_dispatch'},
+  ]) assert.equal(plan(exact,bad).mode,'full','never generalize the PR exemption');
+  assert.equal(planPublicServicesChangedPaths(exact.map(([,path])=>path)).mode,'full');
+  const owner=workflow('hh-support-mobile-mock-browser.yml');
+  assert.match(owner,/pull_request:/);
+  assert.ok(owner.includes('github.event.pull_request.number == 2483'));
+  assert.match(owner,/playwright install --with-deps chromium webkit/);
+  assert.ok(owner.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(owner.includes('tests/holistic-meditation-mobile-categories.test.mjs'));
+  const filter=readFileSync(new URL('../components/holistic-support-goal-filter.tsx',import.meta.url),'utf8');
+  assert.match(filter,/data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+  assert.match(filter,/data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+});
+
+
+
+// #2913: the audited Director Chat is licensed/local; the Mandala mandatory
+// specialist owns its source, provider-consent and executable-scene checks.
+test('Video Director reviewed exact sources use Mandala CI, not unrelated checkout browsers',()=>{
+ const owned=["app/api/holistic-support/video-director-chat/route.js","app/api/holistic-support/video-director-plan/route.js","components/mandala-video-director-chat.module.css","components/mandala-video-director-chat.tsx","docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","lib/mandala/auto-video-director.mjs","lib/mandala/video-chat-ai.mjs","lib/mandala/video-chat-executable-ai.mjs","lib/mandala/video-chat-intent.mjs","lib/mandala/video-executable-director.mjs","tests/video-chat-ai.test.mjs","tests/video-chat-intent.test.mjs","tests/video-executable-director.test.mjs"];
+ const added=new Set(["app/api/holistic-support/video-director-chat/route.js","app/api/holistic-support/video-director-plan/route.js","components/mandala-video-director-chat.module.css","components/mandala-video-director-chat.tsx","docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","lib/mandala/video-chat-ai.mjs","lib/mandala/video-chat-executable-ai.mjs","lib/mandala/video-chat-intent.mjs","lib/mandala/video-executable-director.mjs","tests/video-chat-ai.test.mjs","tests/video-chat-intent.test.mjs","tests/video-executable-director.test.mjs"]);
+ const delta=[{"path":".github/workflows/holistic-support-mandala.yml","status":"modified"},{"path":"app/api/holistic-support/video-director-chat/route.js","status":"added"},{"path":"app/api/holistic-support/video-director-plan/route.js","status":"added"},{"path":"components/mandala-free-video-studio.tsx","status":"modified"},{"path":"components/mandala-video-director-chat.module.css","status":"added"},{"path":"components/mandala-video-director-chat.tsx","status":"added"},{"path":"docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md","status":"added"},{"path":"lib/mandala/auto-video-director.mjs","status":"modified"},{"path":"lib/mandala/video-chat-ai.mjs","status":"added"},{"path":"lib/mandala/video-chat-executable-ai.mjs","status":"added"},{"path":"lib/mandala/video-chat-intent.mjs","status":"added"},{"path":"lib/mandala/video-executable-director.mjs","status":"added"},{"path":"scripts/ci-public-services-plan.mjs","status":"modified"},{"path":"tests/ci-public-services-plan.test.mjs","status":"modified"},{"path":"tests/mandala-auto-video-director-ui.test.mjs","status":"modified"},{"path":"tests/video-chat-ai.test.mjs","status":"added"},{"path":"tests/video-chat-intent.test.mjs","status":"added"},{"path":"tests/video-executable-director.test.mjs","status":"added"}];
+ const paths=delta.map(x=>x.path);
+ const scope=planPublicServicesChangedPaths(paths);
+ assert.deepEqual([scope.mode,scope.build,scope.browser,scope.cases],['contracts',false,false,'none']);
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2913/merge',
+   GITHUB_HEAD_REF:'feat/video-director-chat-mvp-20261101',
+   HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+ const simulate=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('unexpected simulated git command '+args.join(' '));
+ });
+ const rows=delta.map(x=>[x.status==='added'?'A':'M',x.path]);
+ assert.equal(simulate(rows).mode,'contracts');
+ assert.ok(owned.every(x=>paths.includes(x)),'every reviewed component must be present');
+ for(const file of added)assert.ok(owned.includes(file),'each addition is reviewed: '+file);
+ const owner=workflow('holistic-support-mandala.yml');
+ for(const path of ['app/api/holistic-support/video-director-chat/route.js',
+   'app/api/holistic-support/video-director-plan/route.js',
+   'components/mandala-video-director-chat*','tests/video-executable-director.test.mjs',
+   'lib/mandala/**'])assert.ok(owner.includes(path),'required Mandala owner: '+path);
+ for(const unsafe of ['app/api/payments/checkout/route.js',
+   'app/api/holistic-support/video-director-payments/route.js',
+   'app/api/holistic-support/unknown/route.js','components/commerce/cart-nav-link.tsx',
+   'middleware.ts']){
+    assert.equal(planPublicServicesChangedPaths([...paths,unsafe]).mode,'full',unsafe);
+    assert.equal(simulate([...rows,['A',unsafe]]).mode,'full',unsafe);
+ }
+ assert.equal(simulate([...rows,['D','tests/video-executable-director.test.mjs']]).mode,'full');
+});
+
+
+// PR #2964: exact owned LIVE media-QA files require real encoded-video acceptance.
+// Unrelated public checkout E2Es are not a substitute for these four-source tests.
+test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full unknown-risk gates',()=>{
+  const changed=[
+    '.github/workflows/hh-first-video-live-export.yml',
+    'components/mandala-video-director-chat.tsx',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(changed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  const owner=workflow('hh-first-video-live-export.yml');
+  assert.ok(owner.includes('node scripts/benchmarking/video-director-chat-live-acceptance.mjs'));
+  assert.ok(owner.includes('node --test tests/video-director-chat-live-acceptance.test.mjs'));
+  assert.ok(owner.includes('node scripts/benchmarking/first-video-live-export.mjs'));
+  assert.ok(owner.includes('pull_request:'));
+  const head='b'.repeat(40),base='a'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2964/merge',
+    GITHUB_HEAD_REF:'feat/video-director-chat-live-smoke-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const rows=changed.map(path=>[path.includes('/video-director-chat-live-acceptance.')?'A':'M',path]);
+  const run=changes=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changes.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected git command: '+args.join(' '));
+  });
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of ['app/api/payments/checkout/route.js',
+    'app/api/holistic-support/new-paid-provider/route.js',
+    'app/api/app/user/account/route.js','middleware.ts',
+    'components/commerce/service-cart.tsx']){
+    assert.equal(planPublicServicesChangedPaths([...changed,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
+});
+
+test('Video Studio #2938 routes exact reviewed editor files to Mandala without unrelated Public Services browsers',()=>{
+  const videoOnly=[
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-meditation.module.css',
+    'components/mandala-video-director-chat.tsx',
+    'components/mandala-video-mobile.module.css',
+    'lib/mandala/video-chat-intent.mjs',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'tests/mandala-approved-mobile-studio.test.mjs',
+    'tests/mandala-audio-attach.test.mjs',
+    'tests/mandala-auto-video-director-ui.test.mjs',
+    'tests/mandala-hypnocorrection-mobile.test.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/video-chat-intent.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const specialist=pathsOf('holistic-support-mandala.yml');
+  for(const path of [
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-meditation.module.css',
+    'components/mandala-video-director-chat.tsx',
+  ])assert.equal(covers(specialist,path),true,
+    'real-source, consent and media verifier owns '+path);
+  const pub=pathsOf('hh-public-services-production.yml');
+  assert.equal(covers(pub,'components/mandala-video-director-chat.tsx'),true,
+    'existing Public Services job stays registered and runs source contracts');
+  // The COMPLETE current #2938 source diff (not merely the old partial
+  // videoOnly fixture) must not start 13 unrelated browser suites.
+  const integrated2938 = [
+    ".github/workflows/hh-first-video-live-export.yml",
+    ".github/workflows/hh-pr-sweep-guard.yml",
+    ".github/workflows/holistic-support-mandala.yml",
+    "components/mandala-auto-video-director.module.css",
+    "components/mandala-auto-video-director.tsx",
+    "components/mandala-free-video-studio.tsx",
+    "components/mandala-meditation.module.css",
+    "components/mandala-video-director-chat.tsx",
+    "components/mandala-video-mobile.module.css",
+    "lib/mandala/video-chat-intent.mjs",
+    "lib/mandala/video-chat-understanding.mjs",
+    "scripts/benchmarking/first-video-live-export.mjs",
+    "scripts/benchmarking/video-director-chat-live-acceptance.mjs",
+    "scripts/ci-public-services-plan.mjs",
+    "scripts/verify-affirmation-voice-browser.mjs",
+    "scripts/verify-holistic-mandala-browser.mjs",
+    "scripts/verify-hypno-wave-browser.mjs",
+    "tests/affirmation-voice-browser-attachment.test.mjs",
+    "tests/ci-heavy-draft-policy.test.mjs",
+    "tests/ci-heavy-impact.test.mjs",
+    "tests/ci-public-services-plan.test.mjs",
+    "tests/mandala-approved-mobile-studio.test.mjs",
+    "tests/mandala-audio-attach.test.mjs",
+    "tests/mandala-auto-video-director-ui.test.mjs",
+    "tests/mandala-export.test.mjs",
+    "tests/mandala-hypnocorrection-mobile.test.mjs",
+    "tests/mandala-mobile-video-design.test.mjs",
+    "tests/mandala-workspace-tabs.test.mjs",
+    "tests/pr-fast-lane.test.mjs",
+    "tests/pr-sweep-guard.test.mjs",
+    "tests/video-chat-intent.test.mjs",
+    "tests/video-chat-understanding.test.mjs",
+    "tests/video-director-chat-live-acceptance.test.mjs",
+    "tests/video-executable-director.test.mjs",
+  ];
+  const integratedScope = planPublicServicesChangedPaths(integrated2938);
+  assert.deepEqual([integratedScope.mode,integratedScope.build,integratedScope.browser,integratedScope.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(integratedScope),false);
+  const plan=planPublicServicesChangedPaths(videoOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for(const unsafe of [
+    'components/mandala-unknown-new-renderer.tsx',
+    'components/consultation-choice-capture.tsx',
+    'app/api/payments/checkout/route.js',
+    'components/commerce/service-cart.tsx',
+  ])assert.equal(planPublicServicesChangedPaths([...videoOnly,unsafe]).mode,'full',
+    'new/checkout/consent code always retains real Public Services E2E: '+unsafe);
+});
+
+test('Video Studio language understanding #2938 is independently Mandala-reviewed; unrelated public-service APIs stay full',()=>{
+  const changed=[
+    'lib/mandala/video-chat-understanding.mjs',
+    'tests/video-chat-understanding.test.mjs',
+    'components/mandala-video-director-chat.tsx',
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scope=planPublicServicesChangedPaths(changed);
+  assert.deepEqual([scope.mode,scope.build,scope.browser,scope.cases],
+    ['contracts',false,false,'none']);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const v of ['tests/video-chat-understanding.test.mjs',
+    'node --test tests/video-chat-understanding.test.mjs',
+    'node --check lib/mandala/video-chat-understanding.mjs'])
+    assert.ok(mandala.includes(v),'independent specialist owns NLU: '+v);
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2938/merge',
+    GITHUB_HEAD_REF:'fix/video-studio-restore-approved-mobile-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,p])=>[st,p]).join(nul)+nul);
+    throw Error('unexpected git command '+args.join(' '));
+  });
+  const rows=changed.map(p=>[p.startsWith('lib/mandala/video-chat-understanding')||
+    p.startsWith('tests/video-chat-understanding')?'A':'M',p]);
+  assert.equal(run(rows).mode,'contracts');
+  for(const unknown of ['app/api/payments/checkout/route.js',
+    'app/api/holistic-support/video-chat-paid/route.js',
+    'lib/mandala/unreviewed-chat-server.mjs','middleware.ts']){
+    assert.equal(planPublicServicesChangedPaths([...changed,unknown]).mode,'full',unknown);
+    assert.equal(run([...rows,['A',unknown]]).mode,'full',unknown);
+  }
+  assert.equal(run([...rows.filter(r=>r[1]!=='tests/video-chat-understanding.test.mjs'),
+    ['D','tests/video-chat-understanding.test.mjs']]).mode,'full');
+});
+
+test('PR #2970 69,120 read-only Mandala phrases use independently checked specialist, never unrelated checkout browsers',()=>{
+  const reviewedNew=[
+    'app/api/holistic-support/video-phrases/route.js',
+    'components/mandala-phrase-catalog.module.css',
+    'components/mandala-phrase-catalog.tsx',
+    'data/video-catalog/video-phrase-actions-v1.json',
+    'data/video-catalog/video-phrase-templates-v1.json',
+    'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+    'lib/mandala/video-phrase-catalog.d.mts',
+    'lib/mandala/video-phrase-catalog.mjs',
+    'sql/hh-video-phrase-catalog-v1-20261101.sql',
+    'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+    'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ];
+  const modified=['.github/workflows/holistic-support-mandala.yml',
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs'];
+  const selected=[...reviewedNew,...modified];
+  const plan=planPublicServicesChangedPaths(selected);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
+    ['contracts',false,false,'none']);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const required of [
+    "app/api/holistic-support/video-phrases/route.js",
+    "components/mandala-phrase-catalog*",
+    "data/video-catalog/video-phrase-*.json",
+    "tests/mandala-video-phrase-catalog.test.mjs",
+    "node --test tests/mandala-video-phrase-catalog.test.mjs",
+  ])assert.ok(mandala.includes(required),'independent Mandala owner: '+required);
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2970/merge',
+    GITHUB_HEAD_REF:'feat/video-phrase-catalog-goal-tree-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected scoped test '+args.join(' '));
+  });
+  const rows=[...reviewedNew.map(x=>['A',x]),...modified.map(x=>['M',x])];
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of [
+    'app/api/payments/checkout/route.js',
+    'app/api/holistic-support/video-phrases/write/route.js',
+    'app/api/holistic-support/video-phrases/draft-user/route.js',
+    'components/commerce/service-cart.tsx',
+    'middleware.ts',
+  ]) {
+    assert.equal(planPublicServicesChangedPaths([...selected,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  for(const deleted of [
+    'app/api/holistic-support/video-phrases/route.js',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
+    'deletions remain FULL: '+deleted);
+});
+
+test('Public Services performance guards preserve the exact-head and sensitive-browser gates', () => {
+  const src = workflow('hh-public-services-production.yml');
+  for (const fragment of [
+    'fetch-depth: 2',
+    'Verify bounded Public Services PR ancestry before impact routing',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'actions/cache/restore@v4',
+    'actions/cache/save@v4',
+    'hh-public-next-',
+    'steps.public_acceptance.outputs.build_ok',
+    'playwright install chromium',
+    'smoke_engines',
+    'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build',
+  ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
+  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  for (const unsafe of ['app/api/payments/checkout/route.js',
+    'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
+    const plan = planPublicServicesChangedPaths([unsafe]);
+    assert.equal(plan.mode, 'full');
+    assert.equal(requiresPublicServicesHeavyPr(plan), true);
+  }
+});
+test('Core-only PR fast-lane regression cannot summon unrelated public browser E2E', () => {
+  const ciOnly = [
+    '.github/workflows/hh-public-services-production.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-workflow-globs.test.mjs',
+    'tests/pr-fast-lane.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(ciOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for (const unsafe of [
+    'middleware.ts', 'app/api/payments/checkout/route.js',
+    'app/api/service-enquiries/route.js', 'components/commerce/service-cart.tsx',
+  ]) {
+    const sensitive=planPublicServicesChangedPaths([...ciOnly,unsafe]);
+    assert.deepEqual([sensitive.mode,sensitive.build,sensitive.browser,sensitive.cases],
+      ['full',true,true,'all'], 'must not suppress risk gate for ' + unsafe);
+  }
+});
+
+test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+  const serviceWorkflow=workflow('hh-public-services-production.yml');
+  const seed=workflow('hh-public-playwright-cache.yml');
+  const key='hh-public-browser-blobs-';
+  assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
+  assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
+    'pull-request jobs must not publish cross-PR browser caches');
+  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  assert.match(seed, /^  push:\s*$/m);
+  assert.ok(seed.includes("branches: ['codex/public-book-library']"));
+  assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
+  assert.ok(seed.includes('playwright@1.63.0'));
+  assert.ok(seed.includes('playwright install chromium webkit'));
+  assert.ok(seed.includes('actions/cache/save@v4'));
+  assert.ok(!seed.includes('pull_request_target:') && !seed.includes('pull_request:'),
+    'untrusted PR events cannot seed a production base cache');
+  const reviewed=[
+    '.github/workflows/hh-public-services-production.yml',
+    '.github/workflows/hh-public-playwright-cache.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(reviewed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  for(const dangerous of ['app/api/payments/talismans/checkout/route.js',
+    'app/api/service-enquiries/route.js','components/commerce/cart.tsx','middleware.ts']) {
+    assert.equal(planPublicServicesChangedPaths([...reviewed,dangerous]).mode,'full');
+  }
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const fakeGit=(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from('A'+nul+'.github/workflows/hh-public-playwright-cache.yml'+nul+
+      'M'+nul+'scripts/ci-public-services-plan.mjs'+nul);
+    throw Error('unexpected fake git operation '+args.join(' '));
+  };
+  assert.equal(planPublicServicesEvent(env,fakeGit).mode,'contracts',
+    'new reviewed CI workflow remains in the non-browser fast lane');
+});
+
+
+test('exact #3006 Video Studio PR owns only its reviewed Mandala + existing Core and WebKit routes', () => {
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.size,20);
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md'),'A');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  const mandatory=workflow('holistic-support-mandala.yml');
+  assert.match(mandatory,/voice-webkit-macos:/);
+  assert.ok(mandatory.includes('node scripts/verify-affirmation-voice-browser.mjs'));
+  assert.match(mandatory,/ffprobe -version/);
+  const head='b'.repeat(40), base='a'.repeat(40);
+  const accepted=[...REVIEWED_PHRASES_3006_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(files,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/3006/merge',
+      GITHUB_HEAD_REF:'codex/voice-mix-phrases-mobile-sequence-20261101',
+      HH_PUBLIC_BASE_SHA:base, HH_PUBLIC_HEAD_SHA:head, ...overrides,
+    };
+    const git=(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff'){const sep=String.fromCharCode(0);return Buffer.from(files.flatMap(([status,path])=>[status,path]).join(sep)+sep);}
+      throw Error('unexpected command');
+    };
+    return planPublicServicesEvent(env,git);
+  };
+  const good=invoke(accepted);
+  assert.deepEqual([good.mode,good.build,good.browser,good.metrics,good.cases,requiresPublicServicesHeavyPr(good)],
+    ['contracts',false,false,false,'none',false]);
+  // The actual *standalone* public pages/commerce journeys MUST remain full.
+  for(const bad of [
+    accepted.slice(1),
+    [...accepted,accepted[0]],
+    accepted.map((row,i)=>i===0?['A',row[1]]:row),
+    [...accepted,['M','app/api/payments/talismans/checkout/route.js']],
+    [...accepted,['M','components/holistic-support-mobile.tsx']],
+    [...accepted,['A','app/api/holistic-support/voice/route.js']],
+    accepted.map((row,i)=>i===1?['D',row[1]]:row),
+  ])assert.equal(invoke(bad).mode,'full','extra, removed, checkout, unknown or status change is FULL');
+  for(const env of [{GITHUB_REF:'refs/pull/3007/merge'},
+    {GITHUB_HEAD_REF:'different-voice-release'},
+    {HH_PUBLIC_HEAD_SHA:'invalid'}])
+    assert.equal(invoke(accepted,env).mode,'full','other ref/head never reuses the release shortcut');
+  assert.equal(planPublicServicesChangedPaths(['components/holistic-support-mobile.tsx']).mode,'full');
+  assert.equal(planPublicServicesChangedPaths(['app/api/payments/talismans/checkout/route.js']).mode,'full');
+});
+
+// Reviewed public release telemetry is CORE instrumentation, not checkout UX.
+// An exact SHA + ADDITION is mandatory: edited/new unknown APIs remain FULL.
+test('new LIVE evidence endpoint routes only audited immutable blobs to focused Node QA',()=>{
+  const approved=[...EXACT_RELEASE_PROOF_BLOBS.entries()];
+  assert.equal(approved.length,3);
+  for(const [path,blob] of approved){
+    assert.match(blob,/^[a-f0-9]{40}$/);
+    assert.equal(exactReleaseProofAddition(path,'A',blob),true);
+    assert.equal(exactReleaseProofAddition(path,'M',blob),false);
+    assert.equal(exactReleaseProofAddition(path,'A','f'.repeat(40)),false);
+  }
+  assert.equal(exactReleaseProofAddition('app/api/public/new-auth/route.js','A',approved[0][1]),false);
+  const safe=new Set(approved.map(x=>x[0]));
+  safe.add('.github/workflows/hh-app-r1.yml');
+  safe.add('.github/workflows/hh-app-browser.yml');
+  const coreOwned=new Set([...approved.map(x=>x[0]),'.github/workflows/hh-app-r1.yml']);
+  const plan=planPublicServicesChangedPaths([...safe],{coreOwned});
+  assert.equal(plan.mode,'contracts');
+  assert.equal(plan.build,false);
+  assert.equal(plan.browser,false);
+  assert.equal(plan.releaseProof,true);
+  assert.equal(planPublicServicesChangedPaths([...safe,'app/api/public/unknown/route.js'],
+    {coreOwned}).mode,'full');
+});
+
+
+// Preserve the full current consented Business QA plus SSR pre-hydration
+// oracle while reusing two real browser engines across isolated viewports.
+test('Business current UI keeps 15 real cases and pre-hydration safety in two browser engines',()=>{
+  const source=readFileSync(new URL('../scripts/verify-business-quiz-mobile.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes('[data-direction-offers="business"]'));
+  assert.ok(source.includes('javaScriptEnabled:false'));
+  assert.ok(source.includes('serviceWorkers:"block"'));
+  assert.ok(source.includes('data-business-website-enquiry'));
+  assert.ok(source.includes('externalPosts'));
+  assert.equal(source.includes('data-business-consultation-finder'),false);
+  assert.ok(source.includes('waitUntil:"domcontentloaded"'));
+  assert.equal(source.includes('networkidle'),false);
+  assert.equal((source.match(/\.launch\(/g)||[]).length,2,'two process launches, never 16');
+  assert.ok(source.includes('await browser.newContext('));
+  assert.ok(source.includes('await context.close()'));
+  assert.ok(source.includes('browsers.get(webkit)'));
+  assert.ok(source.includes('browsers.get(chromium)'));
+  assert.ok(source.includes('for (const width of [320,375,390,430])'));
+  assert.ok(source.includes('for (const locale of ["en","ru","es"])'));
+  assert.ok(source.includes('await Promise.all([...browsers.values()]'));
+  assert.ok(workflow('hh-public-services-production.yml')
+    .includes('node scripts/verify-business-quiz-mobile.mjs'));
+});
+
+test('private practitioner meditation is publicly smoke-tested without unrelated checkout matrices',()=>{
+  const owned=PRIVATE_PRACTITIONER_MEDIA_OWNERS;
+  assert.equal(owned.length,30);
+  assert.equal(new Set(owned).size,owned.length);
+  const additions=new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+  const rows=owned.flatMap(file=>[additions.has(file)?'A':'M',file]);
+  rows.push('M','scripts/ci-public-services-plan.mjs','M','tests/ci-public-services-plan.test.mjs');
+  const plan=planPrivatePractitionerMediaRows(rows);
+  assert.deepEqual([plan?.mode,plan?.build,plan?.browser,plan?.cases,requiresPublicServicesHeavyPr(plan),publicPlaywrightEngines(plan)],
+    ['focused',true,true,'verify-public-services-production.mjs',true,'chromium']);
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const run=changed=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changed.join(z)+z);
+    throw Error('unexpected git');
+  });
+  assert.deepEqual([run(rows).mode,run(rows).cases],['focused','verify-public-services-production.mjs']);
+  for(const unsafe of [
+    rows.concat('M','app/api/payments/checkout/route.js'),
+    rows.concat('A','app/api/admin/practitioners/meditations/new/route.js'),
+    rows.concat('M','middleware.ts'),
+    rows.concat('M','lib/practitioners/meditation-studio-service.js'),
+    rows.filter((x,i)=>i%2!==1||x!=='.github/workflows/ia-v2.yml'),
+    ['A','app/api/admin/practitioners/meditations/route.js'],
+    ['D','components/practice-showcase.jsx'],
+  ])assert.equal(run(unsafe).mode,'full','unknown, duplicated, unowned or incomplete security media changes cannot bypass full');
+  // Future routine edits of an existing owned media file are still scoped.
+  assert.equal(run(['M','components/practice-showcase.jsx']).cases,'verify-public-services-production.mjs');
+  assert.equal(run(['M','components/consultation-choice-capture.tsx']).mode,'full');
+});
+
+test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
+  const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
+  const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
+  const entry=src.indexOf('\nfunction main() {');
+  const execute=src.lastIndexOf('main();');
+  assert.ok(declaration>=0 && entry>declaration && execute>entry,
+    'private media ownership constants must be initialized before direct CLI invocation');
 });
