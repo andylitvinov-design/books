@@ -53,12 +53,21 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/effects:\{tab:"Efecto hipno",title:"Efectos de hipnosis"/);
   assert.match(studio,/data-workspace-section="effects"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
-  assert.match(studio,/onOpenAudioEditor=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
+  assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
+  assert.match(studio,/createHypnoAudioEffectFile/);
+  assert.match(ui,/data-hypno-speech-settings/);
+  assert.match(ui,/data-hypno-binaural-settings/);
+  assert.match(ui,/whisperEnabled/);
+  assert.match(ui,/binauralEnabled/);
+  const audioGroup=ui.slice(ui.indexOf('{group.id==="audio"?<>'),ui.indexOf('{group.id==="visual"?<>'));
+  assert.ok(audioGroup.length>0,"audio group must exist");
+  assert.doesNotMatch(audioGroup,/unavailable|coming soon/);
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
   assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw the real hypno overlay");
-  for(const name of ['"phrases"','"audio"','"visual"','"meditation"'])assert.ok(ui.includes(name));
+  for(const name of ['"phrases"','"audio"','"visual"'])assert.ok(ui.includes(name));
+  assert.doesNotMatch(ui,/posters\.meditation/,"no stale lookup remains for the removed meditation group");
   for(const name of ["25-й кадр","Бинауральные ритмы","Импульс света",
     "Быстрая настройка с Wave","Создать личную медитацию"])assert.ok(ui.includes(name));
   assert.match(css,/font-size:18px/);
@@ -66,17 +75,19 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("owner's third workspace exposes all four image-led groups in screenshot order and one real Create handler",()=>{
+test("owner's third workspace exposes three image-led groups in approved order and one real Create handler",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
+  const order=["phrases","visual","audio"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
-  assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
+  assert.match(ui,/useState<GroupId\[\]>\(\["phrases","visual","audio"\]\)/);
   assert.match(ui,/data-hypno-card/);
-  assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
-    "optional audio safety details must not stretch the approved default row");
+  assert.match(ui,/note==="voice"/,
+    "opening the speech control reveals the inline voice editor");
+  assert.match(ui,/note==="audio"/,
+    "audio guidance remains available only when required; the optional safety note stays compact");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
   assert.match(ui,/createPortal\(intro,introTarget\)/);
@@ -108,7 +119,7 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
   assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
   for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
-  assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
+  assert.doesNotMatch(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
 
