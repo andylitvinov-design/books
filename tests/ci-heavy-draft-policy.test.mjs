@@ -409,7 +409,9 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual runs cannot be cancelled by unrelated PRs');
+  assert.ok(source.includes("group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), 'PR runs share a PR-scoped group; manual runs stay isolated by run id');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'only a changed PR HEAD cancels the prior run');
+  assert.ok(source.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"), 'the exact source SHA remains explicit as a lease');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -699,8 +701,10 @@ test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard 
   assert.ok(core.includes('github.run_attempt == 1'));
   assert.ok(core.includes("format('run-{0}', github.run_id)"));
   const webkit=read('holistic-support-mandala.yml');
-  assert.ok(webkit.includes('${{ github.event.pull_request.head.sha || github.sha }}'));
+  assert.ok(webkit.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
   assert.ok(webkit.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(webkit.includes("format('pr-{0}', github.event.pull_request.number)"));
+  assert.ok(!webkit.match(/^  group: .*head\\.sha/m), 'the run group must not split one PR across obsolete HEADs');
   const guard=read('hh-pr-sweep-guard.yml');
   assert.ok(!guard.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
     'Guard first-attempt concurrency must not isolate obsolete HEADs');
