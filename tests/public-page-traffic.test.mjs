@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {safePublicPagePath,safePublicSource,sourceFromPublicEntry} from '../lib/analytics/public-page-traffic.mjs'
 import {summarizePublicPageTraffic,publicPageDigestLines} from '../lib/analytics/public-page-traffic-report.mjs'
-import {existsSync, readFileSync} from 'node:fs'
+import {readFileSync} from 'node:fs'
 
 const period={yesterday:'2026-10-24',weekStart:'2026-10-18'}
 test('strictly public marketing paths, no private pages, queries or arbitrary slugs',()=>{
@@ -43,14 +43,18 @@ test('yesterday/weekly page ranking and sources are accurate and exclude invalid
  assert.match(message,/26|14/)
  assert.doesNotMatch(message,/private-email|any\.example|999|400|sensitive|уникальных посетителей: 26/)
 })
-test('existing GA4/Meta hold and strict opt-in; owner auto-excluded and browser override',()=>{
+test('GA4/Meta remain off; anonymous public counts are automatic but honor durable opt-out',()=>{
  const tag=readFileSync(new URL('../lib/public-analytics.ts',import.meta.url),'utf8')
  const collector=readFileSync(new URL('../components/public-page-traffic.tsx',import.meta.url),'utf8')
  const endpoint=readFileSync(new URL('../app/api/analytics/public-page/route.js',import.meta.url),'utf8')
  const service=readFileSync(new URL('../app/api/marketplace/service-event/route.js',import.meta.url),'utf8')
  const migration=readFileSync(new URL('../supabase/migrations/20261025175000_hh_public_page_source_daily.sql',import.meta.url),'utf8')
  assert.match(tag,/PUBLIC_ANALYTICS_AVAILABLE = false/)
- assert.match(collector,/hh_public_stats_consent/)
+ assert.match(collector,/!hasCookie\("hh_public_stats_consent", "denied"\)/)
+ assert.match(collector,/!hasCookie\("hh_public_stats_skip", "1"\)/)
+ assert.doesNotMatch(collector,/"hh_public_stats_consent", "v1"/)
+ assert.match(endpoint,/request\.cookies\.get\('hh_public_stats_consent'\)\?\.value === 'denied'/)
+ assert.doesNotMatch(endpoint,/request\.cookies\.get\('hh_public_stats_consent'\)\?\.value !== 'v1'/)
  assert.match(collector,/credentials: "same-origin"/)
  assert.match(endpoint,/requireSameOrigin\(request,config\)/)
  assert.match(endpoint,/publicStatsExclusion\(request,config\)/)
@@ -83,35 +87,27 @@ test('top pages are ranked by views, not by clicks, for two completed Toronto pe
  assert.match(message,/Источники входов за 7 дней: Google поиск/)
  assert.ok(message.length<2600,message.length)
 })
-test('do not call lack of consent zero visits and never include private pages',()=>{
+test('empty aggregates are not called zero visitors and never include private pages',()=>{
  const message=publicPageDigestLines([],period).join('\n')
  assert.match(message,/нет измеренных данных/)
- assert.match(message,/пока нет данных по добровольным посещениям/)
+ assert.match(message,/пока нет измеренных агрегированных посещений/)
  assert.doesNotMatch(message,/посещений: 0/)
  const tracker=readFileSync(new URL('../components/public-page-traffic.tsx',import.meta.url),'utf8')
  const choice=readFileSync(new URL('../components/analytics-consent.tsx',import.meta.url),'utf8')
  const privacy=readFileSync(new URL('../app/privacy/page.tsx',import.meta.url),'utf8')
  const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
- const noticeFile=new URL('../components/first-party-stats-notice.tsx',import.meta.url)
- assert.equal(existsSync(noticeFile),true)
- const notice=readFileSync(noticeFile,'utf8')
- assert.match(layout,/<FirstPartyStatsNotice\s*\/>/)
- assert.match(notice,/safePublicPagePath\(pathname\)/)
- assert.match(notice,/!hasRecordedChoice\(\)/)
- assert.match(notice,/hh_public_stats_consent=/)
- assert.match(notice,/setFirstPartyConsent\(allow\)/)
- assert.match(notice,/onClick=\{\(\) => decide\(true\)\}/)
- assert.match(notice,/onClick=\{\(\) => decide\(false\)\}/)
- assert.match(notice,/data-first-party-consent/)
- assert.doesNotMatch(notice,/window\.gtag|facebook\.com\/tr|fetch\(/)
- assert.doesNotMatch(notice,/localStorage|sessionStorage|userId|visitorId/)
- assert.match(choice,/setFirstPartyConsent\(allow\)/)
- assert.match(choice,/allow \? "v1" : "denied"/)
- assert.match(privacy,/<FirstPartyStatsPreferences \/>/)
- assert.match(choice,/export function FirstPartyStatsPreferences\(\)/)
+ // A fresh browser must never see a sitewide analytics popup.
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice/)
+ assert.match(layout,/<PublicPageTraffic\\s*\\/>/)
+ assert.match(tracker,/function countAllowed\\(\\)/)
+ assert.match(tracker,/!countAllowed\\(\\)/)
  assert.match(tracker,/holistic-house:public-stats-consent/)
- assert.match(tracker,/data-first-party-consent/)
- assert.doesNotMatch(layout,/<FirstPartyStatsNotice[^>]*onClick=/)
- assert.doesNotMatch(tracker,/analytics\.google|gtag|facebook\.com\/tr/)
+ assert.match(choice,/setFirstPartyConsent\\(allow\\)/)
+ assert.match(choice,/allow \\? "v1" : "denied"/)
+ assert.match(choice,/firstPartyCookie\\(publicStatsCookie\\) !== "denied"/)
+ assert.match(privacy,/<FirstPartyStatsPreferences \\/>/)
+ assert.match(choice,/export function FirstPartyStatsPreferences\\(\\)/)
+ assert.match(privacy,/automatically count aggregate entrances/)
+ assert.doesNotMatch(tracker,/analytics\\.google|gtag|facebook\\.com\\/tr/)
  assert.doesNotMatch(choice,/<aside\\b/)
 })
