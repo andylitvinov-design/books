@@ -53,6 +53,37 @@ function evidenceDecision({sha,status,deployment,alias,publicSite}) {
  return {verified_live:true,reason:'LIVE_VERIFIED',deployment_id:deployId,
   production_sha:sha,alias:ALIAS};
 }
+
+const PUBLIC_PROOF_SCHEMA='HH_PUBLIC_RELEASE_EVIDENCE_V1';
+function publicEvidenceDecision({sha,status,proof,publicSite}){
+ const fail=reason=>({verified_live:false,reason});
+ if(!SHA.test(sha||''))return fail('INVALID_PRODUCTION_SHA');
+ const match=String(status?.target_url||'').match(VERCEL_URL);
+ if(!match||status?.state!=='success')return fail('VERCEL_GITHUB_STATUS_UNVERIFIED');
+ if(!proof||proof.schema!==PUBLIC_PROOF_SCHEMA||proof.available!==true||
+    proof.sha!==sha||proof.deployment_id!=='dpl_'+match[1]||
+    proof.project_id!==PROJECT_ID||proof.environment!=='production'||
+    proof.branch!==PROD||proof.repo!==REPO)
+  return fail('PUBLIC_RUNTIME_DEPLOYMENT_MISMATCH');
+ if(publicSite?.status!==200||publicSite.host!==ALIAS||
+    !String(publicSite.contentType||'').toLowerCase().includes('text/html')||
+    publicSite.html!==true)return fail('PRODUCTION_HTTP_NOT_VERIFIED');
+ return {verified_live:true,reason:'LIVE_VERIFIED',
+  proof_method:'PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT',
+  production_sha:sha,deployment_id:proof.deployment_id,alias:ALIAS};
+}
+async function readPublicIdentity(fetchImpl){
+ const url='https://'+ALIAS+'/api/public/release-evidence';
+ const response=await fetchImpl(url,{
+  headers:{Accept:'application/json'},cache:'no-store',redirect:'error',
+  signal:AbortSignal.timeout(12000)
+ });
+ if(response.status!==200||new URL(response.url||url).hostname!==ALIAS||
+    !String(response.headers?.get('content-type')||'').toLowerCase().includes('application/json'))
+  return null;
+ const identity=await response.json();
+ return identity&&typeof identity==='object'&&!Array.isArray(identity)?identity:null;
+}
 async function checkedJson(fetchImpl,url,token){
  const response=await fetchImpl(url,{
   headers:{Authorization:'Bearer '+token,Accept:'application/json'},
@@ -114,8 +145,32 @@ async function run({github,core,context,vercelToken='',fetchImpl=fetch,now=Date.
   report.evidence_urls.push(status.target_url);
   report.deployment_id='dpl_'+m[1];
   if(!vercelToken){
-   report.reason='VERCEL_READ_CREDENTIAL_UNAVAILABLE';
-   report.coverage='GITHUB_STATUS_ONLY_NO_LIVE_CLAIM';
+   // No API credential is needed when the *served canonical site* itself
+   // proves the exact Vercel production SHA and deployment ID.
+   let proof;
+   try{proof=await readPublicIdentity(fetchImpl);}catch(error){
+    report.reason='PUBLIC_RUNTIME_PROOF_READ_FAILED';
+    report.coverage='GITHUB_STATUS_ONLY_NO_LIVE_CLAIM';
+    report.error_code=String(error?.message||'unknown').slice(0,110);
+    return finish();
+   }
+   if(!proof){
+    report.reason='PUBLIC_RUNTIME_PROOF_UNAVAILABLE';
+    report.coverage='GITHUB_STATUS_ONLY_NO_LIVE_CLAIM';
+    return finish();
+   }
+   const publicSite=await checkPublic(fetchImpl);
+   const decision=publicEvidenceDecision({sha,status,proof,publicSite});
+   Object.assign(report,decision);
+   if(report.verified_live){
+    const current=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+    if(current?.commit?.sha!==sha){
+     report.verified_live=false;report.reason='PRODUCTION_HEAD_CHANGED_DURING_VERIFY';
+     return finish();
+    }
+    report.evidence_urls.push('https://'+ALIAS+'/api/public/release-evidence',
+      'https://'+ALIAS+'/en');
+   }
    return finish();
   }
   const suffix='?teamId='+encodeURIComponent(TEAM_ID);
@@ -126,7 +181,15 @@ async function run({github,core,context,vercelToken='',fetchImpl=fetch,now=Date.
   const publicSite=await checkPublic(fetchImpl);
   const decision=evidenceDecision({sha,status,deployment,alias,publicSite});
   Object.assign(report,decision);
-  if(report.verified_live)report.evidence_urls.push('https://'+ALIAS+'/en');
+  if(report.verified_live){
+   const current=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+   if(current?.commit?.sha!==sha){
+    report.verified_live=false;report.reason='PRODUCTION_HEAD_CHANGED_DURING_VERIFY';
+    return finish();
+   }
+   report.proof_method='VERCEL_API_READY_AND_ALIAS';
+   report.evidence_urls.push('https://'+ALIAS+'/en');
+  }
   return finish();
  }catch(error){
   // Read-only errors never authorize a merge, a retry, a release or a false LIVE.
@@ -136,4 +199,5 @@ async function run({github,core,context,vercelToken='',fetchImpl=fetch,now=Date.
  }
 }
 module.exports={REPO,DEFAULT,PROD,ALIAS,PROJECT_ID,TEAM_ID,VERCEL_URL,
- trustedContext,latestVercelStatus,evidenceDecision,checkPublic,run};
+ trustedContext,latestVercelStatus,evidenceDecision,publicEvidenceDecision,
+ readPublicIdentity,checkPublic,run};

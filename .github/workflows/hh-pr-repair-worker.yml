@@ -33,7 +33,7 @@ on:
         default: false
 permissions:
   contents: read
-  actions: read
+  actions: write
   issues: write
   pull-requests: write
 concurrency:
@@ -69,12 +69,14 @@ jobs:
           script: |
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
             const requested=Number(context.payload.inputs?.pr_number || 0);
-            await worker.claim({github,core,context,
+            const dryRun=context.eventName==='push' || String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            const result=await worker.claim({github,core,context,
               number:Number.isSafeInteger(requested)?requested:0,
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
-              taskKey:String(context.payload.inputs?.task_key || ''),
-              dryRun:context.eventName==='push' || String(context.payload.inputs?.dry_run ?? 'false')==='true',
+              taskKey:String(context.payload.inputs?.task_key || ''),dryRun,
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
   fix:
     needs: claim
     if: needs.claim.outputs.strategy == 'lint'
@@ -220,3 +222,5 @@ jobs:
             core.info('HH_REPAIR_PUBLISH '+JSON.stringify(result));
             await core.summary.addHeading('HH PR Repair Worker outcome')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning}));
