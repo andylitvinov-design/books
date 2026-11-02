@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search, Send, X } from 'lucide-react'
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from 'react'
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -30,6 +30,11 @@ type ActionIntent = OfferKind | 'advice'
 type Localized = Record<PublicLocale, string>
 type CatalogOffer = { id: string; title: Localized; description: Localized; path: string; photo: string; note: Localized; action?: Localized }
 const tr = (en: string, ru: string, es: string): Localized => ({en, ru, es})
+// Do not advertise clickable controls until React has attached event handlers.
+// Server and pre-hydration snapshots are disabled even without JavaScript.
+const subscribeHydration = () => () => {}
+const browserHydrated = () => true
+const serverNotHydrated = () => false
 
 const photography = {
   test: '/images/holistic-house/report-lighthouse-coast.webp',
@@ -476,6 +481,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
 }) {
   const [interactive, setInteractive] = useState(false)
   useEffect(() => setInteractive(true), [])
+  const hydrated = useSyncExternalStore(subscribeHydration, browserHydrated, serverNotHydrated)
   const [topicId, setTopicId] = useState('')
   const [intent, setIntent] = useState<ActionIntent | null>(null)
   const [question, setQuestion] = useState('')
@@ -745,15 +751,15 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     {!dialogUrgent && <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
         <h2 id="hh-direction-focus-label">{c.pick}</h2>
-        <button type="button" disabled={!interactive} className={styles.reset} data-direction-filter="all"
+        <button type="button" className={styles.reset} data-direction-filter="all" disabled={!hydrated}
           aria-pressed={!topicId} aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           onClick={()=>selectTopic('')}>{c.all}</button>
       </div>
       <p id="hh-direction-focus-hint" className={styles.srOnly}>{ui.filterLead}</p>
       <div className={styles.topicChips} role="group"
         aria-labelledby="hh-direction-focus-label" aria-describedby="hh-direction-focus-hint">
-        {journey.topics.map(topic=><button type="button" disabled={!interactive} className={styles.chip} key={topic.id}
-          data-direction-filter={topic.id} aria-label={topic.title[locale]}
+        {journey.topics.map(topic=><button type="button" className={styles.chip} key={topic.id}
+          data-direction-filter={topic.id} aria-label={topic.title[locale]} disabled={!hydrated}
           aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>
           {quickTopicLabels[topic.id]?.[locale] ?? topic.title[locale]}

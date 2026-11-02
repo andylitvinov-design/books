@@ -29,7 +29,11 @@ const protectedPr=process.env.GITHUB_EVENT_NAME==='pull_request' &&
 assert.equal(pkg.scripts?.prebuild,canonical.join(' && '),'Prebuild drift: do not skip newly required production steps');
 assert.equal(pkg.scripts?.build,'next build','Production build command drift');
 assert.match(core,/run: npm run build/,'Core must execute full production prebuild');
-assert.match(core,/name: release-ready/,'Core release-ready must remain mandatory');
+assert.match(core,/^  hh-merge-check:\s*$/m,'Protected unified merge check must exist');
+assert.match(core,/needs: \[scope, code, hh-specialist\]/,
+  'Unified merge check must require real Core and specialist evidence');
+assert.match(core,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/,
+  'Missing or failing specialist must block unified merge check');
 const verifyOnly=process.argv.length===3&&process.argv[2]==='--verify-only';
 assert.ok(process.argv.length===2||verifyOnly,'Only --verify-only is supported');
 if(verifyOnly){

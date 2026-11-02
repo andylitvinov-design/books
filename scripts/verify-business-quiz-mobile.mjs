@@ -18,8 +18,7 @@ const wishes = {
 };
 const results = [];
 
-async function verify(engine, locale, width) {
-  const browser = await engine.launch({headless:true});
+async function verify(engine, browser, locale, width) {
   const label = engine.name() + ":" + locale + ":" + width;
   const context = await browser.newContext({
     viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,
@@ -84,6 +83,26 @@ async function verify(engine, locale, width) {
     }, null, {timeout:10000});
     assert.equal(await root.locator('[data-offer-action="session"]').count(),4,
       label+": show more reveals four genuine session options");
+    // Wait for the expanded list and its toggle to settle before the next
+    // genuine user click. Under loaded WebKit the newly inserted cards can
+    // shift the control while the previous pointer action is finishing.
+    // We still require one real click to collapse, not a forced state write.
+    await sessionMore.scrollIntoViewIfNeeded();
+    await sessionMore.evaluate(async node => {
+      let last = null, stable = 0;
+      for (let frame=0; frame<60; frame++) {
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        if (!node.isConnected) throw new Error("BUSINESS_SESSION_TOGGLE_REMOUNTED");
+        const rect=node.getBoundingClientRect();
+        const position=[rect.x,rect.y,rect.width,rect.height];
+        stable=last&&position.every((v,i)=>Math.abs(v-last[i])<1)?stable+1:0;
+        if (stable>=4) return;
+        last=position;
+      }
+      throw new Error("BUSINESS_SESSION_TOGGLE_UNSTABLE");
+    });
+    assert.equal(await sessionMore.getAttribute("aria-expanded"),"true",
+      label+": expanded toggle committed before the collapse click");
     await sessionMore.click();
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-direction-offers="business"]');
@@ -170,7 +189,13 @@ async function verify(engine, locale, width) {
       label+": no implicit consent");
     assert.equal(await enquiry.locator('button[type="submit"]').isDisabled(),true,
       label+": cannot submit without consent");
+    // Wait for the express deep-link navigation before testing the independent
+    // free CTA. Otherwise WebKit can deliver the previous hash navigation after
+    // the next waitForURL has been installed, producing a false failure.
+    const directNavigation=page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting" &&
+      url.hash==="#business-direct-request",{waitUntil:"domcontentloaded",timeout:15000});
     await page.locator('[data-business-offer="express"] [data-business-direct-option="express"]').click();
+    await directNavigation;
     assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
       label+": actual express SKU preselected on first-party contact form");
     await noOverflow("paid request");
@@ -195,25 +220,37 @@ async function verify(engine, locale, width) {
     throw error;
   } finally {
     await context.close();
-    await browser.close();
   }
 }
 
-// Before React hydrates there is no filter handler; do not expose an enabled
-// control that can silently lose a visitor's first selection.
-{
-  const browser = await webkit.launch({headless:true});
-  const context = await browser.newContext({javaScriptEnabled:false, viewport:{width:375,height:844}});
-  try {
-    const page = await context.newPage();
-    await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
-    assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
-      'The server-rendered filter must wait for its real click handler');
-  } finally { await context.close(); await browser.close(); }
-}
+// Browser binaries are expensive: use exactly two engine processes for 15
+// independent contexts, plus a dedicated JavaScript-disabled WebKit context.
+// The real pointer, safety, consent, SSR and EN/RU/ES assertions stay unchanged.
+const browsers = new Map();
+try {
+  browsers.set(webkit, await webkit.launch({headless:true}));
+  browsers.set(chromium, await chromium.launch({headless:true}));
 
-for (const locale of ["en","ru","es"]) {
-  for (const width of [320,375,390,430]) results.push(await verify(webkit,locale,width));
-  results.push(await verify(chromium,locale,390));
+  // Before React hydrates there is no filter handler; do not expose an enabled
+  // control that can silently lose a visitor's first selection.
+  {
+    const context = await browsers.get(webkit).newContext({
+      javaScriptEnabled:false,viewport:{width:375,height:844}
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
+      assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
+        'The server-rendered filter must wait for its real click handler');
+    } finally { await context.close(); }
+  }
+
+  for (const locale of ["en","ru","es"]) {
+    for (const width of [320,375,390,430])
+      results.push(await verify(webkit,browsers.get(webkit),locale,width));
+    results.push(await verify(chromium,browsers.get(chromium),locale,390));
+  }
+} finally {
+  await Promise.all([...browsers.values()].map(browser => browser.close()));
 }
 console.log("Current Business direction → consent-gated €50/€100 service browser QA:",results.join(", "));

@@ -85,6 +85,33 @@ async function installEntryDiagnostics(context, page) {
   return requests;
 }
 
+// Check the current consent-first analysis request without posting a lead or
+// navigating to a retired direct-link page. Free tests and Reiki remain links.
+async function verifyAnalysisConsentEntry(capture) {
+  const chooser = capture.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
+  await expect(chooser).toHaveCount(1);
+  await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveCount(0);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  const size = await trigger.evaluate(el => ({ height: el.getBoundingClientRect().height, font: parseFloat(getComputedStyle(el).fontSize) }));
+  assert.ok(size.height >= 46 && size.font >= 14, 'Analysis consent launcher must be tappable: ' + JSON.stringify(size));
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const form = chooser.locator('form');
+  await expect(form).toBeVisible();
+  await expect(form.locator('input[type="tel"][required]')).toBeVisible();
+  const consent = form.locator('input[type="checkbox"][required]');
+  await expect(consent).toBeVisible();
+  await expect(consent).not.toBeChecked();
+  await expect(form.locator('button[data-contact-channel-submit="whatsapp"]')).toBeVisible();
+  await expect(form.locator('button[data-contact-channel-submit="telegram"]')).toBeVisible();
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(form).toBeHidden();
+}
+
 async function verifyFreeOffers(page, locale, engine, width) {
   await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
   const capture = page.locator('[data-home-contact-capture] [data-home-free-capture]');
@@ -96,6 +123,10 @@ async function verifyFreeOffers(page, locale, engine, width) {
     await expect(option).toBeVisible();
     await option.click();
     await expect(option).toHaveAttribute('aria-pressed', 'true');
+    if (id === 'analysis') {
+      await verifyAnalysisConsentEntry(capture);
+      continue;
+    }
     const cta = capture.locator('a[data-home-free-action="' + id + '"]');
     await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
     await expect(cta).toBeVisible();
@@ -128,9 +159,15 @@ async function exerciseFreeJourneys(page, engine, width) {
     return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
   });
   for (const locale of ['en', 'ru']) {
+    await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle');
+    const safeCapture = page.locator('[data-home-free-capture]');
+    await safeCapture.locator('button[data-home-free-option="analysis"]').click();
+    await verifyAnalysisConsentEntry(safeCapture);
+    await expect(page).toHaveURL(origin + homePath(locale));
+    results.push({ engine, width, locale, freeConsentJourney: 'analysis', submitted: false, requiredConsent: true });
     for (const [id, suffix, target] of [
       ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
-      ['analysis', '/services/free-situation-review', '#free-entry-title'],
       ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
@@ -300,7 +337,7 @@ async function exercise(engine, browserType, width) {
     await expect(capture).toBeVisible();
     await expect(capture.locator('[data-choice-layout="home-free"] button')).toHaveCount(3);
     await capture.locator('button[data-home-free-option="analysis"]').click();
-    await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    await verifyAnalysisConsentEntry(capture);
     await capture.locator('button[data-home-free-option="reiki"]').click();
     await expect(capture.locator('a[data-home-free-action="reiki"]')).toHaveAttribute('href', '/en/academy/principles-of-energywork/learn');
     await capture.locator('button[data-home-free-option="selfTest"]').click();
@@ -407,7 +444,8 @@ try {
   }));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
   assert.equal(results.filter(result => result.firstClickRetained).length, widths.length * 4);
-  assert.equal(results.filter(result => result.freeJourney).length, widths.length * 12);
+  assert.equal(results.filter(result => result.freeJourney).length, widths.length * 8);
+  assert.equal(results.filter(result => result.freeConsentJourney === 'analysis' && result.requiredConsent && !result.submitted).length, widths.length * 4);
   console.log('PASS: twenty delayed-RSC EN/RU switches, Chromium/WebKit,320–430px/desktop; stable offer and no lost inline YouTube playback');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));

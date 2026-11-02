@@ -43,11 +43,13 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
   assert.match(studio,/function attachSelectedAudio\(\)/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file\}\)/);
+  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);
+  assert.match(studio,/my-voice\\./);
+  assert.match(studio,/nonLoop:true as const/);
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/startUploadedAudio\(attachedAudio.file,soundVolume\)/);
+  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
   assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume\)/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
@@ -120,7 +122,10 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
     "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
   assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
-  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
@@ -167,7 +172,7 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
     const attachedPresetIds=attached?.kind==="presets"?attached.ids:
       attached?.kind==="preset"?[attached.id]:[];
     runInNewContext(transpiled+";toggleQuickMusic(choice)",{
-      choice,attachedPresetIds,recording:false,preparing:false,micRecording:false,
+      choice,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
       clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
       setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
       setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
@@ -185,6 +190,12 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   assert.deepEqual(Array.from(attached.ids),["wings-of-light","quiet-stars"],"toggle off selected layer");
   assert.equal(selected,"wings-of-light");
   assert.equal(mutations,5);assert.equal(played,0,"inactive film does not autoplay");
+  // A pre-existing mastered voice must never be replaced by standalone music.
+  attached={kind:"file",narration:true,file:{name:"voice.wav"},id:"blob:voice"};
+  invoke("warm-morning");
+  assert.equal(attached.kind,"file");
+  assert.equal(attached.narration,true);
+  assert.equal(mutations,5,"no audio mutation when narration is attached");
 });
 
 test("local music mixer reads at most three static site-owned WAVs and emits one export audio track",async()=>{
@@ -232,8 +243,39 @@ test("local music mixer reads at most three static site-owned WAVs and emits one
 test("quick music rail and shared native player are simultaneously mounted on Audio workspace",()=>{
   // The old production CSS hid the quick selector exactly when the native player existed.
   assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
-  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
-  assert.match(studio,/flushSync\(\(\)=>\{setActiveWorkspace\("audio"\);setSamplePreviewId\(choice\);\}\)/);
+  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
+  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
+});
+
+
+test("direct audio URL reveals its existing workspace instead of hidden advanced settings",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/const reveal=\(\)=>\{/);
+  assert.match(s,/"video-audio":"video"/);
+  assert.match(s,/setActiveWorkspace\(tab\)/);
+  assert.match(s,/window\.addEventListener\("hashchange",reveal\)/);
+  assert.match(s,/window\.removeEventListener\("hashchange",reveal\)/);
+  assert.equal((s.match(/id=\"video-audio\"/g)||[]).length,1);
+  assert.equal((s.match(/data-video-audio-mic\b/g)||[]).length,1);
+  assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
+  assert.match(browser,/deep-link\.png/);
+});
+
+test("original audio cover and separate 44px Play keep the real photograph visible",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const styles=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/audioTileGlyph\} aria-hidden="true"\s*\/>\s*<span className=\{videoStyles\.audioPlaySlot\}/);
+  assert.match(s,/data-video-audio-play=\{track\.id\}/);
+  assert.match(styles,/\.audioPlaySlot\{display:block;min-width:44px/);
+  assert.match(styles,/\.audioSection \.audioTrackSelect\{grid-template-columns:54px 44px minmax\(0,1fr\) auto/);
+  assert.match(styles,/\.audioSection \.audioTrackPlay\{left:68px;top:50%;width:44px;height:44px/);
+  assert.match(styles,/@media\(max-width:375px\)\{[\s\S]*?\.audioSection \.audioTrackPlay\{left:59px\}/);
+  assert.match(browser,/play\.x>=cover\.x\+cover\.width\+4/);
 });
