@@ -1114,10 +1114,11 @@ test('completed transition snapshots cannot reserve a worker slot',()=>{
  assert.equal(admission('repair',live),'WORKER_BUSY');
 });
 
-test('real workers run addressed dispatches rather than competing cron and push audits',()=>{
+test('source Repair Worker only runs addressed tasks, with no cron or push lease contention',()=>{
  const fs=require('node:fs');
- for(const path of ['.github/workflows/hh-pr-repair-worker.yml',
-                     '.github/workflows/hh-pr-ci-worker.yml']){
+ // CI has an independent schedule backstop and a separate concurrency group;
+ // it is covered by its own capacity and workflow contract below.
+ for(const path of ['.github/workflows/hh-pr-repair-worker.yml']){
   const content=fs.readFileSync(path,'utf8');
   const triggers=content.slice(content.indexOf('\non:\n'),content.indexOf('\npermissions:\n'));
   assert.match(triggers,/workflow_dispatch:/);
