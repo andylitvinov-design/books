@@ -162,29 +162,43 @@ jobs:
             const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
             })).data;
-            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
-                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
-                  job.status === "completed" && job.conclusion === "success")) {
-              log("SKIP current source missing verified Core job for PR #" + number);
+            // Use the real exact-run named jobs. No absent/skipped/duplicate job
+            // can satisfy required evidence, including during the transition.
+            const jobs = jobPage.jobs;
+            if (!Array.isArray(jobs) || !Number.isSafeInteger(jobPage.total_count) ||
+                jobPage.total_count > 100 || jobPage.total_count !== jobs.length) {
+              log("SKIP incomplete Core job evidence for PR #" + number);
               return;
             }
-            // Support both verified protection states without bypassing the
-            // old required status while the admin token is still insufficient.
+            const passed = name => {
+              const matching = jobs.filter(job => job.name === name);
+              return matching.length === 1 && matching[0].status === "completed" &&
+                matching[0].conclusion === "success";
+            };
+            // The branch's actual required contexts must be one of the
+            // reviewed old, new or transitional sets. No zero-required fallback.
             const branchProtection = (await github.rest.repos.getBranch({
               owner, repo, branch: "codex/public-book-library"
             })).data;
             const required = branchProtection.protection?.required_status_checks?.contexts;
-            const oldRequired = Array.isArray(required) && required.includes("release-ready");
-            const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            const allowedRequiredSets = new Map([
+              ["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]],
+              ["hh-core-verified,hh-specialist", ["hh-core-verified", "hh-specialist"]],
+              ["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]],
+              ["hh-merge-check", ["hh-merge-check"]]
+            ]);
+            const signature = Array.isArray(required) ?
+              [...new Set(required)].sort().join(",") : "";
+            const need = allowedRequiredSets.get(signature);
             if (!branchProtection.protected || !Array.isArray(required) ||
-                (oldRequired === coreRequired)) {
-              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+                required.length !== new Set(required).size || !need) {
+              log("SKIP unknown, empty or partially migrated branch protection for PR #" + number);
               return;
             }
-            if (oldRequired && !jobPage.jobs.some(job =>
-                job.name === "release-ready" && job.status === "completed" &&
-                job.conclusion === "success")) {
-              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
+            const notPassed = need.filter(name => !passed(name));
+            if (notPassed.length) {
+              log("SKIP current Core status missing, skipped or red for PR #" +
+                number + ": " + notPassed.join(","));
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||

@@ -588,7 +588,7 @@ test('GraphQL outage falls back to no more than six rotating REST snapshots',asy
   assert.equal(result.inspected,6);
 });
 
-test('manual branch-check migration validates pinned Core evidence and both protected controls',()=>{
+test('one-time admin migration proves merged single gate and preserves BOTH protected controls',()=>{
   const {readFileSync}=require('node:fs');
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
   assert.ok(source.includes('  workflow_dispatch:'));
@@ -597,15 +597,15 @@ test('manual branch-check migration validates pinned Core evidence and both prot
   assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
   assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
   assert.ok(source.includes('set -euo pipefail'));
-  assert.ok(source.includes('Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.'));
-  // Verify immutable approved Core evidence before policy mutations.
-  assert.ok(source.includes('repos/$GH_REPO/actions/runs/41328294027'));
-  assert.ok(source.includes('repos/$GH_REPO/pulls/2935'));
-  for(const gate of ['hh-core-verified','hh-specialist','release-ready'])
-    assert.ok(source.includes('.name == "'+gate+'"'),gate);
-  assert.ok(source.includes('Approved Core, Specialist and legacy compatibility jobs are not all green'));
-  // The first ruleset/classic read MUST precede mutation, and a second read
-  // MUST verify the two new mandatory contexts. One PUT, one PATCH only.
+  assert.ok(source.includes('HH_BRANCH_ADMIN_TOKEN missing. No branch rule changed.'));
+  assert.ok(source.includes("EVIDENCE_PR: " + '$' + "{{ inputs.evidence_pr_number }}"));
+  assert.ok(source.includes('repos/$GH_REPO/pulls/$EVIDENCE_PR'));
+  assert.ok(source.includes('.merged == true'));
+  assert.ok(source.includes('head_sha=$head'));
+  assert.ok(source.includes('total_count == (.jobs | length)'));
+  for(const gate of ['hh-core-verified','hh-specialist','release-ready','hh-merge-check'])
+    assert.ok(source.includes('"'+gate+'"'),gate);
+  assert.ok(source.includes('Exact run lacks Core, Specialist, legacy or new verified PASS jobs.'));
   const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
   const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
   const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
@@ -620,20 +620,23 @@ test('manual branch-check migration validates pinned Core evidence and both prot
   assert.ok(source.includes('required_review_thread_resolution == true'));
   assert.ok(source.includes('non_fast_forward'));
   assert.ok(source.includes('deletion'));
-  assert.ok(source.includes('Already migrated: both required status sources read back cleanly.'));
-  assert.ok(source.includes('["hh-core-verified","hh-specialist"]'));
-  assert.ok(source.includes('Both controls VERIFIED: required hh-core-verified + hh-specialist'));
+  assert.ok(source.includes('Already migrated, both protections verified.'));
+  assert.ok(source.includes('["hh-merge-check"]'));
+  assert.ok(source.includes('MIGRATED: only hh-merge-check required'));
   assert.ok(!source.includes('base64 --decode | grep -q '));
   assert.ok(!source.includes('gh api --method DELETE '));
 });
 
-test('event-driven merge and inventory respect legacy protection until admin migration',()=>{
+test('event-driven merge supports legacy, bridge and only approved single required check',()=>{
   const {readFileSync}=require('node:fs');
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
-  assert.ok(native.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'));
-  assert.ok(native.includes('job.name === "release-ready" && job.status === "completed"'));
-  assert.ok(native.includes('job.name === "hh-core-verified"'));
+  assert.ok(native.includes('const allowedRequiredSets = new Map(['));
+  assert.ok(native.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
+  assert.ok(native.includes('["hh-merge-check", ["hh-merge-check"]]'));
+  assert.ok(native.includes('["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]]'));
+  assert.ok(native.includes('const notPassed = need.filter(name => !passed(name))'));
+  assert.ok(native.includes('jobPage.total_count !== jobs.length'));
   assert.ok(hourly.includes('const legacyReleaseMandatory=legacy.includes("release-ready")'));
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
@@ -759,7 +762,11 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const current=[coreRun,specialist,
     ...Array.from({length:98},(_,i)=>makeRun(i+3,'Workflow '+i,i+3))];
   const prior=makeRun(200,'Prior SHA',200,'success','c'.repeat(40));
-  async function decide(pages,totals) {
+  async function decide(pages,totals,{required=['release-ready'],jobs=[
+    {name:'hh-core-verified',status:'completed',conclusion:'success'},
+    {name:'hh-specialist',status:'completed',conclusion:'success'},
+    {name:'release-ready',status:'completed',conclusion:'success'},
+  ]}={}) {
     const calls=[],outputs={},notes=[];
     const gh={rest:{
       pulls:{get:async()=>({data:pr}),list:async()=>({data:[pr]})},
@@ -770,13 +777,10 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
-          {name:'hh-core-verified',status:'completed',conclusion:'success'},
-          {name:'release-ready',status:'completed',conclusion:'success'},
-        ]}}),
+        listJobsForWorkflowRun:async()=>({data:{total_count:jobs.length,jobs}}),
       },
       repos:{getBranch:async()=>({data:{protected:true,protection:{
-        required_status_checks:{contexts:['release-ready']}}}})},
+        required_status_checks:{contexts:required}}}})},
     }};
     const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
       payload:{pull_request:pr}};
@@ -787,6 +791,21 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  const noSpecialist=await decide([current,[prior]],[101,101],{jobs:[
+    {name:'hh-core-verified',status:'completed',conclusion:'success'},
+    {name:'release-ready',status:'completed',conclusion:'success'},
+  ]});
+  assert.equal(noSpecialist.ok,false,'legacy alias cannot replace missing real Specialist');
+  const single=await decide([current,[prior]],[101,101],{
+    required:['hh-merge-check'],
+    jobs:[{name:'hh-merge-check',status:'completed',conclusion:'success'}],
+  });
+  assert.equal(single.ok,true,'new single required status accepts only actual PASS');
+  const redSingle=await decide([current,[prior]],[101,101],{
+    required:['hh-merge-check'],
+    jobs:[{name:'hh-merge-check',status:'completed',conclusion:'failure'}],
+  });
+  assert.equal(redSingle.ok,false,'red unified status can never arm AutoMerge');
   const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
   assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
   const incomplete=await decide([current,[]],[102,102]);
@@ -847,6 +866,7 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
+  assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
   assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
@@ -868,7 +888,7 @@ test('green Core plus failed mandatory legacy release gate queues one gate-revie
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
     checks:{listForRef:async({check_name})=>({data:{
       total_count:1,check_runs:[{id:21,name:check_name,status:'completed',
-        conclusion:check_name==='hh-core-verified'?'success':'failure',
+        conclusion:['hh-core-verified','hh-specialist'].includes(check_name)?'success':'failure',
         app:{id:15368}}]
     }})},
     repos:{getBranch:async()=>({data:{protected:true,protection:{
@@ -955,7 +975,7 @@ test('watchdog retries a missing durable label after the handoff receipt, withou
   const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const head='a'.repeat(40), marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->';
   const pr={number:421,head:{sha:head},labels:[]};
-  let comments=[{body:marker}],written=0,labeled=0;
+  let comments=[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:marker}],written=0,labeled=0;
   const gh={rest:{issues:{
     listComments:async()=>({data:comments}),
     createComment:async()=>{written++;throw Error('duplicate receipt')},
@@ -973,7 +993,7 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   const comments=[];let written=0,labeled=0,fail=true;
   const gh={rest:{issues:{
     listComments:async()=>({data:comments}),
-    createComment:async({body})=>{written++;comments.push({body});return {data:[]}},
+    createComment:async({body})=>{written++;comments.push({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body});return {data:[]}},
     addLabels:async()=>{if(fail)throw Object.assign(Error('Resource not accessible by integration'),{status:403});
       labeled++;return {data:[]}}
   }}};
@@ -986,9 +1006,9 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   assert.equal(written,1);assert.equal(labeled,1);
 });
 
-test('failed-Core event only inspects the associated PR; periodic still rotates',async()=>{
+test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback',async()=>{
   const first=pr(401),second=pr(402);
-  let graphQLSource='';
+  let graphQLSource='',cronHealthy=true;
   const github={
     graphql:async query=>{
       graphQLSource=query;
@@ -998,6 +1018,12 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
         headRefName:first.head.ref,headRefOid:first.head.sha,
         headRepository:{nameWithOwner:'andylitvinov-design/books'},
         autoMergeRequest:null
+      },p402:{
+        number:402,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+        mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+        headRefName:second.head.ref,headRefOid:second.head.sha,
+        headRepository:{nameWithOwner:'andylitvinov-design/books'},
+        autoMergeRequest:null
       }},rateLimit:{remaining:4000}};
     },
     rest:{
@@ -1005,19 +1031,32 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
       actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
       checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
     },
-    request:async(route,args)=>args.workflow_id==='hh-pr-core-release.yml'
-      ? {data:{total_count:0,workflow_runs:[]}}
-      : {data:{workflow_runs:[]}}
+    request:async(route,args)=>{
+      if(args.workflow_id==='hh-pr-ten-minute-watchdog.yml')
+        return {data:cronHealthy
+          ? {total_count:1,workflow_runs:[{created_at:new Date(NOW-2*60000).toISOString()}]}
+          : {total_count:0,workflow_runs:[]}};
+      return args.workflow_id==='hh-pr-core-release.yml'
+        ? {data:{total_count:0,workflow_runs:[]}}
+        : {data:{workflow_runs:[]}};
+    }
   };
   const wake={...context,eventName:'workflow_run',payload:{workflow_run:{
     event:'pull_request',status:'completed',head_branch:first.head.ref,
     pull_requests:[{number:first.number}]
   }}};
-  const outcome=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
-  assert.equal(outcome.inspected,1);
-  assert.equal(outcome.missingCore,1);
+  const healthy=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(healthy.inspected,1,'healthy cron restricts failed CI to exact PR');
+  assert.equal(healthy.cronBackstop,false);
+  assert.equal(healthy.missingCore,1);
   assert.match(graphQLSource,/p401:pullRequest/);
   assert.ok(!graphQLSource.includes('p402:pullRequest'));
+  cronHealthy=false;
+  const stale=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(stale.inspected,2,'absent cron gets bounded fallback');
+  assert.equal(stale.cronBackstop,true);
+  assert.equal(stale.missingCore,2);
+  assert.match(graphQLSource,/p402:pullRequest/);
 });
 test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
   const fs=require('node:fs');
@@ -1069,4 +1108,212 @@ test('interrupted Core recovery allocates a runner only to eligible first-attemp
  for(const result of ['cancelled','timed_out','startup_failure','failure']) assert.ok(job.includes(result));
  assert.match(job,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
  assert.match(job,/github\.event\.workflow_run\.status == 'completed'/);
+});
+
+test('fresh environment failures are not source-repair diagnoses',()=>{
+ const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const gate={name:'hh-core-verified',conclusion:'failure'};
+ const infra={name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]};
+ const lint={name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Lint changed JS/TS sources on PR',conclusion:'failure'}]};
+ assert.equal(classifyCoreFailureJobs([infra,gate]),'CI_INFRA_OR_ENVIRONMENT');
+ assert.equal(classifyCoreFailureJobs([lint,gate]),'SOURCE_OR_PREFLIGHT');
+ assert.equal(classifyCoreFailureJobs([{...infra,steps:[...infra.steps,...lint.steps]},gate]),'SOURCE_OR_PREFLIGHT');
+});
+
+test('fresh checkout failure never queues source repair or an early rerun',async()=>{
+ let reruns=0,comments=0,labels=0;
+ const github={rest:{
+  pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
+  actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]}]}})},
+  checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
+  repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
+  issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++},addLabels:async()=>{labels++}}
+ },paginate:async()=>[],request:async(route,args)=>{
+  if(route.includes('rerun-failed-jobs'))reruns++;
+  if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
+   id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+   pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],status:'completed',conclusion:'failure',run_attempt:1,
+   created_at:new Date(NOW-60000).toISOString(),updated_at:new Date(NOW-60000).toISOString()}]}};
+  return {data:{workflow_runs:[]}};
+ }};
+ const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+ assert.equal(result.infraOrEnvironment,1);assert.equal(result.sourceRepairQueued,0);
+ assert.equal(reruns,0);assert.equal(comments,0);assert.equal(labels,0);
+});
+
+test('watchdog does not accept an outsider marker as a durable source handoff',async()=>{
+ const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const sha='a'.repeat(40),pr={number:99,head:{sha},labels:[]};let written=0,labeled=0;
+ const gh={rest:{issues:{listComments:async()=>({data:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}}]}),
+  createComment:async()=>{written++},addLabels:async()=>{labeled++}}}};
+ assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_,fn)=>fn()),true);
+ assert.equal(written,1);assert.equal(labeled,1);
+});
+
+
+test('watchdog finds an existing repair receipt after 300 comments',async()=>{
+ const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const sha='a'.repeat(40);const pages=[];let written=0;
+ const gh={rest:{issues:{listComments:async({page})=>{
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+ },createComment:async()=>{written++}}}};
+ const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
+ const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result,false);assert.equal(written,0);
+});
+
+test('live watchdog no longer gates periodic PR discovery on stale unit tests',()=>{
+  const fs=require('node:fs');
+  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  const reconcile=yaml.split('\n  reactivate-schedules:')[0];
+  assert.ok(!reconcile.includes('node --test'),'unit tests cannot block live reconciliation');
+  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+  assert.ok(contract.includes('Watchdog decision contracts'));
+  assert.ok(contract.includes('tests/ci-pr-ten-minute-watchdog.test.cjs'));
+});
+
+
+test('behind PR with verified real specialist failure is reclassified without new CI',async()=>{
+  const src=pr(771);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const mutations={add:[],remove:[],retries:0};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name
+      ? {total_count:1,check_runs:[{
+          id:check_name==='hh-specialist'?2:1,name:check_name,
+          status:'completed',conclusion:check_name==='hh-specialist'?'failure':'success',
+          app:{id:15368}}]}
+      : {total_count:3,check_runs:[
+          {id:3,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+          {id:4,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+          {id:5,name:'public-services',status:'completed',conclusion:'failure',app:{id:15368}}]}})},
+    issues:{
+      addLabels:async({labels})=>{mutations.add.push(...labels);live.labels.push({name:labels[0]});return {data:[]};},
+      removeLabel:async({name})=>{mutations.remove.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]};}
+    }
+  },request:async()=>{mutations.retries++;throw Error('No CI bootstrap or manual rerun');}};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.behindProduction,1);
+  assert.equal(result.specialistFailures,1);
+  assert.equal(result.specialistQueued,1);
+  assert.equal(result.staleGateReclassified,1);
+  assert.deepEqual(mutations.add,['hh:specialist-repair-needed']);
+  assert.deepEqual(mutations.remove,['hh:release-gate-review']);
+  assert.equal(mutations.retries,0);
+});
+
+test('only trusted completed hh-specialist failures qualify for backfill',()=>{
+  const {verifiedRedSpecialist,needsFailedCoreCronBackstop}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const evidence=(app,conclusion,status='completed')=>({total_count:1,
+    check_runs:[{id:1,name:'hh-specialist',app:{id:app},status,conclusion}]});
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure')),true);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'success')),false);
+  assert.equal(verifiedRedSpecialist(evidence(444,'failure')),false);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure','in_progress')),false);
+  assert.equal(needsFailedCoreCronBackstop('HEALTHY'),false);
+  assert.equal(needsFailedCoreCronBackstop('UNKNOWN'),false);
+  assert.equal(needsFailedCoreCronBackstop('STALE'),true);
+  assert.equal(needsFailedCoreCronBackstop('UNOBSERVED'),true);
+});
+
+test('skipped optional MacOS check does not create a fake Product Repair task',async()=>{
+  const src=pr(566);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:4,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'public-services',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:5,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistFailures,0);
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.deepEqual(writes.added,[]);
+  assert.deepEqual(writes.removed,[]);
+});
+test('misrouted policy-only aggregate is restored to gate review on the same HEAD',async()=>{
+  const src=pr(567);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:specialist-repair-needed'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:3,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);live.labels.push({name:labels[0]});return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.equal(result.policyRelabeled,1);
+  assert.deepEqual(writes.added,['hh:release-gate-review']);
+  assert.deepEqual(writes.removed,['hh:specialist-repair-needed']);
+});
+test('independent specialist failures require complete trusted same-HEAD evidence',()=>{
+  const classify=require('../scripts/ci-pr-ten-minute-watchdog.cjs').classifyIndependentSpecialistChecks;
+  const row=(id,name,conclusion,status='completed',app=15368)=>({id,name,conclusion,status,app:{id:app}});
+  const rows=[row(1,'hh-core-verified','success'),row(2,'hh-specialist','failure'),
+    row(3,'public-services','failure')];
+  assert.equal(classify({total_count:3,check_runs:rows}),'PRODUCT_FAILURE');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'voice-webkit-macos','skipped')]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:3,check_runs:rows.slice(0,2)}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services',null,'in_progress')]}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services','failure','completed',999)]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:101,check_runs:rows}),'UNKNOWN');
+});
+
+test('one exact unified Actions status can wake the existing merge coordinator',async()=>{
+  let dispatched=0;
+  const candidate=pr(99);
+  const github={rest:{
+    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'clean'}})},
+    actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:3}})},
+    checks:{listForRef:async arg=>({data:{total_count:1,check_runs:[{
+      id:2,name:arg.check_name==='hh-merge-check'?'hh-merge-check':'obsolete-check',
+      status:'completed',conclusion:'success',app:{id:15368}
+    }]}})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['hh-merge-check']}
+    }}})}
+  },request:async route=>{if(route.includes('dispatches'))dispatched++;return {data:{workflow_runs:[]}};}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.greenUnarmed,1);
+  assert.equal(result.mergeCoordinatorDispatched,1);
+  assert.equal(dispatched,1);
+});
+
+
+
+test('production coordinator keeps exact new unified status after protection migration',()=>{
+  const {readFileSync}=require('node:fs');
+  const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+  const watchdog=readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(hourly.includes('const unifiedRequired=legacy.includes("hh-merge-check")'));
+  assert.ok(hourly.includes('UNIFIED_REQUIRED_NOT_GREEN'));
+  assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(watchdog.includes('required-unified-head-check'));
+  assert.ok(watchdog.includes("'hh-merge-check'"));
 });

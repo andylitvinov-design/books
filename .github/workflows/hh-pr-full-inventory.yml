@@ -62,14 +62,18 @@ jobs:
                pullRule.parameters?.required_review_thread_resolution!==true)
               throw Error("Production ruleset not verified");
             const methods=new Set(pullRule.parameters?.allowed_merge_methods||[]);
-            // Transition-safe: legacy release-ready remains mandatory until an
-            // admin-scoped token can replace it. A ruleset with [] is not enough.
+            // A single verified hh-merge-check replaces three old wrappers
+            // only after BOTH hosted and classic protection are updated.
             const protectedBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
             const legacy=protectedBranch.protection?.required_status_checks?.contexts;
-            if(!protectedBranch.protected||!Array.isArray(legacy)||
-               legacy.includes("hh-core-verified")===legacy.includes("release-ready"))
+            const declared=Array.isArray(legacy)?[...legacy].sort().join(","):"";
+            if(!protectedBranch.protected ||
+               !["release-ready","hh-core-verified,hh-specialist","hh-merge-check",
+                 "hh-merge-check,release-ready"].includes(declared) ||
+               legacy.length!==new Set(legacy).size)
               throw Error("UNRECOGNIZED_LEGACY_PROTECTION");
             const legacyReleaseMandatory=legacy.includes("release-ready");
+            const unifiedRequired=legacy.includes("hh-merge-check");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
@@ -87,15 +91,30 @@ jobs:
             const functional=/browser|database|guard-unit|contract|public-services|crm|verify|unit/i;
             function assess(names){
               if(!names)return {ok:false,reason:"INCOMPLETE_CHECKS"};
-              const rows=[...names.entries()],gate=names.get("hh-core-verified");
+              const rows=[...names.entries()],gate=names.get(unifiedRequired?
+                "hh-merge-check":"hh-core-verified");
               const legacyGate=names.get("release-ready");
               if(legacyReleaseMandatory&&(!legacyGate||
                  legacyGate.status!=="completed"||legacyGate.conclusion!=="success"||
                  legacyGate.app?.slug!=="github-actions"))
                 return {ok:false,reason:"LEGACY_REQUIRED_RELEASE_NOT_GREEN"};
-              // Legacy optional check is not evidence of a current product defect.
-              if(rows.some(([name,c])=>name!=="release-ready"&&red.has(c.conclusion)))
+              // After the switch, obsolete alias failures from previous runs
+              // cannot veto a verified new gate on the same exact HEAD.
+              const obsolete=new Set(["release-ready","hh-core-verified",
+                "hh-specialist","hh-specialists-verified"]);
+              if(rows.some(([name,c])=>red.has(c.conclusion)&&
+                !(unifiedRequired&&obsolete.has(name))&&
+                !(name==="release-ready"&&!legacyReleaseMandatory)))
                 return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};
+              if(unifiedRequired){
+                if(!gate||gate.status!=="completed"||gate.conclusion!=="success"||
+                   gate.app?.slug!=="github-actions")
+                  return {ok:false,reason:"UNIFIED_REQUIRED_NOT_GREEN"};
+                if(rows.some(([name,c])=>quality.test(name)&&!obsolete.has(name)&&
+                   c.status!=="completed"))
+                  return {ok:false,reason:"FOCUSED_QA_RUNNING"};
+                return {ok:true,via:"UNIFIED_REQUIRED"};
+              }
               if(rows.some(([name,c])=>quality.test(name)&&c.status!=="completed"))
                 return {ok:false,reason:"FOCUSED_QA_RUNNING"};
               if(!gate||gate.status!=="completed"||gate.conclusion!=="success"||
@@ -182,32 +201,54 @@ jobs:
                  const body=comment.body||"";
                  if(!body.includes("HH_PR_SWEEP_LEASE_V1"))continue;
                  try{
-                   const start=body.indexOf("{"),end=body.indexOf("}",start);
-                   const lease=JSON.parse(body.slice(start,end+1));
+                   const fence=String.fromCharCode(96).repeat(3);
+                   const open=body.indexOf(fence+"json");
+                   const source=open>=0?
+                     body.slice(open+fence.length+4,body.indexOf(fence,open+fence.length+4)):
+                     body.slice(body.indexOf("{"),body.lastIndexOf("}")+1);
+                   const lease=JSON.parse(source);
                    if(lease.schema==="HH_PR_SWEEP_LEASE_V1"){
-                     // An active malformed expiry must never unlock a current HEAD.
-                     if(lease.head_sha===c.head &&
-                        ["active","claim","heartbeat"].includes(lease.state||lease.last_action) &&
-                        !Number.isFinite(Date.parse(lease.expires_at||"")))
-                       throw Error("Unbounded active lease");
+                     // The latest release may carry previous_head_sha after a
+                     // concurrent owner edit; an old HEAD alone is never proof.
+                     if(lease.head_sha!==c.head&&lease.previous_head_sha!==c.head)continue;
+                     const actor=comment.user?.login||"";
+                     const owner=typeof lease.owner==="string"?lease.owner.trim():"";
+                     const leaseId=typeof lease.lease_id==="string"&&lease.lease_id.trim()?
+                       "id:"+lease.lease_id.trim():
+                       (typeof lease.run_id==="string"&&lease.run_id.trim()?
+                         "run:"+lease.run_id.trim():"head:"+c.head);
+                     const key=actor+":"+owner+":"+leaseId;
+                     const state=String(lease.state||lease.last_action||"");
+                     if(["active","claim","heartbeat"].includes(state)){
+                       if(lease.head_sha!==c.head)continue;
+                       // An active malformed expiry must never unlock a current HEAD.
+                       if(!Number.isFinite(Date.parse(lease.expires_at||"")))
+                         throw Error("Unbounded active lease");
+                       if(!actor||!owner)throw Error("Unknown active lease owner");
+                       leases.set(key,{...lease,historical_expiry_allowed:false});
+                     }else if(/^released(?:_|$)/.test(state)||
+                          /^release(?:_|$)/.test(String(lease.last_action||""))){
+                       // Author + logical lease identity must match; a foreign
+                       // release cannot cancel another actor's claim.
+                       if(!actor||!owner)throw Error("Untrusted release author");
+                       leases.delete(key);
+                     }else throw Error("Unrecognized modern lease state");
                    }else{
-                     // Historical Codex/owner comments use lease_expires.
-                     // Permit an expired exact-head legacy lease, never unknown schemas.
+                     // Historical Codex lease_expires remains expirable, unlike
+                     // modern active source-edit ownership.
                      const legacy=lease.schema==null &&
                        typeof lease.owner==="string"&&lease.owner.trim() &&
                        typeof lease.run_id==="string"&&lease.run_id.trim() &&
                        /^[a-f0-9]{40}$/i.test(lease.head_sha||"") &&
                        Number.isFinite(Date.parse(lease.lease_expires||""));
                      if(!legacy)throw Error("Unrecognized lease");
+                     if(lease.head_sha!==c.head)continue;
                      lease.state="active";
                      lease.expires_at=lease.lease_expires;
                      lease.lease_id="legacy:"+lease.owner+":"+lease.run_id;
-                     // Only expired historical Codex *verify* records can
-                     // relinquish ownership by time alone. A modern active
-                     // repair/heartbeat requires explicit release or new HEAD.
                      lease.historical_expiry_allowed=true;
+                     leases.set(lease.lease_id,lease);
                    }
-                   leases.set(lease.lease_id||("legacy:"+lease.owner+":"+lease.head_sha),lease);
                  }catch{ambiguous=true;break;}
                }
                if(ambiguous||[...leases.values()].some(l=>
@@ -260,10 +301,12 @@ jobs:
        (github.event_name == 'repository_dispatch' &&
         github.event.client_payload.environment == 'production'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 4
+    timeout-minutes: 8
     permissions:
       contents: read
       statuses: read
+      pull-requests: read
+      actions: read
     steps:
       - name: Checkout only trusted control-plane code
         uses: actions/checkout@v4
@@ -280,10 +323,66 @@ jobs:
           # Existing optional read-only Vercel API credential; absent means UNVERIFIED.
           # No Vercel credential is exposed to PR source or public browser.
           HH_VERCEL_READ_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          HH_PR_METRICS_PATH: ${{ runner.temp }}/hh-pr-outcome-metrics.json
         with:
           github-token: ${{ github.token }}
           script: |
             const verifier=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-live-verifier.cjs');
-            await verifier.run({github,core,context,
+            const liveEvidence=await verifier.run({github,core,context,
               vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
+            const outcomes=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-release-outcomes.cjs');
+            await outcomes.run({github,core,context,liveEvidence,
+              reportPath:process.env.HH_PR_METRICS_PATH||''});
+
+      # Persist read-only outcome snapshots to compare throughput week over week.
+      # A missing metrics file is explicit PARTIAL coverage, never a false LIVE.
+      - name: Archive merged / verified LIVE outcome metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-pr-outcomes-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hh-pr-outcome-metrics.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Resolve production SHA for hourly conflict diagnostics
+        if: github.event_name == 'schedule'
+        id: conflict_base
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const branch=(await github.rest.repos.getBranch({owner:context.repo.owner,
+              repo:context.repo.repo,branch:'codex/public-book-library'})).data;
+            if(!branch.protected || !/^[a-f0-9]{40}$/i.test(branch.commit?.sha||''))
+              throw Error('PRODUCTION_REF_UNVERIFIED');
+            core.setOutput('sha',branch.commit.sha);
+      - name: Checkout pinned production conflict diagnostics
+        if: github.event_name == 'schedule'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.conflict_base.outputs.sha }}
+          path: .hh-production
+          persist-credentials: false
+      - name: Run bounded read-only conflict diagnostics
+        if: github.event_name == 'schedule'
+        timeout-minutes: 4
+        working-directory: .hh-production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PINNED_PRODUCTION_SHA: ${{ steps.conflict_base.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -q 'export function conflictRotationOffset' lib/ci/pr-sweep-guard.mjs; then
+            echo '::warning::CONFLICT_ROTATION_UNAVAILABLE: awaiting production rollout'
+            echo 'Conflict diagnostics: UNAVAILABLE — production rotation is not deployed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          actual="$(git rev-parse HEAD)"
+          [[ "$actual" == "$PINNED_PRODUCTION_SHA" ]] || { echo '::error::Production checkout changed'; exit 1; }
+          echo "HH_CONFLICT_MONITOR_CODE_SHA=$actual"
+          node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY" | tee "$RUNNER_TEMP/hh-conflicts.json"
+          { echo '### Hourly conflict diagnostics'; echo '```json'; cat "$RUNNER_TEMP/hh-conflicts.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
