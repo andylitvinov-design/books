@@ -157,8 +157,14 @@ jobs:
             const dryRun=context.eventName==='push'||input;
             // Trust checks inside run() and exact-HEAD check before each mutation.
             // Push is audit-only; cron and completed trusted worker events are live.
-            await run({github,core,context,dryRun});
+            const summary=await run({github,core,context,dryRun});
             // Single-writer event fallback: once per 11+ minute inactivity,
             // never if Direction Watcher is queued/running. Does not create PR
             // checks, edit source or pretend that GitHub cron delivered events.
             await wakeDirectionWatcher({github,core,context,dryRun});
+            // GitHub may silently delay schedule. A verified cron gap can
+            // dispatch the existing guarded Watchdog, without changing source,
+            // production protection or the single-writer queue lease.
+            const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-control-tower-wakeup.cjs');
+            await wakeStaleWatchdog({github,context,summary,dryRun,log:core.info});
