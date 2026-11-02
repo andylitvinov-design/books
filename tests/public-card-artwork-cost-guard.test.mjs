@@ -125,7 +125,7 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]\n    if: always\(\)/m);
   assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(core, /\[\[ "\$CODE_RESULT" == success \]\]/);
-  assert.match(core, /\[\[ "\$CODE_RESULT" == skipped \]\]/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$CODE_RESULT" == skipped \]\]/);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
