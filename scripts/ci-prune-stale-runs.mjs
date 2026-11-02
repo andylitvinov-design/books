@@ -16,6 +16,9 @@ export function context(env, event) {
 }
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
+const CORE_FORCE_PATH = '.github/workflows/hh-pr-core-release.yml';
+const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
+  'hh-specialist', 'hh-merge-check', 'release-ready']);
 
 export function eligible(run, pr, ctx) {
   if (!run || run.event !== 'pull_request' || run.status !== 'queued' ||
@@ -25,11 +28,13 @@ export function eligible(run, pr, ctx) {
       run.head_repository?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo ||
       run.head_branch !== pr.head?.ref || run.pull_requests[0]?.head?.ref !== run.head_branch ||
       !sha40(run.head_sha) || !sha40(run.pull_requests[0]?.head?.sha) || !sha40(pr.head?.sha)) return false;
-  // GitHub PR run.head_sha can be a synthetic merge SHA, not the actual PR head.
-  return pr.state === 'open' && run.pull_requests[0].head.sha.toLowerCase() !== pr.head.sha.toLowerCase();
+  // The association can report today's PR head, not the run's original head.
+  // A different run SHA is only a candidate: ancestry is proved before cancel.
+  return pr.state === 'open' && run.head_sha.toLowerCase() !== pr.head.sha.toLowerCase();
 }
 
-export async function prune(api, ctx, { limit = 300, dryRun = false } = {}) {
+export async function prune(api, ctx, { limit = 300, dryRun = false,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), settleMs = 30_000 } = {}) {
   const max = Math.min(500, int(limit) || 300);
   const current = ctx.number ? await api.pr(ctx.number) : null;
   const found = [];
@@ -40,7 +45,9 @@ export async function prune(api, ctx, { limit = 300, dryRun = false } = {}) {
     if (res.workflow_runs.length < 100) break;
   }
   const cache = new Map(current ? [[ctx.number, current]] : []);
-  const summary = { scanned: found.length, candidates: 0, cancelled: [], confirmed: [], dryRun: [], errors: [], partial: found.length === 1000 };
+  const summary = { scanned: found.length, candidates: 0, cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], partial: found.length === 1000 };
+  const accepted = new Map();
+  const baseWorkflows = new Map();
   const seen = new Set();
   for (const run of found) {
     if (summary.cancelled.length + summary.dryRun.length >= max) { summary.partial = true; break; }
@@ -55,20 +62,72 @@ export async function prune(api, ctx, { limit = 300, dryRun = false } = {}) {
     summary.candidates++;
     // Read BOTH objects again before POST: a queued run may have started and a PR HEAD may have moved.
     const [freshRun, freshPR] = await Promise.all([api.run(run.id), api.pr(n)]);
-    if (!eligible(freshRun, freshPR, ctx) ||
-        freshRun.pull_requests[0].head.sha.toLowerCase() !== run.pull_requests[0].head.sha.toLowerCase()) continue;
+    if (!eligible(freshRun, freshPR, ctx) || freshRun.head_sha !== run.head_sha) continue;
+    // Only an ancestor of the live branch HEAD is provably obsolete. Synthetic
+    // merge commits and rewritten histories are held unless ancestry proves it.
+    let relation;
+    try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
+    catch { summary.partial = true; continue; }
+    if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1) continue;
+    // Re-read after the network compare: neither a new HEAD nor a started job
+    // may be acted on using stale evidence.
+    const [verifiedRun, verifiedPR] = await Promise.all([api.run(run.id), api.pr(n)]);
+    if (!eligible(verifiedRun, verifiedPR, ctx) || verifiedRun.head_sha !== freshRun.head_sha ||
+        verifiedPR.head.sha !== freshPR.head.sha) continue;
     if (dryRun) { summary.dryRun.push(run.id); continue; }
-    try { await api.cancel(run.id); summary.cancelled.push(run.id); }
+    try { await api.cancel(run.id); summary.cancelled.push(run.id); accepted.set(run.id, {number:n, head:freshRun.head_sha, path:verifiedRun.path}); }
     catch (e) {
       // Another janitor may have cancelled the same run between GET and POST.
       const after = await api.run(run.id).catch(() => null);
       if (after?.status === 'queued') summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) });
     }
   }
+  // A normal cancel can leave always() jobs queued and block the next SHA.
+  // Wait once for the batch, then force only still-queued, proven-stale runs
+  // with complete job evidence and no running job. Never force dry runs.
+  if ([...accepted.values()].some(item => item.path === CORE_FORCE_PATH) && typeof api.forceCancel === 'function') {
+    await sleep(Math.max(0, Math.min(30_000, Number(settleMs) || 0)));
+  }
   // POST accepted != confirmed cancelled. Read back the actual conclusion.
   for (const id of summary.cancelled) {
     try {
-      const checked = await api.run(id);
+      let checked = await api.run(id);
+      const previous = accepted.get(id);
+      if (checked?.status === 'queued' && checked.path === CORE_FORCE_PATH && previous && typeof api.forceCancel === 'function') {
+        const currentPR = await api.pr(previous.number);
+        const jobPage = await api.jobs(id);
+        const complete = Array.isArray(jobPage?.jobs) && jobPage.jobs.length > 0 &&
+          Number.isSafeInteger(jobPage.total_count) && jobPage.total_count === jobPage.jobs.length &&
+          jobPage.total_count <= 100 && jobPage.jobs.every(job => CORE_FORCE_JOBS.has(job.name) &&
+            (job.status === 'completed' || job.status === 'queued'));
+        if (complete && eligible(checked, currentPR, ctx) && checked.head_sha === previous.head &&
+            sha40(currentPR.base?.sha)) {
+          // A PR may edit the workflow itself. Force is permitted only when
+          // that run's workflow is byte-identical to its trusted current base.
+          const [runWorkflow, baseWorkflow] = await Promise.all([
+            api.workflowBlob(checked.head_sha),
+            baseWorkflows.has(currentPR.base.sha) ? baseWorkflows.get(currentPR.base.sha) : api.workflowBlob(currentPR.base.sha),
+          ]);
+          baseWorkflows.set(currentPR.base.sha, baseWorkflow);
+          if (runWorkflow?.type !== 'file' || baseWorkflow?.type !== 'file' ||
+              !sha40(runWorkflow.sha) || runWorkflow.sha !== baseWorkflow.sha) continue;
+          const relation = await api.compare(checked.head_sha, currentPR.head.sha);
+          if (relation?.status === 'ahead' && Number.isSafeInteger(relation.ahead_by) && relation.ahead_by > 0) {
+            const [lastRun, lastPR] = await Promise.all([api.run(id), api.pr(previous.number)]);
+            if (eligible(lastRun, lastPR, ctx) && lastRun.path === CORE_FORCE_PATH && lastRun.head_sha === checked.head_sha &&
+                lastPR.head.sha === currentPR.head.sha && lastPR.base?.sha === currentPR.base.sha) {
+              try {
+                await api.forceCancel(id);
+                summary.forced.push(id);
+                checked = await api.run(id);
+              } catch (error) {
+                checked = await api.run(id);
+                if (checked?.status !== 'completed' || checked.conclusion !== 'cancelled') throw error;
+              }
+            }
+          }
+        }
+      }
       if (checked?.status === 'completed' && checked.conclusion === 'cancelled') summary.confirmed.push(id);
     } catch (e) { summary.errors.push({ id, status: 'readback: ' + String(e.message || e).slice(0, 80) }); }
   }
@@ -144,6 +203,9 @@ export function client(repo, token, transport = fetch) {
     pr: (n) => call('/pulls/' + n),
     run: (id) => call('/actions/runs/' + id),
     cancel: (id) => call('/actions/runs/' + id + '/cancel', 'POST'),
+    forceCancel: (id) => call('/actions/runs/' + id + '/force-cancel', 'POST'),
+    workflowBlob: (ref) => call('/contents/' + CORE_FORCE_PATH + '?' + new URLSearchParams({ref})),
+    compare: (base, head) => call('/compare/' + base + '...' + head),
     recent: (page, since) => call('/actions/runs?' + new URLSearchParams({ event: 'pull_request', created: '>=' + since, per_page: '100', page: String(page) })),
     jobs: id => call('/actions/runs/' + id + '/jobs?per_page=100&page=1'),
     list: (page, branch) => {
@@ -174,7 +236,7 @@ async function main() {
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +
     '| New PR workflow checks (last 60 min) | ' + (m ? m.newChecks + (m.truncated ? ' (PARTIAL)' : '') : 'n/a') + ' |\n' +
     '| Queued / running checks (last 60 min) | ' + (m ? m.queuedChecks + ' / ' + m.runningChecks : 'n/a') + ' |\n' +
-    '| Superseded: cancel accepted / confirmed | ' + s.cancelled.length + ' / ' + s.confirmed.length + ' |\n' +
+    '| Superseded: cancel accepted / forced / confirmed | ' + s.cancelled.length + ' / ' + s.forced.length + ' / ' + s.confirmed.length + ' |\n' +
     '| Job/runner start wait p50 / p95 (sample) | ' + (m ? fmt(m.waitP50Ms) + ' / ' + fmt(m.waitP95Ms) + ' (n=' + m.waitSamples + ')' : 'n/a') + ' |\n' +
     '| Pending jobs; p95 queued age (sample) | ' + (m ? m.queuedJobs + '; ' + fmt(m.queuedAgeP95Ms) : 'n/a') + ' |\n' +
     '| Actual completed job execution (sample) | ' + (m ? fmt(m.runnerMs) + ' across ' + m.completedJobs + ' jobs / ' + m.sampledRuns + ' runs' : 'n/a') + ' |\n' +
@@ -183,7 +245,7 @@ async function main() {
     (metricError ? 'Metrics error: ' + metricError + '\n' : '');
   console.log(msg);
   console.log('HH_CI_QUEUE_METRICS ' + JSON.stringify({ at: new Date().toISOString(), scanned: s.scanned,
-    candidates: s.candidates, cancelAccepted: s.cancelled.length, cancelConfirmed: s.confirmed.length,
+    candidates: s.candidates, cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
     partial: s.partial, errors: s.errors.length, snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
   if (s.errors.length) { console.error(s.errors); process.exitCode = 1; }
