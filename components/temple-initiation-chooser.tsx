@@ -377,6 +377,7 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
             <ContactChannelChooser
               locale={locale}
               whatsappUrl={whatsappUrl}
+              stayAfterSave
               className={styles.action}
               label={t.contact}
               attributes={{ "data-temple-whatsapp-request": "true" }}
