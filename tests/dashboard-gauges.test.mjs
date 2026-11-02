@@ -29,15 +29,15 @@ test('raw needle orientation follows difficulty/resource direction; traits remai
   assert.equal(gaugeModel({ ...metric(101) }),null)
 })
 
-test('change arrows depend on direction, never raw sign alone',()=>{
+test('comparable raw differences never become invented clinically meaningful changes',()=>{
   const old=result('1',75,'2026-09-01T12:00:00Z')
   const improved=result('2',45.83,'2026-10-11T12:00:00Z')
-  assert.deepEqual(gaugeChange(improved,old,metric(0).key),{state:'improved',delta:-29.17})
+  assert.deepEqual(gaugeChange(improved,old,metric(0).key),{state:'changed',delta:-29.17})
   assert.equal(gaugeChange(old,improved,metric(0).key).state,'baseline')
-  assert.equal(gaugeChange(result('3',95.83,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'worsened')
+  assert.equal(gaugeChange(result('3',95.83,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'changed')
   assert.equal(gaugeChange(result('4',75,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'unchanged')
   const resources=(value,date)=>resultFor('brcs','x',value,date)
-  assert.equal(gaugeChange(resources(18,'2026-10-11T12:00:00Z'),resources(8,'2026-09-11T12:00:00Z'),'resources.brcs.total').state,'improved')
+  assert.equal(gaugeChange(resources(18,'2026-10-11T12:00:00Z'),resources(8,'2026-09-11T12:00:00Z'),'resources.brcs.total').state,'changed')
   const neutral=(value,date)=>resultFor('ipip-big-five-50','x',value,date)
   assert.equal(gaugeChange(neutral(40,'2026-10-11T12:00:00Z'),neutral(20,'2026-09-11T12:00:00Z'),'trait.ipip50.extraversion').state,'changed')
   assert.equal(gaugeChange({...improved,definitionVersion:'v2'},old,metric(0).key).state,'baseline')

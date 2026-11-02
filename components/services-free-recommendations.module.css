@@ -41,7 +41,7 @@
   font:750 9px/1.2 system-ui,sans-serif;
 }
 .cardDescription{margin:6px 0 0;color:#667284;font:11px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
-.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:auto}
+.actions{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:7px;margin-top:auto}
 .order,.details{
   box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
   gap:6px;min-width:0;min-height:40px;padding:9px 10px;border-radius:9px;

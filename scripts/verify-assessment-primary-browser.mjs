@@ -44,6 +44,9 @@ const transpile = relative => ts.transpileModule(fs.readFileSync(path.join(work,
   fileName: relative, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
 const overview = addVirtual('overview', transpile('lib/assessments/result-overview.js'));
+// Keep the current evidence-status logic in the real synthetic report, not a fake
+// clinical-quality status. This pure module requires no account or network data.
+const evidenceStatus = addVirtual('evidence-status', transpile('lib/assessments/assessment-evidence-status.js'));
 const stubs = addVirtual('stubs', `const React=require('react');
 exports.FreeCourseBanner=({locale})=>React.createElement('aside',{'data-synthetic-banner':true},locale==='ru'?'Учебный блок':'Learning block');
 exports.ScoreGauge=({dimension})=>React.createElement('span',{'data-synthetic-gauge':true},dimension?.value);
@@ -55,7 +58,9 @@ addVirtual('component', transpile('components/app/compact-assessment-report.jsx'
   react, 'react/jsx-runtime': jsxRuntime,
   './free-course-banner': stubs, './assessment-gauge': stubs,
   '@/lib/assessments/scale-guides': stubs, '@/lib/assessments/dashboard-gauges': stubs,
-  '@/lib/assessments/result-overview': overview, './compact-assessment-report.module.css': css,
+  '@/lib/assessments/result-overview': overview,
+  '@/lib/assessments/assessment-evidence-status': evidenceStatus,
+  './compact-assessment-report.module.css': css,
 });
 const bootstrap = `
 const React=load(${JSON.stringify(react)}),{createRoot}=load(${JSON.stringify(client)}),{flushSync}=load(${JSON.stringify(dom)}),{CompactAssessmentReport}=load('component');
@@ -64,7 +69,7 @@ const originalError=console.error;console.error=(...args)=>{window.acceptanceErr
 const root=createRoot(document.getElementById('app'));
 function propsFor(id,locale='en',guest=false,review=false){
  const ru=locale==='ru'; const values=id==='B'?[6,8,1]:[8,2,6];
- const sections=values.map((value,i)=>({key:'scale-'+i,construct:(ru?'Шкала ':'Scale ')+(i+1),value,min:0,max:10,bandBasis:'descriptive',band:ru?'Описательная шкала':'Descriptive scale',summary:(ru?'Краткое объяснение ':'Short explanation ')+i,meaning:(ru?'Полное исходное объяснение ':'Full original explanation ')+i,primarySupport:(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,steps:[(ru?'Исходное наблюдение с баллом ':'Original score-linked observation ')+value,(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,(ru?'Дополнительный исходный шаг ':'Additional original step ')+i],followUp:(ru?'Обсудите беспокоящие симптомы со специалистом ':'Discuss concerning symptoms with a professional ')+i,source:'https://example.invalid/'+id+'/'+locale+'/scale-'+i,recommendedReview:review&&i===0}));
+ const sections=values.map((value,i)=>({key:'scale-'+i,presentationDirection:'resource',construct:(ru?'Шкала ':'Scale ')+(i+1),value,min:0,max:10,bandBasis:'descriptive',band:ru?'Описательная шкала':'Descriptive scale',summary:(ru?'Краткое объяснение ':'Short explanation ')+i,meaning:(ru?'Полное исходное объяснение ':'Full original explanation ')+i,primarySupport:(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,steps:[(ru?'Исходное наблюдение с баллом ':'Original score-linked observation ')+value,(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,(ru?'Дополнительный исходный шаг ':'Additional original step ')+i],followUp:(ru?'Обсудите беспокоящие симптомы со специалистом ':'Discuss concerning symptoms with a professional ')+i,source:'https://example.invalid/'+id+'/'+locale+'/scale-'+i,recommendedReview:review&&i===0}));
  return {locale,result:{...(guest?{}:{id}),definitionKey:'synthetic-local-fixture',dimensions:sections.map(({key,value,min,max})=>({key,value,min,max}))},report:{verified:true,sections,rulesVersion:'synthetic-acceptance-only',methodology:ru?'Методика синтетической проверки':'Synthetic acceptance methodology',seekSupport:sections[0].followUp,purpose:ru?'Синтетические данные':'Synthetic data',note:ru?'Не клинические данные':'No clinical data'}};
 }
 window.acceptance={propsFor,render(props){flushSync(()=>root.render(React.createElement(CompactAssessmentReport,props)))},click(key){flushSync(()=>document.querySelector('[data-assessment-scale-trigger="'+key+'"]').click())},errors:window.acceptanceErrors};

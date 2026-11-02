@@ -1,0 +1,65 @@
+name: Holistic House compact lead-capture verification
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - "components/compact-lead-capture.tsx"
+      - "components/personal-support-landing.tsx"
+      - "components/commerce/consultation-cart-entry.tsx"
+      - "tests/monthly-support-programme.test.mjs"
+      - "tests/compact-lead-channel-handoff.test.mjs"
+      - "tests/service-cart.test.mjs"
+      - "tests/consultation-cart-experience.test.mjs"
+      - "components/compact-lead-capture.module.css"
+      - "components/free-entry-landing.tsx"
+      - "components/sitewide-lead-capture.tsx"
+      - "components/sitewide-lead-capture.module.css"
+      - "lib/public-lead-capture.js"
+      - "tests/free-review-conversion.test.mjs"
+      - "tests/sitewide-lead-capture.test.mjs"
+      - "tests/contact-channel-chooser.test.mjs"
+      - ".github/workflows/compact-lead-capture-ci.yml"
+permissions:
+  contents: read
+
+jobs:
+  focused-conversion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify compact footer, locale conversion and existing contact flows
+        run: >-
+          node --test
+          tests/sitewide-lead-capture.test.mjs
+          tests/free-review-conversion.test.mjs
+          tests/contact-channel-chooser.test.mjs
+          tests/services-hero-quick-request.test.mjs
+          tests/monthly-support-programme.test.mjs
+          tests/compact-lead-channel-handoff.test.mjs
+          tests/service-cart.test.mjs
+          tests/consultation-cart-experience.test.mjs
+      - name: Lint modified UI and lead classifier
+        run: >-
+          npx --no-install eslint
+          components/compact-lead-capture.tsx
+          components/free-entry-landing.tsx
+          components/sitewide-lead-capture.tsx
+          lib/public-lead-capture.js
+          components/personal-support-landing.tsx
+          components/commerce/consultation-cart-entry.tsx
+
+      # PR Core verifies whole-project TypeScript + build on the same candidate SHA.
+      - name: TypeScript and production build with unchanged payment gates
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: |
+          npx --no-install tsc --noEmit
+          npm run build

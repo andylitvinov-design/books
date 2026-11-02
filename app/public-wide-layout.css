@@ -74,3 +74,26 @@
     margin-inline: -6px;
   }
 }
+
+
+/* Services-first-screen precise Tests parity.
+   The shared Services shell has its own 16px mobile gutter. Without this
+   override it is compounded by the Services panel inset, leaving the first
+   screen visibly narrower than /client/tests. Only the public finder escapes
+   that extra inset; practitioner detail pages and downstream panels retain
+   their existing width. */
+.services-shell--studio > #find-your-service {
+  box-sizing: border-box;
+  width: min(1240px, 100%);
+  max-width: none;
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
+@media screen and (max-width: 767px) {
+  .services-shell--studio > #find-your-service {
+    width: calc(100% + 16px);
+    margin-inline: -8px;
+    padding-inline: 0;
+  }
+}

@@ -1,56 +1,70 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
-import {createClient} from '@supabase/supabase-js'
+import {canProxyOwnerPhoto,OWNER_PHOTO_PROXY_MAX_BYTES} from '../lib/clients/owner-photo-upload'
 import {Camera,Images,CheckCircle2,RotateCcw} from 'lucide-react'
 import {recordingUpload,saveRecording} from '../lib/clients/recording-upload'
 import styles from './client-session.module.css'
 
 const INPUT_TYPES=new Set(['image/jpeg','image/png','image/webp','image/heic','image/heif'])
 const MAX_INPUT_BYTES=25_000_000
-const MAX_OUTPUT_BYTES=5_000_000
+const MAX_OUTPUT_BYTES=OWNER_PHOTO_PROXY_MAX_BYTES
 const MAX_PHOTOS_PER_SELECTION=12
 
-// Decode locally, correct orientation, downsize and re-encode. Re-encoding
-// discards EXIF (including geolocation), original filename and camera metadata.
+// iPhone Files/Photos sometimes provides JPEG or HEIC with an empty generic
+// MIME. The image is decoded and newly encoded locally, not relabelled/uploaded.
+function sourcePhotoMime(file) {
+  const provided=(file?.type||'').split(';')[0].toLowerCase()
+  if(INPUT_TYPES.has(provided))return provided
+  if(provided==='image/jpg'||provided==='image/pjpeg')return 'image/jpeg'
+  if(provided&&provided!=='application/octet-stream')return provided
+  const extension=/\.([a-z0-9]+)$/i.exec(file?.name||'')?.[1]?.toLowerCase()
+  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',
+    heic:'image/heic',heif:'image/heif'})[extension]||provided
+}
+
+// Canvas makes a new raster image and discards all EXIF/GPS metadata.
+// Use a bounded JPEG for authenticated same-origin uploads: Vercel's
+// function body limit is 4.5 MB, so the private proxy accepts <=3 MB.
 export async function preparePhoto(original) {
-  const mime=(original?.type||'').toLowerCase()
+  const mime=sourcePhotoMime(original)
   if(!INPUT_TYPES.has(mime))throw new Error('PHOTO_FORMAT_NOT_ALLOWED')
   if(original.size<128||original.size>MAX_INPUT_BYTES)throw new Error('PHOTO_SIZE_NOT_ALLOWED')
   let bitmap=null,url=null
   try {
-    if(typeof createImageBitmap==='function'){
+    if(typeof createImageBitmap==='function') {
       try {bitmap=await createImageBitmap(original)} catch {}
     }
-    if(!bitmap){
+    if(!bitmap) {
       url=URL.createObjectURL(original)
       const image=new Image()
-      image.src=url
-      await image.decode()
+      await new Promise((resolve,reject)=>{
+        image.onload=resolve
+        image.onerror=()=>reject(new Error('PHOTO_DECODING_FAILED'))
+        image.src=url
+      })
       bitmap=image
     }
     const width=bitmap.width||bitmap.naturalWidth,height=bitmap.height||bitmap.naturalHeight
     if(!width||!height||width*height>120_000_000)throw new Error('PHOTO_DIMENSIONS_NOT_ALLOWED')
-    const scale=Math.min(1,2048/Math.max(width,height))
     const canvas=document.createElement('canvas')
-    canvas.width=Math.max(1,Math.round(width*scale))
-    canvas.height=Math.max(1,Math.round(height*scale))
     const context=canvas.getContext('2d',{alpha:false})
     if(!context)throw new Error('PHOTO_PROCESSING_UNAVAILABLE')
-    context.fillStyle='#ffffff'
-    context.fillRect(0,0,canvas.width,canvas.height)
-    context.drawImage(bitmap,0,0,canvas.width,canvas.height)
-    const encode=type=>new Promise(resolve=>canvas.toBlob(resolve,type,type==='image/jpeg'?0.84:0.82))
-    let type=mime==='image/png'?'image/png':mime==='image/webp'?'image/webp':'image/jpeg'
-    let blob=await encode(type)
-    if(!blob||!['image/jpeg','image/png','image/webp'].includes(blob.type)) {
-      type='image/jpeg';blob=await encode(type)
+    // Try full 2048px detail first. Only reduce resolution if JPEG quality
+    // alone does not fit the safe first-party request cap.
+    for(const side of [2048,1792,1536,1280,1024]) {
+      const scale=Math.min(1,side/Math.max(width,height))
+      canvas.width=Math.max(1,Math.round(width*scale))
+      canvas.height=Math.max(1,Math.round(height*scale))
+      context.fillStyle='#ffffff'
+      context.fillRect(0,0,canvas.width,canvas.height)
+      context.drawImage(bitmap,0,0,canvas.width,canvas.height)
+      for(const quality of [0.84,0.72,0.60]) {
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality))
+        if(blob?.type==='image/jpeg'&&blob.size>=128&&blob.size<=MAX_OUTPUT_BYTES)
+          return new File([blob],'consultation-photo.jpg',{type:'image/jpeg',lastModified:Date.now()})
+      }
     }
-    if(blob?.size>MAX_OUTPUT_BYTES&&type!=='image/jpeg') {
-      type='image/jpeg';blob=await encode(type)
-    }
-    if(!blob||blob.size<128||blob.size>MAX_OUTPUT_BYTES)throw new Error('PHOTO_SIZE_NOT_ALLOWED')
-    const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg'
-    return new File([blob],'consultation-photo.'+ext,{type:blob.type,lastModified:Date.now()})
+    throw new Error('PHOTO_SIZE_NOT_ALLOWED')
   } finally {
     if(typeof bitmap?.close==='function')bitmap.close()
     if(url)URL.revokeObjectURL(url)
@@ -71,7 +85,11 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
   const [attachedSessionId,setAttachedSessionId]=useState(null)
   const [busy,setBusy]=useState(false),[progress,setProgress]=useState({done:0,total:0})
   const [saved,setSaved]=useState(0),[failed,setFailed]=useState([]),[message,setMessage]=useState('')
-  useEffect(()=>{if(providedSessionId)sessionRef.current=providedSessionId},[providedSessionId])
+  useEffect(()=>{
+    // Never carry a session from a previous client/report across prop changes.
+    sessionRef.current=providedSessionId||null
+    setAttachedSessionId(null)
+  },[providedSessionId,clientId,documentId,assessmentId])
   async function ensureSession() {
     if(sessionRef.current)return sessionRef.current
     if(!documentId&&!assessmentId)throw new Error('SESSION_SOURCE_REQUIRED')
@@ -83,8 +101,10 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
   }
   async function upload(files) {
     if(busyRef.current||!files?.length)return
-    const entries=Array.from(files)
-    if(entries.length>MAX_PHOTOS_PER_SELECTION){
+    // Retain the processed bytes and idempotent intent across retry taps.
+    const entries=Array.from(files).map(item=>item?.file&&item?.code?item:
+      {file:item,prepared:null,job:null,code:null})
+    if(entries.length>MAX_PHOTOS_PER_SELECTION) {
       setMessage(ru?'Выберите не более 12 фотографий за один раз.':'Select no more than 12 photos at once.')
       return
     }
@@ -92,37 +112,60 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
     setProgress({done:0,total:entries.length})
     let ok=0,sessionId=null
     const errors=[]
-    for(let index=0;index<entries.length;index++){
-      const original=entries[index]
-      try {
-        const file=await preparePhoto(original)
-        sessionId=await ensureSession()
-        const job=recordingUpload({file,clientId,sessionId,scope:'client'})
-        await saveRecording(job,{post,upload:async(intent,blob,mime)=>{
-          const storage=createClient(intent.supabaseUrl,intent.publishableKey,
-            {auth:{persistSession:false,autoRefreshToken:false}})
-          const result=await storage.storage.from(intent.bucket).uploadToSignedUrl(
-            intent.objectKey,intent.token,blob,{contentType:mime,upsert:false})
-          if(result.error)throw new Error(result.error.message||'PHOTO_UPLOAD_FAILED')
-        }})
-        ok++
-      } catch(error) {
-        errors.push({file:original,code:error?.message||'PHOTO_UPLOAD_FAILED'})
+    try {
+      for(let index=0;index<entries.length;index++) {
+        const entry=entries[index]
+        try {
+          if(!entry.prepared)entry.prepared=await preparePhoto(entry.file)
+          if(!entry.job) {
+            sessionId=await ensureSession()
+            entry.job=recordingUpload({file:entry.prepared,clientId,sessionId,scope:'client'})
+          } else sessionId=entry.job.sessionId
+          await saveRecording(entry.job,{post,upload:async(intent,blob,mime)=>{
+            if(!canProxyOwnerPhoto(blob)||!intent?.assetId||intent.provider==='external')
+              throw new Error('PHOTO_UPLOAD_FAILED')
+            const endpoint='/api/admin/clients/'+clientId+'/sessions/'+sessionId+
+              '/media/'+encodeURIComponent(intent.assetId)+'/upload'
+            let response
+            try {
+              response=await fetch(endpoint,{method:'POST',headers:{'content-type':mime},
+                body:blob,credentials:'same-origin',cache:'no-store'})
+            } catch {
+              throw new Error('PHOTO_NETWORK_FAILED')
+            }
+            const data=await response.json().catch(()=>({}))
+            if(!response.ok||data.uploaded!==true)throw new Error(
+              data.error||(response.status===413?'MEDIA_SIZE_NOT_ALLOWED':
+                response.status===404?'SESSION_UNAVAILABLE':'PHOTO_UPLOAD_FAILED'))
+          }})
+          ok++
+        } catch(error) {
+          entry.code=error?.message||'PHOTO_UPLOAD_FAILED'
+          errors.push(entry)
+        }
+        setProgress({done:index+1,total:entries.length})
       }
-      setProgress({done:index+1,total:entries.length})
-    }
-    setSaved(ok)
-    setFailed(errors)
-    if(ok)onSaved?.(sessionId)
-    setMessage(ok?(ru?'Фото сохранены в черновике. Клиент увидит их только после публикации.':
-      'Photos attached to the draft. The client will see them only after publication.'):'')
-    busyRef.current=false;setBusy(false)
+      setSaved(ok)
+      setFailed(errors)
+      if(ok)onSaved?.(sessionId)
+      setMessage(ok?(ru?'Фото сохранены в черновике. Клиент увидит их только после публикации.':
+        'Photos attached to the draft. The client will see them only after publication.'):'')
+    } finally {busyRef.current=false;setBusy(false)}
   }
+
   const errorText=code=>{
-    if(code==='PHOTO_FORMAT_NOT_ALLOWED')return ru?'Выберите JPEG, PNG или WebP. HEIC преобразуется, если браузер его поддерживает.':'Use JPEG, PNG or WebP. HEIC is converted if supported by your browser.'
-    if(code==='PHOTO_SIZE_NOT_ALLOWED'||code==='MEDIA_SIZE_NOT_ALLOWED')return ru?'Фото слишком большое (максимум 5 МБ после обработки).':'Photo exceeds the 5 MB processed-file limit.'
+    if(code==='PHOTO_DECODING_FAILED'||code==='PHOTO_PROCESSING_UNAVAILABLE'||code==='PHOTO_DIMENSIONS_NOT_ALLOWED')
+      return ru?'Не удалось открыть изображение. Попробуйте сохранить фото как JPEG в «Фото» или «Файлы».':'Could not process this image. Try exporting it as JPEG from Photos or Files.'
+    if(code==='PHOTO_NETWORK_FAILED')
+      return ru?'Соединение прервано. Фото осталось на этом экране — нажмите «Повторить».':'Connection interrupted. The photo is retained here; tap Retry.'
+    if(code==='SESSION_UNAVAILABLE'||code==='ADMIN_SIGN_IN_REQUIRED')
+      return ru?'Не удалось открыть консультацию. Проверьте вход в кабинет и повторите.':'The consultation is unavailable. Check your sign-in and retry.'
+    if(code==='MEDIA_STORAGE_UNAVAILABLE'||code==='MEDIA_STORAGE_NOT_CONFIGURED')
+      return ru?'Приватное хранилище временно недоступно. Попробуйте позже.':'Private storage is temporarily unavailable. Please try again.'
+    if(code==='MEDIA_TYPE_NOT_ALLOWED'||code==='PHOTO_FORMAT_NOT_ALLOWED')return ru?'Выберите JPEG, PNG или WebP. HEIC преобразуется, если браузер его поддерживает.':'Use JPEG, PNG or WebP. HEIC is converted if supported by your browser.'
+    if(code==='PHOTO_SIZE_NOT_ALLOWED'||code==='MEDIA_SIZE_NOT_ALLOWED')return ru?'Фото слишком большое (максимум 3 МБ после обработки).':'Photo exceeds the 3 MB processed-file limit.'
     if(code==='SESSION_PHOTO_LIMIT')return ru?'В одной сессии допускается до 12 фото. Уберите лишние в редакторе.':'Up to 12 photos per session. Remove extras in the session editor.'
-    if(code==='MEDIA_STORAGE_NOT_CONFIGURED')return ru?'Приватное хранилище ещё не настроено.':'Private storage has not been configured.'
+    if(code==='ORIGIN_DENIED')return ru?'Откройте редактор на основном сайте и повторите.':'Open the editor on the primary site and retry.'
     return ru?'Не удалось загрузить фото. Можно повторить.':'Could not upload this photo. You can retry.'
   }
   return <section className={styles.recorder+' '+styles.photoUploader} aria-label={ru?'Фотографии к отчету':'Report photos'}>
@@ -142,8 +185,8 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
           onChange={event=>{const files=Array.from(event.target.files||[]);event.target.value='';void upload(files)}}/>
       </label>
     </div>
-    <p className={styles.photoHint}>{ru?'JPEG, PNG, WebP и совместимые HEIC · до 12 фото · до 5 МБ каждое после сжатия. Метаданные камеры и геолокация удаляются.':
-      'JPEG, PNG, WebP and compatible HEIC · up to 12 photos · 5 MB per processed photo. Camera metadata and location are removed.'}</p>
+    <p className={styles.photoHint}>{ru?'JPEG, PNG, WebP и совместимые HEIC · до 12 фото · до 3 МБ каждое после сжатия. Метаданные камеры и геолокация удаляются.':
+      'JPEG, PNG, WebP and compatible HEIC · up to 12 photos · 3 MB per processed photo. Camera metadata and location are removed.'}</p>
     {busy&&<div className={styles.photoProgress} role="status">
       <span>{ru?'Защищённая загрузка':'Uploading privately'} · {progress.done}/{progress.total}</span>
       <progress value={progress.done} max={progress.total||1}/>
@@ -152,7 +195,7 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
     {failed.length>0&&<div className={styles.error} role="alert">
       <p>{ru?'Не удалось загрузить':'Upload failed'}: {failed.length}</p>
       <ul>{failed.map((item,index)=><li key={index}>{item.file.name}: {errorText(item.code)}</li>)}</ul>
-      <button type="button" className={styles.secondaryButton} disabled={busy} onClick={()=>void upload(failed.map(item=>item.file))}>
+      <button type="button" className={styles.secondaryButton} disabled={busy} onClick={()=>void upload(failed)}>
         <RotateCcw size={16}/> {ru?'Повторить неудачные':'Retry failed photos'}</button>
     </div>}
     {(providedSessionId||attachedSessionId)&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+(providedSessionId||attachedSessionId)}>

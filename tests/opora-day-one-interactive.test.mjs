@@ -112,7 +112,7 @@ test('each redesigned day-one screen is interactive with distinct visual practic
   const player=readFileSync('components/app/course-slide-player.jsx','utf8')
   for(const activity of ['prepare','notice','practice','exit','anchor','association','independent',
      'experience','adapt','transfer']) assert.match(ui,new RegExp('data-day-one-activity="'+activity+'"'))
-  for(const marker of ['data-interactive-practice-stepper','photoRegions','wordTokens',
+  for(const marker of ['data-interactive-practice-stepper','calmPhoto','calmMore','wordTokens',
     'swatchPanel','data-personal-transfer-preview','hintToggle','data-day-one-activity="neutral-support"'])
       assert.ok(ui.includes(marker),marker)
   assert.ok(css.includes('object-fit:contain'), 'Do not crop scenic picture')
@@ -129,4 +129,20 @@ test('displaying a hint cannot by itself count as independent practice',()=>{
   assert.ok(!ui.includes("if(!hintOpen)onAnswer('independent','guided')"))
   assert.throws(()=>validateDayOneAnswers({hintUsed:'yes',independent:'independent'}),/DEPENDENCY/)
   assert.deepEqual(validateDayOneAnswers({hintUsed:'yes',independent:'guided'}),{hintUsed:'yes',independent:'guided'})
+})
+
+test('the OPORA welcome photo visibly fills the panoramic iPhone slot with a local fallback',()=>{
+  const ui=readFileSync('components/app/opora-experience-player.jsx','utf8')
+  const css=readFileSync('components/app/opora-experience-player.module.css','utf8')
+  assert.match(ui, /<div className=\{styles\.arrivalPhoto\}/)
+  assert.match(ui, /<img src="\/images\/holistic-house\/report-lighthouse-coast\.webp"/)
+  const frame=css.match(/\.arrivalPhoto\{([^}]*)\}/)?.[1]
+  const image=css.match(/\.arrivalPhoto img\{([^}]*)\}/)?.[1]
+  assert.ok(frame && image,'Welcome image frame styles must exist')
+  assert.match(frame,/position:relative/)
+  assert.match(frame,/course-focus-mountain-boy\.webp/,'Local backup scene fills the frame on image failure')
+  assert.match(image,/position:absolute/)
+  assert.match(image,/object-fit:cover/,'Portrait photo must fill the landscape slot, not disappear as a narrow strip')
+  for(const asset of ['report-lighthouse-coast.webp','course-focus-mountain-boy.webp'])
+    assert.ok(readFileSync('public/images/holistic-house/'+asset).byteLength>1000,asset+' should be shipped locally')
 })

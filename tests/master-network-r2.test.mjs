@@ -1,3 +1,4 @@
+import './practitioner-profile-booking-cards.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -72,13 +73,14 @@ test('R2 migration preserves original Andy and service identities and adds scope
 })
 
 test('R2 UI exposes Practice master cabinet, public Masters and moderation with shared personal nav', async () => {
-  const [workspace, practice, moderation, route, repository, services, explorer] = await Promise.all([
+  const [workspace, practice, moderation, route, repository, services, directory, explorer] = await Promise.all([
     readFile(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/practitioner-moderation.jsx',import.meta.url),'utf8'),
     readFile(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8'),
     readFile(new URL('../lib/practitioners/repository.js',import.meta.url),'utf8'),
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.tsx',import.meta.url),'utf8'),
   ])
   assert.match(workspace,/id: 'practice', label: locale === 'ru' \? 'Практика' : 'Practice'/)
@@ -93,7 +95,12 @@ test('R2 UI exposes Practice master cabinet, public Masters and moderation with 
   assert.match(practice,/pricingMode:'free'/)
   assert.match(route,/practice\/onboarding/)
   assert.match(repository,/async onboarding\(actor,input\)/)
-  assert.match(repository,/pricingMode:'free'/)
-  assert.match(services,/<MarketplaceServiceFinder services=/)
+  assert.match(repository,/validateServiceDraft\(\{\.\.\.input\.service,pricingMode:'free',confirmedPrice:null,currency:''\},\{complete:submitting\}\)/)
+  // The onboarding inserts an explicitly FREE service; persisted values are
+  // literal 'free', null, null instead of user-controlled draft pricing.
+  assert.match(repository,/pricing_mode,confirmed_price,currency/)
+  assert.match(repository,/values\(\$1,\$2,\$3,'\{\}'::jsonb,true,\$4,\$5,\$6,\$7,\$8,\$9,\$10,'free',null,null,0/)
+  assert.match(services,/<ServicesDirectoryInvitation/)
+   assert.match(directory,/<MarketplaceServiceFinder services=/)
   assert.match(explorer,/Request free service/)
 })

@@ -1,8 +1,9 @@
+import { attachCatalogStatsResponseDiagnostic } from '../scripts/catalog-stats-request-diagnostics.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { decodeReadyPoster } from '../scripts/public-poster-readiness.mjs';
+import { decodeReadyPoster, openPosterDisclosures } from '../scripts/public-poster-readiness.mjs';
 const source = readFileSync(new URL('../scripts/verify-release-reaudit.mjs', import.meta.url), 'utf8');
 function fixture(change = {}) {
   const document = { visibilityState: 'visible', baseURI: 'http://127.0.0.1:3123/' };
@@ -11,7 +12,7 @@ function fixture(change = {}) {
   const el = { isConnected: true, ownerDocument: document, complete: true, naturalWidth: 100, naturalHeight: 50,
     currentSrc: 'http://127.0.0.1:3123/poster.webp?secret=private#fragment', getAttribute: name => attrs[name],
     decode: async () => { decoded++; }, ...change };
-  const handle = { scrollIntoViewIfNeeded: async () => {}, evaluate: (fn, arg) => Promise.resolve().then(() => runInNewContext(`(${fn})(el,arg)`, { el, arg, document, URL })), dispose: async () => { disposed = true; } };
+  const handle = { evaluateHandle: async () => ({ asElement: () => null, dispose: async () => {} }), scrollIntoViewIfNeeded: async () => {}, evaluate: (fn, arg) => Promise.resolve().then(() => runInNewContext(`(${fn})(el,arg)`, { el, arg, document, URL })), dispose: async () => { disposed = true; } };
   const expect = { poll: (fn, options) => ({ toBe: async value => {
     assert.equal(options.timeout, 7000);
     for (let i = 0; i < 4; i++) { ticks++; fixtureTick?.(el, attrs, ticks); if (await fn() === value) { afterReady?.(el); return; } }
@@ -21,6 +22,22 @@ function fixture(change = {}) {
   return { el, attrs, document, run: () => decodeReadyPoster(handle, expect),
     onTick: fn => { fixtureTick = fn; }, afterReady: fn => { afterReady = fn; }, decoded: () => decoded, disposed: () => disposed };
 }
+test('opens nested poster disclosures through their summary before decoding', async () => {
+  const pending = ['outer', 'inner']; const clicked = [];
+  const image = {evaluateHandle: async () => {
+    const name = pending[0];
+    return {asElement: () => name ? {$: async selector => {
+      assert.equal(selector, ':scope > summary');
+      return {click: async () => {clicked.push(pending.shift());}, dispose: async () => {}};
+    }, evaluate: async () => !pending.includes(name)} : null, dispose: async () => {}};
+  }};
+  await openPosterDisclosures(image);
+  assert.deepEqual(clicked, ['outer', 'inner']);
+});
+test('a poster disclosure without a real summary fails closed', async () => {
+  const image = {evaluateHandle: async () => ({asElement: () => ({$: async () => null}), dispose: async () => {}})};
+  await assert.rejects(() => openPosterDisclosures(image), /Poster disclosure has no summary/);
+});
 test('waits for lazy load on the same element before strict decoding', async () => {
   const f = fixture({ complete: false, naturalWidth: 0 });
   f.onTick((el, _, tick) => { assert.equal(f.decoded(), 0); if (tick === 2) { el.complete = true; el.naturalWidth = 100; } });
@@ -50,9 +67,9 @@ test('actual page collector isolates late retired requests, but new pending requ
   const end = source.indexOf('  let publicPageState = await createPublicPage();', start);
   assert.ok(start >= 0 && end > start);
   const pages = [];
-  const diagnostics = { requests: [], responses: [], failedRequests: [], pageErrors: [] };
+  const diagnostics = { requests: [], responses: [], statsResponses: [], failedRequests: [], pageErrors: [] };
   const context = { newPage: async () => { const events = {}; const page = { on: (type, fn) => { events[type] = fn; }, url: () => 'http://127.0.0.1:3123/', events }; pages.push(page); return page; } };
-  const make = new Function('context', 'publicDiagnostics', 'origin', `let errors=[];let publicPhase='test';${source.slice(start,end)};return createPublicPage;`)(context, diagnostics, 'http://127.0.0.1:3123');
+  const make = new Function('context', 'publicDiagnostics', 'origin', 'attachCatalogStatsResponseDiagnostic', `let errors=[];let publicPhase='test';${source.slice(start,end)};return createPublicPage;`)(context, diagnostics, 'http://127.0.0.1:3123', attachCatalogStatsResponseDiagnostic);
   const old = await make(); const next = await make();
   const request = path => ({ url: () => 'http://127.0.0.1:3123/' + path, frame: () => ({ url: () => 'old-document' }), method: () => 'GET', resourceType: () => 'fetch', failure: () => ({ errorText: 'aborted' }) });
   pages[0].events.request(request('late-old'));

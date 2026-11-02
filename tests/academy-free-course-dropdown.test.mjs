@@ -7,8 +7,9 @@ const source = read('components/academy-free-course-banner.tsx')
 const styles = read('components/academy-free-course-banner.module.css')
 const hub = read('components/academy-hub.tsx')
 
-test('Academy replaces the oversized promotional banner with a native, keyboard-accessible dropdown', () => {
-  assert.match(hub, /<AcademyFreeCourseBanner locale=\{locale\} \/>/)
+test('Legacy free-course dropdown stays accessible in isolation; Academy now displays its courses directly', () => {
+  assert.doesNotMatch(hub, /<AcademyFreeCourseBanner/)
+  assert.match(hub, /<AcademyDiscovery locale=\{locale\}/)
   assert.match(source, /<details className=\{styles\.disclosure\}>/)
   assert.match(source, /<summary className=\{styles\.summary\}>/)
   assert.match(source, /aria-labelledby="academy-free-course-title"/)
@@ -38,7 +39,8 @@ test('Photo-left cards keep a visible course start link in EN RU ES and remain u
   for (const phrase of ['Start course', 'Пройти', 'Empezar', 'Бесплатные ИИ-курсы', 'Free AI courses']) {
     assert.ok(source.includes(phrase), phrase)
   }
-  assert.match(source, /<Image src=\{course\.image\} alt="" fill/)
+  assert.match(source, /<Image src=\{cardArtworkUrl\(course\.image\)\} unoptimized=\{hasCardArtwork\(course\.image\)\} alt="" fill/)
+  assert.match(source, /image: "\/academy\/reiki-yggdrasil\/source\/program-overview\.jpg"/)
   assert.match(source, /className=\{styles\.start\} href=\{href\}/)
   assert.match(styles, /grid-template-columns: 132px minmax\(0, 1fr\)/)
   assert.match(styles, /@media \(max-width: 540px\)/)

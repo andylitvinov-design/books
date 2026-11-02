@@ -1,0 +1,57 @@
+name: Holistic House SalesBot Remaster feature parity
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'data/benchmarking/salesbot-remaster-*.csv'
+      - 'scripts/benchmarking/salesbot-remaster-parity.mjs'
+      - 'lib/crm/salesbot-editor.mjs'
+      - 'tests/crm-salesbot-feature-editor.test.mjs'
+      - '.github/workflows/hh-salesbot-remaster-feature.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-salesbot-remaster-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  feature-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify strict feature editor without customer/provider actions
+        run: node --test tests/crm-salesbot-feature-editor.test.mjs
+      - name: Audit Remaster package provenance before sandbox install
+        env:
+          npm_config_ignore_scripts: 'true'
+        run: |
+          set -euo pipefail
+          expected='sha512-5spbVptne6xnojsUzdsRV/pMubuakCR1KofcKNTMshWK0SsiqrjY3hrdYMjBsemny22DDJeWOtvGhnsmJ885Dw=='
+          actual="$(npm view @thenavidm/remaster@0.2.1 dist.integrity --json | tr -d '"\r\n')"
+          test "$expected" = "$actual"
+          npm install --prefix "$RUNNER_TEMP/hh-salesbot-remaster-bin" \
+            --no-audit --no-fund --no-package-lock --ignore-scripts \
+            @thenavidm/remaster@0.2.1
+      - name: Run real Remaster feature-mode research and truthful parity gate
+        timeout-minutes: 3
+        env:
+          HH_REMASTER_BIN: ${{ runner.temp }}/hh-salesbot-remaster-bin/node_modules/.bin/remaster
+          npm_config_ignore_scripts: 'true'
+        run: node scripts/benchmarking/salesbot-remaster-parity.mjs
+      - name: Save only anonymous functional-gate summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-salesbot-remaster-feature-parity
+          path: artifacts/benchmarking/salesbot-remaster-parity.json
+          retention-days: 3
+          if-no-files-found: warn

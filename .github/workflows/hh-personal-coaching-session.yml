@@ -1,0 +1,104 @@
+name: HH Personal Coaching Session
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - '.github/workflows/hh-personal-coaching-session.yml'
+      - 'lib/personal-coaching/**'
+      - 'lib/app/personal-coaching.js'
+      - 'lib/app/personal-coaching-catalog.js'
+      - 'lib/app/business-coaching.js'
+      - 'lib/business-coaching/program.js'
+      - 'components/app/personal-coaching*'
+      - 'components/app/tradition-coaching*'
+      - 'components/app/coaching-question-voice.jsx'
+      - 'components/app/business-coaching.jsx'
+      - 'components/app/my-courses-dashboard.jsx'
+      - 'components/app/my-course.jsx'
+      - 'components/app/development-program.jsx'
+      - 'components/direction-offers.tsx'
+      - 'components/academy-hub.tsx'
+      - 'components/academy-tradition-coaching-landing*'
+      - 'app/api/app/coaching/**'
+      - 'app/api/app/\[...path\]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
+      - 'app/api/app/personal-coaching/**'
+      - 'app/**/app/coaching/**'
+      - 'app/**/app/personal-coaching/**'
+      - 'tests/personal-coaching-session.test.mjs'
+      - 'tests/personal-coaching-voice.test.mjs'
+      - 'tests/personal-coaching-model-selection.test.mjs'
+      - 'tests/coaching-intelligence-p1.test.mjs'
+      - 'tests/coaching-intelligence-offline.test.mjs'
+      - 'tests/coaching-intelligence-state.test.mjs'
+      - 'components/coaching-action-plan.jsx'
+      - 'components/coaching-action-plan.module.css'
+      - 'supabase/migrations/*coaching_model_fit_comments*'
+      - 'supabase/migrations/*coaching_request_signals*'
+      - 'supabase/migrations/*coaching_topic_fit_weights*'
+      - 'tests/tradition-coaching-courses.test.mjs'
+      - 'tests/tradition-coaching-completion.test.mjs'
+      - 'tests/tradition-coaching-persistence.test.mjs'
+      - 'tests/coaching-author-audio.test.mjs'
+      - 'tests/coaching-audio-my-materials.test.mjs'
+      - 'tests/coaching-author-audio-synthetic.test.mjs'
+      - 'components/app/practice-materials.jsx'
+      - 'components/app/practice-materials.module.css'
+      - 'components/app/practice-workspace.jsx'
+      - 'components/practitioner-cabinet.jsx'
+      - 'lib/app/practitioner-access.js'
+      - 'lib/academy/coaching-audio-*.js'
+      - 'components/admin-coaching-audio*'
+      - 'app/admin/materials/coaching/**'
+      - 'app/admin/coaching-audio/**'
+      - 'middleware.ts'
+      - 'tests/business-coaching-90-days.test.mjs'
+      - 'tests/academy-discovery-hero.test.mjs'
+      - 'supabase/migrations/*personal_coaching*'
+      - 'supabase/migrations/*coaching_tradition*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: personal-coaching-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+jobs:
+  focused-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify private GROW model, old programme pause and course discovery
+        run: |
+          node --check lib/personal-coaching/questions.js
+          node --check lib/personal-coaching/speech-text.js
+          node --check lib/personal-coaching/model-matcher.js
+          for source in tests/coaching-intelligence-*.test.mjs lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js; do
+            node --check "$source"
+          done
+          node --check lib/app/personal-coaching-catalog.js
+          node --check lib/app/personal-coaching.js
+          node --check lib/personal-coaching/traditions.js
+          node --check lib/academy/coaching-audio-model.js
+          node --check lib/academy/coaching-audio-store.js
+          node --test tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/coaching-author-audio.test.mjs tests/coaching-author-audio-synthetic.test.mjs tests/coaching-audio-my-materials.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-completion.test.mjs tests/tradition-coaching-persistence.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
+      - name: Scoped eslint
+        run: npx --no-install eslint components/app/practice-materials.jsx components/app/practice-workspace.jsx components/practitioner-cabinet.jsx lib/app/practitioner-access.js components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/tradition-coaching-audio.jsx components/admin-coaching-audio.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/academy/coaching-audio-model.js lib/academy/coaching-audio-store.js app/admin/coaching-audio/data/route.js app/admin/materials/coaching/page.jsx app/admin/materials/coaching/\[tradition\]/page.jsx lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
+      - name: TypeScript noEmit
+        run: npx --no-install tsc --noEmit
+      - name: Build production Next.js
+        run: npm run build

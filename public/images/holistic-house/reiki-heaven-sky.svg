@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1500" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="sky" x1="0" x2=".2" y1="0" y2="1">
+  <stop stop-color="#cfeafa"/><stop offset=".24" stop-color="#e0f4ff"/><stop offset=".47" stop-color="#fffaf0"/><stop offset=".66" stop-color="#e6f6f9"/><stop offset="1" stop-color="#bfdfea"/>
+ </linearGradient>
+ <radialGradient id="sunlight"><stop stop-color="#fffef4"/><stop offset=".16" stop-color="#fffbe1" stop-opacity=".95"/><stop offset=".43" stop-color="#fff5c9" stop-opacity=".57"/><stop offset="1" stop-color="#fff1c6" stop-opacity="0"/></radialGradient>
+ <radialGradient id="sunWide"><stop stop-color="#fff4ca" stop-opacity=".45"/><stop offset="1" stop-color="#fef6df" stop-opacity="0"/></radialGradient>
+ <linearGradient id="farMount" x1="0" x2=".4" y1="0" y2="1"><stop stop-color="#a2bed0"/><stop offset="1" stop-color="#e0edf2"/></linearGradient>
+ <linearGradient id="ridge" x1="0" x2=".6" y1="0" y2="1"><stop stop-color="#88adc3"/><stop offset=".65" stop-color="#bfdae5"/><stop offset="1" stop-color="#eff6f3"/></linearGradient>
+ <linearGradient id="sea" x1="0" x2=".2" y1="0" y2="1"><stop stop-color="#d3eff4"/><stop offset=".55" stop-color="#c4e7f0"/><stop offset="1" stop-color="#a3d7e3"/></linearGradient>
+ <linearGradient id="lightReflection" x1="0" x2=".25" y1="0" y2="1"><stop stop-color="#fff6d4" stop-opacity=".8"/><stop offset="1" stop-color="#fff5de" stop-opacity="0"/></linearGradient>
+ <filter id="cloudBlur" x="-30%" y="-60%" width="170%" height="220%"><feGaussianBlur stdDeviation="30"/></filter>
+ <filter id="cloudSoft" x="-25%" y="-45%" width="150%" height="190%"><feGaussianBlur stdDeviation="13"/></filter>
+ <filter id="leafBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<rect width="900" height="1500" fill="url(#sky)"/>
+<ellipse cx="722" cy="585" rx="450" ry="440" fill="url(#sunWide)"/>
+<ellipse cx="712" cy="585" rx="252" ry="255" fill="url(#sunlight)"/>
+<circle cx="714" cy="585" r="24" fill="#fffef5" opacity=".8"/>
+<g fill="#fff" filter="url(#cloudBlur)" opacity=".84">
+ <ellipse cx="145" cy="178" rx="195" ry="56"/><ellipse cx="400" cy="256" rx="195" ry="48"/>
+ <ellipse cx="820" cy="176" rx="245" ry="53"/><ellipse cx="70" cy="506" rx="190" ry="77"/>
+ <ellipse cx="494" cy="488" rx="160" ry="50"/><ellipse cx="875" cy="770" rx="196" ry="75"/>
+ <ellipse cx="220" cy="1005" rx="322" ry="67"/><ellipse cx="630" cy="1086" rx="316" ry="79"/>
+</g>
+<g fill="#f8fdff" opacity=".72" filter="url(#cloudSoft)">
+ <path d="M-120 345Q-30 280 70 317 151 248 275 313 377 266 452 320T1030 323V380H-120Z"/>
+ <path d="M-80 655Q24 589 130 637 261 579 366 631 515 595 630 634 742 583 982 635V683H-80Z"/>
+ <path d="M-80 924Q52 853 218 912 350 847 470 916 611 876 745 905 857 842 1030 900V969H-80Z"/>
+</g>
+<path d="M0 845 95 811 145 837 233 728 323 818 385 775 479 837 584 725 650 810 737 707 811 795 900 746V1245H0Z" fill="url(#farMount)" opacity=".37"/>
+<path d="M460 968 528 832 590 888 672 738 734 807 785 755 851 869 900 831V1253H460Z" fill="url(#ridge)" opacity=".39"/>
+<path d="M660 773 673 740 689 778 718 805 739 707 774 786 792 759 827 815" stroke="#fffef7" stroke-width="8" fill="none" opacity=".24" stroke-linejoin="round"/>
+<path d="M0 1100Q153 1050 291 1063T569 1053Q735 1058 900 1028V1500H0Z" fill="url(#sea)" opacity=".45"/>
+<path d="M600 1062Q670 1003 716 869 743 998 799 1064L850 1500H531Z" fill="url(#lightReflection)" opacity=".43"/>
+<g fill="none" stroke="#fffefa" stroke-linecap="round" opacity=".49">
+ <path d="M626 1069h184" stroke-width="5"/><path d="M649 1090h141" stroke-width="4"/><path d="M620 1122h203" stroke-width="5"/>
+ <path d="M668 1159h131" stroke-width="3"/><path d="M622 1193h180" stroke-width="4"/><path d="M650 1239h143" stroke-width="3"/>
+</g>
+<g fill="#fff" filter="url(#cloudSoft)" opacity=".66">
+ <ellipse cx="118" cy="1092" rx="230" ry="52"/><ellipse cx="365" cy="1120" rx="220" ry="38"/>
+ <ellipse cx="715" cy="1152" rx="264" ry="42"/><ellipse cx="180" cy="1363" rx="304" ry="72"/>
+ <ellipse cx="566" cy="1430" rx="355" ry="85"/><ellipse cx="963" cy="1305" rx="245" ry="50"/>
+</g>
+<g opacity=".21" fill="#a4c4aa" filter="url(#leafBlur)">
+ <path d="M-76 110Q44 33 139-15 134 86 50 147 6 176-76 189Z"/>
+ <path d="M-65 195Q85 111 136 171 106 251-23 265Z"/>
+ <path d="M900 145Q801 99 810 12 897 42 965 123Z"/>
+ <path d="M900 1177Q818 1131 820 1052 923 1070 956 1164Z"/>
+ <path d="M-55 1220Q84 1129 131 1189 98 1271-42 1331Z"/>
+</g>
+</svg>

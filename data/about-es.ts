@@ -81,7 +81,7 @@ export const aboutEs: (typeof aboutBiography)['en'] = {
     body: 'Tu área personal está disponible mediante el enlace privado que has recibido.',
     prompt: '¿Necesitas tu enlace?',
     action: 'Contactar con Andy',
-    href: 'https://t.me/AndyTherapist',
+    href: '/es/contact',
   },
 };
 

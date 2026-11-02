@@ -1,26 +1,20 @@
-import { login } from './actions'
+import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { uiLocaleCookie } from '@/lib/ui-locale'
+import { PractitionerAutoEntry } from '@/components/practitioner-auto-entry'
+import { practitionerDestination } from '@/lib/app/practitioner-access'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { robots: { index: false, follow: false }, title: 'Practitioner Cabinet sign in' }
+export const metadata = { robots: { index: false, follow: false }, title: 'Practitioner Cabinet' }
 
+// Restore practitioner access through the verified Google owner bridge;
+// individual admin routes continue to enforce their own private session checks.
 export default async function PrescriptionAdminLogin({ searchParams }) {
-  const { error } = await searchParams
-  const ru = (await cookies()).get(uiLocaleCookie)?.value === 'ru'
-  const copy = ru
-    ? { label: 'Приватный доступ', title: 'Кабинет практика', description: 'Приватный доступ к рабочему кабинету и материалам клиентов.', field: 'Код доступа', error: 'Код доступа не принят. Попробуйте ещё раз позже.', submit: 'Продолжить' }
-    : { label: 'Private access', title: 'Practitioner Cabinet', description: 'Private access for practitioner tools and client records.', field: 'Access code', error: 'Access code was not accepted. Please try again later.', submit: 'Continue' }
-  return (
-    <main className="prescription-admin-shell">
-      <form className="prescription-admin-login" action={login}>
-        <p>Holistic House · {copy.label}</p>
-        <h1>{copy.title}</h1>
-        <span>{copy.description}</span>
-        <label>{copy.field}<input name="accessCode" type="password" autoComplete="current-password" inputMode="numeric" required /></label>
-        {error && <p role="alert">{copy.error}</p>}
-        <button type="submit">{copy.submit}</button>
-      </form>
-    </main>
-  )
+  const [params, jar] = await Promise.all([searchParams, cookies()])
+  // Only named server-owned destinations. Never follow arbitrary query-provided URLs.
+  const destination = ['growth', 'seo', 'acquisition', 'tools', 'youtubeConnect'].includes(params?.destination) ? params.destination : 'cabinet'
+  if (await requireAdminRequest()) redirect(practitionerDestination[destination])
+  const locale = jar.get(uiLocaleCookie)?.value === 'ru' ? 'ru' : 'en'
+  return <PractitionerAutoEntry locale={locale} destination={destination} authFailed={['failed', 'cancelled'].includes(params?.auth)} />
 }

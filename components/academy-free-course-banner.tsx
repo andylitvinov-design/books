@@ -1,4 +1,6 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -8,37 +10,40 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · FREE LEARNING",
     title: "Free AI courses & introductions",
-    subtitle: "One guided AI course and three free Reiki introductions.",
+    subtitle: "Two guided courses (one preview) and two free Reiki introductions.",
     count: "4 courses",
     open: "Choose a course",
     start: "Start course",
+    price: "Price · €0",
     details: "Details",
     note: "The Reiki introductions are free to explore; personal initiations need teacher confirmation. Stress Relief is education and support, not a substitute for professional care.",
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНОЕ ОБУЧЕНИЕ",
     title: "Бесплатные ИИ-курсы и вводные программы",
-    subtitle: "Один интерактивный ИИ-курс и три бесплатных знакомства с Рейки.",
+    subtitle: "Два интерактивных курса (один в предварительной версии) и два знакомства с Рейки.",
     count: "4 курса",
     open: "Выбрать курс",
     start: "Пройти",
+    price: "Цена · €0",
     details: "Детали",
     note: "Вводные материалы Рейки бесплатны, личная инициация — по согласованию. «ОПОРА» — образовательная поддержка, не замена профессиональной помощи.",
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · APRENDIZAJE GRATIS",
     title: "Cursos de IA e introducciones gratis",
-    subtitle: "Un curso interactivo de IA y tres introducciones gratuitas a Reiki.",
+    subtitle: "Dos cursos interactivos (uno preliminar) y dos introducciones a Reiki.",
     count: "4 cursos",
     open: "Elegir un curso",
     start: "Empezar",
+    price: "Precio · €0",
     details: "Detalles",
     note: "Las introducciones a Reiki son gratuitas; las iniciaciones personales requieren confirmación. OPORA se abre en inglés y ofrece apoyo educativo, no atención clínica.",
   },
 } as const;
 
-// Reuse published learning paths. Only OPORA is currently a self-guided AI course;
-// the Reiki entries are existing introductory lessons/materials, not AI enrolments.
+// Reuse published learning paths. OPORA is the account-saved course; Energywork
+// is an educational preview without durable answers until the secure API ships.
 const courses = [
   {
     id: "stress",
@@ -67,32 +72,32 @@ const courses = [
   {
     id: "energywork",
     image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
-    path: "principles-of-energywork",
-    detailsPath: null,
+    path: "principles-of-energywork/learn",
+    detailsPath: "academy/principles-of-energywork",
     en: {
-      type: "FREE INTRODUCTORY COURSE",
+      type: "INTERACTIVE COURSE · PREVIEW",
       title: "Principles of Energywork",
-      description: "A clear introduction to energy practices and three Reiki traditions.",
-      duration: "Study at your own pace",
+      description: "Guided slides, original videos and reflections. Private save and resume after Google sign-in.",
+      duration: "At your own pace",
     },
     ru: {
-      type: "БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС",
+      type: "ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ",
       title: "Основы энергетики",
-      description: "Первые шаги в энергопрактиках и знакомство с тремя системами Рейки.",
+      description: "Слайды, авторские видео и рефлексия. Сохранение и продолжение после входа через Google.",
       duration: "В своём темпе",
     },
     es: {
-      type: "CURSO INTRODUCTORIO GRATIS",
+      type: "CURSO INTERACTIVO · VISTA PREVIA EN INGLÉS",
       title: "Principios del trabajo energético",
-      description: "Primeros pasos en prácticas energéticas y tres tradiciones Reiki.",
+      description: "Lecciones, vídeos originales y reflexiones. Guardado privado tras iniciar sesión.",
       duration: "A tu ritmo",
     },
   },
   {
     id: "tantra-reiki",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
     path: "reiki/tantra-reiki/free-initiation",
-    detailsPath: null,
+    detailsPath: "academy/reiki/tantra-reiki/free-initiation",
     en: {
       type: "FREE LEVEL 1 INTRODUCTION",
       title: "Tantra Reiki",
@@ -116,7 +121,7 @@ const courses = [
     id: "reiki-yggdrasil",
     image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
     path: "reiki/yggdrasil/free-initiation",
-    detailsPath: null,
+    detailsPath: "academy/reiki/yggdrasil/free-initiation",
     en: {
       type: "FREE LEVEL 1 INTRODUCTION",
       title: "Reiki Yggdrasil",
@@ -163,16 +168,19 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
           <div className={styles.courses}>
             {courses.map((course) => {
               const info = course[locale];
+              // Every Reiki "Start course" CTA opens the same interactive course.
+              // Separate "Details" links preserve each Level 1 initiation guide.
               const href = course.id === "stress"
                 ? `/${courseLocale}/${course.path}`
-                : `/${locale}/academy/${course.path}`;
+                : REIKI_FREE_COURSE_PATH;
               return (
                 <article className={styles.course} key={course.id} data-free-course-id={course.id}>
                   <span className={styles.photo}>
-                    <Image src={course.image} alt="" fill sizes="(max-width: 540px) 96px, 132px" />
+                    <Image src={cardArtworkUrl(course.image)} unoptimized={hasCardArtwork(course.image)} alt="" fill sizes="(max-width: 540px) 96px, 132px" />
                   </span>
                   <div className={styles.courseContent}>
                     <span className={styles.courseType}>{info.type}</span>
+                     <span className={styles.pricePill}>{t.price}</span>
                     <h3>{info.title}</h3>
                     <p>{info.description}</p>
                     <div className={styles.courseFooter}>

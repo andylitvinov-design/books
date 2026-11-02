@@ -18,7 +18,7 @@ test("Academy introduces the new Principles of Energywork course in all public l
   assert.match(hub, /"\/" \+ locale \+ "\/academy\/principles-of-energywork"/);
   assert.match(hub, /if \(direction === "reiki"\)/);
   assert.match(sitemap, /"\/principles-of-energywork"/);
-  for (const marker of ["en:", "ru:", "es:", "Principles of Energywork", "Принципы энергетической работы", "Principios del trabajo energético"]) {
+  for (const marker of ["en:", "ru:", "es:", "Free Course Reiki Practitioner: Study & Initiation", "Бесплатный курс «Практик Рейки»: обучение и инициация", "Curso gratis Reiki Practitioner: estudio e iniciación"]) {
     assert.ok(component.includes(marker), "Missing locale or course title: " + marker);
   }
 });

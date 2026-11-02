@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Compass, ScrollText } from "lucide-react";
 
@@ -186,7 +187,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                 </div>
               </div>
               <div className="temple-hero-image">
-                <Image src="/library/maya-mysteries/media/post-244-1.jpg" alt="" fill priority sizes="(max-width: 900px) 100vw, 35vw" />
+                <Image src={cardArtworkUrl("/library/maya-mysteries/media/post-244-1.jpg", "feature")} unoptimized alt="" fill priority sizes="(max-width: 900px) 100vw, 35vw" />
               </div>
             </header>
 
@@ -232,7 +233,7 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                   <section id={"temple-" + stage.id} className="temple-stage" key={stage.id} aria-labelledby={"temple-title-" + stage.id}>
                     {(legacyAliases[stage.id] ?? []).map((alias) => <span className="temple-anchor-alias" id={alias} key={alias} />)}
                     <div className="temple-stage-cover">
-                      <Image src={stage.image} alt="" fill sizes="(max-width: 900px) 100vw, 75vw" />
+                      <Image src={cardArtworkUrl(stage.image, "feature")} unoptimized={hasCardArtwork(stage.image)} alt="" fill sizes="(max-width: 900px) 100vw, 75vw" />
                       <div className="temple-stage-cover-label">{String(index + 1).padStart(2, "0")} / 07</div>
                     </div>
                     <div className="temple-stage-reading">

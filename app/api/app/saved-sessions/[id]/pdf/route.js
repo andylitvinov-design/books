@@ -29,7 +29,7 @@ export async function GET(request,{params}){
       buildPrescriptionPdf(doc,locale,metadataBaseFor().origin)
     return auth.apply(new NextResponse(bytes,{headers:{...PRIVATE_HEADERS,
       'Content-Type':'application/pdf',
-      'Content-Disposition':'attachment; filename="holistic-house-saved-session.pdf"'}}))
+      'Content-Disposition':(new URL(request.url).searchParams.get('preview')==='1'?'inline':'attachment')+'; filename="holistic-house-saved-session.pdf"'}}))
   }catch{
     return new NextResponse(null,{status:404,headers:PRIVATE_HEADERS})
   }

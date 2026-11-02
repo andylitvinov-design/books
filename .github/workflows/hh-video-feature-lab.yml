@@ -1,0 +1,58 @@
+name: HH Video Studio feature lab (official docs, no competitor access)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [codex/public-book-library]
+    paths:
+      - 'tools/video-feature-lab/**'
+      - '.github/workflows/hh-video-feature-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-video-feature-lab-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  offline-feature-research:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test first-party code evidence and fail-closed reference format
+        run: |
+          node --test tools/video-feature-lab/run.test.mjs
+          node tools/video-feature-lab/run.mjs --json > /dev/null
+      - name: Install only audited pinned Remaster in disposable CI directory
+        timeout-minutes: 3
+        env:
+          npm_config_ignore_scripts: 'true'
+        run: |
+          set -euo pipefail
+          expected='sha512-5spbVptne6xnojsUzdsRV/pMubuakCR1KofcKNTMshWK0SsiqrjY3hrdYMjBsemny22DDJeWOtvGhnsmJ885Dw=='
+          actual="$(npm view @thenavidm/remaster@0.2.1 dist.integrity --json | tr -d '"\r\n')"
+          test "$actual" = "$expected"
+          npm install --prefix "$RUNNER_TEMP/hh-video-remaster" \
+            --no-audit --no-fund --no-package-lock --ignore-scripts \
+            @thenavidm/remaster@0.2.1
+      - name: Run genuine Remaster feature init, source and parity checks (NO Canva traffic)
+        timeout-minutes: 3
+        env:
+          HH_REMASTER_BIN: ${{ runner.temp }}/hh-video-remaster/node_modules/.bin/remaster
+        run: node tools/video-feature-lab/run.mjs --remaster > /dev/null
+      - name: Attach own-code readiness only, no screenshots or private data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-video-feature-docs-remaster
+          path: artifacts/benchmarking/video-studio-feature-lab.json
+          retention-days: 3
+          if-no-files-found: warn

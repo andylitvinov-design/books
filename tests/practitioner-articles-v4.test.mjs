@@ -62,7 +62,7 @@ test('article visibility and auth are wired through existing isolated backend',a
  assert.match(repo,/revision=revision\+1/)
  assert.match(repo,/published=\$2/)
  assert.match(repo,/p\.status in\('approved','submitted','changes_requested'\)/)
- assert.match(api,/articleRepo\.mine\(actor\)/)
+ assert.match(api,/articleRepo\.library\(actor\)/)
  assert.match(api,/articleRepo\.submit\(actor/)
  assert.match(admin,/requireAdminRequest/)
  assert.match(admin,/requireSameOrigin/)

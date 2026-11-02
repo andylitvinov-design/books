@@ -22,15 +22,19 @@ test('public test hero reuses the home palette and photo while keeping the exist
   assert.ok(routeCss.includes('Public My Tests entry echoes the approved warm homepage masthead'))
 })
 
-test('the new entrance leads to the functioning first step, not a fake action', () => {
-  assert.match(picker, /href="#hh-simple-topic-title"/)
+test('the compact public finder links to tests, courses and assistance without losing the real topic and recommendations sections', () => {
+  assert.ok(picker.includes('<DiscoverySectionTabs locale={locale} active="tests" />'))
+  const tabs=read('components/discovery-section-tabs.tsx')
+  assert.match(tabs, /\/client\/tests/)
+  assert.match(tabs, /\/academy\/free-ai-courses/)
+  assert.match(tabs, /\/services/)
+  assert.match(tabs, /\/events/)
   assert.match(picker, /id="hh-simple-topic-title"/)
-  assert.match(picker, /href="#hh-simple-recommendations"/)
   assert.match(picker, /id="hh-simple-recommendations"/)
   assert.match(css, /\.shell :global\(#hh-simple-topic-title\)\{scroll-margin-top:115px\}/)
   assert.match(picker, /TOPICS\.map/)
   assert.match(picker, /onToggleFocus\(key\)/)
-  assert.match(picker, /problemsForTopics\(focus\)/)
+  assert.match(picker, /problemsForTopics\(concernFocus\)/)
   assert.match(picker, /onToggleProblem\(problem\.key\)/)
   assert.ok(picker.includes('<details className={styles.advanced} id="hh-more-test-filters">'))
 })

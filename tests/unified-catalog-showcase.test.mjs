@@ -19,7 +19,8 @@ test("Services leads with free tests and five photo cards while Home preserves f
   assert.doesNotMatch(services, /<FreeInsightsPaths/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.doesNotMatch(services, /<CatalogShowcase/);
-  assert.match(academy, /CatalogShowcase/);
+  assert.match(academy, /AcademyCourseItem/);
+  assert.match(read("components", "academy-discovery.tsx"), /<AcademyCourseCardList/);
   assert.match(library, /CatalogShowcase/);
   assert.match(academy, /academy-featured-yggdrasil/);
   assert.match(academy, /academy-featured-tantra-reiki/);
@@ -70,7 +71,7 @@ test("core offer links lead to distinct native EN/RU pages, with optional method
   for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) {
     assert.ok(offers.includes('route: "' + route + '"'), route);
   }
-  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
+  for (const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"]) {
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'), slug);
   }
   assert.match(ui, /id="methods"/);

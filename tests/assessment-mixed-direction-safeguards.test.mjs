@@ -40,7 +40,7 @@ for (const [key, count, goal] of affected) for (const locale of ['en', 'ru']) {
       assert.deepEqual(profile.priority, [])
       assert.deepEqual(courseSuggestedFocus(profile), [])
       // Saved choices are a separate contract: do not remove or reinterpret them.
-      assert.equal(goalForChosenScale(row.id, locale), goal)
+      assert.equal(goalForChosenScale(row.id, locale), null, 'No new automatic goal from a historical mixed total')
       assert.deepEqual(courseContinuationGoals([row.id]), [goal])
       assert.deepEqual(courseNextCycleScaleKeys([row.id], goal), [row.id])
       const historical = coursePracticeFocus([row.id], 'inner_support', 1, locale)

@@ -1,3 +1,5 @@
+import { advanceSavedGuidedQuestion } from './helpers/guided-progress-verifier.mjs'
+import { openAccountTestPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
  await expect(action).toHaveCount(1)
@@ -26,6 +28,7 @@ async function publicTopicButton(picker, locale, title) {
  await expect(button).toBeVisible()
  return button
 }
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
@@ -158,14 +161,7 @@ async function openAccountRelationshipPicker(target){
  await expect(target).toHaveURL(origin+'/en/app/tests')
  const dashboard=target.locator('[data-my-tests-dashboard]')
  await expect(dashboard).toBeVisible()
- const explorer=target.locator('#my-test-explorer')
- if(!(await explorer.isVisible())){
-  const open=dashboard.getByRole('button',{name:/^(Open test filters|Review test filters)/})
-  await expect(open).toHaveCount(1)
-  await open.click()
- }
- await expect(explorer).toHaveCount(1)
- await expect(explorer).toBeVisible()
+ const explorer=await openAccountTestPicker(target,expect)
  const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
  await expect(browse).toHaveCount(1)
  await browse.click()
@@ -204,7 +200,14 @@ async function relationshipChoice(picker,key){
  for(let batch=0;await choice.count()===0&&batch<Math.ceil(MONITORING_CATALOG.length/5);batch++){
   const more=picker.getByRole('button',{name:/^Show \d+ more tests$/})
   await expect(more).toHaveCount(1)
+  const list=picker.locator('#hh-public-recommended-tests')
+  const before=Number(await list.getAttribute('data-visible-test-count'))
+  const batchSize=Number((await more.innerText()).match(/Show (\d+) more tests/)[1])
+  assert.ok(Number.isInteger(before)&&before>0)
+  assert.ok(batchSize>=1&&batchSize<=5)
+  console.log('RELATIONSHIP_PICKER_EXPANSION',JSON.stringify({key,batch,before,batchSize}))
   await more.click()
+  await expect(list).toHaveAttribute('data-visible-test-count',String(before+batchSize))
  }
  await expect(choice).toHaveCount(1)
  await expect(choice).toBeVisible()
@@ -334,7 +337,7 @@ async function fill(page,d,mode,guest,locale){
   const saved=page.waitForResponse(r=>r.url().includes('/runs/')&&r.url().endsWith('/save')&&r.request().method()==='POST')
   await buttons.nth([0,1,4,4,2,0][i]).click()
   assert.ok((await saved).ok())
-  if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
+  if(mode==='guided'&&i<d.questions.length-1)await advanceSavedGuidedQuestion(page,expect,{locale,progress:i+1,guest})
  }
  const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
@@ -388,8 +391,18 @@ try{
   await expect(choices).toHaveCount(4)
   assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicChoice)),['trust','boundaries','conflict','presence'])
   const actions=journey.locator('[data-topic-action]')
-  await expect(actions).toHaveCount(4)
-  assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicAction)),['tests','browse','course','review'])
+  await expect(actions).toHaveCount(5)
+  assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicAction)),['tests','browse','course','review','consultation'])
+  // Owner #996 adds an optional public service action; it does not replace the free paths.
+  const consultationAction=journey.locator('a[data-topic-action="consultation"]')
+  await expect(consultationAction).toHaveCount(1)
+  await expect(consultationAction).toBeVisible()
+  await expect(consultationAction).toHaveAttribute('data-topic-service','relationships')
+  await expect(consultationAction).toHaveAttribute('href','/'+locale+'/services/systemic-constellations')
+  await expect(consultationAction.locator('strong')).toHaveText(locale==='ru'?'Обсудить тему лично с Андреем':'Discuss this topic with Andrey')
+  await expect(consultationAction.locator('small')).toHaveText(locale==='ru'
+   ?'Необязательная сессия независимо от баллов теста: €50 / 30 мин или €100 / 60 мин.'
+   :'Optional personal session, independent of your test scores. €50 / 30 min or €100 / 60 min.')
   const testsAction=journey.locator('button[data-topic-action="tests"]')
   await expect(testsAction).toHaveAttribute('type','button')
   await expect(testsAction).toBeEnabled()
@@ -519,14 +532,15 @@ try{
  page=await diagnosticPage(account,'account')
  await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  // Exercise the primary topic action through the existing isolated auth and plan API.
  // This is a button that saves its two recommendations, not the full-catalog link.
  const relationshipJourney=TOPIC_JOURNEYS.find(journey=>journey.id==='relationships')
@@ -622,6 +636,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const file=await downloadAccountReport(page,locale),bytes=await readFile(await file.path())
   assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');assert.ok(bytes.length>12000)
   await file.saveAs(output+'/report-'+locale+'.pdf')

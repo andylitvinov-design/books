@@ -54,7 +54,8 @@ test("home SEO preserves visible photo offers and bottom blue free capture in EN
   assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
   assert.doesNotMatch(home, /data-home-path|data-home-extra-paths|service-home-more|service-home-progress/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
-  for (const comp of ["HomeFreeTestsBanner", "ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
+  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
+  for (const comp of ["ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
     assert.ok(home.includes("<" + comp), comp);
   }
   assert.match(spanish, /href="\/es\/services\/free-situation-review"/);
@@ -72,4 +73,16 @@ test("linked data represents actual organization/person without invented regulat
   assert.match(layout, /twitter:/);
   assert.match(read("app/[locale]/services/page.tsx"), /es: "\/es\/services"/);
   assert.doesNotMatch(read("components/holistic-house-home.tsx"), /fake-testimonial|stock-avatar/);
+});
+
+test("EN and RU home meta descriptions match the current paid and free offers within crawler limits", () => {
+  const source = read("lib/home-seo.ts");
+  const descriptions = [...source.matchAll(/description: "([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(descriptions.length, 2);
+  for (const description of descriptions)
+    assert.ok(description.length >= 100 && description.length <= 160, "Invalid home SEO length: " + description.length);
+  assert.match(descriptions[0], /Toronto and online sessions from €50/);
+  assert.match(descriptions[0], /free written review/);
+  assert.match(descriptions[1], /Торонто и онлайн/);
+  assert.match(descriptions[1], /бесплатный письменный разбор/);
 });

@@ -72,7 +72,7 @@ export default async function AuthenticatedSavedDocument({ params }) {
         </nav>
         {payment
           ? <PaymentDocument document={saved.document} locale={locale} embedded />
-          : <PrescriptionDocument document={saved.document} locale={locale} embedded />}
+          : <PrescriptionDocument document={saved.document} locale={locale} embedded narration={{scope:'saved-document',id}} />}
         {!payment&&<ReportFinalActions locale={locale} mode="saved"/>}
         <details className="hh-saved-document-reader__management">
           <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>

@@ -51,6 +51,13 @@ test('My Courses keeps the selected route without overriding legacy lesson versi
  assert.match(selector,/moduleId=\{course\?\.moduleChoice\?\.id\|\|null\}/)
  assert.match(selector,/routerVersion=\{course\?\.moduleChoice\?\.version\|\|null\}/)
  assert.match(daily,/oporaModuleRouter/)
- assert.match(seo,/6 учебных этапов/)
- assert.match(seo,/6 курсов по 14 дней|Six 14-Day Courses/)
+ // Current public copy promises one programme with six personalized routes,
+ // not six independent courses. Route selection and stored versions stay pinned.
+ assert.match(seo,/14 занятий · 6 маршрутов/)
+ assert.match(seo,/14 Days & 6 Learning Paths/)
+ assert.match(seo,/14 días y 6 rutas/)
+ assert.match(seo,/Клинический маршрут — только со специалистом/)
+ assert.match(seo,/The clinical path requires a professional/)
+ assert.match(seo,/La ruta clínica requiere un profesional/)
+ assert.doesNotMatch(seo,/6 курсов по 14 дней|Six 14-Day Courses/)
 })

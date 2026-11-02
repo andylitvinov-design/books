@@ -27,6 +27,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { createArticleRepository } from '../lib/practitioners/article-repository.js'
 import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
@@ -641,6 +642,98 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('selected public master alias: real owner transaction, collision, RLS and old URL permanence',async()=>{
+  const before=await practiceRepo.getMyPractice(a)
+  const originalSlug=before.practitioner.slug
+  const first='qa-master-a'
+  const second='qa-master-a-renamed'
+  assert.deepEqual(await practiceRepo.checkPublicAlias(a,first),{
+    alias:first,available:true,mine:false,
+  })
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:first}),{
+    alias:first,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,first)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+  await assert.rejects(()=>practiceRepo.savePublicAlias(b,{alias:first}),e=>e?.code==='ALIAS_TAKEN')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'admin'}),e=>e?.code==='ALIAS_RESERVED')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'bad--alias'}),e=>e?.code==='INVALID_ALIAS')
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query(
+    'select alias from app.practitioner_profile_aliases'
+  )),e=>e?.code==='42501')
+  const unauthorized=await rawAs(b,'hh_app_backend',db=>db.query(
+    'update app.practitioner_profile_aliases set is_primary=false where alias=$1',[first],
+  ))
+  assert.equal(unauthorized.rowCount,0,'Other masters cannot change this URL even with the backend SQL role')
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:second}),{
+    alias:second,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,second)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug,
+    'Previously shared/printed link must keep working')
+  assert.equal(await practiceRepo.resolvePublicAlias(second),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(a,first)).mine,true)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+})
+
+test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
+ const articleRepo=createArticleRepository(config)
+ const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})
+ assert.equal(folder.name,'Synthetic QA Remedy Cards')
+ await assert.rejects(()=>articleRepo.createFolder(a,{name:' synthetic qa remedy cards '}),{code:'FOLDER_EXISTS'})
+ const article=await articleRepo.save(a,null,{
+  draft:{
+   locale:'ru',title:'Synthetic QA article',
+   excerpt:'Synthetic article for checking owner-only folders and private publication.',
+   body:'## Описание\n\n'+('Тестовый безопасный материал для проверки структуры. ').repeat(7),
+   coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:['Тест','Test'],
+  },
+  folderId:folder.id,
+ })
+ assert.equal(article.folderId,folder.id)
+ assert.deepEqual(article.draft.tags,['Тест','Test'])
+ const mine=await articleRepo.library(a)
+ assert.ok(mine.folders.some(x=>x.id===folder.id))
+ assert.ok(mine.items.some(x=>x.id===article.id))
+ const others=await articleRepo.library(b)
+ assert.equal(others.items.some(x=>x.id===article.id),false)
+ assert.equal(others.folders.some(x=>x.id===folder.id),false)
+ await assert.rejects(()=>articleRepo.renameFolder(b,folder.id,{name:'Not yours',expectedRevision:0}),
+   e=>['REVISION_CONFLICT','PRACTITIONER_REQUIRED'].includes(e.code))
+ const renamed=await articleRepo.renameFolder(a,folder.id,{name:'Renamed QA folder',expectedRevision:folder.revision})
+ assert.equal(renamed.name,'Renamed QA folder')
+ assert.equal(renamed.revision,1)
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ await articleRepo.removeFolder(a,renamed.id)
+ const after=(await articleRepo.library(a)).items.find(x=>x.id===article.id)
+ assert.equal(after.folderId,null,'folder deletion must keep its linked article in Unfiled')
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ const submitted=await articleRepo.submit(a,article.id,{expectedRevision:after.revision})
+ assert.equal(submitted.status,'submitted')
+ const approved=await articleRepo.moderate(article.id,{action:'approve'})
+ assert.equal(approved.status,'published')
+ const publicArticle=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publicArticle.published.title,'Synthetic QA article')
+ assert.equal(Object.hasOwn(publicArticle,'draft'),false)
+ assert.equal(Object.hasOwn(publicArticle,'folderId'),false)
+ assert.equal(Object.hasOwn(publicArticle,'reviewNote'),false)
+ const publicList=(await articleRepo.publicList('ru')).find(x=>x.id===article.id)
+ assert.ok(publicList)
+ assert.equal(Object.hasOwn(publicList,'draft'),false)
+ const changed=await articleRepo.save(a,article.id,{
+  expectedRevision:approved.revision,
+  folderId:null,
+  draft:{...approved.draft,body:approved.draft.body+'\n\nPRIVATE_PENDING_CHANGES'},
+ })
+ assert.notEqual(changed.draft.body,approved.published.body)
+ const publishedAgain=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publishedAgain.published.body,approved.published.body)
+ assert.equal(Object.hasOwn(publishedAgain,'draft'),false)
+ await articleRepo.archive(a,article.id,{expectedRevision:changed.revision})
+ await assert.rejects(()=>articleRepo.publicArticle('ru',article.slug),{code:'NOT_FOUND'})
+})
+
 test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
   const owned=(await practiceRepo.getMyPractice(a)).services.find(s=>s.status==='published')
   assert.ok(owned,'Fixture must contain published service for Practitioner A')
@@ -669,6 +762,32 @@ test('public service funnel stores daily clicks and keeps practitioner report pr
     () => rawAs(a,'authenticated',db=>db.query('select * from app_private.service_funnel_daily')),
     error => error?.code === '42501',
   )
+})
+
+test('isolated service photos fixture matches the observed existing JSON-array contract', async () => {
+  const owned = (await practiceRepo.getMyPractice(a)).services.find(service => service.status === 'published')
+  assert.ok(owned, 'Use the existing synthetic published-service fixture')
+  assert.deepEqual(owned.photos, [], 'The existing column defaults to an empty JSON array')
+  const db = await adminClient()
+  try {
+    await db.query('begin')
+    const photos = Array.from({ length: 5 }, (_, index) => `https://example.invalid/synthetic-photo-${index}.jpg`)
+    const result = await db.query('update app.service_offerings set photos=$1::jsonb where id=$2 returning photos', [JSON.stringify(photos), owned.id])
+    assert.deepEqual(result.rows[0].photos, photos)
+    for (const [invalid, code] of [[{}, '23514'], [Array(6).fill('synthetic'), '23514'], [null, '23502']]) {
+      await db.query('savepoint invalid_photos')
+      await assert.rejects(
+        db.query('update app.service_offerings set photos=$1::jsonb where id=$2', [invalid === null ? null : JSON.stringify(invalid), owned.id]),
+        error => error.code === code,
+      )
+      await db.query('rollback to savepoint invalid_photos')
+      assert.deepEqual((await db.query('select photos from app.service_offerings where id=$1', [owned.id])).rows[0].photos, photos)
+    }
+  } finally {
+    await db.query('rollback')
+    await db.end()
+  }
+  assert.deepEqual((await practiceRepo.getMyPractice(a)).services.find(service => service.id === owned.id).photos, [])
 })
 
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
@@ -1136,6 +1255,32 @@ function minimumMonitoringAnswers(definition) {
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
   assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {
@@ -1903,7 +2048,10 @@ test('private session share grants enforce per-consultation ownership under real
     await db.query('create schema if not exists storage')
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
     const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)

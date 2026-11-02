@@ -48,3 +48,248 @@
 /* The Holistic House mobile tab bar overlays the visual viewport. Aligning the
    opened panel with this safety margin keeps both messenger buttons tappable. */
 .panel { scroll-margin-block: 100px 118px; }
+
+
+.enquiryForm { display:grid; gap:9px; }
+.enquiryForm label { color:#294763; font:750 12px/1.3 Arial,Helvetica,sans-serif; }
+.enquiryForm textarea {
+  box-sizing:border-box; display:block; resize:vertical; width:100%; min-height:91px;
+  border:1px solid #bacbd9; border-radius:10px; background:#fff;
+  color:#213c55; padding:12px; font:400 14px/1.5 Arial,Helvetica,sans-serif;
+}
+.enquiryForm textarea:focus-visible, .submit:focus-visible, .again:focus-visible {
+  outline:3px solid #80abc7; outline-offset:2px;
+}
+.privateNote { color:#6a7885; font:11px/1.5 Arial,Helvetica,sans-serif; }
+.submit {
+  cursor:pointer; width:100%; min-height:49px; display:flex; gap:9px;
+  align-items:center; justify-content:center; border:0; border-radius:11px;
+  color:#fff; background:#147b79; padding:11px 14px;
+  font:750 14px/1.3 Arial,Helvetica,sans-serif;
+}
+.submit:not(:disabled):hover { background:#106965; }
+.submit:disabled { opacity:.55; cursor:not-allowed; }
+.error { margin:0; color:#9e3140; font:650 12px/1.45 Arial,Helvetica,sans-serif; }
+.saved {
+  margin:0 0 7px; padding:9px 11px; border-radius:9px; background:#e3f1e9;
+  color:#23624c; font:750 12px/1.4 Arial,Helvetica,sans-serif;
+}
+.next { margin:0 0 12px; color:#3c596e; font:500 12px/1.45 Arial,Helvetica,sans-serif; }
+.again {
+  margin-top:8px; min-height:35px; padding:5px 3px; color:#346b8a;
+  background:transparent; border:0; cursor:pointer;
+  text-decoration:underline; font:650 11px/1.4 Arial,Helvetica,sans-serif;
+}
+
+/* Opt-in lead registration: readable form in narrow course/service offer cards. */
+.contactFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.contactFields label { display:grid; align-content:start; gap:5px; min-width:0; }
+.contactFields label:first-child { grid-column:1 / -1; }
+.contactFields input {
+  width:100%; min-width:0; min-height:44px; box-sizing:border-box;
+  border:1px solid #bacbd9; border-radius:9px; background:white;
+  padding:10px; color:#213c55; font:400 14px/1.4 Arial,Helvetica,sans-serif;
+}
+.contactFields input:focus-visible, .consent input:focus-visible { outline:3px solid #80abc7; outline-offset:2px; }
+.consent { display:flex; align-items:flex-start; gap:9px; line-height:1.5 !important; cursor:pointer; }
+.consent input { width:19px; height:19px; flex:none; accent-color:#147b79; margin:0; }
+.consent span { flex:1; }
+.honeypot { position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden; }
+@container (max-width:340px) {
+  .contactFields { grid-template-columns:1fr; }
+}
+
+/* Optional notes stay out of the first mobile screen: name, reply contact and
+   consent are the only required registration inputs. */
+.optionalNote { min-width:0; border:1px solid #c9d9e1; border-radius:10px; background:#fff; }
+.optionalNote > summary {
+  box-sizing:border-box; min-height:44px; padding:11px 12px;
+  cursor:pointer; font:650 13px/1.45 Arial,Helvetica,sans-serif;
+  color:#375872; list-style-position:inside;
+}
+.optionalNote > summary:focus-visible { outline:3px solid #80abc7; outline-offset:2px; }
+.optionalNote[open] { padding-bottom:10px; }
+.optionalNote[open] > textarea { margin:0 10px 8px; width:calc(100% - 20px); }
+.optionalNote[open] > .privateNote { display:block; margin:0 10px; }
+
+/* Reserve actual scrollable space below expanded intake on mobile; the fixed
+   HH tab bar and iPhone safe-area must not cover the optional messenger links. */
+@media(max-width:600px) {
+  .wrapper[data-open="true"] { padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
+  .choices a { scroll-margin-block:110px 140px; }
+}
+
+.contactFields .phoneField{grid-column:1/-1;display:grid;gap:5px;min-width:0}
+.phoneField label{display:block}
+.contactFields .phoneField input,.contactFields .phoneField select{font-size:16px}
+
+/* Compact, opt-in registration: one reply field at a time and optional Google. */
+.googleButton {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  min-height:48px; width:100%; padding:9px 13px; border:1px solid #b9ccd8;
+  border-radius:11px; background:white; color:#243e5d; cursor:pointer;
+  font:750 14px/1.3 Arial,Helvetica,sans-serif;
+}
+.googleMark {
+  display:grid; place-items:center; width:22px; height:22px; flex:none;
+  font:800 20px/1 Arial,Helvetica,sans-serif;
+  color:#4285f4; background:white;
+}
+.googleButton:disabled { opacity:.6; cursor:wait; }
+.googleReady { margin:0; font:650 12px/1.4 Arial,Helvetica,sans-serif; color:#196756; }
+.separator { display:flex; align-items:center; gap:12px; margin:0; color:#65798b;
+  text-align:center; font:600 11px/1.5 Arial,Helvetica,sans-serif; }
+.separator::before,.separator::after { content:""; flex:1; border-top:1px solid #d5e0e7; }
+.methodChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px;
+  border-radius:11px; background:#e8f1f5; padding:4px; }
+.methodChoices button { min-height:44px; border:1px solid transparent; border-radius:8px;
+  padding:8px 5px; background:transparent; color:#34576e; cursor:pointer;
+  font:750 13px/1.3 Arial,Helvetica,sans-serif; }
+.methodChoices button[aria-pressed="true"] { background:white; color:#204b58;
+  border-color:#c4d9df; box-shadow:0 1px 3px rgba(25,54,84,.09); }
+.methodChoices button:disabled { cursor:not-allowed; opacity:.65; }
+.contactFields { grid-template-columns:minmax(0,1fr); gap:0; }
+.contactFields label:first-child { grid-column:auto; }
+.contactFields input,.optionalName input { font-size:16px; }
+.optionalName { border:1px solid #d1dee6; border-radius:10px; background:#fff; min-width:0; }
+.optionalName > summary { cursor:pointer; min-height:40px; padding:10px 12px; box-sizing:border-box;
+  font:650 12px/1.4 Arial,Helvetica,sans-serif; color:#3a6175; list-style-position:inside; }
+.optionalName > label { display:grid; gap:5px; margin:0 10px 10px; }
+.optionalName input { width:100%; min-height:44px; box-sizing:border-box; border:1px solid #bacbd9;
+  border-radius:9px; padding:9px 10px; color:#213c55; background:white; }
+.privacy { margin-top:8px; }
+.privacy > summary { cursor:pointer; font:600 11px/1.5 Arial,Helvetica,sans-serif; color:#65798b; }
+.privacy .note { margin-top:5px; }
+.googleButton:focus-visible,.methodChoices button:focus-visible,.optionalName summary:focus-visible,
+.optionalName input:focus-visible,.privacy summary:focus-visible {
+  outline:3px solid #80abc7; outline-offset:2px;
+}
+.enquiryForm input { scroll-margin-bottom:170px; }
+@container (max-width: 300px) {
+  .methodChoices { grid-template-columns:1fr; }
+}
+
+/* Inline 1-step requests: no nested card or extra fields. Submission is an
+   affirmative reply-only action; never an advertising subscription. */
+.wrapper[data-quick="true"] { padding-bottom:0 !important; }
+.quickPanel { margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.quickPanel .enquiryForm { gap:8px; }
+/* Real thumb-sized, stable React checkbox for the one-response consent.
+   Preserve the native input and label association; no synthetic opt-in. */
+.quickPanel .consent { min-height:48px; align-items:center; }
+.quickPanel .consent input { width:28px; height:28px; cursor:pointer; }
+.quickPanel .consent span { line-height:1.5; }
+.quickPanel .googleButton { min-height:47px; }
+.quickPanel .contactFields { margin:2px 0 0; }
+.quickPanel .contactFields input { min-height:48px; border-radius:11px; }
+.quickPanel .submit { min-height:49px; background:#973e58; font-size:14px; }
+.quickPanel .submit:not(:disabled):hover { background:#843349; }
+.quickSwitch { justify-self:start; width:auto; padding:5px 1px; border:0; background:transparent;
+  color:#236c72; text-decoration:underline; text-underline-offset:3px; font:650 12px/1.4 Arial,Helvetica,sans-serif; cursor:pointer; }
+.quickSwitch:focus-visible { outline:3px solid #80abc7; outline-offset:3px; }
+.quickConsent { display:block; color:#496a6b; font:500 11px/1.45 Arial,Helvetica,sans-serif; }
+@media(max-width:430px){ .quickPanel .googleButton,.quickPanel .submit { min-height:46px; }
+  .quickPanel .contactFields input { min-height:46px; } }
+
+/* Reiki Level 1: a single phone field and two messenger actions. No duplicate
+   Google/email registration panel; CRM commit happens before chat handoff. */
+.compactPhone { width:100%; min-width:0; box-sizing:border-box; margin-top:9px; }
+.compactPhoneForm, .compactReceipt { display:grid; gap:9px; }
+.compactPhoneField { display:grid; gap:5px; min-width:0; }
+.compactPhoneField > label { color:#28566a; font:750 12px/1.25 Arial,Helvetica,sans-serif; }
+.compactPhoneField :is(input, select) { min-height:44px; font-size:16px; }
+.compactConsent {
+  display:flex; align-items:center; gap:8px; min-height:33px;
+  color:#4e7080; font:500 11px/1.35 Arial,Helvetica,sans-serif; cursor:pointer;
+}
+.compactConsent input { flex:none; width:18px; height:18px; margin:0; accent-color:#16768b; }
+.compactChannels {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+  width:100%; min-width:0; scroll-margin-block:95px 125px;
+}
+.compactChannels :is(button,a) {
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  min-width:0; min-height:46px; padding:9px 11px; border:0;
+  border-radius:11px; color:white; cursor:pointer;
+  font:800 14px/1.25 Arial,Helvetica,sans-serif; text-decoration:none;
+  transition:filter .15s ease; box-sizing:border-box;
+}
+.compactChannels :is(button,a):hover:not(:disabled) { filter:brightness(.92); }
+.compactChannels button:disabled { opacity:.65; cursor:wait; }
+.compactChannels .whatsapp { background:#217e5b; }
+.compactChannels .telegram { background:#287fa4; }
+.compactPhone :is(input,select,button,a):focus-visible {
+  outline:3px solid #b87c44; outline-offset:2px;
+}
+.compactReceipt .saved { margin:0; }
+.compactReceipt .next { margin:0; }
+@media (max-width:350px) {
+  .compactChannels { gap:6px; }
+  .compactChannels :is(button,a) { font-size:13px; padding:8px 5px; }
+}
+@media(prefers-reduced-motion:reduce) { .compactChannels :is(button,a) { transition:none; } }
+
+/* Shared compact enquiry CTA: one phone field, reply-only consent, two chat actions.
+   Preserve the closed request button while removing Google/email/note expansion. */
+.compactPhoneToggle { margin-top:0; }
+.compactPhoneToggle .compactTogglePanel {
+  margin-top:9px; padding:13px;
+  border:1px solid #c9e2dc; border-radius:15px;
+  background:#fcfefa; color:#28536a;
+  box-shadow:0 6px 18px rgba(25,63,74,.09);
+  scroll-margin-block:88px 145px;
+}
+.compactPhoneToggle .compactTogglePanel[hidden] { display:none !important; }
+.compactPhoneToggle .compactPhoneForm,
+.compactPhoneToggle .compactReceipt { gap:10px; }
+.compactPhoneToggle .compactPhoneField :is(input,select) { min-width:0; width:100%; box-sizing:border-box; }
+.compactPhoneToggle .trigger { min-height:48px; }
+@media(max-width:430px) {
+  .compactPhoneToggle .compactTogglePanel { padding:11px; margin-top:7px; }
+  .compactPhoneToggle .compactChannels :is(button,a) { min-height:46px; }
+}
+
+/* The existing compact consent form exposes only a short optional review note. */
+.compactQuestion { display:grid;gap:5px;min-width:0;font:700 12px/1.4 Arial,Helvetica,sans-serif;color:#315668; }
+.compactQuestion textarea { display:block;box-sizing:border-box;width:100%;min-height:70px;max-height:160px;padding:10px 11px;resize:vertical;border:1px solid #b9ccd6;border-radius:10px;background:#fff;color:#2c4250;font:400 16px/1.45 Arial,Helvetica,sans-serif;overflow-wrap:break-word; }
+.compactQuestion small { font:500 11px/1.4 Arial,Helvetica,sans-serif;color:#677e8b; }
+.compactQuestion textarea:focus-visible { outline:3px solid #2169bd;outline-offset:2px; }
+
+/* Free express only: details are optional and closed on first render, keeping
+   the required phone, explicit consent, and channel buttons above the fold. */
+.compactQuestionReveal{min-width:0;margin:0}
+.compactQuestionReveal > summary{display:flex;align-items:center;gap:7px;min-height:33px;padding:4px 2px;color:#7c3f57;cursor:pointer;font:700 12px/1.35 Arial,Helvetica,sans-serif;list-style:none}
+.compactQuestionReveal > summary::-webkit-details-marker{display:none}
+.compactQuestionReveal > summary::before{content:"+";display:grid;place-items:center;width:17px;height:17px;border:1px solid currentColor;border-radius:50%;font:700 15px/1 Arial,Helvetica,sans-serif}
+.compactQuestionReveal[open] > summary::before{content:"−"}
+.compactQuestionReveal > summary:focus-visible{outline:3px solid #b87c44;outline-offset:2px}
+.compactQuestionReveal .compactQuestion{padding:4px 0 5px}
+
+/* Alchemy booking: the cart is shown only after server-verified practitioner confirmation. */
+.bookingForm,.bookingPayPanel { display:grid;gap:10px;min-width:0; }
+.bookingIntro,.bookingFine,.bookingPending,.bookingSuccess { margin:0;color:#3f6774;
+  font:500 13px/1.55 Arial,Helvetica,sans-serif;overflow-wrap:anywhere; }
+.bookingFine {font-size:11px}
+.bookingProduct {margin:0;font:750 14px/1.5 Arial,Helvetica,sans-serif;color:#14596b}
+.bookingSuccess {color:#176b4b;font-weight:750}
+.bookingPrimary,.bookingCheck {
+  box-sizing:border-box;min-height:49px;width:100%;padding:11px 12px;border:0;
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font:800 15px/1.35 Arial,Helvetica,sans-serif;text-align:center;
+  cursor:pointer;text-decoration:none;
+}
+.bookingPrimary {background:#ab526c;color:white}
+.bookingCheck {background:#e1f3f0;color:#186b71;border:1px solid #aed1cf}
+.bookingPrimary:disabled,.bookingCheck:disabled {opacity:.55;cursor:wait}
+.bookingSwitch {align-self:start;border:0;background:transparent;color:#166b8b;text-align:left;
+  font:650 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;cursor:pointer}
+.bookingPayPanel {margin-top:5px;padding:12px;border:1px solid #add9cf;border-radius:12px;
+  background:#eff9f4}
+.bookingPayPanel strong {color:#18596a;font:750 14px/1.45 Arial,Helvetica,sans-serif}
+.bookingPayPanel small {color:#52707d;line-height:1.5}
+.bookingChat {margin-top:5px;border-top:1px solid #d6e8e3;padding-top:8px}
+.bookingChat summary {min-height:44px;display:flex;align-items:center;cursor:pointer;
+  color:#22748d;font:650 13px/1.5 Arial,Helvetica,sans-serif}
+.bookingChat .compactChannels {margin-top:6px}
+@media(max-width:350px){.bookingPrimary,.bookingCheck{padding:9px 7px;font-size:13px}}
+@media(prefers-reduced-motion:reduce){.bookingPrimary,.bookingCheck{transition:none}}

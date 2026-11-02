@@ -725,86 +725,159 @@
   .hh-app #hh-practice-services-view {scroll-margin-top:74px}
 }
 
-/* New marketplace offer overview — October 2026. First card on My Practice. */
+/* My Practice discovery showcase — real published service photos first, metrics later. */
 .hh-app .hh-practice-marketplace {
-  margin:0 0 14px;padding:16px 18px 14px;border:1px solid #ddc6b3;
-  border-radius:19px;background:linear-gradient(135deg,#fffbf5 0%,#f9f2eb 100%);
-  box-shadow:0 3px 12px #44301c08;color:#342c28;
+  margin:0 0 14px;padding:clamp(14px,2.3vw,22px);
+  border:1px solid #dec8b4;border-radius:22px;
+  background:linear-gradient(145deg,#fffaf4 0%,#f8efe7 100%);
+  box-shadow:0 9px 28px #503a2910;color:#332b29;
 }
-.hh-app .hh-practice-marketplace-heading{display:flex;align-items:flex-start;gap:11px;margin:0 0 13px}
+.hh-app .hh-practice-marketplace-heading{
+  display:flex;align-items:flex-start;gap:12px;margin:0 0 14px;
+}
 .hh-app .hh-practice-marketplace-mark{
-  display:grid;place-items:center;flex:none;width:38px;height:38px;
-  border-radius:12px;background:#ecedf2;color:#812c49;
+  display:grid;place-items:center;flex:none;width:40px;height:40px;
+  border-radius:13px;background:#f1e1e7;color:#812c49;
 }
-.hh-app .hh-practice-marketplace-mark svg{width:19px;height:19px}
+.hh-app .hh-practice-marketplace-mark svg{width:21px;height:21px}
 .hh-app .hh-practice-marketplace-kicker{
-  margin:0 0 3px;color:#8c5868;font:740 10px/1.35 system-ui,sans-serif;
-  letter-spacing:.08em;text-transform:uppercase;
+  margin:0 0 5px;color:#8b4762;font:800 10px/1.3 system-ui,sans-serif;
+  letter-spacing:.10em;text-transform:uppercase;
 }
 .hh-app .hh-practice-marketplace-heading h2{
-  margin:0;color:#233956;font:400 clamp(22px,3.3vw,29px)/1.12 Georgia,serif;
-  letter-spacing:-.03em;
+  margin:0;color:#203a57;font:400 clamp(23px,3.4vw,31px)/1.14 Georgia,serif;
+  letter-spacing:-.035em;
 }
 .hh-app .hh-practice-marketplace-intro{
-  margin:5px 0 0;color:#72665d;font:450 12px/1.45 system-ui,sans-serif;
+  margin:6px 0 0;color:#706258;font:460 12px/1.48 system-ui,sans-serif;
+  max-width:58ch;
 }
-.hh-app .hh-practice-marketplace-statistics{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 11px;
+.hh-app .hh-practice-marketplace .hh-practice-top-cta{
+  display:flex;flex-direction:column;gap:7px;max-width:none;margin:0 0 19px;
 }
-.hh-app .hh-practice-marketplace-statistics>div{
-  display:grid;align-content:center;gap:5px;min-height:70px;padding:10px 11px;
-  border:1px solid #e3d7c8;border-radius:12px;background:#fffdf8;
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button{
+  width:100%;min-height:55px;padding:12px 17px;
+  border:1px solid #872849;border-radius:14px;
+  background:linear-gradient(110deg,#8d2b50 0%,#742440 100%);
+  color:#fff;box-shadow:0 5px 15px #7c2d461e;
+  font:760 15px/1.3 system-ui,sans-serif;
 }
-.hh-app .hh-practice-marketplace-statistics strong{
-  font:400 28px/1 Georgia,serif;color:#273d58;font-variant-numeric:tabular-nums;
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:hover:not(:disabled){
+  background:linear-gradient(110deg,#70213f 0%,#5e1d38 100%);
+  border-color:#70213f;
 }
-.hh-app .hh-practice-marketplace-statistics span{
-  font:650 11px/1.3 system-ui,sans-serif;color:#6d645c;overflow-wrap:anywhere;
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:focus-visible{
+  outline:3px solid #a66783;outline-offset:3px;
 }
-.hh-app .hh-practice-marketplace-latest{
-  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 11px;margin:0 0 11px;
-  font:500 11px/1.4 system-ui,sans-serif;
+.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note{
+  display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:0 2px;
+  color:#7b695c;font:650 11px/1.35 system-ui,sans-serif;
 }
-.hh-app .hh-practice-marketplace-latest>strong{font-weight:750;color:#665347}
-.hh-app .hh-practice-marketplace-latest ul{
-  display:flex;flex-wrap:wrap;gap:5px 12px;align-items:baseline;list-style:none;margin:0;padding:0;
+.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note span:first-child{
+  color:#2c6d5e;
 }
-.hh-app .hh-practice-marketplace-latest li a{
-  display:inline-flex;align-items:center;gap:2px;color:#7d2d4b;text-decoration:none;
-  font-weight:690;overflow-wrap:anywhere;
+.hh-app .hh-practice-marketplace-latest{display:block;margin:0}
+.hh-app .hh-practice-marketplace-latest-heading{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin:0 0 10px;
 }
-.hh-app .hh-practice-marketplace-latest li a:hover{text-decoration:underline;text-underline-offset:3px}
-.hh-app .hh-practice-marketplace-latest svg{width:13px;height:13px;flex:none}
-.hh-app .hh-practice-marketplace-latest p,
-.hh-app .hh-practice-marketplace-unavailable{margin:0 0 10px;color:#71685f;font-size:12px}
+.hh-app .hh-practice-marketplace-latest-heading h3{
+  margin:0;color:#283e55;font:600 clamp(17px,2.4vw,20px)/1.2 Georgia,serif;
+  letter-spacing:-.02em;
+}
 .hh-app .hh-practice-marketplace-all{
-  display:flex;align-items:center;justify-content:space-between;gap:9px;
-  min-height:45px;width:100%;padding:10px 14px;border:1px solid #b6c8d8;
-  border-radius:12px;background:#edf3f7;color:#243d58;text-decoration:none;
-  font:750 13px/1.3 system-ui,sans-serif;
+  display:inline-flex;align-items:center;justify-content:flex-end;flex:none;gap:3px;
+  width:auto;min-height:0;padding:4px 0;border:0;border-radius:0;
+  background:transparent;color:#812c49;text-decoration:none;
+  font:750 11px/1.3 system-ui,sans-serif;
 }
-.hh-app .hh-practice-marketplace-all:hover{background:#e3edf5;border-color:#819caf}
-.hh-app .hh-practice-marketplace-all svg{width:17px;height:17px;flex:none}
-.hh-app .hh-practice-marketplace .hh-practice-top-cta{max-width:none;margin:7px 0 0}
-.hh-app .hh-practice-marketplace .hh-practice-top-cta-button,
-.hh-app .hh-practice-marketplace .hh-practice-top-cta-quota{min-height:49px}
+.hh-app .hh-practice-marketplace-all:hover{
+  background:transparent;border-color:transparent;text-decoration:underline;text-underline-offset:3px;
+}
+.hh-app .hh-practice-marketplace-all:focus-visible{
+  outline:2px solid #812c49;outline-offset:3px;border-radius:3px;
+}
+.hh-app .hh-practice-marketplace-all svg{width:15px;height:15px}
+.hh-app .hh-practice-marketplace-cards{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+  list-style:none;margin:0;padding:0;
+}
+.hh-app .hh-practice-marketplace-cards li{margin:0;min-width:0}
+.hh-app .hh-practice-marketplace-card{
+  display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;align-items:stretch;
+  min-height:144px;padding:7px;border:1px solid #e6d8ca;border-radius:16px;
+  color:#253d53;background:#fffefa;text-decoration:none;overflow:hidden;
+  box-shadow:0 2px 7px #4531210b;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.hh-app .hh-practice-marketplace-card:hover{
+  border-color:#c6a9b2;box-shadow:0 7px 19px #54302518;transform:translateY(-2px);
+}
+.hh-app .hh-practice-marketplace-card:focus-visible{
+  outline:3px solid #a15f78;outline-offset:3px;
+}
+.hh-app .hh-practice-marketplace-card-photo{
+  position:relative;display:block;min-height:128px;overflow:hidden;
+  border-radius:11px;background:#e9e2da;
+}
+.hh-app .hh-practice-marketplace-card-photo img{
+  object-fit:cover;object-position:center center;
+}
+.hh-app .hh-practice-marketplace-card-content{
+  display:flex;flex-direction:column;min-width:0;gap:4px;padding:4px 5px 3px 0;
+}
+.hh-app .hh-practice-marketplace-card-byline{
+  display:block;color:#96617a;font:750 10px/1.35 system-ui,sans-serif;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.hh-app .hh-practice-marketplace-card-title{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;color:#253e57;font:750 15px/1.24 system-ui,sans-serif;
+}
+.hh-app .hh-practice-marketplace-card-summary{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;color:#71665d;font:450 11px/1.38 system-ui,sans-serif;
+}
+.hh-app .hh-practice-marketplace-card-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:5px;
+  margin-top:auto;color:#7d2d4b;font:760 11px/1.25 system-ui,sans-serif;
+}
+.hh-app .hh-practice-marketplace-card-foot svg{width:16px;height:16px;flex:none}
+.hh-app .hh-practice-marketplace-empty{
+  margin:0;padding:17px 14px;border:1px dashed #d8c5b7;
+  border-radius:12px;background:#fffcf7;color:#71665d;font:550 12px/1.45 system-ui,sans-serif;
+}
+@media(max-width:760px){
+  .hh-app .hh-practice-marketplace-cards{grid-template-columns:minmax(0,1fr);gap:8px}
+  .hh-app .hh-practice-marketplace-card{grid-template-columns:116px minmax(0,1fr);min-height:126px;gap:10px}
+  .hh-app .hh-practice-marketplace-card-photo{min-height:112px}
+}
 @media(max-width:600px){
-  .hh-app .hh-practice-marketplace{margin:0 0 11px;padding:12px;border-radius:16px}
-  .hh-app .hh-practice-marketplace-heading{gap:9px;margin-bottom:10px}
-  .hh-app .hh-practice-marketplace-mark{width:32px;height:32px;border-radius:10px}
-  .hh-app .hh-practice-marketplace-mark svg{width:16px;height:16px}
+  .hh-app .hh-practice-marketplace{margin:0 0 11px;padding:13px;border-radius:18px}
+  .hh-app .hh-practice-marketplace-heading{gap:9px;margin-bottom:11px}
+  .hh-app .hh-practice-marketplace-mark{width:33px;height:33px;border-radius:10px}
+  .hh-app .hh-practice-marketplace-mark svg{width:17px;height:17px}
+  .hh-app .hh-practice-marketplace-kicker{font-size:9px;margin-bottom:4px}
   .hh-app .hh-practice-marketplace-heading h2{font-size:23px}
-  .hh-app .hh-practice-marketplace-intro{font-size:11px;margin-top:3px}
-  .hh-app .hh-practice-marketplace-statistics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:9px}
-  .hh-app .hh-practice-marketplace-statistics>div{min-height:55px;padding:8px 10px;gap:3px}
-  .hh-app .hh-practice-marketplace-statistics strong{font-size:24px}
-  .hh-app .hh-practice-marketplace-statistics span{font-size:10px;line-height:1.2}
-  .hh-app .hh-practice-marketplace-latest{gap:4px 8px;margin-bottom:9px;font-size:10px}
-  .hh-app .hh-practice-marketplace-latest ul{gap:4px 9px}
-  .hh-app .hh-practice-marketplace-all{min-height:43px;padding:9px 11px;font-size:12px}
-  .hh-app .hh-practice-marketplace .hh-practice-top-cta{margin-top:6px}
-  .hh-app .hh-practice-marketplace .hh-practice-top-cta-button,
-  .hh-app .hh-practice-marketplace .hh-practice-top-cta-quota{min-height:45px}
+  .hh-app .hh-practice-marketplace-intro{font-size:11px;margin-top:4px}
+  .hh-app .hh-practice-marketplace .hh-practice-top-cta{margin-bottom:15px;gap:6px}
+  .hh-app .hh-practice-marketplace .hh-practice-top-cta-button{min-height:51px;padding:10px 13px;font-size:14px}
+  .hh-app .hh-practice-marketplace-latest-heading{margin-bottom:9px}
+  .hh-app .hh-practice-marketplace-latest-heading h3{font-size:17px}
+  .hh-app .hh-practice-marketplace-card{border-radius:13px;gap:10px;padding:6px;min-height:120px}
+  .hh-app .hh-practice-marketplace-card-photo{border-radius:9px;min-height:108px}
+  .hh-app .hh-practice-marketplace-card-content{padding:3px 4px 2px 0;gap:3px}
+  .hh-app .hh-practice-marketplace-card-title{font-size:14px}
+  .hh-app .hh-practice-marketplace-card-summary{font-size:11px}
+}
+@media(max-width:370px){
+  .hh-app .hh-practice-marketplace-card{grid-template-columns:98px minmax(0,1fr);gap:8px}
+  .hh-app .hh-practice-marketplace-card-photo{min-height:110px}
+  .hh-app .hh-practice-marketplace-card-title{font-size:13px}
+  .hh-app .hh-practice-marketplace-latest-heading h3{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hh-app .hh-practice-marketplace-card{transition:none}
+  .hh-app .hh-practice-marketplace-card:hover{transform:none}
 }
 
 /* Optional video presentations in practitioner and service editors. */
@@ -815,3 +888,801 @@
 .hh-practice-presentation-input{display:grid;gap:.5rem}.hh-practice-presentation-input label{display:grid;gap:.5rem}.hh-practice-presentation-input input[type=url],.hh-practice-presentation-input input[type=file]{max-width:100%;box-sizing:border-box;background:#fff;color:#162c3b;border-radius:9px;padding:.6rem;min-width:0}
 .hh-practice-presentation-input p{margin:0;color:#e8d7ad}.hh-practice-presentation-remove{justify-self:start;padding:.4rem .6rem;background:transparent;border:0;color:#f1c9c3;text-decoration:underline;cursor:pointer}
 .hh-practice-presentation .hh-fine{color:#d5dee6;margin:0}.hh-practice-presentation .hh-practice-error{color:#ffcdcd}
+
+
+/* Practice first-service activation: community is open, practitioner tools are gated. */
+.hh-app .hh-practice-join{
+  display:grid;gap:8px;margin:17px 0 0;padding:17px;
+  border:1px solid #deceb9;border-radius:16px;
+  background:linear-gradient(135deg,#f9f2e9,#f7f9f5);
+}
+.hh-app .hh-practice-join h3{
+  margin:0;color:#342a22;font:400 clamp(20px,3vw,26px)/1.2 Georgia,serif;
+}
+.hh-app .hh-practice-join p{
+  margin:0 0 4px;color:#76675a;font:400 12px/1.55 system-ui,sans-serif;
+}
+.hh-app .hh-practice-start-button{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:52px;padding:11px 15px;border:0;border-radius:12px;
+  background:#812c49;color:#fff;text-align:center;
+  font:750 14px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.hh-app .hh-practice-start-button:hover{background:#69223c}
+.hh-app .hh-practice-start-button svg{width:18px;height:18px;flex:none}
+.hh-app .hh-practice-start-button svg:last-child{margin-left:auto}
+.hh-app .hh-practice-start-button:focus-visible,
+.hh-app .hh-practice-registration-submit:focus-visible{
+  outline:3px solid #b87d97;outline-offset:3px;
+}
+.hh-app .hh-practice-signup{
+  max-width:740px;margin:14px auto 24px;scroll-margin-top:18px;
+}
+.hh-app .hh-practice-registration{
+  display:grid;gap:13px;background:#fffcf8;
+  border:1px solid #deccba;border-radius:19px;padding:21px;
+  box-shadow:0 4px 18px #58361509;
+}
+.hh-app .hh-practice-registration-heading h2{
+  font:400 clamp(24px,4vw,32px)/1.15 Georgia,serif;
+  margin:7px 0;color:#352921;
+}
+.hh-app .hh-practice-registration-heading p{
+  font:400 12px/1.55 system-ui,sans-serif;color:#77695e;margin:0;
+}
+.hh-app .hh-practice-registration-section{
+  display:grid;gap:10px;margin:0;padding:13px;
+  border:1px solid #e9ddd0;border-radius:14px;min-width:0;
+}
+.hh-app .hh-practice-registration-section legend{
+  padding:0 6px;color:#704a38;font:750 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section label{
+  display:grid;gap:5px;min-width:0;
+  color:#524134;font:650 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section :is(input,select,textarea){
+  width:100%;max-width:100%;min-height:43px;padding:9px 11px;
+  color:#332820;background:#fff;border:1px solid #d9c5b2;
+  border-radius:10px;font:400 14px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section textarea{min-height:64px;resize:vertical}
+.hh-app .hh-practice-registration-section input[readonly]{
+  background:#f5eee5;color:#685747;
+}
+.hh-app .hh-practice-registration-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;min-width:0;
+}
+.hh-app .hh-practice-registration-note{
+  margin:0;color:#74685d;font:400 11px/1.5 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-submit{
+  width:100%;min-height:50px;display:flex;align-items:center;justify-content:center;gap:8px;
+  font:750 14px/1.3 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-submit svg{width:18px;height:18px}
+@media(max-width:600px){
+  .hh-app .hh-practice-join{padding:12px;margin-top:13px}
+  .hh-app .hh-practice-join h3{font-size:21px}
+  .hh-app .hh-practice-signup{margin:10px 0 18px}
+  .hh-app .hh-practice-registration{padding:12px;gap:10px;border-radius:15px}
+  .hh-app .hh-practice-registration-section{padding:10px}
+  .hh-app .hh-practice-registration-grid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .hh-app .hh-practice-registration-section :is(input,select,textarea){font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hh-app .hh-practice-start-button{transition:none}
+}
+
+/* Compact owner Marketing hub, same warm visual language as My Practice. */
+.hh-app .hh-practice-marketing-intro{margin:0 0 11px;color:#695648;font-size:13px;line-height:1.5}
+.hh-app .hh-practice-marketing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.hh-app .hh-practice-marketing-link{display:flex;align-items:center;min-width:0;gap:10px;text-align:left;padding:12px;border:1px solid #dbc7b1;border-radius:14px;background:#fffdf9;color:#3d3028;cursor:pointer;min-height:77px}
+.hh-app .hh-practice-marketing-link:hover{background:#f7eee5;border-color:#a98769}
+.hh-app .hh-practice-marketing-link:focus-visible{outline:3px solid #99715c;outline-offset:2px}
+.hh-app .hh-practice-marketing-link:disabled{opacity:.55;cursor:wait}
+.hh-app .hh-practice-marketing-icon{display:grid;place-items:center;flex:none;width:33px;height:33px;border-radius:11px;background:#eee0d0;color:#794c34}
+.hh-app .hh-practice-marketing-icon svg{width:18px;height:18px}
+.hh-app .hh-practice-marketing-copy{display:grid;gap:3px;min-width:0}
+.hh-app .hh-practice-marketing-copy strong{font:600 14px/1.2 system-ui,sans-serif;overflow-wrap:anywhere}
+.hh-app .hh-practice-marketing-copy small{font:400 11px/1.35 system-ui,sans-serif;color:#806d5c;overflow-wrap:anywhere}
+.hh-app .hh-practice-marketing-arrow{width:15px;height:15px;flex:none;margin-left:auto;color:#957664}
+@media(max-width:430px){.hh-app .hh-practice-marketing-grid{grid-template-columns:minmax(0,1fr)}.hh-app .hh-practice-marketing-link{min-height:62px;padding:10px 12px}.hh-app .hh-practice-marketing-copy strong{font-size:14px}.hh-app .hh-practice-marketing-copy small{font-size:11px}}
+
+/* Approved 10-screen practitioner V4: honest data and main actions above promotions. */
+.hh-app .hh-practice-dashboard{
+ --v4-teal:#0b7776;--v4-cream:#fffcf7;--v4-parchment:#f5ede1;
+ --practice-ink:#352a22;--practice-muted:#75685d;--practice-stroke:#e3d4c3;
+ display:flex;flex-direction:column;gap:12px;
+ width:100%;max-width:1080px;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));
+ color:var(--practice-ink)}
+.hh-app .hh-practice-dashboard > *{order:10;min-width:0}
+.hh-app .hh-practice-dashboard > .hh-practice-head{order:1}
+.hh-app .hh-practice-dashboard > .hh-practice-v4-launch{order:2}
+.hh-app .hh-practice-dashboard > .hh-practice-tools{order:3}
+.hh-app .hh-practice-dashboard > .hh-practice-quick{order:4}
+.hh-app .hh-practice-dashboard > .hh-practice-form-panel{order:5}
+.hh-app .hh-practice-dashboard > .hh-practice-v4-requests{order:6}
+.hh-app .hh-practice-dashboard > .hh-practice-setup{order:7}
+.hh-app .hh-practice-dashboard > .hh-practice-v4-analytics{order:8;scroll-margin-top:92px}
+.hh-app .hh-practice-dashboard > .hh-practice-overview{order:9}
+.hh-app .hh-practice-dashboard > .hh-practice-public-link{order:10}
+.hh-app .hh-practice-dashboard > .hh-practice-more-tools{order:11}
+.hh-app .hh-practice-dashboard > .hh-practice-v4-community{order:12}
+.hh-app .hh-practice-head{position:relative;min-height:120px;margin:0;
+ padding:14px 14px 12px;border:1px solid #dfcdb9;border-radius:18px;
+ background:linear-gradient(90deg,#fffcf7ee,#fffcf7d9),
+ url('/images/holistic-house/hero-olive-incense.webp') center/cover}
+.hh-app .hh-practice-breadcrumb{margin:0 0 8px;font-size:11px}
+.hh-app .hh-practice-head h1{font:400 clamp(29px,4.6vw,43px)/1.11 Georgia,serif;
+ letter-spacing:-.045em;color:#382a22;margin-bottom:5px}
+.hh-app .hh-practice-intro{font:450 12px/1.5 system-ui,sans-serif;color:#716155;max-width:46ch}
+.hh-app .hh-practice-status{margin-top:9px}
+.hh-app .hh-practice-status-chip{border:1px solid #e5d5c4;background:#f9f2e9;
+ color:#665243;font:720 10px/1.3 system-ui,sans-serif}
+.hh-app .hh-practice-v4-launch{padding:0;min-width:0}
+.hh-app .hh-practice-v4-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.hh-app .hh-practice-v4-grid button{display:flex;flex-direction:column;align-items:center;
+ gap:4px;min-height:96px;justify-content:center;padding:10px 6px;
+ border:1px solid #e2d5c6;border-radius:15px;background:#fffdf8;
+ color:#4b3a2d;box-shadow:0 2px 9px #4a37250a;text-align:center;cursor:pointer}
+.hh-app .hh-practice-v4-grid button:hover{background:#f5efe5;border-color:#abcfc8}
+.hh-app .hh-practice-v4-grid button[aria-pressed="true"]{background:#dff1ed;border-color:#96c5bc}
+.hh-app .hh-practice-v4-grid button svg{width:22px;height:22px;color:#0e7774;flex:none}
+.hh-app .hh-practice-v4-grid button span{font:750 12px/1.25 system-ui,sans-serif}
+.hh-app .hh-practice-v4-grid button strong{font:700 14px/1.2 system-ui,sans-serif;color:#0e7774}
+.hh-app .hh-practice-v4-grid button small{font:550 10px/1.25 system-ui,sans-serif;color:#806e60}
+.hh-app .hh-practice-v4-materials-cta{display:flex;align-items:center;gap:12px;
+ width:100%;min-height:77px;margin:11px 0 0;padding:13px 16px;
+ text-align:left;border:1px solid #c6a586;border-radius:16px;
+ background:linear-gradient(105deg,#67513c,#856244);
+ color:#fffdf8;cursor:pointer;box-shadow:0 5px 16px #61432a20}
+.hh-app .hh-practice-v4-materials-cta > svg:first-child{width:27px;height:27px;flex:none}
+.hh-app .hh-practice-v4-materials-cta > svg:last-child{width:19px;flex:none;margin-left:auto}
+.hh-app .hh-practice-v4-materials-cta > span{flex:1;min-width:0;display:grid;gap:4px}
+.hh-app .hh-practice-v4-materials-cta strong{font:700 17px/1.25 Georgia,serif;color:white}
+.hh-app .hh-practice-v4-materials-cta small{font:550 11px/1.35 system-ui,sans-serif;color:#f1e4d6}
+.hh-app .hh-practice-tools{margin:0}
+.hh-app .hh-practice-tool-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.hh-app .hh-practice-tool-card{min-height:90px;padding:12px;border:1px solid #e2d1bf;
+ border-radius:14px;background:#fffcf7}
+.hh-app .hh-practice-tool-icon{width:31px;height:31px;background:#e6f0ea;color:#17796c}
+.hh-app .hh-practice-tool-icon svg{width:17px;height:17px}
+.hh-app .hh-practice-tool-title{font:700 15px/1.2 Georgia,serif;color:#443429}
+.hh-app .hh-practice-tool-description{font:450 11px/1.3 system-ui,sans-serif;color:#806c5c}
+.hh-app .hh-practice-activity{margin-top:9px;border-color:#e2d1bf;background:#fffcf7}
+.hh-app .hh-practice-form-panel{padding:clamp(11px,2.5vw,20px);border:1px solid #dfceba;
+ border-radius:18px;background:#fffdf8;scroll-margin-top:18px}
+.hh-app .hh-practice-form-heading{margin-bottom:12px}
+.hh-app .hh-practice-form-heading h2{font:400 clamp(22px,4vw,28px)/1.2 Georgia,serif;color:#382b21}
+.hh-app .hh-practice-community-v4,.hh-app .hh-practice-v4-community{
+ margin:0;border:1px solid #dfceba;border-radius:15px;background:#fffdf8;overflow:hidden}
+.hh-app .hh-practice-v4-community > summary{display:flex;gap:10px;align-items:center;
+ padding:12px 15px;min-height:46px;list-style:none;cursor:pointer;color:#725744;
+ font:730 12px/1.3 system-ui,sans-serif}
+.hh-app .hh-practice-v4-community > summary::-webkit-details-marker{display:none}
+.hh-app .hh-practice-v4-community > summary > svg{width:17px;height:17px;color:#907256}
+.hh-app .hh-practice-v4-community > summary > span{flex:1}
+.hh-app .hh-practice-v4-community[open] > summary > svg:last-child{transform:rotate(90deg)}
+.hh-app .hh-practice-v4-community .hh-practice-marketplace{margin:0;padding:12px;
+ box-shadow:none;border:0;border-top:1px solid #eadbca;border-radius:0;background:#fffdfa}
+.hh-app .hh-practice-dashboard :is(.hh-practice-v4-grid button,.hh-practice-v4-materials-cta,.hh-practice-v4-community summary):focus-visible{
+ outline:3px solid #50a99b;outline-offset:2px}
+@media(max-width:640px){
+ .hh-app .hh-practice-dashboard{gap:10px}
+ .hh-app .hh-practice-head{min-height:112px;padding:12px;border-radius:15px}
+ .hh-app .hh-practice-v4-grid{gap:6px}
+ .hh-app .hh-practice-v4-grid button{min-height:83px;gap:3px;padding:7px 2px;border-radius:12px}
+ .hh-app .hh-practice-v4-grid button svg{width:20px;height:20px}
+ .hh-app .hh-practice-v4-grid button span{font-size:11px}
+ .hh-app .hh-practice-v4-grid button strong{font-size:13px}
+ .hh-app .hh-practice-v4-grid button small{font-size:10px}
+ .hh-app .hh-practice-v4-materials-cta{min-height:72px;padding:11px 12px;gap:8px;margin-top:8px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:15px}
+ .hh-app .hh-practice-v4-materials-cta small{font-size:10px}
+ .hh-app .hh-practice-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .hh-app .hh-practice-tool-card{min-height:75px;padding:10px}
+ .hh-app .hh-practice-tool-title{font-size:14px}
+ .hh-app .hh-practice-tool-description{font-size:10px}
+ .hh-app .hh-practice-tool-icon{width:28px;height:28px}
+}
+@media(max-width:350px){
+ .hh-app .hh-practice-v4-grid button span{font-size:10px}
+ .hh-app .hh-practice-v4-grid button small{font-size:9px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:14px}
+ .hh-app .hh-practice-head h1{font-size:29px}
+}
+
+
+/* V4 QA: avoid a second large duplicate tool grid above My Materials. */
+.hh-app .hh-practice-dashboard > .hh-practice-v4-extra{order:3}
+.hh-app .hh-practice-v4-extra{min-width:0;margin:0;border:1px solid #e3d4c3;
+ border-radius:13px;overflow:hidden;background:#fffcf7}
+.hh-app .hh-practice-v4-extra > summary{display:flex;align-items:center;gap:8px;
+ min-height:44px;padding:10px 13px;cursor:pointer;list-style:none;color:#695441;
+ font:720 12px/1.3 system-ui,sans-serif}
+.hh-app .hh-practice-v4-extra > summary::-webkit-details-marker{display:none}
+.hh-app .hh-practice-v4-extra > summary svg{flex:none;width:18px;height:18px;color:#0c7774}
+.hh-app .hh-practice-v4-extra > summary span{flex:1;min-width:0}
+.hh-app .hh-practice-v4-extra[open] > summary{border-bottom:1px solid #e3d4c3}
+.hh-app .hh-practice-v4-extra[open] > summary svg:last-child{transform:rotate(90deg)}
+.hh-app .hh-practice-v4-extra .hh-practice-tools{padding:12px;margin:0;border:0;background:transparent}
+.hh-app .hh-practice-v4-extra :is(button,summary):focus-visible{outline:3px solid #69aca2;outline-offset:2px}
+@media(max-width:430px){.hh-app .hh-practice-v4-extra .hh-practice-tools{padding:9px}}
+
+
+/* Practice V4.1 — mobile visual parity with the approved warm workspace.
+   Scoped to the authenticated practice route; no global site redesign. */
+.hh-app .hh-practice-dashboard{--practice-ink:#352a22;--practice-stroke:#e3d4c3;gap:11px}
+.hh-app .hh-practice-head{
+ min-height:149px;padding:17px 17px 15px;border-color:#d9c3ad;
+ border-radius:20px;overflow:hidden;
+ background:linear-gradient(90deg,#fffbf4f7 0%,#fffbf4e8 50%,#fffbf4b5 100%),
+ url('/images/holistic-house/hero-olive-incense.webp') center/cover;
+ box-shadow:0 5px 18px #4a301012}
+.hh-app .hh-practice-breadcrumb{margin-bottom:8px;color:#705e4e}
+.hh-app .hh-practice-head h1{font-size:clamp(33px,4.7vw,46px);letter-spacing:-.035em}
+.hh-app .hh-practice-intro{font-size:13px;color:#57493d;max-width:37ch}
+.hh-app .hh-practice-status{gap:6px;margin-top:10px}
+.hh-app .hh-practice-status-chip{background:#fffdf9df;border-color:#e0cdb7;
+ padding:7px 10px;font-size:10px;box-shadow:0 2px 7px #4530200b}
+.hh-app .hh-practice-status-chip.is-approved{color:#126c5e;background:#e6f3edea;border-color:#b4d6c9}
+.hh-app .hh-practice-status-chip.is-approved .hh-practice-status-dot{background:#139077}
+.hh-app .hh-practice-v4-grid{gap:10px}
+.hh-app .hh-practice-v4-grid button{
+ min-height:105px;gap:5px;background:#fffcf7;border:1px solid #e0cfbc;
+ border-radius:18px;box-shadow:0 3px 13px #51371b10;
+ transition:background .15s ease,border-color .15s ease}
+.hh-app .hh-practice-v4-grid button svg{width:24px;height:24px}
+.hh-app .hh-practice-v4-grid button span{font-size:13px;color:#44362c}
+.hh-app .hh-practice-v4-grid button strong{font-size:15px}
+.hh-app .hh-practice-v4-grid button small{font-size:11px;color:#796a5a}
+.hh-app .hh-practice-v4-grid button[aria-pressed="true"]{background:#def0ea;border-color:#81bdb5}
+.hh-app .hh-practice-v4-materials-cta{
+ min-height:100px;margin-top:11px;padding:15px 17px;gap:12px;
+ border-color:#97785a;border-radius:18px;
+ background:linear-gradient(90deg,#35291fe6 0%,#473126d6 54%,#4431276b 100%),
+ url('/images/holistic-house/reiki-practitioner-sunrise.webp') center 51%/cover;
+ box-shadow:0 7px 20px #60402a25}
+.hh-app .hh-practice-v4-materials-cta > svg:first-child{width:30px;height:30px}
+.hh-app .hh-practice-v4-materials-cta strong{font:700 19px/1.23 Georgia,serif}
+.hh-app .hh-practice-v4-materials-cta small{font:500 12px/1.38 system-ui,sans-serif}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"]{
+ position:relative;margin:0;padding:0;border:0;background:transparent;
+ box-shadow:none;scroll-margin-top:12px}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] > .hh-practice-form-heading{
+ position:absolute;top:9px;right:10px;z-index:2;margin:0}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] > .hh-practice-form-heading h2{display:none}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] .hh-practice-close{
+ min-height:39px;margin:0;padding:7px 11px;border-radius:999px;
+ border:1px solid #e2d1be;background:#fffcf7;color:#5e4d40;
+ font:650 12px/1 system-ui,sans-serif}
+@media(max-width:640px){
+ .hh-app .hh-practice-dashboard{gap:9px}
+ .hh-app .hh-practice-head{min-height:145px;padding:14px;border-radius:17px}
+ .hh-app .hh-practice-v4-grid{gap:7px}
+ .hh-app .hh-practice-v4-grid button{min-height:94px;padding:8px 4px;border-radius:14px}
+ .hh-app .hh-practice-v4-grid button span{font-size:12px}
+ .hh-app .hh-practice-v4-grid button strong{font-size:14px}
+ .hh-app .hh-practice-v4-grid button small{font-size:10px}
+ .hh-app .hh-practice-v4-materials-cta{min-height:92px;padding:13px 14px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:17px}
+ .hh-app .hh-practice-v4-materials-cta small{font-size:11px}
+}
+@media(max-width:350px){
+ .hh-app .hh-practice-v4-grid{gap:6px}
+ .hh-app .hh-practice-v4-grid button{min-height:91px;padding:7px 2px}
+ .hh-app .hh-practice-v4-grid button span{font-size:11px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:15px}
+ .hh-app .hh-practice-head h1{font-size:33px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app .hh-practice-v4-grid button{transition:none}
+}
+
+/* Compact 320–430px master overview; preserve all six actions and 44px touch targets. */
+@media(max-width:430px){
+ .hh-app .hh-practice-dashboard{gap:7px}
+ .hh-app .hh-practice-head{min-height:95px;padding:10px 12px;border-radius:14px}
+ .hh-app .hh-practice-head h1{font-size:25px;line-height:1.12}
+ .hh-app .hh-practice-breadcrumb{margin-bottom:5px}
+ .hh-app .hh-practice-intro{font-size:11px;line-height:1.32}
+ .hh-app .hh-practice-status{margin-top:6px}
+ .hh-app .hh-practice-status-chip{padding:4px 7px}
+ .hh-app .hh-practice-v4-grid{gap:5px}
+ .hh-app .hh-practice-v4-grid button{min-height:66px;padding:5px 3px;gap:2px;border-radius:11px}
+ .hh-app .hh-practice-v4-grid button svg{width:18px;height:18px}
+ .hh-app .hh-practice-v4-grid button span{font-size:11px}
+ .hh-app .hh-practice-v4-grid button strong{font-size:12px}
+ .hh-app .hh-practice-v4-grid button small{font-size:9px}
+ .hh-app .hh-practice-v4-materials-cta{min-height:68px;padding:9px 11px;gap:7px;margin-top:6px;border-radius:12px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:15px}
+ .hh-app .hh-practice-v4-materials-cta small{font-size:10px}
+ .hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"]{scroll-margin-top:4px}
+}
+
+/* Consistent short service/profile editor controls on 320–430px, without
+   hiding advanced fields or weakening their explicit save/submit gates. */
+@media(max-width:430px){
+ .hh-app .hh-practice-form-panel{margin-top:9px;padding:10px;border-radius:13px}
+ .hh-app .hh-practice-form-panel .hh-practice-form-heading{margin-bottom:7px}
+ .hh-app .hh-practice-form-panel .hh-practice-form-heading h2{font-size:19px;line-height:1.2}
+ .hh-app .hh-practice-form-panel .hh-practice-close{min-height:44px}
+ .hh-app .hh-practice-presentation{gap:8px;margin:8px 0;padding:10px;border-radius:11px}
+ .hh-app .hh-practice-presentation-head{gap:3px}
+ .hh-app .hh-practice-presentation-head strong{font-size:13px}
+ .hh-app .hh-practice-presentation-head small{font-size:11px;line-height:1.35}
+ .hh-app .hh-practice-presentation-options button{min-height:44px}
+ .hh-app .hh-practice-presentation-input :is(input,textarea){font-size:16px}
+}
+
+
+/* V4.3 · One workspace at a time. The permanent 8-way switcher replaces
+   stacked independent detail screens without altering their data/auth flows. */
+.hh-app .hh-practice-dashboard[data-practice-active]{
+  width:100%;max-width:1180px;gap:7px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head{
+  min-height:0;margin:0;padding:8px 12px;border-radius:13px;
+  background:#fffcf7;box-shadow:none;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head h1{
+  font-size:20px;line-height:1.2;margin:0;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-breadcrumb,
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-intro,
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-status{
+  display:none;
+}
+.hh-app .hh-practice-v4-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button{
+  min-height:48px;padding:5px 3px;gap:3px;border-radius:11px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button small{
+  display:none;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button svg{
+  width:17px;height:17px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{
+  font-size:11px;line-height:1.15;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-panel{
+  margin:0;padding:10px 12px;border-radius:13px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-heading{
+  margin-bottom:8px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-heading h2{
+  font-size:21px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-card{
+  min-height:65px;padding:9px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-description{
+  font-size:10px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="materials"]{
+  padding:0;border:0;background:transparent;box-shadow:none;
+}
+@media(min-width:850px){
+ .hh-app .hh-practice-v4-grid{grid-template-columns:repeat(8,minmax(0,1fr))}
+}
+@media(max-width:430px){
+ .hh-app .hh-practice-dashboard[data-practice-active]{gap:5px}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head{
+   padding:6px 10px;border-radius:11px;min-height:0;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head h1{
+   font-size:18px;line-height:1.15;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid{
+   grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button{
+   min-width:0;min-height:46px;padding:4px 1px;gap:2px;border-radius:9px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button svg{
+   width:15px;height:15px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{
+   font-size:10px;line-height:1.15;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-panel{
+   margin:0;padding:7px;border-radius:12px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="materials"]{
+   padding:0;
+ }
+ .hh-app .hh-practice-inline-more .hh-practice-tool-card{min-height:58px;padding:7px}
+ .hh-app .hh-practice-inline-more .hh-practice-tool-description{display:none}
+}
+@media(max-width:350px){
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid{gap:3px}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{font-size:9px}
+}
+
+
+/* Mentor community: two compact shortcuts, not a duplicate ninth dashboard tab. */
+.hh-app .hh-practice-community-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.hh-app .hh-practice-community-shortcuts :is(a,button){box-sizing:border-box;display:flex;align-items:center;gap:9px;min-width:0;min-height:66px;padding:10px 12px;border:1px solid #e3d4c3;border-radius:14px;text-align:left;text-decoration:none;background:#fffcf7;color:#352a22;cursor:pointer;font:inherit}
+.hh-app .hh-practice-community-shortcuts :is(a,button):hover{border-color:#9ac8b8;background:#f1faf6}
+.hh-app .hh-practice-community-shortcuts :is(a,button):focus-visible{outline:3px solid #0b7a78;outline-offset:2px}
+.hh-app .hh-practice-community-shortcuts :is(a,button) > svg:first-child{width:25px;height:25px;flex:none;color:#0b7a78}
+.hh-app .hh-practice-community-shortcuts :is(a,button) > svg:last-child{width:16px;height:16px;flex:none;color:#846c55}
+.hh-app .hh-practice-community-shortcuts :is(a,button) span{flex:1;min-width:0;display:grid;gap:3px}
+.hh-app .hh-practice-community-shortcuts :is(a,button) strong{font:700 12px/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.hh-app .hh-practice-community-shortcuts :is(a,button) small{font:500 10px/1.35 system-ui,sans-serif;color:#756759}
+@media(max-width:360px){
+ .hh-app .hh-practice-community-shortcuts{gap:5px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button){gap:5px;padding:8px 7px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) > svg:first-child{width:20px;height:20px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) > svg:last-child{display:none}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) strong{font-size:11px}
+}
+
+/* Existing My Practice Clients panel → owner-only monthly support workflow. */
+.hh-practice-monthly-support-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;max-width:100%;padding:12px 15px;margin:10px 0;border:1px solid #d7c3a9;background:#fff8ed;border-radius:13px;color:#624530;font-size:13px;font-weight:800;text-decoration:none}
+.hh-practice-monthly-support-link:hover{background:#fff1dc}
+.hh-practice-monthly-support-link:focus-visible{outline:3px solid #b48756;outline-offset:3px}
+
+/* Mobile service editor: the primary panel is the frame. Avoid nested
+   containers consuming usable width on 320–430px iPhones. */
+@media(max-width:650px){
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor]){
+    width:100%;max-width:none;margin:0;padding:0;
+    background:transparent;border:0;border-radius:0;box-shadow:none;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor])>.hh-practice-form-heading{
+    padding:2px 2px 0;margin-bottom:5px;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor])>.hh-practice-form-heading h2{
+    font-size:21px;line-height:1.15;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor]) .hh-practice-close{
+    min-height:40px;padding:7px 11px;
+  }
+}
+
+
+/* My Practice · creation first. Keep the advanced eight-way switcher for
+   returning practitioners, but make the first task unmistakable on phones. */
+.hh-app .hh-practice-dashboard > .hh-practice-first-actions{order:2}
+.hh-app .hh-practice-first-actions{
+  min-width:0;display:grid;gap:11px;padding:clamp(13px,2.4vw,18px);
+  border:1px solid #ddc7b3;border-radius:21px;
+  background:linear-gradient(120deg,#fffdf9 0%,#f9f0e5 100%);
+  box-shadow:0 5px 23px #553b2511
+}
+.hh-app .hh-practice-first-actions-heading{display:grid;gap:4px}
+.hh-app .hh-practice-first-actions-heading > span{
+  color:#8f6050;font:800 10px/1.25 system-ui,sans-serif;
+  letter-spacing:.14em
+}
+.hh-app .hh-practice-first-actions-heading h2{
+  margin:0;color:#3e3028;font:400 clamp(22px,3.1vw,29px)/1.14 Georgia,serif;
+  letter-spacing:-.025em
+}
+.hh-app .hh-practice-first-actions-heading p{
+  margin:0;color:#78665a;font:500 12px/1.45 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-grid{
+  min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
+}
+.hh-app .hh-practice-first-action{
+  display:flex;align-items:center;gap:12px;min-width:0;width:100%;
+  min-height:104px;padding:15px 13px;cursor:pointer;text-align:left;
+  border:1px solid #dbc5b2;border-radius:17px;
+  transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease;
+  box-shadow:0 4px 12px #24170b13
+}
+.hh-app .hh-practice-first-action.is-service{
+  color:#fffdf8;border-color:#874b60;
+  background:linear-gradient(100deg,#772d4a 0%,#78374f 65%,#67434e 100%)
+}
+.hh-app .hh-practice-first-action.is-reiki{
+  color:#fffaf2;border-color:#8b7057;
+  background:linear-gradient(120deg,#74513b,#97734f 72%,#826044)
+}
+.hh-app .hh-practice-first-action.is-meditation{
+  color:#fffdf7;border-color:#58766d;
+  background:linear-gradient(90deg,#274b47f7 0%,#2d554fcf 61%,#2e4a4099 100%),
+  url('/images/holistic-house/reiki-practitioner-sunrise.webp') center/cover
+}
+.hh-app .hh-practice-first-action-icon{
+  flex:none;display:grid;place-items:center;width:42px;height:42px;
+  border-radius:13px;background:#ffffff25
+}
+.hh-app .hh-practice-first-action-icon svg{width:25px;height:25px}
+.hh-app .hh-practice-first-action-copy{
+  flex:1;display:grid;gap:5px;min-width:0
+}
+.hh-app .hh-practice-first-action-copy strong{
+  font:750 clamp(14px,1.55vw,17px)/1.22 system-ui,sans-serif;
+  overflow-wrap:anywhere
+}
+.hh-app .hh-practice-first-action-copy small{
+  color:#fff9eddb;font:500 11px/1.35 system-ui,sans-serif;
+  overflow-wrap:anywhere
+}
+.hh-app .hh-practice-first-action-arrow{width:17px;height:17px;flex:none}
+.hh-app .hh-practice-first-action[aria-expanded="true"] .hh-practice-first-action-arrow{transform:rotate(90deg)}
+.hh-app .hh-practice-first-action:hover:not(:disabled){
+  transform:translateY(-2px);box-shadow:0 7px 17px #24170b26
+}
+.hh-app .hh-practice-first-action:disabled{opacity:.57;cursor:not-allowed}
+.hh-app .hh-practice-first-actions :is(button):focus-visible{
+  outline:3px solid #c79542;outline-offset:3px
+}
+.hh-app .hh-practice-meditation-picker{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  padding:9px;border:1px solid #d7cabb;border-radius:15px;background:#fffdf8
+}
+.hh-app .hh-practice-meditation-picker button{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:60px;
+  padding:10px 11px;background:#f6eee2;border:1px solid #e3d7c8;
+  border-radius:12px;text-align:left;color:#46372a;cursor:pointer
+}
+.hh-app .hh-practice-meditation-picker button:hover{background:#e9f2eb;border-color:#95bdb0}
+.hh-app .hh-practice-meditation-picker button > svg:first-child{
+  width:24px;height:24px;flex:none;color:#0d7975
+}
+.hh-app .hh-practice-meditation-picker button > svg:last-child{
+  width:14px;height:14px;flex:none;color:#846f59
+}
+.hh-app .hh-practice-meditation-picker button span{flex:1;display:grid;min-width:0;gap:2px}
+.hh-app .hh-practice-meditation-picker button strong{
+  font:750 12px/1.25 system-ui,sans-serif;overflow-wrap:anywhere
+}
+.hh-app .hh-practice-meditation-picker button small{
+  color:#716355;font:500 10px/1.35 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-note{
+  display:flex;align-items:center;gap:7px;margin:0;
+  color:#77665b;font:500 11px/1.4 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-note svg{
+  width:15px;height:15px;flex:none;color:#127467
+}
+.hh-app .hh-practice-registration-intent{
+  margin:0 0 12px;padding:12px 14px;border:1px solid #c3dacf;
+  border-radius:13px;background:#edf7ef;color:#286254;
+  font:650 12px/1.45 system-ui,sans-serif
+}
+@media(max-width:640px){
+  .hh-app .hh-practice-first-actions{
+    gap:8px;padding:11px;border-radius:15px
+  }
+  .hh-app .hh-practice-first-actions-heading{gap:3px}
+  .hh-app .hh-practice-first-actions-heading h2{font-size:23px}
+  .hh-app .hh-practice-first-actions-heading p{font-size:11px}
+  .hh-app .hh-practice-first-actions-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .hh-app .hh-practice-first-action{
+    min-height:73px;padding:11px 12px;gap:10px;border-radius:13px
+  }
+  .hh-app .hh-practice-first-action-icon{height:39px;width:39px;border-radius:10px}
+  .hh-app .hh-practice-first-action-icon svg{height:23px;width:23px}
+  .hh-app .hh-practice-first-action-copy{gap:3px}
+  .hh-app .hh-practice-first-action-copy strong{font-size:15px}
+  .hh-app .hh-practice-first-action-copy small{font-size:10px}
+  .hh-app .hh-practice-first-actions-note{font-size:10px}
+}
+@media(max-width:360px){
+  .hh-app .hh-practice-meditation-picker{grid-template-columns:minmax(0,1fr)}
+  .hh-app .hh-practice-first-actions-heading h2{font-size:21px}
+  .hh-app .hh-practice-first-action-copy strong{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hh-app .hh-practice-first-action{transition:none}
+  .hh-app .hh-practice-first-action:hover:not(:disabled){transform:none}
+}
+
+
+/* Approved Oct-28 practitioner inner screens. Visual-only; data and actions stay
+   in the existing authenticated PracticeWorkspace, clients and request store. */
+.hh-app .hh-practice-inner-header{
+ display:flex;align-items:center;gap:10px;min-width:0;margin:0 0 15px;
+ color:#183b32;font:500 14px/1.35 system-ui,-apple-system,sans-serif}
+.hh-app .hh-practice-inner-heading{flex:1;min-width:0}
+.hh-app .hh-practice-inner-heading h2{color:#193d34;font:790 clamp(22px,3.5vw,29px)/1.12 system-ui,sans-serif;
+ margin:0 0 5px;letter-spacing:-.035em}
+.hh-app .hh-practice-inner-heading p{font:500 12px/1.45 system-ui,sans-serif;color:#8a7d6c;margin:0}
+.hh-app .hh-practice-inner-back,.hh-app .hh-practice-inner-alert{
+ position:relative;display:grid;place-items:center;flex:none;width:44px;height:44px;
+ padding:0;border:1px solid #e7e0d4;border-radius:50%;background:#fffcf8;
+ color:#215e4c;box-shadow:0 3px 10px #55432d0c;cursor:pointer}
+.hh-app .hh-practice-inner-unread{position:absolute;top:6px;right:6px;width:9px;height:9px;
+ background:#00a480;border:2px solid #fff;border-radius:50%}
+.hh-app .hh-practice-inner-dock{display:none}
+.hh-app .hh-inner-requests{display:grid;gap:10px;min-width:0}
+.hh-app .hh-inner-request-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hh-app .hh-inner-request-stats>div{display:grid;place-items:center;gap:4px;padding:13px 5px 11px;
+ min-height:81px;background:#fffbf5;border:1px solid #eee4d8;border-radius:16px;box-shadow:0 3px 12px #51432b09}
+.hh-app .hh-inner-request-stats>div[data-kind="new"]{background:#fff2dc;border-color:#efdcb7}
+.hh-app .hh-inner-request-stats>div[data-kind="working"]{background:#e6f2ec;border-color:#d3e5db}
+.hh-app .hh-inner-request-stats strong{color:#20483d;font:820 25px/1.05 system-ui,sans-serif}
+.hh-app .hh-inner-request-stats [data-kind="new"] strong{color:#b47b2a}
+.hh-app .hh-inner-request-stats small{color:#887d70;font:600 11px/1.3 system-ui,sans-serif;text-align:center}
+.hh-app .hh-inner-requests .hh-practice-service-toolbar{display:flex;align-items:center;justify-content:flex-end;
+ min-height:0;margin:-2px 0 -3px;padding:0;border:0;background:none}
+.hh-app .hh-inner-requests .hh-practice-service-toolbar h2{display:none}
+.hh-app .hh-inner-requests .hh-practice-requests-filter{display:flex;align-items:center;gap:7px;
+ color:#807365;font:650 12px/1.35 system-ui,sans-serif}
+.hh-app .hh-inner-requests .hh-practice-requests-filter select{min-height:40px;max-width:205px;
+ border:1px solid #e3d8c9;border-radius:10px;background:#fffdf9;color:#305749;
+ font:650 12px/1.2 system-ui,sans-serif;padding:7px 9px}
+.hh-app .hh-inner-request-tabs{display:flex;gap:7px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:0 0 3px}
+.hh-app .hh-inner-request-tabs button{flex:none;min-height:44px;padding:9px 13px;border-radius:12px;
+ border:1px solid #e6d9ca;color:#756b5f;background:#fffefa;
+ font:700 12px/1.3 system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.hh-app .hh-inner-request-tabs button[aria-pressed="true"]{background:#008971;border-color:#008971;color:#fff}
+.hh-app .hh-inner-requests>p.hh-fine{font:550 11px/1.3 system-ui,sans-serif;margin:0;color:#918578}
+.hh-app .hh-inner-request-card{display:grid;gap:12px;min-width:0;margin:0;padding:13px;
+ background:linear-gradient(135deg,#fffefa,#fffaf4);border:1px solid #ece4d9;border-radius:16px;
+ box-shadow:0 4px 14px #57442c0b}
+.hh-app .hh-inner-request-card-head{display:flex;align-items:center;gap:9px;min-width:0}
+.hh-app .hh-inner-request-avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;
+ border:2px solid #fff;border-radius:50%;background:#e4efe8;color:#397062;
+ font:790 17px/1 system-ui,sans-serif;box-shadow:0 0 0 1px #cee2d6}
+.hh-app .hh-inner-request-identity{display:grid;flex:1;min-width:0;gap:3px}
+.hh-app .hh-inner-request-identity strong{font:770 13px/1.32 system-ui,sans-serif;color:#244137;overflow-wrap:anywhere}
+.hh-app .hh-inner-request-identity small{font:520 11px/1.4 system-ui,sans-serif;color:#8f8375}
+.hh-app .hh-inner-request-state{flex:none;max-width:40%;padding:5px 8px;border-radius:9px;
+ background:#eef0eb;color:#686e65;font:760 10px/1.24 system-ui,sans-serif;text-align:center}
+.hh-app .hh-inner-request-state[data-status="requested"]{background:#fff0d1;color:#ac7622}
+.hh-app .hh-inner-request-state[data-status="contacted"],
+.hh-app .hh-inner-request-state[data-status="in_progress"],
+.hh-app .hh-inner-request-state[data-status="confirmed"],
+.hh-app .hh-inner-request-state[data-status="booked"]{background:#e2f3e9;color:#21775d}
+.hh-app .hh-inner-request-service{display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:4px 10px;min-width:0;border-top:1px solid #f2ebdf;padding-top:10px}
+.hh-app .hh-inner-request-service strong{grid-column:1;color:#26443b;font:730 12px/1.34 system-ui,sans-serif}
+.hh-app .hh-inner-request-service small{grid-column:1;color:#897c6f;font:540 11px/1.4 system-ui,sans-serif}
+.hh-app .hh-inner-request-service b{grid-column:2;grid-row:1 / 3;align-self:center;
+ color:#224939;font:780 13px/1.24 system-ui,sans-serif;white-space:nowrap}
+.hh-app .hh-inner-request-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hh-app .hh-inner-request-actions>button{display:inline-flex;gap:6px;align-items:center;
+ min-height:44px;padding:9px 13px;border:1px solid #008f72;border-radius:11px;
+ background:linear-gradient(110deg,#009e7d,#007d65);color:#fff;font:750 12px/1.25 system-ui,sans-serif;cursor:pointer}
+.hh-app .hh-inner-request-actions small{font:500 10px/1.4 system-ui,sans-serif;color:#928473}
+.hh-app .hh-inner-request-details{border-top:1px solid #ede5db;padding-top:7px}
+.hh-app .hh-inner-request-details>summary{display:flex;justify-content:space-between;align-items:center;
+ gap:8px;cursor:pointer;min-height:43px;list-style:none;color:#21715c;font:730 12px/1.3 system-ui,sans-serif}
+.hh-app .hh-inner-request-details>summary::-webkit-details-marker{display:none}
+.hh-app .hh-inner-request-details[open]>summary svg{transform:rotate(90deg)}
+.hh-app .hh-inner-request-advanced{display:grid;gap:8px;padding:8px 2px 2px;min-width:0;overflow-wrap:anywhere}
+.hh-app .hh-inner-request-advanced .hh-actions{display:flex;flex-wrap:wrap;gap:8px}
+.hh-app .hh-inner-request-advanced .hh-actions button{min-height:44px;max-width:100%;font-size:12px}
+/* The existing workspace controls are replaced by a clear inner header/dock only
+   for the mock's pages; other powerful editor modes retain their own structure. */
+@media(max-width:720px){
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-head,
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-v4-launch{display:none}
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-form-panel{
+   padding:0;border:0;box-shadow:none;background:transparent;margin:0;overflow:visible}
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"]) .hh-practice-form-heading{display:none}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-inner-dock{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;align-items:stretch;
+  position:fixed;z-index:71;bottom:0;left:0;right:0;
+  padding:8px max(9px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));
+  background:#fffdf9f5;border-top:1px solid #e9e0d4;backdrop-filter:blur(17px);
+  box-shadow:0 -6px 18px #4b3b2b14;max-width:610px;margin-inline:auto;border-radius:18px 18px 0 0}
+ .hh-app .hh-practice-inner-dock :is(a,button){display:flex;flex-direction:column;align-items:center;
+   justify-content:center;gap:4px;min-width:0;min-height:50px;padding:6px 2px;
+   border:0;border-radius:11px;background:transparent;text-decoration:none;
+   color:#857e71;font:650 10px/1.16 system-ui,sans-serif;text-align:center}
+ .hh-app .hh-practice-inner-dock :is(a,button) svg{flex:none;width:21px;height:21px}
+ .hh-app .hh-practice-inner-dock button[aria-current="page"]{color:#007e63;background:#e3f3eb;font-weight:790}
+ .hh-app .hh-practice-inner-dock :is(a,button):focus-visible{outline:3px solid #00866a;outline-offset:1px}
+ .hh-app .hh-practice-dashboard:has(.hh-practice-inner-dock){padding-bottom:calc(95px + env(safe-area-inset-bottom))}
+ body:has(.hh-practice-inner-dock) .hh-mobile-app-nav{display:none!important}
+ body:has(.hh-practice-inner-dock) .hh-app:has(input:focus,textarea:focus) .hh-practice-inner-dock{display:none}
+}
+@media(max-width:355px){
+ .hh-app .hh-inner-request-stats{gap:5px}
+ .hh-app .hh-inner-request-stats>div{padding:11px 3px}
+ .hh-app .hh-inner-request-service{grid-template-columns:1fr}
+ .hh-app .hh-inner-request-service b{grid-column:1;grid-row:auto}
+ .hh-app .hh-practice-inner-heading h2{font-size:21px}
+ .hh-app .hh-practice-inner-heading p{font-size:11px}
+ .hh-app .hh-practice-inner-dock :is(a,button){font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app .hh-inner-request-details>summary svg{transition:none}
+}
+
+
+/* 28-Oct approved public → protected practitioner design continuity.
+   The private AppWorkspace keeps the same authenticated APIs, RLS and editor
+   state. Only its obsolete personal-account chrome is removed. */
+body:has(.hh-app--practice-inner){
+  background:radial-gradient(circle at 12% 8%,#e8f0e7,transparent 34%),
+    linear-gradient(160deg,#f7f1e6,#f1ecdf);
+}
+.hh-app.hh-app--practice-inner{
+  --hh-ink:#193e33;--hh-paper:#fffefa;--hh-accent:#008e71;
+  --hh-line:#e8ddce;--hh-muted:#86796b;
+  width:min(100%,1020px);min-height:100svh;margin:0 auto;
+  padding:clamp(10px,2.4vw,23px) clamp(10px,3vw,26px)
+    calc(106px + env(safe-area-inset-bottom));
+  background:transparent;color:#214136;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard{
+  max-width:100%;width:100%;gap:10px;margin:0;
+  padding:0;color:#1d4034;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-head,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-v4-launch,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-setup{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+  width:100%;max-width:100%;min-width:0;
+  display:grid;gap:12px;margin:0!important;padding:0!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;border-radius:0!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel>.hh-practice-form-heading{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-header{
+  margin:0 0 6px;padding:5px 2px 8px;
+  color:#193d32;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{
+  margin:0 0 5px;font:800 clamp(23px,4vw,30px)/1.12 system-ui,-apple-system,sans-serif;
+  color:#183c31;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading p{
+  margin:0;color:#857a6c;font:520 12px/1.38 system-ui,sans-serif;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-back,
+.hh-app.hh-app--practice-inner .hh-practice-inner-alert{
+  min-width:44px;min-height:44px;max-width:44px;max-height:44px;
+  color:#0c8167;background:#fffcf7;border:1px solid #eae1d5;
+  border-radius:50%;padding:0;
+}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="clients"]>div,
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="requests"]>div{
+  min-width:0;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-card{
+  border-color:#e7ded2;border-radius:17px;
+  box-shadow:0 5px 15px #5846310a;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-actions button{
+  background:linear-gradient(115deg,#00a27f,#007c62);
+  color:white;border-color:#008d6d;
+}
+.hh-app.hh-app--practice-inner .hh-practice-form-panel :is(button,a,summary,input,textarea,select):focus-visible{
+  outline:3px solid #008d72;outline-offset:2px;
+}
+@media(max-width:720px){
+ .hh-app.hh-app--practice-inner{padding:10px 11px calc(111px + env(safe-area-inset-bottom))}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+   padding:0!important;gap:8px;margin:0!important
+ }
+ .hh-app.hh-app--practice-inner .hh-practice-inner-header{padding:0 0 6px;margin:0}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:clamp(21px,5.5vw,27px)}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard:has([data-service-slide-editor]) .hh-practice-inner-dock{
+   display:none!important; /* Don't cover the service wizard Save/Continue. */
+ }
+ .hh-app.hh-app--practice-inner:has(input:focus,textarea:focus) .hh-practice-inner-dock{
+   display:none!important; /* Native keyboard must not hide Send/Save. */
+ }
+}
+@media(max-width:355px){
+ .hh-app.hh-app--practice-inner{padding-inline:7px}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app.hh-app--practice-inner *{scroll-behavior:auto!important;transition:none!important}
+}

@@ -14,7 +14,7 @@ test('v4 has ten distinct non-diagnostic bilingual questionnaires with reproduci
   assert.equal(EXPANDED_BATTERY_V4_DEFINITIONS.length, 20)
   assert.equal(new Set(EXPANDED_BATTERY_V4_KEYS).size, 10)
   assert.equal(new Set(EXPANDED_BATTERY_V4_DEFINITIONS.map(({ id }) => id)).size, 20)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 145)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 150)
   for (const key of EXPANDED_BATTERY_V4_KEYS) {
     const item = MONITORING_CATALOG.find(entry => entry.key === key)
     assert.equal(item?.guestEligible, true)

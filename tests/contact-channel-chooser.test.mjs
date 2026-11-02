@@ -37,19 +37,29 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
-    'Куда отправить вашу заявку?', 'Where would you like to send your request?',
-    '¿Dónde quieres enviar tu solicitud?', 'WhatsApp', 'Telegram',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
+    'Оставьте контакт, чтобы записаться или узнать подробности',
+    'Leave your contact to enquire or join',
+    'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
     'data-contact-channel-chooser', 'data-contact-order',
     'telegramEnquiryUrlFromWhatsApp', 'role="group"',
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.doesNotMatch(src, /<input|<textarea|<form|fetch\(|localStorage|sendBeacon|autoSubmit/i);
+  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
+  assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
+  assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
+  assert.match(src, /<form onSubmit=\{submit\}/);
+  assert.match(src, /fetch\("\/api\/service-enquiries"/);
+  assert.match(src, /if \(!response\.ok \|\| data\.saved !== true/);
+  assert.match(src, /\{!saved \? \(/);
+  assert.doesNotMatch(src, /localStorage|sendBeacon|autoSubmit/i);
   assert.match(css, /\.trigger/);
   assert.match(css, /min-height:56px/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /:focus-visible/);
+  assert.match(css, /\.optionalNote > summary/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /@container \(max-width: 300px\)/);
   assert.match(src, /onChannelClick\?\./);
@@ -62,19 +72,39 @@ test("primary capture components render channel chooser after service selection 
     "components/academy-course-capture.tsx",
     "components/energywork-reiki-capture.tsx",
     "components/consultation-choice-capture.tsx",
-    "components/sitewide-lead-capture.tsx",
     "components/core-service-detail.tsx",
     "components/yggdrasil-initiation-form.tsx",
-    "components/tantra-initiation-form.tsx",
+    "components/tantra-initiation-choice.tsx",
     "components/principles-of-energywork.tsx",
     "components/temple-initiation-chooser.tsx",
-    "components/free-drawing-intake.tsx",
   ]) {
     const src = read(path);
     assert.match(src, /<ContactChannelChooser/, path);
     assert.match(src, /whatsappUrl=\{/, path);
   }
+  assert.match(read("components/tantra-initiation-form.tsx"), /<TantraInitiationChoice/);
+  assert.match(read("components/tantra-initiation-form.tsx"), /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
+  const privateEntry = read("components/free-drawing-intake.tsx");
+  assert.doesNotMatch(privateEntry, /ContactChannelChooser|navigator\.clipboard/);
+  assert.match(privateEntry, /\/coaching\/intake/);
   assert.match(read("components/yggdrasil-initiation-form.tsx"), /href=\{pdfUrl\} download/);
   assert.match(read("components/reiki-choice-capture.tsx"), /href=\{guideUrl\}/);
   assert.match(read("components/consultation-choice-capture.tsx"), /isPaidRequest \? \(/);
+  // The global last-slide lead form uses the committed CRM intake directly.
+  const footer = read("components/sitewide-lead-capture.tsx");
+  assert.match(footer, /<CompactLeadCapture/);
+  assert.doesNotMatch(footer, /<ContactChannelChooser/);
+
+});
+
+test("cart form is inert until real hydration, with phone and explicit consent still required", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
+  assert.match(ui, /cartContact && !cartFormHydrated/);
+  assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(ui, /\!consent/);
+  assert.match(qa, /form\[data-contact-hydrated="true"\]/);
+  assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
+  assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
 });

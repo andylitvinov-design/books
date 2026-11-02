@@ -20,7 +20,7 @@ test('lesson-entry measure asks for presence and uses its own positive anchors i
 })
 
 test('legacy discomfort measures remain unchanged to avoid reversing persisted scores', () => {
-  assert.match(player, /checkinQuestion: 'Насколько эта трудность ощущалась за последние 24 часа\?'/)
+  assert.match(player, /checkinQuestion: 'Оцените силу беспокойства за последние 24 часа\.'/)
   assert.match(player, /practicePrePrompt: 'Прямо перед упражнением: насколько трудно/)
   assert.match(player, /practicePostPrompt: 'Сразу после упражнения: насколько трудно/)
   assert.match(player, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)

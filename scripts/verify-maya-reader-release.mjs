@@ -30,7 +30,7 @@ export function assertPage(html, pathname, locale) {
   assert.ok(!/id=["']__next_error__["']/.test(html), `Server error document at ${pathname}`);
   assert.match(html, /<h1\b[^>]*>[^<]+/i, `Missing page heading at ${pathname}`);
   if (pathname === '/books/maya-tradition') {
-    for (const [slug] of volumes) assert.ok(html.includes(`/books/${slug}?lang=en`), `Missing hub link for ${slug}`);
+    for (const [slug] of volumes) assert.ok(html.includes(`/en/books/${slug}`), `Missing hub link for ${slug}`);
   } else {
     assert.match(html, /<article\b[^>]*class=["'][^"']*\breader-article\b/i, `Missing rendered reader at ${pathname}`);
     assert.ok(new RegExp(`<main\\b[^>]*lang=["']${locale}["']`).test(html), `Wrong reader language at ${pathname}`);
@@ -42,7 +42,7 @@ export async function verifyLive(origin = 'https://holistichouse.vercel.app') {
   assert.equal(base.protocol, 'https:', 'Hosted verification requires HTTPS');
   const routes = [
     ['/books/maya-tradition', 'en'],
-    ...volumes.flatMap(([slug]) => [[`/books/${slug}?lang=en`, 'en'], [`/books/${slug}`, 'ru']]),
+    ...volumes.flatMap(([slug]) => [[`/en/books/${slug}`, 'en'], [`/ru/books/${slug}`, 'ru']]),
   ];
   // GitHub can finish its build before Vercel starts its queued production build.
   // Allow a bounded two-minute alias-settling window without accepting any failed route.

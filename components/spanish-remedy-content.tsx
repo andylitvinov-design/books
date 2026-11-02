@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { splitAtRemedyIndications } from '@/lib/remedies/symptom-placement';
+import { RemedySymptomsSection } from '@/components/remedy-symptoms-section';
 // Render the entire translated source as safe React text, never raw HTML.
 function Blocks({ value }: { value: string }) {
   const lines = value.split('\n');
@@ -19,9 +21,15 @@ function Blocks({ value }: { value: string }) {
   }
   return <>{result}</>;
 }
-export function SpanishRemedyContent({ description }: { description: string }) {
+export function SpanishRemedyContent({ description, slug }: { description: string; slug: string }) {
   const marker = /^##\s+Materiales (?:y observaciones adicionales|adicionales del autor en Telegram)\s*$/im.exec(description);
   const primary = marker ? description.slice(0, marker.index) : description;
   const supplementary = marker ? description.slice(marker.index + marker[0].length) : '';
-  return <div className="remedy-content-body remedy-content-body--standalone"><div className="remedy-content-intro"><Blocks value={primary} /></div>{supplementary && <details className="remedy-supplementary"><summary>Materiales y observaciones adicionales</summary><div><Blocks value={supplementary} /></div></details>}</div>;
+  const split = splitAtRemedyIndications(primary.split(/\n{2,}/).map(block => block.trim()).filter(Boolean));
+  return <div className="remedy-content-body remedy-content-body--standalone">
+    {split.before.length > 0 && <div className="remedy-content-intro"><Blocks value={split.before.join('\n\n')} /></div>}
+    <RemedySymptomsSection slug={slug} locale="es" />
+    {split.after.length > 0 && <div className="remedy-content-intro"><Blocks value={split.after.join('\n\n')} /></div>}
+    {supplementary && <details className="remedy-supplementary"><summary>Materiales y observaciones adicionales</summary><div><Blocks value={supplementary} /></div></details>}
+  </div>;
 }

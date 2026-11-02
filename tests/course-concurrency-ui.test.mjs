@@ -40,7 +40,7 @@ test('course command ignores a delayed mutation and old child updates after an a
   h.unmount()
 })
 
-test('additional-course start requires checked consent and keeps a stable course ID after an uncertain result', async () => {
+test('additional-course start takes one explicit click and keeps a stable course ID after an uncertain result', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? { error: 'SERVICE_UNAVAILABLE' } : courseView() })
   await h.settle()
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -49,13 +49,10 @@ test('additional-course start requires checked consent and keeps a stable course
       findButton(h.tree, 'My courses').props.onClick(); await h.settle()
       findPart(h.tree, 'MyCoursesDashboard').props.onNew(); await h.settle()
     }
+    // A signed-in learner already chose Start: no repeated modal or checkbox.
     findPart(h.tree, 'CoursePresetCatalog').props.onPersonal(); await h.settle()
-    let consent = findButton(h.tree, 'Agree & start')
-    assert.equal(consent.props.disabled, true)
-    nodes(h.tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
-    await h.settle(); consent = findButton(h.tree, 'Agree & start')
-    assert.equal(consent.props.disabled, false)
-    consent.props.onClick(); await h.settle()
+    assert.equal(findButton(h.tree, 'Agree & start'), undefined)
+    assert.equal(h.calls.filter(call => call.body).length, attempt + 1)
   }
   const writes = h.calls.filter(call => call.body)
   assert.equal(writes.length, 2)

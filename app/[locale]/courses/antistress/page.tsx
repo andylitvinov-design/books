@@ -7,16 +7,16 @@ import { metadataBaseFor } from "@/data/site-metadata";
 type Props = { params: Promise<{ locale: string }> };
 const seo = {
   ru: {
-    title: "ОПОРА Антистресс — 6 учебных этапов · 14 занятий | Holistic House",
-    description: "Адаптивная программа ОПОРА Антистресс: два коротких опроса, персональная рекомендация одного из 6 курсов по 14 дней, интерактивные практики и добровольная проверка результатов."
+    title: "ОПОРА Антистресс — 14 занятий · 6 маршрутов | Holistic House",
+    description: "ОПОРА Антистресс: персональный маршрут из шести вариантов, 14 занятий, бережные интерактивные упражнения и добровольная обратная связь. Клинический маршрут — только со специалистом."
   },
   en: {
-    title: "OPORA Anti-Stress — Six 14-Day Courses | Holistic House",
-    description: "Explore one adaptive Anti-Stress programme: two short questionnaires, a choice of six learning-phase 14-day courses, interactive exercises and optional outcome tracking."
+    title: "OPORA Anti-Stress — 14 Days & 6 Learning Paths | Holistic House",
+    description: "One adaptive 14-day Anti-Stress programme with six learning paths, gentle interactive exercises and optional progress reflection. The clinical path requires a professional."
   },
   es: {
-    title: "OPORA Antiestrés — Seis cursos de 14 días | Holistic House",
-    description: "Un programa de Antiestrés con seis cursos de 14 días, dos evaluaciones breves, una recomendación personalizada y prácticas educativas."
+    title: "OPORA Antiestrés — 14 días y 6 rutas | Holistic House",
+    description: "Programa personalizado de Antiestrés de 14 días con seis rutas, ejercicios suaves y reflexión opcional. La ruta clínica requiere un profesional."
   }
 } as const;
 
@@ -39,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         "x-default": "/en/courses/antistress",
       }
     },
+    manifest: "/opora-antistress-" + locale + ".webmanifest",
     openGraph: {
       type: "website",
       title: t.title,

@@ -8,6 +8,11 @@ import CourseGuidedTimer from './course-guided-timer'
 import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import OporaV6SlidePlayer from './opora-v6-slide-player'
+import OporaExperiencePlayer from './opora-experience-player'
+import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
+import {COURSE_ANTISTRESS_SKILLS_V7} from '@/lib/inner-growth/anti-stress-skills-v7'
+import {COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
 import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
 import Course14DayOverview from './course-14-day-overview'
@@ -16,6 +21,7 @@ import { startOrResumeCourseFinalRetest, startOrResumeCourseWeeklyCheckpoint } f
 import { ANTISTRESS_MODULE_FINDER_ITEMS } from '@/lib/inner-growth/antistress-module-router'
 import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
+import CourseImmersiveStart from './course-immersive-start'
 import styles from './course-today.module.css'
 
 const UI={
@@ -26,8 +32,12 @@ const UI={
   addNote:'Optional private note',skip:'Skip this check-in',save:'Save today’s check-in',update:'Correct today’s check-in',
   saved:'Your check-in was saved. You can correct it without changing previous days.',
   thought:'Thought of the day',idea:'Why we practise this',meditation:'Guided practice',ritual:'Your small ritual',
-  reflection:'Integration and reflection',afterNow:'How strong is the feeling RIGHT NOW, after the exercise? (optional)',
-  beforeNow:'How strong was it RIGHT BEFORE the exercise? (optional)',feedback:'How did the practice feel?',
+  reflection:'Integration and reflection',afterNow:'How difficult did the same focus feel just after the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeNow:'How difficult did this focus feel just before the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeAvailability:'Before: how available did this small step feel? (0 = not yet available, 10 = available)',
+  afterAvailability:'After: how available did this small step feel? (0 = not yet available, 10 = available)',
+  availabilityClarification:'This earlier lesson used an availability scale: a higher number means the step felt more available, not greater distress.',
+  feedback:'How did the practice feel?',
   helpful:'Helpful',neutral:'Neutral',uncomfortable:'Uncomfortable',noAnswer:'Prefer not to say',
   journal:'Optional private reflection',finish:'Save completed practice',finished:'Today’s practice is saved.',
   step:'Step',next:'Next step',start:'Start practice',restart:'Read again',short:'2-minute practice',
@@ -86,8 +96,12 @@ const UI={
   addNote:'Личная заметка (необязательно)',skip:'Пропустить замер',save:'Сохранить сегодняшний замер',update:'Исправить сегодняшний замер',
   saved:'Замер сохранён. Сегодня его можно исправить, не меняя предыдущие дни.',
   thought:'Афоризм дня',idea:'Для чего эта практика',meditation:'Направленная практика',ritual:'Маленький ритуал',
-  reflection:'Интеграция и рефлексия',afterNow:'Насколько сильно ощущение ПРЯМО СЕЙЧАС после упражнения? (необязательно)',
-  beforeNow:'Насколько сильно оно было НЕПОСРЕДСТВЕННО ПЕРЕД упражнением? (необязательно)',feedback:'Как прошла практика?',
+  reflection:'Интеграция и рефлексия',afterNow:'Насколько трудной ощущалась эта тема сразу после упражнения? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeNow:'Насколько трудной ощущалась эта тема прямо перед упражнением? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeAvailability:'До: насколько доступным казался небольшой шаг? (0 — пока недоступен, 10 — доступен)',
+  afterAvailability:'После: насколько доступным казался тот же шаг? (0 — пока недоступен, 10 — доступен)',
+  availabilityClarification:'В этой ранней версии шкала показывала доступность шага: большее число — доступнее, а не сильнее беспокойство.',
+  feedback:'Как прошла практика?',
   helpful:'Помогло',neutral:'Нейтрально',uncomfortable:'Было некомфортно',noAnswer:'Не хочу отвечать',
   journal:'Личная рефлексия (необязательно)',finish:'Сохранить выполнение',finished:'Сегодняшняя практика сохранена.',
   step:'Шаг',next:'Следующий шаг',start:'Начать практику',restart:'Прочитать ещё раз',short:'2-минутная практика',
@@ -140,9 +154,10 @@ const UI={
   symbolSafety:'Образ используется только для личной рефлексии, не является диагнозом или лечением. Можно перейти к словам или пропустить.',
  }
 }
-async function api(action,locale,body,{accountId,courseId,signal}={}){
+async function api(action,locale,body,{accountId,courseId,signal,reviewDay=null}={}){
   if(!accountId||!courseId)throw new Error('COURSE_SELECTION_REQUIRED')
-  const response=await fetch('/api/app/course/'+action+'?locale='+encodeURIComponent(locale)+'&courseId='+encodeURIComponent(courseId),{
+  const response=await fetch('/api/app/course/'+action+'?locale='+encodeURIComponent(locale)+'&courseId='+encodeURIComponent(courseId)+
+    (reviewDay===null?'':'&reviewDay='+encodeURIComponent(String(reviewDay))),{
     method:body?'POST':'GET',cache:'no-store',credentials:'same-origin',signal,
     headers:{'X-HH-Account-ID':accountId,...(body?{'Content-Type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined,
@@ -175,7 +190,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null}){
+export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null,launchDirectly=false,onLaunchConsumed=null}){
  const notifyLessonSaved=useLessonCompletionOffer()
  const router=useRouter()
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
@@ -183,11 +198,20 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const data=snapshot?.accountId===accountId&&snapshot?.courseId===courseId?snapshot.value:null
  const promotion=useCoursePromotion(accountId,{courseId,cycleId:data?.cycle?.id,day:data?.cycle?.day,lessonId:data?.lesson?.id})
  const currentScope=useRef({accountId,courseId}),mounted=useRef(false),generation=useRef(0),readVersion=useRef(0)
- const readController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
+ const readController=useRef(null),reviewController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
  currentScope.current={accountId,courseId,cycleId:data?.cycle?.id||null}
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [reviewLesson,setReviewLesson]=useState(null),[reviewBusy,setReviewBusy]=useState(null),[reviewError,setReviewError]=useState('')
  const [focusOpen,setFocusOpen]=useState(true)
+ // The just-approved post-test CTA launches lesson 1 as soon as owner-scoped
+ // Today data is ready. Keep the intent only in this mounted React flow.
+ const firstLessonIntent=useRef(false),firstLessonConsumed=useRef(false)
+ const launchConsumedCallback=useRef(onLaunchConsumed)
+ useEffect(()=>{launchConsumedCallback.current=onLaunchConsumed},[onLaunchConsumed])
+ useEffect(()=>{
+   if(launchDirectly && !firstLessonConsumed.current) firstLessonIntent.current=true
+ },[launchDirectly])
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
  const [modulePrimarySkipped,setModulePrimarySkipped]=useState(false)
@@ -224,8 +248,14 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     setSymbolMode('image')
     setExpanded('checkin')
     setQuestOpen(false)
+    setReviewLesson(null)
     setFocusOpen(true)
-    setView('today')
+    // Returning learners land on the existing zigzag 14-day quest map instead
+    // of replaying the scenic first-start screen. Keep the first-ever lesson
+    // and post-assessment direct launch unchanged.
+    const resumingStress = response?.programme?.id === 'stress' &&
+      (Number(response?.progress?.practiceCount || 0) > 0 || Number(response?.cycle?.day || 0) > 1)
+    setView(resumingStress ? 'path' : 'today')
   }else {
     if(response?.currentSession){
       setBeforeNow(response.currentSession.beforeNow)
@@ -239,6 +269,19 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       setResource(response.currentCheckin.resource)
       setDailyNote(response.currentCheckin.note||'')
     }
+  }
+  // The first screen already gave the learner the programme context and
+  // obtained explicit consent. Do not show a second welcome or scenic CTA.
+  // Never skip required activation, pause, course completion or review gates.
+  if(firstLessonIntent.current&&!firstLessonConsumed.current &&
+    response?.programme?.id==='stress' && response?.cycle?.status==='active' &&
+    !response.readOnly && !response.requiresTarget && !response.currentSession){
+    firstLessonIntent.current=false
+    firstLessonConsumed.current=true
+    setFocusOpen(false)
+    setView('today')
+    setQuestOpen(true)
+    launchConsumedCallback.current?.()
   }
  },[accountId,courseId])
  const reload=useCallback(async()=>{
@@ -259,9 +302,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  useEffect(()=>{
   mounted.current=true;generation.current+=1;submitLock.current=null
   retestLock.current=null;setRetestBusyKey('');setRetestError('')
-  hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false)
+  hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false);setReviewLesson(null);setReviewBusy(null);setReviewError('')
   void reload()
-  return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort()}
+  return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort();reviewController.current?.abort()}
  },[reload])
  const viewGeneration=generation.current
  async function submit(action,body={},after,presentation='aside'){
@@ -335,6 +378,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  if(loading&&!data)return <section className={'hh-panel '+styles.shell} aria-busy="true">{ru?'Открываем ваш ежедневный курс…':'Opening your daily course…'}</section>
  if(!data)return <section className={'hh-panel '+styles.shell} role="alert"><p>{t.error}</p><button type="button" onClick={reload}>{t.retry}</button></section>
  const cycle=data.cycle,lesson=data.lesson,progress=data.progress||{},target=data.target||{},today=data.currentCheckin
+ const legacyAvailabilityRatings = cycle?.contentVersion === COURSE_ANTISTRESS_SKILLS_V6
  const continuationGoals=(data.continuationGoals||[]).filter(goal=>GROWTH_GOALS[goal])
  const nextGoal=continuationGoals.includes(newGoal)?newGoal
   :continuationGoals.includes(cycle?.primaryGoal)?cycle.primaryGoal:continuationGoals[0]||''
@@ -354,14 +398,60 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
  const focusEpoch=generation.current
+ async function openLessonDay(day){
+   if(!Number.isInteger(day)||!data||data.readOnly||busy)return
+   if(day===cycle.day){
+     setReviewLesson(data.currentSession?{
+       day,lesson:data.lesson,session:data.currentSession,
+     }:null)
+     setFocusOpen(false);setQuestOpen(true);return
+   }
+   if(!data.roadmap?.some(item=>item.day===day&&item.status==='completed'))return
+   reviewController.current?.abort()
+   const controller=new AbortController();reviewController.current=controller
+   const epoch=generation.current,cycleId=cycle.id
+   setReviewBusy(day);setReviewError('')
+   try{
+     const response=await api('today',locale,undefined,{accountId,courseId,signal:controller.signal,reviewDay:day})
+     if(!mounted.current||controller.signal.aborted||generation.current!==epoch||
+       currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||
+       currentScope.current.cycleId!==cycleId)return
+     if(response.courseId!==courseId||response.cycle?.id!==cycleId||
+       response.review?.day!==day||!response.review?.session?.completedAt||
+       !response.review?.lesson)throw new Error('COURSE_REVIEW_DAY_UNAVAILABLE')
+     setReviewLesson(response.review);setQuestOpen(true)
+   }catch(e){
+     if(!controller.signal.aborted&&mounted.current&&generation.current===epoch)
+       setReviewError(e.message||'COURSE_REVIEW_DAY_UNAVAILABLE')
+   }finally{
+     if(reviewController.current===controller){reviewController.current=null;setReviewBusy(null)}
+   }
+ }
+ const playerData=reviewLesson?{
+   ...data,cycle:{...cycle,day:reviewLesson.day},lesson:reviewLesson.lesson,
+   programme:data.programme?{...data.programme,
+     day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
+   currentSession:reviewLesson.session,currentCheckin:null,
+ }:data
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
+ const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
    setFocusOpen(false)
+   setReviewLesson(completed?{day:cycle.day,lesson:data.lesson,session:data.currentSession}:null)
    if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
    if(data.finalRetest?.ready){showFinalRetest();return}
    if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
    setQuestOpen(true)
  }
+ const immersiveStart=view==='today'&&data.programme?.id==='stress'
+ const scenicCtaLabel=paused?(ru?'Возобновить курс':'Resume course'):
+   data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests'):
+   isFinished?(ru?'Посмотреть итоги курса':'Review course results'):
+   completed&&reportDay&&!reviewed?(ru?'Подвести итоги недели':'Review my week'):
+   completed?(ru?'Посмотреть урок дня':'Review today’s lesson'):
+   (Number(progress.practiceCount)||0)===0&&cycle?.day===1?(ru?'Начать мой курс':'Start my course'):
+   (ru?'Начать практику':'Start today’s practice')
  if(data.readOnly) return <section className={'hh-panel '+styles.shell} data-course-readonly-history>
    <h2>{ru?'История курса':'Course history'}</h2>
    <p>{ru?'Курс завершён вами. Сохранённые наблюдения доступны для чтения.':'You closed this course. Your saved observations remain available to read.'}</p>
@@ -392,28 +482,33 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
    {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_ACTIVE_LIMIT','COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.courseLimit:t.error} ({error})</p>}
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
- return <section className={styles.shell} data-daily-course data-course-view={view}>
-  {focusOpen&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
+ return <section className={styles.shell} data-daily-course data-course-view={view} data-course-immersive={immersiveStart?'true':undefined}>
+  {focusOpen&&data.programme?.id!=='stress'&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
     progress={progress} programme={data.programme} completed={completed}
     finished={isFinished} busy={busy||(paused&&resumeBlocked)} onStart={startFocusLesson}
     onExit={()=>onExit?.()}/>}
 
-  {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
+  {view==='today'&&!immersiveStart&&<div className={styles.todayGreeting} data-course-today-heading>
     <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
     <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
       <Sparkles size={20} aria-hidden="true"/>{20*(Number(progress.practiceCount)||0)} XP
     </span>
   </div>}
-  <div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
+  {!immersiveStart&&<div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
     {[
       ['today',ru?'Сегодня':'Today'],
       ['path',ru?'Путь · 14 дней':'14-day path'],
       ['details',ru?'Подробнее':'Details'],
     ].map(([key,label])=><button key={key} type="button" aria-pressed={view===key}
       onClick={()=>setView(key)}>{label}</button>)}
-  </div>
+  </div>}
   {view==='today'&&<>
-  <header className={styles.questHero} data-course-teal-hero>
+  {immersiveStart&&<CourseImmersiveStart locale={locale} day={cycle.day} duration={cycle.durationDays}
+    completed={progress.practiceCount||0} roadmap={data.roadmap||[]}
+    moduleTitle={data.programme?.title||''} actionLabel={scenicCtaLabel}
+    actionDisabled={busy||(paused&&resumeBlocked)}
+    onStart={startFocusLesson} onBack={()=>onExit?.()} onViewChange={setView}/>}
+  {!immersiveStart&&<header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
@@ -447,7 +542,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         <progress max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
       </div>
     </div>
-  </header>
+  </header>}
   <details className={styles.momentPeek} data-course-today-trends>
     <summary><span><Sparkles size={16} aria-hidden="true"/>{ru?'Моя динамика':'My progress over time'}</span>
       <ChevronDown size={18} aria-hidden="true"/></summary>
@@ -558,7 +653,8 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   </>}
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
-    onPlay={()=>setQuestOpen(true)}/>}
+    onPlay={day=>void openLessonDay(day)} loadingDay={reviewBusy}/>}
+  {view==='path'&&reviewError&&<p role="alert" className={styles.error}>{ru?'Не удалось открыть сохранённый урок. Попробуйте ещё раз.':'Unable to open the saved lesson. Please try again.'}</p>}
   {view==='path'&&data.programme?.id==='stress'&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
     <summary>{ru?'Все упражнения, результаты и слайды 14 дней':'Every exercise, outcome and slide across 14 days'}</summary>
     <Course14DayOverview locale={locale} programId="stress" moduleId={data.programme?.moduleId} routerVersion={cycle.preferences?.oporaModuleRouter} />
@@ -576,18 +672,31 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         :(ru?'Пока не оценивался':'Not assessed')}</small>
     </li>)}</ol>
   </section>}
-  {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-    data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
-     onFinish={()=>{setQuestOpen(false);setView('path')}}
-    onOpenRetest={showFinalRetest}
-    onCheckin={body=>submit('checkin',body)}
-    onSession={body=>submit('session',body,undefined,'inline')}
-    onPreferences={patch=>submit('preferences',{
+  {questOpen&&(playerData?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
+    (playerData?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
+      ?<OporaExperiencePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>
+      :<OporaV6SlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
+    :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+    data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
+    promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer}
+     onFinish={finishLessonPlayer}
+    onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
+    onCheckin={body=>reviewLesson?null:submit('checkin',body)}
+    onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}
+    onPreferences={patch=>reviewLesson?null:submit('preferences',{
       expectedRevision:cycle.revision,
       length:patch.length||cycle.preferences?.length||'standard',
       imagery:patch.imagery||cycle.preferences?.imagery||'optional',
       checkinFrequency:cycle.preferences?.checkinFrequency||'daily',
-    })}/>}
+    })}/>) }
   {view==='details'&&<>
   <details className={styles.classicPanel}>
     <summary>{ru?'Полный текст урока и дополнительные настройки':'Full lesson text and additional settings'}</summary>
@@ -752,9 +861,10 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       <strong>{t.reflectionV3}:</strong> {lesson.practiceV3.review}
     </p>}
     <div className={styles.ratingPair}>
-      <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
-      <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.beforeAvailability:t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.afterAvailability:t.afterNow} value={afterNow} onChange={setAfterNow}/>
     </div>
+    {legacyAvailabilityRatings&&<p className={styles.hint} data-course-legacy-availability-direction>{t.availabilityClarification}</p>}
     <fieldset className={styles.feedback}><legend>{t.feedback}</legend>
       {[['helped',t.helpful],['neutral',t.neutral],['uncomfortable',t.uncomfortable],['skip',t.noAnswer]].map(([value,label])=>
       <label key={value}><input type="radio" name="course-feedback" checked={feedback===value} onChange={()=>setFeedback(value)}/>{label}</label>)}

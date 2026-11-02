@@ -11,6 +11,8 @@ import { buildAssessmentResultReport } from '../lib/assessments/result-report.js
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeChange, gaugeModel } from '../lib/assessments/dashboard-gauges.js'
 import { assessmentResultOverview } from '../lib/assessments/result-overview.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -104,6 +106,7 @@ test('the actual report renders the optional banner without skill mappings or co
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
             : name.endsWith('/result-overview') ? { assessmentResultOverview }
+              : name.endsWith('/assessment-evidence-status') ? { assessmentEvidenceStatus }
             : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
               : require(name),
   })
@@ -148,6 +151,7 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
   }
   const gauges = loadComponent('components/app/assessment-gauge.jsx', {
     '@/lib/assessments/dashboard-gauges': { gaugeChange, gaugeModel },
+    '@/lib/assessments/score-change-reading': { scoreChangeReading },
   })
   const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
     'react': isolatedReactState,
@@ -155,6 +159,7 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
     '@/lib/assessments/result-overview': { assessmentResultOverview },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
   })
   // Exercise the exact pure boundary assertion used by the browser journey.
   const browserSource = read('scripts/verify-asrs6.mjs')

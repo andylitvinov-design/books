@@ -282,39 +282,27 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
       <div className="academy-course-layout">
         <YggdrasilSideNavigation locale={locale} activeSlug="basic-description" />
         <article className="academy-reading">
-          <header className="yggdrasil-description-hero">
+          <header className="yggdrasil-description-hero reiki-screen reiki-screen--hero">
             <div>
               <p className="homeopathy-kicker">{text.eyebrow}</p>
               <h1>{book.heading}</h1>
               <p className="yggdrasil-description-lead">{book.lead}</p>
-              <div className="yggdrasil-description-actions"><a className="yggdrasil-primary-action" href="#full-book">{book.start} ↓</a><Link className="yggdrasil-secondary-action" href={base + "/basic-course"}>{text.openCourse} →</Link><Link className="yggdrasil-secondary-action" href={base + "/basic-course#yggdrasil-basic-course-learning"}>{locale === "ru" ? "Упражнения пяти ступеней" : locale === "es" ? "Ejercicios de los cinco niveles" : "Five-level practice guide"} →</Link><Link className="yggdrasil-secondary-action" href={base + "/free-initiation"}>{locale === "ru" ? "1-я ступень бесплатно · 7 вопросов" : locale === "es" ? "Nivel 1 gratis · 7 preguntas" : "Free Level 1 · 7 questions"} →</Link></div>
+              <div className="yggdrasil-description-actions">
+                <a className="yggdrasil-primary-action" href="#full-book">{book.start} ↓</a>
+                <Link className="yggdrasil-secondary-action" href={base + "/basic-course"}>{text.openCourse} →</Link>
+              </div>
+              <details className="reiki-disclosure reiki-disclosure--hero-links">
+                <summary>{locale === "ru" ? "Упражнения и вводная инициация" : locale === "es" ? "Ejercicios e iniciación introductoria" : "Exercises & introductory initiation"}<span aria-hidden="true">＋</span></summary>
+                <div className="reiki-hero-links">
+                  <Link className="yggdrasil-secondary-action" href={base + "/basic-course#yggdrasil-basic-course-learning"}>{locale === "ru" ? "Упражнения пяти ступеней" : locale === "es" ? "Ejercicios de los cinco niveles" : "Five-level practice guide"} →</Link>
+                  <Link className="yggdrasil-secondary-action" href={base + "/free-initiation"}>{locale === "ru" ? "1-я ступень бесплатно · 7 вопросов" : locale === "es" ? "Nivel 1 gratis · 7 preguntas" : "Free Level 1 · 7 questions"} →</Link>
+                </div>
+              </details>
             </div>
             <figure>
               <Image unoptimized src="/academy/reiki-yggdrasil/source/basic-program.jpg" alt="" width={640} height={520} sizes="(max-width: 780px) 100vw, 38vw" priority />
             </figure>
           </header>
-
-          <section className="yggdrasil-full-book" id="full-book" aria-label={book.heading}>
-            <p className="yggdrasil-book-edition">{book.note}</p>
-            <nav className="yggdrasil-book-toc" aria-label={book.contents}>
-              <h2>{book.contents}</h2>
-              <ol>{chapters.map((chapter) => (
-                <li key={chapter.page}><a href={"#book-page-" + chapter.page}>{chapter.title}</a></li>
-              ))}</ol>
-            </nav>
-            <div className="yggdrasil-book-pages" lang={manualLanguage}>
-              {manualForLocale.pages.filter((sourcePage) => sourcePage.page >= 3).map((sourcePage) => (
-                <section className="yggdrasil-book-page" id={"book-page-" + sourcePage.page} key={sourcePage.page}>
-                  <div className="yggdrasil-book-page-counter">{book.page} {sourcePage.page} / {manualForLocale.originalPages}</div>
-                  {chapters.find((chapter) => chapter.page === sourcePage.page) ? <h2>{chapters.find((chapter) => chapter.page === sourcePage.page)?.title}</h2> : null}
-                  {sourcePage.paragraphs.map((paragraph, idx) => manualParagraphHeading(paragraph)
-                    ? <p className="yggdrasil-book-standout" key={idx}>{paragraph}</p>
-                    : <p key={idx}>{paragraph}</p>
-                  )}
-                </section>
-              ))}
-            </div>
-          </section>
 
           <details className="yggdrasil-description-summary">
             <summary>{book.synopsis}</summary>
@@ -335,8 +323,7 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
                   </div>
                   <p>{level.description}</p>
                   <p className="yggdrasil-description-focus">{level.focus}</p>
-                  <h4>{text.settingsLabel}</h4>
-                  <ul>{level.settings.map((name) => <li key={name}>{name}</li>)}</ul>
+                  <details className="reiki-disclosure"><summary>{text.settingsLabel}<span aria-hidden="true">＋</span></summary><ul>{level.settings.map((name) => <li key={name}>{name}</li>)}</ul></details>
                 </section>
               ))}
             </div>
@@ -357,6 +344,33 @@ export function YggdrasilBasicCourseDescription({ locale }: { locale: PublicLoca
           </section>
 
           </details>
+
+          <section className="yggdrasil-full-book" id="full-book" aria-label={book.heading}>
+            <details className="reiki-full-manual">
+              <summary>{book.start}<span aria-hidden="true">＋</span></summary>
+              <div className="reiki-full-manual__body">
+            <p className="yggdrasil-book-edition">{book.note}</p>
+            <nav className="yggdrasil-book-toc" aria-label={book.contents}>
+              <h2>{book.contents}</h2>
+              <ol>{chapters.map((chapter) => (
+                <li key={chapter.page}><a href={"#book-page-" + chapter.page}>{chapter.title}</a></li>
+              ))}</ol>
+            </nav>
+            <div className="yggdrasil-book-pages" lang={manualLanguage}>
+              {manualForLocale.pages.filter((sourcePage) => sourcePage.page >= 3).map((sourcePage) => (
+                <section className="yggdrasil-book-page" id={"book-page-" + sourcePage.page} key={sourcePage.page}>
+                  <div className="yggdrasil-book-page-counter">{book.page} {sourcePage.page} / {manualForLocale.originalPages}</div>
+                  {chapters.find((chapter) => chapter.page === sourcePage.page) ? <h2>{chapters.find((chapter) => chapter.page === sourcePage.page)?.title}</h2> : null}
+                  {sourcePage.paragraphs.map((paragraph, idx) => manualParagraphHeading(paragraph)
+                    ? <p className="yggdrasil-book-standout" key={idx}>{paragraph}</p>
+                    : <p key={idx}>{paragraph}</p>
+                  )}
+                </section>
+              ))}
+            </div>
+          </div>
+            </details>
+          </section>
 
           <footer className="yggdrasil-description-source">
             <p>{text.sourceNote}</p>

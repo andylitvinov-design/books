@@ -68,7 +68,9 @@ test("correct Level 1 meditation remains separate and immediately precedes testi
   assert.match(meditations, /Tantra Reiki · Level 1 Guided Meditation/);
   assert.match(meditations, /Follow Andrey’s Level 1 video practice/);
   assert.match(meditations, /!isTantraVideo \? <p>\{item\.description\}<\/p> : null/);
-  assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
+  assert.match(reviews, /<TantraLearnerReviewCards locale=\{locale\} headingId="tantra-testimonials-heading" \/>/);
+  const learnerCards = await read("components/tantra-learner-review-cards.tsx");
+  assert.match(learnerCards, /tantraVoices\.map\(\(review, index\) =>/);
   const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
   assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
   assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);

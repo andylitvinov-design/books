@@ -77,6 +77,7 @@ test('mobile design keeps head and one-click CTA above horizontally scrollable c
   assert.match(css, /\.explorer \.row\{padding:14px 11px;gap:10px;grid-template-columns:/)
   assert.match(explorer, /<TestArtwork entry=\{entry\} \/>/)
   assert.match(explorer, /import \{[^}]*\bGraduationCap\b[^}]*\} from 'lucide-react'/)
+  assert.match(explorer, /import \{[^}]*\bFileDown\b[^}]*\} from 'lucide-react'/)
   assert.match(explorer, /data-test-kind-badge/)
   assert.match(visual, /className=\{styles\.focusRays\}/)
   assert.match(visual, /topicCount > 0 \|\| selectedCount > 0/)

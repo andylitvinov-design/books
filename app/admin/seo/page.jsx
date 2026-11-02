@@ -85,7 +85,7 @@ function ResultsTable({ title, rows, t }) {
   </section>;
 }
 export default async function AdminSeoDashboard({ searchParams }) {
-  if (!(await requireAdminRequest())) redirect("/admin/login");
+  if (!(await requireAdminRequest())) redirect("/admin/login?destination=seo");
   const cookieLocale = (await cookies()).get(uiLocaleCookie)?.value;
   const locale = cookieLocale === "ru" ? "ru" : "en";
   const t = copy[locale];
@@ -113,7 +113,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
       description={{ ru: copy.ru.lead, en: copy.en.lead }} initialLocale={locale}/>
     <div className={styles.intro}><div><p className={styles.eyebrow}>HOLISTIC HOUSE / SEARCH INTELLIGENCE</p>
       <h2 className={styles.title}>{t.search}</h2><p className={styles.lead}>{t.searchNote}</p></div>
-      <div className={styles.buttons}><Link className={styles.button} href="/admin">{t.back}</Link>
+      <div className={styles.buttons}><Link className={styles.button} href={`/${locale}/app/practice?panel=marketing`}>{locale === "ru" ? "← Маркетинг" : "← Marketing"}</Link>
         <Link className={styles.button} href={"/admin/seo/export?days=" + days} prefetch={false}>{t.export} ↓</Link>
         <a className={styles.button + " " + styles.buttonPrimary} href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fholistichouse.vercel.app%2F" target="_blank" rel="noopener noreferrer">{t.google} ↗</a>
       </div></div>

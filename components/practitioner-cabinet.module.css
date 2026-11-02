@@ -1,0 +1,66 @@
+/* Smaller admin header; old giant Practitioner Cabinet headline is retired. */
+.page :global(.prescription-admin-titleblock) h1{font-size:clamp(29px,4.2vw,43px)!important;line-height:1.08!important}
+.page :global(.prescription-admin-titleblock){padding-top:15px;padding-bottom:10px}
+.page :global(.prescription-admin-description){font-size:13px;line-height:1.5}
+.page :global(.prescription-admin-navigation--tabs){gap:6px;flex-wrap:wrap}
+@media(max-width:520px){
+  .page :global(.prescription-admin-titleblock) h1{font-size:30px!important}
+  .page :global(.prescription-admin-titleblock){padding-top:10px}
+}
+.shell{
+  max-width:1020px;
+  margin:0 auto;
+  padding:12px clamp(12px,3vw,30px) 42px;
+  font:400 13px/1.45 system-ui,sans-serif;
+  color:#3d3028;
+}
+.intro{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
+  gap:9px 16px;margin:0 0 16px;padding:13px 16px;
+  border:1px solid #e3d4c2;border-radius:14px;background:#fbf3e9;
+}
+.intro p{margin:0;max-width:600px;color:#665447;line-height:1.45}
+.navigation{display:flex;gap:8px;flex-wrap:wrap}
+.navigation a{
+  color:#754b33;text-decoration:none;font-weight:650;font-size:12px;
+  background:#fffaf5;border:1px solid #d7c3ad;border-radius:999px;padding:8px 12px;
+}
+.navigation a:hover{background:#f1e5d9}
+.navigation a:focus-visible,.tool:focus-visible,.group > summary:focus-visible{
+  outline:3px solid #936946;outline-offset:3px;
+}
+.group{border:1px solid #ddcdbb;border-radius:17px;background:#fffaf5;margin:0 0 10px;overflow:hidden}
+.group > summary{
+  display:flex;align-items:center;gap:13px;padding:13px 16px;min-height:57px;
+  list-style:none;cursor:pointer;color:#392c24;
+}
+.group > summary::-webkit-details-marker{display:none}
+.group summary .groupTitle{flex:1;display:grid;gap:3px;min-width:0}
+.group strong{font:600 18px/1.2 Georgia,serif}
+.group small{color:#816d5a;font:400 11px/1.4 system-ui,sans-serif}
+.count{font-size:12px;color:#7e5e49;font-weight:650;background:#f1e2d2;border-radius:999px;padding:4px 9px}
+.arrow{width:17px;height:17px;color:#956e51;flex-shrink:0;transition:transform .15s ease}
+.group[open] summary .arrow{transform:rotate(180deg)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 13px 13px}
+.tool{
+  min-width:0;display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit;
+  border:1px solid #e6d7c7;border-radius:13px;background:#fffefa;padding:10px 11px;
+  min-height:66px;
+}
+.tool:hover{border-color:#ae8464;background:#f7ede1}
+.icon{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;background:#f2e7d9;border-radius:11px;color:#795138}
+.icon svg{width:18px;height:18px}
+.detail{display:grid;gap:3px;min-width:0;flex:1}
+.detail b{font-size:12.5px;line-height:1.3;font-weight:680;overflow-wrap:anywhere}
+.detail span{font-size:10.5px;line-height:1.35;color:#847364;overflow-wrap:anywhere}
+.toolArrow{width:15px;height:15px;color:#8c674e;flex-shrink:0}
+@media(max-width:520px){
+  .shell{padding:8px 11px 28px}
+  .intro{align-items:stretch;padding:11px 12px;gap:9px}
+  .navigation{width:100%}
+  .navigation a{flex:1;text-align:center;min-height:38px}
+  .group>summary{padding:11px 12px}
+  .grid{grid-template-columns:minmax(0,1fr);padding:0 10px 10px}
+  .tool{min-height:60px;padding:9px 10px}
+}
+@media(prefers-reduced-motion:reduce){.arrow{transition:none}}

@@ -1,12 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { DiscoverySectionTabs } from '../discovery-section-tabs'
 import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, Layers, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { availableTestCollections, availableTantraTestPaths } from '@/lib/assessments/test-collections'
+import { availableTestCollections, TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
+import { testCollectionIds } from '@/lib/assessments/test-collection-membership'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
@@ -21,7 +23,7 @@ const TEXT = {
     heroDescription:'Explore stress, mood, sleep and inner resources with free self-checks. See your results as soon as you finish.',
     heroPrimary:'Choose my topics', heroSecondary:'Browse free tests',
     heroFootnote:'Available tests and sets start without registration. Sign in for a free personal analysis.',
-    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTopics:'Topics', heroTabTests:'Tests', heroPicks:'You could try', heroSearchClear:'Clear search',
+    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTests:'Tests', heroTabCourses:'Courses', heroTabAssist:'Assist', heroPicks:'You could try', heroSearchClear:'Clear search',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
@@ -32,9 +34,9 @@ const TEXT = {
     deep:'Longer tests', deepNote:'Prioritize longer questionnaires',
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
-    recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
+    recommended:'Recommended for you', recommendedHelp:'Based on your topics, optional collection, concerns and test-type filters.',
     courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
-    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
+    why:'Why these tests?', whyText:'The approximate match considers your selected topics, the optional collection, specific concerns and measured scales. Test-type and time filters limit which tests are shown; depth changes their order. Unrelated tests stay available when permitted by those filters. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', details:'Details', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
@@ -49,7 +51,7 @@ const TEXT = {
     heroDescription:'Исследуйте стресс, настроение, сон и внутренние ресурсы с помощью бесплатных тестов. Результаты доступны сразу после прохождения.',
     heroPrimary:'Выбрать темы', heroSecondary:'Посмотреть тесты',
     heroFootnote:'Доступные тесты и наборы проходятся без регистрации. После входа — бесплатные пояснения и анализ.',
-    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTopics:'Темы', heroTabTests:'Тесты', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
+    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTests:'Тесты', heroTabCourses:'Курсы', heroTabAssist:'Помощь', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
@@ -60,9 +62,9 @@ const TEXT = {
     deep:'Длинные', deepNote:'Сначала более длинные анкеты',
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
-    recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
+    recommended:'Рекомендуем для вас', recommendedHelp:'С учётом ваших тем, подборки, проблем и выбранных типов тестов.',
     courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
-    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
+    why:'Почему эти тесты?', whyText:'Процент учитывает выбранные темы, необязательную подборку, конкретные проблемы и измеряемые шкалы. Тип и время ограничивают список тестов, глубина влияет на порядок. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', details:'Подробнее', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
@@ -77,7 +79,7 @@ const TEXT = {
     heroDescription:'Explora el estrés, el ánimo, el sueño y tus recursos internos con pruebas gratuitas. Consulta tus resultados al terminar.',
     heroPrimary:'Elegir temas', heroSecondary:'Ver pruebas gratuitas',
     heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte. Entra para recibir un análisis personal gratuito.',
-    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTopics:'Temas', heroTabTests:'Pruebas', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
+    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTests:'Pruebas', heroTabCourses:'Cursos', heroTabAssist:'Ayuda', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
@@ -88,9 +90,9 @@ const TEXT = {
     deep:'Largas', deepNote:'Priorizar cuestionarios más largos',
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
-    recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
+    recommended:'Recomendados para ti', recommendedHelp:'Según tus temas, colección opcional, dificultades y tipos de prueba.',
     courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
-    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
+    why:'¿Por qué estas pruebas?', whyText:'La coincidencia estimada combina los temas, la colección opcional, las dificultades y las escalas medidas. Los filtros de tipo y tiempo limitan los resultados; la profundidad ajusta el orden. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', details:'Detalles', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
@@ -124,54 +126,22 @@ const COLLECTION_ICONS = {
   sleep: Moon, resources: Leaf, personality: Compass, mood: Smile,
   attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
 }
-const TANTRA_PATH_ICONS = {
-  'gentle-start': Sparkles, 'body-sensitivity': Activity,
-  'heart-connection': Heart, 'healthy-boundaries': ShieldCheck,
-  'freedom-kindness': Leaf, 'chakra-symbols': Sun,
-  'five-practice-themes': Compass, 'deep-portrait': BookOpen,
-}
-const TANTRA_PATH_COPY = {
-  en: {
-    eyebrow: 'THEMED TEST COLLECTIONS · TANTRA',
-    title: 'Tantra & intimacy: thematic test collections',
-    intro: 'Each card is a focused collection of real self-reflection tests. Explore what is included or begin straight away. These are not diagnoses or spiritual rankings.',
-    details: 'Details', start: 'Take test', included: 'Tests in this collection', scaleNames: 'Scales',
-    more: 'Show all collections', less: 'Show four collections',
-    test: 'test', tests: 'tests', questions: 'questions', scales: 'scales', minute: 'min',
-    note: 'For a multi-test collection, the questionnaires are taken in sequence. Answers and saved results are never changed by opening details.',
-  },
-  ru: {
-    eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ ТЕСТОВ · ТАНТРА',
-    title: 'Тантра и близость: тематические подборки тестов',
-    intro: 'Каждая карточка — тематическая подборка реальных тестов для самопознания. Посмотрите состав или сразу начните прохождение. Это не диагноз и не духовный рейтинг.',
-    details: 'Детали', start: 'Пройти тест', included: 'Тесты в подборке', scaleNames: 'Шкалы',
-    more: 'Все подборки', less: 'Показать четыре',
-    test: 'тест', tests: 'теста', questions: 'вопросов', scales: 'шкал', minute: 'мин',
-    note: 'Если в подборке несколько тестов, они проходятся по очереди. Просмотр деталей не меняет ваши ответы и сохранённые результаты.',
-  },
-  es: {
-    eyebrow: 'COLECCIONES TEMÁTICAS DE PRUEBAS · TANTRA',
-    title: 'Tantra e intimidad: colecciones temáticas de pruebas',
-    intro: 'Cada tarjeta reúne pruebas reales de reflexión personal. Consulta los detalles o comienza directamente. No son diagnósticos ni rangos espirituales. Cuestionarios en inglés.',
-    details: 'Detalles', start: 'Realizar prueba', included: 'Pruebas de la colección', scaleNames: 'Escalas',
-    more: 'Ver todas las colecciones', less: 'Mostrar cuatro',
-    test: 'prueba', tests: 'pruebas', questions: 'preguntas', scales: 'escalas', minute: 'min',
-    note: 'Si hay varias pruebas, se realizan en secuencia. Abrir los detalles no cambia los resultados guardados.',
-  },
-}
 const COLLECTION_COPY = {
-  en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
+  en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic (optional)',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
     test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
-    open: 'Browse collection' },
-  ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
+    open: 'Prioritize collection', personalized: 'Prioritized from your selected topics and concerns. Counts reflect available tests and your time/type filters.',
+    badge: 'Collection', prioritized: 'Higher priority from collection:', clear: 'Remove priority', tip: 'Included in collections:' },
+  ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам (необязательно)',
     intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
     test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
-    open: 'Открыть подборку' },
-  es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
+    open: 'Повысить приоритет подборки', personalized: 'Подборки упорядочены по вашим темам и запросам. Количество учитывает доступные тесты, время и тип.',
+    badge: 'Подборка', prioritized: 'Приоритет подборки:', clear: 'Снять приоритет', tip: 'Входит в подборки:' },
+  es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema (opcional)',
     intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
     test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
-    open: 'Explorar colección' },
+    open: 'Priorizar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales reflejan pruebas disponibles y los filtros de tiempo y tipo.',
+    badge: 'Colección', prioritized: 'Prioridad de colección:', clear: 'Quitar prioridad', tip: 'Incluida en las colecciones:' },
 }
 
 // Always display the explicit assessment type, including on narrow phones.
@@ -211,7 +181,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, onStartTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], activeCollectionId = null, onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
@@ -224,13 +194,14 @@ export function SimpleTestPicker({
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
-  const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
-  const [expandedTantraPaths, setExpandedTantraPaths] = useState(() => new Set())
-  const collections = availableTestCollections(catalogEntries)
-  const tantraPaths = availableTantraTestPaths(catalogEntries)
-  const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
-  const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
+  const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
+  const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId)
+  // Keep a previously chosen collection visible in the two-card collapsed row.
+  const orderedCollections = activeCollectionId
+    ? [...collections.filter((item) => item.id === activeCollectionId), ...collections.filter((item) => item.id !== activeCollectionId)]
+    : collections
+  const concernFocus = activeCollection ? [...new Set([...focus, ...activeCollection.focus])] : focus
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
@@ -242,7 +213,7 @@ export function SimpleTestPicker({
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const testKindsKey = [...testKinds].sort().join('|')
-  const allProblems = problemsForTopics(focus)
+  const allProblems = problemsForTopics(concernFocus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
   const queryText = problemQuery.trim().toLocaleLowerCase(locale)
@@ -252,7 +223,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
+  }, [focusKey, activeCollectionId, depth, maxMinutes, testKindsKey, problemKey])
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const via = groupViaRecommendations(recommendations, selectedKeys, showIndividualVia)
   const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
@@ -280,10 +251,7 @@ export function SimpleTestPicker({
     <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
       {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
-        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
-          <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
-          <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
-        </nav>
+        <DiscoverySectionTabs locale={locale} active="tests" />
       </div>}
       {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
       {authenticated
@@ -304,7 +272,7 @@ export function SimpleTestPicker({
           placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
         <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      <div className={authenticated ? styles.accountFinderFilters : academyStyles.filters}>
+      {authenticated && <div className={styles.accountFinderFilters}>
         <label>{c.heroTopicFilter}
           <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
             onChange={(event) => {
@@ -327,135 +295,8 @@ export function SimpleTestPicker({
               <option value={item.key} key={item.key}>{testKindShortLabel({ testKind: item.key }, locale)}</option>)}
           </select>
         </label>
-      </div>
-      {!authenticated && <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
-        <span>{c.heroPicks}:</span>
-        {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
-          const topic = TOPICS.find((item) => item.key === key)
-          return <button key={key} type="button" aria-pressed={focus.includes(key)}
-            onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
-        })}
       </div>}
-      {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
-
-    {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
-      data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
-      <h2 id="hh-test-curated-heading" className={styles.curatedSrOnly}>{collectionCopy.title}</h2>
-      <div className={styles.curatedGrid} id="hh-test-curated-grid">
-        {collections.map((collection) => {
-          const Icon = COLLECTION_ICONS[collection.id]
-          const active = focus.length === collection.focus.length && collection.focus.every((key) => focus.includes(key))
-          const title = collection.title[locale] || collection.title.en
-          const countLabel = locale === 'ru'
-            ? (collection.count % 10 === 1 && collection.count % 100 !== 11 ? 'тест' :
-               collection.count % 10 >= 2 && collection.count % 10 <= 4 && (collection.count % 100 < 12 || collection.count % 100 > 14) ? 'теста' : 'тестов')
-            : collection.count === 1 ? collectionCopy.test : collectionCopy.tests
-          return <button key={collection.id} type="button" className={styles.curatedCard}
-            data-test-collection={collection.id} data-tone={collection.tone} aria-pressed={active}
-            aria-label={title + '. ' + collection.count + ' ' + countLabel + '. ' + collectionCopy.open}
-            onClick={() => {
-              onChooseCollection?.(active ? [] : collection.focus)
-              setHeroSearch('')
-              setSubmittedHeroSearch('')
-              setVisibleCount(5)
-              // Keep the named Tantra pathway chooser in view, rather than
-              // jumping past it to the generic recommendation list.
-              window.requestAnimationFrame(() => {
-                const target = !active && ['tantra','sexuality'].includes(collection.id)
-                  ? 'hh-tantra-test-paths-title' : 'hh-simple-recommendations'
-                document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              })
-            }}>
-            <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
-            <span className={styles.curatedCardText}><strong>{title}</strong></span>
-            <span className={styles.curatedCardBottom} aria-hidden="true">
-              <span>{collection.count}</span>
-              {active && <Check size={13} />}
-            </span>
-          </button>
-        })}
-      </div>
-      {collections.length > 4 && <button type="button" className={styles.curatedMore}
-        aria-expanded={collectionsOpen} aria-controls="hh-test-curated-grid"
-        onClick={() => setCollectionsOpen((value) => !value)}>
-        {collectionsOpen ? collectionCopy.less : collectionCopy.more}
-        <ChevronDown size={17} aria-hidden="true" />
-      </button>}
-    </section>}
-
-    {showTantraPaths && <section className={styles.tantraPaths} data-tantra-test-paths
-      data-expanded={tantraPathsOpen ? 'true' : 'false'} aria-labelledby="hh-tantra-test-paths-title">
-      <header className={styles.tantraPathHeading}>
-        <p>{tantraCopy.eyebrow}</p>
-        <h2 id="hh-tantra-test-paths-title">{tantraCopy.title}</h2>
-        <span>{tantraCopy.intro}</span>
-      </header>
-      <div className={styles.tantraPathGrid} role="group" aria-label={tantraCopy.title}>
-        {tantraPaths.map((path) => {
-          const Icon = TANTRA_PATH_ICONS[path.id] || Sparkles
-          const chosen = activeBattery.length === path.keys.length &&
-            path.keys.every((key) => selectedKeys.has(key))
-          const detailId = `hh-tantra-path-${path.id}-details`
-          const expanded = expandedTantraPaths.has(path.id)
-          const includedTests = path.keys.map((key) => catalogEntries.find((entry) => entry.key === key)).filter(Boolean)
-          return <article key={path.id} className={styles.tantraPath}
-            data-tantra-path={path.id} data-tone={path.tone} data-selected={chosen}>
-            <span className={styles.tantraPathIcon} aria-hidden="true"><Icon size={20} strokeWidth={1.8}/></span>
-            <div className={styles.tantraPathBody}>
-              <strong>{path.title[locale] || path.title.en}</strong>
-              <small>{path.detail[locale] || path.detail.en}</small>
-              <span className={styles.tantraPathMeta}>
-                {path.testCount} {path.testCount === 1 ? tantraCopy.test : tantraCopy.tests}
-                {' · '}{path.questionCount} {tantraCopy.questions}
-                {' · '}{path.scaleCount} {tantraCopy.scales}
-                {' · ~'}{path.durationMinutes} {tantraCopy.minute}
-              </span>
-            </div>
-            <div className={styles.tantraPathActions}>
-              <button type="button" className={styles.tantraPathDetailsButton}
-                data-tantra-action="details" aria-expanded={expanded} aria-controls={detailId}
-                onClick={() => setExpandedTantraPaths((current) => {
-                  const next = new Set(current)
-                  if (next.has(path.id)) next.delete(path.id)
-                  else next.add(path.id)
-                  return next
-                })}>
-                {tantraCopy.details} <ChevronDown size={15} aria-hidden="true"/>
-              </button>
-              <button type="button" className={styles.tantraPathStartButton}
-                data-tantra-action="start" disabled={starting || !onStartTantraPath}
-                aria-label={`${tantraCopy.start}: ${path.title[locale] || path.title.en}`}
-                onClick={() => {
-                  onChooseTantraPath?.(path.keys)
-                  onStartTantraPath?.(path.keys)
-                }}>
-                {tantraCopy.start} <ArrowRight size={16} aria-hidden="true"/>
-              </button>
-            </div>
-            <div id={detailId} className={styles.tantraPathDetailsBody} hidden={!expanded}>
-              <strong className={styles.tantraPathIncludedTitle}>{tantraCopy.included}</strong>
-              <ul className={styles.tantraPathIncludedTests}>
-                {includedTests.map((entry) => <li key={entry.key}>
-                  <div><strong>{entry.title}</strong>
-                    <span>{entry.questionCount} {tantraCopy.questions} · ~{entry.durationMinutes} {tantraCopy.minute}</span>
-                  </div>
-                  {entry.scaleGuide?.scales?.length > 0 && <p>
-                    {tantraCopy.scaleNames}: {entry.scaleGuide.scales.map((scale) => scale.label).join(' · ')}
-                  </p>}
-                </li>)}
-              </ul>
-              <p className={styles.tantraPathDetailsNote}>{tantraCopy.note}</p>
-            </div>
-          </article>
-        })}
-      </div>
-      {tantraPaths.length > 4 && <button type="button" className={styles.tantraPathToggle}
-        aria-expanded={tantraPathsOpen} onClick={() => setTantraPathsOpen(value => !value)}>
-        {tantraPathsOpen ? tantraCopy.less : tantraCopy.more}
-        <ChevronDown size={16} aria-hidden="true"/>
-      </button>}
-    </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.topicHeading}>
@@ -496,14 +337,14 @@ export function SimpleTestPicker({
           <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
         </div>
         <button type="button" className={styles.skipProblems}
-          onClick={() => document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
+          onClick={() => (document.getElementById('hh-test-curated-heading') || document.getElementById('hh-simple-recommendations'))?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
       </div>
       <label className={styles.problemSearch}>
         <Search size={19} aria-hidden="true" />
         <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
-          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!concernFocus.length}/>
       </label>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
+      {concernFocus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
         {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
           {visibleProblems.map((problem) => {
@@ -516,7 +357,7 @@ export function SimpleTestPicker({
           })}
         </div>
         {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
-      {focus.length > 0 && <div className={styles.problemActions}>
+      {concernFocus.length > 0 && <div className={styles.problemActions}>
         {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
           {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
@@ -575,11 +416,63 @@ export function SimpleTestPicker({
       </div>
     </details>
 
+    {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
+      data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
+      <header className={styles.curatedHeading}>
+        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
+        <p>{focus.length || problems.length ? collectionCopy.personalized : collectionCopy.intro}</p>
+      </header>
+      <div className={styles.curatedGrid} id="hh-test-curated-grid">
+        {orderedCollections.map((collection) => {
+          const Icon = COLLECTION_ICONS[collection.id]
+          const active = activeCollectionId === collection.id
+          const title = collection.title[locale] || collection.title.en
+          const countLabel = locale === 'ru'
+            ? (collection.count % 10 === 1 && collection.count % 100 !== 11 ? 'тест' :
+               collection.count % 10 >= 2 && collection.count % 10 <= 4 && (collection.count % 100 < 12 || collection.count % 100 > 14) ? 'теста' : 'тестов')
+            : collection.count === 1 ? collectionCopy.test : collectionCopy.tests
+          return <button key={collection.id} type="button" className={styles.curatedCard}
+            data-test-collection={collection.id} data-tone={collection.tone} aria-pressed={active}
+            aria-label={title + '. ' + collection.count + ' ' + countLabel + '. ' + collectionCopy.open}
+            onClick={() => {
+              onChooseCollection?.(active ? null : collection.id)
+              setHeroSearch('')
+              setSubmittedHeroSearch('')
+              setVisibleCount(5)
+              // Every topic opens the same standard list, without the legacy
+              // Tantra card layout or automatic enrollment.
+              window.requestAnimationFrame(() => {
+                document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              })
+            }}>
+            <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
+            <span className={styles.curatedCardText}><strong>{title}</strong></span>
+            <span className={styles.curatedCardBottom} aria-hidden="true">
+              <span>{collection.count}</span>
+              {active && <Check size={13} />}
+            </span>
+          </button>
+        })}
+      </div>
+      {collections.length > 2 && <button type="button" className={styles.curatedMore}
+        aria-expanded={collectionsOpen} aria-controls="hh-test-curated-grid"
+        onClick={() => setCollectionsOpen((value) => !value)}>
+        {collectionsOpen ? collectionCopy.less : collectionCopy.more}
+        <ChevronDown size={17} aria-hidden="true" />
+      </button>}
+    </section>}
+
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
+      {!authenticated && <p className={academyStyles.subnote} data-test-access-note>{c.heroFootnote}</p>}
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      {activeCollection && <div className={styles.collectionHighlight} role="status" data-active-test-collection={activeCollection.id}>
+        <Layers size={15} aria-hidden="true" />
+        <span>{collectionCopy.prioritized} <strong>{activeCollection.title[locale] || activeCollection.title.en}</strong></span>
+        <button type="button" onClick={() => onChooseCollection?.(null)} aria-label={collectionCopy.clear}>×</button>
+      </div>}
       <div className={styles.recommendationMeta}>
         <div className={styles.matchCount} role="status" aria-live="polite">{heroSearchTerm ? browseRecommendations.length : browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
         <details className={styles.why}>
@@ -609,6 +502,10 @@ export function SimpleTestPicker({
            const inputId = `hh-public-test-${entry.key}`
            const detailsId = `${inputId}-details`
            const expanded = expandedTests.has(entry.key)
+           const collectionNames = testCollectionIds(entry).map((id) => {
+             const preset = TEST_TOPIC_COLLECTIONS.find((item) => item.id === id)
+             return preset?.title[locale] || preset?.title.en
+           }).filter(Boolean)
            return <article className={styles.testEntry} key={entry.key} data-test-match={entry.key} data-relevance={entry.matchPercent} data-selected={checked}>
              <div className={styles.testRow} data-selected={checked}>
                <input id={inputId} type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
@@ -620,6 +517,11 @@ export function SimpleTestPicker({
                  <div className={styles.testImageMeta}>
                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
                    <span className={styles.imageDuration}><Clock3 size={13} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
+                   {collectionNames.length > 0 && <span className={styles.collectionMarker} data-test-collection-marker
+                     title={`${collectionCopy.tip} ${collectionNames.join(', ')}`}
+                     aria-label={`${collectionCopy.tip} ${collectionNames.join(', ')}`}>
+                     <Layers size={12} aria-hidden="true" />{collectionCopy.badge}
+                   </span>}
                  </div>
                </div>
                <label htmlFor={inputId} className={styles.testInfo}>

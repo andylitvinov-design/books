@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { mount, nodes, textOf, account, courseA, courseView } from './helpers/course-ui-harness.mjs'
 import * as programs from '../lib/inner-growth/course-programs.js'
 
@@ -70,10 +71,90 @@ test('missing baseline offers a check-in without claiming the course has measure
     const h = render('en')
     await h.settle()
     assert.equal(find(h.tree, 'data-course-baseline-reused'), undefined)
-    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Start my starting check-in/)
+    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Use saved results & continue/)
     assert.match(textOf(find(h.tree, 'data-course-baseline-explanation')), /not a diagnosis or proof/i)
     h.unmount()
   } finally {
     tests[0] = original
+  }
+})
+
+test('one-screen starting check-in keeps the real choices and CTA visible without tall step cards', async () => {
+  const h = render('en')
+  await h.settle()
+  assert.ok(find(h.tree, 'data-course-baseline-one-screen'))
+  const hero = find(h.tree, 'data-course-baseline-explanation')
+  assert.ok(hero)
+  assert.doesNotMatch(JSON.stringify(hero), /baselineStep|baselineNumber/)
+  const picker = find(h.tree, 'data-course-antistress-pretests')
+  assert.ok(picker)
+  const rows = nodes(picker).filter(node => node.props?.['data-checked'] !== undefined)
+  assert.equal(rows.length, 3, 'weekly, anxiety and resource check-ins remain')
+  assert.deepEqual(rows.map(row => row.props['data-checked']), [true, true, true],
+    'all three short tests are preselected for a new OPORA course')
+  assert.ok(textOf(hero).includes('3 free short tests'), 'the value proposition appears in the hero')
+  assert.match(textOf(find(h.tree, 'data-course-baseline-reused')), /saved.*do not need to repeat/i)
+
+  assert.ok(find(h.tree, 'data-antistress-start-first-test'), 'primary CTA remains')
+  h.unmount()
+
+  const css = readFileSync(new URL('../components/app/course-r3-steps.module.css', import.meta.url), 'utf8')
+  const parent = readFileSync(new URL('../components/app/my-course.jsx', import.meta.url), 'utf8')
+  const parentCss = readFileSync(new URL('../components/app/my-course.module.css', import.meta.url), 'utf8')
+  assert.ok(css.includes('.compactTests .shortTestList{gap:6px;margin:0;max-height:clamp('))
+  assert.ok(css.includes('overflow-y:auto;overscroll-behavior:contain'))
+  assert.ok(css.includes('.compactTests .fastTestButton{min-height:47px'))
+  assert.match(parent, /data-opora-baseline-compact-nav/)
+  assert.match(parent, /!compactBaselineNav && <footer/)
+  assert.ok(parentCss.includes('.compactBaselineNav{display:flex'))
+})
+
+
+test('when no starter check-in is saved, one primary action offers all three free tests', async () => {
+  const original = tests.slice()
+  try {
+    tests.splice(0, tests.length, ...original.map(item => ({...item, completed:false, completedAt:null})))
+    const h = render('en')
+    await h.settle()
+    assert.equal(find(h.tree, 'data-course-baseline-reused'), undefined)
+    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Start my 3 free check-ins/)
+    h.unmount()
+  } finally {
+    tests.splice(0, tests.length, ...original)
+  }
+})
+
+test('three free check-ins are preselected yet both optional choices remain removable', async () => {
+  const h = render('en')
+  await h.settle()
+  const initialRows = nodes(find(h.tree, 'data-course-antistress-pretests'))
+    .filter(node => node.props?.['data-checked'] !== undefined)
+  assert.deepEqual(initialRows.map(row => row.props['data-checked']), [true, true, true])
+  const initialInputs = initialRows.map(row => nodes(row).find(node => node.type === 'input'))
+  assert.ok(initialInputs[0].props.disabled, 'required Weekly Pulse is protected')
+  assert.equal(initialInputs[1].props.disabled, false)
+  assert.equal(initialInputs[2].props.disabled, false)
+  initialInputs[1].props.onChange(false)
+  await h.settle()
+  const changedRows = nodes(find(h.tree, 'data-course-antistress-pretests'))
+    .filter(node => node.props?.['data-checked'] !== undefined)
+  assert.deepEqual(changedRows.map(row => row.props['data-checked']), [true, false, true])
+  assert.equal(nodes(changedRows[1]).find(node => node.type === 'input').props.checked, false)
+  h.unmount()
+})
+
+test('hero accurately describes the free offer in all supported course languages', async () => {
+  for (const [locale, match] of [
+    ['en', /3 free short tests/i],
+    ['ru', /бесплатно пройти 3 коротких теста/i],
+    ['es', /3 pruebas breves y gratuitas/i],
+  ]) {
+    const h = render(locale)
+    await h.settle()
+    const hero = find(h.tree, 'data-course-baseline-explanation')
+    assert.match(textOf(hero), match, locale + ' should state the free three-test offer')
+    assert.match(textOf(hero), /~6|3 TESTS|3 ТЕСТА|3 PRUEBAS/, 'duration or test count is visible')
+    assert.ok(find(h.tree, 'data-antistress-start-first-test'))
+    h.unmount()
   }
 })

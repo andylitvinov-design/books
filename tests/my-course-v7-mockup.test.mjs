@@ -34,7 +34,9 @@ test('first screen presents course identity and one focused CTA with approved or
 test('game map zigzags without overlapping absolute labels, with honest locked future state',()=>{
   assert.match(map,/data-side=\{index % 2 === 0 \? 'left' : 'right'\}/)
   assert.match(map,/\(item\.status === 'planned' \|\| item\.status === 'upcoming'\) \? <LockKeyhole/)
-  assert.match(map,/roadmap\.map/)
+  assert.match(map,/visibleRoadmap\.map/)
+  assert.match(map,/showAllDays \? roadmap : roadmap\.filter/)
+  assert.match(map,/View all 14 lessons/)
   assert.match(map,/<ol className=\{styles\.path\}>/)
   assert.match(map,/<img className=\{styles\.journeyScene\}/)
   assert.match(mapCss,/\.mapShell \.pathRow\{[^}]*grid-template-columns:minmax\(0,1fr\) 88px minmax\(0,1fr\)/s)
@@ -70,7 +72,10 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
   assert.match(player,/onFinish\|\|onClose/)
-  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
+  assert.match(today,/const closeLessonPlayer=\(\)=>\{setQuestOpen\(false\);setReviewLesson\(null\)\}/)
+  assert.match(today,/const finishLessonPlayer=\(\)=>\{closeLessonPlayer\(\);setView\('path'\)\}/)
+  assert.match(today,/onClose=\{closeLessonPlayer\}/)
+  assert.match(today,/onFinish=\{finishLessonPlayer\}/)
 })
 
 test('EN/RU mobile course stays keyboard accessible with a visible bottom action',()=>{

@@ -75,6 +75,7 @@
   background: radial-gradient(ellipse at 25% 15%, #eadcc9, transparent 65%), linear-gradient(135deg, #bbaa90, #887c66);
   color: #fffaf3;
   font: inherit;
+  text-decoration: none;
   cursor: pointer;
 }
 

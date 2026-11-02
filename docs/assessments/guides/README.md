@@ -1,10 +1,12 @@
 # Holistic House · Individual assessment guides
 
-This collection has **76 separate bilingual guides**, one for every currently runnable instrument in `MONITORING_CATALOG`. Every guide is linked to a stable test key and scored scale names, offers practical observation and optional skills, and distinguishes source-backed screening from original HH self-observation and traditional Bach themes.
+This collection has **150 separate bilingual guides**, one for every currently runnable instrument in `MONITORING_CATALOG`. Every guide is linked to a stable test key and scored scale names, offers practical observation and optional skills, and distinguishes source-backed screening from original HH self-observation and traditional Bach themes.
 
 The application derives the current score-specific values and bounds from immutable versioned definitions and `lib/assessments/interpretation-registry.js`. If any catalog entry or scale changes, update this collection and its automated coverage test before merging. These documents do **not** authorize reproduction of licensed research-only instruments.
 
-## Guide index
+## Guide index (selected entries)
+
+The directory contains the complete set of 150 individually keyed source guides; this index highlights representative forms and recent additions.
 
 - [Эмоциональный профиль по Баху / Bach Flower Emotional Profile](./hh-bach-flower-profile.md) — 38 scales
 - [Состояние сейчас / Current State Check](./hh-current-state.md) — 5 scales
@@ -81,6 +83,11 @@ The application derives the current score-specific values and bounds from immuta
 - [Шкала самооценки Розенберга (EN) / Rosenberg Self-Esteem Scale](./rses-10.md) — 1 scale
 - [CES-D 20 — настроение и симптомы (EN) / CES-D 20 — Mood & Symptoms](./ces-d-20.md) — 1 scale
 - [Большая пятёрка — IPIP 50 · EN / Big Five Personality — IPIP 50](./ipip-big-five-50.md) — 5 scales
+- [Решения с опорой на эмоции / Emotion-based decision-making](./ipip-emotion-decision-making-9.md) — 1 descriptive IPIP dimension
+- [Отклик на радость других / Responsive joy](./ipip-responsive-joy-10.md) — 1 descriptive IPIP dimension
+- [Отклик на чужие трудности / Responsive distress](./ipip-responsive-distress-10.md) — 1 descriptive IPIP dimension
+- [Эмпатическая забота / Empathic concern](./ipip-empathic-concern-10.md) — 1 descriptive IPIP dimension
+- [Личное благополучие / ONS4 Personal well-being](./ons-personal-wellbeing-4.md) — 4 separate self-report dimensions
 - [Социальная поддержка · EN / Social Support Profile](./mspss.md) — 4 scales
 
 ## Safeguards

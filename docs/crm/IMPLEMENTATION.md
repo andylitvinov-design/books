@@ -8,9 +8,9 @@ Keep contacts separate from clinical records. Minimal contact fields: opaque con
 
 Consent ledger: immutable event UUID, contact UUID, channel, fixed purpose `product_updates`, granted/withdrawn decision, occurred timestamp, source, consent-copy version and recording actor. An owner-recorded grant requires actual evidence; its label does not prove consent. Paid subscription, account creation and purchases do not grant marketing consent. Existing/unknown contacts default to no marketing permission. Messenger opt-in must independently establish the destination belongs to the contact.
 
-Database proposals remain unapplied. Every read/write must authenticate the actor and enforce ownership server-side. No public role receives CRM table access. Encrypted destination storage must use the existing reviewed encryption pattern. CRM editors must not be able to grant paid entitlements or alter provider-verified billing state. Only minimal operational projections may be shown in the owner CRM; no clinical joins.
+The core contact-only CRM schema was activated on 18 October 2026 with restricted role and FORCE RLS. The guarded proposal remains a historical design reference; the applied DDL is recorded in 20261018 Supabase migrations. Every read/write must authenticate the actor and enforce ownership server-side. No public role receives CRM table access. Encrypted destination storage must use the existing reviewed encryption pattern. CRM editors must not be able to grant paid entitlements or alter provider-verified billing state. Only minimal operational projections may be shown in the owner CRM; no clinical joins.
 
-The unapplied proposal cascades an approved account deletion to that owner's CRM contacts, consent events and drafts, and to the account's own communication preferences. These records do not contain billing receipts. This avoids permanently blocking the existing deletion workflow. Before activation the owner must approve this retention/deletion behavior; any required audit retention must be explicitly designed, bounded and disclosed rather than silently keeping personal contacts forever. No deletion has been executed.
+The activated schema cascades an approved account deletion to that owner's CRM contacts, consent events and drafts, and to the account's own communication preferences. These records do not contain billing receipts. This avoids permanently blocking the existing deletion workflow. Owner requested completing the CRM on 18 October, including secure contact persistence and this account-deletion behavior. Any required audit retention must be explicitly designed, bounded and disclosed rather than silently keeping personal contacts forever. No deletion has been executed.
 
 ## Campaign lifecycle
 
@@ -29,3 +29,15 @@ These sources require honoring opt-out without delay, at the latest within ten b
 ## Verification
 
 Run `node --test tests/crm-consent.test.mjs`. Synthetic contacts only. Passing policy tests does not establish database/RLS integration, live email delivery, messenger approval or end-to-end unsubscribe behavior.
+
+## Owner contact-management polish — 18 October 2026
+
+Source implementation adds lead/client/archived filters, a privacy-first one-way **Do not contact** action that writes a withdrawal event and sets global suppression in one owner-scoped transaction, and a safe duplicate-email error. An attempted repeat suppression is idempotent. Neither this action nor draft creation sends any messages, verifies an email address, changes subscription status or authorizes marketing.
+
+**Release gate remains in force:** on 18 October the live Holistic House Supabase project had no `app.crm_*` tables or `hh_crm_backend` role, and Vercel did not have `HH_CRM_ENABLED` / `HH_CRM_PRODUCTION_APPROVED`. The source UI alone is **not** a working production CRM. The guarded schema proposal must receive explicit owner security/deletion approval and be tested with the exact existing restricted runtime LOGIN before enabling these flags. Never grant broad CRM table rights to authenticated/anon or enable campaign dispatch by default. No CRM production schema, environment or customer data was changed by this source update.
+
+## Owner launch record and lifecycle (18 October 2026)
+
+Production core CRM tables, restricted role and indexes were applied in Supabase (migration versions 20261018122353 / 20261018122533), after RLS readback. The two production Vercel CRM flags were then enabled without activating campaign dispatch. New lifecycle controls allow owner-only lead/client/archived transitions with exact revision checks. The applied lifecycle migration (20261018123830) hardens irreversible suppression while granting only the lifecycle column update.
+
+My Practice now surfaces a dedicated CRM tile for the legacy owner without replacing existing admin Clients or the multitenant enquiry view for other masters. Owner E2E remains a signed-in-browser release verification; no real contacts are seeded, imported, emailed or published by tests. Subscriber registry and outbound campaigns remain separately gated OFF.

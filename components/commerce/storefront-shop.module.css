@@ -1,0 +1,47 @@
+.shop{--wood:#845b3d;--cream:#faf6ee;--border:#e5d8c7;max-width:1240px;width:calc(100% - 36px);margin:24px auto 46px;padding:0;color:#332b27;font-family:Arial,Helvetica,sans-serif}
+.shop *{box-sizing:border-box}
+.hero{display:flex;gap:22px;justify-content:space-between;align-items:center;padding:27px 30px;border:1px solid #dfceb9;border-radius:22px;background:linear-gradient(120deg,#f5eadb 0%,#faf6ef 65%,#e8d4bc 100%)}
+.hero>div{flex:1;min-width:0}
+.eyebrow{color:#98694b;font:800 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.11em;margin:0 0 9px}
+.hero h1{font:500 clamp(30px,4.2vw,47px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.025em;color:#392b22;margin:0}
+.hero p:not(.eyebrow){max-width:730px;font:14px/1.65 Arial,Helvetica,sans-serif;color:#756456;margin:12px 0 0}
+.cartLink{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 17px;text-align:center;white-space:nowrap;text-decoration:none;background:#82583e;border:1px solid #82583e;color:#fff;border-radius:13px;font:750 13px/1.25 Arial,Helvetica,sans-serif}
+.cartLink b{display:grid;place-items:center;min-width:23px;height:23px;border-radius:50%;padding:0 4px;background:#fff;color:#794c30;font:800 12px Arial,Helvetica,sans-serif}
+.controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(175px,230px);gap:13px;margin-top:21px}
+.searchControl,.sortControl{min-width:0;display:flex;flex-direction:column;gap:7px}
+.searchControl label,.sortControl label{display:flex;align-items:center;gap:7px;font:750 12px Arial,Helvetica,sans-serif;color:#785e4b}
+.searchControl input,.sortControl select{width:100%;max-width:100%;height:46px;border:1px solid #dccbbb;border-radius:11px;background:#fff;color:#48372b;padding:0 13px;font:14px Arial,Helvetica,sans-serif}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0 19px}
+.filters button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:41px;padding:9px 13px;border:1px solid #e4d5c7;border-radius:99px;background:#fffaf4;color:#775a46;cursor:pointer;font:750 12px Arial,Helvetica,sans-serif}
+.filters button[aria-pressed=true]{background:#80583e;border-color:#80583e;color:#fff}
+.filters span{opacity:.8;font-size:11px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{min-width:0;border:1px solid var(--border);border-radius:17px;overflow:hidden;background:#fffdfa;box-shadow:0 8px 30px rgba(75,49,31,.055)}
+.media{position:relative;height:180px;background:#e9dccd;overflow:hidden}
+.image{object-fit:cover;object-position:center}
+.categoryLabel{position:absolute;left:12px;bottom:11px;display:inline-block;padding:6px 10px;border-radius:9px;background:rgba(255,251,245,.94);backdrop-filter:blur(6px);color:#654a37;font:750 11px Arial,Helvetica,sans-serif}
+.content{display:flex;flex-direction:column;min-height:208px;padding:16px}
+.priceRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font:12px/1.35 Arial,Helvetica,sans-serif;color:#8b735f}
+.priceRow strong{font:800 18px/1.15 Arial,Helvetica,sans-serif;color:#835436}
+.content h2{font:550 23px/1.22 Georgia,"Times New Roman",serif;letter-spacing:-.01em;color:#3c3027;margin:12px 0 7px}
+.content>p{flex:1;font:13px/1.6 Arial,Helvetica,sans-serif;color:#695b4f;margin:0 0 16px}
+.paidActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.paidActions button,.paidActions a,.details{display:flex;justify-content:center;align-items:center;gap:6px;min-height:43px;text-align:center;padding:9px 11px;border-radius:10px;text-decoration:none;font:750 12px/1.35 Arial,Helvetica,sans-serif;cursor:pointer}
+.add{border:1px solid #c4a78e;background:#fff8ef;color:#795539}
+.add[aria-pressed=true]{background:#eee0cf;border-color:#977357}
+.buy{border:1px solid #826042;background:#826042;color:#fff}
+.details{margin-top:auto;border:1px solid #987455;background:#8b6246;color:#fff}
+.empty{text-align:center;padding:45px 15px;border:1px dashed #d8c4b0;background:#fffaf3;border-radius:13px}
+.empty p{font:15px/1.5 Arial,Helvetica,sans-serif;color:#856951}
+.empty button{min-height:42px;padding:8px 16px;border:1px solid #af8d6d;border-radius:10px;background:#fff;cursor:pointer}
+.cartBar{position:sticky;bottom:8px;z-index:10;display:flex;gap:14px;align-items:center;justify-content:space-between;margin-top:19px;padding:12px 14px;border:1px solid #c9b098;border-radius:13px;background:rgba(252,246,236,.96);backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(53,41,28,.12)}
+.cartBar>div{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0;font:700 13px Arial,Helvetica,sans-serif;color:#6e4f37}
+.cartBar strong{font:800 17px Arial,Helvetica,sans-serif;color:#7c5137;white-space:nowrap}
+.cartBar a{display:flex;align-items:center;gap:8px;justify-content:center;min-height:43px;padding:9px 14px;border-radius:10px;background:#80593e;color:#fff;font:750 12px Arial,Helvetica,sans-serif;text-decoration:none;white-space:nowrap}
+.notes{display:grid;gap:8px;margin-top:16px;padding:0 4px}
+.notes p{font:12px/1.55 Arial,Helvetica,sans-serif;color:#796e64;margin:0}
+.shop :is(a,button,input,select):focus-visible{outline:3px solid #aa754d;outline-offset:3px}
+@media(max-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media{height:160px}.content h2{font-size:21px}}
+@media(max-width:560px){.shop{width:calc(100% - 22px);margin:11px auto 25px}.hero{display:block;padding:21px 17px;border-radius:16px}.hero h1{font-size:34px}.hero p:not(.eyebrow){font-size:12px;margin-top:9px}.cartLink{width:100%;margin-top:16px;min-height:43px}.controls{grid-template-columns:1fr;gap:10px;margin-top:16px}.filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;margin:13px 0;padding-bottom:4px}.filters button{flex-shrink:0;min-height:38px;padding:8px 11px}.grid{grid-template-columns:1fr;gap:12px}.media{height:174px}.content{min-height:185px;padding:14px}.content h2{font-size:22px}.paidActions button,.paidActions a{min-height:46px}.cartBar{bottom:5px;padding:10px;gap:7px;flex-wrap:wrap}.cartBar>div{gap:7px;font-size:12px}.cartBar a{margin-left:auto;min-height:42px}.notes p{font-size:11px}}
+@media(max-width:340px){.paidActions{grid-template-columns:1fr}.filters button{font-size:11px}.hero h1{font-size:31px}}
+@media(prefers-reduced-motion:reduce){.shop *{scroll-behavior:auto}}

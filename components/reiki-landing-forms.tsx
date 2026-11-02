@@ -68,7 +68,8 @@ function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind
         <p>{item.lead}</p>
       </div>
       <div className="reiki-offer-card__actions" aria-label={item.title}>
-        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} />
+        <ContactChannelChooser
+        stayAfterSave locale={locale} whatsappUrl={whatsappUrl} />
       </div>
     </article>
   );

@@ -25,7 +25,7 @@ export const englishGuidedMeditations: readonly EnglishGuidedMeditation[] = [
     key: "tantra-reiki",
     title: "Tantra Reiki Practice",
     description: "Watch Andrey’s original Tantra Reiki practice and explore this approach through firsthand guidance.",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
     courseHref: "/en/academy/reiki/tantra-reiki",
     youtubeId: "w2BN-HYmHUk",
   },

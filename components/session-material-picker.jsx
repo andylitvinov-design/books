@@ -1,9 +1,9 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {Film,Images,Link2,FolderOpen} from 'lucide-react'
+import {Film,Images,Link2,FolderOpen,Headphones} from 'lucide-react'
 import styles from './session-material-picker.module.css'
 
-function typeLabel(item,ru){return item.kind==='youtube'?'YouTube':item.kind==='image'?(ru?'Фото':'Photo'):(ru?'Видео':'Video')}
+function typeLabel(item,ru){return item.kind==='youtube'?'YouTube':item.kind==='image'?(ru?'Фото':'Photo'):item.kind==='audio'?(ru?'Аудио':'Audio'):(ru?'Видео':'Video')}
 
 export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpen,disabled=false}){
   const ru=locale==='ru'
@@ -14,7 +14,12 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
   const [reloadCount,setReloadCount]=useState(0)
   const [search,setSearch]=useState('')
   useEffect(()=>{
-    if(!open)return
+    const refresh=()=>setReloadCount(value=>value+1)
+    window.addEventListener('hh-materials-changed',refresh)
+    return ()=>window.removeEventListener('hh-materials-changed',refresh)
+  },[])
+  useEffect(()=>{
+    // Keep the available count current even when the picker is collapsed.
     let mounted=true
     setLoading(true);setError('')
     fetch('/api/admin/materials',{credentials:'same-origin',cache:'no-store'})
@@ -40,11 +45,11 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
     }
   }}>
     <summary><FolderOpen size={20}/>{ru?'Выбрать из библиотеки':'Select from library'}
-      <span className={styles.count}>{selectedIds.length}</span>
+      <span className={styles.count}>{loading?'…':materials.length} {ru?'доступно':'available'}</span>
     </summary>
     <div className={styles.contents}>
-      <p className={styles.help}>{ru?'Отметьте галочками ранее загруженные общие фото, видео и ссылки YouTube. Здесь материалы не загружаются; они добавляются отдельно в меню «Материалы» кабинета мастера. После публикации выбранное появится в конце отчёта.':
-        'Select existing general photos, videos and YouTube links. No uploads are made here; add new resources from Practitioner Cabinet → Materials. Selected items appear at the end of the published report.'}</p>
+      <p className={styles.help}>{ru?'Отметьте материалы, которые нужно приложить к этому отчёту. Аудио, фото и видео можно предварительно загрузить в библиотеку. Клиент увидит выбранные записи только после публикации отчёта.':
+        'Choose materials for this report. Upload reusable audio, photos or videos to the library, then select them here. Clients see selected items only after publication.'}</p>
       <div className={styles.tools}>
         <input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={ru?'Поиск по материалам…':'Search materials…'} aria-label={ru?'Поиск материалов':'Search materials'}/>
@@ -58,11 +63,11 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       {error&&<p role="alert" className={styles.alert}>{error}</p>}
       <div className={styles.items}>
         {loading?<p className={styles.empty}>{ru?'Загрузка…':'Loading…'}</p>:
-        filtered.length===0?<p className={styles.empty}>{ru?'В библиотеке пока нет подходящих материалов. Откройте меню «Материалы» в кабинете мастера.':'No matching materials yet. Use the practitioner Materials menu to populate the library.'}</p>:
+        filtered.length===0?<p className={styles.empty}>{ru?'Пока нет подходящих материалов. Сохраните видео выше — оно сразу появится здесь.':'No matching materials yet. Save a video above to see it here.'}</p>:
         filtered.map(item=><label className={styles.item} key={item.id}>
           <input type="checkbox" checked={selectedIds.includes(item.id)} disabled={disabled||(!selectedIds.includes(item.id)&&selectedIds.length>=24)}
             onChange={event=>toggle(item.id,event.target.checked)}/>
-          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:<Film size={19}/>}
+          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:item.kind==='audio'?<Headphones size={19}/>:<Film size={19}/>}
           <span><strong>{item.title}</strong>
             <small>{typeLabel(item,ru)}{item.description?' · '+item.description:''}</small>
           </span>

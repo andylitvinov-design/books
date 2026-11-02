@@ -1,9 +1,10 @@
+import {fixtureModuleBody} from './helpers/fixture-module-body.mjs'
 import {readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 const root=new URL('../',import.meta.url);
 const source=await readFile(new URL('lib/clients/session-delivery-storage.js',root),'utf8');
-const load=(src,names,values,result)=>new Function(...names,src.replace(/^import .*\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'').replace(/export /g,'')+'\nreturn '+result)(...values);
+const load=(src,names,values,result)=>new Function(...names,fixtureModuleBody(src)+'\nreturn '+result)(...values);
 class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status}}
 function storageFixture({size=512,mime='audio/mp4',status='pending',split=false,removedDuringValidation=false}={}){
  let updates=0,attached=0;const asset={id:'asset',status,object_key:'fake',max_bytes:512,mime:'audio/mp4'};
@@ -49,7 +50,7 @@ test('matching intent returns same private object key',async()=>{const result=aw
 test('old pending intent cannot refresh into cleanup window',async()=>{const f=intentFixture({created_at:new Date(Date.now()-22*3600_000).toISOString()});await assert.rejects(f.run(),{code:'MEDIA_INTENT_EXPIRED'});assert.equal(f.signed(),0)});
 function cleanupFixture(failRemove=false){
  const events=[];
- const cleanup=load(source,['AppError','transaction','createClient','PRIVATE_MEDIA_BUCKET','getOwnerSession'],[AppError,async(c,a,fn)=>{const result=await fn({query:async(sql)=>{if(sql.startsWith('update')){events.push('claim');assert.ok(sql.includes('ready_at is null'));return {rows:[{object_key:'pending-only'}]}};events.push('delete-tombstone');assert.ok(sql.includes("status='removed' and ready_at is null"));return {}}});events.push('commit');return result},()=>({storage:{from:()=>({remove:async keys=>{events.push('remove-storage');assert.deepEqual(keys,['pending-only']);return {error:failRemove?new Error('offline'):null}}})}}),'private',async()=>({})],'cleanupPendingSessionMedia');
+ const cleanup=load(source,['AppError','transaction','createClient','PRIVATE_MEDIA_BUCKET','getOwnerSession'],[AppError,async(c,a,fn)=>{const result=await fn({query:async(sql)=>{if(sql.startsWith('update')){events.push('claim');assert.ok(sql.includes('ready_at is null'));return {rows:[{object_key:'pending-only'}]}};events.push('delete-tombstone');assert.ok(sql.includes("status='removed' and object_key=any("));return {}}});events.push('commit');return result},()=>({storage:{from:()=>({remove:async keys=>{events.push('remove-storage');assert.deepEqual(keys,['pending-only']);return {error:failRemove?new Error('offline'):null}}})}}),'private',async()=>({})],'cleanupPendingSessionMedia');
  return {run:()=>cleanup({secretKey:'synthetic'},null,'a','b'),events};
 }
 test('cleanup commits claim before object deletion, then removes successful tombstones',async()=>{const f=cleanupFixture();await f.run();assert.deepEqual(f.events,['claim','commit','remove-storage','delete-tombstone','commit'])});

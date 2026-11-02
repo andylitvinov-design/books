@@ -128,7 +128,7 @@ test('videos lead the complete canonical HTML report, with audio, attachments an
   assert.match(css,/\.cabinetSessionPage \.fullReportSection/)
   for(const selector of ['canonical-report-brandline','canonical-progress',
     'canonical-report-analysis','canonical-remedy-group','canonical-guidance',
-    'canonical-follow-up-appointment','DocumentSignature','canonical-remedy-profiles']) {
+    'canonical-follow-up-appointment','DocumentSignature','canonical-remedy--unified']) {
     assert.ok(canonical.includes(selector),'original signed document keeps '+selector)
   }
 })

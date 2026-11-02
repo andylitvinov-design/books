@@ -56,9 +56,10 @@ test('Master Network v3: money amounts and provider state reject invalid values'
 })
 
 test('Master Network v3: filtered public catalog and actionable My Practice stay connected without activating payments', async () => {
-  const [masters,services,finder,css,practice,styles,ownServices] = await Promise.all([
+  const [masters,services,servicesDirectory,finder,css,practice,styles,ownServices] = await Promise.all([
     readFile(new URL('../app/[locale]/masters/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.module.css',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-workspace.jsx',import.meta.url),'utf8'),
@@ -66,7 +67,11 @@ test('Master Network v3: filtered public catalog and actionable My Practice stay
     readFile(new URL('../components/app/my-services-dashboard.jsx',import.meta.url),'utf8'),
   ])
   assert.match(masters,/<MarketplaceMasterFinder practitioners=/)
-  assert.match(services,/<MarketplaceServiceFinder services=/)
+  // The marketplace moved to the optional /services/catalog route; the primary
+  // personal Services landing intentionally no longer renders the full finder.
+  assert.match(services,/\/services\/catalog#service-listings/)
+  assert.match(servicesDirectory,/<MarketplaceServiceFinder services=/)
+  assert.doesNotMatch(services,/<MarketplaceServiceFinder services=/)
   assert.match(finder,/serviceMatches/)
   assert.match(finder,/masterMatches/)
   assert.match(finder,/pricing: PriceChoice/)

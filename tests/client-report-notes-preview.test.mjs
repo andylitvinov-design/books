@@ -19,6 +19,7 @@ const fixture = {
   includeInvoice: false,
   items: [{ remedySlug: 'arsenicum-album' }],
   analysis: 'STATE-MEASUREMENT-01: 3 of 10, baseline',
+  recommendationsText: 'CLIENT-RECOMMENDATIONS-01: follow tailored next steps',
   additionalNotes: 'CLIENT-GUIDANCE-01: keep an observation journal',
   generalInstructions: 'LEGACY-GENERAL-NOTE',
   internalNotes: 'PRIVATE-PRACTITIONER-ONLY',
@@ -31,22 +32,26 @@ test('consultation saves analysis and notes with a prescription but without an i
   assert.ok(saved.recommendation)
   assert.equal(saved.payment, undefined)
   assert.equal(saved.recommendation.analysis, fixture.analysis)
+  assert.equal(saved.recommendation.recommendationsText, fixture.recommendationsText)
   assert.equal(saved.recommendation.additionalNotes, fixture.additionalNotes)
   assert.equal(saved.recommendation.generalInstructions, fixture.generalInstructions)
   const projected = getClientPrescription(saved.recommendation, 'ru')
   assert.equal(projected.analysis, fixture.analysis)
+  assert.equal(projected.recommendationsText, fixture.recommendationsText)
   assert.equal(projected.additionalNotes, fixture.additionalNotes)
   assert.equal(projected.generalInstructions, fixture.generalInstructions)
   assert.equal(projected.internalNotes, undefined)
   const inHistory = await store.listClientDocuments(saved.recommendation.clientId)
   assert.equal(inHistory.length, 1)
   assert.equal(inHistory[0].analysis, fixture.analysis)
+  assert.equal(inHistory[0].recommendationsText, fixture.recommendationsText)
   const retry = await createConsultation({ ...fixture, newClient: { fullName: fixture.patientName, preferredLocale: 'ru' } }, { store, requestId })
   assert.equal(retry.recommendation.id, saved.recommendation.id)
   const changed = await updateConsultation(saved.recommendation, undefined, {
-    ...fixture, analysis: 'STATE-MEASUREMENT-02: 5 of 10', additionalNotes: 'CLIENT-GUIDANCE-02: next steps',
+    ...fixture, analysis: 'STATE-MEASUREMENT-02: 5 of 10', recommendationsText: 'CLIENT-RECOMMENDATIONS-02: approved', additionalNotes: 'CLIENT-GUIDANCE-02: next steps',
   }, { store })
   assert.equal(changed.recommendation.analysis, 'STATE-MEASUREMENT-02: 5 of 10')
+  assert.equal(changed.recommendation.recommendationsText, 'CLIENT-RECOMMENDATIONS-02: approved')
   assert.equal(changed.recommendation.additionalNotes, 'CLIENT-GUIDANCE-02: next steps')
   assert.equal((await store.findById(saved.recommendation.id)).additionalNotes, 'CLIENT-GUIDANCE-02: next steps')
 })
@@ -55,7 +60,7 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
   const input = {
     patientName: 'Synthetic Client', practitionerName: 'Synthetic Practitioner', status: 'active',
     dateIssued: '2026-10-13', items: [{ remedySlug: 'arsenicum-album' }],
-    analysis: 'ANALYSIS-SYNTHETIC-123', additionalNotes: 'NOTES-SYNTHETIC-456',
+    analysis: 'ANALYSIS-SYNTHETIC-123', recommendationsText: 'RECOMMENDATIONS-SYNTHETIC-321', additionalNotes: 'NOTES-SYNTHETIC-456',
     generalInstructions: 'GENERAL-SYNTHETIC-789', internalNotes: 'PRIVATE-SYNTHETIC-000',
   }
   for (const locale of ['en', 'ru']) {
@@ -64,7 +69,7 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     const pdf = buildPrescriptionPdf(projected, locale, 'https://example.test')
     const source = pdf.toString('latin1')
     assert.match(source, /^%PDF-1\.7/)
-    for (const phrase of ['ANALYSIS-SYNTHETIC-123', 'NOTES-SYNTHETIC-456', 'GENERAL-SYNTHETIC-789']) {
+    for (const phrase of ['ANALYSIS-SYNTHETIC-123', 'RECOMMENDATIONS-SYNTHETIC-321', 'NOTES-SYNTHETIC-456', 'GENERAL-SYNTHETIC-789']) {
       assert.match(source, new RegExp(phrase))
     }
     assert.doesNotMatch(source, /PRIVATE-SYNTHETIC-000/)
@@ -74,7 +79,8 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     assert.equal(getClientPrescription(record, locale).internalNotes, undefined)
   }
   assert.equal(recommendationCopy('ru').analysis, 'АНАЛИЗ СОСТОЯНИЯ')
-  assert.equal(recommendationCopy('en').additionalNotes, 'ADDITIONAL NOTES & GUIDANCE')
+  assert.equal(recommendationCopy('en').additionalNotes, 'NOTES')
+  assert.equal(recommendationCopy('en').recommendations, 'RECOMMENDATIONS')
 })
 
 test('long client state analysis continues across pages without dropping content', () => {
@@ -96,6 +102,7 @@ test('analysis and notes enforce bounded length independently of private interna
   const input = { patientName: 'Synthetic Client', practitionerName: 'Synthetic Practitioner', items: [{ remedySlug: 'arsenicum-album' }] }
   assert.throws(() => createPrescription({ ...input, analysis: 'x'.repeat(5001) }), /Analysis.*(?:too long|5000)/)
   assert.throws(() => createPrescription({ ...input, additionalNotes: 'x'.repeat(5001) }), /Additional notes.*(?:too long|5000)/)
+  assert.throws(() => createPrescription({ ...input, recommendationsText: 'x'.repeat(5001) }), /Recommendations.*(?:too long|5000)/)
   assert.equal(createPrescription({ ...input, analysis: '', additionalNotes: '  ' }).analysis, undefined)
 })
 
@@ -125,7 +132,7 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
     readFile('lib/consultations/service.js', 'utf8'),
     readFile('app/admin/consultations/actions.js', 'utf8'),
   ])
-  for (const field of ['analysis', 'additionalNotes']) {
+  for (const field of ['analysis', 'recommendationsText', 'additionalNotes']) {
     assert.match(studio, new RegExp('textarea name="' + field + '"'))
     assert.match(standalone, new RegExp('textarea name="' + field + '"'))
     assert.match(service, new RegExp(field + ': input\\.' + field))
@@ -133,6 +140,8 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
   }
   assert.match(studio, /Анализ/)
   assert.match(studio, /Примечания/)
+  assert.ok(studio.indexOf('textarea name="analysis"') < studio.indexOf('textarea name="recommendationsText"'))
+  assert.ok(studio.indexOf('textarea name="recommendationsText"') < studio.indexOf('textarea name="additionalNotes"'))
   assert.match(studio, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
   assert.match(studio, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
 })

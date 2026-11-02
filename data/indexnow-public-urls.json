@@ -1,0 +1,16 @@
+{
+  "origin": "https://holistichouse.vercel.app",
+  "keyFile": "/fd5a76df78ea5cb826818733ae65556c.txt",
+  "endpoint": "https://api.indexnow.org/indexnow",
+  "purpose": "Notify participating search engines of approved, public, canonical Holistic House landing pages. Receipt is not indexing.",
+  "paths": [
+    "/en/services/free-situation-review",
+    "/ru/services/free-situation-review",
+    "/es/services/free-situation-review",
+    "/en/services/systemic-constellations",
+    "/en/academy/reiki/yggdrasil",
+    "/en/academy/reiki/tantra-reiki/discover",
+    "/en/toronto",
+    "/en/events/love-magic-tarot-initiations-2026-10-25"
+  ]
+}

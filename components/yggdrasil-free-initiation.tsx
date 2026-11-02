@@ -1,3 +1,5 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { yggdrasilPreparationQuestions } from "@/data/academy/yggdrasil-preparation-questions";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
@@ -49,15 +51,7 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     videoLead: "Watch the first-level introductory recording here before working through the seven questions.",
     checklistTitle: "Seven questions for Reiki Yggdrasil Level 1",
     checklistIntro: "Seven preparation questions to study and discuss with the teacher, not an online exam.",
-    questions: [
-      "Which is more fundamental to the Runic Reiki system: Reiki, runes, or their combination?",
-      "What differences does the author claim between Runic Reiki and classical Usui Reiki, and how are these claims explained within the tradition?",
-      "What does Yggdrasil, the World Tree, represent in Scandinavian tradition and in the course?",
-      "What is the Healing stream or attunement in Runic Reiki, and how is it traditionally described as being used?",
-      "How is the Protection stream described, and in what situations do students practise it?",
-      "What is the Money Stream Activation attunement, and what symbolic or practical purposes does the course associate with it?",
-      "Which pantheons and deities does the course introduce for study at Level 5?",
-    ],
+    questions: [...yggdrasilPreparationQuestions.en],
     statement: "The source describes energy, healing and other esoteric effects as part of its spiritual teaching. These claims are not established medical facts. Reiki Yggdrasil does not replace health care or guarantee healing, money or supernatural abilities.",
     afterTitle: "After the first initiation: what to do next",
     after: [
@@ -98,15 +92,7 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     videoLead: "Вводная запись на английском. Просмотр по нажатию, без автоматического звука.",
     checklistTitle: "Семь контрольных вопросов для 1-й ступени",
     checklistIntro: "Семь вопросов для самостоятельной подготовки и обсуждения с преподавателем. Ответы можно записать самостоятельно или обсудить с преподавателем.",
-    questions: [
-      "Что лежит в основе системы Рейки Иггдрасиль — Рейки, руны или их сочетание?",
-      "Чем автор системы объясняет заявленные отличия Рейки Иггдрасиль от классического Усуи Рейки?",
-      "Что такое Иггдрасиль — Мировое Древо — в скандинавской традиции и в системе обучения?",
-      "Что означает поток или настройка «Целительство» и как его традиционно описывают?",
-      "Как описывается работа потока «Защита» и в каких ситуациях его практикуют?",
-      "В чём идея настройки «Активация денежного потока» и какие символические задачи с ней связывают?",
-      "С какими пантеонами и богами предполагается знакомство на пятой ступени Рейки Иггдрасиль?",
-    ],
+    questions: [...yggdrasilPreparationQuestions.ru],
     statement: "Описания целительства, энергетических потоков и иных эзотерических эффектов являются частью традиции, а не доказанными медицинскими фактами. Инициация не заменяет медицинскую помощь и не гарантирует исцеления, дохода или сверхъестественных способностей.",
     afterTitle: "После первой инициации: что делать дальше",
     after: [
@@ -147,15 +133,7 @@ const copy: Record<PublicLocale, LocaleStrings> = {
     videoLead: "Mira el video introductorio aquí y continúa con las siete preguntas.",
     checklistTitle: "Siete preguntas para el Nivel 1",
     checklistIntro: "Siete preguntas para preparar y conversar con el profesor.",
-    questions: [
-      "¿Reiki, runas o su combinación: qué fundamenta Reiki Yggdrasil?",
-      "¿Cómo explica el autor las diferencias que afirma entre Reiki Yggdrasil y Usui Reiki?",
-      "¿Qué es Yggdrasil, el Árbol del Mundo?",
-      "¿Qué representa la corriente de Sanación y cómo se describe su práctica?",
-      "¿Cómo se describe la corriente de Protección?",
-      "¿En qué consiste la llamada Activación del flujo de dinero?",
-      "¿Qué panteones y deidades se estudian en el quinto nivel?",
-    ],
+    questions: [...yggdrasilPreparationQuestions.es],
     statement: "Las afirmaciones esotéricas y de sanación pertenecen a la tradición y no constituyen evidencia clínica ni sustituyen la atención médica.",
     afterTitle: "Después de la primera iniciación",
     after: [
@@ -347,7 +325,10 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h1 id="free-initiation-title">{t.title}</h1>
             <p className={styles.heroLead}>{t.intro}</p>
             <ul className={styles.benefits}>{t.benefits.map((item) => <li key={item}>{item}</li>)}</ul>
-            <a className={styles.primaryAction} href="#choose-initiation">{t.discover}<span aria-hidden="true"> →</span></a>
+            <div className={styles.heroActions}>
+              <Link href={REIKI_FREE_COURSE_PATH} className={styles.primaryAction} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"}<span aria-hidden="true"> →</span></Link>
+              <a className={styles.secondaryAction} href="#choose-initiation">{t.discover}<span aria-hidden="true"> →</span></a>
+            </div>
           </div>
           <div className={styles.heroVisual}>
             <Image unoptimized src="/academy/reiki-yggdrasil/source/school-introduction.jpg" alt="" fill priority sizes="(max-width: 800px) 100vw, 42vw" />

@@ -14,8 +14,8 @@ test('Spanish biography preserves every English section, paragraph and experienc
 });
 test('Spanish About uses its independent published Spanish audio, not an English fallback', async () => {
   const page = source('app/es/about/page.tsx');
-  assert.match(page, /getPublishedSiteVideos\(\)/);
-  assert.ok(page.includes("published['about-intro:es']"));
+  assert.match(page, /getPublishedSiteVideo\('about-intro:es'\)/);
+  assert.doesNotMatch(page, /getPublishedSiteVideos\(\)/);
   assert.doesNotMatch(page, /englishIntro|about-intro:en|create_video|saveSiteVideoAction/);
   const { existingAboutIntroVideoEs } = await import('../lib/site-videos/defaults.js');
   const { aboutIntroEs } = await loadData('data/about-es.ts');
@@ -27,7 +27,7 @@ test('Spanish About uses its independent published Spanish audio, not an English
   for (const text of ['Audio en inglés','Audio en ruso','cc_lang_pref: video.language','lang={textLanguage}','psychic-alchemy-es-v1.webp']) assert.ok(player.includes(text));
 });
 test('ES About retains all sections, real translated destinations, form and SEO', () => {
-  const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'about-testimonials', 'about-review-archive', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);
+  const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'PersonalTestimonials', 'variant="about"', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);
   assert.doesNotMatch(page, /Los enlaces marcados con EN|href="\/en\/client"/);
   const form = source('components/personal-consultation-form.tsx');
   const chooser = source('components/consultation-choice-capture.tsx');
@@ -37,7 +37,7 @@ test('ES About retains all sections, real translated destinations, form and SEO'
 });
 test('Public ES routing does not enable unsupported private-cabinet locales', () => {
   const navigation = source('components/site-navigation.tsx'); assert.match(navigation, /hasSpanishCounterpart/); assert.match(navigation, /if \(next === 'es'\) return/);
-  assert.match(source('components/mobile-bottom-navigation.tsx'), /getSiteNavigation/); assert.match(source('middleware.ts'), /requestHeaders.set\('x-public-page-locale', pageLocale\)/); assert.match(source('app/layout.tsx'), /<html lang=\{lang\}>/); assert.match(source('lib/ui-locale.js'), /return value === 'ru' \|\| value === 'en'/);
+  assert.match(source('components/mobile-bottom-navigation.tsx'), /getCompactNavigation/); assert.match(source('middleware.ts'), /requestHeaders.set\('x-public-page-locale', pageLocale\)/); assert.match(source('app/layout.tsx'), /<html lang=\{lang\}>/); assert.match(source('lib/ui-locale.js'), /return value === 'ru' \|\| value === 'en'/);
   assert.match(source('app/es/client/page.tsx'), /locale="en" displayLocale="es"/);
 });
 
@@ -46,4 +46,18 @@ test('Spanish preview is the exact small frame extracted from the archived Spani
   assert.ok(poster.length < 100000);
   assert.equal(createHash('sha256').update(poster).digest('hex'), '53646820605fbd228ec1511b11f9701cbba6127b8b79fb7863a101ee7ad5347c');
   assert.doesNotMatch(source('components/site-video-player.tsx'), /Expires=|Signature=|\.mp4\?/);
+});
+
+
+test('ES browser acceptance verifies current intro and all ten authentic testimonials without masking RU audio',()=>{
+  const suite=source('scripts/verify-es-about.mjs');
+  assert.match(suite, /data-video-slot="about-intro"/);
+  assert.match(suite, /data-personal-testimonials="about"/);
+  assert.match(suite, /toHaveCount\(10\)/);
+  assert.match(suite, /site-video-caption \[lang="ru"\]/);
+  assert.match(suite, /site-video-caption \[lang="en"\]/);
+  assert.match(suite, /spanishCopy\.join/);
+  assert.match(suite, /await intro\.getByRole\('button'/);
+  assert.match(suite, /intro\.locator\('iframe'\)/);
+  assert.doesNotMatch(suite, /about-video-grid/);
 });

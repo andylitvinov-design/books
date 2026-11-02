@@ -9,3 +9,6 @@ export function getMediaAsset(series: string, file: string): Promise<{
   body: Buffer;
   contentType: string;
 } | undefined>;
+
+
+export function getRemoteMediaResponse(series: string, file: string, revision: string, fetchSource?: typeof fetch): Promise<Response>;

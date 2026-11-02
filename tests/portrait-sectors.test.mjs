@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors,
+  portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors, portraitSectorReadouts,
+  portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
 test('portrait grouping partitions all 17 directional axes exactly once and excludes personality', () => {
@@ -41,4 +42,80 @@ test('each sector has localized public labels', () => {
   for (const sector of PORTRAIT_SECTORS) {
     for (const lang of ['en', 'ru', 'es']) assert.ok(sector.label[lang], sector.key + '/' + lang)
   }
+})
+
+test('All reports only actual measured coverage, never composite wellbeing values', () => {
+  const portrait = {axes:{
+    stress:{percent:20},sleep:{percent:80},clarity:{percent:40},
+    relationships:{percent:65},boundaries:{percent:75},meaning:{percent:90},
+  }}
+  const summary = summarizePortraitSectors(portrait)
+  assert.deepEqual(summary.map(row => [row.key,row.percent,row.measured,row.total,row.coveragePercent]), [
+    ['body',null,2,5,40],['work',null,1,3,33],['relationships',null,2,4,50],['growth',null,1,5,20],
+  ])
+  assert.deepEqual(summary.map(s => Math.round(portraitSectorMidAngle(s.key) * 1e6)),
+    PORTRAIT_SECTOR_KEYS.map((key,index) => Math.round((-Math.PI / 2 + (index+.5) * Math.PI / 2) * 1e6)))
+})
+
+test('No result: four sectors remain unmeasured, not percentages or health norms', () => {
+  const absent = summarizePortraitSectors(null)
+  assert.equal(absent.length, 4)
+  assert.deepEqual(absent.map(x => x.percent), [null,null,null,null])
+  assert.deepEqual(absent.map(x => x.measured), [0,0,0,0])
+  assert.equal(portraitSectorMidAngle('invalid'), null)
+  const invalid = summarizePortraitSectors({axes:{
+    stress:{percent:NaN},anxiety:{percent:-2},sleep:{percent:101},energy:{percent:'40'},
+    clarity:{percent:0},focus:{percent:100},
+  }})
+  assert.equal(invalid[0].percent,null)
+  assert.equal(invalid[1].percent,null)
+  assert.equal(invalid[1].coveragePercent,67)
+  assert.equal(invalid[1].measured,2)
+  assert.deepEqual(PORTRAIT_SECTOR_KEYS, ['body','work','relationships','growth'])
+})
+
+test('selected category scales occupy full 360°, not their old quarter',()=>{
+  for(const sector of PORTRAIT_SECTORS){
+    const angles=sector.axes.map(axis=>portraitFullCircleAngleForAxis(axis,sector.key))
+    assert.equal(angles.length,sector.axes.length)
+    assert.ok(angles.every(Number.isFinite))
+    assert.equal(angles[0],-Math.PI/2)
+    for(let i=1;i<angles.length;i++){
+      assert.ok(Math.abs((angles[i]-angles[i-1])-(2*Math.PI/angles.length))<1e-10)
+    }
+    // The last and first axes are equally spaced around the wrap.
+    assert.ok(Math.abs((angles[0]+Math.PI*2-angles.at(-1))-(2*Math.PI/angles.length))<1e-10)
+    assert.equal(portraitFullCircleAngleForAxis('personality',sector.key),null)
+    assert.equal(portraitFullCircleAngleForAxis('unrelated',sector.key),null)
+  }
+  assert.equal(portraitFullCircleAngleForAxis('stress','not-a-sector'),null)
+  assert.equal(portraitFullCircleAngleForAxis('stress','growth'),null)
+  // Existing domain membership remains unchanged, so no test scoring or
+  // report/result storage migration is needed for the new presentation.
+  assert.deepEqual(PORTRAIT_SECTOR_KEYS,['body','work','relationships','growth'])
+})
+
+test('All reads the latest current source score per area, never coverage or an average',()=>{
+  const portrait={axes:{
+    stress:{mode:'directional',rawValue:1,min:0,max:5,percent:80,measuredAt:'2026-10-20T12:00:00Z'},
+    energy:{mode:'directional',rawValue:3,min:0,max:5,percent:20,measuredAt:'2026-10-23T12:00:00Z'},
+    clarity:{mode:'directional',rawValue:2,min:1,max:4,percent:33,measuredAt:'2026-10-23T12:00:00Z'},
+    relationships:{mode:'descriptive',rawValue:3,min:1,max:5,percent:null,measuredAt:'2026-10-22T12:00:00Z'},
+    meaning:{mode:'directional',rawValue:1,min:0,max:10,percent:10,measuredAt:'2026-10-23T12:00:00Z'},
+  }}
+  const summary=portraitSectorReadouts(portrait)
+  assert.equal(summary.length,4)
+  assert.deepEqual(summary.map(row=>row.axis),['energy','clarity','relationships','meaning'])
+  assert.deepEqual(summary.map(row=>row.percent),[20,33,null,10])
+  assert.deepEqual(summary.map(row=>row.measurement?.rawValue),[3,2,3,1])
+  // Descriptive source remains numeric, but cannot create a favorable ray.
+  assert.equal(summary[2].measurement.max,5)
+  assert.equal(summary[2].percent,null)
+  // Reject malformed/out-of-range results, and never fall back to staleAxes.
+  const invalid=portraitSectorReadouts({axes:{
+    stress:{mode:'directional',rawValue:8,min:0,max:5,percent:80},
+    energy:{mode:'directional',rawValue:2,min:0,max:5,percent:NaN},
+  },staleAxes:{clarity:{mode:'directional',rawValue:3,min:0,max:5,percent:60}}})
+  assert.deepEqual(invalid.map(row=>row.axis),[null,null,null,null])
+  assert.deepEqual(portraitSectorReadouts(null).map(row=>row.axis),[null,null,null,null])
 })

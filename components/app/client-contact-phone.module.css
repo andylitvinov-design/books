@@ -1,0 +1,23 @@
+.panel{max-width:780px;margin:18px 0;padding:clamp(14px,3vw,24px);border:1px solid #c9dee1;background:#f6fafb;border-radius:19px;color:#24434c;font:400 13px/1.55 system-ui,sans-serif}
+.panel h2{font:750 clamp(18px,2.5vw,23px)/1.3 system-ui,sans-serif;margin:0 0 6px}
+.panel p{margin:7px 0;color:#556d74;font-size:12px}
+.saved{display:flex;flex-direction:column;gap:3px;background:#fff;border:1px solid #d9e6e9;border-radius:12px;padding:12px 13px;margin:14px 0}
+.saved strong{font-weight:750;color:#305566}.saved span{font-size:12px;color:#667b81}
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:5px;font-size:12px;font-weight:700}
+.form input[type=tel]{width:100%;box-sizing:border-box;min-height:44px;border:1px solid #acc7d0;border-radius:9px;background:white;padding:9px 11px;font:500 14px/1.4 system-ui,sans-serif}
+.form .consent{display:flex;align-items:flex-start;gap:9px;font-weight:500;line-height:1.5}
+.consent input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:#236078}
+.actions{display:flex;flex-wrap:wrap;gap:9px}
+.actions button{min-height:44px;padding:9px 13px;background:#236078;border:1px solid #236078;color:white;font-size:13px;font-weight:750;border-radius:10px}
+.actions button.delete{background:#fff;color:#7b3d49;border-color:#d8a7af}
+.actions button:disabled{opacity:.55;cursor:not-allowed}
+.panel :focus-visible{outline:3px solid #3293aa;outline-offset:3px}
+.hint{color:#617981!important;margin:12px 0!important}
+.notice{color:#236748!important;font-weight:700}
+.error{color:#992f3e!important;font-weight:650}
+@media(max-width:450px){.panel{padding:13px}.actions button{flex:1 1 150px}}
+
+.phoneField{display:grid;gap:5px;min-width:0}
+.phoneField label{font-size:12px;font-weight:700}
+.form .phoneField input,.form .phoneField select{font-size:16px}

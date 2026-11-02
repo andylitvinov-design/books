@@ -4,6 +4,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, provenance } from '../
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { interpretationForDimension, interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
+import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
 
 const answers = (definition, position = 0) => Object.fromEntries(definition.questions.map(question => {
   const min = question.min ?? definition.answerScale.min
@@ -108,7 +109,7 @@ test('unvalidated Russian GAD7 is descriptive in both report languages, never in
   }
 })
 
-test('all 230 immutable definitions retain valid source-specific interpretation in both report languages', () => {
+test('all registered forms retain source-specific meaning while historical 230 source identities stay immutable', () => {
   const splitV2Ids=new Set([
     '52c75d85-d99e-5178-8ee4-3b7faa802601',
     '7715324b-f54c-5d7c-8ca7-08ff17ba8c8e',
@@ -121,9 +122,12 @@ test('all 230 immutable definitions retain valid source-specific interpretation 
   const appendedV2Ids=new Set([...splitV2Ids,...bachV2Ids])
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
-  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!appendedV2Ids.has(d.id)).length,222)
-  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!bachV2Ids.has(d.id)).length,228)
-  assert.equal(ASSESSMENT_DEFINITIONS.length,230)
+  const newer = new Set(ADDITIONAL_PROFESSIONAL_DEFINITIONS.map(d=>d.id))
+  const historical = ASSESSMENT_DEFINITIONS.filter(d=>!newer.has(d.id))
+  assert.equal(historical.filter(d=>!appendedV2Ids.has(d.id)).length,222)
+  assert.equal(historical.filter(d=>!bachV2Ids.has(d.id)).length,228)
+  assert.equal(historical.length,230)
+  assert.equal(ASSESSMENT_DEFINITIONS.length,230+newer.size)
   for (const definition of ASSESSMENT_DEFINITIONS) for (const position of [0,.5,1]) {
     const result = score(definition, position)
     for (const dimension of result.dimensions) for (const locale of ['en','ru']) {

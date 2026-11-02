@@ -581,3 +581,320 @@
   .courseLinks .systemSecondary,.courseDetailLink { justify-content:center; }
   .archiveRow { padding:0 12px 15px; }
 }
+
+
+
+/* Compact mobile story deck (18 Oct 2026).
+   Each idea is a short, independently readable screen; expanded resources
+   remain in normal document flow for keyboard use and increased text size. */
+.courseDeck { --energywork-bottom-nav-space: 78px; }
+.heroQuickLinks { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+.heroQuickLinks > a { flex: 1 1 190px; }
+.foundationCopy { min-width: 0; }
+.flightLinks { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.flightDetails .systemLabel { margin: 0; }
+
+.captureDisclosure, .extraVideoDisclosure, .archiveDisclosure { min-width: 0; }
+.captureDisclosure > summary, .extraVideoDisclosure > summary, .archiveDisclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+.captureDisclosure > summary::-webkit-details-marker,
+.extraVideoDisclosure > summary::-webkit-details-marker,
+.archiveDisclosure > summary::-webkit-details-marker { display: none; }
+.captureDisclosure > summary { background: #f4ecf0; color: #893a55; }
+.captureDisclosure > summary:hover { background: #ecdde4; }
+.captureDisclosure > summary svg, .extraVideoDisclosure > summary svg, .archiveDisclosure > summary svg {
+  flex-shrink: 0;
+  transition: transform .18s ease;
+}
+.captureDisclosure[open] > summary svg,
+.extraVideoDisclosure[open] > summary svg,
+.archiveDisclosure[open] > summary svg { transform: rotate(180deg); }
+.captureDisclosure > :not(summary) { margin-top: 12px; }
+.extraVideoDisclosure > summary {
+  color: #f4e5d9;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+}
+.extraVideoDisclosure > .systemVideo { margin-top: 10px; }
+.archiveDisclosure {
+  grid-column: 1 / -1;
+  border-top: 1px solid #e6e0e7;
+  padding: 10px 16px 15px;
+}
+.archiveDisclosure > summary { background: #f0f3f7; color: #234665; }
+.archiveDisclosure > .archiveRow { padding: 12px 0 0; }
+.captureDisclosure > summary:focus-visible,
+.extraVideoDisclosure > summary:focus-visible,
+.archiveDisclosure > summary:focus-visible { outline: 3px solid #e5bd72; outline-offset: 3px; }
+
+@media (max-width: 780px) {
+  .courseDeck { max-width: 680px; padding-bottom: var(--energywork-bottom-nav-space); }
+  .courseDeck > .backRow { margin: 2px 0 10px; }
+  .courseDeck > .backRow a { font-size: 13px; }
+  .courseDeck > section, .courseDeck .systemCard { scroll-margin-top: 12px; }
+  .courseDeck > .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    min-height: 0;
+    padding: 23px 20px 19px;
+  }
+  .courseDeck .hero .eyebrow { margin-bottom: 10px; }
+  .courseDeck .hero h1 { margin-bottom: 9px; font-size: clamp(31px, 7.8vw, 42px); line-height: 1.03; }
+  .courseDeck .hero .heroSubtitle { margin-bottom: 10px; font-size: clamp(17px, 4.2vw, 20px); line-height: 1.23; }
+  .courseDeck .hero .heroLead { max-width: none; font-size: 14px; line-height: 1.43; }
+  .courseDeck .hero .heroActions { flex-direction: column; gap: 8px; margin-top: 15px; }
+  .courseDeck .hero .heroActions > .primaryButton { width: 100%; min-height: 45px; padding: 10px 14px; font-size: 14px; }
+  .courseDeck .heroQuickLinks { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .courseDeck .heroQuickLinks .ghostButton { width: 100%; min-height: 39px; padding: 8px; font-size: 11px; line-height: 1.23; gap: 5px; }
+  .courseDeck .heroQuickLinks svg { width: 14px; flex-shrink: 0; }
+  .courseDeck .heroFacts { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px 12px; margin-top: 14px; font-size: 10.5px; line-height: 1.25; }
+  .courseDeck .heroFacts span { white-space: nowrap; gap: 4px; }
+  .courseDeck .heroFacts svg { width: 13px; height: 13px; }
+  .courseDeck .heroArt { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px; width: 100%; max-width: none; min-height: 0; margin: 3px 0 0; transform: none; }
+  .courseDeck .heroArt .orbitOuter, .courseDeck .heroArt .orbitCaption { display: none; }
+  .courseDeck .heroArt .orbitTag {
+    position: static;
+    padding: 6px 9px;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: .08em;
+    box-shadow: none;
+  }
+  .courseDeck > .flightSection, .courseDeck > .foundations, .courseDeck > .systemsSection, .courseDeck > .howSection {
+    margin-top: 0;
+    padding-top: 24px;
+  }
+  .courseDeck .sectionHeader { max-width: none; margin: 0 0 12px; }
+  .courseDeck .sectionEyebrow.sequenceStep { margin-bottom: 9px; padding: 5px 10px; font-size: 10px; line-height: 1.25; }
+  .courseDeck .sectionHeader h2 { margin-bottom: 8px; font-size: clamp(26px, 6.8vw, 33px); line-height: 1.08; }
+  .courseDeck .sectionHeader > p:last-child { font-size: 14px; line-height: 1.4; }
+  .courseDeck .flightLayout { grid-template-columns: 1fr; border-radius: 15px; }
+  .courseDeck .flightMedia { aspect-ratio: 16/9; max-height: none; }
+  .courseDeck .flightDetails { padding: 11px 13px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .courseDeck .flightDetails .systemLabel { font-size: 10px; line-height: 1.25; }
+  .courseDeck .flightLinks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .courseDeck .flightLinks .courseDetailLink { min-height: 32px; font-size: 11px; text-align: left; }
+  .courseDeck .flightDetails .systemPrimary { min-height: 36px; margin-top: 0; padding: 8px 10px; font-size: 11px; }
+  .courseDeck .foundationGrid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .courseDeck .foundationCard {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 0;
+    padding: 10px 12px;
+    border-radius: 13px;
+  }
+  .courseDeck .foundationCard .foundationIcon { padding: 8px; border-radius: 10px; }
+  .courseDeck .foundationCard .foundationIcon svg { width: 19px; height: 19px; }
+  .courseDeck .foundationCard .stepNumber { display: none; }
+  .courseDeck .foundationCopy h3 { margin: 0 0 3px; font-size: 17px; line-height: 1.15; }
+  .courseDeck .foundationCopy p { margin: 0; color: #54667d; font-size: 12.5px; line-height: 1.34; }
+  .courseDeck .systemsSection > .sectionHeader { margin-bottom: 12px; }
+  .courseDeck .systemGrid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+  .courseDeck .systemCard { display: flex; flex-direction: column; width: 100%; border-radius: 15px; }
+  .courseDeck .systemMedia { padding: 10px 11px 8px; gap: 6px; }
+  .courseDeck .systemVideo { aspect-ratio: 16/9; border-radius: 9px; }
+  .courseDeck .systemVideo :global(.academy-video-poster) span { font-size: 11px; }
+  .courseDeck .originalLanguage { font-size: 10px; }
+  .courseDeck .systemBody { padding: 12px 13px 13px; gap: 7px; }
+  .courseDeck .systemBody .systemLabel { margin: 0; font-size: 10px; }
+  .courseDeck .systemBody h3 { margin: 0; font-size: 25px; line-height: 1.1; }
+  .courseDeck .systemBody .systemDescription { margin: 0; font-size: 13px; line-height: 1.4; }
+  .courseDeck .courseLinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+  .courseDeck .courseLinks .systemSecondary,
+  .courseDeck .courseLinks .courseDetailLink { min-height: 39px; padding: 8px 9px; justify-content: center; font-size: 11px; line-height: 1.2; text-align: center; }
+  .courseDeck .courseLinks .courseDetailLink { border: 1px solid #ead5dd; border-radius: 9px; }
+  .courseDeck .courseLinks svg { width: 13px; flex-shrink: 0; }
+  .courseDeck .captureDisclosure > summary { min-height: 39px; padding: 8px 10px; font-size: 12px; }
+  .courseDeck .archiveDisclosure { padding: 0 11px 10px; }
+  .courseDeck .archiveDisclosure > summary, .courseDeck .extraVideoDisclosure > summary { min-height: 36px; padding: 7px 10px; font-size: 11px; }
+  .courseDeck .journeyGrid { grid-template-columns: 1fr; gap: 8px; }
+  .courseDeck .journeyStep {
+    display: grid;
+    grid-template-columns: 28px minmax(0,1fr);
+    gap: 3px 8px;
+    align-items: start;
+    padding: 10px 13px;
+    border-top-width: 2px;
+    border-radius: 11px;
+  }
+  .courseDeck .journeyStep > strong { grid-row: 1 / span 2; padding-top: 2px; font-size: 12px; }
+  .courseDeck .journeyStep h3 { margin: 0; font-size: 16px; line-height: 1.25; }
+  .courseDeck .journeyStep p { margin: 0; font-size: 12px; line-height: 1.4; }
+  .courseDeck > .finalCta { margin-top: 20px; padding: 18px; border-radius: 15px; gap: 13px; }
+  .courseDeck .finalCta h2 { font-size: 24px; line-height: 1.12; }
+  .courseDeck .finalCta .eyebrow { margin-bottom: 6px; font-size: 10px; }
+  .courseDeck .finalCta p { font-size: 13px; line-height: 1.4; }
+  .courseDeck .finalCta .primaryButton { min-height: 43px; width: 100%; }
+  .courseDeck > .disclaimer { margin-top: 13px; font-size: 11px; line-height: 1.5; }
+}
+@media (max-width: 550px) {
+  .courseDeck { padding-left: 12px; padding-right: 12px; }
+  .courseDeck > .hero { padding: 19px 17px 16px; border-radius: 20px; }
+  .courseDeck .hero h1 { font-size: clamp(30px, 8vw, 36px); }
+  .courseDeck .hero .eyebrow { margin-bottom: 8px; font-size: 9px; letter-spacing: .06em; }
+  .courseDeck .hero .heroLead { font-size: 13px; line-height: 1.37; }
+  .courseDeck .hero .heroSubtitle { font-size: 17px; margin-bottom: 7px; }
+  .courseDeck .hero .heroActions { margin-top: 11px; }
+  .courseDeck .heroFacts { margin-top: 10px; }
+  .courseDeck .heroArt .orbitTag { padding: 5px 7px; }
+}
+@media (max-width: 370px) {
+  .courseDeck .heroQuickLinks .ghostButton { font-size: 10px; }
+  .courseDeck .courseLinks .systemSecondary, .courseDeck .courseLinks .courseDetailLink { font-size: 10px; }
+  .courseDeck .heroFacts { gap: 5px 7px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .captureDisclosure > summary svg, .extraVideoDisclosure > summary svg, .archiveDisclosure > summary svg { transition: none; }
+}
+
+/* Five-course-stage overview: the unnumbered foundations are preparation, not lesson 2. */
+.stepRail {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 15px 0 0;
+}
+.stepRail a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 9px;
+  border: 1px solid #e1dfe8;
+  border-radius: 11px;
+  color: #213f59;
+  background: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.22;
+  font-weight: 750;
+}
+.stepRail a:hover, .stepRail a:focus-visible { border-color: #b16f87; background: #fbf1f4; }
+.stepRail span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #204d66;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+}
+.giftOffer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.giftOffer > div {
+  min-width: 0;
+  padding: 17px 20px;
+  border: 1px solid #d7e3e4;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #eff8f6, #fff);
+}
+.giftOffer > div + div {
+  border-color: #e5dae1;
+  background: linear-gradient(120deg, #fbf3f6, #fff);
+}
+.offerKicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #23627b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.giftOffer h3 { margin: 0 0 6px; color: #193951; font-size: clamp(17px, 1.7vw, 21px); line-height: 1.2; }
+.giftOffer p { margin: 0; color: #4d6273; font-size: 13px; line-height: 1.45; }
+.personalRates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 19px;
+  padding: 18px;
+  border: 1px solid #dce3e8;
+  border-radius: 15px;
+  background: #f4f8f9;
+}
+.personalRatesCopy h3 { margin: 0 0 6px; color: #1b4056; font-size: 19px; }
+.personalRatesCopy p { margin: 0; color: #52697b; font-size: 13px; line-height: 1.4; }
+.rate {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 98px;
+  min-height: 76px;
+  padding: 10px 15px;
+  border: 1px solid #cfdfe3;
+  border-radius: 12px;
+  background: #fff;
+}
+.rate strong { color: #85405c; font-size: 24px; line-height: 1.2; }
+.rate span { color: #526579; font-size: 12px; line-height: 1.35; }
+.finalCtaActions {
+  display: grid;
+  gap: 11px;
+  flex: 0 0 min(100%, 380px);
+  width: min(100%, 380px);
+}
+.finalCtaActions > :global([data-contact-channel-chooser]) { width: 100%; }
+.finalCtaActions .primaryButton,
+.finalCtaActions .personalButton {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.25;
+}
+.finalCtaActions .personalButton { background: #1c516a; color: #fff; }
+.finalCtaActions .personalButton:hover { background: #133f55; color: #fff; }
+@media (max-width: 1020px) {
+  .stepRail { grid-template-columns: repeat(5, minmax(140px, 1fr)); overflow-x: auto; padding-bottom: 3px; }
+  .stepRail a { min-height: 51px; }
+}
+@media (max-width: 780px) {
+  .courseDeck > .stepRail { gap: 6px; margin-top: 10px; }
+  .courseDeck .stepRail a { min-height: 43px; padding: 8px; font-size: 11px; }
+  .courseDeck .stepRail span { flex-basis: 23px; width: 23px; height: 23px; font-size: 10px; }
+  .courseDeck .giftOffer { gap: 8px; margin-bottom: 12px; }
+  .courseDeck .giftOffer > div { padding: 12px; }
+  .courseDeck .giftOffer h3 { font-size: 16px; }
+  .courseDeck .giftOffer p { font-size: 12px; }
+  .courseDeck .personalRates { padding: 12px; margin-top: 12px; }
+  .courseDeck .finalCtaActions { flex-basis: auto; width: 100%; gap: 9px; }
+  .courseDeck .finalCtaActions .personalButton { min-height: 43px; }
+}
+@media (max-width: 560px) {
+  .giftOffer { grid-template-columns: 1fr; }
+  .personalRates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .personalRatesCopy { grid-column: 1 / -1; }
+  .rate { min-width: 0; min-height: 63px; }
+  .rate strong { font-size: 22px; }
+  .finalCtaActions .primaryButton, .finalCtaActions .personalButton { font-size: 12.5px; }
+}

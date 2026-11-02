@@ -135,11 +135,11 @@ export function ServicesFreeRecommendations({ locale }: { locale: PublicLocale }
                 </div>
               </div>
               <div className={styles.actions}>
-                <Link className={styles.order} href={item.orderHref} prefetch={false} data-free-service-action="order">
-                  <ActionIcon size={15} strokeWidth={2} aria-hidden="true" />{item.action}
-                </Link>
                 <Link className={styles.details} href={item.detailsHref} prefetch={false} data-free-service-action="details">
                   {t.details}<ArrowRight size={15} strokeWidth={2} aria-hidden="true" />
+                </Link>
+                <Link className={styles.order} href={item.orderHref} prefetch={false} data-free-service-action="order">
+                  <ActionIcon size={15} strokeWidth={2} aria-hidden="true" />{item.action}
                 </Link>
               </div>
             </article>

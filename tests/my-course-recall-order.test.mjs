@@ -1,3 +1,4 @@
+import { OPORA_SKILL_SLIDE_MODEL } from '../lib/inner-growth/anti-stress-skills-v5.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -7,7 +8,7 @@ import { lessonFor, TRACKS, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CO
 const source = readFileSync(new URL('../components/app/course-slide-player.jsx', import.meta.url), 'utf8')
 const match = source.match(/function buildSlides\(lesson\) \{[\s\S]*?\n\}/)
 assert.ok(match, 'test the real player slide builder, without a duplicate implementation')
-const buildSlides = runInNewContext('(' + match[0] + ')')
+const buildSlides = runInNewContext('(' + match[0] + ')', { OPORA_SKILL_SLIDE_MODEL })
 const keys = lesson => Array.from(buildSlides(lesson), slide => slide.key)
 
 test('every EN/RU V3/V4 lesson recalls before the merged teaching exercise, preserving the rest of the steps', () => {
@@ -57,7 +58,8 @@ test('day one is orientation, while later prompts preserve previously learned-sk
 test('full text keeps recall before teaching and player retains server-confirmed save contract', () => {
   const full = readFileSync(new URL('../components/app/course-today.jsx', import.meta.url), 'utf8')
   assert.ok(full.indexOf('data-course-active-recall') < full.indexOf('className={styles.aphorism}'))
-  assert.match(source, /const \[index, setIndex\] = useState\(alreadyDone \? slides.length : 0\)/)
+  // A saved historic lesson always starts read-only at its first screen.
+  assert.match(source, /const \[index, setIndex\] = useState\(reviewOnly \? 0 : alreadyDone \? slides.length : 0\)/)
   assert.match(source, /day:cycle.day,lessonId:lesson.id,operationId:sessionOp.current/)
   assert.match(source, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)
   assert.match(source, /if \(response\) \{ sessionOp.current = null; setEarned\(true\); setIndex\(slides.length\) \}/)

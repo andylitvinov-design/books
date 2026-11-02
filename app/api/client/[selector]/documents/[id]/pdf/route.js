@@ -17,5 +17,5 @@ export async function GET(request, { params }) {
   const document = payment ? getClientPaymentDocument(access.record, locale) : getClientPrescription(access.record, locale)
   if (!document) return new NextResponse(null, { status: 404, headers: privateHeaders })
   const pdf = payment ? buildPaymentPdf(document, locale, metadataBaseFor().origin) : buildPrescriptionPdf(document, locale, metadataBaseFor().origin)
-  return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${payment ? 'private-document.pdf' : reportPdfFilename(document)}"` } })
+  return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `${new URL(request.url).searchParams.get('preview') === '1' ? 'inline' : 'attachment'}; filename="${payment ? 'private-document.pdf' : reportPdfFilename(document)}"` } })
 }

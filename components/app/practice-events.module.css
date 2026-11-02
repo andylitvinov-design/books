@@ -1,0 +1,56 @@
+.root{color:#193951;font-size:14px}
+.header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.header h3{font-size:22px;line-height:1.2;color:#163d57;margin:2px 0 7px}
+.header p{margin:0;max-width:650px;line-height:1.55;color:#557183}
+.kicker{font-size:10px!important;letter-spacing:.16em;font-weight:800;color:#2d8992!important}
+.calendarLink{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:#147a80;text-decoration:none;font-size:12px;font-weight:750}
+.listHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px;color:#60778b;font-size:12px}
+.primary,.secondary,.back{display:inline-flex;gap:7px;align-items:center;justify-content:center;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:740;cursor:pointer}
+.primary{border:1px solid #087f8c;background:#117e8f;color:white}
+.primary:hover{background:#096878}.secondary{border:1px solid #b5d9dc;background:#f7ffff;color:#176a78}.secondary:hover{background:#e9f7f8}
+.primary:disabled,.secondary:disabled{opacity:.55;cursor:not-allowed}
+.empty{border:1px dashed #a8c7d4;border-radius:13px;padding:25px 16px;text-align:center;color:#52778c;background:#f6fafb}
+.list{display:grid;gap:10px}
+.card{border:1px solid #d8e5e8;background:#fff;border-radius:14px;display:flex;align-items:center;gap:14px;padding:12px}
+.thumb,.fallback{width:112px;height:78px;flex:none;border-radius:9px;object-fit:cover;background:#e5f0f1}
+.fallback{display:flex;align-items:center;justify-content:center;color:#518c9a}
+.cardCopy{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cardCopy strong{font-size:14px;color:#25465b}
+.meta{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:12px;color:#607c8f}
+.status{align-self:flex-start;padding:3px 9px;background:#e8f4f4;color:#237a7e;font-size:11px;font-weight:700;border-radius:20px}
+.cardCopy small{font-size:12px;color:#785e39}
+.cardActions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+.cardActions button{border:1px solid #d8e6eb;border-radius:8px;padding:7px 10px;background:#f8fbfc;color:#315a6c;font-size:12px;cursor:pointer}
+.cardActions button:hover{background:#e8f3f5}
+.cardActions button:disabled{opacity:.5}
+.editor{padding:17px;border-radius:14px;background:#f9fcfc;border:1px solid #c9dfe6}
+.editorHead{display:flex;align-items:center;gap:16px;margin-bottom:15px}
+.editorHead strong{font-size:16px;min-width:0;overflow-wrap:anywhere}
+.back{padding:6px 9px;background:transparent;color:#237081;border:0}
+.languageTabs{display:inline-flex;gap:4px;padding:4px;background:#e9f2f3;border-radius:11px;margin-bottom:18px}
+.languageTabs button{border:0;border-radius:8px;padding:7px 15px;cursor:pointer;background:transparent;color:#61808c;font-weight:720}
+.languageTabs button[aria-pressed="true"]{color:#135d69;background:#fff;box-shadow:0 1px 4px #0d454214}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:13px}
+.fields label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:730;color:#355d70;min-width:0}
+.fields :is(input,textarea,select){box-sizing:border-box;width:100%;min-height:40px;border:1px solid #c6dbe0;border-radius:9px;background:#fff;color:#24475e;padding:9px 10px;font:inherit;font-size:14px;font-weight:450;outline-offset:2px}
+.fields textarea{resize:vertical;min-height:90px}
+.fields small,.helper{font-size:11px!important;color:#728899!important;font-weight:400;line-height:1.45;margin:0}
+.full{grid-column:1/-1}
+.priceRow{display:flex;align-items:center;gap:7px}
+.priceRow select{max-width:100px}
+.actions{display:flex;justify-content:flex-end;gap:9px;margin-top:21px;flex-wrap:wrap}
+.error,.success{border-radius:9px;padding:10px 13px;margin:10px 0;font-size:12px}
+.error{color:#7a302e;background:#fdf1ef;border:1px solid #efd0cb}
+.success{color:#186c68;background:#eef9f6;border:1px solid #c8e5da}
+@media(max-width:660px){
+ .header{flex-direction:column;gap:8px}
+ .listHead{align-items:flex-start;flex-direction:column}
+ .fields{grid-template-columns:1fr}
+ .editor{padding:12px}
+ .card{align-items:flex-start;gap:10px;flex-wrap:wrap}
+ .thumb,.fallback{width:78px;height:70px}
+ .cardCopy{flex:1;min-width:160px}
+ .cardActions{width:100%;justify-content:flex-start;padding-left:0}
+ .actions{justify-content:stretch}
+ .actions button{flex:1}
+}

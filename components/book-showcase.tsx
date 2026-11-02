@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 
@@ -23,13 +24,14 @@ export function BookShowcase({ books, locale }: BookShowcaseProps) {
       {books.map((book, index) => {
         const display = localizedBookText(book, locale);
         return (
-        <Link className="catalog-card remedies-book-card" href={`/books/${book.id}${locale === "en" ? "?lang=en" : ""}`} key={book.id}>
+        <Link className="catalog-card remedies-book-card" href={`/${locale}/books/${book.id}`} prefetch={false} key={book.id}>
           <figure className="catalog-cover">
             <Image
               alt={locale === "ru" ? `Обложка: ${display.title}` : `Cover: ${display.title}`}
               height={600}
               priority={index < 2}
-              src={`/media/${book.mediaSeries}/${book.cover}`}
+              src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)}
+              unoptimized={hasBookCoverArtwork(book.id)}
               width={800}
             />
           </figure>

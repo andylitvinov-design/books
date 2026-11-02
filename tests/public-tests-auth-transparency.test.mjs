@@ -6,9 +6,9 @@ const read = (name) => readFileSync(new URL('../' + name, import.meta.url), 'utf
 
 test('public picker transparently offers tests without registration and advertises scale-first results', () => {
   const source = read('components/app/simple-test-picker.jsx')
-  const note = source.indexOf('className={academyStyles.subnote}')
-  const firstTopic = source.indexOf('id="hh-simple-topic-title"')
-  assert.ok(note > 0 && firstTopic > note, 'access information must precede topic selection')
+  const note = source.indexOf('data-test-access-note>{c.heroFootnote}')
+  const firstTopic = source.indexOf('className={styles.testEntry}')
+  assert.ok(note > 0 && firstTopic > note, 'access information must precede the test cards')
   assert.match(source, /heroFootnote:'Available tests and sets start without registration/)
   assert.match(source, /heroFootnote:'Доступные тесты и наборы проходятся без регистрации/)
   assert.match(source, /heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte/)
@@ -17,12 +17,14 @@ test('public picker transparently offers tests without registration and advertis
   assert.ok(source.includes('className={styles.testEntry}'))
 })
 
-test('homepage accurately advertises registration-free starts and free Cabinet analysis', () => {
-  const source = read('components/home-free-tests-banner.tsx')
-  assert.match(source, /Available tests and sets need no registration/)
-  assert.match(source, /Доступные тесты и наборы — без регистрации/)
-  assert.match(source, /free personal analysis/)
-  assert.match(source, /href=\{\`\/\$\{locale\}\/client\`\}/)
+test('home retains its direct free-test entry without the retired promo', () => {
+  const source = read('components/holistic-house-home.tsx')
+  assert.doesNotMatch(source, /HomeFreeTestsBanner/)
+  assert.ok(source.includes('"data-hero-cta": "free-tests"'))
+  assert.ok(source.includes('/client/tests'))
+  const picker = read('components/app/simple-test-picker.jsx')
+  assert.match(picker, /Available tests and sets start without registration/)
+  assert.match(picker, /free personal analysis/)
 })
 
 test('public selector sends startable tests directly to guest runner, never automatically to Google OAuth', () => {

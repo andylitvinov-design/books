@@ -26,7 +26,8 @@ test("Services uses compact free-test entry plus all five photo offers; Home kee
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   assert.match(read("components/homepage-contact-cta.tsx"), /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(services, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
+  assert.match(services, /<ServicesStudioOffers locale=\{locale as Locale\} \/>/);
+  assert.match(read("components/services-studio-offers.tsx"), /data-services-studio-free/);
   assert.doesNotMatch(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /data-core-service-id=\{offer.id\}/);
   assert.ok(solutions.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
@@ -36,7 +37,7 @@ test("Services uses compact free-test entry plus all five photo offers; Home kee
   assert.match(read("components/services-tests-intro.tsx"), /href="#solutions"/);
   assert.match(home, /heroSecondary: "Take free self-checks"/);
   assert.match(home, /heroSecondary: "Пройти бесплатные тесты"/);
-  assert.match(home, /className="service-home-button service-home-button--secondary"\s*href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
+  assert.match(home, /className="service-home-selfcheck-link"\s*href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
   assert.doesNotMatch(hero, /two free assessments/i);
 });
 

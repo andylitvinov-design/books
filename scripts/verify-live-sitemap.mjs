@@ -76,7 +76,7 @@ for (const item of entries) {
 // Never request private or non-canonical URL families.
 const publicEntries = entries.filter(e => !privatePattern.test(e.path));
 const routesToCheck = sampleLimit > 0 ? publicEntries.slice(0, sampleLimit) : publicEntries;
-const statuses = { ok: 0, redirect: 0, invalid: 0, network: 0 };
+const statuses = { ok: 0, redirect: 0, invalid: 0, network: 0, rateLimited: 0 };
 let cursor = 0;
 async function worker() {
   while (cursor < routesToCheck.length) {
@@ -89,6 +89,7 @@ async function worker() {
         logError("Sitemap URL redirects: " + entry.path + " -> " + (response.headers.get("location") ?? "?"));
       } else {
         statuses.invalid++;
+        if (response.status === 429) statuses.rateLimited++;
         logError("Sitemap URL HTTP " + response.status + ": " + entry.path);
       }
     } catch (e) {
@@ -107,6 +108,9 @@ const spotlight = [
   "/es/homeopathy/remedies/arnica", "/en/services",
   "/es/services", "/en/services/free-situation-review",
   "/es/services/free-situation-review", "/es/about",
+  "/en/tests", "/ru/tests", "/es/tests",
+  "/en/books/alchemy-homeopathy-foundations", "/ru/books/alchemy-homeopathy-foundations",
+  "/es/books/alchemy-homeopathy-foundations",
 ];
 const pageReport = [];
 for (const path of spotlight) {
@@ -130,10 +134,41 @@ for (const path of spotlight) {
       // Existing English canonical root is '/', not the legacy /en.
       logError("Incorrect/missing canonical " + canonical + ": " + path);
     }
+    // Public tests are a deliberate SEO landing, not the guest questionnaire UI.
+    // Validate the production DOM directly: these pages must never redirect or
+    // expose private answers, and their localized links must be crawlable.
+    if (["/en/tests", "/ru/tests", "/es/tests"].includes(path)) {
+      const firstPartyTestUrl = "/" + expectedLocale + "/client/tests";
+      const writtenReviewUrl = "/" + expectedLocale + "/services/free-situation-review";
+      if (!html.includes('href="' + firstPartyTestUrl + '"')) logError("Public test CTA missing: " + path);
+      if (!html.includes('href="' + writtenReviewUrl + '"')) logError("Free written review link missing: " + path);
+      const robots = tags(html, "meta").filter(meta => ["robots", "googlebot"].includes(meta.name));
+      if (robots.some(meta => /\bnoindex\b/i.test(meta.content ?? "")) ||
+          /\bnoindex\b/i.test(response.headers.get("x-robots-tag") ?? "")) {
+        logError("Public tests unexpectedly noindex: " + path);
+      }
+      const alternates = Object.fromEntries(
+        tags(html, "link")
+          .filter(link => link.rel === "alternate" && link.hreflang && link.href)
+          .map(link => [link.hreflang, link.href]),
+      );
+      const sitemapAlternates = byURL.get(origin + path)?.languages ?? {};
+      for (const language of ["en", "ru", "es", "x-default"]) {
+        const expectedUrl = origin + "/" + (language === "x-default" ? "en" : language) + "/tests";
+        if (alternates[language] !== expectedUrl || sitemapAlternates[language] !== expectedUrl) {
+          logError("Public tests " + language + " hreflang mismatch " + path +
+            " (HTML " + (alternates[language] ?? "missing") +
+            ", sitemap " + (sitemapAlternates[language] ?? "missing") + ")");
+        }
+      }
+    }
   } catch (e) { logError("Spotlight request error " + path + ": " + e.message); }
 }
 for (const [old, target] of [
-  ["/en/tests", "/en/client/tests"], ["/ru/cabinet", "/ru/client"],
+  ["/books/alchemy-homeopathy-foundations", "/en/books/alchemy-homeopathy-foundations"],
+  ["/books/alchemy-homeopathy-foundations?lang=ru", "/ru/books/alchemy-homeopathy-foundations"],
+  ["/books/alchemy-homeopathy-foundations?lang=en", "/en/books/alchemy-homeopathy-foundations"],
+  ["/ru/cabinet", "/ru/client"],
   ["/es/review", "/es/services/free-situation-review"],
 ]) {
   const response = await fetchWithTimeout(old, { method: "HEAD" });
@@ -141,6 +176,7 @@ for (const [old, target] of [
   if (![301, 308].includes(response.status) || !location.endsWith(target)) logError("Legacy redirect " + old + ": " + response.status + " " + location);
 }
 const notFound = [];
+const translatedNotFound = { en: "Page not found", ru: "Страница не найдена", es: "Página no encontrada" };
 for (const locale of ["en", "ru", "es"]) {
   const path = "/" + locale + "/seo-audit-missing-route-20261016";
   const response = await fetchWithTimeout(path);
@@ -150,7 +186,7 @@ for (const locale of ["en", "ru", "es"]) {
   const h1 = [...html.matchAll(/<h1(?:\s|>)/g)].length;
   const noindex = /<meta[^>]*name="robots"[^>]*noindex/.test(html);
   notFound.push({ path, status: response.status, lang, title, h1, noindex });
-  if (response.status !== 404 || lang !== locale || h1 !== 1 || !title.includes("404")) logError("Localized 404 incomplete: " + JSON.stringify(notFound.at(-1)));
+  if (response.status !== 404 || lang !== locale || h1 !== 1 || !title.includes(translatedNotFound[locale])) logError("Localized 404 incomplete: " + JSON.stringify(notFound.at(-1)));
 }
 const result = {
   timestamp: new Date().toISOString(), origin,

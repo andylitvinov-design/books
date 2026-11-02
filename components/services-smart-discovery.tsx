@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Gift, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, SlidersHorizontal, Sparkles, Tag, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -14,6 +14,8 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ServicesFreeRecommendations } from "@/components/services-free-recommendations";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 
 type Locale = "en" | "ru" | "es";
 type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean;image?:string};
@@ -26,10 +28,14 @@ const COPY = {
     description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
     placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
-    freeButton:"Find free services",
+    quickHints:[
+      { label:"energy healing", query:"energy healing Reiki" },
+      { label:"business analyses", query:"business analyses consulting" },
+    ],
+    freeOnlyLabel:"Free Services Only",
     examples:"You could try",
-    exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
-    quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
+    exampleList:["I want more balance in my body and energy","I want support with stress and anxiety","I want clarity in my relationships","I want to explore business and money questions","I want to clarify my goals, life purpose and personal growth"],
+    quickExamples:["Body & Energy","Stress & Anxiety","Relationships","Business & Money","Goals, Meaning & Growth"],
     mobilePrivacy:"✓ Free matching · No sign-up · Private by default. Please avoid sharing personal medical details.",
     privacy:"Private by default: this text is matched locally in your browser and isn't saved.",
     caution:"Please don't include names or sensitive medical details. This is service discovery, not a diagnosis or medical recommendation.",
@@ -62,7 +68,7 @@ const COPY = {
     browse:"All practitioners",
     clear:"Reset",
     personal:"Prefer personal guidance?",
-    personalAction:"Explore Andrey's personal services below",
+    personalAction:"Explore Andrey's personal services",
     categoryCount:"offers",
     localMatch:"Topic-based matching",
     aiMatch:"AI-enhanced matching",
@@ -80,10 +86,14 @@ const COPY = {
     description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
     placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
-    freeButton:"Найти бесплатные услуги",
+    quickHints:[
+      { label:"энергопрактики", query:"Рейки энергетическая поддержка" },
+      { label:"бизнес-анализ", query:"бизнес анализ консалтинг" },
+    ],
+    freeOnlyLabel:"Только бесплатные услуги",
     examples:"Например",
-    exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
-    quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
+    exampleList:["Хочу больше энергии и контакта с телом","Хочу справиться со стрессом и тревогой","Хочу разобраться в отношениях","Хочу разобраться с бизнесом и деньгами","Ищу ясность в целях, смыслах и саморазвитии"],
+    quickExamples:["Тело и энергия","Стресс и тревога","Отношения","Бизнес и деньги","Цели, смыслы и развитие"],
     mobilePrivacy:"✓ Бесплатно · Без регистрации · Приватно по умолчанию. Не вводите личные медицинские данные.",
     privacy:"По умолчанию приватно: подбор выполняется в браузере, текст не сохраняется.",
     caution:"Не указывайте имена и чувствительные медицинские данные. Это поиск услуг, а не диагноз или медицинская рекомендация.",
@@ -116,7 +126,7 @@ const COPY = {
     browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
-    personalAction:"Ниже — личные услуги Андрея",
+    personalAction:"Личные услуги Андрея",
     categoryCount:"предложений",
     localMatch:"Смысловой подбор",
     aiMatch:"Подбор с помощью ИИ",
@@ -134,10 +144,14 @@ const COPY = {
     description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
     placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
-    freeButton:"Encontrar servicios gratis",
+    quickHints:[
+      { label:"sanación energética", query:"sanación energética Reiki" },
+      { label:"análisis empresarial", query:"análisis empresarial y consultoría" },
+    ],
+    freeOnlyLabel:"Solo servicios gratuitos",
     examples:"Por ejemplo",
-    exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
-    quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
+    exampleList:["Quiero sentir más energía y conexión con mi cuerpo","Busco ayuda con el estrés y la ansiedad","Quiero entender mejor mis relaciones","Quiero explorar mi negocio y mi dinero","Quiero claridad en mis metas, propósito y desarrollo personal"],
+    quickExamples:["Cuerpo y energía","Estrés y ansiedad","Relaciones","Negocios y dinero","Metas, sentido y desarrollo"],
     mobilePrivacy:"✓ Gratis · Sin registro · Privado por defecto. Evita compartir datos médicos personales.",
     privacy:"Privado por defecto: la búsqueda se realiza en tu navegador y no se guarda.",
     caution:"No incluyas nombres ni datos médicos sensibles. No es un diagnóstico ni una recomendación médica.",
@@ -170,7 +184,7 @@ const COPY = {
     browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
-    personalAction:"Más abajo: servicios personales de Andrey",
+    personalAction:"Servicios personales de Andrey",
     categoryCount:"opciones",
     localMatch:"Búsqueda temática",
     aiMatch:"Búsqueda con IA",
@@ -234,6 +248,15 @@ export function ServicesSmartDiscovery({
 }) {
   const locale: Locale = givenLocale === "ru" || givenLocale === "es" ? givenLocale : "en";
   const t = COPY[locale];
+  const remoteOfferingId = services.find(service=>service.slug==="remote-energy-support")?.id;
+  const editorialRatingKey = useCallback((id:string) => id==="remote-energy-support"
+    ? remoteOfferingId ?? null : "editorial:" + id,[remoteOfferingId]);
+  const stars = useCatalogRatings("service", [
+    ...services.map(item => item.id),
+    ...editorialOffers.map(item=>editorialRatingKey(item.id)).filter((key):key is string=>Boolean(key)),
+  ]);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
   const [query,setQuery] = useState("");
   const [submitted,setSubmitted] = useState("");
   const [activeCategory,setActiveCategory] = useState("");
@@ -256,7 +279,8 @@ export function ServicesSmartDiscovery({
   // These constraints apply to both locally-ranked and AI-ranked published services.
   const eligible=useCallback((service:PublicService)=>serviceMatchesDiscoveryFacets(service,{
     format,city,language,price:budget,
-  }),[format,city,language,budget]);
+  }) && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[service.id],minimumStars)),
+    [format,city,language,budget,stars.loading,stars.unavailable,stars.ratings,minimumStars]);
   const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:budget==="free"?10:4,includeAllAreas:budget==="free"}),[submitted,services,activeCategory,eligible,budget]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
@@ -274,9 +298,19 @@ export function ServicesSmartDiscovery({
     // Editorial cards have no validated physical city or numeric price data.
     // Preserve the default online suggestions, and only narrow to known free offers.
     if (format==="in_person" || (language && language!==locale) || (budget && budget!=="free")) return [];
-    const offers=budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers;
+    const offers=(budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers)
+      .filter(item=>stars.loading || stars.unavailable || matchesStarFilter(
+        stars.ratings[editorialRatingKey(item.id) ?? ""],minimumStars));
     return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:budget==="free"?10:suggestions.length?2:4});
-  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget]);
+  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget,
+    stars.loading,stars.unavailable,stars.ratings,minimumStars,editorialRatingKey]);
+
+  const suggestedByStars = (sortRated
+    ? sortByStars(suggestions, entry => entry.service.id, stars.ratings) : suggestions)
+    .filter(entry => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[entry.service.id], minimumStars));
+  const editorialByStars = (sortRated
+    ? sortByStars(editorial, item => editorialRatingKey(item.id) ?? "", stars.ratings) : editorial)
+    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[editorialRatingKey(item.id) ?? ""], minimumStars));
 
   // Scroll only after a new selection has rendered. AI updates should not
   // unexpectedly pull the visitor back to the results while they read.
@@ -322,7 +356,7 @@ export function ServicesSmartDiscovery({
   async function find(queryText: string) {
     const nonce = ++requestNumber.current;
     const text = queryText.trim().slice(0,350);
-    if (!text) return;
+    if (!text && budget !== "free") return;
     searchInputRef.current?.blur(); // Dismiss the mobile keyboard before navigating.
     setScrollRequest((count) => count + 1);
     setActiveCategory("");
@@ -332,7 +366,7 @@ export function ServicesSmartDiscovery({
     setOrderingCard(null);
     setAiOrder(null);
     setAiStatus("local");
-    if (!aiAvailable || !useExternalAi) return;
+    if (!text || !aiAvailable || !useExternalAi) return;
     setAiStatus("loading");
     try {
       const response=await fetch("/api/marketplace/intent-match",{
@@ -351,22 +385,6 @@ export function ServicesSmartDiscovery({
     }
   }
 
-  function findFreeServices() {
-    // The CTA works without text. Preserve format and language selections,
-    // but include all free categories (including Wu Xing).
-    requestNumber.current += 1; // Invalidate any pending AI result.
-    searchInputRef.current?.blur();
-    setBudget("free");
-    setSubmitted(query.trim().slice(0,350));
-    setActiveCategory("");
-    setHasSelection(true);
-    setScrollRequest((count) => count + 1);
-    setAiOrder(null);
-    setAiStatus("local");
-    setExpandedCard(null);
-    setOrderingCard(null);
-  }
-
   function runExample(text: string) { setQuery(text); void find(text); }
 
   const highlighted = submitted || activeCategory;
@@ -375,8 +393,11 @@ export function ServicesSmartDiscovery({
   return (
     <section className={styles.discovery} id="find-your-service" aria-labelledby="hh-service-discovery-title">
       <div className={styles.hero}>
+        <div className={styles.topline}>
+          <p className={styles.kicker}><Sparkles size={16} aria-hidden="true"/>{t.kicker}</p>
+          <DiscoverySectionTabs locale={locale} active="services" />
+        </div>
         <div className={styles.heroCopy}>
-          <p className={styles.kicker}><Sparkles size={15} aria-hidden="true"/>{t.kicker}</p>
           <h2 id="hh-service-discovery-title">{t.title}</h2>
           <p className={styles.intro}>{t.description}</p>
         </div>
@@ -385,13 +406,71 @@ export function ServicesSmartDiscovery({
           <textarea ref={searchInputRef} id="hh-service-free-text" value={query} maxLength={350} rows={2}
             placeholder={t.placeholder} onChange={event=>setQuery(event.target.value)}
             autoComplete="off" className={styles.textarea}/>
-          <button type="submit" className={styles.submit} disabled={!query.trim() || aiStatus==="loading"}>
+          <button type="submit" className={styles.submit} disabled={(!query.trim() && budget!=="free") || aiStatus==="loading"}>
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
-          <button type="button" className={styles.freeSubmit} onClick={findFreeServices}>
-            {t.freeButton}<Gift size={19} aria-hidden="true"/>
-          </button>
         </form>
+        <div className={styles.quickHints} role="group" aria-label={
+          locale==="ru"?"Подсказки для поиска":locale==="es"?"Búsquedas sugeridas":"Suggested searches"
+        }>
+          {t.quickHints.map(({label,query:hintQuery})=>(
+            <button key={label} type="button" className={styles.quickHint} onClick={()=>runExample(hintQuery)}>
+              <Tag size={15} strokeWidth={1.9} aria-hidden="true"/>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.categorySection} id="browse-service-categories" data-services-filter-below-search aria-labelledby="hh-service-category-title">
+        <div className={styles.categoryHead}>
+          <div className={styles.stepHeader}>
+            <span className={styles.stepBadge} aria-hidden="true">1</span>
+            <div>
+              <h2 id="hh-service-category-title">{t.categories}</h2>
+              <p>{t.categoriesIntro}</p>
+            </div>
+          </div>
+          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
+        </div>
+        <div className={styles.categoryGrid}>
+          {DISCOVERY_AREAS.map((area,i)=>{
+            const Icon=ICONS[i];
+            const count=services.filter(s=>s.areaKey===area.key).length;
+            const active=activeCategory===area.key;
+            return <button type="button" key={area.key}
+              className={active?styles.categoryActive:styles.category}
+              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
+              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
+              <span className={styles.categoryName}>{area.label[locale]}</span>
+              {count>0
+                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
+                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
+            </button>;
+          })}
+        </div>
+        <div className={styles.filterControls}>
+        <label className={styles.freeOnlyToggle}>
+          <input
+            type="checkbox"
+            data-free-services-only
+            checked={budget === "free"}
+            onChange={event => {
+              requestNumber.current += 1;
+              setBudget(event.target.checked ? "free" : "");
+              setAiOrder(null);
+              setAiStatus("local");
+            }}
+          />
+          <span>{t.freeOnlyLabel}</span>
+        </label>
+          <details className={styles.extraFilters} data-services-extra-filters>
+            <summary>
+              <span className={styles.extraIcon}><SlidersHorizontal size={19} aria-hidden="true"/></span>
+              <span className={styles.extraLabel}><strong>{locale==="ru"?"Дополнительные фильтры":locale==="es"?"Filtros adicionales":"Additional filters"}</strong><small>{locale==="ru"?"Формат, цена и язык":locale==="es"?"Modalidad, precio e idioma":"Format, price and language"}</small></span>
+              <ChevronDown className={styles.extraChevron} size={19} aria-hidden="true"/>
+            </summary>
+            <div className={styles.extraBody}>
         <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
           <label>
             <span>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}</span>
@@ -424,6 +503,13 @@ export function ServicesSmartDiscovery({
             </select>
           </label>
         </div>
+        {aiAvailable&&<label className={styles.aiOption}>
+          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
+          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
+        </label>}
+            </div>
+          </details>
+        </div>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
           {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
@@ -431,37 +517,10 @@ export function ServicesSmartDiscovery({
             <span className={styles.exampleShort} aria-hidden="true">{t.quickExamples[index]}</span>
           </button>)}
         </div>
-        {aiAvailable&&<label className={styles.aiOption}>
-          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
-          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
-        </label>}
         <p className={styles.privacy}>
           <span className={styles.privacyFull}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</span>
           <span className={styles.privacyCompact}>{t.mobilePrivacy}</span>
         </p>
-      </div>
-
-      <div className={styles.categorySection} id="browse-service-categories">
-        <div className={styles.categoryHead}>
-          <div><h2>{t.categories}</h2></div>
-          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
-        </div>
-        <div className={styles.categoryGrid}>
-          {DISCOVERY_AREAS.map((area,i)=>{
-            const Icon=ICONS[i];
-            const count=services.filter(s=>s.areaKey===area.key).length;
-            const active=activeCategory===area.key;
-            return <button type="button" key={area.key}
-              className={active?styles.categoryActive:styles.category}
-              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
-              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
-              <span className={styles.categoryName}>{area.label[locale]}</span>
-              {count>0
-                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
-                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
-            </button>;
-          })}
-        </div>
       </div>
 
       {hasSelection&&<div ref={resultsRef} tabIndex={-1} className={styles.results} id="service-discovery-results" aria-live="polite" aria-labelledby="hh-service-discovery-results-title">
@@ -474,9 +533,16 @@ export function ServicesSmartDiscovery({
           </div>
           <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setFormat("online");setCity("toronto");setLanguage(locale);setBudget("")}}>{t.clear} ×</button>
         </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:14,alignItems:"center",margin:"10px 0"}}>
+          <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars}/>
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13}}>
+            <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>
+            {locale==="ru"?"Сначала лучшие оценки":locale==="es"?"Mejor valorados primero":"Highest rated first"}
+          </label>
+        </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
-        {suggestions.length>0?<div className={styles.suggestionGrid}>
-          {suggestions.map(({service,reasonKey})=>{
+        {suggestedByStars.length>0?<div className={styles.suggestionGrid}>
+          {suggestedByStars.map(({service,reasonKey})=>{
             const mainArea=DISCOVERY_AREAS.find(a=>a.key===service.areaKey);
             return <article className={styles.suggestion} key={service.id} data-service-funnel-card>
               <ServiceFunnelImpression serviceId={service.id}/>
@@ -485,17 +551,19 @@ export function ServicesSmartDiscovery({
               </div>
               <div className={styles.suggestionTop}><span>{mainArea?.label[locale]||t.service}</span><strong>{formatPrice(service,locale,t)}</strong></div>
               <h3>{service.copy.title}</h3>
+              <CatalogStarRating locale={locale} summary={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} unavailable={stars.unavailable} compact/>
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
                 <button type="button" className={styles.suggestionDetailsToggle}
                   aria-expanded={expandedCard==="listing:"+service.id}
                   aria-controls={"hh-listing-details-"+service.id}
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>
               </div>
+              {locale==="es"&&<small className={styles.intakeNote}>El formulario de solicitud se abre en inglés; se conserva el servicio elegido.</small>}
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
                 <p>{service.copy.description || service.copy.shortDescription}</p>
@@ -505,11 +573,12 @@ export function ServicesSmartDiscovery({
               </div>
             </article>;
           })}
-        </div>:editorial.length===0?<p className={styles.message}>{t.noDirect}</p>:null}
-        {editorial.length>0&&<div className={styles.editorial}>
+        </div>:editorialByStars.length===0?<p className={styles.message}>{minimumStars ? (locale==="ru"?"Нет услуг с такой оценкой":locale==="es"?"No hay servicios con esa valoración":"No services match this star rating") : t.noDirect}</p>:null}
+        {editorialByStars.length>0&&<div className={styles.editorial}>
           <h3>{t.curated}</h3>
-          <div className={styles.editorialList}>{editorial.map(item=>{
+          <div className={styles.editorialList}>{editorialByStars.map(item=>{
             const id = "editorial:"+item.id;
+            const ratingId = editorialRatingKey(item.id);
             const expanded = expandedCard===id;
             const ordering = orderingCard===id;
             const whatsappUrl = editorialEnquiryUrl(item,locale);
@@ -524,19 +593,20 @@ export function ServicesSmartDiscovery({
               </div>
               <div className={styles.editorialCardCopy}>
                 <h4>{item.title}</h4>
+                <CatalogStarRating locale={locale} summary={ratingId?stars.ratings[ratingId]:undefined} onRate={ratingId?value=>stars.rate(ratingId,value):undefined} unavailable={stars.unavailable} compact/>
                 <p>{item.promise}</p>
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>
               <div className={styles.editorialCardActions}>
-                <button type="button" className={styles.editorialOrderButton}
-                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
-                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
-                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
-                </button>
                 <button type="button" className={styles.editorialDetailsButton}
                   aria-expanded={expanded} aria-controls={"hh-details-"+item.id}
                   onClick={()=>setExpandedCard(current=>current===id?null:id)}>
                   {expanded?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
+                <button type="button" className={styles.editorialOrderButton}
+                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
+                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
+                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
                 </button>
               </div>
               <div id={"hh-details-"+item.id} className={styles.editorialDetailsPanel} hidden={!expanded}>

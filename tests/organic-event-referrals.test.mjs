@@ -91,8 +91,15 @@ test("no stateful analytics, hidden dispatch or leaking raw URL query in contact
   const script = readFileSync(new URL("../lib/organic-event-referrals.js", import.meta.url), "utf8");
   assert.match(component, /readOrganicEventReferral\(window\.location\.search/);
   assert.match(component, /withOrganicEventReferral\(whatsappUrl, publicEventSearch/);
-  assert.match(component, /href=\{referredWhatsappUrl\}/);
-  assert.match(component, /telegramEnquiryUrlFromWhatsApp\(referredWhatsappUrl\)/);
-  assert.doesNotMatch(component, /fetch\(|sendBeacon|localStorage|sessionStorage/);
+  assert.match(component, /href=\{preparedWhatsApp\}/);
+  assert.match(component, /telegramEnquiryUrlFromWhatsApp\(preparedWhatsApp\)/);
+  assert.match(component, /fetch\("\/api\/service-enquiries", \{/);
+  assert.match(component, /event\.preventDefault\(\)/);
+  // OAuth may retain public route identity briefly in the same tab, but never
+  // the visitor's contact, question, consent or an outbound message payload.
+  assert.doesNotMatch(component, /sendBeacon|localStorage/);
+  assert.match(component, /sessionStorage\.setItem\("hh-google-enquiry-return"/);
+  assert.match(component, /JSON\.stringify\(\{ path: pathname, service: serviceTitle, panel: panelId \}\)/);
+  assert.doesNotMatch(component, /sessionStorage\.setItem\([^;]*(?:email|phone|description|consent)/i);
   assert.doesNotMatch(script, /fetch\(|sendBeacon|localStorage|sessionStorage/);
 });

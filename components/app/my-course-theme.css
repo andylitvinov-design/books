@@ -32,3 +32,34 @@
  .hh-app:has([data-course-selector]) .hh-master-header-link{min-height:39px!important;padding:0 10px!important;font-size:11px!important}
  .hh-app:has([data-course-selector]) .hh-account-menu>summary{min-height:39px!important;padding:7px 9px!important;font-size:12px!important}
 }
+
+
+/* Only the active Anti-Stress daily Today screen becomes an edge-to-edge
+   immersive cover. All tests, sign-up, other courses, and Path/Details retain
+   the original cabinet shell and navigation. */
+.hh-app:has([data-course-immersive="true"]){
+  width:100%!important;max-width:none!important;min-height:100svh!important;
+  margin:0!important;padding:0!important;
+  background:#084865!important;
+}
+.hh-app:has([data-course-immersive="true"])>.hh-header,
+.hh-app:has([data-course-immersive="true"])>.hh-nav,
+.hh-app:has([data-course-immersive="true"])>.hh-mobile-app-nav{display:none!important}
+.hh-app:has([data-course-immersive="true"]) [data-my-course]{
+  display:block!important;width:100%!important;max-width:none!important;
+  margin:0!important;padding:0!important;background:transparent!important;
+}
+.hh-app:has([data-course-immersive="true"]) [data-my-course]>button{
+  display:none!important;
+}
+.hh-app:has([data-course-immersive="true"]) [data-daily-course]{
+  display:block!important;width:100%!important;max-width:none!important;
+  margin:0!important;padding:0!important;color:#fff!important;
+}
+.hh-app:has([data-course-immersive="true"]) [data-daily-course] > [data-course-today-trends],
+.hh-app:has([data-course-immersive="true"]) [data-daily-course] > [data-opora-weekly-checkpoint]{
+  width:min(940px,calc(100% - 34px));margin:16px auto;
+}
+.hh-app:has([data-course-immersive="true"]) [data-course-scenic-hero]{
+  width:100%;margin:0;border:0;border-radius:0;
+}

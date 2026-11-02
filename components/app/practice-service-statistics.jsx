@@ -1,5 +1,7 @@
 'use client'
 
+import PracticeAnalyticsSubscriptions from './practice-analytics-subscriptions'
+
 import {useMemo,useState} from 'react'
 
 const zero={impressions:0,orders:0,whatsapp:0,telegram:0}
@@ -33,7 +35,7 @@ const dateLabel=(day,ru)=>{
   const date=new Date(day+'T12:00:00Z')
   return new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{month:'short',day:'numeric',timeZone:'UTC'}).format(date)
 }
-export default function PracticeServiceStatistics({analytics,locale}){
+export default function PracticeServiceStatistics({analytics,registrationStats,locale,accountId}){
   const ru=locale==='ru',t=COPY[ru?'ru':'en']
   const [period,setPeriod]=useState('yesterday')
   const [showAllServices,setShowAllServices]=useState(false)
@@ -91,6 +93,18 @@ export default function PracticeServiceStatistics({analytics,locale}){
       </button>}
     </div>
     {(!items.length||(!totals.impressions&&!totals.orders&&!messages))&&<p className="hh-practice-analytics-empty">{t.empty}</p>}
+    {registrationStats&&<section aria-label={ru?"Сохранённые заявки":"Saved enquiries"}>
+      <h3 style={{margin:"18px 0 9px",fontSize:16,fontWeight:750}}>{ru?"Заявки, сохранённые в CRM":"Requests saved in CRM"}</h3>
+      <div className="hh-practice-analytics-summary">
+        <div><strong>{number(registrationStats.last7)}</strong><span>{ru?"За 7 дней":"Last 7 days"}</span></div>
+        <div><strong>{number(registrationStats.last30)}</strong><span>{ru?"За 30 дней":"Last 30 days"}</span></div>
+        <div><strong>{number(registrationStats.academy7)}</strong><span>{ru?"Курсы · 7 дней":"Courses · 7 days"}</span></div>
+      </div>
+      <p className="hh-practice-analytics-note">{ru
+        ?"Это заявки, которые сервер записал после согласия на личный ответ. Повторный просмотр страницы «Спасибо» не увеличивает число. Заявка не означает подтверждённую запись или оплату."
+        :"These are consented enquiries committed by the server. Revisiting the thank-you page does not increase the count. An enquiry is not a confirmed booking or payment."}</p>
+    </section>}
     <p className="hh-practice-analytics-note">{t.disclaimer}</p>
+    <PracticeAnalyticsSubscriptions locale={locale} accountId={accountId}/>
   </section>
 }

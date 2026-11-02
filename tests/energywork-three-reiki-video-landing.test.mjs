@@ -13,7 +13,7 @@ test("Principles of Energywork puts Flight to the Sun before all three Reiki vid
   const flight = page.indexOf('id="energywork-flight-to-sun"');
   const foundations = page.indexOf('aria-labelledby="energywork-foundations"');
   const systems = page.indexOf('id="energywork-systems"');
-  assert.ok(flight > 0 && flight < foundations && foundations < systems, "Flight must be the first video step");
+  assert.ok(foundations > 0 && foundations < flight && flight < systems, "Foundations may introduce the course, but Flight is the first numbered video step");
   assert.match(page, /href="#energywork-flight-to-sun"/);
   for (const title of ["Flight to the Sun", "Полёт к Солнцу", "Vuelo hacia el Sol"]) {
     assert.ok(page.includes(title), "Missing original title " + title);
@@ -43,8 +43,8 @@ test("All three Reiki systems display video or explicit source-gated media and a
   assert.match(page, /<EnergyworkReikiCapture locale=\{locale\} course=\{system\.key\} \/>/);
   assert.match(page, /href=\{academyUrl\(locale, system\.study\)\}/);
   assert.match(page, /href=\{academyUrl\(locale, system\.free\)\}/);
-  assert.match(form, /type Choice = "free" \| "personal" \| "pdf"/);
-  assert.match(form, /const choices: Choice\[\] = \["free", "personal", "pdf"\]/);
+  assert.match(form, /type Choice = "gift" \| "donation" \| "personal" \| "pdf"/);
+  assert.match(form, /const choices: Choice\[\] = \["gift", "donation", "personal", "pdf"\]/);
   assert.match(form, /aria-pressed=\{choice===option\}/);
   assert.match(form, /whatsappEnquiryUrl\(\{/);
   assert.match(form, /service: system\.name \+ " · Level 1"/);
@@ -52,7 +52,7 @@ test("All three Reiki systems display video or explicit source-gated media and a
   assert.match(form, /reiki-guide\?course=/);
   assert.match(form, /data-energywork-action=\{choice\}/);
   assert.doesNotMatch(form, /<input|<textarea|type="file"|FormData|localStorage|navigator\.share/);
-  assert.match(css, /\.choices \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.choices \{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 test("Three downloadable PDF course options point to the real production guide endpoint", async () => {
@@ -110,20 +110,38 @@ test("Verified meditations come only from their owner-supplied source registry",
   assert.match(page, /youtubeId="DYo-fG-SyKw"/);
 });
 
-test("Reiki promo presents four clearly labeled sequential learning sections in EN/RU/ES", async () => {
-  const [page, css] = await Promise.all([
+test("Reiki promo matches all five course steps in EN/RU/ES, with gift, donation and two booking prices", async () => {
+  const [page, css, form] = await Promise.all([
     read("components/principles-of-energywork.tsx"),
     read("components/principles-of-energywork.module.css"),
+    read("components/energywork-reiki-capture.tsx"),
   ]);
-  for (const prefix of ["STEP", "ШАГ", "PASO"]) {
-    for (const number of [1, 2, 3, 4]) {
-      assert.ok(page.includes(prefix + " " + number + " ·"), "Missing " + prefix + " " + number);
-    }
-  }
+  for (const marker of [
+    "STEP 1 ·", "STEP 5 ·", "STEPS 2–4 ·",
+    "ШАГ 1 ·", "ШАГ 5 ·", "ШАГИ 2–4 ·",
+    "PASO 1 ·", "PASO 5 ·", "PASOS 2–4 ·",
+    'badge: "02"', 'badge: "03"', 'badge: "04"',
+    'data-energywork-step="1"', 'data-energywork-step={String(index + 2)}', 'data-energywork-step="5"',
+    "data-energywork-five-steps", "data-energywork-gift-offer",
+    "data-energywork-personal-rates", "data-energywork-final-choices",
+    "data-energywork-final-online", "data-energywork-final-personal",
+    "€50", "€60",
+  ]) assert.ok(page.includes(marker), "Missing course/offer marker: " + marker);
   assert.match(page, /styles\.sequenceStep/);
   assert.match(css, /\.sequenceStep\s*\{/);
-  assert.match(page, /System"\} \{system\.badge\}/);
+  assert.match(css, /\.stepRail\s*\{/);
+  assert.match(css, /\.giftOffer\s*\{/);
+  assert.match(css, /\.personalRates\s*\{/);
+  assert.match(css, /\.finalCtaActions\s*\{/);
+  assert.match(page, /"Шаг" : locale === "es" \? "Paso" : "Step"\} \{system\.badge\}/);
   assert.ok(page.indexOf('id="energywork-flight-to-sun"') < page.indexOf('id="energywork-systems"'));
+  assert.ok(page.indexOf('id="energywork-systems"') < page.indexOf('id="energywork-how"'));
+  assert.ok(page.indexOf('id="energywork-how"') < page.indexOf('className={styles.finalCta}'));
+  assert.ok(page.indexOf("<ReikiPublicReviews locale={locale} />") < page.indexOf("className={styles.finalCta}"), "Reviews must appear before the final two-choice CTA");
+  assert.match(form, /pay-what-you-wish donation/);
+  assert.match(form, /добровольное пожертвование/);
+  assert.match(form, /donación voluntaria/);
+  assert.match(form, /€50 \/ 30 min · €60 \/ 60 min/);
 });
 
 test("Owner's Kundalini Reiki video is embedded in the promo and the dedicated course landing", async () => {

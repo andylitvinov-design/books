@@ -3,12 +3,16 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
+import { AcquisitionEventLink } from '@/components/acquisition-event-link'
+import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
+import { BusinessConsultationFinder } from '@/components/business-consultation-finder'
+import { BusinessServiceBrowser } from '@/components/business-service-browser'
 
-type Language = 'en' | 'ru'
+type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
 type Journey = { id: string; title: Record<Language, string>; eyebrow: Record<Language, string>; summary: Record<Language, string>; introduction: Record<Language, string>; focus: readonly string[]; courseProgram: string; topics: readonly Item[] }
 type RecommendedTest = {
@@ -23,7 +27,7 @@ type RecommendedTest = {
 
 const art: Record<string, string> = {
   relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  business: '/images/holistic-house/course-focus-mountain-boy.webp',
+  business: '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp',
   stress: '/images/holistic-house/hero-olive-incense.webp',
   energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
   effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
@@ -41,9 +45,22 @@ const copy = {
     options: 'How else would you like to continue?',
     course: 'Free support course', courseDetail: 'Start with tests, then explore a self-guided daily programme. One free course at a time.',
     review: 'Personal situation review', reviewDetail: 'A free written review of your form and ME–GOAL–PROBLEM drawing; no live session is included.',
+    personal: 'Discuss this topic with Andrey', personalDetail: 'Optional personal session, independent of your test scores. €50 / 30 min or €100 / 60 min.', remoteDetail: 'Optional Reiki support. Practitioner, availability and fee are confirmed before booking; no test results are shared.',
+    share:'Share this public guide', copied:'Public guide link copied. Your personal results are not included.', shared:'Public guide shared without your results.', manual:'Copy this public link manually. It does not contain your test answers.',
     safety: 'These questionnaires are for self-reflection, not medical diagnosis or treatment.',
     error: 'Could not open your tests. Check your connection and try again.',
     signinError: 'Google sign-in is currently unavailable. Please try again.',
+  },
+  es: {
+    back:'Todas las áreas',eyebrow:'PASO 1 · ELIGE UN TEMA',pickTitle:'¿Qué te gustaría explorar?',pickHint:'Selecciona uno o varios temas; las dos pruebas sugeridas se actualizarán.',
+    recommended:'PASO 2 · RECOMENDACIONES',recommendedTitle:'Dos pruebas para empezar',recommendedHint:'Cuestionarios disponibles relacionados con tus intereses. Abre una tarjeta para conocer la fuente.',
+    questions:'preguntas',minutes:'min',details:'Acerca de esta prueba',empty:'No hay pruebas iniciales para esta selección. Prueba otros temas o consulta el catálogo.',
+    start:'Realizar las dos pruebas sugeridas',starting:'Abriendo las pruebas…',browse:'Explorar el catálogo de más de 100 pruebas',
+    options:'¿Cómo deseas continuar?',course:'Curso gratuito de apoyo',courseDetail:'Empieza con pruebas y después descubre prácticas breves a tu ritmo. Un curso gratuito a la vez.',
+    review:'Revisión escrita de tu situación',reviewDetail:'Reflexión personal gratuita sobre tu formulario y dibujo YO–META–PROBLEMA; no incluye una sesión en directo.',
+    personal:'Hablar personalmente con Andrey',personalDetail:'Sesión opcional, independiente de los resultados. €50 / 30 min o €100 / 60 min.',remoteDetail:'Apoyo Reiki opcional. Profesional, horario y precio se confirman antes de reservar; no enviamos tus resultados.',
+    share:'Compartir esta guía pública',copied:'Enlace copiado. Tus resultados personales no se incluyen.',shared:'Guía compartida sin tus resultados.',manual:'Copia este enlace público. No contiene respuestas personales.',
+    safety:'Estos cuestionarios son para la autoobservación y no ofrecen diagnóstico ni tratamiento médico.',error:'No se pudieron abrir las pruebas. Comprueba la conexión e inténtalo de nuevo.',signinError:'El acceso con Google no está disponible en este momento. Inténtalo más tarde.',
   },
   ru: {
     back: 'Все направления', eyebrow: 'ШАГ 1 · ВЫБОР ТЕМЫ', pickTitle: 'Что хотите исследовать?',
@@ -57,9 +74,42 @@ const copy = {
     options: 'Как ещё хотите продолжить?',
     course: 'Бесплатный курс поддержки', courseDetail: 'После тестов — самостоятельная ежедневная программа. Бесплатно доступен один курс одновременно.',
     review: 'Личная диагностика (расстановка)', reviewDetail: 'Бесплатный письменный разбор; живая расстановка в бесплатный формат не входит. Заполните анкету и пришлите рисунок «Я — цель — проблема».',
+    personal: 'Обсудить тему лично с Андреем', personalDetail: 'Необязательная сессия независимо от баллов теста: €50 / 30 мин или €100 / 60 мин.', remoteDetail: 'Необязательная Рейки-поддержка: мастер, время и цена согласуются до записи; ответы тестов не передаются.',
+    share:'Поделиться публичным материалом',copied:'Ссылка скопирована. В ней нет ваших результатов.',shared:'Публичный материал отправлен без ваших результатов.',manual:'Скопируйте эту ссылку вручную. Она не содержит ваших ответов.',
     safety: 'Опросники предназначены для самонаблюдения, не для медицинской диагностики или лечения.',
     error: 'Не удалось открыть тесты. Проверьте соединение и повторите попытку.',
     signinError: 'Вход через Google сейчас недоступен. Попробуйте позже.',
+  },
+} as const
+
+// Maps public topic interests to public paid offers. No test answers or scores enter these URLs.
+const personalServiceForJourney: Record<string, string> = {
+  relationships: 'systemic-constellations',
+  business: 'business-consulting',
+  stress: 'imagery-therapy',
+  energy: 'remote-energy-support',
+  effectiveness: 'imagery-therapy',
+}
+
+
+const businessDiscoveryCopy = {
+  en: {
+    eyebrow: 'PERSONAL BUSINESS CONSULTATIONS',
+    title: 'What would help your business most right now?',
+    lead: 'Choose one answer. We will suggest a way to begin — no long questionnaire.',
+    portrait: 'Andrey Litvinov · Personal consultation',
+  },
+  ru: {
+    eyebrow: 'ЛИЧНЫЕ БИЗНЕС-КОНСУЛЬТАЦИИ',
+    title: 'Что сейчас больше всего поможет вашему делу?',
+    lead: 'Выберите один ответ и сразу увидите подходящий вариант — без длинных анкет.',
+    portrait: 'Андрей Литвинов · Личная консультация',
+  },
+  es: {
+    eyebrow: 'CONSULTAS PERSONALES DE NEGOCIOS',
+    title: '¿Qué ayudaría más a tu negocio hoy?',
+    lead: 'Elige una respuesta y encuentra cómo empezar, sin formularios largos.',
+    portrait: 'Andrey Litvinov · Consulta personal',
   },
 } as const
 
@@ -92,11 +142,15 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   journey: Journey
   suggestions: Record<string, RecommendedTest[]>
 }) {
-  const language = locale === 'ru' ? 'ru' : 'en'
+  const language = locale
+  // Private test sessions still use the existing English/Russian app.
+  const appLocale = language === 'es' ? 'en' : language
   const c = copy[language]
+  const businessText = businessDiscoveryCopy[language]
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
+  const [shareStatus,setShareStatus] = useState<'copied'|'shared'|'manual'|''>('')
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
   const recommended = suggestions[selected.slice().sort().join(',')] || []
@@ -155,6 +209,25 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   const courseHref = testHref + '&mode=course'
   const browseHref = testHref + '&catalog=full'
 
+  async function shareJourney() {
+    // Never place session identifiers, selected answers, scores or concerns in a public URL.
+    const publicUrl = new URL('/' + language + '/explore/' + journey.id, window.location.origin).toString()
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: journey.title[language], url: publicUrl })
+        setShareStatus('shared')
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(publicUrl)
+        setShareStatus('copied')
+      } else {
+        setShareStatus('manual')
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      setShareStatus('manual')
+    }
+  }
+
   const toggle = (id: string) => setSelected((current) =>
     current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
 
@@ -201,13 +274,13 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         if (session.account?.id !== accountId) throw new Error('ACCOUNT_CHANGED')
         // Cross public -> private CSP policies with one fresh document.
         // A soft transition would start chunks that the CSP boundary must cancel.
-        window.location.assign('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
+        window.location.assign('/' + appLocale + '/app/tests?plan=' + encodeURIComponent(saved.id))
         return
       }
       // Store only the editorial test identifiers, never personal answers.
       attempt.intent = intent
       window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
-      const auth = await request('auth/start', { locale: language, continueTo: 'tests' }, 'POST', options)
+      const auth = await request('auth/start', { locale: appLocale, continueTo: 'tests' }, 'POST', options)
       if (!current()) return
       if (!auth.redirectUrl) throw new Error('SIGN_IN_UNAVAILABLE')
       window.location.assign(auth.redirectUrl)
@@ -228,22 +301,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     }
   }
 
-  return <div className={styles.root} data-topic-journey={journey.id}>
-    <section className={styles.hero}>
-      <div className={styles.heroArt} aria-hidden="true">
-        <Image src={art[journey.id]} alt="" fill unoptimized priority
-          sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
-      </div>
-      <div className={styles.heroCopy}>
-        <Link onClick={cancelStart} href={'/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
-          <ArrowLeft size={16} aria-hidden="true" />{c.back}
-        </Link>
-        <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
-        <h1>{journey.title[language]}</h1>
-        <p className={styles.introduction}>{journey.introduction[language]}</p>
-      </div>
-    </section>
-
+  const assessmentSections = <>
     <section className={styles.selection} aria-labelledby="hh-topic-selection-heading">
       <div className={styles.sectionHead}>
         <p className={styles.eyebrow}>{c.eyebrow}</p>
@@ -278,7 +336,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             <ChevronDown className={styles.testChevron} size={19} aria-hidden="true" />
           </summary>
           <div className={styles.testDetail}>
-            <p>{item.description || item.area || c.details}</p>
+            {language === 'es' ? <><p>Los detalles técnicos se muestran en el idioma original del cuestionario. Esta herramienta no establece un diagnóstico.</p><p lang={item.definition.instrumentLocale}>{item.description || item.area || c.details}</p></> : <p>{item.description || item.area || c.details}</p>}
           </div>
         </details>) : <p className={styles.noTests}>{c.empty}</p>}
       </div>
@@ -295,6 +353,51 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
       </Link>
     </section>
 
+  </>
+
+  return <div className={styles.root} data-topic-journey={journey.id}>
+    <section className={styles.hero}>
+      {journey.id === 'business' ? (
+        <div className={styles.businessHeroContent}>
+          <div className={styles.businessHeroPhoto}>
+            <Image src={art.business} alt={businessText.portrait} fill unoptimized priority
+              sizes="(max-width: 720px) 135px, (max-width: 1100px) 30vw, 360px" />
+            <span>{businessText.portrait}</span>
+          </div>
+          <div className={styles.businessHeroMain}>
+            <div className={styles.businessHeroTopline}>
+              <p className={styles.businessHeroEyebrow}>{businessText.eyebrow}</p>
+              <div className={styles.businessDesktopNav}>
+                <DiscoverySectionTabs locale={locale} active="business" />
+              </div>
+            </div>
+            <h1>{businessText.title}</h1>
+            <p className={styles.businessHeroLead}>{businessText.lead}</p>
+            <BusinessConsultationFinder locale={language}/>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={styles.heroArt} aria-hidden="true">
+            <Image src={art[journey.id]} alt="" fill unoptimized priority
+              sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
+          </div>
+          <div className={styles.heroCopy}>
+            <Link onClick={cancelStart} href={language === 'es' ? '/es#hh-topic-journeys' : '/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
+              <ArrowLeft size={16} aria-hidden="true" />{c.back}
+            </Link>
+            <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
+            <h1>{journey.title[language]}</h1>
+            <p className={styles.introduction}>{journey.introduction[language]}</p>
+          </div>
+        </>
+      )}
+    </section>
+
+
+    {journey.id === 'business' ? <BusinessServiceBrowser locale={language}/> : assessmentSections}
+
+    {journey.id !== 'business' && (
     <section className={styles.actions} aria-labelledby="hh-topic-actions-heading">
       <div className={styles.sectionHead}>
         <p className={styles.eyebrow}>HOLISTIC HOUSE</p>
@@ -306,13 +409,31 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           <span><strong>{c.course}</strong><small>{c.courseDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
-        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review'} className={styles.secondaryLink} data-topic-action="review">
+        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review' + (journey.id === 'business' ? '?topic=business' : '')} className={styles.secondaryLink} data-topic-action="review">
           <HeartHandshake size={21} aria-hidden="true" />
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
+        <AcquisitionEventLink onClick={cancelStart}
+          href={'/' + language + '/services/' + (personalServiceForJourney[journey.id] || 'alchemy-of-soul')}
+          event="service_view" className={[styles.secondaryLink, styles.paidServiceLink].join(' ')}
+          attributes={{ 'data-topic-action': 'consultation', 'data-topic-service': journey.id }} prefetch={false}>
+          <CalendarDays size={21} aria-hidden="true" />
+          <span><strong>{c.personal}</strong><small>{journey.id === 'energy' ? c.remoteDetail : c.personalDetail}</small></span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </AcquisitionEventLink>
+      </div>
+      <div className={styles.shareArea} data-topic-safe-sharing>
+        <button type="button" className={styles.shareButton} onClick={shareJourney}>
+          <Share2 size={17} aria-hidden="true" />{c.share}
+        </button>
+        {shareStatus && <p className={styles.shareStatus} role="status">{c[shareStatus]}</p>}
+        {shareStatus === 'manual' && <input className={styles.manualShare} type="text" readOnly
+          aria-label={c.manual} onFocus={event=>event.currentTarget.select()}
+          value={'https://holistichouse.vercel.app/' + language + '/explore/' + journey.id}/>}
       </div>
       <p className={styles.footnote}><Sparkles size={15} aria-hidden="true" />{c.safety}</p>
     </section>
+    )}
   </div>
 }

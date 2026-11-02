@@ -75,6 +75,14 @@ export async function assertAccountScaleJumpLayout(page, expect, sections, { scr
         await expect(panel.locator('h3')).toHaveText(section.construct || section.title)
         const limitations = panel.locator('[data-scale-limitation]')
         await expect(limitations).toHaveCount((section.limitations || []).length)
+        // Ordinary methodology notes are intentionally collapsed by the approved
+        // report design. Exercise their disclosure; still verify every full note.
+        const disclosure = panel.locator('details:has([data-scale-limitation])')
+        if (await disclosure.count()) {
+          await expect(disclosure).toHaveCount(1)
+          if (!await disclosure.evaluate(node => node.open)) await disclosure.locator('summary').click()
+          assert.equal(await disclosure.evaluate(node => node.open), true, 'Scale limitations disclosure must open')
+        }
         for (const [limitIndex, limit] of (section.limitations || []).entries()) {
           await expect(limitations.nth(limitIndex)).toBeVisible()
           await expect(limitations.nth(limitIndex)).toHaveText(limit)

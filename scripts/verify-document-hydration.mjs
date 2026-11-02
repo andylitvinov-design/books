@@ -16,9 +16,11 @@ try{
  // replaces its server-component nonce with one from an RSC response, whose CSP
  // does not replace the document's policy. This is server readiness, not a retry
  // or an exception to the document/nonce assertions below.
+ // The core journey also visits the separate Spanish public tests route.
+ // Compile it here, before any hydrated page subscribes to dev Fast Refresh.
  const warmup=await browser.newContext()
  try{
-  for(const [path,status] of [['/api/app/bootstrap',401],['/api/app/guest/bootstrap',401],['/en/app',200],['/ru/app',200],['/en/client',200],['/ru/client',200],['/icon.svg',200]]){
+  for(const [path,status] of [['/api/app/bootstrap',401],['/api/app/guest/bootstrap',401],['/api/test-catalog/stats',200],['/en/app',200],['/ru/app',200],['/en/client',200],['/ru/client',200],['/es/client/tests',200],['/icon.svg',200]]){
    const response=await warmup.request.get(origin+path)
    assert.equal(response.status(),status,'isolated route must compile before browser acceptance: '+path)
   }
@@ -40,10 +42,16 @@ try{
    if(message.type()==='error'&&/hydrat(?:e|ed|ion)|server rendered HTML/i.test(message.text()))errors.push({path,message:message.text()})
   })
   await page.goto(origin+path)
-  if(route==='app')await expect(page.getByRole('button',{name:locale==='ru'?'Продолжить с Google':'Continue with Google',exact:true})).toBeVisible()
+  if(route==='app'){
+    // The public /app entry now uses the dedicated Cabinet guest landing.
+    // Pin the real Google handoff, not the retired legacy sign-in copy.
+    await expect(page.locator('[data-cabinet-guest-overview="true"]')).toBeVisible()
+    await expect(page.getByRole('button',{name:locale==='ru'?'Открыть мой кабинет через Google':'Open my Cabinet with Google',exact:true})).toBeVisible()
+   }
   else await expect(page.locator('[data-prelogin-test-picker]')).toBeVisible()
   await page.waitForLoadState('load', {timeout:30000})
-  // A document is ready on its load event; optional API prefetches may stay active.\n  // Cold Next dev compilation can reload the document. Compare the live DOM
+  // A document is ready on its load event; optional API prefetches may stay active.
+  // Cold Next dev compilation can reload the document. Compare the live DOM
   // with its own navigation response, never the previous document's nonce.
   const document=documents.at(-1),response=document?.response
   assert.ok(response?.ok())

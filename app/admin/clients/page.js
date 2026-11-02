@@ -58,6 +58,7 @@ export default async function Clients({ searchParams }) {
 
   return <main className="prescription-admin-shell master-clients-shell">
     <PrescriptionAdminHeader title={{ en: copy.en.title, ru: copy.ru.title }} description={{ en: copy.en.intro, ru: copy.ru.intro }} />
+    {params?.removed === '1' && <p role="status" className="master-clients-success">{locale === 'ru' ? 'Клиент и его данные удалены.' : 'Client and their records were deleted.'}</p>}
     {!store && <p role="alert" className="master-clients-error">{t.storage}</p>}
     {store && <details className="master-client-create" id="create-client">
       <summary>

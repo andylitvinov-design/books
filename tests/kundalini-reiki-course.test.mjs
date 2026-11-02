@@ -94,11 +94,33 @@ test("medically unsupported claims are not advertised as confirmed effects", asy
   assert.doesNotMatch(data, /300 times stronger|cures disease|heals genetic disorders/i);
 });
 
-test("WhatsApp buttons carry the specific Kundalini Reiki course and enquiry type", async () => {
+test("Kundalini Reiki now uses the same safe Academy selector and CRM-backed messenger handoff", async () => {
+  const [page, selector, chooser] = await Promise.all([
+    read("components/kundalini-reiki-course.tsx"),
+    read("components/kundalini-reiki-order-capture.tsx"),
+    read("components/contact-channel-chooser.tsx"),
+  ]);
+  assert.match(page, /<KundaliniReikiOrderCapture locale=\{locale\} \/>/);
+  assert.doesNotMatch(page, /https:\/\/wa\.me|https:\/\/t\.me|function enquiryUrl/);
+  assert.match(selector, /data-consultation-cta="kundalini"/);
+  assert.match(selector, /id="kundalini-enquire"/);
+  assert.match(selector, /"free", "personal", "training"/);
+  assert.match(selector, /aria-pressed=\{active\}/);
+  assert.match(selector, /whatsappEnquiryUrl\(\{/);
+  assert.match(selector, /service: "Kundalini Reiki"/);
+  assert.match(selector, /<ContactChannelChooser/);
+  assert.match(selector, /stayAfterSave/);
+  assert.match(chooser, /method: "POST"/);
+  assert.match(chooser, /fetch\("\/api\/service-enquiries"/);
+  assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
+});
+
+test("Kundalini landing identifies the linked free AI course as covering all three Reiki systems", async () => {
   const component = await read("components/kundalini-reiki-course.tsx");
-  assert.match(component, /https:\/\/wa\.me\/14376066502\?text=/);
-  assert.match(component, /Kundalini Reiki Level 1 personal initiation/);
-  assert.match(component, /Course \/ Система:/);
-  assert.match(component, /Request \/ Запрос:/);
-  assert.match(component, /encodeURIComponent/);
+  assert.ok(component.includes("href={REIKI_FREE_COURSE_PATH}"));
+  assert.match(component, /AI course · 3 Reiki systems/);
+  assert.match(component, /ИИ-курс · 3 системы Рейки/);
+  assert.match(component, /Curso de IA · 3 sistemas Reiki/);
+  const selector = await read("components/kundalini-reiki-order-capture.tsx");
+  assert.match(selector, /pagePath \+ "\/free-initiation"/);
 });

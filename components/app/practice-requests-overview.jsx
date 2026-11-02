@@ -63,7 +63,7 @@ const COPY = {
 
 function serviceTitle(item, services, locale, fallback) {
   const service = services.find(entry => entry.id === item.serviceId)
-  if (!service) return fallback
+  if (!service) return item.serviceTitle || fallback
   return service.localizedCopy?.[locale]?.title
     || service.draftCopy?.copy?.[locale]?.title
     || service.localizedCopy?.en?.title

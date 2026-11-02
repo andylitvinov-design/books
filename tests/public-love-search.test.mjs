@@ -48,7 +48,7 @@ test('Love search finds real relationship assessments despite an unrelated selec
 test('the first-screen search uses the separate available catalog without changing suggested sets', () => {
   const parent = readFileSync(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8')
   const picker = readFileSync(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8')
-  assert.match(parent, /filterExplorerEntries\(entries, \{ availability: 'available', kinds, maxMinutes \}\)/)
+  assert.match(parent, /filterExplorerEntries\(entries, \{[\s\S]*?availability: 'available',[\s\S]*?maxMinutes, language, tracking, freeOnly,/)
   assert.match(parent, /searchRecommendations=\{searchRecommendations\}/)
   assert.match(picker, /searchPublicTestEntries\(/)
   assert.match(picker, /groupViaRecommendations\(searchRecommendations, selectedKeys, showIndividualVia\)/)

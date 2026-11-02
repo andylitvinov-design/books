@@ -17,7 +17,7 @@ test('four complete real measures have verifiable provenance, valid ranges and n
   assert.equal(PROFESSIONAL_BATTERY_2026_DEFINITIONS.length, 4)
   assert.equal(PROFESSIONAL_BATTERY_2026_CATALOG.length, 4)
   assert.equal(new Set(PROFESSIONAL_BATTERY_2026_CATALOG.map(x => x.key)).size, 4)
-  assert.equal(MONITORING_CATALOG.filter(x => x.startable).length, 145)
+  assert.equal(MONITORING_CATALOG.filter(x => x.startable).length, 150)
   for (const item of PROFESSIONAL_BATTERY_2026_CATALOG) {
     const d = getAssessmentDefinition(item.key, 'v1', 'en')
     const { contentHash, ...body } = d

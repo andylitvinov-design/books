@@ -1,6 +1,13 @@
+'use client'
+
+import { useEffect, useId, useRef, useState } from 'react'
+import { appFetch } from '@/lib/app/client-fetch'
 import Image from 'next/image'
+import { cardArtworkUrl, hasCardArtwork } from '@/lib/public-card-artwork'
 import Link from 'next/link'
-import { ArrowUpRight, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Check, LockKeyhole, Sparkles, X } from 'lucide-react'
+import { energyworkLessonRanges, energyworkSequence } from '@/data/academy/energywork-ai-schema'
+import { energyworkLessons } from '@/data/academy/energywork-ai-curriculum'
 import styles from './cabinet-free-course-banners.module.css'
 
 // These are existing Academy learning and free introductory initiation pages.
@@ -8,15 +15,15 @@ import styles from './cabinet-free-course-banners.module.css'
 const COURSES = [
   {
     id: 'energywork',
-    path: 'principles-of-energywork',
+    path: 'principles-of-energywork/learn',
     image: '/academy/reiki-yggdrasil/source/program-overview.jpg',
-    en: { offer: 'FREE INTRODUCTORY COURSE', title: 'Energywork Basics', description: 'Foundations and three Reiki traditions' },
-    ru: { offer: 'БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС', title: 'Основы энергетики', description: 'Основы практики и три системы Рейки' },
+    en: { offer: 'INTERACTIVE COURSE · PREVIEW', title: 'Reiki Practitioner', description: 'Slides, original videos and private save after sign-in' },
+    ru: { offer: 'ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ', title: 'Практик Рейки', description: 'Слайды, видео и сохранение после входа в аккаунт' },
   },
   {
     id: 'tantra-reiki',
     path: 'reiki/tantra-reiki/free-initiation',
-    image: '/library/maya-mysteries/media/post-217-1.jpg',
+    image: '/images/holistic-house/tantra-reiki-yin-yang-cover.svg',
     en: { offer: 'FREE LEVEL 1 INTRODUCTION', title: 'Tantra Reiki', description: 'Practice, materials and first steps' },
     ru: { offer: 'БЕСПЛАТНОЕ ЗНАКОМСТВО С 1 СТУПЕНЬЮ', title: 'Тантра Рейки', description: 'Практика и материалы первой ступени' },
   },
@@ -29,26 +36,155 @@ const COURSES = [
   },
 ]
 
+const ENERGYWORK_SEQUENCE = energyworkSequence()
+const ENERGYWORK_LESSON_RANGES = energyworkLessonRanges(ENERGYWORK_SEQUENCE)
+
 const COPY = {
   en: {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course',
+    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Reiki Practitioner', continueTitle: 'Continue Reiki Practitioner', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
+    lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it', reviewEdit: 'Read or edit your Flight to the Sun review',
+    removeCourse: 'Delete Reiki Practitioner course', removeTitle: 'Delete Reiki Practitioner?',
+    removeDetails: 'This permanently removes your saved slides, private reflections, shared Reiki application and any public reviews. It cannot be undone. Other courses and test results stay saved.',
+    removeConfirm: 'Delete course', removeCancel: 'Keep course', removing: 'Deleting…',
+    removeError: 'Deletion could not be confirmed. Refresh to check your course before retrying.',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс',
+    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Практик Рейки', continueTitle: 'Продолжить «Практик Рейки»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
+    lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт', reviewEdit: 'Прочитать или переписать отзыв о «Полёте к Солнцу»',
+    removeCourse: 'Удалить курс «Практик Рейки»', removeTitle: 'Удалить «Практик Рейки»?',
+    removeDetails: 'Будут безвозвратно удалены сохранённые слайды, личные отзывы, заявка на Рейки и публичные отзывы, если они были. Другие курсы и результаты тестов сохранятся.',
+    removeConfirm: 'Удалить курс', removeCancel: 'Оставить курс', removing: 'Удаление…',
+    removeError: 'Не удалось подтвердить удаление. Обновите страницу и проверьте курс перед повторной попыткой.',
   },
 }
 
 export default function CabinetFreeCourseBanners({ locale = 'en' }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
+  const [academyProgress, setAcademyProgress] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const deleteInFlight = useRef(false)
+  const deleteDialog = useRef(null)
+  const deleteTitleId = useId()
+  const courseHref = '/' + language + '/academy/principles-of-energywork/learn'
+  useEffect(() => {
+    let alive = true
+    appFetch('academy-energywork').then(value => {
+      if (alive && value?.enrolled && typeof value.slideId === 'string') setAcademyProgress(value)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
 
-  return <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
+  // Existing POST command deletes only this signed-in account's Reiki enrollment and
+  // its associated shared reviews/leads. Never remove a card optimistically.
+  async function removeSavedCourse() {
+    const accountId = academyProgress?.accountId
+    if (deleteInFlight.current || typeof accountId !== 'string') return
+    deleteInFlight.current = true
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const removed = await appFetch('academy-energywork', {action:'delete',confirmed:true}, 'POST', {accountId})
+      if (removed?.enrolled !== false || removed?.accountId !== accountId) throw new Error('DELETE_UNCONFIRMED')
+      deleteDialog.current?.close()
+      setAcademyProgress(null)
+      // Notify any other course-list view without exposing notes or progress.
+      try {
+        const channel = new BroadcastChannel('hh-app-session')
+        channel.postMessage('academy-energywork-changed')
+        channel.close()
+      } catch { /* Browser broadcasts are optional. */ }
+    } catch {
+      setDeleteError(t.removeError)
+    } finally {
+      deleteInFlight.current = false
+      setDeleting(false)
+    }
+  }
+
+  const savedIndex = academyProgress ? Math.max(0, ENERGYWORK_SEQUENCE.indexOf(academyProgress.slideId)) : 0
+  const currentLesson = ENERGYWORK_LESSON_RANGES.find(range => savedIndex >= range.start && savedIndex < range.end)
+  const resumeLabel = currentLesson
+    ? `${t.lesson} ${currentLesson.lesson} · ${t.slide} ${savedIndex - currentLesson.start + 1} ${t.of} ${currentLesson.count}`
+    : `${t.intro} · ${t.slide} ${savedIndex + 1} ${t.of} ${ENERGYWORK_LESSON_RANGES[0].start}`
+
+  return <>
+    {academyProgress ? <section className={styles.savedSection} aria-label={t.started}>
+      <article className={styles.savedCourse} data-energywork-course-resume>
+        <span className={styles.savedPhoto} aria-hidden="true">
+          <Image src={cardArtworkUrl(COURSES[0].image)} unoptimized={hasCardArtwork(COURSES[0].image)}
+            alt="" fill sizes="(max-width: 540px) 100px, 140px" />
+        </span>
+        <div className={styles.savedOverview}>
+          <div className={styles.savedCardHeader}>
+            <span className={styles.savedEyebrow}>{academyProgress.status === 'completed' ? t.completed : t.started}</span>
+            <button type="button" className={styles.savedRemoveButton} data-energywork-remove-course
+              aria-label={t.removeCourse} title={t.removeCourse} disabled={deleting || !academyProgress.accountId}
+              onClick={() => { setDeleteError(''); deleteDialog.current?.showModal() }}>
+              <X size={19} aria-hidden="true" />
+            </button>
+          </div>
+          <strong className={styles.savedLabel}>{t.energywork}</strong>
+          <p>{resumeLabel}</p>
+          <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
+            {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          {savedIndex >= ENERGYWORK_SEQUENCE.indexOf('init-photo-01') ? (
+            <Link className={styles.savedReviewLink} href={courseHref + '?slide=init-photo-01'}
+              prefetch={false} data-reiki-cabinet-personal-photo>
+              {language === 'ru' ? 'Моё фото для инициации' : 'My initiation photo'}
+              <LockKeyhole size={14} aria-hidden="true" /><ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          ) : null}
+          {academyProgress.answers?.['flight-04'] ? (
+            <Link className={styles.savedReviewLink} href={courseHref + '?slide=flight-04'}
+              prefetch={false} data-energywork-edit-flight-review>
+              {t.reviewEdit}<ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          ) : null}
+        </div>
+        <details className={styles.lessonDisclosure}>
+          <summary>{t.chooseLesson}</summary>
+          <div className={styles.lessonPicker} data-energywork-cabinet-lessons>
+            <ol className={styles.lessonGrid}>
+              {ENERGYWORK_LESSON_RANGES.map((range, number) => {
+                const unlocked = savedIndex >= range.start
+                const finished = academyProgress.status === 'completed' || savedIndex >= range.end
+                const label = <><span>{t.lesson} {range.lesson} · {energyworkLessons[number].title[language]}</span>
+                  <small>{finished ? <Check size={13} aria-hidden="true" /> : null}{range.count} {t.slides}</small></>
+                return <li key={range.firstSlideId}>
+                  {unlocked
+                    ? <Link className={styles.lessonLink} href={courseHref + '?slide=' + encodeURIComponent(range.firstSlideId)} prefetch={false} aria-current={currentLesson?.lesson === range.lesson ? 'step' : undefined}>{label}</Link>
+                    : <span className={styles.lessonLocked} title={t.locked} aria-disabled="true"><LockKeyhole size={13} aria-hidden="true" />{label}</span>}
+                </li>
+              })}
+            </ol>
+          </div>
+        </details>
+      </article>
+    </section> : null}
+    <dialog ref={deleteDialog} className={styles.removeDialog} aria-labelledby={deleteTitleId}
+      onCancel={event => { if (deleting) event.preventDefault() }}>
+      <div className={styles.removeDialogContent}>
+        <h3 id={deleteTitleId}>{t.removeTitle}</h3>
+        <p>{t.removeDetails}</p>
+        {deleteError && <p className={styles.removeError} role="alert">{deleteError}</p>}
+        <div className={styles.removeActions}>
+          <button type="button" className={styles.removeConfirm} disabled={deleting}
+            onClick={removeSavedCourse}>{deleting ? t.removing : t.removeConfirm}</button>
+          <button type="button" className={styles.removeCancel} disabled={deleting}
+            onClick={() => deleteDialog.current?.close()}>{t.removeCancel}</button>
+        </div>
+      </div>
+    </dialog>
+    <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
       <div>
         <span className={styles.eyebrow}><Sparkles size={13} aria-hidden="true" />{t.eyebrow}</span>
@@ -57,7 +193,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       <p className={styles.note}>{t.note}</p>
     </div>
     <div className={styles.grid}>
-      {COURSES.map(course => {
+      {COURSES.filter(course => !(academyProgress && course.id === 'energywork')).map(course => {
         const content = course[language]
         return <Link
           key={course.id}
@@ -66,7 +202,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
           data-free-course-id={course.id}
         >
           <span className={styles.photo} aria-hidden="true">
-            <Image src={course.image} alt="" fill sizes="(max-width: 860px) 96px, 92px" />
+            <Image src={cardArtworkUrl(course.image)} unoptimized={hasCardArtwork(course.image)} alt="" fill sizes="(max-width: 860px) 96px, 92px" />
           </span>
           <span className={styles.body}>
             <span className={styles.offer}>{content.offer}</span>
@@ -78,4 +214,5 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       })}
     </div>
   </section>
+  </>
 }

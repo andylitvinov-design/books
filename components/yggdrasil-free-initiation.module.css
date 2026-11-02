@@ -1112,3 +1112,6 @@
 @media (prefers-reduced-motion: reduce) {
   .questionsSummaryToggle svg { transition: none; }
 }
+
+/* Keep the separate free Reiki course and initiation choices compact. */
+.heroActions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

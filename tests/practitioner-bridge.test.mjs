@@ -18,6 +18,9 @@ test('verified app practitioner bridge never exposes admin credentials or public
   assert.match(access, /consultation: '\/admin\/consultations\/new'/)
   assert.match(access, /recommendation: '\/admin\/prescriptions\/new'/)
   assert.match(access, /payment: '\/admin\/payments\/new'/)
+  assert.match(access, /growth: '\/admin\/growth-studio'/)
+  assert.match(access, /seo: '\/admin\/seo'/)
+  assert.match(access, /acquisition: '\/admin\/acquisition'/)
 
   assert.match(route, /joined === 'practitioner\/open'/)
   assert.match(route, /repo\.isPractitioner\(actor\)/)

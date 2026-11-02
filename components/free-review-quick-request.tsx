@@ -129,7 +129,7 @@ const copy = {
 } as const;
 
 /** Both capture placements share this one source of truth for price, duration and handoff. */
-export function FreeReviewQuickRequest({ locale }: { locale: PublicLocale }) {
+export function FreeReviewQuickRequest({ locale, pagePath }: { locale: PublicLocale; pagePath?: string }) {
   const t = copy[locale];
   const headingId = useId();
   const formatName = useId();
@@ -149,7 +149,7 @@ export function FreeReviewQuickRequest({ locale }: { locale: PublicLocale }) {
     option: [selected.label, selected.detail, selected.price].join(" · "),
     request: selected.request,
     context,
-    pagePath: "/" + locale + "/services/free-situation-review",
+    pagePath: pagePath || "/" + locale + "/services/free-situation-review",
   });
 
   return (

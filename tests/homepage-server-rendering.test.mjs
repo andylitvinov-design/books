@@ -10,7 +10,11 @@ test("homepage stays server-rendered, with client behavior in leaf boundaries on
   assert.match(home, /<AcquisitionEventLink/);
   assert.match(home, /<SiteNavigation locale=\{locale\}/);
   assert.doesNotMatch(home, /HomeFreePaths/);
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  const deferred = read("components/home-more-disclosure.tsx");
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.match(deferred, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.match(deferred, /ssr: false/);
+  assert.doesNotMatch(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(read("app/page.tsx"), /<HolisticHouseHome/);
   assert.match(read("app\/\[locale\]\/page.tsx"), /<HolisticHouseHome/);
   assert.match(read("components/site-navigation.tsx"), /^["']use client["']/m);

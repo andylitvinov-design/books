@@ -67,7 +67,7 @@ test('preset focus prioritizes the requested goal using only actual eligible mea
   assert.deepEqual(coursePresetSuggestedScales({eligible:[]},'confidence'),[])
 })
 
-test('all presets pass the original consent, owner-scoped battery, real-result and 14-day gates',()=>{
+test('all presets keep deliberate-start consent, owner-scoped battery, real-result and 14-day gates',()=>{
   const service=source('lib/app/growth-course.js')
   const r3=source('components/app/course-r3-steps.jsx')
   const ui=source('components/app/my-course.jsx')
@@ -88,8 +88,9 @@ test('all presets pass the original consent, owner-scoped battery, real-result a
   assert.match(r3,/disabled=\{busy\|\|localBusy\|\|Boolean\(preset\)/)
   assert.match(r3,/\?mode=guided&course=1/)
   assert.match(ui,/<CoursePresetCatalog locale=\{locale\}/)
-  assert.match(ui,/onPersonal=\{\(\)\s*=>\s*openStartDialog\(null\)\}/)
-  assert.match(ui,/consent: true, \.\.\.\(intent\.presetId \? \{\s*presetId:\s*intent\.presetId\s*\}/)
+  assert.match(ui,/onPersonal=\{\(\)\s*=>\s*startSelectedCourse\(null\)\}/)
+  assert.match(ui,/const values = \{ consent: true,/)
+  assert.match(ui,/void act\('start', values\)/)
   assert.match(catalogUi,/data-course-presets/)
   assert.match(catalogUi,/data-course-personal-card/)
   assert.match(catalogUi,/coursePresetTests\(preset\.id,language\)/)

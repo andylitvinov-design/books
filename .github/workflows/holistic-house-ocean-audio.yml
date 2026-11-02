@@ -1,0 +1,44 @@
+name: Holistic House Ocean Audio
+
+on:
+  pull_request:
+    paths:
+      - 'components/ocean-practice-audio.ts'
+      - 'components/app/opora-ocean-outro.jsx'
+      - 'components/app/course-guided-timer.jsx'
+      - 'components/energywork-ai-learner.tsx'
+      - 'components/app/opora-experience-player.jsx'
+      - 'components/app/opora-experience-player.module.css'
+      - 'tests/opora-midlesson-music.test.mjs'
+      - 'tests/opora-ocean-outro.test.mjs'
+      - 'tests/opora-as56-experience-first.test.mjs'
+      - 'public/audio/**'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'package.json'
+      - 'tests/ocean-practice-audio*.test.mjs'
+      - '.github/workflows/holistic-house-ocean-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: holistic-house-ocean-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  verify-ocean-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      # Verify day-14 meditation placement, localizations and saved receipt lifecycle.
+      - name: Generate the complete 96-second original score
+        run: node scripts/generate-soft-ocean-melody.mjs
+      - name: Verify full-length WAV and native media lifecycle across practice timers
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs tests/opora-ocean-outro.test.mjs tests/opora-as56-experience-first.test.mjs

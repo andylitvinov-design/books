@@ -47,8 +47,12 @@ test('unmapped PsiTrends sources fail visibly instead of reintroducing a proxy o
 test('global optimizer remains enabled for existing book redirects', () => {
   const config = readFileSync('next.config.ts','utf8');
   assert.doesNotMatch(config,/images:\s*\{\s*unoptimized:\s*true/);
-  assert.ok(readFileSync('components/book-catalog.tsx','utf8').includes('src={"/media/" + book.mediaSeries'));
-  assert.ok(!readFileSync('components/book-catalog.tsx','utf8').includes('unoptimized'));
+  assert.ok(readFileSync('components/book-catalog.tsx','utf8').includes('bookCoverArtworkUrl(book.id, "/media/" + book.mediaSeries'));
+  const catalog = readFileSync('components/book-catalog.tsx', 'utf8');
+  assert.match(catalog, /<Image\s+unoptimized\s+alt=[\s\S]*?src="\/images\/holistic-house\/books-library\.webp"/);
+  const covers = catalog.split('visibleBooks.map((book, index) =>')[1];
+  assert.ok(covers, 'Keep dynamic book cover loop');
+  assert.match(covers, /unoptimized=\{hasBookCoverArtwork\(book\.id\)\}/, 'Only pinned prebuilt book covers bypass runtime transforms');
   assert.match(config,/hostname: "psitrends.com", pathname: "\/images\/\*\*"/);
   assert.match(config,/outputFileTracingIncludes/);
 });

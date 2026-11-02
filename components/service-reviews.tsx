@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import styles from "./service-reviews.module.css";
+import { CatalogStarRating, useCatalogRatings } from "@/components/catalog-star-rating";
 
 type Review={
   id:string;displayName:string;rating:number;body:string;status?:string;
@@ -15,13 +16,13 @@ type ReviewPayload={
 };
 const COPY={
   en:{
-    kicker:"Community feedback",title:"Reviews of this service",
+    kicker:"Community feedback",title:"Reviews of the practitioner and service",
     note:"Reviews are written by registered Holistic House members. A booking or completed session is not independently verified.",
     average:"Average rating",reviewCount:"reviews",empty:"No reviews yet. Be the first to share a real experience.",
     write:"Write a review",edit:"Edit my review",signin:"Sign in to leave a review",
     owner:"Practitioners cannot review their own services.",inactive:"Complete your member profile to leave a review.",
     publicName:"Public display name",rating:"Your rating",experience:"Your experience",
-    experienceHint:"20–1200 characters. Please avoid personal, medical or contact details.",
+    experienceHint:"50–1200 characters. Please avoid personal, medical or contact details.",
     publish:"Publish review",save:"Save changes",cancel:"Cancel",delete:"Delete my review",
     confirmDelete:"Delete your review of this service?",saved:"Your review has been saved.",
     deleted:"Your review has been deleted.",hidden:"Your review is under moderation and is not shown publicly.",
@@ -29,18 +30,18 @@ const COPY={
     genericError:"We couldn't complete this request. Please try again.",
     errorSignin:"Please sign in again to post a review.",
     errorRate:"Too many changes. Please try again later.",
-    errorInvalid:"Please enter 1–5 stars, a public name (2–60 characters), and a review of 20–1200 characters.",
+    errorInvalid:"Please enter 1–5 stars, a public name (2–60 characters), and a review of 50–1200 characters.",
     errorPersonal:"Please remove email addresses, phone numbers and other private contact details.",
     member:"Member review",edited:"Edited",stars:"stars out of 5",
   },
   ru:{
-    kicker:"Отзывы сообщества",title:"Отзывы об этой услуге",
+    kicker:"Отзывы сообщества",title:"Отзывы о мастере и услуге",
     note:"Отзывы оставляют зарегистрированные участники Holistic House. Факт заказа или прохождения сеанса отдельно не проверен.",
     average:"Средняя оценка",reviewCount:"отзывов",empty:"Пока нет отзывов. Поделитесь реальным личным опытом первым.",
     write:"Оставить отзыв",edit:"Редактировать мой отзыв",signin:"Войти, чтобы оставить отзыв",
     owner:"Мастер не может оценивать собственные услуги.",inactive:"Завершите оформление профиля, чтобы оставить отзыв.",
     publicName:"Публичное имя",rating:"Ваша оценка",experience:"Ваш опыт",
-    experienceHint:"20–1200 символов. Не добавляйте личные, медицинские данные и контакты.",
+    experienceHint:"50–1200 символов. Не добавляйте личные, медицинские данные и контакты.",
     publish:"Опубликовать отзыв",save:"Сохранить изменения",cancel:"Отмена",delete:"Удалить мой отзыв",
     confirmDelete:"Удалить ваш отзыв об этой услуге?",saved:"Отзыв сохранён.",
     deleted:"Отзыв удалён.",hidden:"Ваш отзыв скрыт на модерации и не виден другим.",
@@ -48,18 +49,18 @@ const COPY={
     genericError:"Не получилось выполнить действие. Попробуйте ещё раз.",
     errorSignin:"Войдите в аккаунт заново, чтобы оставить отзыв.",
     errorRate:"Слишком много изменений. Попробуйте позже.",
-    errorInvalid:"Укажите 1–5 звёзд, публичное имя (2–60 символов) и отзыв длиной 20–1200 символов.",
+    errorInvalid:"Укажите 1–5 звёзд, публичное имя (2–60 символов) и отзыв длиной 50–1200 символов.",
     errorPersonal:"Удалите email, номера телефонов и контактные данные.",
     member:"Отзыв участника",edited:"Изменён",stars:"звёзд из 5",
   },
   es:{
-    kicker:"Opiniones de la comunidad",title:"Opiniones sobre este servicio",
+    kicker:"Opiniones de la comunidad",title:"Opiniones del profesional y su servicio",
     note:"Las opiniones pertenecen a miembros registrados de Holistic House. La reserva o realización del servicio no se verifica por separado.",
     average:"Valoración media",reviewCount:"opiniones",empty:"Todavía no hay opiniones. Comparte tu experiencia real.",
     write:"Escribir opinión",edit:"Editar mi opinión",signin:"Inicia sesión para opinar",
     owner:"Los profesionales no pueden valorar sus propios servicios.",inactive:"Completa tu perfil para escribir una opinión.",
     publicName:"Nombre público",rating:"Tu valoración",experience:"Tu experiencia",
-    experienceHint:"Entre 20 y 1200 caracteres. Evita datos personales, médicos o de contacto.",
+    experienceHint:"Entre 50 y 1200 caracteres. Evita datos personales, médicos o de contacto.",
     publish:"Publicar opinión",save:"Guardar cambios",cancel:"Cancelar",delete:"Eliminar mi opinión",
     confirmDelete:"¿Eliminar tu opinión sobre este servicio?",saved:"Opinión guardada.",
     deleted:"Opinión eliminada.",hidden:"Tu opinión está oculta por moderación.",
@@ -67,7 +68,7 @@ const COPY={
     genericError:"No se pudo completar la solicitud. Inténtalo de nuevo.",
     errorSignin:"Inicia sesión de nuevo para publicar una opinión.",
     errorRate:"Demasiados cambios. Inténtalo más tarde.",
-    errorInvalid:"Indica entre 1 y 5 estrellas, un nombre (2–60 caracteres) y una opinión (20–1200 caracteres).",
+    errorInvalid:"Indica entre 1 y 5 estrellas, un nombre (2–60 caracteres) y una opinión (50–1200 caracteres).",
     errorPersonal:"Elimina correos electrónicos, teléfonos y datos de contacto.",
     member:"Opinión de miembro",edited:"Editada",stars:"estrellas de 5",
   },
@@ -80,9 +81,11 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
   if(code==="INVALID_REVIEW"||code==="INVALID_RATING")return t.errorInvalid;
   return t.genericError;
 }
-export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:string}){
+export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false,sectionId="reviews"}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean;sectionId?:"reviews"|"service-reviews"}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
+  const headingId=sectionId==="reviews"?"service-reviews-heading":"alchemy-service-reviews-heading";
+  const stars=useCatalogRatings("service",[serviceId]);
   const [data,setData]=useState<ReviewPayload|null>(null);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -112,6 +115,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
 
   const mine=data?.viewer.mine;
   const canReview=Boolean(data?.viewer.canReview);
+  const bodyCharacterCount=Array.from(body.trim()).length;
   function openEditor(){
     setDisplayName(mine?.displayName||data?.viewer.suggestedName||"");
     setRating(mine?.rating||5);
@@ -122,7 +126,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
   }
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
-    if(saving)return;
+    if(saving||Array.from(body.trim()).length<50)return;
     setSaving(true);setError("");setNotice("");
     try{
       const response=await fetch("/api/marketplace/reviews",{
@@ -156,29 +160,35 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
   }
   const dateLocale=language==="ru"?"ru-RU":language==="es"?"es-ES":"en-CA";
   return (
-    <section id="reviews" className={styles.root} aria-labelledby="service-reviews-heading">
+    <section id={sectionId} className={styles.root} aria-labelledby={headingId}>
       <div className={styles.header}>
-        <div><p className={styles.kicker}>{t.kicker}</p><h2 id="service-reviews-heading">{t.title}</h2></div>
-        {data&&<div className={styles.score} aria-label={t.average}>
-          <strong>{data.summary.count?data.summary.average.toFixed(1):"—"}</strong>
-          <span aria-hidden="true">★</span>
-          <small>{data.summary.count} {t.reviewCount}</small>
-        </div>}
+        <div><p className={styles.kicker}>{t.kicker}</p><h2 id={headingId}>{t.title}</h2></div>
+        <div>
+          <CatalogStarRating locale={language} summary={stars.ratings[serviceId]}
+            onRate={readOnly?undefined:value=>stars.rate(serviceId,value)} unavailable={stars.unavailable}/>
+          {data&&<small className={styles.note}>{data.summary.count} {t.reviewCount}</small>}
+        </div>
       </div>
-      <p className={styles.note}>{t.note}</p>
-      {data&&!loading&&(
+      <p className={styles.note}>{verifiedOnly
+        ? language==='ru'?'Отзывы принимаются только после выполненного заказа. Публичная публикация требует проверки.':
+          language==='es'?'Solo se acepta feedback tras una sesión completada. Publicación sujeta a revisión.':
+          'Feedback is accepted only after a completed booking. Publication requires moderation.'
+        : t.note}</p>
+      {data&&!loading&&!readOnly&&(
         <div className={styles.actions}>
           {data.viewer.canReview&&mine?.status!=="hidden"&&
             <button type="button" className={styles.primary} onClick={openEditor}>{mine?t.edit:t.write}</button>}
-          {mine?.status==="published"&&
+          {mine&&
             <button type="button" className={styles.secondary} disabled={saving} onClick={()=>void remove()}>{t.delete}</button>}
           {!data.viewer.signedIn&&<Link className={styles.primary} href={"/"+(language==="es"?"en":language)+"/app"}>{t.signin} →</Link>}
           {data.viewer.signedIn&&!data.viewer.canReview&&<span className={styles.note}>
-            {data.viewer.suggestedName?t.owner:t.inactive}</span>}
+            {verifiedOnly
+              ? (language==='ru'?'Отзывы доступны после выполненного сеанса':language==='es'?'Opiniones tras la sesión completada':'Reviews unlock after a completed session')
+              : (data.viewer.suggestedName?t.owner:t.inactive)}</span>}
           {mine?.status==="hidden"&&<span className={styles.note}>{t.hidden}</span>}
         </div>
       )}
-      {formOpen&&canReview&&<form className={styles.form} onSubmit={submit}>
+      {formOpen&&canReview&&!readOnly&&<form className={styles.form} onSubmit={submit}>
         <label>{t.publicName}<input value={displayName} onChange={event=>setDisplayName(event.target.value)}
           required minLength={2} maxLength={60} autoComplete="nickname"/></label>
         <fieldset className={styles.stars}><legend>{t.rating}</legend>
@@ -187,10 +197,10 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
             onClick={()=>setRating(value)} className={value<=rating?styles.starActive:styles.starEmpty}>★</button>)}
         </fieldset>
         <label>{t.experience}<textarea value={body} onChange={event=>setBody(event.target.value)}
-          required minLength={20} maxLength={1200} rows={4}/></label>
-        <p className={styles.note}>{t.experienceHint}</p>
+          required minLength={50} maxLength={1200} rows={4}/></label>
+        <p className={styles.note} aria-live="polite">{bodyCharacterCount} / 50 · {t.experienceHint}</p>
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={saving}>{saving?t.loading:(mine?t.save:t.publish)}</button>
+          <button type="submit" className={styles.primary} disabled={saving||bodyCharacterCount<50}>{saving?t.loading:(mine?t.save:(verifiedOnly?(language==='ru'?'Отправить отзыв на проверку':'Send feedback for review'):t.publish))}</button>
           <button type="button" className={styles.secondary} disabled={saving} onClick={()=>setFormOpen(false)}>{t.cancel}</button>
         </div>
       </form>}

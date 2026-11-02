@@ -11,6 +11,8 @@ import { courseMeasuredProfile, goalForChosenScale, coursePracticeFocus } from '
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { monitoringCatalogItem } from '../data/assessments/catalog.js'
 import { isMixedDirectionResultDimension } from '../lib/assessments/interpretation-context.js'
+import { portraitSourceRule } from '../lib/assessments/portrait-constructs.js'
+import { buildPsychPortrait } from '../lib/assessments/psych-portrait.js'
 
 // Independent specification: explicit indices and expected IDs, never derived from the scorer map.
 const cases = [
@@ -41,6 +43,12 @@ for(const c of cases) for(const locale of ['en','ru']) {
   assert.equal(d.scoring.dimensions[1].direction,c.dir)
   assert.equal(d.questions.at(-1).direction,c.dir)
   assert.equal(monitoringCatalogItem(c.key).version,'v2')
+  const difficulty=portraitSourceRule(c.key,c.ids[0],'v2')
+  assert.equal(difficulty?.mode,'directional')
+  assert.equal(difficulty?.goalEligible,true)
+  const context=portraitSourceRule(c.key,c.ids[1],'v2')
+  assert.equal(context?.mode,c.dir==='non-normative' ? 'excluded' : 'directional')
+  assert.equal(portraitSourceRule(c.key,c.ids[0],'v1'),null) // saved v1 is never recast
  })
  test(`${c.key}/${locale}: independent arithmetic over extremes, all response levels, basis vectors and rounding`,()=>{
   const vectors=[]
@@ -82,9 +90,18 @@ for(const c of cases) for(const locale of ['en','ru']) {
   const legacy=record(score(old,[2,2,2,2,2,2])),id=`${c.key}::${legacy.dimensions[0].key}`
   const legacyProfile=courseMeasuredProfile({results:[legacy],testKeys:[c.key],locale,now})
   assert.equal(legacyProfile.scales.length,1);assert.equal(legacyProfile.scales[0].priorityPercent,null)
-  assert.equal(goalForChosenScale(id,locale),c.goal)
+  // Mixed-polarity historical totals are never used to make *new* goals.
+  // A course whose owner previously selected one can still continue.
+  assert.equal(goalForChosenScale(id,locale),null)
   assert.equal(coursePracticeFocus([id],'inner_support',1,locale).scaleId,id)
   assert.equal(goalForChosenScale(`${c.key}::${c.ids[0]}`,locale),c.goal)
+  const actual=record(score(d,[2,2,2,2,2,2]))
+  const portrait=buildPsychPortrait([actual],{now})
+  const axis=portraitSourceRule(c.key,c.ids[0],'v2').axis
+  assert.equal(portrait.axes[axis]?.definitionKey,c.key)
+  assert.equal(portrait.axes[axis]?.dimensionKey,c.ids[0])
+  assert.equal(portrait.axes[axis]?.rawValue,2)
+  if(c.dir==='non-normative') assert.equal(portraitSourceRule(c.key,c.ids[1],'v2').axis,null)
   if(c.dir==='non-normative')assert.equal(goalForChosenScale(`${c.key}::${c.ids[1]}`,locale),null)
  })
  test(`${c.key}/${locale}: no old-to-new score history comparison or identity forgery`,()=>{

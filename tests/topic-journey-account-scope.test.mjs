@@ -43,6 +43,7 @@ function mount(locale = 'en', options = {}) {
     '@/lib/app/repository': { createAppRepository: () => repo },
     '@/lib/practitioners/repository': { createPractitionerRepository: () => ({}) },
     '@/lib/practitioners/article-repository': { createArticleRepository: () => ({}) },
+    '@/lib/practitioners/events-repository': { createPractitionerEventsRepository: () => ({}) },
     '@/lib/app/guest-repository': { createGuestRepository: () => ({}) },
     '@/lib/app/database': { consumeRate: async () => {} },
     '@/lib/app/http': { PRIVATE_HEADERS: {}, readBody: request => request.json(), safeError: error => ({ code: error.code || error.message, status: error.status || 500 }) },
@@ -74,6 +75,10 @@ function mount(locale = 'en', options = {}) {
     addEventListener: (name, fn) => add('window', name, fn), removeEventListener: (name, fn) => remove('window', name, fn) }
   const modules = { react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'next/image': { default: 'Image' }, 'next/link': { default: 'Link' },
+    '@/components/acquisition-event-link': { AcquisitionEventLink: 'TrackedLink' },
+    '@/components/discovery-section-tabs': { DiscoverySectionTabs: 'DiscoverySectionTabs' },
+    '@/components/business-consultation-finder': { BusinessConsultationFinder: 'BusinessConsultationFinder' },
+    '@/components/business-service-browser': { BusinessServiceBrowser: 'BusinessServiceBrowser' },
     'lucide-react': new Proxy({}, { get: (_, key) => String(key) }), '@/lib/assessments/topic-journeys': journeys,
     '@/lib/app/test-selection-intent': intents, './topic-journey-selector.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) } }
   const runtime = { exports: {}, require: name => { assert.ok(modules[name], name); return modules[name] }, window, document,
@@ -83,7 +88,7 @@ function mount(locale = 'en', options = {}) {
   const render = () => { index = 0; pending = []; dirty = false; tree = runtime.exports.TopicJourneySelector(props); pending.forEach(fn => fn()) }
   const h = { calls, dispatches, navigations, authNavigations, storage, document, window,
     get tree() { return tree }, setActor(value) { actorId = value }, get props() { return props },
-    action: name => nodes(tree).find(node => node.props?.['data-topic-action'] === name),
+    action: name => nodes(tree).find(node => (node.props?.['data-topic-action'] || node.props?.attributes?.['data-topic-action']) === name),
     start: () => h.action('tests').props.onClick(),
     async settle() { for (let i = 0; i < 30; i++) { await Promise.resolve(); if (dirty && mounted) render() } },
     rerender(next) { props = { ...props, ...next }; render() },
@@ -138,7 +143,7 @@ for (const locale of ['en', 'ru']) {
 }
 
 for (const stage of ['bootstrap', 'test-plans', 'final-bootstrap']) {
-  for (const cancel of ['unmount', 'pagehide', 'popstate', 'hidden', 'signout', 'route-change', 'alternate-link', 'locale-change', 'topic-change']) {
+  for (const cancel of ['unmount', 'pagehide', 'popstate', 'hidden', 'signout', 'route-change', 'alternate-link', 'consultation-link', 'locale-change', 'topic-change']) {
     test(`${cancel} during ${stage} prevents late requests/navigation even if abort is ignored`, async () => {
       const gate = deferred(), reached = deferred(); let bootstraps = 0
       const h = mount('en', { async afterRoute(call, response) {
@@ -153,6 +158,7 @@ for (const stage of ['bootstrap', 'test-plans', 'final-bootstrap']) {
       if (cancel === 'signout') h.signout()
       if (cancel === 'route-change') h.window.location.href = 'https://local.example/en/app'
       if (cancel === 'alternate-link') h.action('browse').props.onClick()
+      if (cancel === 'consultation-link') { assert.equal(h.action('consultation').props.href, '/en/services/systemic-constellations'); h.action('consultation').props.onClick() }
       if (cancel === 'locale-change') h.rerender({ locale: 'ru' })
       if (cancel === 'topic-change') { nodes(h.tree).find(node => node.props?.['data-topic-choice']).props.onClick(); await h.settle() }
       gate.resolve(); await work; await h.settle()

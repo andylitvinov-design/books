@@ -9,6 +9,7 @@ import { MHC_SF_DEFINITIONS } from '../data/assessments/mhc-sf-adult-dec2011.js'
 import { COMPASSION_DEFINITIONS } from '../data/assessments/compassion-2026.js'
 import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-types-original-2026.js'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} }
@@ -28,6 +29,7 @@ function scenario(keys, fault) {
     '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },
     '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },
     '@/lib/assessments/result-overview': { assessmentResultOverview: () => ({}) },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
     './compact-assessment-report.module.css': { default: {} },
   }
   const exports = {}
@@ -115,7 +117,9 @@ test('four direct suites preserve every instrument-specific assertion and downst
   for (const required of ['Response sum (0–70)', 'English original', 'cannot rule out mental illness', 'Corey L. M. Keyes', 'PHAC (2017)']) assert.ok(mhc.includes(required))
   const compassion = read('scripts/verify-compassion-assessments.mjs')
   for (const required of ['Response mean (1–5)', 'unreliable', 'LESS indifference']) assert.ok(compassion.includes(required))
-  assert.match(read('scripts/verify-personality-types.mjs'), /summary.getAttribute\('open'\).*summary.locator\(':scope > summary'\).click\(\)/)
+  assert.ok(read('scripts/verify-personality-types.mjs').includes("await expect(summary.locator(':scope > h3')).toHaveCount(1)"))
+  assert.ok(read('scripts/verify-personality-types.mjs').includes("await expect(summary).toBeVisible()"))
+  assert.match(read('components/app/compact-assessment-report.jsx'), /<section[^>]+data-personality-type-summary>/)
   for (const required of ['not clinically validated', 'consent']) assert.ok(read('scripts/verify-relationships-assessments.mjs').includes(required))
   assert.match(read('scripts/verify-asrs6.mjs'), /report.locator\('article'\)\)\.toHaveCount\(1\)/)
 })

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ChevronDown, ExternalLink, ClipboardList, Radio } from 'lucide-react'
-import { remedySchedule, recommendationCopy } from '@/lib/documents/recommendation'
+import { remedySchedule, recommendationCopy, recommendationItemType } from '@/lib/documents/recommendation'
 import styles from './client-session.module.css'
 
 // Only format an approved date; never silently change the practitioner's data.
@@ -25,15 +25,15 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
   if(part==='summary')return <section id="session-prescription" className={styles.clientSection} aria-labelledby="prescription-title">
     <header className={styles.sectionHeader}>
       <span className={styles.sectionIcon}><ClipboardList size={19}/></span>
-      <div><span className={styles.sectionKicker}>{ru?'ШАГ 1 · НАЗНАЧЕНИЕ':'STEP 1 · YOUR RECOMMENDATIONS'}</span>
-        <h2 id="prescription-title">{ru?'Что вам назначено':'What was recommended'}</h2>
+      <div><span className={styles.sectionKicker}>{ru?'ШАГ 1 · НАЗНАЧЕНИЕ':'STEP 1 · PRESCRIPTIONS'}</span>
+        <h2 id="prescription-title">{ru?'Что вам назначено':'Your prescriptions'}</h2>
       </div>
     </header>
     <div className={styles.prescriptionSummary}>
       <div className={styles.prescriptionSummaryLead}>
         <p className={styles.prescriptionCount}>{ru?'В отчёте':'In this report'} <strong>{items.length}</strong> {ru
           ? (items.length===1?'назначение':items.length>=2&&items.length<=4?'назначения':'назначений')
-          : (items.length===1?'recommendation':'recommendations')}</p>
+          : (items.length===1?'prescription':'prescriptions')}</p>
         <p className={styles.prescriptionHint}>{ru?'Откройте карточку ниже, чтобы прочитать личные инструкции.':
           'Open a card below to read your individual instructions.'}</p>
       </div>
@@ -43,7 +43,7 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
       </div>}
       {recommendation.includeDistanceHomeopathy&&<div className={styles.distanceNote}>
         <Radio size={18} aria-hidden="true"/>
-        <div><strong>{ru?'Дистанционная работа отмечена в назначении':'Distance work is included in the recommendation'}</strong>
+        <div><strong>{ru?'Дистанционная работа отмечена в назначении':'Distance work is included in your prescription'}</strong>
           <p>{ru?'Дополнительные условия дистанционной работы смотрите в полном отчёте или уточните у специалиста.':
             'Please refer to your full report or ask your practitioner for the details of this service.'}</p>
         </div>
@@ -58,10 +58,13 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
   </section>
 
   if(part==='remedies')return <section id="session-remedies" className={styles.clientSection+' '+styles.remedyDetailSection}
-    aria-label={ru?'Личные инструкции по назначениям':'Personal recommendation instructions'}>
+    aria-label={ru?'Личные инструкции по назначениям':'Personal prescription instructions'}>
     <div className={styles.remedyAccordions}>
       {items.map((item,index)=>{
         const schedule=remedySchedule(item,locale,recommendation.recommendationType)
+        const potency=recommendationItemType(item,recommendation.recommendationType)==='homeopathy'
+          ? String(item.potency ?? '').trim() : ''
+        const administration=potency ? schedule.split(' · ').slice(1).join(' · ') : schedule
         const fields=[
           ['purpose',labels.purpose],['dosage',labels.dosage],['frequency',labels.frequency],
           ['duration',labels.duration],['sequence',labels.sequence],['instructions',labels.instructions]
@@ -70,8 +73,8 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
           <summary>
             <span className={styles.remedyIndex}>{String(index+1).padStart(2,'0')}</span>
             <span className={styles.remedyAccordionText}>
-              <strong>{item.displayName}</strong>
-              {schedule&&<small>{schedule}</small>}
+              <strong>{item.displayName}{potency ? ` ${potency}` : ''}</strong>
+              {administration&&<small>{administration}</small>}
             </span>
             <ChevronDown size={21} className={styles.remedyChevron} aria-hidden="true"/>
           </summary>

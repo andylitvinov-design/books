@@ -33,12 +33,17 @@ const COPY = {
 // Visual blur is a presentation step, not authentication. The parent must
 // first authorize the individual private link on the server or exchange the
 // fragment into a scoped HttpOnly viewer session.
-export function ReportInvitationGate({ locale = 'en', kind = 'report', saveAction = null, viewPdfHref = null, children }) {
+export function ReportInvitationGate({ locale = 'en', kind = 'report', saveAction = null, viewPdfHref = null, onViewed = null, children }) {
   const [viewing, setViewing] = useState(false)
   const dialogRef = useRef(null)
   const titleId = 'hh-report-invitation-title'
   const c = COPY[locale] || COPY.en
   const isReport = kind === 'report'
+
+  function openReport() {
+    setViewing(true)
+    onViewed?.()
+  }
 
   useEffect(() => {
     if (viewing) return undefined
@@ -52,7 +57,7 @@ export function ReportInvitationGate({ locale = 'en', kind = 'report', saveActio
   function handleDialogKeys(event) {
     if (event.key === 'Escape') {
       event.preventDefault()
-      setViewing(true)
+      openReport()
       return
     }
     if (event.key !== 'Tab') return
@@ -98,7 +103,7 @@ export function ReportInvitationGate({ locale = 'en', kind = 'report', saveActio
               <button
                 type="button"
                 className={styles.viewButton}
-                onClick={() => setViewing(true)}
+                onClick={openReport}
               >
                 {isReport ? c.viewReport : c.viewDocument}
               </button>
