@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, BookOpen, Film, Play, Search, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play, Search, ThumbsDown, X } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
@@ -22,6 +22,11 @@ export type LibraryFeedItem = {
   seriesTitle?: string;
   seriesHref?: string;
   seriesOrder?: number;
+  topicTags?: string[];
+  audioLanguage?: "ru" | "en" | "es";
+  curation?: "verified" | "published";
+  sourceGroup?: string;
+  sourceLabel?: string;
 };
 
 const words = {
@@ -64,12 +69,22 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(parsed);
 }
 
-export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false }: {
+export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false,
+  preserveOrder = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
+  saveText = "Save", unsaveText = "Unsave", dismissText = "Not for me",
+}: {
   locale: PublicLocale;
   items: LibraryFeedItem[];
   videosOnly?: boolean;
   guidesOnly?: boolean;
   timeline?: boolean;
+  preserveOrder?: boolean;
+  savedVideoIds?: string[];
+  onToggleSaved?: (id: string) => void;
+  onDismissVideo?: (id: string) => void;
+  saveText?: string;
+  unsaveText?: string;
+  dismissText?: string;
 }) {
   const copy = words[locale];
   const [kind, setKind] = useState<"all" | LibraryFeedItem["kind"]>("all");
@@ -95,7 +110,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
     ) && (!videosOnly || selectedSeries === "all" || item.seriesId === selectedSeries)
       && (!needle || [item.title, item.description, item.author || "", item.seriesTitle || ""].join(" ")
         .toLocaleLowerCase(locale).includes(needle)));
-    if (!videosOnly) return matches;
+    if (!videosOnly || preserveOrder) return matches;
     // Never let newest-first blog posts scatter numbered archival episodes.
     const position = new Map(seriesChoices.map((series, index) => [series.id, index]));
     return matches.sort((a, b) => {
@@ -105,9 +120,9 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         ? (a.seriesOrder ?? Number.MAX_SAFE_INTEGER) - (b.seriesOrder ?? Number.MAX_SAFE_INTEGER)
         : 0);
     });
-  }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices]);
+  }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
   // A whole series is visible even when it has more than the normal eight cards.
-  const visibleLimit = videosOnly && selectedSeries === "all"
+  const visibleLimit = videosOnly && !preserveOrder && selectedSeries === "all"
     ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
   const filters = [
@@ -195,6 +210,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
               {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
               {date && <span>{date}</span>}
               {item.author && <span className={styles.author}>{item.author}</span>}
+              {item.sourceLabel && <span className={styles.author}>{item.sourceLabel}</span>}
             </p>
             <h2>{canPlay ? (
               <button type="button" className={styles.titleButton} onClick={() => setPlayingId(playing ? null : item.id)}>
@@ -220,6 +236,19 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
                   {action}<ArrowRight size={15} aria-hidden="true" />
                 </Link>
               ) : null}
+              {videosOnly && onToggleSaved && <button type="button" className={styles.preferenceAction}
+                aria-pressed={savedVideoIds.includes(item.youtubeId || item.id)}
+                aria-label={(savedVideoIds.includes(item.youtubeId || item.id) ? unsaveText : saveText) + ": " + item.title}
+                title={savedVideoIds.includes(item.youtubeId || item.id) ? unsaveText : saveText}
+                onClick={() => onToggleSaved(item.youtubeId || item.id)}>
+                {savedVideoIds.includes(item.youtubeId || item.id)
+                  ? <BookmarkCheck size={18} aria-hidden="true" /> : <Bookmark size={18} aria-hidden="true" />}
+              </button>}
+              {videosOnly && onDismissVideo && <button type="button" className={styles.preferenceAction}
+                aria-label={dismissText + ": " + item.title} title={dismissText}
+                onClick={() => onDismissVideo(item.youtubeId || item.id)}>
+                <ThumbsDown size={18} aria-hidden="true" />
+              </button>}
             </div>
           </div>
           </article>

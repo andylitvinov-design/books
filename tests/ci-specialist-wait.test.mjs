@@ -31,12 +31,16 @@ test('waits for a running exact-head specialist and still fails on an unsuccessf
 test('loose base reuse is limited to normal public changes; privacy and policy require current base', () => {
   for (const files of [
     ['components/public-faq.js'], ['app/[locale]/academy/page.tsx'], ['public/images/new-image.webp'], ['docs/guide.md'],
+    ['components/video-editor.tsx','scripts/verify-video-editor-browser.mjs'],
+    ['scripts/benchmarking/video-timing.mjs'],
     ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
     ['scripts/verify-affirmation-voice-browser.mjs'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
+    ['scripts/verify-payment-browser.mjs'], ['scripts/new-auth-guard.mjs'],
+    ['scripts/benchmarking/first-video-live-export.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],
