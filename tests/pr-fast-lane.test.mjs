@@ -130,7 +130,7 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
-  assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(unified,/^    needs: \[code, hh-specialist\]$/m);
   for(const required of ['CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$CODE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source,/ci-specialist-aggregate\.mjs/);
@@ -1139,7 +1139,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   const gate=source.match(/^  hh-merge-check:\n[\s\S]*$/m)?.[0];
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[code, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -1309,7 +1309,7 @@ test('post-migration live gate preserves parallel source checks and removes redu
   assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[code, hh-specialist\]$/m);
   assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialists-verified:/m);
 });
 
@@ -1397,7 +1397,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   const gate=source.split(/^  hh-merge-check:\s*$/m)[1];
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[code, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   for(const required of ['CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
