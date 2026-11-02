@@ -3632,10 +3632,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           enabled={affirmations.enabled} durationSeconds={duration}
           disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>{
-            const hasHypnoTrack=Boolean(hypnoSpeechSource||hypnoWhisperEnabled||hypnoBinauralEnabled);
+            const staleHypnoTrack=Boolean(hypnoWhisperEnabled||hypnoBinauralEnabled||
+              (attachedAudio?.kind==="file"&&attachedAudio.narration));
             setHypnoSpeechSource(null);setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
             previousHypnoAudioRef.current=null;
-            if(hasHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
+            if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
         {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
@@ -4414,7 +4415,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
             hasVoiceFile={Boolean(hypnoSpeechSource)}
-            voiceActive={Boolean(attachedAudio?.kind==="file"&&audioRights)}
+            voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&audioRights)}
             voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
             whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
             beatHz={hypnoBeatHz} audioEffectBusy={hypnoAudioBusy}
