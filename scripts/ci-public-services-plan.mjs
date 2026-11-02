@@ -61,6 +61,9 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'tests/ci-site-video-scope.test.mjs',
   'tests/site-video-admin-e2e-gate.test.mjs',
   'tests/ci-heavy-draft-policy.test.mjs',
+  // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/pr-fast-lane.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
@@ -162,6 +165,11 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
+  // Exact Mandala-eligible real media/consent QA, covered by its independent
+  // Chromium and macOS WebKit jobs. Do not send video-editor QA to checkout.
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/affirmation-voice-browser-attachment.test.mjs',
+  'tests/mandala-export.test.mjs',
   'tests/cinematic-studio.test.mjs',
   'tests/mandala-approved-mobile-studio.test.mjs',
   'tests/mandala-audio-attach.test.mjs',

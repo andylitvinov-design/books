@@ -936,6 +936,44 @@ test('Video Studio #2938 routes exact reviewed editor files to Mandala without u
   const pub=pathsOf('hh-public-services-production.yml');
   assert.equal(covers(pub,'components/mandala-video-director-chat.tsx'),true,
     'existing Public Services job stays registered and runs source contracts');
+  // The COMPLETE current #2938 source diff (not merely the old partial
+  // videoOnly fixture) must not start 13 unrelated browser suites.
+  const integrated2938 = [
+    ".github/workflows/holistic-support-mandala.yml",
+    "components/mandala-auto-video-director.module.css",
+    "components/mandala-auto-video-director.tsx",
+    "components/mandala-free-video-studio.tsx",
+    "components/mandala-meditation.module.css",
+    "components/mandala-video-director-chat.tsx",
+    "components/mandala-video-mobile.module.css",
+    "lib/mandala/video-chat-intent.mjs",
+    "lib/mandala/video-chat-understanding.mjs",
+    "scripts/benchmarking/first-video-live-export.mjs",
+    "scripts/benchmarking/video-director-chat-live-acceptance.mjs",
+    "scripts/ci-public-services-plan.mjs",
+    "scripts/verify-affirmation-voice-browser.mjs",
+    "scripts/verify-holistic-mandala-browser.mjs",
+    "tests/affirmation-voice-browser-attachment.test.mjs",
+    "tests/ci-heavy-draft-policy.test.mjs",
+    "tests/ci-heavy-impact.test.mjs",
+    "tests/ci-public-services-plan.test.mjs",
+    "tests/mandala-approved-mobile-studio.test.mjs",
+    "tests/mandala-audio-attach.test.mjs",
+    "tests/mandala-auto-video-director-ui.test.mjs",
+    "tests/mandala-export.test.mjs",
+    "tests/mandala-hypnocorrection-mobile.test.mjs",
+    "tests/mandala-mobile-video-design.test.mjs",
+    "tests/mandala-workspace-tabs.test.mjs",
+    "tests/pr-fast-lane.test.mjs",
+    "tests/video-chat-intent.test.mjs",
+    "tests/video-chat-understanding.test.mjs",
+    "tests/video-director-chat-live-acceptance.test.mjs",
+    "tests/video-executable-director.test.mjs"
+  ];
+  const integratedScope = planPublicServicesChangedPaths(integrated2938);
+  assert.deepEqual([integratedScope.mode,integratedScope.build,integratedScope.browser,integratedScope.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(integratedScope),false);
   const plan=planPublicServicesChangedPaths(videoOnly);
   assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
     ['contracts',false,false,'none']);
