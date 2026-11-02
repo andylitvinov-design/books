@@ -7,6 +7,7 @@ import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound }
 import type { PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
+import { mobileVisualBottomGap } from "@/lib/mobile-visual-bottom.mjs";
 
 const icons = {
   mytube: Clapperboard, video: Film, ai: MessageCircle,
@@ -31,13 +32,11 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
   useEffect(() => {
     if (!visible) return;
     let frame = 0;
-    let translation = 0;
     const viewport = window.visualViewport;
-    // Preserve left:50% centering; only translate the measured vertical gap
-    // when Safari's visual viewport detaches from the fixed layout viewport.
+    // Only compensate for the actual browser-toolbar occlusion; keep the six
+    // destinations pinned to the visible edge, not a stale layout viewport.
     const resetDockCorrection = () => {
-      translation = 0;
-      navRef.current?.style.removeProperty("--hh-unified-dock-offset");
+      document.body.style.removeProperty("--hh-unified-viewport-inset");
     };
     const update = () => {
       if (frame) return;
@@ -59,11 +58,12 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
           resetDockCorrection();
           return;
         }
-        const gap = visualBottom - rect.bottom;
-        if (Number.isFinite(gap) && Math.abs(gap) > 1) {
-          translation += gap;
-          node.style.setProperty("--hh-unified-dock-offset", translation + "px");
-        }
+        const inset = mobileVisualBottomGap({
+          layoutHeight: window.innerHeight,
+          visualHeight: viewport?.height ?? window.innerHeight,
+          visualOffsetTop: viewport?.offsetTop ?? 0,
+        });
+        document.body.style.setProperty("--hh-unified-viewport-inset", inset + "px");
       });
     };
     update();
