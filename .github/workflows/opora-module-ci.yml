@@ -23,7 +23,12 @@ on:
       - 'tests/antistress-*.mjs'
       - 'tests/my-course-moment-trends.test.mjs'
       - 'tests/my-course-programs.test.mjs'
-      - 'tests/course-*.mjs'
+      - 'tests/course-baseline-explainer.test.mjs'
+      - 'tests/course-compact-owner-ui.test.mjs'
+      - 'tests/course-entry-selector.test.mjs'
+      - 'tests/course-test-sequence.test.mjs'
+      - 'tests/opora-pr-path-filter.test.mjs'
+      - '.github/workflows/opora-module-ci.yml'
       - 'scripts/verify-opora-*.mjs'
       - 'middleware.ts'
       - 'package.json'
@@ -54,6 +59,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
+      - name: Verify OPORA PR file routing excludes unrelated course tests
+        run: node --test tests/opora-pr-path-filter.test.mjs
       - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
         run: node --test tests/opora-support-second-screen.test.mjs
       - name: Verify AS-6.0 five channels per day, 14 practical lessons, music and historical sessions
