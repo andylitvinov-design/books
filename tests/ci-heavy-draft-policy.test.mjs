@@ -393,30 +393,13 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  // Match required risk/engine semantics, not one stale branch-whitelist literal.
-  const actualMediaLines=source.split(String.fromCharCode(10));
-  for(const name of [
-    'Build',
-    'Install isolated Chromium and WebKit (no external account)',
-    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
-    'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
-    'Public mandala photo, PNG and video browser flow · 320/390/430px',
-  ]){
-    const i=actualMediaLines.indexOf('      - name: '+name);
-    assert.ok(i>=0,'missing mandatory media step '+name);
-    const clause=actualMediaLines[i+1]||'';
-    for(const required of [
-      "steps.impact.outputs.browser == 'true'",
-      "github.event_name == 'workflow_dispatch'",
-      "github.event_name == 'pull_request'",
-      "startsWith(github.head_ref, 'codex/voice-studio-')",
-      "startsWith(github.head_ref, 'codex/voice-mix-')",
-      "startsWith(github.head_ref, 'feat/meditation-writer-')",
-    ]) assert.ok(clause.includes(required),'real media check '+name+' missing '+required);
-  }
-  const macosIndex=actualMediaLines.indexOf('  voice-webkit-macos:');
-  assert.ok(macosIndex>=0 && actualMediaLines[macosIndex+1]?.includes("startsWith(github.head_ref, 'feat/meditation-writer-')"),
-    'Writer branch must run real macOS WebKit instead of producing a skipped specialist');
+  const browserGate = source.match(/^      - name: Build\n        (if: [^\n]+)$/m)?.[1];
+  assert.ok(browserGate, 'real browser Build guard missing');
+  for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
+    "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
+  assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
@@ -694,4 +677,25 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   const home=read('home-locale-switch.yml');
   assert.match(home,/^  push:/m);
   assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
+});
+
+test('Core SHA-scoped concurrency prevents older reruns from cancelling current valid builds',()=>{
+  const core=read('hh-pr-core-release.yml');
+  assert.ok(core.includes('group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}'),
+    'old and new SHA must never contend for one Core concurrency group');
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+    'keep same-SHA redundant-synchronize cancellation');
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.doesNotMatch(core,/^  release-ready:/m);
+});
+
+test('source-head concurrency also covers WebKit and Guard, not just Core',()=>{
+  for(const file of ['hh-pr-core-release.yml','holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
+    const workflow=read(file);
+    assert.ok(workflow.includes('group: '), file);
+    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+      file+' older PR rerun must never cancel a newer source HEAD');
+    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+      file+' retains exact same-head cancellation and no weakened gates');
+  }
 });

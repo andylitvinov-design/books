@@ -131,7 +131,7 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
@@ -201,18 +201,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -221,10 +221,10 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         run: node scripts/video-catalog-probe.mjs --check
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -272,7 +272,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
+        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
@@ -293,7 +293,7 @@ jobs:
   # the closest supported CI platform to iPhone Safari. Never mock a download.
   # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-')) }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-')) }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:
