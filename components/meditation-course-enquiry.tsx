@@ -117,7 +117,7 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
         <label>{t.phone}<input value={phone} type="tel" maxLength={40} autoComplete="tel"
           placeholder="+1 416 000 0000"
           onChange={event=>{setPhone(event.target.value);operationRef.current=null;}}/></label>
-        <label className={css.consent}><input type="checkbox" checked={consent}
+        <label className={css.consent} data-meditation-course-consent><input type="checkbox" checked={consent}
           onChange={event=>setConsent(event.target.checked)}/><span>{t.consent}</span></label>
         <small>{t.note}</small>
         {error?<p className={css.error} role="alert">{error}</p>:null}

@@ -111,7 +111,14 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
         await form.locator('input[type="email"]').fill("synthetic@example.invalid");
         assert.equal(await send.isDisabled(),true);
-        await form.locator('input[type="checkbox"]').check();
+        // A real mobile visitor taps the full accessible consent label, not
+        // an 18px box under the fixed iPhone dock. No force/check JS bypass.
+        const consentLabel=form.locator("[data-meditation-course-consent]");
+        assert.equal(await consentLabel.count(),1,"one genuine opt-in label");
+        await consentLabel.click();
+        const consentBox=form.locator('input[type="checkbox"]');
+        assert.equal(await consentBox.isChecked(),true,
+          "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
         // Deliberately do not submit: no database test account, lead or external delivery.
         await course.screenshot({
