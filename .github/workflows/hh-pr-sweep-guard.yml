@@ -54,3 +54,14 @@ jobs:
       - name: Install locked parser without lifecycle scripts
         run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
       - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs
+
+      # Repo-wide conflict inventory is an operational diagnostic, not source
+      # acceptance. Run it on explicit manual sweep only. The PR path still
+      # executes every deterministic policy/security/unit contract above.
+      # This prevents a transient GitHub GraphQL 502 or moving production
+      # from turning an unrelated PR into a red Specialist/release-ready.
+      - name: Probe real conflict inventory with a read-only token
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
