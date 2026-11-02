@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
+import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -17,6 +18,103 @@ const covers = (patterns, file) => {
   }
   return selected;
 };
+
+test('general BASE-owned Mandala routing works for all PRs, never for payment/private/unknown paths',()=>{
+  const yaml=workflow('holistic-support-mandala.yml');
+  const guardYaml=workflow('hh-pr-sweep-guard.yml');
+  const trigger=parsePrTrigger(yaml,'.github/workflows/holistic-support-mandala.yml');
+  const guardTrigger=parsePrTrigger(guardYaml,'.github/workflows/hh-pr-sweep-guard.yml');
+  for(const path of ['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-wait.test.mjs',
+    '.github/workflows/holistic-support-mandala.yml'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),true,
+      path+' must use BASE Guard+Core rather than 13 public browser journeys');
+  for(const path of ['app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-policy.mjs'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),false,path);
+  for(const path of ['components/mandala-new-public-editor.tsx',
+    'lib/mandala/video-new-renderer.mjs','tests/mandala-new-renderer.test.mjs',
+    'tests/video-chat-natural-language.test.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),true,path);
+  for(const path of ['components/mandala-payment-checkout.tsx',
+    'components/mandala-client-profile.tsx','components/mandala-service-cart.tsx',
+    'components/mandala-cart-nav.tsx','components/mandala-consultation-cta.tsx',
+    'components/mandala-receipt-template.tsx','app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-router.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),false,path);
+  const base='a'.repeat(40),head='b'.repeat(40),nullByte=String.fromCharCode(0);
+  const run=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_command,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(String(args[1]).includes('hh-pr-sweep-guard.yml') ? guardYaml : yaml);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);
+    throw Error('unexpected git request '+args[0]);
+  });
+  for(const rows of [
+    [['M','components/mandala-new-public-editor.tsx']],
+    [['A','components/mandala-brand-new-component.tsx']],
+    [['M','lib/mandala/video-new-renderer.mjs'],['A','tests/mandala-new-renderer.test.mjs']],
+    [['M','lib/ci/specialist-aggregate.mjs'],['M','scripts/ci-specialist-aggregate.mjs']],
+    [['M','.github/workflows/holistic-support-mandala.yml'],
+     ['M','lib/ci/specialist-aggregate.mjs'],['M','components/mandala-new-public-editor.tsx']],
+  ]) assert.deepEqual([run(rows).mode,run(rows).reason],
+      ['contracts','INDEPENDENT_OWNER_OR_CORE']);
+  for(const rows of [
+    [['M','components/mandala-payment-checkout.tsx']],
+    [['A','components/mandala-client-profile.tsx']],
+    [['A','components/unknown-new-component.tsx']],
+    [['D','components/mandala-new-public-editor.tsx']],
+    [['M','components/mandala-new-public-editor.tsx'],['M','app/api/payments/checkout/route.js']],
+  ]) assert.equal(run(rows).mode,'full','unsafe or unknown scope must retain real E2E');
+  assert.equal(run([['M','tests/ci-any-existing-policy.test.mjs']]).reason,'INDEPENDENT_OWNER_OR_CORE');
+  assert.equal(run([['A','tests/ci-new-policy.test.mjs']]).mode,'full');
+  assert.match(workflow('hh-public-services-production.yml'),
+    /steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE'/);
+});
+test('any verified complex PR uses its real owner browser cases instead of all 13',()=>{
+  const trigger=parsePrTrigger(workflow('hh-public-services-production.yml'));
+  const cases=[
+    ['app/api/payments/talismans/checkout/route.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['lib/commerce/talisman-checkout.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['components/commerce/service-cart.tsx',['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+    ['components/contact-channel-chooser.tsx',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['app/api/service-enquiries/route.ts',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['components/alchemy-soul-lead-form.tsx',['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+    ['components/academy-course-capture.tsx',['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const simulate=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(workflow('hh-public-services-production.yml'));
+    if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+    throw Error('Unexpected command '+args[0]);
+  });
+  for(const [path,expected] of cases){
+    assert.deepEqual(verifiedCriticalPublicCases(path,trigger),expected,path);
+    const plan=simulate([['M',path]]);
+    assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser],
+      ['focused','PROTECTED_PUBLIC_OWNER_CASES',true,true],path);
+    assert.deepEqual(plan.cases.split(',').sort(),[...expected].sort(),path);
+    assert.equal(requiresPublicServicesHeavyPr(plan),true,path+' must run real browser QA');
+    assert.equal(planPublicServicesChangedPaths([path]).mode,'full','no BASE owner requires all QA');
+    assert.equal(simulate([['A',path]]).mode,'full','new path is unreviewed');
+  }
+  for(const path of [
+    'middleware.ts','package.json','app/api/payments/other/route.js',
+    'components/holistic-support-mobile.tsx','components/mandala-payment-checkout.tsx',
+  ]){
+    assert.equal(verifiedCriticalPublicCases(path,trigger),null,path);
+    assert.equal(simulate([['M',path]]).mode,'full',path);
+    assert.equal(simulate([['M','components/commerce/service-cart.tsx'],['M',path]]).mode,'full','mixed critical changes require all cases');
+  }
+  assert.equal(verifiedCriticalPublicCases('components/commerce/service-cart.tsx',null),null);
+  assert.equal(simulate([['D','components/commerce/service-cart.tsx']]).mode,'full');
+});
 
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
@@ -34,6 +132,72 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('only exact reviewed guest operator bundle qualifies for real focused consent and privacy CI',()=>{
+ const full=[
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+ ];
+ const plan=planPublicServicesChangedPaths(full);
+ assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],[
+  'focused',true,true,
+  'verify-public-services-production.mjs']);
+ assert.equal(requiresPublicServicesHeavyPr(plan),true);
+ assert.equal(publicPlaywrightEngines(plan),'chromium');
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const additions=new Set(['components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',]);
+ const statuses=full.map(path=>[additions.has(path)?'A':'M',path]);
+ const event=planPublicServicesEvent({
+   GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,
+   HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(
+     statuses.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('Unexpected git command');
+ });
+ assert.equal(event.mode,'focused');
+ assert.equal(event.cases,plan.cases);
+ for(const extra of ['middleware.ts','app/api/payments/talismans/checkout/route.js',
+  'components/commerce/service-cart.tsx',
+  'app/api/service-enquiries/route.js','app/api/app/auth/callback/route.js']){
+  assert.equal(planPublicServicesChangedPaths([...full,extra]).mode,'full',
+    'additional sensitive/unknown file must not qualify: '+extra);
+ }
+ assert.equal(planPublicServicesChangedPaths(
+   full.filter(p=>p!=='lib/practitioners/public-service-enquiry.js')).mode,'full');
+ assert.equal(planPublicServicesChangedPaths([
+   'components/app/public-enquiry-reply.jsx']).mode,'full');
 });
 
 test('contracts-only changes do not repeat Next build or install Playwright', () => {

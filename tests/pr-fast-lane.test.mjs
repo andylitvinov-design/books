@@ -137,7 +137,8 @@ test('PR automation policy and agent entry point require specialist safety gates
   assert.match(docs, /The replacement checks are `hh-core-verified` \(Core\) and `hh-specialist`/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
-  assert.match(docs, /production advance alone does not require updating the PR branch/);
+  assert.match(docs, /when strict required checks are enabled, a production advance requires updating the PR branch/);
+  assert.doesNotMatch(docs, /GitHub uses loose required-status checks/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));

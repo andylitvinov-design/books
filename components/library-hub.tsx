@@ -8,6 +8,9 @@ import { DaoHexagramLibrarySection } from "@/components/dao-hexagram-library-sec
 import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
 import { greekVideoSeries } from "@/data/academy/greek-video-series";
+import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
+import { VideoDiscovery } from "@/components/video-discovery";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -192,6 +195,57 @@ const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "
   ],
 };
 
+
+// Source-backed discovery indexes reuse the verified Academy manifests, never private videos.
+// Original Russian teaching records are shown only on the Russian page.
+const discoveryTags: Record<string,string[]>={
+  "tantra-reiki":["relationships","energy","practices"],
+  "reiki-yggdrasil":["energy","meaning","practices"],
+  "kundalini-reiki":["energy","practices"],
+  "videos/greek-mysteries-dionysus":["relationships","meaning","practices"],
+  "videos/greek-mysteries-demeter":["relationships","meaning","practices"],
+  "videos/egypt-osiris":["meaning","practices"],
+  "videos/maya-archetypes":["meaning","practices"],
+  "videos/planetary-power":["energy","practices"],
+  "videos/strength-protection":["stress","energy","practices"],
+  "videos/energy-pump-ups":["energy","practices"],
+  "videos/sun-meditations":["meaning","energy","practices"],
+};
+function approvedAcademyDiscoveryVideos(locale:PublicLocale):LibraryFeedItem[]{
+  const english:LibraryFeedItem[]=englishGuidedMeditations.flatMap(video=>{
+    // Do not promote Sun Flight until the original recorded playback is verified.
+    if(video.key==="flight-to-sun" || !video.youtubeId || !/^[A-Za-z0-9_-]{11}$/.test(video.youtubeId))return [];
+    return [{
+      id:"academy-en-"+video.key,kind:"video" as const,title:video.title,
+      description:video.description,image:video.image,youtubeId:video.youtubeId,
+      href:"https://www.youtube.com/watch?v="+video.youtubeId,
+      sourceLabel:"Academy · EN",sourceGroup:video.key,
+      audioLanguage:"en" as const,curation:"verified" as const,
+      topicTags:discoveryTags[video.key]||["practices"],
+    }];
+  });
+  if(locale!=="ru")return english;
+  const archive:LibraryFeedItem[]=videoRecords("ru")
+    .filter(record=>record.sourceLocale==="ru"&&record.status!=="needs_review")
+    .flatMap(record=>mediaForRecord(record)
+      .filter(media=>media.status==="verified_legacy_public_embed")
+      .sort((a,b)=>(a.order??Number.MAX_SAFE_INTEGER)-(b.order??Number.MAX_SAFE_INTEGER))
+      .flatMap(media=>{
+        const youtubeId=youtubeIdFromUrl(media.mediaUrl);
+        if(!youtubeId || !/^[A-Za-z0-9_-]{11}$/.test(youtubeId))return [];
+        return [{
+          id:"academy-ru-"+record.logicalId+"-"+youtubeId,kind:"video" as const,
+          title:media.lessonTitle||academyDisplayTitle(record,"ru"),
+          description:academyDisplayTitle(record,"ru"),youtubeId,
+          href:"https://www.youtube.com/watch?v="+youtubeId,
+          sourceLabel:"Академия · архив",sourceGroup:record.logicalId,
+          audioLanguage:"ru" as const,curation:"verified" as const,
+          topicTags:discoveryTags[record.logicalId]||["practices"],
+        }];
+      }));
+  return [...english,...archive];
+}
+
 export function LibraryBackLink({ locale }: { locale: PublicLocale }) {
   return <Link className="library-back-link" href={`/${locale}/library`}>← {libraryCopy[locale].back}</Link>;
 }
@@ -286,11 +340,19 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
         seriesTitle: series.title,
         seriesOrder: lesson.order,
         seriesHref: series.href,
+        audioLanguage: "ru" as const, curation: "verified" as const,
+        sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
+        topicTags: discoveryTags[series.logicalId] || ["practices"],
       })))
     : [];
-  const seriesVideoIds = new Set(seriesItems.map(item => item.youtubeId));
-  const videoItems = [...seriesItems, ...feedItems.filter(item =>
-    item.kind !== "video" || !item.youtubeId || !seriesVideoIds.has(item.youtubeId))];
+  const seenDiscoveryIds = new Set<string>();
+  const videoItems = [...seriesItems, ...approvedAcademyDiscoveryVideos(locale),
+    ...feedItems.filter(item => item.kind === "video")].filter(item => {
+      const key = item.youtubeId || item.id;
+      if (seenDiscoveryIds.has(key)) return false;
+      seenDiscoveryIds.add(key);
+      return true;
+    });
 
   return (
     <main className="library-shell" lang={locale}>
@@ -305,9 +367,10 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
         <Link aria-current={view === "books" ? "page" : undefined} href={"/" + locale + "/library?view=books"}>{text.booksTab}</Link>
         <Link aria-current={view === "dao" ? "page" : undefined} href={"/" + locale + "/library?view=dao"}>{text.daoTab}</Link>
       </nav>
-      {view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> : (
-        <LibraryFeed locale={locale} items={view === "books" ? guideFeed : view === "videos" ? videoItems : feedItems}
-          videosOnly={view === "videos"} guidesOnly={view === "books"} />
+      {view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> :
+        view === "videos" ? <VideoDiscovery locale={locale} videos={videoItems} /> : (
+        <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
+          guidesOnly={view === "books"} />
       )}
       <p className="library-note">{text.note}</p>
       <PublicConsultationCta locale={locale} />

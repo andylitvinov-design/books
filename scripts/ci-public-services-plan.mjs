@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -243,6 +244,56 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   'tests/meditation-course-enquiry.test.mjs',
   'tests/meditation-regeneration.test.mjs',
 ]);
+// Exact operator guest reply (#2856): reviewed private route and SQL audit
+// are backed by isolated PostgreSQL17, other-account negative auth, IA/CRM,
+// real EN/RU/ES public enquiry browser and Core build. Any unknown file or
+// payment, common auth, provider transport change runs the full 13 browsers.
+const REVIEWED_GUEST_REPLY_PATHS=new Set([
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_REPLY_ADDITIONS=new Set([
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_CI_POLICY=new Set([
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+]);
+function exactReviewedGuestReply(files) {
+  const changed=files.filter(file=>!REVIEWED_GUEST_CI_POLICY.has(file));
+  return changed.length===REVIEWED_GUEST_REPLY_PATHS.size &&
+    changed.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)) &&
+    files.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)||
+      REVIEWED_GUEST_CI_POLICY.has(file));
+}
+
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 // The Ideas/Coaching source owner checks these exact files. Public Services
 // must still run its real Ideas browser when the shared mobile QA harness
@@ -281,26 +332,84 @@ const HARNESS_CASES = new Map([
   ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
+// Complex PRs still run real Chromium/WebKit for the affected sensitive
+// funnel. The immutable BASE owner selects only relevant cases; missing,
+// added, removed, unknown or mixed critical paths continue to run all 13.
+const VERIFIED_CRITICAL_PUBLIC_CASES = [
+  [/^app\/api\/payments\/talismans\/checkout\/route\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^lib\/commerce\/talisman-checkout\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^components\/commerce\/(?:service-cart|personal-cart|consultation-cart-entry|cart-nav-link)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/contact-channel-chooser(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/(?:compact-lead-capture|phone-country-input|consultation-choice-capture|public-consultation-cta|free-diagnosis-offers|business-website-enquiry|free-resource-enquiry)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^app\/api\/service-enquiries\/route\.(?:js|ts)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/academy-course-capture(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/alchemy-soul-lead-form(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+];
+export function verifiedCriticalPublicCases(file, baseTrigger) {
+  if (typeof file !== 'string' || !baseTrigger || file.includes('..') ||
+      file.includes('\0') || file.includes('\n') || !matchesTrigger(baseTrigger,[file])) return null;
+  const owner = VERIFIED_CRITICAL_PUBLIC_CASES.find(([pattern]) => pattern.test(file));
+  return owner ? owner[1] : null;
+}
+
+// Cross-domain browser matrix is NOT a default requirement for changes that
+// the immutable BASE Mandala workflow independently owns. Any mixed checkout,
+// auth, payment, service-enquiry or unknown change still routes to full QA.
+const MANDALA_INDEPENDENT_DOMAIN = [
+  /^components\/mandala-[^/]+\.(?:tsx|module\.css)$/,
+  /^lib\/mandala\/[a-z0-9./-]+\.(?:mjs|ts|tsx)$/i,
+  /^tests\/(?:mandala|video|voice|affirmation|personal-guided)[a-z0-9.-]+\.test\.mjs$/i,
+  /^scripts\/verify-(?:holistic-mandala|affirmation-voice|hypno-wave)-browser\.mjs$/,
+  /^scripts\/benchmarking\/(?:first-video|video)[a-z0-9.-]+\.mjs$/i,
+  /^data\/video-catalog\/[a-z0-9.-]+\.json$/i,
+  /^app\/\[locale\]\/holistic-support\/mandala\/[a-z0-9./-]+\.(?:ts|tsx)$/i,
+];
+const PUBLIC_SERVICE_SENSITIVE_NAME = /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|cart|checkout|client|commerce|consent|contact|consultation|credential|crm|database|enquiry|enquiries|health|medical|message|messaging|migration|order|patient|payment|private|privacy|profile|receipt|rls|secret|security|service|services|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+export function isTrustedMandalaOwnerPath(path, trigger) {
+  return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
+    !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
+}
+const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
+// BASE Guard is the independent CI/security policy owner. It, not browser
+// checkout/reiki tests, validates changed policy/workflow files in every PR.
+const CORE_CI_OWNER_DOMAIN = /^(?:lib\/ci\/[a-z0-9./-]+\.mjs|scripts\/(?:ci-[a-z0-9.-]+|pr-sweep-guard)\.mjs|\.github\/workflows\/[a-z0-9.-]+\.ya?ml|tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane|pr-sweep-guard)\.test\.mjs)$/i;
+export function isTrustedCoreCiOwnerPath(path, trigger) {
+  return typeof path === 'string' && CORE_CI_OWNER_DOMAIN.test(path) &&
+    !!trigger && matchesTrigger(trigger,[path]);
+}
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
 
-export function planPublicServicesChangedPaths(files) {
+export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map() } = {}) {
   if (!Array.isArray(files) || files.length === 0 ||
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
   }
+  if(exactReviewedGuestReply(files)) {
+    // Keep real EN/RU/ES service consent Chromium and production build;
+    // the separate mandatory IA owner/browser runs WebKit and the dedicated
+    // Messages workflow runs PostgreSQL17 tenant isolation. Unknowns run ALL.
+    return {mode:'focused',reason:'EXACT_PRIVATE_GUEST_REPLY',
+      build:true,browser:true,metrics:false,
+      cases:'verify-public-services-production.mjs'};
+  }
   const selected = new Set();
-  let performance = false;
+  let performance = false, ownPublicTests = false, protectedPublic = false;
   for (const file of files) {
-    if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
+    if (publicOwned.has(file)) {
+      for (const name of publicOwned.get(file)) selected.add(name);
+      protectedPublic = true;
+      continue;
+    }
+    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
     }
-    if (sourceTests.has(file)) continue;
+    if (sourceTests.has(file)) { ownPublicTests = true; continue; }
     if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
@@ -332,11 +441,11 @@ export function planPublicServicesChangedPaths(files) {
       build: true, browser: false, metrics: true, cases: 'none' };
   }
   if (selected.size) {
-    return { mode: 'focused', reason: 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
+    return { mode: 'focused', reason: protectedPublic ? 'PROTECTED_PUBLIC_OWNER_CASES' : 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
       build: true, browser: true, metrics: false,
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
-  return { mode: 'contracts', reason: 'EXISTING_NODE_SOURCE_TESTS_ONLY',
+  return { mode: 'contracts', reason: ownPublicTests ? 'EXISTING_NODE_SOURCE_TESTS_ONLY' : 'INDEPENDENT_OWNER_OR_CORE',
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
@@ -662,17 +771,40 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       return full('UNREVIEWED_PR_3006_DELTA');
     }
     const changed = [];
+    const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
+    let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/holistic-support-mandala.yml'],options));
+      mandalaTrigger = parsePrTrigger(baseline,'.github/workflows/holistic-support-mandala.yml');
+    } catch { /* Unavailable BASE owner never authorizes a fast lane. */ }
+    try {
+      const guardBaseline=String(git('git',
+        ['show',diffBase+':.github/workflows/hh-pr-sweep-guard.yml'],options));
+      guardTrigger=parsePrTrigger(guardBaseline,'.github/workflows/hh-pr-sweep-guard.yml');
+    } catch { /* Unknown BASE guard is not release proof. */ }
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/hh-public-services-production.yml'],options));
+      publicTrigger = parsePrTrigger(baseline,'.github/workflows/hh-public-services-production.yml');
+    } catch { /* Unknown BASE owner never waives browser QA. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
+      if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
+      if (status === 'M') {
+        const cases = verifiedCriticalPublicCases(file, publicTrigger);
+        if (cases) publicOwned.set(file,cases);
+      }
       if (status !== 'M' && !(status === 'A' &&
-        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+        (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
+         IDEAS_SCOPED_ADDITIONS.has(file) || MANDALA_REVIEWED_ADDITIONS.has(file) || REVIEWED_GUEST_REPLY_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
-    return planPublicServicesChangedPaths(changed);
+    return planPublicServicesChangedPaths(changed,{mandalaOwned,coreOwned,publicOwned});
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
@@ -689,7 +821,7 @@ const SAFE_FOCUSED_PR_CASES = new Set([
   'verify-holistic-support-recommendations-mobile.mjs',
 ]);
 export function requiresPublicServicesHeavyPr(plan) {
-  if (!plan || plan.mode === 'full') return true;
+  if (!plan || plan.mode === 'full' || plan.reason === 'PROTECTED_PUBLIC_OWNER_CASES') return true;
   if (plan.mode === 'focused') {
     const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
     return !cases.length || cases.some(name => !SAFE_FOCUSED_PR_CASES.has(name));
@@ -721,7 +853,7 @@ function main() {
   console.log(summary);
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT,
-      ['mode=' + plan.mode, 'build=' + plan.build,
+      ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
