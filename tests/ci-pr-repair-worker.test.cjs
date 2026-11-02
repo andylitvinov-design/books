@@ -99,7 +99,12 @@ test('conflicting source is assigned to owner but never unsafe-merged',async()=>
   assert.equal(f.log.commit,0);
 });
 test('active external lease blocks concurrent worker',async()=>{
-  assert.equal(activeSweepLease([{body:'<!-- HH_PR_SWEEP_LEASE_V1 {"schema":"HH_PR_SWEEP_LEASE_V1","head_sha":"'+sha+'","state":"active","expires_at":"2099-01-01T00:00:00Z"} -->'}],sha,Date.now()),true);
+  // A real ownership receipt starts with the canonical header; incidental
+  // embedded mention must not be used as exclusive source-writer evidence.
+  const lease={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+    schema:'HH_PR_SWEEP_LEASE_V1',owner:'verified-owner',head_sha:sha,
+    state:'active',expires_at:'2099-01-01T00:00:00Z'}),user:{login:'andylitvinov-design'}};
+  assert.equal(activeSweepLease([lease],sha,Date.now()),true);
   const f=fixture({comments:[{body:'HH_PR_SWEEP_LEASE_V1 no json'}]});
   const r=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(r.status,'skipped');
