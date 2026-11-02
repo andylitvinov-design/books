@@ -8,6 +8,7 @@ on:
       - 'components/app/messages-simple-inbox.*'
       - 'components/app/messages-hub.*'
       - 'components/app/messages-bottom-navigation.jsx'
+      - 'app/**/workspace.css'
       - 'lib/mobile-visual-bottom.mjs'
       - 'tests/mobile-visual-dock.test.mjs'
       - 'components/app/practice-request-conversation.*'
