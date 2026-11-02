@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
+import { MandalaResourcePractice } from "./mandala-resource-practice";
 import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
@@ -117,6 +118,31 @@ const themeLabels = {
   es:{money:"Dinero",energy:"Energía",relationships:"Relaciones",goals:"Metas",life:"Sentido",health:"Bienestar"}
 } as const;
 
+const courseFocusCopy = {
+  ru: {
+    title:"Шаг 1 · Фокус практики",mode:"Выберите направление",state:"Состояние",vector:"Вектор развития",
+    now:"Моё состояние сейчас",desired:"К какому состоянию я хочу прийти",
+    nowHint:"Например: часто чувствую напряжение",desiredHint:"Например: больше устойчивости и спокойствия",
+    incomplete:"Для вектора заполните оба поля.",choose:"Можно выбрать готовую тему или описать свою",
+    presets:{calm:"Спокойствие и сон",energy:"Больше энергии",support:"Опора в себе",connection:"Близость и тепло"},
+  },
+  en: {
+    title:"Step 1 · Practice focus",mode:"Choose direction",state:"State",vector:"Growth direction",
+    now:"How I feel now",desired:"How I would like to feel",
+    nowHint:"For example: frequently tense",desiredHint:"For example: steadier and calmer",
+    incomplete:"Fill in both fields to generate your growth-direction meditation.",choose:"Choose a theme or describe it yourself",
+    presets:{calm:"Calm and sleep",energy:"More energy",support:"Inner support",connection:"Connection and warmth"},
+  },
+  es: {
+    title:"Paso 1 · Enfoque",mode:"Elige una dirección",state:"Estado",vector:"Dirección de desarrollo",
+    now:"Mi estado actual",desired:"El estado que deseo",
+    nowHint:"Por ejemplo: mucha tensión",desiredHint:"Por ejemplo: más calma y estabilidad",
+    incomplete:"Completa ambos campos para crear la meditación.",choose:"Elige un tema o describe el tuyo",
+    presets:{calm:"Calma y sueño",energy:"Más energía",support:"Apoyo interior",connection:"Cercanía y calidez"},
+  },
+} as const;
+const focusPresets = ["calm","energy","support","connection"] as const;
+
 const courseCopy={
   ru:{
     title:"Курсы медитаций",eyebrow:"БЕСПЛАТНО · ПЕРВЫЙ ДЕНЬ",
@@ -156,9 +182,15 @@ export function MandalaPersonalMeditation({
   const t=copy[locale];
   const course=courseCopy[locale];
   const [courseRequest,setCourseRequest]=useState(wish);
+  const [focusMode,setFocusMode]=useState<"state"|"vector">("state");
+  const [currentState,setCurrentState]=useState("");
+  const [desiredState,setDesiredState]=useState("");
   const [courseDays,setCourseDays]=useState<CourseDay[]>([]);
   const [courseFocus,setCourseFocus]=useState<VideoTheme|null>(null);
-  const effectiveWish=coursePreview?courseRequest:wish;
+  const effectiveWish=coursePreview?(focusMode==="state"?courseRequest:
+    (locale==="ru"?"Сейчас: ":locale==="es"?"Ahora: ":"Now: ")+currentState.trim()+". "+
+    (locale==="ru"?"Хочу: ":locale==="es"?"Deseo: ":"I want: ")+desiredState.trim()):wish;
+  const vectorIncomplete=coursePreview&&focusMode==="vector"&&(!currentState.trim()||!desiredState.trim());
   const [selected,setSelected]=useState<Accent[]>([]);
   const [image,setImage]=useState<ImageKey>("video");
   const [tone,setTone]=useState<ToneKey>("gentle");
@@ -315,13 +347,46 @@ export function MandalaPersonalMeditation({
         <div><small>{coursePreview?course.eyebrow:t.eyebrow}</small><h3 id="personal-meditation-heading">{coursePreview?course.title:t.title}</h3></div>
       </header>
       <p className={css.intro}>{coursePreview?course.intro:t.intro}</p>
-      {coursePreview?<label className={css.courseRequest} htmlFor="meditation-course-request">
-        {course.request}
-        <textarea id="meditation-course-request" data-meditation-course-request
-          rows={2} maxLength={160} disabled={disabled}
-          placeholder={course.placeholder} value={courseRequest}
-          onChange={event=>setCourseRequest(event.currentTarget.value)}/>
-      </label>:null}
+      {coursePreview?<div className={css.journeyFocus} data-meditation-focus-step>
+        <h4>{courseFocusCopy[locale].title}</h4>
+        <small>{courseFocusCopy[locale].mode}</small>
+        <div className={css.focusModeTabs} role="group" aria-label={courseFocusCopy[locale].mode}>
+          {(["state","vector"] as const).map(mode=><button type="button" key={mode}
+            data-meditation-focus-mode={mode} aria-pressed={focusMode===mode}
+            disabled={disabled} onClick={()=>setFocusMode(mode)}>
+            {courseFocusCopy[locale][mode]}
+          </button>)}
+        </div>
+        {focusMode==="state"?<>
+          <p>{courseFocusCopy[locale].choose}</p>
+          <div className={css.focusPresets} role="group" aria-label={courseFocusCopy[locale].choose}>
+            {focusPresets.map(id=><button key={id} type="button" disabled={disabled}
+              aria-pressed={courseRequest===courseFocusCopy[locale].presets[id]}
+              onClick={()=>setCourseRequest(courseFocusCopy[locale].presets[id])}>
+              {courseFocusCopy[locale].presets[id]}
+            </button>)}
+          </div>
+          <label className={css.courseRequest} htmlFor="meditation-course-request">
+            {course.request}
+            <textarea id="meditation-course-request" data-meditation-course-request
+              rows={2} maxLength={160} disabled={disabled}
+              placeholder={course.placeholder} value={courseRequest}
+              onChange={event=>setCourseRequest(event.currentTarget.value)}/>
+          </label>
+        </>:<div className={css.vectorFields}>
+          <label>{courseFocusCopy[locale].now}
+            <textarea rows={2} maxLength={140} data-meditation-vector-now
+              value={currentState} placeholder={courseFocusCopy[locale].nowHint}
+              disabled={disabled} onChange={event=>setCurrentState(event.currentTarget.value)}/>
+          </label>
+          <label>{courseFocusCopy[locale].desired}
+            <textarea rows={2} maxLength={140} data-meditation-vector-desired
+              value={desiredState} placeholder={courseFocusCopy[locale].desiredHint}
+              disabled={disabled} onChange={event=>setDesiredState(event.currentTarget.value)}/>
+          </label>
+          {vectorIncomplete?<small role="note">{courseFocusCopy[locale].incomplete}</small>:null}
+        </div>}
+      </div>:null}
       <div className={css.context} data-meditation-context aria-label={t.filters}>
         <small>{t.filters}</small>
         <div className={css.chips}>
@@ -415,7 +480,7 @@ export function MandalaPersonalMeditation({
           </label>
         </div>
       </details>
-      <button type="button" className={css.generate} data-meditation-generate disabled={disabled}
+      <button type="button" className={css.generate} data-meditation-generate disabled={disabled||Boolean(vectorIncomplete)}
         onClick={generate}>
         {script?<RotateCcw size={19} aria-hidden="true"/>:<Sparkles size={19} aria-hidden="true"/>}
         {script?(coursePreview?course.regenerate:t.regenerate):t.generate}
@@ -481,6 +546,10 @@ export function MandalaPersonalMeditation({
         </div>
         <p className={css.helper}>{t.editHint}</p>
       </div>:null}
+      {coursePreview&&script&&!stale&&!isMeditationSafetyResponse(script,locale)?
+        <MandalaResourcePractice locale={locale} theme={courseFocus||actualTheme}
+          focus={{...focus,goal:effectiveWish||focus.goal,
+            difficulty:focusMode==="vector"?currentState:focus.difficulty}} disabled={disabled}/>:null}
       {coursePreview&&script&&!stale&&courseDays.length===8?
         <section className={css.courseOutline} data-meditation-eight-day-plan aria-labelledby="meditation-course-outline-heading">
           <div className={css.courseOutlineHeader}>
