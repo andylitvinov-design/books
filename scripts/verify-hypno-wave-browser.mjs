@@ -9,8 +9,15 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
  ]){const page=await browser.newPage({viewport:{width,height:844},isMobile:true,hasTouch:true});
   const writes=[];await page.route('**/*',route=>{const r=route.request();let u=new URL(r.url());if(!['GET','HEAD'].includes(r.method()))writes.push(`${r.method()} ${u.pathname}`);return u.origin==='http://127.0.0.1:3100'&&['GET','HEAD'].includes(r.method())?route.continue():route.abort();});
   await page.goto(`http://127.0.0.1:3100/${locale}/holistic-support/mandala`,{waitUntil:'domcontentloaded',timeout:90000});
-  // A real visitor must expand the approved advanced director; mounting
-  // a hidden hydrated form does not make it visible to Playwright.
+  // The approved compact Video workspace hides the legacy advanced
+  // director and scene gallery until the visitor opens "All video style
+  // settings". Enter through the real visible button, not hidden DOM nodes.
+  const advancedToggle=page.locator('[data-video-advanced-toggle]');
+  await advancedToggle.waitFor({state:'visible',timeout:60000});
+  if(await advancedToggle.getAttribute('aria-expanded')!=='true')
+    await advancedToggle.click();
+  await page.locator('[data-mandala-free-video][data-video-advanced-open="true"]').waitFor({state:'visible',timeout:60000});
+  // A real visitor then expands the advanced director details.
   const firstDetails=page.locator('[data-video-first-video-advanced]');
   await firstDetails.waitFor({state:'attached',timeout:60000});
   if(await firstDetails.getAttribute('open')===null)
