@@ -272,10 +272,10 @@ test('source repair is allowed during ordinary CI overload but CI bootstrap is n
  assert.equal(r.dispatchAccepted,1);assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
  assert.equal(r.blocked.CI_QUEUE_BUSY,1);
 });
-test('deduplicates a worker lane within one cycle and refuses a stacked parent',async()=>{
+test('separate Repair PRs do not deduplicate each other and stacked parents remain blocked',async()=>{
  const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(r.dispatchAccepted,1);
+ assert.equal(r.dispatchAccepted,2);
  const child=pr(3,'repair',{base:{ref:'branch-1'}});
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
@@ -1158,7 +1158,11 @@ test('completed transition snapshots cannot reserve a worker slot',()=>{
  assert.equal(stale.coreQueuedRuns,0);
  assert.equal(admission('repair',stale),'ADMIT');
  const live=computeCapacity([{name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
- assert.equal(admission('repair',live),'WORKER_BUSY');
+ assert.equal(admission('repair',live),'ADMIT');
+ const full=computeCapacity([
+  {name:'HH PR source Repair Worker',status:'in_progress'},
+  {name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
+ assert.equal(admission('repair',full),'WORKER_BUSY');
 });
 
 test('source Repair Worker only runs addressed tasks, with no cron or push lease contention',()=>{
@@ -1185,7 +1189,10 @@ test('completed Action wrapper does not occupy a live repair worker lease',()=>{
  assert.equal(admission('repair',capx),'ADMIT');
  const queued=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'}],[]);
  assert.equal(queued.activeWorker['HH PR source Repair Worker'],1);
- assert.equal(admission('repair',queued),'WORKER_BUSY');
+ assert.equal(admission('repair',queued),'ADMIT');
+ const full=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'},
+  {id:4,name:'HH PR source Repair Worker',status:'queued'}],[]);
+ assert.equal(admission('repair',full),'WORKER_BUSY');
 });
 test('complete previous_head + new_head owner release cannot block unrelated future source HEAD',()=>{
  const old='b'.repeat(40),newHead='c'.repeat(40);
