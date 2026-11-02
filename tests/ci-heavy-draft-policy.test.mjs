@@ -694,13 +694,16 @@ test('Core auto first attempts supersede old HEAD but manual reruns cannot evict
   assert.doesNotMatch(core,/^  release-ready:/m);
 });
 
-test('manual Core retries are attempt-isolated and WebKit plus Guard retain SHA leases',()=>{
+test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard cancels stale first attempts',()=>{
   const core=read('hh-pr-core-release.yml');
   assert.ok(core.includes('github.run_attempt == 1'));
   assert.ok(core.includes("format('run-{0}', github.run_id)"));
-  for(const file of ['holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
-    const workflow=read(file);
-    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),file);
-    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),file);
-  }
+  const webkit=read('holistic-support-mandala.yml');
+  assert.ok(webkit.includes('${{ github.event.pull_request.head.sha || github.sha }}'));
+  assert.ok(webkit.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  const guard=read('hh-pr-sweep-guard.yml');
+  assert.ok(!guard.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+    'Guard first-attempt concurrency must not isolate obsolete HEADs');
+  assert.ok(guard.includes("group: hh-pr-sweep-guard-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(guard.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
 });
