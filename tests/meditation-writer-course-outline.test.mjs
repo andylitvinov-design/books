@@ -76,7 +76,7 @@ test("One API call returns one meditation and seven future topics, no extra bill
    "coursePlan","problemFrame","desiredExperience","auth.verified()",
    "externalModelOptIn!==true","PRIVATE_HEADERS","sessionNumber:1"])
    assert.ok(api.includes(item),item);
- assert.ok(ui.includes('useState<"template"|"llm">("llm")'));
+ assert.ok(ui.includes('useState<"template"|"llm">("template")'));
  assert.ok(ui.includes("problemFrame,desiredExperience"));
  assert.ok(ui.includes("data-meditation-course-topics"));
  assert.ok(ui.includes("preview.coursePlan?.nextTopics.map"));

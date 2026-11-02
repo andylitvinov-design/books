@@ -137,3 +137,16 @@
 .generatorActions button:disabled{opacity:.55;cursor:not-allowed}
 .generatorActions button:focus-visible{outline:3px solid #b87519;outline-offset:3px}
 @media(max-width:550px){.generatorActions{grid-template-columns:1fr}}
+
+/* Explicit state/vector focus, matching the approved cream-and-green mobile flow. */
+.focusSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.focusSwitch button,.stateChoices button{min-height:48px;padding:10px 12px;border-radius:13px;
+ border:1px solid #afcfba;background:#fff;color:#18523b;font:inherit;
+ font-weight:700;cursor:pointer}
+.focusSwitch button[aria-pressed="true"],.stateChoices button[aria-pressed="true"]{
+ background:#087e5e;border-color:#087e5e;color:#fff}
+.stateChoices p{margin:10px 0;color:#315a44;font-weight:700}
+.stateChoices>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:15px}
+.focusSwitch button:focus-visible,.stateChoices button:focus-visible{
+ outline:3px solid #b87519;outline-offset:2px}
+@media(max-width:400px){.stateChoices>div{grid-template-columns:1fr}}

@@ -17,3 +17,17 @@
 - Будущие семь медитаций, аудиофайлы, видео, покупка курса и прохождение 8 сессий **не создаются** автоматически. Любая новая сессия требует актуального preflight и согласия. Переход к специалисту остаётся заявкой.
 - Gemini/OpenRouter получают только заранее одобренные обезличенные коды литературного задания. Каталог методов, решение о безопасности, тип практики и план восьми сессий — **наши собственные алгоритмы**. При отключении внешнего AI остаются текстовый шаблон, выбор методов и полный план.
 - Все три варианта UI переключаются локально, без дополнительных сетевых запросов, списаний XP или передачи личных записей. На LIVE ничего не включать до выпуска объединённого PR #2676 по существующему CI/QA и подтверждённому SHA Vercel.
+
+## 1 November: UI step orchestration and strict model routing
+
+Explicit state (four goal choices) versus developmental vector entry mode on
+the light mobile editor. The route accepts only meditation, practice, course.
+Only the first action may use an explicitly consented external text model;
+practice and eight-session-plan actions use trusted first-party methods,
+regardless of forged client flags. The UI has three separate actions and
+shows only the selected result: text+voice, catalogue practice/ritual/exercise,
+or the 8-stage programme; it does not mislabel future themes as videos.
+The text route still uses one shared authenticated Psychologist Mind
+preflight and builds the vetted intermediate objects in one pass.
+The current release is NOT LIVE before stack completion, safety/privacy
+acceptance, exact-head CI and Vercel SHA verification.

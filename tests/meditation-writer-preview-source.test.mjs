@@ -26,3 +26,13 @@ test("preview is hidden without server flag and accurately labelled template-onl
   assert.ok(component.includes("role=\"alert\""));
   assert.ok(component.includes("resourceImageryOptIn:true"));
 });
+
+test("state/vector and three generation actions use first-party practice and programme logic",()=>{
+ const ui=component;
+ for(const term of ['data-meditation-focus-mode','focusMode==="state"',
+  'focusMode==="vector"','activeAction==="practice"','activeAction==="program"',
+  'output,generationMode:requestedMode'])assert.ok(ui.includes(term),term);
+ for(const term of ['"meditation","practice","course"',
+  'WRITER_OUTPUT_AI_FORBIDDEN',
+  'output==="meditation" && generationMode==="llm"'])assert.ok(route.includes(term),term);
+});

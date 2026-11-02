@@ -30,7 +30,7 @@ export const maxDuration=25;
 const FIELDS=["locale","focus","mode","durationMinutes","intentionCode","motifId",
   "symbolId","styleId","channel","avoidElements","noImagery","clientPhrase",
   "desiredExperience","problemFrame","resourceImageryOptIn",
-  "generationMode","externalModelOptIn","providerPreference"];
+  "generationMode","externalModelOptIn","providerPreference","output"];
 const stopped = /\b(?:stop|please stop|i feel worse|getting worse|me siento peor|no quiero continuar)\b|(?:мне стало хуже|становится хуже|хочу остановиться|хочу умереть|самоповреждение)/iu;
 const preflight = (texts,locale)=>{
   for(const text of texts){
@@ -54,11 +54,16 @@ export async function POST(request) {
     const actor=await auth.verified();
     const body=await readBody(request,4000);
     onlyKeys(body,FIELDS);
-    const {resourceImageryOptIn,generationMode="template",
+    const {resourceImageryOptIn,output="meditation",generationMode="template",
       externalModelOptIn=false,providerPreference="auto",...requested}=body;
     if(!["template","llm"].includes(generationMode) ||
        typeof externalModelOptIn!=="boolean")
       throw new AppError("WRITER_INVALID_MODE",400);
+    if(!["meditation","practice","course"].includes(output))
+      throw new AppError("WRITER_INVALID_OUTPUT",400);
+    // Model calls belong only to a consented meditation text request.
+    if(output!=="meditation" && (generationMode!=="template"||externalModelOptIn))
+      throw new AppError("WRITER_OUTPUT_AI_FORBIDDEN",400);
     if(generationMode==="llm" && externalModelOptIn!==true)
       throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
     if(!["auto","gemini","openrouter"].includes(providerPreference))
@@ -108,7 +113,7 @@ export async function POST(request) {
     const template=outcome.template;
     let payload={
       status:"template_ready",generationMode:"template",modelUsed:false,
-      coursePlan,activityFormats,intentDecision:resolved.decision,
+      output,coursePlan,activityFormats,intentDecision:resolved.decision,
       disclaimer:"resource_self_guided_preview_not_clinical_treatment",
       title:template.title,locale:normalized.locale,
       plannedDurationSeconds:template.plannedDurationSeconds,
@@ -134,7 +139,7 @@ export async function POST(request) {
       audioAssetId:null,rendered:false,published:false,
       canPauseOrSkip:true,requiresEditorialReview:true,
     };
-    if(generationMode==="llm"){
+    if(output==="meditation" && generationMode==="llm"){
       const providers=freeWriterProviders(process.env,providerPreference);
       if(providers.length){
         await consumeRate(config,{op:"meditation-writer-free-hour",actorId:actor.id},3,3600);

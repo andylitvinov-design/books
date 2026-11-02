@@ -9,7 +9,7 @@ type Locale = "ru" | "en" | "es";
 type ProviderPreference = "auto" | "gemini" | "openrouter";
 type Focus = "auto" | "stress" | "relationships" | "self_worth" | "meaning";
 type Style = "gentle_simple" | "grounded_practical" | "poetic_contained" | "contemplative";
-type Goal = "auto" | "settle" | "support" | "clarity" | "boundaries" |
+type Goal = "auto" | "settle" | "support" | "clarity" | "energy" | "boundaries" |
   "relationships" | "confidence" | "meaning" | "goals";
 type Motif = "gentle_nature" | "supportive_object" | "comfortable_corner" | "small_light";
 type Segment = { id:string; text:string; optionalSilenceSeconds:number };
@@ -156,7 +156,7 @@ const stylistics:Style[]=["gentle_simple","grounded_practical","poetic_contained
 const motifs:Motif[]=["gentle_nature","supportive_object","comfortable_corner","small_light"];
 const goalsByFocus:Record<Focus,Goal[]>={
   auto:["auto"],
-  stress:["auto","settle","support","clarity"],
+  stress:["auto","settle","support","clarity","energy"],
   relationships:["auto","boundaries","relationships","support"],
   self_worth:["auto","confidence","support","clarity"],
   meaning:["auto","meaning","goals","clarity"],
@@ -167,23 +167,33 @@ const defaultGoal:Record<Focus,Goal>={
 };
 const goalNames:Record<Locale,Record<Goal,string>>={
   ru:{auto:"Подобрать автоматически",settle:"Вернуть устойчивость",support:"Найти опору",
-    clarity:"Увидеть ситуацию яснее",boundaries:"Личные границы",
+    clarity:"Увидеть ситуацию яснее",energy:"Больше энергии",boundaries:"Личные границы",
     relationships:"Бережное общение",confidence:"Отнестись к себе мягче",
     meaning:"Прояснить ценности",goals:"Выбрать один шаг"},
   en:{auto:"Select automatically",settle:"Return to the present",support:"Find support",
-    clarity:"See a situation more clearly",boundaries:"Personal boundaries",
+    clarity:"See a situation more clearly",energy:"More energy",boundaries:"Personal boundaries",
     relationships:"Gentle communication",confidence:"Be kinder to yourself",
     meaning:"Clarify what matters",goals:"Choose a small step"},
   es:{auto:"Elegir automáticamente",settle:"Volver al presente",support:"Encontrar apoyo",
-    clarity:"Ver con más claridad",boundaries:"Límites personales",
+    clarity:"Ver con más claridad",energy:"Más energía",boundaries:"Límites personales",
     relationships:"Comunicación amable",confidence:"Tratarte con más amabilidad",
     meaning:"Clarificar valores",goals:"Elegir un paso pequeño"},
 };
+const flowCopy={
+ ru:{state:"Состояние",vector:"Вектор развития",hint:"Выберите, какое состояние хотите поддержать",
+   states:["Спокойствие и сон","Больше энергии","Опора в себе","Близость и тепло"]},
+ en:{state:"State",vector:"Development direction",hint:"Choose a state to support",
+   states:["Calm and sleep","More energy","Inner support","Closeness and warmth"]},
+ es:{state:"Estado",vector:"Dirección de desarrollo",hint:"Elige el estado deseado",
+   states:["Calma y sueño","Más energía","Apoyo interior","Cercanía y calidez"]},
+} as const;
 export function MeditationWriterPreview({locale}:{locale:string}) {
   const l:Locale=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=lang[l];
+  const flow=flowCopy[l];
   const a=activityLabels[l];
   const [focus,setFocus]=useState<Focus>("auto");
+  const [focusMode,setFocusMode]=useState<"state"|"vector">("state");
   const [goal,setGoal]=useState<Goal>("auto");
   const [style,setStyle]=useState<Style>("gentle_simple");
   const [motif,setMotif]=useState<Motif>("gentle_nature");
@@ -191,7 +201,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [clientPhrase,setClientPhrase]=useState("");
   const [problemFrame,setProblemFrame]=useState("");
   const [desiredExperience,setDesiredExperience]=useState("");
-  const [mode,setMode]=useState<"template"|"llm">("llm");
+  const [mode,setMode]=useState<"template"|"llm">("template");
   const [providerPreference,setProviderPreference]=useState<ProviderPreference>("auto");
   const [externalOptIn,setExternalOptIn]=useState(false);
   const [consented,setConsented]=useState(false);
@@ -205,6 +215,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   async function submit(action:"meditation"|"practice"|"program"="meditation"){
     if(preview&&action!=="meditation"){setActiveAction(action);return;}
     const requestedMode=action==="meditation"?mode:"template";
+    const output=action==="program"?"course":action;
     if(!consented||loading||(requestedMode==="llm"&&!externalOptIn))return;
     setActiveAction(action);
     setLoading(true);setError("");setPreview(null);
@@ -216,7 +227,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:l,focus,intentionCode:goal,styleId:style,motifId:motif,
           durationMinutes:duration,clientPhrase,problemFrame,desiredExperience,resourceImageryOptIn:true,
-          generationMode:requestedMode,providerPreference,
+          output,generationMode:requestedMode,providerPreference,
           externalModelOptIn:requestedMode==="llm"&&externalOptIn}),
       });
       const data=await response.json() as Preview & {error?:string};
@@ -231,11 +242,30 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
     }catch{setError(t.unavailable);}
     finally{setLoading(false);}
   }
+  const states:{focus:Focus;goal:Goal}[]=[
+    {focus:"stress",goal:"settle"},{focus:"stress",goal:"energy"},
+    {focus:"self_worth",goal:"support"},{focus:"relationships",goal:"relationships"},
+  ];
   return <section id="meditation-courses" className={styles.shell} aria-label={t.title}>
     <div className={styles.intro}>
       <h2>{t.title}</h2><p>{t.subtitle}</p>
     </div>
-    <div className={styles.wishes} data-meditation-client-wishes>
+    <div className={styles.focusSwitch} data-meditation-focus-mode>
+      <button type="button" aria-pressed={focusMode==="state"}
+        onClick={()=>{setFocusMode("state");setProblemFrame("");setDesiredExperience("");
+          setPreview(null);}}>{flow.state}</button>
+      <button type="button" aria-pressed={focusMode==="vector"}
+        onClick={()=>{setFocusMode("vector");setFocus("auto");setGoal("auto");
+          setPreview(null);}}>{flow.vector}</button>
+    </div>
+    {focusMode==="state"&&<div className={styles.stateChoices}>
+      <p>{flow.hint}</p><div>
+      {states.map((choice,i)=><button key={i} type="button"
+        aria-pressed={focus===choice.focus && goal===choice.goal}
+        onClick={()=>{setFocus(choice.focus);setGoal(choice.goal);setPreview(null);}}>
+        {flow.states[i]}</button>)}</div>
+    </div>}
+    {focusMode==="vector"&&<div className={styles.wishes} data-meditation-client-wishes>
       <label>{t.wishes}
         <textarea rows={3} maxLength={350} value={problemFrame}
           placeholder={t.wishesPlaceholder}
@@ -247,7 +277,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
           onChange={e=>{setDesiredExperience(e.target.value);setPreview(null);}}/>
       </label>
       <p>{t.wishesPrivacy}</p>
-    </div>
+    </div>}
     <div className={styles.controls}>
       <label>{t.focus}<select value={focus} onChange={e=>{
         const next=e.target.value as Focus;
@@ -328,10 +358,10 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         {" · "}{goalNames[l][preview.intentDecision.goalCode]}.
         {preview.intentDecision.origin==="general_default"?" "+t.strategyDefault:""}
       </p>}
-      <h3>{preview.title}</h3>
+      <h3>{activeAction==="meditation"?preview.title:activeAction==="practice"?a.heading:t.courseTitle}</h3>
       <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft+" · "+(preview.provider==="openrouter_free"?"OpenRouter Free":"Gemini Free"):t.template}</p>
       {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}
-      {preview.activityFormats?.status==="ready"&&
+      {activeAction==="practice"&&preview.activityFormats?.status==="ready"&&
       <section id="meditation-practice" className={styles.practice} data-meditation-activity-formats
         aria-label={a.heading}>
         <h4>{a.heading}</h4>
@@ -348,7 +378,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         <p><strong>{t.nextAction}:</strong> {preview.activityFormats.formats[activityKind].transferAction}</p>
         <p className={styles.caption}>{a.notes}</p>
       </section>}
-      {preview.practice&&!preview.activityFormats&&<section className={styles.practice} aria-label={t.practice}>
+      {activeAction==="practice"&&preview.practice&&!preview.activityFormats&&<section className={styles.practice} aria-label={t.practice}>
         <h4>{t.practice}: {preview.practice.title}</h4>
         <ol>{preview.practice.steps.slice(0,2).map((step,i)=>
           <li key={i}>{step}</li>)}</ol>
@@ -356,11 +386,11 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         <p className={styles.caption}>{preview.practice.reflectionQuestion}</p>
         <p className={styles.caption}>{t.practicalNote}</p>
       </section>}
-      {preview.segments.map(s=><div key={s.id} className={styles.segment}>
+      {activeAction==="meditation"&&preview.segments.map(s=><div key={s.id} className={styles.segment}>
         <p>{s.text}</p>
         {s.optionalSilenceSeconds>0&&<small>{t.pause}: {s.optionalSilenceSeconds} s</small>}
       </div>)}
-      {preview.practice&&<details className={styles.checkin}>
+      {activeAction==="practice"&&preview.practice&&<details className={styles.checkin}>
         <summary>{t.checkin}</summary>
         <div className={styles.checkinControls}>
           <label>{preview.practice.beforeCheckinPrompt}
@@ -382,11 +412,11 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
           {before} → {after}. {t.checkinScore}
         </p>}
       </details>}
-      <p className={styles.caption}>{t.durationNote}</p>
-      {preview.estimatedDurationSeconds!==undefined&&
+      {activeAction==="meditation"&&<p className={styles.caption}>{t.durationNote}</p>}
+      {activeAction==="meditation"&&preview.estimatedDurationSeconds!==undefined&&
         <p className={styles.caption}>{t.estimated}: {Math.max(1,Math.round(preview.estimatedDurationSeconds/60))} min</p>}
-      <MeditationWriterDeviceVoice locale={l} segments={preview.segments} />
-      {preview.coursePlan&&<section id="meditation-program" className={styles.course} data-meditation-course-topics>
+      {activeAction==="meditation"&&<MeditationWriterDeviceVoice locale={l} segments={preview.segments} />}
+      {activeAction==="program"&&preview.coursePlan&&<section id="meditation-program" className={styles.course} data-meditation-course-topics>
         <h4>{t.courseTitle}</h4>
         <p className={styles.caption}>{t.courseExplanation}</p>
         <div className={styles.firstDay}>
