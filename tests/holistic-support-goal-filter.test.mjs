@@ -44,8 +44,8 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(mainCss, /\.page \.assessment > \.goalFilterTrigger/);
   assert.match(mainCss, /\.page \.profile > \.recommendButton/);
 });
-test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
-  for (const sector of ["energy", "money", "love", "meaning"]) {
+test("five goal-filter sectors include Stress and merge Goals into Meaning in EN/RU/ES", () => {
+  for (const sector of ["energy", "money", "love", "meaning", "stress"]) {
     assert.match(editor, new RegExp('id: "' + sector + '"'));
     assert.match(editor, new RegExp('' + sector + ': \{'));
   }
@@ -77,7 +77,7 @@ test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
   assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
   assert.match(editor, /data-support-goal-actions/);
   assert.match(css, /prefers-reduced-motion/);
-  for (const sector of ["energy","money","love","meaning"]) {
+  for (const sector of ["energy","money","love","meaning","stress"]) {
     const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
     assert.equal((section?.match(/\baxis\("/g) || []).length,sector === "meaning" ? 6 : 3,
       sector+" preserves all independent measures");
@@ -125,7 +125,7 @@ test("all former Goals questions, tasks and metrics live inside the single Meani
   assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
   assert.match(editor, /meaning: "meaning"/);
   assert.doesNotMatch(editor, /goals: "goals", meaning: "meaning"/);
-  assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'));
+  assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning", "stress"]'));
   assert.ok(!client.includes('energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5'));
 });
 
@@ -182,6 +182,7 @@ test("specific concerns/intentions change matching topic and only sort verified 
   assert.equal(goalTopicForSelection({ sector: "energy", concerns: ["symptoms"] }), "health");
   assert.equal(goalTopicForSelection({ sector: "energy", tasks: ["sleepWell"] }), "health");
   assert.equal(goalTopicForSelection({ sector: "money" }), "business");
+  assert.equal(goalTopicForSelection({ sector: "stress", concerns: ["overload"], tasks: ["grounding"] }), "health");
   assert.equal(goalTopicForSelection({ sector: "love" }), "love");
   assert.equal(goalTopicForSelection({ sector: "meaning", tasks: ["direction"] }), "business");
   assert.equal(goalTopicForSelection({ sector: "meaning", concerns: ["unclearGoals"] }), "business");
@@ -193,6 +194,9 @@ test("specific concerns/intentions change matching topic and only sort verified 
   assert.equal(sleep.videos[0].id, "ddddddddddd");
   const love = rankSupportGoalVideos({ selection: { sector: "love" }, videos: sample, locale: "ru" });
   assert.equal(love.videos[0].id, "ccccccccccc");
+  const stress = rankSupportGoalVideos({ selection: { sector: "stress" }, videos: sample, locale: "ru" });
+  assert.equal(stress.videos[0].id, "ddddddddddd");
+  assert.equal(stress.matchedVideo, false, "related health recordings are not verified as anti-stress-specific");
   const meaning = rankSupportGoalVideos({ selection: { sector: "meaning" }, videos: sample, locale: "ru" });
   assert.equal(meaning.matchedVideo, false, "never claim exact meaning source");
   assert.equal(meaning.videos.length,4);
@@ -234,4 +238,21 @@ test("money editor Save and Next keep native click stable with focused numbers",
   assert.match(actions, /data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{saveCurrent\}/);
   assert.match(actions, /data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{nextSector\}/);
   assert.match(editor, /function nextSector\(\)[\s\S]*?flushSync\(\(\) => \{\s*saveCurrent\(\);\s*\}\)/);
+});
+
+test("stress editor has six concerns, six actions, three measures and a local self-recheck", () => {
+  const sector = editor.split("  stress: {\n    concerns: [")[1]?.split("  },")[0] ?? "";
+  assert.equal((sector.match(/make\("/g) ?? []).length,12);
+  assert.equal((sector.match(/axis\("/g) ?? []).length,3);
+  for(const id of ["overload","worry","innerTension","racingThoughts","restless",
+    "difficultySwitchingOff","lowerPressure","regulateWorry","grounding","restoreSleep",
+    "takeBreaks","selfSupport","stressBalance","stressRecovery","stressFocus"])
+    assert.ok(sector.includes('"'+id+'"'),id);
+  for(const text of ["Anti-stress","Антистресс","Antiestrés"]) assert.ok(editor.includes(text));
+  assert.match(editor,/isAccepted\("stress"\)/);
+  assert.match(editor,/data-support-stress-after/);
+  assert.match(editor,/setStressAfter\(Number\(event.target.value\)\)/);
+  assert.match(editor,/data-support-stress-delta/);
+  assert.match(client,/stress: values.stress/);
+  assert.match(read("components/holistic-support-course-profiles.tsx"),/courses\/antistress/);
 });

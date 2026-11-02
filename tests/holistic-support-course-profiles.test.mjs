@@ -9,20 +9,20 @@ const profiles = read("components/holistic-support-course-profiles.tsx");
 const style = read("components/holistic-support-course-profiles.module.css");
 const filter = read("components/holistic-support-goal-filter.tsx");
 
-test("Tests shortcut opens four profile categories in the existing mobile shell", () => {
+test("Tests shortcut opens five profile categories in the existing mobile shell", () => {
   assert.match(home, /data-support-tool="pump"/);
   assert.match(home, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
   assert.match(home, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.doesNotMatch(home, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
-  for (const sector of ["energy", "money", "love", "meaning"]) {
+  for (const sector of ["energy", "money", "love", "meaning", "stress"]) {
     assert.match(profiles, new RegExp('id: "' + sector + '"'));
     assert.match(profiles, new RegExp('data-support-profile=\\{id\\}'));
   }
-  for (const label of ["Профиль здоровья", "Профиль денег", "Профиль отношений", "Профиль смыслов"]) {
+  for (const label of ["Профиль здоровья", "Профиль денег", "Профиль отношений", "Профиль смыслов", "Антистресс"]) {
     assert.ok(profiles.includes(label), label);
   }
   assert.match(profiles, /aria-pressed=\{active === id\}/);
-  assert.match(style, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(style, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(style, /@media \(max-width:640px\)/);
   assert.match(style, /@media \(max-width:350px\)/);
 });
@@ -56,6 +56,7 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
 
 test("existing academy links remain available and no storage or fabricated reports are introduced", () => {
   assert.match(profiles, /\/academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(profiles, /courses\/antistress/);
   assert.match(profiles, /\/academy\`/);
   assert.match(profiles, /courses\.map\(course => <Link href=\{course\.seriesHref \?\? course\.href\}/);
   assert.match(profiles, /solo|only until|до закрытия страницы/i);

@@ -45,12 +45,12 @@ function selection(input = home) {
   assert.ok(videoJsx.includes("data-support-courses-panel"), "published Academy links render");
   const testsBranch = one(all(result, x => ts.isConditionalExpression(x) && x.condition.getText(file) === 'choice === "tests"'));
   const testsJsx = testsBranch.whenTrue.getText(file);
-  assert.ok(testsJsx.includes("HolisticSupportCourseProfiles"), "four profiles render only inside Tests");
+  assert.ok(testsJsx.includes("HolisticSupportCourseProfiles"), "five profiles render only inside Tests");
   assert.ok(testsJsx.includes("data-support-tests-panel"), "original test links remain");
   assert.ok(!testsJsx.includes("data-support-player"), "Tests must not show course video player");
   return { file, component, scene, branch, testsBranch };
 }
-test("Courses restores original live course videos; Tests alone shows four diagnostic profiles", () => {
+test("Courses restores original live course videos; Tests alone shows five diagnostic profiles", () => {
   const { file, branch, testsBranch } = selection();
   assert.ok(branch.whenTrue.getText(file).includes('choice === "pump" ? t.watchLesson : t.play'));
   assert.ok(branch.whenTrue.getText(file).includes("activeMystery?.videoGroups.map"));
@@ -75,7 +75,7 @@ test("the selected original programme menu retains selection and playback reset"
   assert.deepEqual(calls,[["setProgram","egypt"],["setPlaying",false],["setSelectedId",null],["setMaster","all"],["setTheme","all"]]);
 });
 
-const iconNames = ["ArrowRight", "BookOpen", "CheckCircle2", "Coins", "Compass", "Heart", "HeartPulse", "ListChecks", "Sparkles"];
+const iconNames = ["ArrowRight", "BookOpen", "CheckCircle2", "Coins", "Compass", "Heart", "HeartPulse", "ListChecks", "Sparkles", "Wind"];
 function profileComponent(input = profiles) {
   const file = parse(input);
   const fn = one(file.statements.filter(x => ts.isFunctionDeclaration(x) && x.name?.text === "HolisticSupportCourseProfiles"));
@@ -99,7 +99,7 @@ const courses = Array.from(collections, entry => {
     seriesHref: entry.id.startsWith("greek-") ? "/ru/academy/" + entry.videoIds[0] : undefined,
     poster: "/inert-course-poster.png", videoCount: media.filter(x => entry.videoIds.includes(x.logicalId)).length };
 });
-const sectors = ["energy", "money", "love", "meaning"];
+const sectors = ["energy", "money", "love", "meaning", "stress"];
 function verifyProfiles(locale, input = profiles) {
   const render = profileComponent(input);
   for (const active of sectors) {
@@ -117,14 +117,14 @@ function verifyProfiles(locale, input = profiles) {
     for (const action of ["test", "fill", "recommend"]) one(allNodes.filter(x => x.props["data-support-profile-" + action])).props.onClick();
     assert.deepEqual(calls, [...sectors.map(x => ["select", x]), ["tests"], ["fill", active], ["recommend", active]]);
     const links = allNodes.filter(x => x.tag === "link");
-    assert.deepEqual(links.map(x => x.props.href), ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.seriesHref ?? x.href) : [])]);
+    assert.deepEqual(links.map(x => x.props.href), [...(active === "stress" ? ["/" + locale + "/courses/antistress"] : []), "/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.seriesHref ?? x.href) : [])]);
     if (locale === "ru") {
       assert.equal(one(allNodes.filter(x => x.props["data-support-mystery-courses"])).tag, "details");
       for (const course of courses) assert.ok(text(one(links.filter(x => x.props.href === (course.seriesHref ?? course.href)))).includes(course.shortTitle));
     } else assert.equal(allNodes.filter(x => x.props["data-support-mystery-courses"]).length, 0);
   }
 }
-for (const locale of ["en", "ru", "es"]) test("actual " + locale + " Tests JSX retains four profiles, three actions and source Academy links", () => verifyProfiles(locale));
+for (const locale of ["en", "ru", "es"]) test("actual " + locale + " Tests JSX retains five profiles, three actions and source Academy links", () => verifyProfiles(locale));
 test("course/profile loss, wrong link and inert real CTA fail the selected JSX contract", () => {
   for (const [before, after] of [
     ['courses.map(course =>', 'courses.slice(0, 2).map(course =>'],
@@ -136,7 +136,7 @@ test("course/profile loss, wrong link and inert real CTA fail the selected JSX c
     assert.throws(() => verifyProfiles("ru", profiles.replace(before, after)), { code: "ERR_ASSERTION" });
   }
 });
-test("original RU manifest pointers and media totals remain distinct from four profile sectors", () => {
+test("original RU manifest pointers and media totals remain distinct from five profile sectors", () => {
   assert.deepEqual(courses.map(x => x.id), ["maya", "egypt", "greek-dionysus", "greek-demeter"]);
   assert.deepEqual(courses.map(x => x.videoCount), [6, 7, 7, 5]);
   assert.equal(media.length, 45); assert.equal(curricula.length, 22);

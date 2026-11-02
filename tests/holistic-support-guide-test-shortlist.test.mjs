@@ -3,11 +3,11 @@ import test from "node:test";
 import { buildExplorerEntries } from "../lib/assessments/test-explorer.js";
 import { buildSupportGuideTestShortlists, SUPPORT_GUIDE_TEST_FOCUS } from "../lib/assessments/support-guide-tests.js";
 
-test("V2 guide never invents or leaks tests: 4 editorial topics, 2 rights-cleared public starters max",()=>{
+test("V2 guide never invents or leaks tests: 5 editorial topics, 2 rights-cleared public starters max",()=>{
   const entries=buildExplorerEntries({locale:"en",audience:"guest"});
   const byKey=new Map(entries.map(x=>[x.key,x]));
   const out=buildSupportGuideTestShortlists({locale:"en",entries});
-  assert.deepEqual(Object.keys(out).sort(),["energy","love","meaning","money"].sort());
+  assert.deepEqual(Object.keys(out).sort(),["energy","love","meaning","money","stress"].sort());
   for(const [topic,items] of Object.entries(out)){
     assert.ok(SUPPORT_GUIDE_TEST_FOCUS[topic],topic);
     assert.ok(items.length<=2,topic+" only two choices");
