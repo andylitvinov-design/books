@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {trusted,certified,exactMergedPR,recordLive,countWindow,run,LABEL,MARKER} = require('../scripts/ci-pr-release-kpi.cjs');
+const {trusted,certified,exactMergedPR,recordLive,run,LABEL,MARKER} = require('../scripts/ci-pr-release-kpi.cjs');
 const sha='a'.repeat(40), old='b'.repeat(40);
 const ctx={eventName:'schedule',ref:'refs/heads/codex/bootstrap-books',repo:{owner:'andylitvinov-design',repo:'books'}};
 const proof={schema:'HH_LIVE_EVIDENCE_V1',repo:'andylitvinov-design/books',
@@ -75,20 +75,12 @@ test('long PR association and comment history fail closed; no missing evidence i
  assert.equal((await recordLive({github:z.github,context:ctx,report:proof})).state,'COMMENT_RECEIPT_HISTORY_INCOMPLETE');
  assert.deepEqual(v.mutations,[]);assert.deepEqual(z.mutations,[]);
 });
-test('merged and confirmed LIVE counted separately, only for merged cohort',async()=>{
- const v=f();const counts=await countWindow({github:v.github,context:ctx,now:Date.parse('2026-11-02T06:00:00Z')});
- assert.equal(counts.state,'OK');assert.equal(counts.merged,9);
- assert.equal(counts.confirmed_live,3);assert.equal(counts.live_confirmation_rate,0.333);
- assert.match(counts.since,/^2026-11-01/);
- v.github.rest.search.issuesAndPullRequests=async()=>({data:{total_count:1000,incomplete_results:true}});
- assert.equal((await countWindow({github:v.github,context:ctx})).state,'PARTIAL_SEARCH_RESULT');
-});
 test('receipt API failures remain visible and cannot be counted as LIVE by this worker',async()=>{
  const v=f();v.github.rest.issues.createComment=async()=>{throw Error('denied');};
  const summary={addHeading(){return this},addCodeBlock(){return this},async write(){}};
  const info=[];const core={info:s=>info.push(s),summary};
  const result=await run({github:v.github,context:ctx,core,liveReport:proof});
- assert.equal(result.receipt.state,'RECEIPT_FAILED');assert.equal(result.cohort.merged,9);
+ assert.equal(result.receipt.state,'RECEIPT_FAILED');
  assert.deepEqual(v.mutations,[]);
- assert.ok(info.some(x=>x.startsWith('HH_RELEASE_KPI ')));
+ assert.ok(info.some(x=>x.startsWith('HH_LIVE_RECEIPTS ')));
 });
