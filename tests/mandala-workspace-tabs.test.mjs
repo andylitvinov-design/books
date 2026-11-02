@@ -74,7 +74,7 @@ function exercise(input,workspace,overrides={}){
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,visible:cover.open&&(!active||active==='video'||active==='pro')})};
- runInNewContext(js,{...state,activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+ runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,open:cover.open,scrolls,notices,renders,picks};

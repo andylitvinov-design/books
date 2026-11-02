@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -1475,4 +1475,70 @@ test('new LIVE evidence endpoint routes only audited immutable blobs to focused 
   assert.equal(plan.releaseProof,true);
   assert.equal(planPublicServicesChangedPaths([...safe,'app/api/public/unknown/route.js'],
     {coreOwned}).mode,'full');
+});
+
+
+// Preserve the full current consented Business QA plus SSR pre-hydration
+// oracle while reusing two real browser engines across isolated viewports.
+test('Business current UI keeps 15 real cases and pre-hydration safety in two browser engines',()=>{
+  const source=readFileSync(new URL('../scripts/verify-business-quiz-mobile.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes('[data-direction-offers="business"]'));
+  assert.ok(source.includes('javaScriptEnabled:false'));
+  assert.ok(source.includes('serviceWorkers:"block"'));
+  assert.ok(source.includes('data-business-website-enquiry'));
+  assert.ok(source.includes('externalPosts'));
+  assert.equal(source.includes('data-business-consultation-finder'),false);
+  assert.ok(source.includes('waitUntil:"domcontentloaded"'));
+  assert.equal(source.includes('networkidle'),false);
+  assert.equal((source.match(/\.launch\(/g)||[]).length,2,'two process launches, never 16');
+  assert.ok(source.includes('await browser.newContext('));
+  assert.ok(source.includes('await context.close()'));
+  assert.ok(source.includes('browsers.get(webkit)'));
+  assert.ok(source.includes('browsers.get(chromium)'));
+  assert.ok(source.includes('for (const width of [320,375,390,430])'));
+  assert.ok(source.includes('for (const locale of ["en","ru","es"])'));
+  assert.ok(source.includes('await Promise.all([...browsers.values()]'));
+  assert.ok(workflow('hh-public-services-production.yml')
+    .includes('node scripts/verify-business-quiz-mobile.mjs'));
+});
+
+test('private practitioner meditation is publicly smoke-tested without unrelated checkout matrices',()=>{
+  const owned=PRIVATE_PRACTITIONER_MEDIA_OWNERS;
+  assert.equal(owned.length,30);
+  assert.equal(new Set(owned).size,owned.length);
+  const additions=new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+  const rows=owned.flatMap(file=>[additions.has(file)?'A':'M',file]);
+  rows.push('M','scripts/ci-public-services-plan.mjs','M','tests/ci-public-services-plan.test.mjs');
+  const plan=planPrivatePractitionerMediaRows(rows);
+  assert.deepEqual([plan?.mode,plan?.build,plan?.browser,plan?.cases,requiresPublicServicesHeavyPr(plan),publicPlaywrightEngines(plan)],
+    ['focused',true,true,'verify-public-services-production.mjs',true,'chromium']);
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const run=changed=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changed.join(z)+z);
+    throw Error('unexpected git');
+  });
+  assert.deepEqual([run(rows).mode,run(rows).cases],['focused','verify-public-services-production.mjs']);
+  for(const unsafe of [
+    rows.concat('M','app/api/payments/checkout/route.js'),
+    rows.concat('A','app/api/admin/practitioners/meditations/new/route.js'),
+    rows.concat('M','middleware.ts'),
+    rows.concat('M','lib/practitioners/meditation-studio-service.js'),
+    rows.filter((x,i)=>i%2!==1||x!=='.github/workflows/ia-v2.yml'),
+    ['A','app/api/admin/practitioners/meditations/route.js'],
+    ['D','components/practice-showcase.jsx'],
+  ])assert.equal(run(unsafe).mode,'full','unknown, duplicated, unowned or incomplete security media changes cannot bypass full');
+  // Future routine edits of an existing owned media file are still scoped.
+  assert.equal(run(['M','components/practice-showcase.jsx']).cases,'verify-public-services-production.mjs');
+  assert.equal(run(['M','components/consultation-choice-capture.tsx']).mode,'full');
+});
+
+test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
+  const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
+  const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
+  const entry=src.indexOf('\nfunction main() {');
+  const execute=src.lastIndexOf('main();');
+  assert.ok(declaration>=0 && entry>declaration && execute>entry,
+    'private media ownership constants must be initialized before direct CLI invocation');
 });

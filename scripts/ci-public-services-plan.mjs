@@ -821,6 +821,8 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build:false,browser:false,metrics:false,cases:'none'};
       return full('UNREVIEWED_PR_3006_DELTA');
     }
+    const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
+    if(practitionerMediaPlan)return practitionerMediaPlan;
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
     let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;
@@ -902,6 +904,91 @@ export function publicPlaywrightEngines(plan) {
   const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
   return cases.length > 0 && cases.every(name => CHROMIUM_ONLY_CASES.has(name))
     ? 'chromium' : 'chromium webkit';
+}
+
+
+// Reusable domain ownership: private practitioner-created meditation media is
+// independently checked by protected Core, IA v2 (auth/RLS), practitioner
+// previews, private-audio E2E and YouTube owner-confirmed handoff. Public
+// Services still runs its real public-services smoke, not 12 unrelated
+// checkout/Alchemy/commerce/browser journeys. This is NOT an auth waiver.
+// Only already-reviewed module paths and explicitly reviewed additions are
+// eligible. Any mixed/unknown/payment/auth/migration path falls back to FULL.
+export const PRIVATE_PRACTITIONER_MEDIA_OWNERS = Object.freeze([
+  ".github/workflows/ia-v2.yml",
+  "app/admin/practitioners/meditations/page.jsx",
+  "app/admin/youtube-upload/page.js",
+  "app/api/admin/practitioners/meditations/[id]/handoff/route.js",
+  "app/api/admin/practitioners/meditations/[id]/media/route.js",
+  "app/api/admin/practitioners/meditations/route.js",
+  "app/api/admin/practitioners/meditations/youtube-start/route.js",
+  "app/api/admin/practitioners/meditations/youtube-verify/route.js",
+  "app/api/app/practice/meditations/[id]/media/route.js",
+  "app/api/app/practice/meditations/route.js",
+  "components/app/practice-workspace.jsx",
+  "components/app/practitioner-meditation-studio.jsx",
+  "components/app/practitioner-meditation-studio.module.css",
+  "components/practice-showcase.jsx",
+  "components/practitioner-meditations-moderation.jsx",
+  "components/practitioner-moderation.jsx",
+  "components/youtube-phone-uploader.jsx",
+  "lib/practitioners/meditation-studio-contract.mjs",
+  "lib/practitioners/meditation-studio-service.js",
+  "scripts/ci-practitioner-meditation-scope.mjs",
+  "supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql",
+  "tests/ci-practitioner-meditation-scope.test.mjs",
+  "tests/course-slide-recorder.test.mjs",
+  "tests/growth-studio-benchmark-quick-compose.test.mjs",
+  "tests/practice-course-materials-navigation.test.mjs",
+  "tests/practice-single-owner-cabinet.test.mjs",
+  "tests/practitioner-course-builder.test.mjs",
+  "tests/practitioner-course-quick-start.test.mjs",
+  "tests/practitioner-meditation-studio.test.mjs",
+  "tests/practitioner-preview-auth.test.mjs"
+]);
+export const PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS = Object.freeze([
+  "app/admin/practitioners/meditations/page.jsx",
+  "app/api/admin/practitioners/meditations/[id]/handoff/route.js",
+  "app/api/admin/practitioners/meditations/[id]/media/route.js",
+  "app/api/admin/practitioners/meditations/route.js",
+  "app/api/admin/practitioners/meditations/youtube-start/route.js",
+  "app/api/admin/practitioners/meditations/youtube-verify/route.js",
+  "app/api/app/practice/meditations/[id]/media/route.js",
+  "app/api/app/practice/meditations/route.js",
+  "components/app/practitioner-meditation-studio.jsx",
+  "components/app/practitioner-meditation-studio.module.css",
+  "components/practitioner-meditations-moderation.jsx",
+  "lib/practitioners/meditation-studio-contract.mjs",
+  "lib/practitioners/meditation-studio-service.js",
+  "scripts/ci-practitioner-meditation-scope.mjs",
+  "supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql",
+  "tests/ci-practitioner-meditation-scope.test.mjs",
+  "tests/practitioner-meditation-studio.test.mjs"
+]);
+const privatePractitionerFiles = new Set(PRIVATE_PRACTITIONER_MEDIA_OWNERS);
+const privatePractitionerAdditions = new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+const privateNewReleaseAnchors = new Set([".github/workflows/ia-v2.yml","app/api/admin/practitioners/meditations/route.js","app/api/app/practice/meditations/route.js","lib/practitioners/meditation-studio-service.js","supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql"]);
+export function planPrivatePractitionerMediaRows(rows) {
+  if (!Array.isArray(rows) || rows.length<2 || rows.length%2!==0) return null;
+  const seen=new Set();let ownedCount=0;let sensitiveAdded=false;
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(typeof path!=='string'||seen.has(path))return null;
+    seen.add(path);
+    if(TRUSTED_CI_CONTRACT_FILES.has(path) && status==='M')continue;
+    if(!privatePractitionerFiles.has(path))return null;
+    if(status==='A'){
+      if(!privatePractitionerAdditions.has(path))return null;
+      sensitiveAdded=true;
+    }else if(status!=='M')return null;
+    ownedCount++;
+  }
+  if(!ownedCount)return null;
+  // Introducing a private endpoint or RLS migration is allowed only when the
+  // complete reviewed IA/security owner integration is in the same PR.
+  if(sensitiveAdded && [...privateNewReleaseAnchors].some(path=>!seen.has(path)))return null;
+  return {mode:'focused',reason:'PRACTITIONER_MEDIA_OWNED_SECURITY_AND_PUBLIC_SMOKE',
+    build:true,browser:true,metrics:false,cases:'verify-public-services-production.mjs'};
 }
 
 function main() {
