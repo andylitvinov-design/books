@@ -188,18 +188,18 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const profileRequestRef = useRef(0);
   const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
   const activeTheme:VideoTheme=focusMode==="vector"?vectorTheme:(goals[0]||theme);
-  const actualGoals=goals.length?goals:[activeTheme];
+  const actualGoals=useMemo(()=>goals.length?goals:[activeTheme],[goals,activeTheme]);
   const detailLabels=useMemo(()=>detailGoals.flatMap(id=>
     affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label)),[detailGoals,locale]);
   const practiceResult=useMemo(()=>selectResourcePractice({
     locale,theme:activeTheme,kind:practiceKind==="daily"?"practice":practiceKind,
     revision:practiceVariant,
     focus:{difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels},
-  }),[locale,activeTheme,practiceKind,practiceVariant,keyDifficulty,keyGoal,goals,detailLabels]);
+  }),[locale,activeTheme,practiceKind,practiceVariant,keyDifficulty,keyGoal,actualGoals,detailLabels]);
   const safetyProbe=useMemo(()=>buildPersonalMeditationScript({
     locale,theme:activeTheme,wish:keyGoal,technique:"grounding",length:3,
     focus:{difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels},
-  }),[locale,activeTheme,keyDifficulty,keyGoal,goals,detailLabels]);
+  }),[locale,activeTheme,keyDifficulty,keyGoal,actualGoals,detailLabels]);
   const safetyBlocked=practiceResult.status==="blocked"||isMeditationSafetyResponse(safetyProbe,locale);
   const safetyMessage=practiceResult.status==="blocked"?practiceResult.message:safetyBlocked?safetyProbe:"";
   const needsVector=focusMode==="vector"&&(!keyDifficulty.trim()||!keyGoal.trim());
@@ -214,11 +214,11 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   // meditation composer. Never forward private test scores or raw answers.
   useEffect(()=>{
     onContextChange?.({difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels});
-  },[onContextChange,keyDifficulty,keyGoal,goals,activeTheme,detailLabels,locale]);
+  },[onContextChange,keyDifficulty,keyGoal,actualGoals,detailLabels,locale]);
   const plan = useMemo(()=>buildPersonalImageryCourse({
     locale,theme:activeTheme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal,
     detailGoals:detailLabels
-  }),[locale,activeTheme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailLabels]);
+  }),[locale,activeTheme,actualGoals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailLabels]);
   const sessions = plan.sessions as Session[];
   const firstScript = sessions[0]?.script || "";
   const resetGeneratedMeditation=()=>{
@@ -464,7 +464,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
             onClick={()=>setPracticeVariant(current=>current+1)}>
             <RefreshCw size={17} aria-hidden="true"/>{f.refreshPractice}
           </button>
-        </>:<p role="alert">{practiceResult.message}</p>}
+        </>:null}
       </div>
     </section>:null}
     <section className={css.flowBlock} data-guided-programme-step>
