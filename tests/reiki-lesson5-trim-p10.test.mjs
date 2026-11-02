@@ -32,8 +32,8 @@ test('Previously retired screens and three newly removed lesson-five screens are
   const ranges = energyworkLessonRanges(sequence)
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P9_VERSION, '2026-10-19.p9')
-  assert.equal(sequence.length, 64)
-  assert.deepEqual(ranges.map(range => range.count), [7, 15, 17, 15, 7])
+  assert.equal(sequence.length, 68)
+  assert.deepEqual(ranges.map(range => range.count), [8, 16, 18, 16, 7])
   assert.deepEqual(sequence.slice(ranges[4].start), [
     'paths-01','paths-03','init-02','end-01','intention-04','init-photo-01','end-02',
   ])

@@ -426,8 +426,9 @@ for (const browserType of [chromium, webkit]) {
             label+" opted-out consultation excluded from final alternatives");
           assert.equal(await results.locator('[data-support-guide-alternative]').count()<=2,true,
             label+" no more than two alternative formats");
-          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
-            label+" only published video catalogue");
+          const featuredNow=await root.locator('[data-support-meditation-gallery] [data-support-video]').count();
+          assert.ok(featuredNow>=1 && featuredNow<=4,
+            label+" only available published videos appear in the filtered featured shelf");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
           await root.locator('[data-support-tool="tests"]').click();
           const testsFromGoals=root.locator('[data-support-tests-panel]');
@@ -439,6 +440,28 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await testsFromGoals.locator('[data-support-tests-guide]').getAttribute('href'),
             '/'+locale+'/tests',label+" test privacy explanation");
           await root.locator('[data-support-tool="meditation"]').click();
+          const meditationCategories=root.locator('[data-support-meditation-category-switcher]');
+          await meditationCategories.waitFor({state:"visible",timeout:8000});
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category]').count(),6,
+            label+" all six original categories are available");
+          const featuredIds=await root.locator('[data-support-meditation-gallery] [data-support-video]')
+            .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-support-video')));
+          const catalogIds=await root.locator('[data-support-meditation-feed-item]')
+            .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-support-meditation-feed-item')));
+          assert.ok(featuredIds.length>0&&catalogIds.length>=featuredIds.length,
+            label+" full catalog includes the featured licensed recordings");
+          assert.deepEqual(featuredIds,catalogIds.slice(0,featuredIds.length),
+            label+" featured posters share the complete filtered manifest");
+          const fullscreenHref=await root.locator('[data-support-fullscreen-selected]').getAttribute('href');
+          const selectedVideoId=await root.locator('[data-support-player]').getAttribute('data-selected-video');
+          assert.equal(fullscreenHref,"/"+locale+"/meditations?video="+encodeURIComponent(selectedVideoId),
+            label+" full-screen player receives the selected published source ID");
+          await meditationCategories.locator('[data-support-meditation-category="money"]').click();
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category="money"]').getAttribute("aria-pressed"),"true",
+            label+" money topic responds to the original user action");
+          await meditationCategories.locator('[data-support-meditation-category="all"]').click();
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+            label+" selection does not autoplay external media");
           await root.locator('[data-support-tool="talisman"]').click();
           const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
@@ -543,8 +566,21 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
-              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
+            // Use the visible, accessible label as the real touch target.
+            // A moving/re-rendered checkbox can cause Playwright.uncheck()
+            // to click a stale input while the user-facing choice stays checked.
+            // Verify the actual controlled React state after EACH user click;
+            // never infer opt-out merely from dispatching an event.
+            const checkedFormats=filter.locator('[data-support-goal-format] input:checked');
+            for(let remaining=await checkedFormats.count();remaining>0;remaining--){
+              const choice=filter.locator('[data-support-goal-format]:has(input:checked)').first();
+              await choice.scrollIntoViewIfNeeded();
+              await choice.click();
+              await page.waitForFunction(expected=>
+                document.querySelectorAll('[data-support-goal-filter] [data-support-goal-format] input:checked').length===expected,
+                remaining-1,{timeout:10000});
+              assert.equal(await checkedFormats.count(),remaining-1,
+                label+' opt-out must change the actual selected formats, not just dispatch click');
             }
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});

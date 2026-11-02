@@ -668,7 +668,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           <p>{selectedMaster?.description || selectedMaster?.bio || (reikiFormat === "session" ? t.description : reikiLearningIntro)}</p>
           <p>{r.preferences} {r.notBooked}</p>
           {selectedMaster &&
-            <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
+            <Link href={profileLink} prefetch={false} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
         </div> : reikiTab === "media" ? <div className={styles.reikiTabCopy} data-support-reiki-media>
           <span className={styles.reikiPill}>{r.tabs.media}</span>
           <h2>{selectedMaster?.name || (reikiFormat === "session" ? r.heading : reikiLearningLabel)}</h2>
@@ -683,9 +683,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
                 </a>)}
             </div> : <p>{r.mediaNone}</p>}
           {selectedMaster &&
-            <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
+            <Link href={profileLink} prefetch={false} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
           {reikiFormat !== "session" && !selectedMaster && reikiLearningMatches &&
-            <Link href={reikiLearningPath} className={styles.reikiInlineLink}>{r.learn}<ArrowRight size={16}/></Link>}
+            <Link href={reikiLearningPath} prefetch={false} className={styles.reikiInlineLink}>{r.learn}<ArrowRight size={16}/></Link>}
         </div> : <div className={styles.reikiTabCopy} data-support-reiki-main>
           <span className={styles.reikiPill}><HandHeart size={15}/>{t.healing}</span>
           <h2>{reikiFormat === "session" ? r.heroTitle : selectedMaster?.name || reikiLearningLabel}</h2>
@@ -842,7 +842,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
       : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
-        <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
+        <Link href={"/" + locale + "/masters"} prefetch={false}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div> : !selected ? <div className={styles.status} role="status">
         <p>{t.empty}</p>
         {consultations && consultCategory === "imagery" && <p className={styles.consultFallback}>
@@ -856,7 +856,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           if (consultations) { setConsultCategory("all"); setConsultMaster("");
             setConsultFormat(""); setConsultPhotoIndex(0); setConsultDetailsOpen(false); }
         }}>{t.reset}</button>
-        <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
+        <Link href={"/" + locale + (consultations ? "/services" : "/masters")} prefetch={false}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
         <section className={styles.hero} data-support-master-hero={id(selected)}
           data-support-consultation-hero={consultations ? "true" : undefined}
@@ -930,11 +930,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             </Link> : selectedMaster && cheapest ? <button type="button" className={styles.primary}
               data-support-master-request onClick={() => setOrderOpen(true)}>
               <HandHeart size={21} aria-hidden="true"/>{t.request}<ArrowRight size={21} aria-hidden="true"/>
-            </button> : <Link href={profileLink} className={styles.primary}>{t.details}<ArrowRight size={21}/></Link>}
+            </button> : <Link href={profileLink} prefetch={false} className={styles.primary}>{t.details}<ArrowRight size={21}/></Link>}
             {selectedOffer && <button type="button" className={styles.secondary}
               aria-controls="support-consultation-details" aria-expanded={consultDetailsOpen}
               onClick={() => setConsultDetailsOpen(open => !open)}>{c.details}</button>}
-            {selectedMaster && <Link className={styles.secondary} href={profileLink}>{t.details}</Link>}
+            {selectedMaster && <Link className={styles.secondary} href={profileLink} prefetch={false}>{t.details}</Link>}
           </div>
         </section>
         {selectedOffer && consultDetailsOpen && <div id="support-consultation-details"

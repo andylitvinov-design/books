@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mount, findPart, findButton, nodes, deferred, account, courseA, courseB, courseView } from './helpers/course-ui-harness.mjs'
+import { mount, findPart, findButton, nodes, textOf, deferred, account, courseA, courseB, courseView } from './helpers/course-ui-harness.mjs'
 const closed = course => courseView({ ...course, status: 'closed', revision: course.revision + 1 })
 function fixture() {
  const pending=deferred()
@@ -26,7 +26,7 @@ test('close rejects a response identifying another course',async()=>{
  const {h,pending}=fixture();await h.settle();const promise=findPart(h.tree,'CourseEntrySelector').props.onCloseCourse();pending.resolve(closed(courseB));assert.equal(await promise,false);await h.settle();assert.equal(findPart(h.tree,'CourseEntrySelector').props.course.id,courseA.id);h.unmount()
 })
 
-test('legacy closed course restarts its exact identity only after renewed consent',async()=>{
+test('legacy closed course restarts its exact identity only after deliberate start',async()=>{
  const prior={...courseA,status:'closed',revision:8,stage:4}
  const view=course=>courseView(course,{courses:[course],access:{tier:'free',activeCourseCount:0,activeCourseLimit:1,multiCourseEnabled:false}})
  const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},fetcher:(_path,_options,body)=>body ? view({...prior,status:'active',stage:body.action==='start'?1:2,revision:9}) : view(prior)})
@@ -34,11 +34,13 @@ test('legacy closed course restarts its exact identity only after renewed consen
  const dashboard=findPart(h.tree,'MyCoursesDashboard')
  assert.equal(dashboard.props.canAddCourse,true)
  dashboard.props.onNew();await h.settle()
- findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await h.settle()
- assert.equal(h.calls.filter(c=>c.body).length,0);assert.equal(findButton(h.tree,'Agree & start').props.disabled,true)
- nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}});await h.settle()
- await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
+ assert.equal(h.calls.filter(c=>c.body).length,0,'Opening the catalog must not start a course')
+ assert.match(textOf(h.tree), /choices, optional notes and practice progress are saved privately/i,
+  'The learner sees what is saved before choosing to start')
+ const catalog=findPart(h.tree,'CoursePresetCatalog');assert.ok(catalog)
+ catalog.props.onPersonal();await h.settle()
  const start=h.calls.find(c=>c.body?.action==='start');assert.ok(start)
  assert.equal(start.body.courseId,prior.id);assert.equal(start.body.newCourse,false);assert.equal(start.body.expectedRevision,8);assert.equal(start.body.consent,true)
+ assert.equal(h.calls.filter(c=>c.body?.action==='start').length,1)
  assert.equal(start.options.headers['X-HH-Account-ID'],'owner-a');h.unmount()
 })

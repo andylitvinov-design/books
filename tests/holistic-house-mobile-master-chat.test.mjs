@@ -106,8 +106,10 @@ test('mobile inbox resumes replies only when visible and online, never caches pr
   assert.match(inbox,/window\.addEventListener\('focus',focus\)/)
   assert.match(inbox,/findMaster:'Найти мастера'/)
   assert.match(inbox,/\/masters'/)
-  assert.match(page,/hh-phone-notifications/)
-  assert.match(page,/<Bell size=\{17\}/)
+  const orders=read('components/app/messages-orders-clients.jsx')
+  assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
+  assert.match(orders,/hh-phone-notifications/)
+  assert.match(orders,/<Bell size=\{17\}/)
   assert.match(css,/flex-wrap:wrap/)
   assert.match(sw,/PRIVATE_PREFIXES/)
   assert.match(sw,/\/es\/app/)
@@ -115,7 +117,7 @@ test('mobile inbox resumes replies only when visible and online, never caches pr
   assert.doesNotMatch(inbox,/localStorage|sessionStorage/)
 })
 
-test('messages remain real participant-scoped text/image/voice; video is not claimed live',()=>{
+test('messages remain participant-scoped; private short video is validated before send',()=>{
   const api=read('app/api/app/direct-messages/route.js')
   const inbox=read('components/app/direct-message-inbox.jsx')
   const policy=read('lib/practitioners/direct-message-policy.mjs')
@@ -128,5 +130,7 @@ test('messages remain real participant-scoped text/image/voice; video is not cla
   assert.match(inbox,/await post\(\{action:'send'/)
   assert.match(policy,/'audio\/ogg'/)
   assert.match(policy,/'image\/jpeg'/)
-  assert.doesNotMatch(policy,/'video\/mp4'/)
+  assert.match(policy,/'video\/mp4'/)
+  assert.match(inbox,/DirectVideoRecorder/)
+  assert.match(inbox,/shortVideo\(next\)/)
 })

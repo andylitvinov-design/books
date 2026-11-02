@@ -16,11 +16,27 @@ on:
       - 'tests/holistic-support-guided-recommendations.test.mjs'
       - 'scripts/verify-holistic-support-guided-card.mjs'
       - '.github/workflows/hh-support-guided-recommendations.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-inline-guide.tsx'
+      - 'components/holistic-support-inline-guide.module.css'
+      - 'lib/holistic-support/guide-dialogue.mjs'
+      - 'lib/assessments/support-guide-tests.js'
+      - 'app/[locale]/holistic-support/mobile/page.tsx'
+      - 'tests/holistic-support-conversation-intents.test.mjs'
+      - 'tests/holistic-support-guide-test-shortlist.test.mjs'
+      - 'components/holistic-support-mobile.module.css'
+      - 'tests/holistic-support-guided-recommendations.test.mjs'
+      - 'scripts/verify-holistic-support-guided-card.mjs'
+      - '.github/workflows/hh-support-guided-recommendations.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-support-guided-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: hh-support-guided-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -65,12 +81,18 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Browser verification script syntax (fast PR path)
+        run: node --check scripts/verify-holistic-support-guided-card.mjs
+      - name: Install project dependencies for production/manual browser QA
+        if: github.event_name != 'pull_request'
+        run: npm ci --no-audit --no-fund
       - name: Install browsers for mobile Chromium and WebKit
+        if: github.event_name != 'pull_request'
         run: |
           npm install --prefix /tmp/hh-support-guide-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-support-guide-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Score-first multi-turn dialog on EN/RU/ES × 320/390/430
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           mkdir -p artifacts/holistic-guided-recommendations
@@ -87,7 +109,7 @@ jobs:
           if [ "$ready" -ne 1 ]; then tail -100 /tmp/hh-support-guide-next.log; exit 1; fi
           node scripts/verify-holistic-support-guided-card.mjs
       - name: Keep only public synthetic screenshots
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: holistic-guided-recommendations-browser

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { BriefcaseBusiness, Heart, HeartPulse, Play, Sparkles } from "lucide-react";
 
@@ -25,7 +26,7 @@ const copy = {
     audio: "Original audio: English",
     other: "Choose another recording",
     empty: "No verified recording is available for this theme yet. Try All.",
-    watch: "Play selected recording", best: "Highest rated first",
+    watch: "Play selected recording", fullscreen: "Open full-screen meditation app", best: "Highest rated first",
   },
   ru: {
     filter: "Фильтр медитаций по темам",
@@ -35,7 +36,7 @@ const copy = {
     audio: "Оригинальное аудио: русский",
     other: "Выбрать другую запись",
     empty: "Для этой темы пока нет подтверждённых записей. Выберите «Все».",
-    watch: "Воспроизвести выбранную запись", best: "Сначала лучшие оценки",
+    watch: "Воспроизвести выбранную запись", fullscreen: "Открыть медитацию на весь экран", best: "Сначала лучшие оценки",
   },
   es: {
     filter: "Filtrar las meditaciones por tema",
@@ -45,7 +46,7 @@ const copy = {
     audio: "Audio original: inglés",
     other: "Elegir otra grabación",
     empty: "Aún no hay grabaciones verificadas para este tema. Prueba Todas.",
-    watch: "Reproducir la grabación seleccionada", best: "Mejor valorados primero",
+    watch: "Reproducir la grabación seleccionada", fullscreen: "Abrir meditación a pantalla completa", best: "Mejor valorados primero",
   },
 } as const;
 
@@ -128,6 +129,12 @@ export function HolisticMeditationGallery({
               <h3 aria-live="polite">{activeVideo.title}</h3>
               <CatalogStarRating locale={locale} summary={stars.ratings[activeVideo.id]} onRate={value=>stars.rate(activeVideo.id,value)} unavailable={stars.unavailable}/>
               <span className={styles.audioLanguage}>{t.audio}</span>
+              <Link className={styles.fullscreenLink}
+                href={"/" + locale + "/meditations?video=" + encodeURIComponent(activeVideo.id)}
+                data-open-meditation-app prefetch={false}
+                aria-label={t.fullscreen + ": " + activeVideo.title}>
+                <Play size={16} aria-hidden="true" />{t.fullscreen}
+              </Link>
             </div>
           </div>
           {visibleVideos.length > 1 ? (

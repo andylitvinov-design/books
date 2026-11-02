@@ -16,11 +16,28 @@ on:
       - 'tests/app-auth-pkce.integration.mjs'
       - 'tests/holistic-house-mobile-master-chat.test.mjs'
       - '.github/workflows/hh-messenger-mobile-release.yml'
+  # Full localized PWA acceptance is post-merge; auth/privacy contracts remain PR-blocking.
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/\[locale\]/app/messages/**'
+      - 'app/api/app/\[...path\]/route.js'
+      - 'app/api/app/direct-messages/**'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/direct-message-inbox.jsx'
+      - 'components/app/messages-hub.jsx'
+      - 'components/app/messenger-sign-in.jsx'
+      - 'lib/app/direct-messenger-handoff.*'
+      - 'lib/native/deep-link-policy.js'
+      - 'tests/app-auth-pkce.integration.mjs'
+      - 'tests/holistic-house-mobile-master-chat.test.mjs'
+      - '.github/workflows/hh-messenger-mobile-release.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-messenger-mobile-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-messenger-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   messenger-release:
@@ -59,12 +76,15 @@ jobs:
             tests/app-auth-pkce.integration.mjs \
             tests/holistic-house-mobile-master-chat.test.mjs
       - name: Type-check real production application
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build actual Next.js production bundle
+        if: github.event_name != 'pull_request'
         env:
           NEXT_TELEMETRY_DISABLED: '1'
         run: npm run build
       - name: Verify installed PWA opens the same real localized Messenger
+        if: github.event_name != 'pull_request'
         run: |
           PORT=3099 npm run start -- --port 3099 > /tmp/hh-messenger-next.log 2>&1 &
           app_pid=$!

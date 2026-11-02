@@ -416,3 +416,102 @@ export function buildHypnoRequestPhrases(
   return [...new Set([issue.phrase,chosenGoal?.sentence,...base].filter((value):value is string=>Boolean(value))
     .map(cleanLine).filter(Boolean))].slice(0,5);
 }
+
+
+/** Curated short variants: all filters act on the actual text, never on clinical claims. */
+export type HypnoPhraseTone="gentle"|"balanced"|"uplifting";
+export type HypnoPhraseKind="support"|"possibility"|"action";
+export type HypnoPhraseFocus="support"|"confidence"|"action";
+export type HypnoPhraseLength="short"|"medium";
+const hypnoPhraseStyles:Record<VideoLocale,Record<VideoTheme,{short:string[];medium:string[]}>>={
+ ru:{
+  energy:{short:["Мне можно сделать паузу","Я выбираю свой темп","Я начну с малого"],medium:["Я могу беречь силы сегодня","Я выбираю спокойный темп дня","Я могу двигаться без спешки"]},
+  money:{short:["Мой труд имеет ценность","Я могу обсудить условия","Я выбираю ясный шаг"],medium:["Мне можно назвать свою цену","Я могу спокойно обсудить оплату","Я уважаю ценность своего труда"]},
+  relationships:{short:["Мне можно сказать нет","Я могу говорить открыто","Я выбираю свои границы"],medium:["Мои потребности имеют значение","Я могу сохранять свои границы","Мне можно взять время на ответ"]},
+  goals:{short:["Мне можно начать с малого","Я вижу следующий шаг","Я могу попробовать снова"],medium:["Один посильный шаг уже важен","Я выбираю ясную задачу сейчас","Мне можно учиться на ошибках"]},
+  life:{short:["Мне можно выбирать","Я замечаю важное","Я ищу собственный путь"],medium:["Я могу выбирать свой путь","Мне можно замечать радость в малом","Я двигаюсь в своём ритме"]},
+  health:{short:["Мне можно отдыхать","Я берегу свои силы","Я могу просить помощь"],medium:["Забота о себе может быть мягкой","Я выбираю бережный режим","Мне можно сделать паузу для отдыха"]},
+ },
+ en:{
+  energy:{short:["I can take a gentle pause","I choose my own pace","I can start with one step"],medium:["I can care for my energy today","I choose a calmer daily pace","I can move without rushing"]},
+  money:{short:["My work has value","I can discuss my terms","I choose a clear next step"],medium:["I may discuss my fair price","I can talk about payment calmly","I respect the value of my work"]},
+  relationships:{short:["I can say no kindly","I can speak openly","I can keep my boundaries"],medium:["My needs deserve attention","I can keep respectful boundaries","I may take time before I respond"]},
+  goals:{short:["I can start small","I see the next step","I can try once more"],medium:["One manageable step still matters","I choose a clear task today","It is okay to learn from mistakes"]},
+  life:{short:["I can choose my path","I notice what matters","I explore my own direction"],medium:["I can choose what matters to me","Small moments may hold meaning","I can move at my own pace"]},
+  health:{short:["I may take a rest","I can care for myself","I can ask for support"],medium:["Care can begin with a gentle step","I choose a manageable rhythm","I may pause and rest when needed"]},
+ },
+ es:{
+  energy:{short:["Puedo hacer una pausa","Elijo mi ritmo","Puedo empezar con un paso"],medium:["Puedo cuidar mi energía hoy","Elijo un ritmo más tranquilo","Puedo avanzar sin tanta prisa"]},
+  money:{short:["Mi trabajo tiene valor","Puedo hablar de mis tarifas","Elijo un paso claro"],medium:["Puedo hablar de un precio justo","Puedo conversar con calma","Respeto el valor de mi trabajo"]},
+  relationships:{short:["Puedo decir que no","Puedo hablar con sinceridad","Puedo cuidar mis límites"],medium:["Mis necesidades son importantes","Puedo cuidar mis propios límites","Puedo tomar tiempo para responder"]},
+  goals:{short:["Puedo empezar poco a poco","Veo el próximo paso","Puedo intentarlo de nuevo"],medium:["Un paso pequeño tiene valor","Elijo una tarea clara hoy","Puedo aprender de mis errores"]},
+  life:{short:["Puedo elegir mi camino","Noto lo importante","Exploro mi dirección"],medium:["Puedo elegir lo que me importa","Un momento pequeño tiene sentido","Puedo avanzar a mi propio ritmo"]},
+  health:{short:["Puedo descansar","Puedo cuidarme","Puedo pedir apoyo"],medium:["Cuidarme puede ser algo sencillo","Elijo un ritmo más amable","Puedo pausar para descansar"]},
+ },
+};
+
+const hypnoUpliftingStyles:Record<VideoLocale,Record<VideoTheme,readonly string[]>>={
+ ru:{
+  energy:["Я могу начать с хорошего шага","Во мне есть место для нового","Я могу действовать без спешки"],
+  money:["Мои идеи достойны обсуждения","Я могу открыто говорить о работе","Я пробую новые решения"],
+  relationships:["Я могу говорить чуть свободнее","Я могу делать выбор в диалоге","Мне доступны новые способы общения"],
+  goals:["Мой следующий шаг мне доступен","Я могу пробовать новые пути","Сегодня я могу начать с малого"],
+  life:["Я открываю для себя новые пути","Я могу замечать возможности","Маленькие шаги приносят опыт"],
+  health:["Я могу выбирать заботу о себе","Я замечаю свои возможности","Сегодня есть место для отдыха"],
+ },
+ en:{
+  energy:["I can take a positive first step","I can explore new possibilities","I can act without rushing"],
+  money:["My ideas deserve discussion","I can discuss work openly","I can explore better choices"],
+  relationships:["I can speak a little more freely","I can make choices in dialogue","I can explore new ways to talk"],
+  goals:["My next step is within reach","I can explore other ways forward","I can begin with a small step"],
+  life:["I can explore different paths","I can notice new possibilities","Small steps help me learn"],
+  health:["I can choose gentle self-care","I notice what I can manage","Today I can make room for rest"],
+ },
+ es:{
+  energy:["Puedo empezar con un buen paso","Puedo explorar posibilidades","Puedo actuar sin tanta prisa"],
+  money:["Mis ideas merecen escucharse","Puedo hablar de mi trabajo","Puedo explorar mejores opciones"],
+  relationships:["Puedo hablar con más libertad","Puedo elegir cómo dialogar","Puedo probar nuevas formas de hablar"],
+  goals:["Mi próximo paso está cerca","Puedo explorar otros caminos","Puedo empezar por algo pequeño"],
+  life:["Puedo explorar distintos caminos","Puedo notar nuevas posibilidades","Los pasos pequeños me enseñan"],
+  health:["Puedo elegir cuidarme con calma","Puedo ver lo que está a mi alcance","Hoy puedo darme tiempo para descansar"],
+ }
+};
+
+export function buildHypnoFilteredPhrases(
+ locale:VideoLocale,theme:VideoTheme,problemIndex:number,goal:VideoAffirmationGoal,
+ tone:HypnoPhraseTone="gentle",kind:HypnoPhraseKind="support",
+ focus:HypnoPhraseFocus="support",length:HypnoPhraseLength="medium",round=0
+):string[]{
+ const styles=hypnoPhraseStyles[locale][theme];
+ const targetLength=length==="short"?"short":"medium";
+ const gentle=styles[targetLength];
+ const balanced=styles[targetLength==="short"?"medium":"short"];
+ const uplifting=hypnoUpliftingStyles[locale][theme];
+ const toneRows=tone==="balanced"?balanced:tone==="uplifting"?uplifting:gentle;
+ const roleIdx=kind==="action"?2:kind==="possibility"?1:0;
+ const focusIdx=focus==="action"?2:focus==="confidence"?1:0;
+ const variant=Math.max(0,Math.floor(round))%3;
+ const base=buildHypnoRequestPhrases(locale,theme,problemIndex,goal);
+ const goalText=affirmationGoalCatalog[locale].find(g=>g.id===goal)?.sentence;
+ const candidates=[base[0],goalText].filter((x):x is string=>Boolean(x));
+ // Keep two source-backed anchors, then different role/tone/focus words.
+ const roleOptions=[toneRows[roleIdx],toneRows[(roleIdx+1)%3],toneRows[(roleIdx+2)%3]];
+ const roleLine=roleOptions.find(s=>!candidates.includes(s));
+ if(roleLine)candidates.push(roleLine);
+ const focusOptions=focus==="support"
+   ?styles.short
+   :focus==="confidence"?[uplifting[0],uplifting[1],...styles.short]
+   :[uplifting[2],uplifting[1],...styles.short];
+ const focusLine=focusOptions.find(s=>!candidates.includes(s));
+ if(focusLine)candidates.push(focusLine);
+ // A new request for variants introduces a genuinely different authored line.
+ const variationOptions=variant===0
+   ?[toneRows[(roleIdx+1)%3],toneRows[(roleIdx+2)%3],...gentle]
+   :variant===1?[uplifting[1],uplifting[2],...toneRows]
+   :[balanced[2],balanced[1],...uplifting];
+ const extraLine=variationOptions.find(s=>!candidates.includes(s));
+ if(extraLine)candidates.push(extraLine);
+ const fallbacks=[...toneRows,...styles.short,...styles.medium,...uplifting,...base,...suggestedVideoAffirmations[locale][theme]];
+ return [...new Set([...candidates,...fallbacks].map(x=>cleanLine(x||"")).filter(Boolean))]
+   .filter(x=>Array.from(x).length<=MAX_AFFIRMATION_LENGTH).slice(0,5);
+}

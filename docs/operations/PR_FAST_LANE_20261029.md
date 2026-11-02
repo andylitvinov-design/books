@@ -1,6 +1,8 @@
 # Holistic House — PR Fast Lane (2026-10-29)
 
-**Canonical release branch:** `codex/public-book-library` (not default `codex/bootstrap-books`). Verify active Vercel source, SHA and alias at release time. This document is the source of truth for Work, Chat and DOT cooperation.
+**Historical implementation record — current policy: [docs/operations/CI_RELEASE_POLICY.md](CI_RELEASE_POLICY.md)**
+
+The sections below preserve measurements and implementation history from 29–30 October 2026; proposals and rollout states are historical, not current instructions.
 
 ## Observed blockers and correction
 
@@ -9,26 +11,6 @@
 - Scope job fails closed on unexpected inputs; merge_group and workflow_dispatch always run code checks. No skip for SQL, workflow, auth or application changes.
 - This core gate is **necessary but not sufficient**: applicable specialist workflow jobs, security/privacy/auth/RLS/payment checks, unresolved reviews and actual E2E requirements still apply. Never consider a red, queued, canceled, unknown, or mismatched-head specialist result green.
 - GitHub Actions concurrency should be by PR number/ref (cancel superseded commits only). Do not rerun unchanged failing jobs, edit tests just to turn status green, or push empty commits to restart queues.
-
-## Critical administrator setup (requires GitHub repository administration)
-
-The connected GitHub MCP exposes PR/file actions but **not** repository settings/branch-rule writes. These steps must be done in GitHub Settings by a repository administrator, **after confirming this new core gate is successful and stable**.
-
-1. Settings → General → Pull Requests: enable **Allow auto-merge** and keep **Allow squash merging**. Do not enable merge without checks.
-2. Settings → Rules → Rulesets → New branch ruleset (or Branch protection) → target `codex/public-book-library` **only**. Require pull request, require approvals for risky changes, dismiss stale reviews, require resolved conversations, disallow force-push and deletion; do not add unrestricted bypass.
-3. Require the **stable** check `release-ready` from `HH PR core release gate` (confirm exact status/check name from successful live run). For security or code-specific cases, explicitly require corresponding applicable specialist checks or an equivalent protected aggregate gate; never silently ignore failing relevant workflows. Do not require path-filtered optional workflows globally (skips may remain pending).
-4. Test ruleset using a safe temporary PR; confirm queue/approval and requested protections work before activating automatic merging for ordinary low-risk PRs.
-5. Review GitHub General default branch; do **not** change it to production without checking integrations that depend on bootstrap. Any default-branch alignment is a separate planned migration.
-
-## One-cycle operating contract
-
-All agents operate on **existing** PRs; coordinate with a single owner for each `repo#PR`. If another agent owns it, pick a different PR; avoid simultaneous commits to the same branch. Track in PR comments or a compact shared ledger: `owner`, `run_id`, `head_sha`, `last_action`, `next_action`, `lease_expires`. Leases must be refreshed from GitHub; never rely solely on a stale summary.
-
-1. **Work Repair (08:30–18:30):** choose up to two high-value unowned open PRs; inspect last exact-head failed/queued jobs; implement the smallest verified fix **in the same branch**; run focused local tests; commit once or as needed; hand off to release lane. Spend first 70–80% of cycle on code, not a 300-PR inventory.
-2. **Work Merge Delivery (09:00–19:00):** inspect last ready candidate and check exact head/base, non-draft, mergeability, approvals, relevant specialist statuses and privacy/security. Squash-merge only truly green safe PRs; otherwise fix a concrete blocker or select another ready PR. If GitHub Auto-merge is enabled **and** all rules are enforced, enable it for approved low-risk PRs; otherwise do not bypass.
-3. **Chat CI triage (24/7 hourly):** no duplicate full-portfolio inventory or second PR repair owner. Select up to three ready/blocked candidates, parse failed job **logs**, classify `CODE_FAIL`, `TEST_STALE`, `CI_INFRA`, `CROSS_SCOPE`, `REVIEW`, `QUEUE`; perform a focused repair only on unowned PRs, otherwise hand off one precise command/log reference.
-4. **DOT (coordination/acceptance):** compare GH merged events to Work/Chat run receipts; verify Vercel READY/deployed SHA/domain and post-release smoke tests. DOT must not claim that someone else's merge is its own. DOT may fix distinct unowned PRs but must follow the same gate.
-5. **Every report:** `run_id / PR numbers inspected / distinct PRs repaired / own commits / own merges with merge SHA / other merges observed / live verified / blocker class / next owner`. Merges count only on actual GitHub `merged_at`, not comments or declarations. For throughput analysis dedupe by `repo#PR`, attribute actor using audit trail, never infer actor from timestamp alone.
 
 ## Performance experiment and rollback
 
@@ -41,7 +23,7 @@ The seven heavy specialist suites are required for their **matching product/sour
 
 The relevant validation for **CI-only** edits is the dedicated always-triggered `HH workflow syntax — actionlint` (all YAML syntax/expression validation plus strict changed-file shellcheck) and unconditional `HH PR core release gate` (exact-head `tests/pr-fast-lane.test.mjs`, targeted ESLint, full TypeScript, Next production build, and fail-closed `release-ready`). The narrow regression above checks that removing `AGENTS.md` and each workflow's own YAML from heavy `pull_request.paths` does not remove any other product, middleware, dependency, migration or security-sensitive path. For any change to actual app/API/DB/security/payment/test harness paths, all relevant specialist jobs still trigger and their failures remain blocking. No test commands, steps, service isolation, RLS, browser matrices or privacy assertions were deleted.
 
-Important: **skipped workflow is never considered green**; GitHub branch protection must not require an optional path-filtered job globally, because filtered jobs can remain Pending. Before enabling native auto-merge, a protected unconditional aggregator must enforce successful *applicable* specialist checks, reviews and safety gates, and a read-back must confirm protected production branch. CI-only changes need review of the full YAML diff and green actionlint/core; changed production behavior requires green corresponding specialist suites. If this scoping proves unsafe, restore previous filters and quarantine auto-merge.
+At the time, the rollout noted: **skipped workflow was never considered green**; GitHub branch protection must not require an optional path-filtered job globally, because filtered jobs can remain Pending. Current release requirements are in the policy above.
 
 
 ## Full exact-head applicable specialist gate — rollout 29 October 2026
@@ -71,15 +53,7 @@ Merge Queue until its separate specialist evidence is explicitly verified.
 External booking, payments, provider message delivery and production E2E are
 separate gates that this GitHub CI reader does not claim to prove.
 
-ADMINISTRATIVE HOLD: repository-native Auto-merge remains disabled until
-the exact-head aggregated release-ready passes positive and negative integration
-scenarios, a branch ruleset protecting ONLY codex/public-book-library is enabled
-with required review, resolved conversations, no force push/delete and required
-release-ready from GitHub Actions, and settings are verified by readback.
-GitHub default codex/bootstrap-books is not production. The currently connected
-GitHub tool has no repository ruleset/auto-merge settings write operation.
-
-Additional source-integrity rule: fork-head PRs fail closed before receiving the gate's read token. The first bootstrap rollout uses the new same-repository candidate script only because the exact baseline does not yet include an aggregator and Native Auto-merge is OFF. On every subsequent PR, release-ready extracts and executes both validator modules strictly from the verified base SHA using git show, and inspects candidate workflow definitions only as data. Missing base module fails closed. The required workflow itself still needs branch-rule protection and review for changes to its source.
+Historically the initial bootstrap used a same-repository candidate because the base lacked an aggregator. The subsequent implementation reads validator modules from the verified base SHA and fails closed if they are missing.
 
 ## Measured CI-volume audit — 29 October 2026 (production branch only)
 
@@ -100,12 +74,7 @@ acceptance, and encrypted-store/browser tests. On feature pushes or manual IA
 runs the original global checks still run. Workflow triggers and specialist
 exact-head fail-closed aggregation are unchanged.
 
-Readback: `allow_auto_merge=true`, but production `protected=false` with no
-repository rulesets. Do not merge solely on a core check without review and
-relevant specialist evidence; configure protection before enabling PR-level
-automatic merging. Next improvements: group related scoped specialist workflows,
-share expensive builds where browser tests allow it, and reduce agent-created
-duplicate PRs. Never drop privacy/auth/RLS/payment/E2E gates.
+Historical 29 October readback: `allow_auto_merge=true`, while production was then reported `protected=false` with no repository rulesets. This is not the current configuration.
 
 ## Workflow consolidation wave 1: reviewed migration before deleting jobs (30 October 2026)
 
@@ -116,7 +85,7 @@ Two strictly reviewed one-to-one replacements are staged in existing domain work
 
 The `specialist-aggregate.mjs` base-trusted allowlist *only* accepts deletion of the two explicitly named workflows when their already present replacement is byte-identical to the BASE version, the replacement is actually scoped to the changed PR files, and its exact-head associated run has completed successfully with real jobs. Unmapped YAML deletion, weakening of a replacement in the same PR, jobless/skipped/failed/queued/mismatched-head run, or unrelated failed current-HEAD workflow remains blocking. Core `hh-pr-core-release.yml` continues extracting its verifier from immutable BASE SHA. The `hh-actionlint.yml` deletion-only branch checks statuses, validates all remaining YAMLs and still relies on the exact-head specialist gate to allow any removal.
 
-**Two-PR protocol:** first merge this additive / trusted-allowlist PR with exact-head actionlint, sweep-guard and both specialist jobs green, then create a separate *deletion-only* PR. Do not remove legacy workflows before approved replacements and policy are in BASE. Do not treat lower YAML count as evidence of cost or E2E gains; compare runner-minutes and actual status parity. GitHub branch ruleset for production remains a separate owner-admin step.
+**Two-PR protocol:** first merge this additive / trusted-allowlist PR with exact-head actionlint, sweep-guard and both specialist jobs green, then create a separate *deletion-only* PR. Do not remove legacy workflows before approved replacements and policy are in BASE. Do not treat lower YAML count as evidence of cost or E2E gains; compare runner-minutes and actual status parity. Ruleset rollout status at that time was pending.
 
 ## Wave 1 obsolete workflow removal (30 October 2026)
 
@@ -151,7 +120,7 @@ For production-targeted PRs changing **only** an explicit, short allowlist of Gi
 
 The allowlist intentionally excludes `AGENTS.md`, dependencies/lockfiles, SQL and RLS migrations, all app/components/lib runtime code, scripts that build site content, auth, providers, billing, health/private content and security configuration. Mixed PRs fail closed to the full TS/Next build. Manual/merge queue events also use full global checks. Synthetic git regression tests cover workflow edit, removal, CI source edit, mixed YAML+runtime, renames, migrations, auth and dependencies. If a CI test path changes without a specialist trigger, add its exact path to the relevant specialist workflow, not the allowlist alone.
 
-**Release condition:** this policy needs its own positive/negative GitHub exact-head CI, read-only base-trusted aggregator and manual merge after review, followed by production Vercel READY SHA/aliases. Separate owner GitHub branch ruleset remains mandatory for native auto-merge; no relaxed approvals or test waivers.
+The original rollout conditions have been superseded by the current policy.
 
 ## Fail-closed protection against unmapped workflow deletion (30 October 2026)
 
@@ -169,22 +138,12 @@ on `ready_for_review` and each subsequent `synchronize` of a non-Draft PR;
 feature-branch `push` audits still run. `browser-journey-complete` retains
 `always()` fail-closed status aggregation on Ready, not on Draft.
 
-**Draft-skipped is NOT CI-success or merge eligibility.** Work Repair may use
-focused local tests while iterating a Draft, but must explicitly mark the PR
-Ready to obtain current-head specialist acceptance. Work Merge continues to
-require the unconditional exact-head `release-ready`, all applicable actual
-executed specialist jobs, reviews, and live delivery checks. Dedicated
-`tests/ci-heavy-draft-policy.test.mjs`, PR Sweep Guard and actionlint verify
-the event transitions, job guards and preserved push safety on any workflow
-change. No check, RLS, consent, payment or E2E assertions were removed.
+The dedicated `tests/ci-heavy-draft-policy.test.mjs`, PR Sweep Guard and actionlint covered event transitions, job guards and preserved push safety. No RLS, consent, payment or E2E assertions were removed.
 
 
-## Next optimization programme and daily waiting-time forecast — 30 October 2026
+## Historical optimization proposals and forecast — 30 October 2026
 
-**Decision:** optimize duplicate work and shared failure causes first. Do not relax
-the immutable-base `release-ready` aggregator, owner/consent/RLS/payment
-checks or true provider E2E. GitHub production is
-`codex/public-book-library`, not repository default `codex/bootstrap-books`.
+The following proposals and forecasts describe the 30 October planning snapshot, not current policy.
 
 ### Evidence and units (snapshot at approximately 11:50 UTC)
 
@@ -227,7 +186,7 @@ measure savings against a seven-day baseline.
 | P1 BLOCKED / #2630 | **Reuse Core build/TypeScript only where truly duplicate**: existing Draft #2630 covers Growth Journey and My Courses; solve its exact-head domain failures first, then Ready review. Preserve domain tests, scoped ESLint, manual/push independent builds. | ~8–20 repeated build/TS jobs/day × 4–8 minutes | **10–70** | **30–160** | No unconditional skipping of `npm run build`; trusted core compile must actually run and pass on production-targeted PRs |
 | P1 NEXT | **Unstack dependency chains, oldest-ready fairness**: map all 39 non-production-base PRs; merge reviewed parent into production first, retarget child only after conflict/authorization review and fresh CI. Reserve one aged eligible PR per 4–5 regular deliveries. | ~2–6 blocked stacked PR/day × 20–50 minutes avoided | **40–300** | **10–80** | Delivery agent reports parent/child SHAs; no direct merge of child feature branch counted as live |
 | P1 PILOT | **Reproducible npm/Next/Playwright caching**: share lockfile-keyed download caches and isolated browser binaries; validate cache hit/miss and exclude private DB/session artifacts. Do not reuse compiled outputs across unverified branches. | ~10–25 applicable jobs/day × 2–4 minutes | **10–50** | **20–100** | Pilot in one slow non-sensitive workflow; compare cold vs warm, disable cache on stale artifacts |
-| P2 OWNER HOLD | **Native Auto-merge after real protected production ruleset**. Only with required exact-head core + applicable specialist checks, review and resolved threads; never bypass. Repository `allow_auto_merge` alone is insufficient. | ~3–8 already-green eligible PR/day, typical core→merge gap 0.4–10 min (occasional multi-hour outlier) | **5–60 typical**; greater only for rare outliers | **0** | Owner rules: https://github.com/andylitvinov-design/books/settings/rules; validate positive/negative scenarios and `protected=true` readback before opt-in |
+| P2 HISTORICAL | **Native Auto-merge proposal before protection was configured**. | ~3–8 already-green eligible PR/day, typical core→merge gap 0.4–10 min (occasional multi-hour outlier) | **5–60 typical**; greater only for rare outliers | **0** | Owner rules: https://github.com/andylitvinov-design/books/settings/rules; validate positive/negative scenarios and `protected=true` readback before opt-in |
 | P2 DESIGN | **Reduce specialist-aggregate polling without false green**: optional trusted completion-driven status/check instead of idle 35-minute wait, only if it watches complete applicable *exact-head* jobs and fails closed on absent/cancelled/skipped/changed-base results. | 4–10 genuine slow-ready checks/day × 5–10 minutes | **20–100** | **30–150** | Prototype isolated integration tests before any change to production gate; rollback if missing jobs could pass |
 | P2 STAGED | **Retire only proven duplicated YAML workflows**, never weaken workflow inventory simply to lower the YAML count. Existing successor jobs and BASE-trusted deletion proof must remain green. | ~4–12 redundant executed jobs/day × 3–8 minutes | **10–40** | **20–100** | Two-PR additive→verified retirement protocol, with exact matching successor and rollback guard |
 
@@ -243,7 +202,7 @@ measure savings against a seven-day baseline.
    #2630 and stacked parent chains. CI optimization itself is a normal PR
    requiring actionlint, Sweep Guard, trusted release-ready, reviews.
 3. **Next 3–7 days:** run one cache pilot, one remaining high-fan-out path-scope
-   pilot, and the protected Auto-merge owner review independently. Avoid
+   pilot, and the then-proposed protected Auto-merge review independently. Avoid
    adding new unmeasured background workflows or parallel merger agents.
 
 ### Seven-day measurement, stop-loss and expected combined outcome
@@ -285,3 +244,9 @@ production-targeted PRs, where core `release-ready` already requires full
 `tsc --noEmit`. Draft-skipped never counts as merge success and the base-trusted
 specialist aggregate still requires every applicable executed job to succeed.
 No assertions, RLS, checkout, browser checks or paid APIs are disabled.
+
+## Wave 3: website About video coverage only (30 October 2026)
+
+The BASE-trusted migration now considers only `holistic-about-video-check.yml` → `site-video-browser.yml`. Original source tests for intro, defaults and player are included in the existing Chromium/WebKit + Redis + EN/RU/ES workflow. Scope includes all original PR paths; global TypeScript and Next build remain mandatory in `release-ready` for changed application/browser harness source (CI-only changes have a separate strictly allowlisted fast lane). After green exact-head CI and a reviewed additive merge, a separate deletion-only PR may remove this single obsolete YAML (90 → 89) subject to unchanged successor and exact-head successful-job evidence.
+
+**Pro Reiki consolidation HOLD:** the attempted `pro-reiki-master-paths.yml` → `hh-energywork-ai.yml` transfer exposed 5 failing source tests in [original Pro Reiki contracts](https://github.com/andylitvinov-design/books/actions/runs/41000113247) (directory placement, bottom navigation, OAuth categorical handoff, draft editor and localized paths). No test is removed or weakened. Pro Reiki stays a separate original workflow until product defects are corrected and its full suite is green. This PR restores `hh-energywork-ai.yml` byte-for-byte from BASE and removes the unapproved migration. Do not describe that baseline as green.

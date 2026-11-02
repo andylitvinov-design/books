@@ -10,8 +10,7 @@ on:
       - 'app/api/app/video-progress/route.js'
       - 'lib/app/my-progress.mjs'
       - 'lib/app/video-progress.js'
-      - 'app/**/app/**/page.jsx'
-      - 'components/app/app-workspace.jsx'
+      - 'app/**/app/my-progress/**'
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
       - '.github/workflows/hh-my-progress-release.yml'
@@ -29,8 +28,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-my-progress-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-my-progress-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   private-progress:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}

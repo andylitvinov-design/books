@@ -2,7 +2,7 @@
 
 When the owner provides a screenshot, reference image, Figma export, or mockup and asks to create, rebuild, redesign, or correct any page, **read and follow .agents/skills/visual-to-code-pro/SKILL.md before changing UI code**. Its FIRST gate is page identity: reference and actual must share the same route/query intent, role, auth state and dashboard/editor view type. A service editor screenshot is not a visually failed practitioner dashboard; fix wrong OAuth/automatic navigation before comparing pixels. Use its reference specification, preserve working APIs/auth/data, perform rendered screenshot comparison, and never call CSS/unit tests alone a visual match.
 
-The canonical website is https://holistichouse.vercel.app. The GitHub default branch codex/bootstrap-books is **not** automatically production. Production previously used codex/public-book-library: verify Vercel project, source branch, READY deployment, SHA and canonical domain every time.
+The canonical website is https://holistichouse.vercel.app. The GitHub default branch codex/bootstrap-books is **not** automatically production. See the CI / PR / LIVE delivery policy below for production release verification.
 
 Keep existing pages/components instead of adding duplicates. Preserve EN/RU/ES routes, signed-in navigation, private data, CSP nonce, CRM, protected media, real service IDs, consent and existing E2E contracts. Never claim real delivery, booking, payment, OAuth, or photo upload from a mock, a screenshot, HTTP 200 or CI alone. Use synthetic screenshots in public artifacts and respect privacy.
 
@@ -17,6 +17,55 @@ For each owner screenshot, URL or Figma-based page design request, **do not ask 
 
 Verified tool versions and project setup are declared in .codex/config.toml and .vscode/mcp.json, but **repository files do not install MCPs into ChatGPT nor grant browser/IDE permissions**. Only claim tool availability after successful tool calls. A failed or blocked MCP connection is not a reason to skip the independent GitHub browser workflow or to fabricate visual acceptance.
 
-## PR delivery fast lane (Work / Chat / DOT)
+## CI / PR / LIVE Delivery
 
-For any PR repair, CI triage or merge into the canonical production branch, follow `docs/operations/PR_FAST_LANE_20261029.md`: deduplicate ownership by repo#PR, spend most effort on an actual fix/merge, inspect *exact-head* checks and failed job logs, keep security/privacy/RLS/payment gates, and report own merges separately from other agents' actions. The single core `release-ready` check is necessary but never replaces relevant specialist tests, approval or post-merge Vercel/live verification. GitHub default branch is **not** automatically production.
+Follow [CI_RELEASE_POLICY.md](docs/operations/CI_RELEASE_POLICY.md) for agent ownership, CI, PR delivery and LIVE acceptance.
+
+## Provider credential autonomy: bounded, consented, agent-first
+
+Use `docs/integrations/AGENT_SECRET_AUTOMATION.md` for consent-gated provider integration. This file does not itself grant permission to create, read, change or transmit secrets. The preceding screenshot-driven visual policies and `docs/operations/CI_RELEASE_POLICY.md` remain authoritative; do not bypass production protections.
+
+Verify current deployment identity first: `codex-public-book-library`, project `prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b`, team `team_OSf690d0nxRHWVMXCElA8i95`; production branch `codex/public-book-library`. Re-check live IDs instead of trusting local metadata.
+
+1. Search existing **authorized** app connectors, provider OAuth, environment
+   variable **names and targets only**, integration configuration and linked
+   services before asking the owner to configure anything.
+2. Prefer existing GitHub/Vercel/Supabase/provider connectors or provider-issued
+   short-lived, scoped credentials. An authorized connector/account establishes
+   access, not consent for every action. Before creating persistent credentials
+   or transmitting a secret to a destination, obtain explicit owner confirmation
+   for that specific action whenever required by the runtime. Identify provider,
+   destination project, secret name, target and scope without exposing its value.
+   A general automation request, issue/PR URL, token possession or `--apply` is
+   not that confirmation. After approval, use the official provider API or a
+   CSPRNG for application-owned HMAC/webhook secrets; coordinate both ends.
+3. Only after the action is authorized, create new Vercel secrets using the
+   connected project tool with
+   `upsert=false`, `type=sensitive` (Secret) and the smallest appropriate
+   environment/branch. Never accidentally replace an existing value, use
+   Production credentials in Preview, or assign secret values to
+   `NEXT_PUBLIC_*`, `VITE_*` or any other client-visible variable.
+4. Do not retrieve/decrypt working secret values for convenience. Never expose
+   secrets, API tokens, session cookies or personal data in chat, source code,
+   issues, logs, screenshots or command-line arguments. Prefer process stdin
+   or protected app-to-app calls over plaintext files or shell history.
+5. Before a rotation, verify the provider supports overlap/rollback; update
+   both ends, redeploy, run authorized real E2E, and only then revoke the old
+   value. Avoid unnecessary rotations. Environment-variable write != deployed
+   feature != proven external delivery/payment.
+6. One-time provider OAuth, MFA/passkey, legal/financial consent, account
+   verification, permissions not already granted and enabling paid services
+   still require explicit owner action, in addition to any per-action credential
+   confirmation above. First complete independent work and
+   provide one exact link + minimal click instructions; never ask for a raw
+   password/token pasted into ChatGPT.
+7. No spending, mass sends, unapproved integrations, permission escalation or
+   privacy hold bypass. Medical/test results remain in protected channels; no
+   sensitive payloads in Telegram/SMS/push or advertising pixels.
+8. Record only secret *names*, environment, provenance class (existing,
+   generated or provider-issued), outcome, tests, PR/commit, CI, production
+   deployment/SHA and any remaining owner-only blocker in the linked issue.
+
+## New public landing pages (optional, subordinate design skill)
+
+For a new public marketing landing page or an explicitly requested marketing redesign, consult `.agents/skills/landing-page-design/SKILL.md`, the MIT-licensed vendored reference from #2224. Apply only ideas compatible with Holistic House's current visual identity, localization, accessibility, honest claims and consent/CRM contracts. Its broad scope must NOT change existing cabinets, Messenger, courses or site-wide UI without an explicit request. For screenshot-driven changes, the existing `visual-to-code-pro` skill remains FIRST.

@@ -91,6 +91,8 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/practice\/?$/.test(pathname) ||
   // The private practitioner editor shares the new minimal header and dock.
   /^\/(?:ru|en|es)\/app\/practice\/?$/.test(pathname) ||
+  // The signed-in Orders / Clients Messenger is an app, not a marketing page.
+  /^\/(?:ru|en|es)\/app\/messages\/?$/.test(pathname) ||
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
   // Keep the fire landing hero and its CTA inside the first phone viewport.

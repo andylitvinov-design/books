@@ -1,0 +1,603 @@
+{
+  "schemaVersion": "hh-video-goal-topic-scenarios-v1",
+  "id": "body",
+  "label": {
+    "ru": "Тело",
+    "en": "Body",
+    "es": "Cuerpo"
+  },
+  "subtitle": {
+    "ru": "Комфорт, отдых и контакт с телом",
+    "en": "Comfort, rest and body awareness",
+    "es": "Comodidad, descanso y conexión corporal"
+  },
+  "topics": [
+    {
+      "id": "body-release",
+      "label": {
+        "ru": "Телесное расслабление",
+        "en": "Physical relaxation",
+        "es": "Relajación corporal"
+      },
+      "desiredOutcome": {
+        "ru": "Мягко отпустить напряжение в теле",
+        "en": "Feel less physically tense",
+        "es": "Soltar suavemente la tensión corporal"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/body",
+      "aliases": {
+        "ru": [
+          "мышцы",
+          "напряжение",
+          "расслабиться",
+          "расслабление"
+        ],
+        "en": [
+          "muscles",
+          "tension",
+          "relaxation"
+        ],
+        "es": [
+          "músculos",
+          "tensión",
+          "relajación"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-release-s1",
+          "label": {
+            "ru": "Тихая река",
+            "en": "Quiet river",
+            "es": "Río tranquilo"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "stone",
+            "river",
+            "light",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-release-s2",
+          "label": {
+            "ru": "Тёплый свет",
+            "en": "Warm light",
+            "es": "Luz cálida"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "window",
+            "warmth",
+            "hands",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-release-s3",
+          "label": {
+            "ru": "Мягкая волна",
+            "en": "Gentle wave",
+            "es": "Ola suave"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "shore",
+            "ocean",
+            "breeze",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-release-s4",
+          "label": {
+            "ru": "Возвращение в тело",
+            "en": "Coming back to the body",
+            "es": "Volver al cuerpo"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "breath",
+            "clearing"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "body-sleep",
+      "label": {
+        "ru": "Сон и отдых",
+        "en": "Sleep and rest",
+        "es": "Sueño y descanso"
+      },
+      "desiredOutcome": {
+        "ru": "Подготовиться к спокойному отдыху",
+        "en": "Prepare for restful sleep",
+        "es": "Prepararse para un descanso tranquilo"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/recovery",
+      "aliases": {
+        "ru": [
+          "сон",
+          "заснуть",
+          "отдых",
+          "бессонница"
+        ],
+        "en": [
+          "sleep",
+          "bedtime",
+          "rest"
+        ],
+        "es": [
+          "dormir",
+          "descanso",
+          "sueño"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-sleep-s1",
+          "label": {
+            "ru": "Сумеречный сад",
+            "en": "Twilight garden",
+            "es": "Jardín al anochecer"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "sunset",
+            "garden",
+            "leaves",
+            "stars"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-sleep-s2",
+          "label": {
+            "ru": "Тихое небо",
+            "en": "Quiet sky",
+            "es": "Cielo sereno"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "clouds",
+            "sky",
+            "stars",
+            "lake"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-sleep-s3",
+          "label": {
+            "ru": "Колыбель леса",
+            "en": "Forest lullaby",
+            "es": "Arrullo del bosque"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "forest",
+            "nest",
+            "breeze",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-sleep-s4",
+          "label": {
+            "ru": "Вечер у очага",
+            "en": "Evening by the hearth",
+            "es": "Noche junto al hogar"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "home",
+            "window",
+            "hearth",
+            "flame"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "body-breath",
+      "label": {
+        "ru": "Свободное дыхание",
+        "en": "Breathing with ease",
+        "es": "Respirar con facilidad"
+      },
+      "desiredOutcome": {
+        "ru": "Замечать дыхание без усилия",
+        "en": "Notice a natural, easy breath",
+        "es": "Notar una respiración natural"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/body",
+      "aliases": {
+        "ru": [
+          "дыхание",
+          "вдох",
+          "выдох",
+          "воздух"
+        ],
+        "en": [
+          "breathing",
+          "breath",
+          "exhale",
+          "air"
+        ],
+        "es": [
+          "respiración",
+          "aire",
+          "inhalar",
+          "exhalar"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-breath-s1",
+          "label": {
+            "ru": "Пространство для вдоха",
+            "en": "Room to breathe",
+            "es": "Espacio para respirar"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "window",
+            "sky",
+            "breath",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-breath-s2",
+          "label": {
+            "ru": "Горный воздух",
+            "en": "Mountain air",
+            "es": "Aire de montaña"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "mountain",
+            "clouds",
+            "breeze",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-breath-s3",
+          "label": {
+            "ru": "Волна дыхания",
+            "en": "Breathing wave",
+            "es": "Ola de respiración"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "shore",
+            "ocean",
+            "breath",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-breath-s4",
+          "label": {
+            "ru": "Дыхание деревьев",
+            "en": "Breathing with trees",
+            "es": "Respirar con los árboles"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "forest",
+            "leaves",
+            "tree",
+            "clearing"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "body-comfort",
+      "label": {
+        "ru": "Комфорт в теле",
+        "en": "Body comfort",
+        "es": "Comodidad corporal"
+      },
+      "desiredOutcome": {
+        "ru": "Почувствовать больше удобства и мягкости",
+        "en": "Feel more at ease in my body",
+        "es": "Sentir más comodidad en mi cuerpo"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/body",
+      "aliases": {
+        "ru": [
+          "телесный комфорт",
+          "зажим",
+          "скованность"
+        ],
+        "en": [
+          "body comfort",
+          "stiffness"
+        ],
+        "es": [
+          "comodidad corporal",
+          "rigidez"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-comfort-s1",
+          "label": {
+            "ru": "Тепло внутри",
+            "en": "Warmth within",
+            "es": "Calor interior"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "home",
+            "hearth",
+            "warmth",
+            "hands"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-comfort-s2",
+          "label": {
+            "ru": "Лёгкость движений",
+            "en": "Ease of movement",
+            "es": "Facilidad de movimiento"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "path",
+            "breeze",
+            "meadow",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-comfort-s3",
+          "label": {
+            "ru": "Спокойная осанка",
+            "en": "A grounded posture",
+            "es": "Postura estable"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "mountain",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-comfort-s4",
+          "label": {
+            "ru": "Тихий контакт",
+            "en": "Gentle contact",
+            "es": "Contacto amable"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "stone",
+            "stream",
+            "hands",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "body-care",
+      "label": {
+        "ru": "Забота о теле",
+        "en": "Caring for my body",
+        "es": "Cuidar mi cuerpo"
+      },
+      "desiredOutcome": {
+        "ru": "Отнестись к телу с вниманием и добротой",
+        "en": "Care for my body with kindness",
+        "es": "Cuidar mi cuerpo con amabilidad"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "personal_growth/support",
+      "aliases": {
+        "ru": [
+          "забота о теле",
+          "самочувствие",
+          "самоподдержка"
+        ],
+        "en": [
+          "self care",
+          "body wellbeing"
+        ],
+        "es": [
+          "autocuidado",
+          "bienestar corporal"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-care-s1",
+          "label": {
+            "ru": "Доброе утро",
+            "en": "A kind morning",
+            "es": "Una mañana amable"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "sunrise",
+            "window",
+            "warmth",
+            "garden"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-care-s2",
+          "label": {
+            "ru": "Время для себя",
+            "en": "Time for me",
+            "es": "Tiempo para mí"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "shore",
+            "stone",
+            "meadow",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-care-s3",
+          "label": {
+            "ru": "Тёплая ладонь",
+            "en": "A kind hand",
+            "es": "Una mano amable"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "hands",
+            "heart",
+            "warmth",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-care-s4",
+          "label": {
+            "ru": "Мой естественный ритм",
+            "en": "My natural rhythm",
+            "es": "Mi ritmo natural"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "river",
+            "path",
+            "leaves",
+            "sunset"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "body-confidence",
+      "label": {
+        "ru": "Телесная уверенность",
+        "en": "Body confidence",
+        "es": "Confianza corporal"
+      },
+      "desiredOutcome": {
+        "ru": "Ощущать себя увереннее в своём теле",
+        "en": "Feel more confident in my body",
+        "es": "Sentirme más seguro en mi cuerpo"
+      },
+      "legacyVideoTheme": "goals",
+      "legacyProfileTopic": "personal_growth/traits",
+      "aliases": {
+        "ru": [
+          "телесная уверенность",
+          "осанка",
+          "уверенно в теле"
+        ],
+        "en": [
+          "body confidence",
+          "posture"
+        ],
+        "es": [
+          "confianza corporal",
+          "postura"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "body-confidence-s1",
+          "label": {
+            "ru": "Сильные корни",
+            "en": "Strong roots",
+            "es": "Raíces firmes"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "mountain",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-confidence-s2",
+          "label": {
+            "ru": "Открытая поза",
+            "en": "An open stance",
+            "es": "Una postura abierta"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "clearing",
+            "sky",
+            "light",
+            "path"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-confidence-s3",
+          "label": {
+            "ru": "Прямой путь",
+            "en": "A steady path",
+            "es": "Camino firme"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "stone",
+            "road",
+            "horizon",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "body-confidence-s4",
+          "label": {
+            "ru": "Спокойная сила",
+            "en": "Quiet strength",
+            "es": "Fuerza serena"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "mountain",
+            "warmth",
+            "hands",
+            "tree"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    }
+  ]
+}

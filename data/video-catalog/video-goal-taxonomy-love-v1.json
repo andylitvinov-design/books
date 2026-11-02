@@ -1,0 +1,604 @@
+{
+  "schemaVersion": "hh-video-goal-topic-scenarios-v1",
+  "id": "love",
+  "label": {
+    "ru": "Любовь",
+    "en": "Love",
+    "es": "Amor"
+  },
+  "subtitle": {
+    "ru": "Близость, доверие, принятие и границы",
+    "en": "Closeness, trust, acceptance and boundaries",
+    "es": "Cercanía, confianza, aceptación y límites"
+  },
+  "topics": [
+    {
+      "id": "love-closeness",
+      "label": {
+        "ru": "Больше близости",
+        "en": "More closeness",
+        "es": "Más cercanía"
+      },
+      "desiredOutcome": {
+        "ru": "Открыться бережному контакту",
+        "en": "Open to gentle connection",
+        "es": "Abrirme a una conexión amable"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "relationships/connection",
+      "aliases": {
+        "ru": [
+          "близость",
+          "отношения",
+          "партнёр",
+          "любовь"
+        ],
+        "en": [
+          "closeness",
+          "intimacy",
+          "relationship"
+        ],
+        "es": [
+          "cercanía",
+          "intimidad",
+          "pareja"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-closeness-s1",
+          "label": {
+            "ru": "Тёплая встреча",
+            "en": "Warm meeting",
+            "es": "Encuentro cálido"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "path",
+            "bridge",
+            "heart",
+            "garden"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-closeness-s2",
+          "label": {
+            "ru": "Навстречу друг другу",
+            "en": "Moving closer",
+            "es": "Acercarnos"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "shore",
+            "road",
+            "hands",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-closeness-s3",
+          "label": {
+            "ru": "Общее пространство",
+            "en": "Shared space",
+            "es": "Espacio compartido"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "meadow",
+            "circle",
+            "tree",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-closeness-s4",
+          "label": {
+            "ru": "Свет между нами",
+            "en": "Light between us",
+            "es": "Luz entre nosotros"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "window",
+            "light",
+            "heart",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "love-trust",
+      "label": {
+        "ru": "Доверие",
+        "en": "Trust",
+        "es": "Confianza"
+      },
+      "desiredOutcome": {
+        "ru": "Дать место доверию с уважением границ",
+        "en": "Make space for trust and boundaries",
+        "es": "Dar espacio a la confianza y los límites"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "relationships/connection",
+      "aliases": {
+        "ru": [
+          "доверие",
+          "довериться",
+          "отношения"
+        ],
+        "en": [
+          "trust",
+          "reliable relationship"
+        ],
+        "es": [
+          "confianza",
+          "confiar",
+          "relación"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-trust-s1",
+          "label": {
+            "ru": "Мост доверия",
+            "en": "Bridge of trust",
+            "es": "Puente de confianza"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "river",
+            "bridge",
+            "stone",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-trust-s2",
+          "label": {
+            "ru": "Мягкая опора",
+            "en": "Gentle support",
+            "es": "Apoyo amable"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "hands",
+            "tree",
+            "roots",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-trust-s3",
+          "label": {
+            "ru": "Открытый сад",
+            "en": "Welcoming garden",
+            "es": "Jardín abierto"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "door",
+            "garden",
+            "flowers",
+            "path"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-trust-s4",
+          "label": {
+            "ru": "Два берега",
+            "en": "Two shores",
+            "es": "Dos orillas"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "shore",
+            "river",
+            "bridge",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "love-heart",
+      "label": {
+        "ru": "Открытое сердце",
+        "en": "Open heart",
+        "es": "Corazón abierto"
+      },
+      "desiredOutcome": {
+        "ru": "Почувствовать больше тепла и открытости",
+        "en": "Feel warmth and openness",
+        "es": "Sentir calidez y apertura"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "relationships/connection",
+      "aliases": {
+        "ru": [
+          "сердце",
+          "открытость",
+          "нежность",
+          "любовь"
+        ],
+        "en": [
+          "heart",
+          "openness",
+          "tenderness"
+        ],
+        "es": [
+          "corazón",
+          "apertura",
+          "ternura"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-heart-s1",
+          "label": {
+            "ru": "Сияние сердца",
+            "en": "Heart glow",
+            "es": "Resplandor del corazón"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "heart",
+            "light",
+            "sunrise",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-heart-s2",
+          "label": {
+            "ru": "Цветущий сад",
+            "en": "Blossoming garden",
+            "es": "Jardín florecido"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "garden",
+            "flowers",
+            "seed",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-heart-s3",
+          "label": {
+            "ru": "Тёплый луч",
+            "en": "A warm ray",
+            "es": "Un rayo cálido"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "sun",
+            "window",
+            "hands",
+            "heart"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-heart-s4",
+          "label": {
+            "ru": "Дверь сердца",
+            "en": "Door of the heart",
+            "es": "Puerta del corazón"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "door",
+            "bridge",
+            "light",
+            "clearing"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "love-boundaries",
+      "label": {
+        "ru": "Личные границы",
+        "en": "Personal boundaries",
+        "es": "Límites personales"
+      },
+      "desiredOutcome": {
+        "ru": "Сохранять свои границы в отношениях",
+        "en": "Keep my boundaries in relationships",
+        "es": "Cuidar mis límites en las relaciones"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "personal_growth/traits",
+      "aliases": {
+        "ru": [
+          "границы",
+          "сказать нет",
+          "уважение"
+        ],
+        "en": [
+          "boundaries",
+          "say no",
+          "respect"
+        ],
+        "es": [
+          "límites",
+          "decir no",
+          "respeto"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-boundaries-s1",
+          "label": {
+            "ru": "Круг света",
+            "en": "Circle of light",
+            "es": "Círculo de luz"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "circle",
+            "shield",
+            "sky",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-boundaries-s2",
+          "label": {
+            "ru": "Моё пространство",
+            "en": "My own space",
+            "es": "Mi espacio"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "clearing",
+            "tree",
+            "stone",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-boundaries-s3",
+          "label": {
+            "ru": "Мягкое нет",
+            "en": "A kind no",
+            "es": "Un no amable"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "door",
+            "hands",
+            "path",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-boundaries-s4",
+          "label": {
+            "ru": "Равновесие",
+            "en": "Finding balance",
+            "es": "Encontrar equilibrio"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "river",
+            "bridge",
+            "circle",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "love-self",
+      "label": {
+        "ru": "Любовь к себе",
+        "en": "Self-compassion",
+        "es": "Amor propio"
+      },
+      "desiredOutcome": {
+        "ru": "Отнестись к себе с теплом",
+        "en": "Treat myself with kindness",
+        "es": "Tratarme con amabilidad"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "personal_growth/support",
+      "aliases": {
+        "ru": [
+          "любовь к себе",
+          "самопринятие",
+          "доброта"
+        ],
+        "en": [
+          "self love",
+          "self compassion"
+        ],
+        "es": [
+          "amor propio",
+          "autocompasión"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-self-s1",
+          "label": {
+            "ru": "Доброе зеркало",
+            "en": "Kind reflection",
+            "es": "Reflejo amable"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "mirror",
+            "window",
+            "warmth",
+            "heart"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-self-s2",
+          "label": {
+            "ru": "Забота о себе",
+            "en": "Caring for myself",
+            "es": "Cuidarme"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "hands",
+            "home",
+            "garden",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-self-s3",
+          "label": {
+            "ru": "Тихое принятие",
+            "en": "Quiet acceptance",
+            "es": "Aceptación serena"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "lake",
+            "stone",
+            "light",
+            "leaves"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-self-s4",
+          "label": {
+            "ru": "Внутренний дом",
+            "en": "An inner home",
+            "es": "Hogar interior"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "nest",
+            "hearth",
+            "home",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "love-dialogue",
+      "label": {
+        "ru": "Гармоничное общение",
+        "en": "Kind communication",
+        "es": "Comunicación amable"
+      },
+      "desiredOutcome": {
+        "ru": "Говорить и слушать с уважением",
+        "en": "Speak and listen with respect",
+        "es": "Hablar y escuchar con respeto"
+      },
+      "legacyVideoTheme": "relationships",
+      "legacyProfileTopic": "relationships/connection",
+      "aliases": {
+        "ru": [
+          "общение",
+          "разговор",
+          "диалог",
+          "конфликт"
+        ],
+        "en": [
+          "communication",
+          "conversation",
+          "dialogue"
+        ],
+        "es": [
+          "comunicación",
+          "conversación",
+          "diálogo"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "love-dialogue-s1",
+          "label": {
+            "ru": "Мост слов",
+            "en": "Bridge of words",
+            "es": "Puente de palabras"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "bridge",
+            "light",
+            "hands",
+            "heart"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-dialogue-s2",
+          "label": {
+            "ru": "Слушать сердцем",
+            "en": "Listening with care",
+            "es": "Escuchar con cuidado"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "circle",
+            "tree",
+            "warmth",
+            "garden"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-dialogue-s3",
+          "label": {
+            "ru": "Честная встреча",
+            "en": "An honest meeting",
+            "es": "Encuentro sincero"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "path",
+            "door",
+            "sky",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "love-dialogue-s4",
+          "label": {
+            "ru": "Разговор при свете",
+            "en": "Conversation in light",
+            "es": "Conversación a la luz"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "window",
+            "hearth",
+            "sun",
+            "flowers"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    }
+  ]
+}

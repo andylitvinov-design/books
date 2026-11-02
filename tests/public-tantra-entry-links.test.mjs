@@ -49,7 +49,9 @@ const freePaths = loadComponent('components/home-free-paths.tsx', {
 shared['@/components/home-free-paths'] = { HomeFreePaths: freePaths };
 const home = loadComponent('components/holistic-house-home.tsx', {
   ...shared,
+  react: React,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
+  '@/components/home-presentation-video-section': { HomePresentationVideoSection: empty },
   '@/components/homepage-contact-cta': { HomepageContactCta: empty },
   '@/components/services-solutions': { ServicesSolutions: empty },
   '@/components/homepage-topic-journeys': { HomepageTopicJourneys: empty },

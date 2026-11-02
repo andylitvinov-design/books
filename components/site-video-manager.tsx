@@ -5,6 +5,7 @@ import { Check, ExternalLink, Film, Globe2, Save } from "lucide-react";
 import Link from "next/link";
 
 import { refreshSiteVideosAction, saveSiteVideoAction } from "@/app/admin/videos/actions";
+import { readUiLocale } from "@/lib/ui-locale";
 import { SiteVideoPlayer, existingYouTubeMirrors } from "@/components/site-video-player";
 import { parseSiteVideoSource, siteVideoWatchUrl, SITE_VIDEO_SLOTS, videoKey, videoPagePath } from "@/lib/site-videos/model";
 import type { SiteVideoRecord, VideoLocale } from "@/lib/site-videos/model";
@@ -131,6 +132,11 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
       setUiLocale((event as CustomEvent).detail === "en" ? "en" : "ru");
     }
     window.addEventListener("holistic-house-ui-locale", onLocale);
+    // The header and editor hydrate separately. Reconcile the cookie after
+    // subscribing so a language click before this effect cannot be lost.
+    // readUiLocale comes from JS and TypeScript cannot infer its union type.
+    // Validate the value before committing it to the typed editor state.
+    setUiLocale(readUiLocale(document.cookie) === "ru" ? "ru" : "en");
     return () => window.removeEventListener("holistic-house-ui-locale", onLocale);
   }, []);
 
