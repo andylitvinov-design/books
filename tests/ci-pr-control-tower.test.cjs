@@ -764,3 +764,30 @@ test('source receives first scheduling priority and DIRTY cleanup does not reser
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'78');
  assert.ok(f.calls.labels.some(x=>x.issue_number===77&&x.labels.includes('hh:repair-manual')));
 });
+
+test('orphaned accepted Repair handoff receives one terminal diagnostic, not a replay',async()=>{
+ const item=pr(70),task=taskFor(item,{tier:'P1'});
+ const created=NOW-61*60_000;
+ const reserved={body:commentBody(reservation(task,created,25)),
+  created_at:new Date(created).toISOString()};
+ const f=fixture([item],{comments:{70:[proof(),reserved]},recent:[]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.unconfirmedHandoffs,1);
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_HANDOFF_UNCONFIRMED_V1')));
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('NO_VERIFIED_WORKER_OUTCOME_AFTER_60_MINUTES')));
+ assert.ok(f.calls.labels.some(x=>x.issue_number===70&&x.labels.includes('hh:repair-manual')));
+ assert.ok(f.calls.removed.some(x=>x.issue_number===70&&x.name==='hh:repair-needed'));
+});
+test('orphan reconciliation does not interrupt an active Repair Worker',async()=>{
+ const item=pr(70),task=taskFor(item,{tier:'P1'});
+ const created=NOW-61*60_000;
+ const reserved={body:commentBody(reservation(task,created,25)),
+  created_at:new Date(created).toISOString()};
+ const f=fixture([item],{comments:{70:[proof(),reserved]},
+  recent:[{status:'in_progress',event:'workflow_dispatch'}]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.unconfirmedHandoffs,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.labels.length,0);
+});
