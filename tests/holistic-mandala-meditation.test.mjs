@@ -46,7 +46,8 @@ test("private photo never leaves the browser and can be cropped or removed", () 
   assert.match(studio, /!recording && !photoPending/, "the quick video cannot begin during HEIC preparation");
   assert.match(studio, /if\(photoPending\)\{/, "recording callback checks stale photo before export");
   assert.match(studio, /data-video-photo-pending/);
-  assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
+  assert.match(studio, /if\(recording\|\|preparing\|\|preparingRef\.current\|\|jobRef\.current\|\|webCodecJobRef\.current\|\|photoPending\)return false;/,
+    "HEIC must add to—not replace—active render and codec job guards");
   const normalized = read("lib/mandala/prepare-browser-photo.ts");
   assert.match(normalized, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
   assert.match(normalized, /canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
