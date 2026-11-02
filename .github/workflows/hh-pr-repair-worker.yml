@@ -84,7 +84,8 @@ jobs:
             const result=await worker.claim({github,core,context,
               number:Number.isSafeInteger(requested)?requested:0,
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
-              taskKey:String(context.payload.inputs?.task_key || ''),dryRun,
+              taskKey:String(context.payload.inputs?.task_key || ''),
+              reservationRunId:String(context.payload.inputs?.reservation_run_id || ''),dryRun,
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
@@ -115,6 +116,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Try targeted ESLint autofix and write bounded patch candidate
@@ -275,7 +277,7 @@ jobs:
       contents: read
       actions: read
       issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - name: Checkout trusted finalizer without write credentials
         uses: actions/checkout@v4
