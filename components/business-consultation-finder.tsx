@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, Check, Compass, RotateCcw, ShieldCheck, TrendingUp, WalletCards } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { ArrowRight, Check, Lightbulb, RotateCcw, ShieldCheck } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
 import { BUSINESS_FINDER_FORMATS, suggestBusinessConsultation } from '@/lib/business-consulting/consultation-finder'
+import { BUSINESS_TOPIC_GUIDE, BUSINESS_QUESTION_TOPICS, businessNeedForTopic, inferBusinessTopic } from '@/lib/business-consulting/question-guide'
 import styles from './business-consultation-finder.module.css'
 
 type Locale = 'en' | 'ru' | 'es'
@@ -12,8 +13,7 @@ type Need = 'clarity' | 'income' | 'growth'
 type Format = 'free' | 'express' | 'full' | 'mentoring'
 type PaidFormat = Exclude<Format, 'free'>
 type Choice = { label: string; help: string }
-
-const needs = ['clarity', 'income', 'growth'] as const
+type BusinessTopic = 'all' | 'money' | 'clients' | 'start' | 'strategy' | 'career' | 'opportunities' | 'team' | 'focus'
 const paidFormats = (BUSINESS_FINDER_FORMATS as readonly Format[]).filter((format): format is PaidFormat => format !== 'free')
 // Editorial mapping onto the existing approved matcher and CRM formats.
 // No questionnaire answers, sensitive data, identifiers or diagnosis are collected.
@@ -25,17 +25,25 @@ const needIssues = {
 
 const words: Record<Locale, {
   title: string; match: string; focus: string; change: string;
+  questionLabel: string; questionPlaceholder: string; submit: string; questionError: string;
+  ideaLabel: string; unknownIdea: string;
   request: string; freeAction: string; freeKicker: string; paidKicker: string;
   other: string; available: string; consent: string; noBooking: string;
   mentorPrice: string; reasons: Record<Format, string>; choices: Record<Need, Choice>;
 }> = {
   en: {
     title: 'Find your starting point',
-    match: 'Choose how to begin', focus: 'Your focus', change: 'Change my answer',
+    questionLabel: 'Ask a question about your business',
+    questionPlaceholder: 'For example: I have an idea, but how do I find my first clients?',
+    submit: 'Find a solution or get an idea',
+    questionError: 'Please write a short question (at least 8 characters).',
+    ideaLabel: 'A practical idea',
+    unknownIdea: 'Choose a topic below to narrow this down. You can also start with a free written review.',
+    match: 'Choose how to begin', focus: 'Your focus', change: 'Edit question',
     request: 'Request a personal session', freeAction: 'Start free written review',
     freeKicker: 'FREE · WRITTEN REVIEW', paidKicker: 'LIVE WITH ANDREY',
     other: 'Other paid formats', available: 'Personal session formats',
-    consent: 'Only an enquiry you submit with consent goes to Andrey. Your choice stays on this page until then.',
+    consent: 'Your question stays on this page. Only a separate enquiry you send with consent reaches Andrey.',
     noBooking: 'A request is not a booked or paid appointment. Time is confirmed personally; business results are not guaranteed.',
     mentorPrice: 'By arrangement',
     reasons: {
@@ -52,11 +60,17 @@ const words: Record<Locale, {
   },
   ru: {
     title: 'Найдите подходящий формат',
-    match: 'Два способа начать', focus: 'Ваш запрос', change: 'Изменить ответ',
+    questionLabel: 'Задайте вопрос о бизнесе',
+    questionPlaceholder: 'Например: как привлечь первых клиентов?',
+    submit: 'Найти решение или идею',
+    questionError: 'Напишите короткий вопрос (хотя бы 8 символов).',
+    ideaLabel: 'Идея для первого шага',
+    unknownIdea: 'Выберите тему в фильтре ниже для уточнения. Можно также начать с бесплатного письменного разбора.',
+    match: 'Два способа начать', focus: 'Ваш запрос', change: 'Изменить вопрос',
     request: 'Запросить личную сессию', freeAction: 'Начать бесплатный разбор',
     freeKicker: 'БЕСПЛАТНО · ПИСЬМЕННО', paidKicker: 'СЕССИЯ С АНДРЕЕМ',
     other: 'Другие платные форматы', available: 'Форматы личных сессий',
-    consent: 'Только заявка с вашим согласием отправляется Андрею. До этого выбор остаётся на странице.',
+    consent: 'Ваш вопрос остаётся на странице. Андрею отправится только отдельно поданная заявка с вашим согласием.',
     noBooking: 'Заявка — ещё не запись и не оплата. Время согласуется лично; результаты для бизнеса не гарантируются.',
     mentorPrice: 'По договорённости',
     reasons: {
@@ -73,11 +87,17 @@ const words: Record<Locale, {
   },
   es: {
     title: 'Encuentra tu punto de partida',
-    match: 'Dos formas de empezar', focus: 'Tu tema', change: 'Cambiar respuesta',
+    questionLabel: 'Haz una pregunta sobre tu negocio',
+    questionPlaceholder: 'Por ejemplo: ¿cómo encuentro mis primeros clientes?',
+    submit: 'Encontrar una solución o idea',
+    questionError: 'Escribe una pregunta breve (al menos 8 caracteres).',
+    ideaLabel: 'Una idea para empezar',
+    unknownIdea: 'Elige un tema abajo para precisar tu pregunta. También puedes solicitar una revisión escrita gratis.',
+    match: 'Dos formas de empezar', focus: 'Tu tema', change: 'Editar pregunta',
     request: 'Solicitar una sesión personal', freeAction: 'Empezar revisión gratuita',
     freeKicker: 'GRATIS · POR ESCRITO', paidKicker: 'EN VIVO CON ANDREY',
     other: 'Otras opciones de pago', available: 'Modalidades de sesiones personales',
-    consent: 'Solo enviamos tu solicitud con tu consentimiento. Hasta entonces, tu elección queda en la página.',
+    consent: 'Tu pregunta se queda aquí. Solo se envía a Andrey una solicitud aparte con tu consentimiento.',
     noBooking: 'Solicitar no confirma una cita ni un pago. El horario se acuerda personalmente, sin promesas económicas.',
     mentorPrice: 'Por acuerdo',
     reasons: {
@@ -94,8 +114,13 @@ const words: Record<Locale, {
   },
 }
 
-export function BusinessConsultationFinder({locale}: {locale: Locale}) {
+export function BusinessConsultationFinder({locale, onTopicIdentified}: {
+  locale: Locale; onTopicIdentified?: (topic: BusinessTopic) => void
+}) {
   const t = words[locale]
+  const [question, setQuestion] = useState('')
+  const [error, setError] = useState('')
+  const [topic, setTopic] = useState<BusinessTopic>('all')
   const [need, setNeed] = useState<Need | null>(null)
   const [preferred, setPreferred] = useState<PaidFormat | null>(null)
   const issue = need ? needIssues[need] : null
@@ -108,34 +133,55 @@ export function BusinessConsultationFinder({locale}: {locale: Locale}) {
     full: {name: offers[2].name, price: offers[2].price},
     mentoring: {name: businessConsultingCopy[locale].mentorTitle, price: t.mentorPrice},
   }
-  // Editorial labels only. Never place answers in URL/query, marketing pixels or messages.
-  const context = need ? t.focus + ': ' + t.choices[need].label + '.' : ''
+  // Only a *public topic label*, never the visitor's free text, enters a CRM handoff.
+  const topicLabel = topic === 'all' ? (need ? t.choices[need].label : '') : BUSINESS_TOPIC_GUIDE[locale][topic].label
+  const context = need ? t.focus + ': ' + topicLabel + '.' : ''
+  const idea = topic === 'all' ? t.unknownIdea : BUSINESS_TOPIC_GUIDE[locale][topic].idea
+
+  function submitQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (question.trim().length < 8) { setError(t.questionError); return }
+    const inferred = inferBusinessTopic(question)
+    const nextTopic: BusinessTopic = inferred && BUSINESS_QUESTION_TOPICS.includes(inferred)
+      ? inferred as BusinessTopic : 'all'
+    setTopic(nextTopic)
+    setNeed(businessNeedForTopic(nextTopic) as Need)
+    setPreferred(null)
+    setError('')
+    onTopicIdentified?.(nextTopic)
+  }
+
+  function restart() {
+    setNeed(null)
+    setPreferred(null)
+    setError('')
+    onTopicIdentified?.('all')
+  }
 
   return <section className={styles.panel} id="hh-business-finder"
     data-business-consultation-finder aria-labelledby="hh-business-finder-title">
     <h2 id="hh-business-finder-title" className={styles.srOnly}>{t.title}</h2>
-    {!need ? <>
-      <div className={styles.choices} role="group" aria-label={t.title} data-business-finder-step="need">
-        {needs.map(key=><button key={key} type="button" className={styles.choice}
-          data-business-need={key} aria-pressed={need===key}
-          onClick={()=>{setNeed(key);setPreferred(null)}}>
-          <span className={styles.choiceIcon} aria-hidden="true">
-            {key==='clarity' ? <Compass size={19}/> : key==='income' ? <WalletCards size={19}/> : <TrendingUp size={19}/>}
-          </span>
-          <span className={styles.choiceCopy}>
-            <strong>{t.choices[key].label}</strong><small>{t.choices[key].help}</small>
-          </span>
-          <ArrowRight className={styles.choiceArrow} size={16} aria-hidden="true"/>
-        </button>)}
-      </div>
+    {!need ? <form className={styles.askForm} data-business-finder-step="question" onSubmit={submitQuestion} noValidate>
+      <label className={styles.askLabel} htmlFor="hh-business-question">{t.questionLabel}</label>
+      <textarea id="hh-business-question" className={styles.questionInput}
+        data-business-question-input value={question} maxLength={400} rows={2}
+        placeholder={t.questionPlaceholder} aria-invalid={!!error}
+        onChange={event=>{setQuestion(event.target.value);if(error)setError('')}}/>
+      <button type="submit" className={styles.submit} data-business-question-submit>
+        <Lightbulb size={18} aria-hidden="true"/>{t.submit}<ArrowRight size={17} aria-hidden="true"/>
+      </button>
+      {error && <p className={styles.inputError} role="alert">{error}</p>}
       <p className={styles.privacy}><ShieldCheck size={14} aria-hidden="true"/>{t.consent}</p>
-    </> : <div className={styles.recommendation} data-business-finder-result aria-live="polite">
+    </form> : <div className={styles.recommendation} data-business-finder-result aria-live="polite">
       <button className={styles.change} data-business-finder-reset type="button"
-        onClick={()=>{setNeed(null);setPreferred(null)}}><RotateCcw size={14} aria-hidden="true"/>{t.change}</button>
+        onClick={restart}><RotateCcw size={14} aria-hidden="true"/>{t.change}</button>
       <div className={styles.resultIntro}>
         <p className={styles.resultEyebrow}>{t.match}</p>
-        <p className={styles.needSummary}>{t.focus}: <strong>{t.choices[need].label}</strong></p>
+        <p className={styles.needSummary}>{t.focus}: <strong>{topicLabel}</strong></p>
       </div>
+      <p className={styles.quickIdea} data-business-quick-idea><Lightbulb size={16} aria-hidden="true"/>
+        <span><strong>{t.ideaLabel}:</strong> {idea}</span>
+      </p>
       <div className={styles.ways} data-business-finder-ways>
         <article className={styles.way} data-business-result-path="free">
           <div className={styles.wayHeading}>

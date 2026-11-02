@@ -15,6 +15,8 @@ on:
       - 'components/business-service-browser.tsx'
       - 'components/business-service-browser.module.css'
       - 'lib/business-consulting/consultation-finder.js'
+      - 'lib/business-consulting/question-guide.js'
+      - 'tests/business-question-guide.test.mjs'
       - 'tests/business-consultation-finder.test.mjs'
       - 'tests/business-service-browser.test.mjs'
       - 'tests/topic-journey-account-scope.test.mjs'
@@ -58,6 +60,7 @@ jobs:
           node --test
           tests/growth-journey-public.test.mjs
           tests/business-consultation-finder.test.mjs
+          tests/business-question-guide.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
       - name: Lint changed JS and TypeScript
@@ -69,6 +72,8 @@ jobs:
           components/business-consultation-finder.tsx
           components/business-service-browser.tsx
           lib/business-consulting/consultation-finder.js
+          lib/business-consulting/question-guide.js
+          tests/business-question-guide.test.mjs
           tests/business-consultation-finder.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs

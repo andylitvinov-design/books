@@ -2,22 +2,28 @@
 .panel{min-width:0;margin:0;color:#fff}
 .panel *{box-sizing:border-box;min-width:0}
 .srOnly{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.choices{display:grid;grid-template-columns:1fr;gap:9px}
-.choice{
-  display:flex;align-items:center;gap:11px;width:100%;min-height:61px;
-  padding:10px 14px;border:1px solid #e0d0bd;border-radius:13px;
-  background:#fffdf8;color:#263c44;text-align:left;cursor:pointer;
-  box-shadow:0 3px 9px rgb(15 28 31 / 12%);
-  transition:background .16s,border-color .16s,transform .16s;
+.askForm{display:grid;gap:8px}
+.askLabel{color:#ffe0a9;font:750 12px/1.25 system-ui,sans-serif}
+.questionInput{
+  width:100%;min-height:66px;max-height:128px;padding:12px 14px;
+  border:1px solid #d9c5ab;border-radius:13px;background:#fffdf9;color:#263d45;
+  font:500 14px/1.4 system-ui,sans-serif;resize:vertical;
+  box-shadow:inset 0 1px 3px rgb(31 32 28 / 6%);
 }
-.choice:hover{border-color:#d9ac74;background:#fff4e7}
-.choice:active{transform:scale(.99)}
-.choiceIcon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#f2e3cf;color:#91623b}
-.choiceCopy{display:grid;flex:1;gap:2px;min-width:0}
-.choice strong{font:800 14px/1.26 system-ui,sans-serif}
-.choice small{font:450 11px/1.35 system-ui,sans-serif;color:#667780}
-.choiceArrow{flex:none;color:#9c6c44}
-.choice[aria-pressed="true"]{border-color:#d5a56d;background:#f5e6d0}
+.questionInput::placeholder{color:#7b8585;opacity:1}
+.questionInput[aria-invalid="true"]{border-color:#b34b4b}
+.submit{display:flex;align-items:center;justify-content:center;gap:10px;
+  min-height:49px;width:100%;padding:11px 14px;border:1px solid #ab694d;
+  border-radius:12px;background:linear-gradient(110deg,#965039,#803d4b);
+  color:#fff;cursor:pointer;text-align:center;font:800 14px/1.3 system-ui,sans-serif}
+.submit:hover{filter:brightness(1.08)}
+.submit svg{flex:none}
+.inputError{margin:0;color:#ffe1d5;font:650 12px/1.35 system-ui,sans-serif}
+.quickIdea{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;padding:9px 11px;
+  border:1px solid #dac4a9;border-radius:11px;background:#f4e9da;color:#39565c;
+  font:500 12px/1.45 system-ui,sans-serif}
+.quickIdea svg{flex:none;color:#976341;margin-top:1px}
+.quickIdea strong{color:#765139}
 .privacy{display:flex;align-items:flex-start;gap:6px;margin:10px 0 0;color:#e0e6e3;font:450 10px/1.35 system-ui,sans-serif}
 .privacy svg{flex:none;margin-top:1px;color:#f1c68f}
 .recommendation{padding:13px 14px 11px;border:1px solid #d9bd96;border-radius:15px;background:#fffaf3;color:#263f49;box-shadow:0 8px 24px rgb(13 29 34 / 13%)}
@@ -49,18 +55,13 @@
 .format small{flex:none;color:#76543b;font:700 10px/1.25 system-ui,sans-serif;text-align:right}
 .format[aria-pressed="true"]{border-color:#b78756;background:#f5e9d9}
 .noBooking{margin:8px 0 0;color:#66767a;font:450 10px/1.4 system-ui,sans-serif}
-.panel :is(button,a,summary):focus-visible{outline:3px solid #f7c58d;outline-offset:3px}
-@media(min-width:1020px){
-  .choices{gap:10px}
-  .choice{min-height:66px}
-}
+.panel :is(button,a,summary,textarea):focus-visible{outline:3px solid #f7c58d;outline-offset:3px}
 @media(max-width:650px){
-  .choices{gap:7px}
-  .choice{min-height:54px;padding:7px 11px;gap:9px;border-radius:11px}
-  .choiceIcon{flex-basis:30px;width:30px;height:30px;border-radius:9px}
-  .choiceIcon svg{width:17px;height:17px}
-  .choice strong{font-size:13px}
-  .choice small{display:none}
+  .askForm{gap:7px}
+  .askLabel{font-size:11px}
+  .questionInput{min-height:59px;padding:10px 11px;border-radius:11px;font-size:13px}
+  .submit{min-height:46px;padding:9px 10px;font-size:13px}
+  .quickIdea{padding:8px;font-size:11px;line-height:1.35}
   .privacy{font-size:9px;margin-top:8px}
   .recommendation{padding:10px 11px}
   .ways{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
@@ -72,8 +73,8 @@
   .formats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:350px){
-  .choice{min-height:51px;padding:7px 9px}
-  .choice strong{font-size:12px}
+  .questionInput{font-size:12px}
+  .submit{font-size:12px}
   .way{padding:8px 7px}
   .way h3{font-size:15px}
   .wayKicker{font-size:8px}
@@ -81,4 +82,4 @@
   .primary,.freePrimary{font-size:11px}
   .formats{grid-template-columns:1fr}
 }
-@media(prefers-reduced-motion:reduce){.choice{transition:none}.choice:active{transform:none}}
+

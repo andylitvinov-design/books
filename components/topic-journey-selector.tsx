@@ -10,7 +10,7 @@ import styles from './topic-journey-selector.module.css'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
 import { BusinessConsultationFinder } from '@/components/business-consultation-finder'
-import { BusinessServiceBrowser } from '@/components/business-service-browser'
+import { BusinessServiceBrowser, type BusinessTopic } from '@/components/business-service-browser'
 
 type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
@@ -96,19 +96,19 @@ const businessDiscoveryCopy = {
   en: {
     eyebrow: 'PERSONAL BUSINESS CONSULTATIONS',
     title: 'What would help your business most right now?',
-    lead: 'Choose one answer. We will suggest a way to begin — no long questionnaire.',
+    lead: 'Ask your business question in your own words. Discover one practical idea and ways to begin.',
     portrait: 'Andrey Litvinov · Personal consultation',
   },
   ru: {
     eyebrow: 'ЛИЧНЫЕ БИЗНЕС-КОНСУЛЬТАЦИИ',
     title: 'Что сейчас больше всего поможет вашему делу?',
-    lead: 'Выберите один ответ и сразу увидите подходящий вариант — без длинных анкет.',
+    lead: 'Задайте свой вопрос своими словами — найдём идею и подходящий первый шаг.',
     portrait: 'Андрей Литвинов · Личная консультация',
   },
   es: {
     eyebrow: 'CONSULTAS PERSONALES DE NEGOCIOS',
     title: '¿Qué ayudaría más a tu negocio hoy?',
-    lead: 'Elige una respuesta y encuentra cómo empezar, sin formularios largos.',
+    lead: 'Haz tu pregunta con tus propias palabras y descubre una idea útil para empezar.',
     portrait: 'Andrey Litvinov · Consulta personal',
   },
 } as const
@@ -148,6 +148,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   const c = copy[language]
   const businessText = businessDiscoveryCopy[language]
   const [selected, setSelected] = useState<string[]>([])
+  const [businessTopic, setBusinessTopic] = useState<BusinessTopic>('all')
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [shareStatus,setShareStatus] = useState<'copied'|'shared'|'manual'|''>('')
@@ -373,7 +374,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             </div>
             <h1>{businessText.title}</h1>
             <p className={styles.businessHeroLead}>{businessText.lead}</p>
-            <BusinessConsultationFinder locale={language}/>
+            <BusinessConsultationFinder locale={language} onTopicIdentified={setBusinessTopic}/>
           </div>
         </div>
       ) : (
@@ -395,7 +396,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     </section>
 
 
-    {journey.id === 'business' ? <BusinessServiceBrowser locale={language}/> : assessmentSections}
+    {journey.id === 'business' ? <BusinessServiceBrowser locale={language} selectedTopic={businessTopic} onTopicChange={setBusinessTopic}/> : assessmentSections}
 
     {journey.id !== 'business' && (
     <section className={styles.actions} aria-labelledby="hh-topic-actions-heading">
