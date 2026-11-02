@@ -10,6 +10,20 @@ const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
 
+test('PR Sweep Guard does not make a live conflict-inventory probe block ordinary PR CI',()=>{
+  const source=readFileSync('.github/workflows/hh-pr-sweep-guard.yml','utf8');
+  const marker='      - name: Probe real conflict inventory with a read-only token';
+  assert.ok(source.includes(marker));
+  const probe=source.slice(source.indexOf(marker));
+  assert.match(probe,/^        if: github\.event_name == 'workflow_dispatch'$/m,
+    'live GitHub inventory should only run on explicit operational dispatch');
+  assert.doesNotMatch(probe,/github\.event_name == 'pull_request'/,
+    'network or production-base instability must not block source CI');
+  assert.match(probe,/run: node scripts\/pr-sweep-guard\.mjs route-conflicts/);
+  assert.match(source,/run: node --test tests\/pr-sweep-guard\.test\.mjs/,
+    'deterministic policy/source tests must remain mandatory on pull requests');
+});
+
 test('deep stale triage accepts only latest exact-head required-app gate failure',()=>{
   const gate=(id,conclusion,overrides={})=>({id,name:'release-ready',status:'completed',conclusion,head_sha:sha('a'),app:{id:15368},started_at:`2026-10-31T12:00:0${id}Z`,...overrides});
   const assess=(checks,total=checks.length)=>assessRequiredGate({head:sha('a'),appId:15368,checks,total});
