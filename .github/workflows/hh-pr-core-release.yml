@@ -13,14 +13,17 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   scope:
     name: classify-change
     # Draft PRs avoid full checkout; original full code is required after ready_for_review.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # Lightweight Git/Node classification: keep build-class runners available for Core.
+    # ubuntu-slim has a 15-minute hard limit; this job does no full build.
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
@@ -131,6 +134,8 @@ jobs:
                   docs/operations/CI_RELEASE_POLICY.md|\
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-quick-route.mjs|\
+                  scripts/ci-prune-stale-runs.mjs|\
+                  tests/ci-prune-stale-runs.test.mjs|\
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
@@ -301,6 +306,20 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
+      # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
+      # A miss safely falls back to the existing full real build and validations.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: needs.scope.outputs.ci_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore production-owned Next compiler cache (read-only)
+        if: needs.scope.outputs.ci_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
@@ -310,10 +329,11 @@ jobs:
 
   hh-specialist:
     name: hh-specialist
-    # Start BASE-trusted specialist evidence while Core builds.
-    # hh-merge-check requires completed and successful real Core and Specialist.
-    needs: [scope]
-    if: always()
+    # Queue specialist alongside scope, not after a delayed scope runner.
+    # Independently verify exact HEAD and use ONLY immutable tested-BASE routing.
+    # hh-merge-check still requires successful real scope, Core and Specialist.
+    # A cancelled stale HEAD must not acquire another specialist runner.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -321,23 +341,32 @@ jobs:
       actions: read
       pull-requests: read
     steps:
-      - name: Verify trusted scope and Ready before independent specialist validation
+      - name: Verify ready exact PR HEAD before independently scheduled specialist
         shell: bash
         env:
-          SCOPE_RESULT: ${{ needs.scope.result }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
           EVENT_NAME: ${{ github.event_name }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
             echo 'Draft: specialists remain deferred.' >&2
             exit 1
           fi
-          [[ "$SCOPE_RESULT" == success ]] || {
-            echo 'Trusted PR scope not successful.' >&2
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request events run a release specialist.' >&2
             exit 1
           }
-          echo 'Parallel specialist preflight passed; hh-merge-check still checks Core.' >> "$GITHUB_STEP_SUMMARY"
+          [[ "$HH_EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$HH_PR_NUMBER" =~ ^[0-9]+$ ]] || exit 1
+          # Avoid occupying a specialist runner on a superseded HEAD.
+          live_head="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$HH_PR_NUMBER" --jq '.head.sha')"
+          [[ "$live_head" == "$HH_EVENT_HEAD_SHA" ]] || {
+            echo 'Superseded PR HEAD: specialist refuses stale evidence.' >&2
+            exit 1
+          }
+          echo 'Independent exact-HEAD specialist started; hh-merge-check still checks trusted scope and Core.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -369,8 +398,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Classify specialist with immutable tested-BASE policy
+        id: specialist_route
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "${HH_TRUSTED_BASE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          route=FULL
+          # Never use candidate-PR routing logic to decide whether to skip a specialist.
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-specialist-route"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs"
+            route="$(HH_TESTED_BASE_SHA="$HH_TRUSTED_BASE_SHA" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs")"
+          fi
+          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && needs.scope.outputs.route == 'FULL'
+        if: github.event_name == 'pull_request' && steps.specialist_route.outputs.route == 'FULL'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -409,8 +457,10 @@ jobs:
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, code, hh-specialist]
-    if: always()
-    runs-on: ubuntu-24.04
+    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
+    if: ${{ !cancelled() }}
+    # Read-only required aggregator: no Next build, npm or privileged tools.
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       contents: read

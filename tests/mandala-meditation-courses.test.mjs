@@ -44,7 +44,7 @@ test("one generated meditation unlocks exactly eight topic previews and an hones
   assert.match(enquiry,/data-meditation-course-order/);
   assert.match(enquiry,/data-meditation-course-submit/);
   assert.match(enquiry,/contactConsent:true/);
-  assert.match(enquiry,/sourcePath:"\/"\+locale\+"\/services\/imagery-therapy"/);
+  assert.match(enquiry,/sourcePath:courseKind==="video-series"\?"\/"\+locale\+"\/holistic-support\/mandala":"\/"\+locale\+"\/services\/imagery-therapy"/);
   assert.doesNotMatch(enquiry,/wish|clientPhrase|testScores|profileData/,
     "the first-party enquiry must not transmit raw meditation or test content");
   assert.match(src,/не проводят? оплату|не проводит оплату/);

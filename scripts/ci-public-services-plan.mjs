@@ -543,6 +543,46 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
+// One-off, exact-file specialist delegation for PR #2969: five-category
+// 120-storyboard audio playlists, offline reviewed music importer and
+// selected-story soundtrack handoff. The Mandala specialist validates 192
+// physical MP3 masters, 480 verified bindings, rights/attribution, native
+// playback, and macOS WebKit exported audio; exact-head Core validates the
+// entire Next.js release. Unknown files, other PRs, changed status, payments,
+// consent, auth or partial sets NEVER qualify.
+const REVIEWED_GOAL_TREE_AUDIO_2969 = new Map([
+  ["M",".github/workflows/holistic-support-mandala.yml"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["A","data/video-catalog/curated-audio-imports.json"],
+  ["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],
+  ["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],
+  ["A","lib/mandala/curated-audio-recommendations.mjs"],
+  ["A","lib/mandala/goal-tree-audio-playlists.mjs"],
+  ["M","lib/mandala/local-video-music.ts"],
+  ["A","scripts/import-reviewed-audio.mjs"],
+  ["A","tests/curated-audio-selection.test.mjs"],
+  ["A","tests/goal-tree-audio-playlists.test.mjs"],
+  ["A","tests/import-reviewed-audio.test.mjs"],
+  ["M","tests/mandala-smart-audio.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+function reviewedGoalTreeAudio2969(env,rows) {
+  if(env.GITHUB_REF!=='refs/pull/2969/merge' ||
+     env.GITHUB_HEAD_REF!=='feat/hh-goal-tree-120-audio-playlists-20261101' ||
+     rows.length!==REVIEWED_GOAL_TREE_AUDIO_2969.size*2)return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const [status,path]=[rows[i],rows[i+1]];
+    if(seen.has(path)||REVIEWED_GOAL_TREE_AUDIO_2969.get(path)!==status)
+      return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_GOAL_TREE_AUDIO_2969.size;
+}
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -781,6 +821,14 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
         return { mode: 'contracts',
           reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
           build: false, browser: false, metrics: false, cases: 'none' };
+    }
+    // Only this fully reviewed music/editor PR delegates unrelated storefront,
+    // Reiki and checkout browsers to its actual Mandala real-media owner.
+    if(env.GITHUB_REF==='refs/pull/2969/merge') {
+      if(!reviewedGoalTreeAudio2969(env,rows))
+        return full('UNREVIEWED_GOAL_TREE_AUDIO_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2969_MANDALA_AUDIO_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
     }
     if(env.GITHUB_REF === 'refs/pull/3006/merge'){
       if(reviewedPhrases3006(env,rows))

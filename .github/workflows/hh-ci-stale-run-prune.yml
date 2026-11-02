@@ -1,8 +1,8 @@
 name: HH CI prune superseded queued runs
 
-# Elevated cleanup runs exclusively on trusted production PUSH.
-# PRs execute only a separate read-only policy job. Do not execute PR HEAD
-# with an actions:write token. The production branch is NOT GitHub default.
+# Elevated cleanup runs only on trusted production PUSH or base-owned
+# pull_request_target synchronize. PR HEAD code is NEVER executed with
+# actions:write. The production branch is NOT GitHub default.
 on:
   pull_request:
     branches: ['codex/public-book-library']
@@ -15,7 +15,7 @@ on:
 
 permissions: {}
 concurrency:
-  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
+  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}
   cancel-in-progress: false
 
 jobs:
@@ -75,3 +75,4 @@ jobs:
         run: |
           echo '::warning::Read-only PR conflict grouping is unavailable; successful queued-run prune remains valid.'
           echo '- Conflict grouping: PARTIAL (read-only diagnostic failed); inspect this job log. CI prune outcome remains independently enforced.' >> "$GITHUB_STEP_SUMMARY"
+

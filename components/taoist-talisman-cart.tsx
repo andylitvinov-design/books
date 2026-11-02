@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_CART_UPDATED_EVENT, TALISMAN_GOOGLE_RETURN_KEY, isTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -444,6 +445,7 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
             onChange={event => setConsent(event.target.checked)} />
           {t.consent}
         </label>
+        <EnquiryAttributionChoice locale={locale} />
         <section className={styles.paymentStep} data-talisman-payment-ready={payable ? "true" : "false"}>
           <p className={styles.stepLabel}>2 · {t.checkoutTitle}</p>
           {!pricing?.available || !approvedMethods.length

@@ -110,3 +110,43 @@ test("three women and three men use original voices, never autoplay on selection
  assert.match(styles,/\.voiceCards\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
  assert.doesNotMatch(ui,/autoPlay/);
 });
+
+
+test("voice samples are fixed server-owned text on RU/EN/ES, independent of phrase approval",()=>{
+  for(const language of ["ru","en","es"]){
+    const valid=validateStudioRequest({mode:"sample",voiceId:"maya",language});
+    assert.equal(valid.mode,"sample");
+    assert.equal(valid.language,language);
+    assert.ok(valid.text.length>20);
+    assert.equal(valid.consent,false);
+    assert.equal(buildStudioPayload(valid).input[0].content[0].text,valid.text);
+    assert.throws(()=>validateStudioRequest({mode:"sample",voiceId:"maya",language,text:"private words"}));
+    assert.throws(()=>validateStudioRequest({mode:"sample",voiceId:"maya",language,consent:true}));
+  }
+  assert.throws(()=>validateStudioRequest({mode:"short_text",voiceId:"maya",language:"es",
+    text:"abc",consent:true}),"the guest script route remains RU/EN-only");
+});
+
+test("all six voices can be selected and their real samples requested before phrase approval",()=>{
+  const editor=read("components/mandala-affirmation-voice.tsx");
+  const page=read("components/mandala-free-video-studio.tsx");
+  const styles=read("components/mandala-affirmation-voice.module.css");
+  assert.match(page,/disabled=\{recording\|\|preparing\} approvalPending=\{phrasePending\}/);
+  assert.match(editor,/approvalPending\?\:boolean/);
+  assert.match(editor,/disabled=\{busy\|\|disabled\} onClick=\{\(\)=>\{/);
+  assert.doesNotMatch(editor,/disabled=\{busy\|\|disabled\|\|approvalPending\} onClick/);
+  assert.match(editor,/\!\!languageAvailable\|\|disabled\|\|approvalPending\|\|busy|disabled=\{\!languageAvailable\|\|\!speechText\|\|\!consent\|\|busy\|\|mixing\|\|disabled\|\|approvalPending\}/);
+  for(const marker of ['data-video-affirmation-voice-preview={v.id}',
+    'data-video-affirmation-sample-ready','mode:"sample",voiceId:id,language',
+    'sampleCacheRef','sampleControllerRef','sampleAudioRef','aria-label={t.sample+" "+v.name[locale]}'])
+    assert.ok(editor.includes(marker),marker);
+  assert.match(styles,/\.sampleButton\{/);
+  assert.match(styles,/\.samplePlayer audio\{/);
+  assert.doesNotMatch(editor,/autoPlay/);
+  assert.ok(editor.includes("if(textChanged)setConsent(false)"),
+    "newly approved phrase text must require new consent before external narration");
+  const ownSample=editor.slice(editor.indexOf('async function previewSample('),
+    editor.indexOf('async function createAudio()'));
+  assert.doesNotMatch(ownSample,/speechText|consent:true|onAttach\(/,
+    "sample must never transmit private phrases or replace the video narration");
+});

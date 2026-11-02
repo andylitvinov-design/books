@@ -398,7 +398,7 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
     'tests/session-media-sdk.test.mjs',
     'Fixture lint and private media tests',
   ]) assert.ok(source.includes(required), 'private-owner/media gate removed: ' + required);
-  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
