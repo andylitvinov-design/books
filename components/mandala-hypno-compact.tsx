@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,8 +13,8 @@ import {
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
-import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
-import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { buildWaveNarrativeDraft, interpretWaveNotes } from "@/lib/mandala/hypno-wave-engine.mjs";
+import { resolvePrivateHypnoCodes } from "@/lib/mandala/hypno-private-signals.mjs";
 import css from "./mandala-hypno-compact.module.css";
 
 type SceneOption = { id:string; label:string; symbol:string; poster:string|null };
@@ -143,7 +144,21 @@ const hypnoExtra = {
   aiPrivacy:"Wave funciona localmente. Gemini no recibe notas personales.",
   catalog:"La selección usa las opciones elegidas. Tu texto queda en el dispositivo."}
 } as const;
-const hypnoMiniThemes:VideoTheme[]=["money","relationships","energy","goals"];
+const writerCopy={
+ ru:{title:"Дополнительно · 5 AI-фраз",consent:"Разрешаю передать только общие коды темы, трудности, цели и тона в бесплатный AI. Личные заметки, тесты, профиль и фразы не отправляются. Бесплатные запросы могут использоваться для обучения моделей.",provider:"AI-провайдер",choices:["Авто · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Предложить 5 AI-фраз",busy:"Готовим черновик…",ready:"Черновик готов. Просмотрите и нажмите «Утвердить».",error:"AI недоступен; локальный Wave работает.",signIn:"Войдите в кабинет для AI. Wave работает без аккаунта.",strategy:"Черновик AI для проверки, не назначение терапии."},
+ en:{title:"Optional · five AI phrases",consent:"I permit sending only generic topic, difficulty, goal and tone codes to free AI. Personal notes, tests, profile and phrases are NOT sent. Free providers may use prompts to improve models.",provider:"AI provider",choices:["Auto · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Suggest five AI phrases",busy:"Drafting…",ready:"Draft ready. Review and explicitly Approve before the video changes.",error:"AI unavailable; local Wave remains available.",signIn:"Sign in for AI; local Wave needs no account.",strategy:"AI draft for review, not approved clinical care."},
+ es:{title:"Opcional · cinco frases IA",consent:"Autorizo enviar solo códigos generales de tema, dificultad, meta y tono a IA gratuita. No se envían notas, pruebas, perfil ni frases. Los proveedores pueden usar solicitudes para entrenar modelos.",provider:"Proveedor IA",choices:["Auto · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Sugerir cinco frases",busy:"Preparando…",ready:"Borrador listo. Revísalo y pulsa Aprobar.",error:"IA no disponible; Wave local sigue disponible.",signIn:"Inicia sesión para IA. Wave local no necesita cuenta.",strategy:"Borrador IA para revisión, no terapia aprobada."},
+} as const;
+const smallFilterLabels={
+  ru:{roles:["Опора","Шанс","Действие"],tones:["Бережно","Ровно","Бодро"],focuses:["Опора","Смелость","Действие"]},
+  en:{roles:["Support","Potential","Action"],tones:["Gentle","Balanced","Uplift"],focuses:["Support","Confidence","Action"]},
+  es:{roles:["Apoyo","Posible","Acción"],tones:["Suave","Equilibrado","Motiva"],focuses:["Apoyo","Confianza","Acción"]},
+} as const;
+const ideaCopy={
+ ru:{title:"1. Идея",hint:"Главная мысль вашего видео",own:"Своя идея (по желанию)",profile:"Подобрать по моему профилю",update:"Обновить профиль",apply:"Подобрать фразы",gender:"Форма обращения",female:"Женщина",male:"Мужчина",variants:["Я справлюсь","Я сильная","Я в гармонии","Я открыт новому"]},
+ en:{title:"1. Idea",hint:"The central thought of your video",own:"My own idea (optional)",profile:"Suggest from my profile",update:"Update profile",apply:"Find phrases",gender:"Addressing",female:"Woman",male:"Man",variants:["I can manage","I am strong","I feel balanced","I welcome change"]},
+ es:{title:"1. Idea",hint:"La idea central de tu vídeo",own:"Mi propia idea (opcional)",profile:"Según mi perfil",update:"Actualizar perfil",apply:"Elegir frases",gender:"Dirigido a",female:"Mujer",male:"Hombre",variants:["Puedo lograrlo","Soy fuerte","Estoy en armonía","Me abro al cambio"]},
+} as const;
 type HypnoTestProposal={theme:VideoTheme;problemIndex:number;goal:VideoAffirmationGoal};
 const profileDirections:Record<string,HypnoTestProposal>={
  stress:{theme:"energy",problemIndex:0,goal:"rhythm"},
@@ -160,61 +175,59 @@ const profileDirections:Record<string,HypnoTestProposal>={
  boundaries:{theme:"relationships",problemIndex:1,goal:"boundaries"},
  relationships:{theme:"relationships",problemIndex:2,goal:"dialogue"}
 };
-function problemIndexFromNote(theme:VideoTheme,raw:string,fallback:number):number{
- const note=raw.toLocaleLowerCase().slice(0,160);
- const keywords:Record<VideoTheme,RegExp[]> = {
- energy:[/напряж|тревог|stress|tensi|anxi/i,/устал|утом|tired|fatig|cansad/i,/спеш|тороп|rush|prisa/i],
- money:[/цен|price|precio|cobr/i,/неопредел|uncertain|incertid/i,/сомнен|doubt|duda/i],
- relationships:[/отказ|отверг|reject|rechaz/i,/границ|boundar|límite/i,/разговор|конфликт|convers|conflict/i],
- goals:[/ясност|направлен|clarity|rumbo/i,/откладыв|procrast|posterg/i,/ошиб|mistake|error/i],
- life:[/перемен|change|cambio/i,/неопредел|uncertain|incertid/i,/радост|joy|alegr/i],
- health:[/перегруз|overload|sobrecarg/i,/сил|energy|fuerza/i,/напряж|stress|tensi/i],
- };
- const found=keywords[theme].findIndex(re=>re.test(note));
- return found>=0?found:fallback;
-}
-
 export function MandalaHypnoCompact({
-  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster,
+  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
+  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange,
   onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null;
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
+  externalPhraseDraft?:string|null; onExternalPhraseClear?:()=>void; onPendingChange?:(pending:boolean)=>void;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
-  const [problemNote,setProblemNote]=useState("");
-  const [goalNote,setGoalNote]=useState("");
+  const [ownIdea,setOwnIdea]=useState("");
+  const problemNote=requestText.slice(0,160);
+  // The personal idea is a desired direction, not an inferred diagnosis.
+  // Both fields are interpreted locally by Wave; Gemini still sees enum codes only.
+  const goalNote=ownIdea.trim().slice(0,160);
+  const safetyBlocked=interpretWaveNotes({locale,currentText:problemNote,goalText:goalNote}).status==="safety_handoff";
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"gemini">("ready");
   const extraGoal=topicGoals[theme].includes(goalId)?goalId:topicGoals[theme][0];
-  const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
-  const goal=affirmationGoalCatalog[locale].find(item=>item.id===extraGoal) || affirmationGoalCatalog[locale][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
-  const [showHint,setShowHint]=useState(false);
+  const [ideaIndex,setIdeaIndex]=useState(0);
+  const [gender,setGender]=useState<"female"|"male">("female");
+  const ideas=locale==="ru"&&gender==="male"?["Я справлюсь","Я сильный","Я в гармонии","Я открыт новому"]:ideaCopy[locale].variants;
+  const ideaText=ownIdea.trim()||ideas[ideaIndex];
   const [tone,setTone]=useState<"gentle"|"balanced"|"uplifting">("gentle");
   const [kind,setKind]=useState<"support"|"possibility"|"action">("support");
   const [focus,setFocus]=useState<"support"|"confidence"|"action">("support");
   const [length,setLength]=useState<"short"|"medium">("medium");
   const [generation,setGeneration]=useState(0);
-  const [allPhrases,setAllPhrases]=useState(false);
   const [ownOpen,setOwnOpen]=useState(false);
-  const [filtersOpen,setFiltersOpen]=useState(false);
   const [ownText,setOwnText]=useState("");
   const [testProposal,setTestProposal]=useState<HypnoTestProposal|null>(null);
   const [testBusy,setTestBusy]=useState(false);
   const [note,setNote]=useState("");
   const [approvalKey,setApprovalKey]=useState("");
   const [model,setModel]=useState<HypnoModel>("wave");
+  const [ideaPending,setIdeaPending]=useState(false);
+  const [readyDraft,setReadyDraft]=useState<{selected:number[];resetPreset:boolean}|null>(null);
+  const [customDraft,setCustomDraft]=useState<string|null>(null);
   const [draftState,setDraftState]=useState<HypnoDraft|null>(null);
   const [geminiConsent,setGeminiConsent]=useState(false);
   const [geminiBusy,setGeminiBusy]=useState(false);
   const [geminiNotice,setGeminiNotice]=useState("");
+  const [aiConsent,setAiConsent]=useState(false);
+  const [aiProvider,setAiProvider]=useState<"auto"|"gemini"|"openrouter">("auto");
+  const [aiBusy,setAiBusy]=useState(false);
+  const [aiMessage,setAiMessage]=useState("");
   const runId=useRef(0);
   const pending=useRef<AbortController|null>(null);
   const waveInput={locale,theme,problemIndex,goalId:extraGoal,tone,focus,kind,length};
@@ -223,42 +236,57 @@ export function MandalaHypnoCompact({
   const latestKey=useRef(requestKey);
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
-  const candidates=draft?.phrases??(settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
-  const chosen=draft?.selected??settings.selected;
+  const candidates=draft?.phrases??(readyDraft?.resetPreset
+    ?suggestedVideoAffirmations[locale][theme]
+    :settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
+  const chosen=draft?.selected??readyDraft?.selected??settings.selected;
+  const customPhraseText=externalPhraseDraft??customDraft??settings.custom;
   const selectedCount=chosen.length;
+  const hasPendingEdits=Boolean(draftState||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending||safetyBlocked);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
-  const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
-  const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
+  const approved=!hasPendingEdits&&Boolean(approvalKey&&signature===approvalKey);
+  useEffect(()=>{onPendingChange?.(hasPendingEdits);},[hasPendingEdits,onPendingChange]);
+  const summary=safetyBlocked
+    ?buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,
+      round:generation,fallbackStrategy:"",fallbackPhrases:[]}).strategy
+    :model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
   // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
   // to third-party models or written to account state. Existing approved
   // video phrases remain unchanged until the visitor explicitly approves.
   function createWaveDraft(round:number,nextTheme:VideoTheme=theme,
-    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal):HypnoDraft {
+    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal,
+    overrides:Partial<Pick<typeof waveInput,"kind"|"tone"|"focus"|"length">>={}):HypnoDraft {
     // Test suggestions can change theme/chips in the same React event. Build
     // the draft with their NEXT values, not a stale pre-render request key.
-    const localInput={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
+    const localInput={...waveInput,...overrides,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
     const key=JSON.stringify([localInput,problemNote,goalNote]);
     const fallbackStrategy=buildWaveStrategy(localInput);
     const fallbackPhrases=buildHypnoFilteredPhrases(
-      locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,round);
+      locale,nextTheme,nextProblem,nextGoal,localInput.tone,localInput.kind,localInput.focus,localInput.length,round);
     const result=buildWaveNarrativeDraft({...localInput,currentText:problemNote,goalText:goalNote,
       round,fallbackStrategy,fallbackPhrases});
     if(result.status==="safety_handoff"){
       return {model:"wave",key,strategy:result.strategy,phrases:[],selected:[]};
     }
-    const maxLength=length==="short"?26:36;
-    const phrases=[...new Set([...result.phrases,...fallbackPhrases])]
+    const maxLength=localInput.length==="short"?26:36;
+    const chosenIdea=Array.from(ideaText).slice(0,maxLength).join("");
+    const phrases=[...new Set([chosenIdea,...result.phrases,...fallbackPhrases])]
       .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
+    // Keep the visitor's selected idea at the top while filling short sets
+    // with distinct approved local fallback phrases (from #3007).
+    const completed=[...phrases,...fallbackPhrases.filter(line=>!phrases.includes(line))].slice(0,5);
     return {model:"wave",key,strategy:result.strategy,
-      phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
+      phrases:completed.length===5?completed:fallbackPhrases,selected:[0,1,2]};
   }
-  function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
+  function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal,
+    overrides:Partial<Pick<typeof waveInput,"kind"|"tone"|"focus"|"length">>={}){
     pending.current?.abort();runId.current++;
     setModel("wave");setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
     // Updating a request or accepting a test proposal only stages a Wave v2
     // suggestion. The parent video never receives it before Approve.
-    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal));
+    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal,overrides));
+    setReadyDraft(null);
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){
@@ -269,7 +297,7 @@ export function MandalaHypnoCompact({
       const axes=Array.isArray(response.axes)?response.axes.filter(v=>typeof v==="string").slice(0,3):[];
       const proposed=axes.map(v=>profileDirections[String(v)]).find(Boolean);
       if(!proposed){setNote(extra.noData);return;}
-      setTestProposal(proposed);setOpen("request");
+      setTestProposal(proposed);
     }catch(error){
       const status=(error as {status?:number}).status;
       setNote(status===401?extra.auth:extra.noData);
@@ -285,15 +313,15 @@ export function MandalaHypnoCompact({
   }
   function addCustom(){
     if(!ownText.trim())return;
-    const custom=compactCustomAffirmationInput([settings.custom,ownText.trim()].filter(Boolean).join("\n"));
-    onChange({...settings,enabled:true,custom});setOwnText("");setApprovalKey("");
+    const custom=compactCustomAffirmationInput([customPhraseText,ownText.trim()].filter(Boolean).join("\n"));
+    setCustomDraft(custom);onExternalPhraseClear?.();setOwnText("");setApprovalKey("");
   }
   function toggleSelected(i:number){
     if(draft)setDraftState({...draft,selected:draft.selected.includes(i)?
       draft.selected.filter(v=>v!==i):[...draft.selected,i].slice(0,5)});
     else{
-      const selected=settings.selected.includes(i)?settings.selected.filter(v=>v!==i):[...settings.selected,i].slice(0,5);
-      onChange({...settings,enabled:true,selected});
+      const selected=chosen.includes(i)?chosen.filter(v=>v!==i):[...chosen,i].slice(0,5);
+      setReadyDraft({selected,resetPreset:readyDraft?.resetPreset??false});
     }
     setApprovalKey("");
   }
@@ -302,39 +330,44 @@ export function MandalaHypnoCompact({
   const propose=()=>{
     pending.current?.abort();runId.current++;
     const next=generation+1;
-    setModel("wave");setDraftState(createWaveDraft(next));
+    setModel("wave");setReadyDraft(null);setDraftState(createWaveDraft(next));
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");setOpen(null);
   };
   const ready=()=>{
     pending.current?.abort();runId.current++;
     setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
-    onChange({...settings,enabled:true,presetOverride:undefined,selected:[0,1,2]});
+    setReadyDraft({selected:[0,1,2],resetPreset:true});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
   const changeTheme=(next:VideoTheme)=>{
     if(next===theme)return;
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    const nextProblem=0,nextGoal=topicGoals[next][0],nextRound=generation+1;
+    // Switching categories proposes new phrases, never overwrites approved video text.
+    const nextDraft=createWaveDraft(nextRound,next,nextProblem,nextGoal);
+    setModel("wave");setDraftState(nextDraft);setReadyDraft(null);
+    setGeminiBusy(false);setGeminiNotice("");
     onSelectTheme(next);
-    onChange({...settings,enabled:settings.enabled,presetOverride:undefined,selected:[0,1,2]});
-    setSelectionSource("ready");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
+    setGeneration(nextRound);
+    setSelectionSource("smart");setApprovalKey("");
+    setGoalId(nextGoal);setProblemIndex(nextProblem);
     setOpen("request");
   };
 
   function switchModel(next:HypnoModel){
-    if(disabled||next===model)return;
+    if(disabled||next===model||(next==="gemini"&&safetyBlocked))return;
     pending.current?.abort();runId.current++;
     setGeminiBusy(false);setGeminiNotice("");setApprovalKey("");
-    setModel(next);setDraftState(null);
+    setModel(next);setDraftState(null);setReadyDraft(null);
     if(next==="wave")setDraftState(createWaveDraft(generation+1));
-    else if(geminiConsent)void generateGemini();
+    // Switching model does not trigger external requests; a separate click is required.
   }
   async function generateGemini(){
-    if(disabled||!geminiConsent)return;
+    if(disabled||!geminiConsent||safetyBlocked)return;
     pending.current?.abort();
     const controller=new AbortController();pending.current=controller;
     const number=++runId.current,key=requestKey;
-    setGeminiBusy(true);setGeminiNotice("");setApprovalKey("");
+    setGeminiBusy(true);setGeminiNotice("");setApprovalKey("");setReadyDraft(null);
     let status=0;
     try{
       const response=await fetch("/api/holistic-support/hypno-strategy",{
@@ -355,50 +388,104 @@ export function MandalaHypnoCompact({
         status===503||status===429?extra.aiUnavailable:extra.aiFailure);
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
+  async function generateAiPhrases(){
+    if(disabled||aiBusy||geminiBusy||!aiConsent)return;
+    pending.current?.abort();
+    const controller=new AbortController();pending.current=controller;
+    const number=++runId.current,key=requestKey;
+    setAiBusy(true);setAiMessage("");setApprovalKey("");
+    let status=0;
+    try{
+      const local=resolvePrivateHypnoCodes({
+        locale,theme,problemNote,goalNote,problemIndex,goalId:extraGoal,
+      });
+      const aiTone=tone==="gentle"?"gentle":tone==="uplifting"?"inspiring":"grounded";
+      const response=await fetch("/api/holistic-support/meditation-writer/affirmations",{
+        method:"POST",cache:"no-store",credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({locale,theme,problemIndex:local.problemIndex,goalId:local.goalId,
+          tone:aiTone,focus:"agency",providerPreference:aiProvider,externalModelOptIn:true}),
+        signal:controller.signal,
+      });
+      status=response.status;
+      const result=await response.json() as {status?:string;phrases?:string[];provider?:string};
+      if(!response.ok||result.status!=="draft_review_required"||!Array.isArray(result.phrases)||
+        result.phrases.length!==5||result.phrases.some(phrase=>typeof phrase!=="string"||
+          Array.from(phrase).length>36))throw Error("INVALID_AI_DRAFT");
+      if(number!==runId.current||key!==latestKey.current)return;
+      const nextInput={...waveInput,problemIndex:local.problemIndex,goalId:local.goalId};
+      const nextKey=JSON.stringify([nextInput,problemNote,goalNote]);
+      if(local.privateDescriptionInterpreted){
+        setProblemIndex(local.problemIndex);setGoalId(local.goalId);
+      }
+      // Staged in existing Wave editor; never publish before manual approval.
+      setModel("gemini");
+      setDraftState({model:"gemini",key:nextKey,strategy:writerCopy[locale].strategy,
+        phrases:result.phrases,selected:[0,1,2,3,4]});
+      setSelectionSource("gemini");setGeminiNotice("");
+      setAiMessage(writerCopy[locale].ready+" · "+(result.provider||"free AI"));
+    }catch{
+      if(number===runId.current&&key===latestKey.current)
+        setAiMessage(status===401?writerCopy[locale].signIn:writerCopy[locale].error);
+    }finally{
+      if(number===runId.current)setAiBusy(false);
+    }
+  }
   function approvePhrases(){
+    if(safetyBlocked)return;
+    // A changed idea or addressing form must first generate its own suggested
+    // text. Never silently approve the old wording for a newly selected idea.
+    if(ideaPending&&!draft)return;
     if(draft){
       if(!draft.selected.length)return;
-      const next={...settings,enabled:true,presetOverride:draft.phrases,selected:draft.selected};
+      const next={...settings,enabled:true,presetOverride:draft.phrases,selected:draft.selected,custom:customPhraseText};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
+      setSelectionSource(model==="gemini"?"gemini":"smart");
+      setDraftState(null);setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      onExternalPhraseClear?.();
+    }else if(readyDraft||customDraft!==null||externalPhraseDraft!==null){
+      const selected=readyDraft?.selected??(externalPhraseDraft!==null?[]:settings.selected);
+      if(!selected.length&&!customPhraseText.trim())return;
+      const next={...settings,enabled:true,selected,
+        presetOverride:externalPhraseDraft!==null||readyDraft?.resetPreset?undefined:settings.presetOverride,
+        custom:customPhraseText,visibility:externalPhraseDraft!==null?["large" as const]:settings.visibility};
+      onChange(next);
+      setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
+      setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      onExternalPhraseClear?.();
     }else setApprovalKey(signature);
   }
 
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
-      <section className={css.card} data-hypno-request>
+      <section className={css.card} data-hypno-request data-hypno-idea>
         <div className={css.cardHead}>
-          <span className={css.emblem}><Target size={20} aria-hidden="true"/></span>
-          <div className={css.heading}><h4>{ui.request}</h4><p>{ui.requestHint}</p></div>
-          <button type="button" className={css.edit} data-hypno-request-edit
-            disabled={disabled} aria-expanded={open==="request"} aria-controls="hypno-request-options"
-            onClick={()=>toggle("request")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+          <span className={css.emblem}><Target size={22} aria-hidden="true"/></span>
+          <div className={css.heading}><h4>{ideaCopy[locale].title}</h4><p>{ideaCopy[locale].hint}</p></div>
         </div>
-
-        <div className={css.topicMiniRail} role="group" aria-label={ui.theme}>
-          {hypnoMiniThemes.map((id,i)=><button type="button" key={id} data-hypno-accent={id}
-            aria-pressed={theme===id} disabled={disabled} onClick={()=>changeTheme(id)}>{extra.topics[i]}</button>)}
+        <div className={css.ideaRail} role="group" aria-label={ideaCopy[locale].title}>
+          {ideas.map((text,index)=><button key={index} type="button" data-hypno-idea-choice={index}
+            disabled={disabled} aria-pressed={ideaIndex===index&&!ownIdea.trim()} onClick={()=>{
+              setIdeaIndex(index);setOwnIdea("");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);
+            }}>{ideaIndex===index&&!ownIdea.trim()?<Check size={18} aria-hidden="true"/>:null}{text}</button>)}
         </div>
-        <div className={css.profileMiniActions}>
-          <button type="button" data-hypno-suggest-tests disabled={disabled||testBusy}
-            onClick={()=>void suggestFromTests()}><Sparkles size={14} aria-hidden="true"/>{testBusy?ui.tests:extra.tests}</button>
-          <Link href={"/"+locale+"/tests"} prefetch={false}><Target size={14} aria-hidden="true"/>{extra.test}</Link>
+        <label className={css.ideaOwn}>
+          <span>{ideaCopy[locale].own}</span>
+          <input type="text" value={ownIdea} maxLength={36} disabled={disabled}
+            data-hypno-idea-own placeholder={ideaCopy[locale].own}
+            onChange={event=>{setOwnIdea(event.target.value);setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}/>
+        </label>
+        <div className={css.ideaGender} role="group" aria-label={ideaCopy[locale].gender}>
+          <span>{ideaCopy[locale].gender}</span>
+          <button type="button" aria-pressed={gender==="female"} disabled={disabled} onClick={()=>{setGender("female");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}>{ideaCopy[locale].female}</button>
+          <button type="button" aria-pressed={gender==="male"} disabled={disabled} onClick={()=>{setGender("male");setDraftState(null);setReadyDraft(null);setApprovalKey("");setIdeaPending(true);}}>{ideaCopy[locale].male}</button>
         </div>
-        <div className={css.requestPreview}>
-          <div><span className={css.micro}>{ui.current}</span><strong>{problemNote.trim()||issue.label}</strong></div>
-          <ChevronRight size={17} color="#8da99d" aria-hidden="true"/>
-          <div><span className={css.micro}>{ui.desired}</span><strong>{goalNote.trim()||goal.label}</strong></div>
-        </div>
-        <div className={css.shortNote}>
-          <input type="text" value={problemNote} disabled={disabled} maxLength={160}
-            data-hypno-short-request aria-label={extra.note} placeholder={extra.note}
-            onChange={event=>setProblemNote(event.target.value)}/>
-          <button type="button" data-hypno-update-request disabled={disabled} onClick={()=>{
-            const problem=problemIndexFromNote(theme,problemNote,problemIndex);
-            setProblemIndex(problem);filtered(theme,problem,extraGoal);
-          }}>{extra.update}</button>
+        <div className={css.ideaActions}>
+          <button type="button" className={css.profilePrimary} data-hypno-suggest-tests disabled={disabled||testBusy}
+            onClick={()=>void suggestFromTests()}><Sparkles size={18} aria-hidden="true"/>{testBusy?ui.tests:ideaCopy[locale].profile}</button>
+          <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{ideaCopy[locale].update}<ChevronRight size={17} aria-hidden="true"/></Link>
         </div>
         {testProposal&&<div className={css.testMiniProposal} data-hypno-profile-proposal>
           <strong>{extra.proposal}</strong>
@@ -410,46 +497,19 @@ export function MandalaHypnoCompact({
           </div>
         </div>}
         {note&&<p role="status" className={css.hypnoMiniNotice}>{note}</p>}
-        {open==="request"&&<div className={css.editPane} id="hypno-request-options" data-hypno-request-options>
-          <label className={css.fieldLabel} htmlFor="hypno-quick-theme">{ui.theme}</label>
-          <select id="hypno-quick-theme" value={theme} disabled={disabled}
-            onChange={event=>changeTheme(event.target.value as VideoTheme)}>
-            {primaryThemes.map(item=><option key={item} value={item}>{ui.themeNames[item]}</option>)}
-            {(["life","health"] as const).map(item=><option key={item} value={item}>{ui.themeNames[item]}</option>)}
-          </select>
-          <strong className={css.fieldLabel}>{ui.problem}</strong>
-          <div className={css.chipGrid}>
-            {hypnoRequestProblems[locale][theme].map((item,i)=><button key={item.label}
-              type="button" data-hypno-problem={i} aria-pressed={problemIndex===i}
-              disabled={disabled} onClick={()=>setProblemIndex(i)}>{item.label}</button>)}
-          </div>
-          <textarea rows={2} value={problemNote} maxLength={400} disabled={disabled}
-            aria-label={ui.optional} placeholder={ui.problemPlaceholder}
-            onChange={event=>setProblemNote(event.target.value)}/>
-          <strong className={css.fieldLabel}>{ui.goal}</strong>
-          <div className={css.chipGrid}>
-            {topicGoals[theme].map(id=>{
-              const row=affirmationGoalCatalog[locale].find(entry=>entry.id===id);
-              return row?<button type="button" key={id} aria-pressed={goalId===id}
-                data-hypno-goal={id} disabled={disabled} onClick={()=>setGoalId(id)}>{row.label}</button>:null;
-            })}
-          </div>
-          <textarea rows={2} value={goalNote} maxLength={400} disabled={disabled}
-            aria-label={ui.goalPlaceholder} placeholder={ui.goalPlaceholder}
-            onChange={event=>setGoalNote(event.target.value)}/>
-          <small className={css.contextNote}>{ui.optional}</small>
-          <button type="button" className={css.apply} data-hypno-apply-request
-            disabled={disabled} onClick={propose}><WandSparkles size={17} aria-hidden="true"/>{ui.apply}</button>
-        </div>}
+        <button type="button" className={css.ideaApply} data-hypno-apply-request disabled={disabled}
+          onClick={propose}><WandSparkles size={19} aria-hidden="true"/>{ideaCopy[locale].apply}<ChevronRight size={18} aria-hidden="true"/></button>
       </section>
 
+      <details className={css.strategyDisclosure}>
+        <summary>{extra.strategy} · {extra.wave}<ChevronDown size={17} aria-hidden="true"/></summary>
         <section className={css.strategyCard} data-hypno-strategy>
         <div className={css.strategyHead}><BrainCircuit size={18} aria-hidden="true"/><h4>{extra.strategy}</h4></div>
         <div className={css.modelChoice} role="group" aria-label={extra.strategy}>
           <button type="button" data-hypno-model="wave" aria-pressed={model==="wave"}
             disabled={disabled} onClick={()=>switchModel("wave")}>{extra.wave}</button>
           <button type="button" data-hypno-model="gemini" aria-pressed={model==="gemini"}
-            disabled={disabled} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
+            disabled={disabled||safetyBlocked} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
         </div>
         <p className={css.strategySummary} aria-live="polite" data-hypno-strategy-summary>{summary}</p>
         {model==="gemini"&&<div className={css.geminiControls}>
@@ -464,85 +524,99 @@ export function MandalaHypnoCompact({
         </div>}
         {draft&&<p className={css.strategyHint}>{extra.aiDraft}</p>}
         {geminiNotice&&<p role="status" className={css.strategyNotice}>{geminiNotice}</p>}
+        <details className={css.aiWriter} data-hypno-ai-writer>
+          <summary>{writerCopy[locale].title}</summary>
+          <label className={css.aiConsent}>
+            <input type="checkbox" checked={aiConsent} disabled={disabled||aiBusy}
+              onChange={e=>setAiConsent(e.target.checked)}/>
+            <span>{writerCopy[locale].consent}</span>
+          </label>
+          <label className={css.aiProvider}>{writerCopy[locale].provider}
+            <select value={aiProvider} data-hypno-ai-provider disabled={disabled||aiBusy}
+              onChange={e=>{setAiProvider(e.target.value as typeof aiProvider);setAiMessage("");}}>
+              {(["auto","gemini","openrouter"] as const).map((id,i)=>
+                <option key={id} value={id}>{writerCopy[locale].choices[i]}</option>)}
+            </select>
+          </label>
+          <button type="button" className={css.aiRun} data-hypno-ai-generate
+            disabled={disabled||aiBusy||!aiConsent}
+            onClick={()=>{void generateAiPhrases();}}>
+            <Sparkles size={15} aria-hidden="true"/>
+            {aiBusy?writerCopy[locale].busy:writerCopy[locale].run}
+          </button>
+          {aiMessage&&<p className={css.aiMessage} role="status">{aiMessage}</p>}
+        </details>
         <small className={css.strategyPrivacy}>{extra.aiPrivacy}</small>
       </section>
+      </details>
 
       <section className={css.card} data-hypno-phrases>
         <div className={css.cardHead}>
           <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
           <div className={css.heading}><h4>{extra.support}</h4><p>{ui.phraseHint}</p></div>
           <button type="button" className={css.edit} data-hypno-phrases-edit
-            disabled={disabled} aria-expanded={open==="phrases"} aria-controls="hypno-phrase-options"
-            onClick={()=>toggle("phrases")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+            disabled={disabled} aria-controls="hypno-phrase-filter-options"
+            onClick={()=>document.getElementById("hypno-phrase-filter-options")?.scrollIntoView({block:"center",behavior:"smooth"})}>
+            {ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
 
         <div className={css.modeRail} role="group" aria-label={extra.support}>
-          <button type="button" data-hypno-smart disabled={disabled} aria-pressed={selectionSource==="smart"} onClick={propose}><Sparkles size={14}/>{ui.smart}</button>
+          <button type="button" data-hypno-smart disabled={disabled} aria-pressed={selectionSource==="smart"} onClick={propose}><Sparkles size={17} aria-hidden="true"/>{ui.smart}</button>
           <button type="button" data-hypno-ready disabled={disabled} aria-pressed={selectionSource==="ready"} onClick={ready}>{ui.ready}</button>
-          <button type="button" data-hypno-tests disabled={disabled} aria-pressed={selectionSource==="tests"}
-            onClick={()=>{setOpen("phrases");setShowHint(true);}}>{ui.tests}</button>
+          <button type="button" data-hypno-tests disabled={disabled||testBusy} aria-pressed={selectionSource==="tests"}
+            onClick={()=>void suggestFromTests()}>{ui.tests}</button>
         </div>
-        <button type="button" data-hypno-filters-toggle className={css.filtersToggle}
-           aria-expanded={filtersOpen} aria-controls="hypno-phrase-filter-options" disabled={disabled}
-           onClick={()=>setFiltersOpen(x=>!x)}>
-           <SlidersHorizontal size={15} aria-hidden="true"/>
-           <span>{locale==="ru"?"Тип · Цель · Тон · Фокус · Длина":locale==="es"?"Tipo · Meta · Tono · Enfoque · Longitud":"Type · Goal · Tone · Focus · Length"}</span>
-           <ChevronDown size={15} aria-hidden="true"/>
-         </button>
-        <div className={css.filtersMini} id="hypno-phrase-filter-options" data-hypno-phrase-filters hidden={!filtersOpen}>
-          <label>{extra.role}<select value={kind} data-hypno-filter-type disabled={disabled} onChange={e=>setKind(e.target.value as typeof kind)}>
-            {(["support","possibility","action"] as const).map((id,i)=><option key={id} value={id}>{extra.roles[i]}</option>)}
-          </select></label>
-          <label>{extra.goal}<select value={extraGoal} data-hypno-filter-goal disabled={disabled}
-            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setGoalNote("");setApprovalKey("");}}>
-            {topicGoals[theme].map(id=><option key={id} value={id}>{affirmationGoalCatalog[locale].find(x=>x.id===id)?.label}</option>)}
-          </select></label>
-          <label>{extra.tone}<select value={tone} data-hypno-filter-tone disabled={disabled} onChange={e=>setTone(e.target.value as typeof tone)}>
-            {(["gentle","balanced","uplifting"] as const).map((id,i)=><option key={id} value={id}>{extra.tones[i]}</option>)}
-          </select></label>
-          <label>{extra.focus}<select value={focus} data-hypno-filter-focus disabled={disabled} onChange={e=>setFocus(e.target.value as typeof focus)}>
-            {(["support","confidence","action"] as const).map((id,i)=><option key={id} value={id}>{extra.focuses[i]}</option>)}
-          </select></label>
-          <label>{extra.length}<select value={length} data-hypno-filter-length disabled={disabled} onChange={e=>setLength(e.target.value as typeof length)}>
-            {(["short","medium"] as const).map((id,i)=><option key={id} value={id}>{extra.lengths[i]}</option>)}
-          </select></label>
-          <button type="button" data-hypno-generate-new disabled={disabled||geminiBusy} onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
-            <WandSparkles size={14} aria-hidden="true"/>{extra.generate}</button>
+        <div className={css.filtersMini} id="hypno-phrase-filter-options" data-hypno-phrase-filters>
+          <div className={css.filterRow} data-hypno-filter-type role="group" aria-label={extra.role}>
+            <strong>{extra.role}</strong><div>
+              {(["support","possibility","action"] as const).map((id,i)=><button type="button" key={id}
+                aria-label={extra.roles[i]} aria-pressed={kind===id} disabled={disabled} onClick={()=>{setKind(id);filtered(theme,problemIndex,extraGoal,{kind:id});}}><span className={css.fullText}>{extra.roles[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].roles[i]}</span></button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-tone role="group" aria-label={extra.tone}>
+            <strong>{extra.tone}</strong><div>
+              {(["gentle","balanced","uplifting"] as const).map((id,i)=><button type="button" key={id}
+                aria-label={extra.tones[i]} aria-pressed={tone===id} disabled={disabled} onClick={()=>{setTone(id);filtered(theme,problemIndex,extraGoal,{tone:id});}}><span className={css.fullText}>{extra.tones[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].tones[i]}</span></button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-focus role="group" aria-label={extra.focus}>
+            <strong>{extra.focus}</strong><div>
+              {(["support","confidence","action"] as const).map((id,i)=><button type="button" key={id}
+                aria-label={extra.focuses[i]} aria-pressed={focus===id} disabled={disabled} onClick={()=>{setFocus(id);filtered(theme,problemIndex,extraGoal,{focus:id});}}><span className={css.fullText}>{extra.focuses[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].focuses[i]}</span></button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-length role="group" aria-label={extra.length}>
+            <strong>{extra.length}</strong><div>
+              {(["short","medium"] as const).map((id,i)=><button type="button" key={id}
+                aria-pressed={length===id} disabled={disabled} onClick={()=>{setLength(id);filtered(theme,problemIndex,extraGoal,{length:id});}}>{extra.lengths[i]}</button>)}
+            </div>
+          </div>
         </div>
-        <div className={css.phraseCounter}>
-          <span>{selectedCount}/5 {ui.selected}</span>
-          <button type="button" disabled={disabled} onClick={()=>setAllPhrases(v=>!v)}>{allPhrases?extra.less:extra.more}<ChevronDown size={13}/></button>
-        </div>
+        <button type="button" className={css.regenerate} data-hypno-generate-new disabled={disabled||geminiBusy}
+          onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
+          <WandSparkles size={18} aria-hidden="true"/>{extra.generate}</button>
+        <div className={css.phraseCounter}><strong>{locale==="ru"?"Выберите фразы":locale==="es"?"Elige frases":"Choose phrases"}</strong><span>{selectedCount}/5 {ui.selected}</span></div>
         <div className={css.phraseMiniList}>
-          {(allPhrases?candidates:candidates.slice(0,3)).map((sentence,i)=><button type="button" key={i} data-hypno-phrase={i}
+          {candidates.map((sentence,i)=><button type="button" key={i} data-hypno-phrase={i}
             aria-pressed={chosen.includes(i)} disabled={disabled} onClick={()=>toggleSelected(i)}>
             {chosen.includes(i)?<Check size={15}/>:<span aria-hidden="true">○</span>}
             <span>{sentence}</span></button>)}
         </div>
+        {customPhraseText.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
           <button type="button" disabled={disabled} onClick={()=>setOwnOpen(v=>!v)}>{extra.add}<ChevronDown size={14}/></button>
-          <button type="button" disabled={disabled} onClick={()=>toggle("phrases")}>{extra.additional}<ChevronRight size={14}/></button>
         </div>
         {ownOpen&&<div className={css.shortNote+" "+css.miniOwn}>
-          <input value={ownText} data-hypno-own-phrase disabled={disabled} maxLength={36} placeholder={extra.add}
+          <input value={ownText} data-hypno-own-phrase aria-label={extra.add} disabled={disabled} maxLength={36} placeholder={extra.add}
             onChange={e=>setOwnText(e.target.value)}/>
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
-        {open==="phrases"&&<div className={css.legacyEditor} id="hypno-phrase-options" data-hypno-phrase-editor>
-          {showHint&&<div className={css.testEntry}>
-            <p className={css.contextNote}>{ui.testsHelp}</p>
-            <div className={css.designFoot}>
-              <Link href={"/"+locale+"/tests"} prefetch={false}>{locale==="ru"?"Пройти тест":locale==="es"?"Hacer una prueba":"Take a test"}</Link>
-              <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
-            </div>
-          </div>}
-          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
-            onTestPersonalization={()=>setSelectionSource("tests")}/>
-        </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(!settings.enabled||(!selectedCount&&!settings.custom.trim())))}
+
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||safetyBlocked||(ideaPending&&!draft)||(draft?!draft.selected.length:(!selectedCount&&!customPhraseText.trim()))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
+      <details className={css.advanced}><summary>{locale==="ru"?"Дополнительные настройки видео":locale==="es"?"Ajustes adicionales de vídeo":"Additional video settings"}<ChevronDown size={18} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-display>
         <div className={css.cardHead}>
           <span className={css.emblem}><SlidersHorizontal size={20} aria-hidden="true"/></span>
@@ -574,7 +648,7 @@ export function MandalaHypnoCompact({
             data-hypno-position={value} aria-pressed={position===value}
             onClick={()=>onChange({...settings,position:value})}>{ui.placements[i]}</button>)}</div>
           <small className={css.contextNote}>{ui.additional}</small>
-          <button type="button" className={css.secondaryAction} onClick={()=>setOpen("phrases")}>{ui.change} · {ui.additional}<ChevronRight size={14}/></button>
+          <button type="button" className={css.secondaryAction} onClick={()=>document.getElementById("hypno-phrase-filter-options")?.scrollIntoView({block:"center",behavior:"smooth"})}>{ui.change} · {ui.additional}<ChevronRight size={14}/></button>
         </fieldset>}
       </section>
 
@@ -584,7 +658,7 @@ export function MandalaHypnoCompact({
           <div className={css.heading}><h4>{ui.design}</h4><p>{ui.designHint}</p></div>
           <button type="button" className={css.edit} disabled={disabled}
             data-hypno-design-edit aria-expanded={open==="design"} aria-controls="hypno-design-options"
-            onClick={()=>toggle("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+            onClick={()=>setOpen("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
         <button type="button" className={css.sceneMiniSummary} data-hypno-scene-summary
           disabled={disabled} aria-expanded={open==="design"} aria-controls="hypno-design-options"
@@ -621,8 +695,10 @@ export function MandalaHypnoCompact({
         </div>}
       </section>
 
+      </details>
+      {children}
       <label className={css.enable}>
-        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
+        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled||hasPendingEdits}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
         <span>{ui.use}</span>
         {!settings.enabled&&<small>{ui.enabledNote}</small>}
@@ -631,12 +707,15 @@ export function MandalaHypnoCompact({
         <div>
           <small>{ui.preview}</small>
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
-          <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
+          <span>{settings.selected.length}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview disabled={disabled} aria-label={ui.previewButton}
+        <button type="button" data-video-affirmation-preview disabled={disabled||hasPendingEdits} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
+      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>
+        {safetyBlocked?summary:locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
+      </p>}
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>
