@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {safePublicPagePath,safePublicSource,sourceFromPublicEntry} from '../lib/analytics/public-page-traffic.mjs'
 import {summarizePublicPageTraffic,publicPageDigestLines} from '../lib/analytics/public-page-traffic-report.mjs'
-import {readFileSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 
 const period={yesterday:'2026-10-24',weekStart:'2026-10-18'}
 test('strictly public marketing paths, no private pages, queries or arbitrary slugs',()=>{
@@ -112,4 +112,35 @@ test('empty aggregates are not called zero visitors and never include private pa
  assert.match(privacy,/automatically count aggregate entrances/)
  assert.doesNotMatch(tracker,/analytics\.google|gtag|facebook\.com\/tr/)
  assert.doesNotMatch(choice,/<aside\b/)
+})
+
+
+test('P0 nonessential popup policy: approved global shell only, no automatic request overlays',()=>{
+ const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
+ const rules=readFileSync(new URL('../AGENTS.md',import.meta.url),'utf8')
+ const privacy=readFileSync(new URL('../app/privacy/page.tsx',import.meta.url),'utf8')
+ // Deliberate review gate: every new global JSX mount requires an owner-approved
+ // noninterruptive UX review, not a silent addition of another popup.
+ const mounted=[...layout.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)].map(match=>match[1])
+ assert.deepEqual(mounted,[
+  'PwaRegistration',
+  'NativeLinkHandler',
+  'NativeExternalLinks',
+  'CspNavigationBoundary',
+  'Ga4Analytics',
+  'SitewideAntistressBanner',
+  'HomePersonalSpaceProvider',
+  'SitewideLeadCapture',
+  'AnalyticsConsent',
+  'PublicPageTraffic',
+  'MobileBottomNavigation'
+ ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
+ assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false,
+   'Delete obsolete notice rather than remounting or renaming its popup')
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice|[<]dialog\b|[<](?:AlertDialog|Modal|Toast|BottomSheet)\b/,
+   'No auto-open dialog or floating consent box in the shared site layout')
+ assert.match(rules,/Sitewide UX policy — no unsolicited popup requests/)
+ assert.match(rules,/Never automatically open or mount/)
+ assert.match(privacy,/<FirstPartyStatsPreferences\s*\/>/,
+   'Privacy settings must remain accessible without an unsolicited prompt')
 })
