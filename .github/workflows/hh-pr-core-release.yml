@@ -447,7 +447,7 @@ jobs:
     needs: [hh-specialist]
     if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 1
     permissions:
       contents: read
     steps:
@@ -463,25 +463,3 @@ jobs:
           }
           echo 'Legacy compatibility passed by delegated hh-specialist.' >> "$GITHUB_STEP_SUMMARY"
 
-  # Keep the pre-existing plural alias as a nonrequired compatibility context.
-  # It delegates to the real hh-specialist check; no duplicate expensive work.
-  hh-specialists-verified:
-    name: hh-specialists-verified
-    needs: [hh-specialist]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    permissions:
-      contents: read
-    steps:
-      - name: Require full specialist aggregate on the same Core workflow
-        env:
-          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Specialist validation missing, cancelled or failed; refusing a green status' >&2
-            exit 1
-          }
-          echo 'Full specialist aggregation succeeded; safe required status propagated.' >> "$GITHUB_STEP_SUMMARY"

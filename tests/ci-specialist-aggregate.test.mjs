@@ -1098,6 +1098,32 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
   assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
   assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  // A route/glob-only Mandala change is NOT a change to the BASE macOS job.
+  const updatedPaths = workflow.replace("paths: ['components/mandala-*']",
+    "paths: ['components/mandala-*', 'tests/video-chat-*.test.mjs']");
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,'tests/ci-specialist-aggregate.test.mjs']),true);
+  // PR-authored edits to macOS conditions or platform cannot self-certify.
+  for (const changedJob of [
+    updatedPaths.replace('runs-on: macos-15','runs-on: macos-14'),
+    updatedPaths.replace("startsWith(github.head_ref, 'fix/video-')",
+      "startsWith(github.head_ref, 'ci/')"),
+    updatedPaths.replace('  voice-webkit-macos:', '  voice-webkit-macos:\n    timeout-minutes: 1'),
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,changedJob]])},
+    'codex/ci-general-release-fastlane-20261101',[path]),false);
+  for(const critical of [
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'lib/mandala/audio-render.mjs',
+    'app/api/holistic-support/voice/route.js',
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,critical]),false);
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'fix/video-source-clock-parity-20261101',[path]),false);
   assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[path,workflow+'# modified']])},'codex/perf-video-studio-lazy-panels-20261101',ui),false);
   const jobs = [{name:'focused-unit-types-build',status:'completed',conclusion:'success'},
     {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'}];
