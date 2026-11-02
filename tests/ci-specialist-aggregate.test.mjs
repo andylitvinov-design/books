@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, onlyAdditivePrPathTriggers } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -1089,4 +1089,29 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+});
+
+test('immutable BASE conditional WebKit skip survives only append-only PR path triggers',()=>{
+ const name='.github/workflows/holistic-support-mandala.yml';
+ const original="name: Mandala\non:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'components/mandala-meditation*'\n  workflow_dispatch:\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-24.04\n  voice-webkit-macos:\n    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-')) }}\n    runs-on: macos-15\n";
+ const expanded=original.replace("      - 'components/mandala-meditation*'\n",
+  "      - 'components/mandala-meditation*'\n      - 'components/mandala-new-editor*'\n");
+ const files={base:new Map([[name,original]]),current:new Map([[name,expanded]])};
+ assert.equal(onlyAdditivePrPathTriggers(original,expanded),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/risk-owned-ci-20261101',[name]),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/voice-studio-test-20261101',[name]),false);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/risk-owned-ci-20261101',[name,'app/api/holistic-support/voice/route.ts']),false);
+ for(const malicious of [
+  expanded.replace('macos-15','ubuntu-24.04'),
+  expanded.replace("github.event_name == 'pull_request'","github.event_name != 'pull_request'"),
+  expanded.replace("      - 'components/mandala-meditation*'\n",''),
+  expanded.replace("  workflow_dispatch:", "  workflow_dispatch:\n    inputs:\n      unsafe:\n        default: yes"),
+  expanded.replace("      - 'components/mandala-new-editor*'\n","      - '!components/security/**'\n"),
+  expanded+"jobs:\n  attacker:\n    runs-on: ubuntu-24.04\n"
+ ]){
+  assert.equal(onlyAdditivePrPathTriggers(original,malicious),false);
+  assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[name,malicious]])},
+    'codex/risk-owned-ci-20261101',[name]),false);
+ }
+ assert.equal(onlyAdditivePrPathTriggers(original,original),false);
 });

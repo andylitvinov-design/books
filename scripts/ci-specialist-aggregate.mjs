@@ -93,15 +93,43 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
+
+// Accept only APPEND-ONLY pull_request.path additions to an immutable BASE
+// workflow. Every other YAML line must remain identical, especially jobs,
+// branch conditions, permissions and existing path ownership.
+export function onlyAdditivePrPathTriggers(baseSource,headSource){
+ if(typeof baseSource!=='string'||typeof headSource!=='string'||
+    !baseSource||!headSource||baseSource===headSource)return false;
+ const base=baseSource.replace(/\r/g,'').split('\n');
+ const head=headSource.replace(/\r/g,'').split('\n');
+ const pr=base.indexOf('  pull_request:');
+ const path=base.findIndex((line,i)=>i>pr&&line==='    paths:');
+ if(pr<0||path<0)return false;
+ let stop=base.findIndex((line,i)=>i>path&&
+  (/^  [A-Za-z][\w-]*:/.test(line)||/^    [A-Za-z][\w-]*:/.test(line)));
+ if(stop<0)stop=base.length;
+ if(!base.slice(path+1,stop).some(line=>/^      - '[^']+'$/.test(line)))return false;
+ let cursor=0,added=0;
+ for(const line of head){
+  if(cursor<base.length&&base[cursor]===line){cursor++;continue;}
+  if(cursor<=path||cursor>stop||!/^      - '[^']+'$/.test(line))return false;
+  const glob=line.slice(9,-1);
+  if(!/^[A-Za-z0-9][A-Za-z0-9_./*{}\[\]-]{0,129}$/.test(glob)||
+     glob.includes('..')||base.includes(line)||++added>20)return false;
+ }
+ return cursor===base.length&&added>0;
+}
+
 // A skipped macOS job is optional ONLY when the unchanged, trusted BASE YAML
 // excludes this exact branch. A PR cannot edit its own guard to become exempt,
 // and voice/recorder changes must still prove real encoded audio and video.
 export function optionalMandalaMacosSkip(files, branch, changed) {
   const name = '.github/workflows/holistic-support-mandala.yml';
   const source = files?.base?.get(name);
-  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+  const addedOnly=onlyAdditivePrPathTriggers(source,files?.current?.get(name));
+  if (typeof source !== 'string' || !source || (source !== files?.current?.get(name) && !addedOnly) ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
-      changed.includes(name) || changed.some(path =>
+      (changed.includes(name) && !addedOnly) || changed.some(path =>
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
