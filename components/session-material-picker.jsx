@@ -1,9 +1,9 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {Film,Images,Link2,FolderOpen} from 'lucide-react'
+import {Film,Images,Link2,FolderOpen,Headphones} from 'lucide-react'
 import styles from './session-material-picker.module.css'
 
-function typeLabel(item,ru){return item.kind==='youtube'?'YouTube':item.kind==='image'?(ru?'Фото':'Photo'):(ru?'Видео':'Video')}
+function typeLabel(item,ru){return item.kind==='youtube'?'YouTube':item.kind==='image'?(ru?'Фото':'Photo'):item.kind==='audio'?(ru?'Аудио':'Audio'):(ru?'Видео':'Video')}
 
 export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpen,disabled=false}){
   const ru=locale==='ru'
@@ -48,8 +48,8 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       <span className={styles.count}>{loading?'…':materials.length} {ru?'доступно':'available'}</span>
     </summary>
     <div className={styles.contents}>
-      <p className={styles.help}>{ru?'Отметьте материалы, которые нужно приложить к этому отчёту. Новое видео можно сохранить выше. Клиент увидит выбор после публикации отчёта.':
-        'Choose materials for this report. Save a new video above. Clients see selected items after you publish.'}</p>
+      <p className={styles.help}>{ru?'Отметьте материалы, которые нужно приложить к этому отчёту. Аудио, фото и видео можно предварительно загрузить в библиотеку. Клиент увидит выбранные записи только после публикации отчёта.':
+        'Choose materials for this report. Upload reusable audio, photos or videos to the library, then select them here. Clients see selected items only after publication.'}</p>
       <div className={styles.tools}>
         <input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={ru?'Поиск по материалам…':'Search materials…'} aria-label={ru?'Поиск материалов':'Search materials'}/>
@@ -67,7 +67,7 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
         filtered.map(item=><label className={styles.item} key={item.id}>
           <input type="checkbox" checked={selectedIds.includes(item.id)} disabled={disabled||(!selectedIds.includes(item.id)&&selectedIds.length>=24)}
             onChange={event=>toggle(item.id,event.target.checked)}/>
-          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:<Film size={19}/>}
+          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:item.kind==='audio'?<Headphones size={19}/>:<Film size={19}/>}
           <span><strong>{item.title}</strong>
             <small>{typeLabel(item,ru)}{item.description?' · '+item.description:''}</small>
           </span>
