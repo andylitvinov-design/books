@@ -82,12 +82,15 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await page.waitForFunction(()=>
         !document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"),
         null,{timeout:15000});
-      await voice.locator(":scope > summary").click();
+      // Reopen through the real Personal Meditation CTA in step 03, using
+      // the approved visible button instead of a tiny native details summary.
+      // This verifies the one existing editor is usable after the skip.
+      await course.locator("[data-guided-open-personal-meditation]").click();
       await page.waitForFunction(()=>
         document.querySelector("[data-video-therapy-meditation-audio]")?.open===true,
         null,{timeout:15000});
       assert.equal(await voice.locator("[data-meditation-script]").count(),0,
-        "skipped narration remains absent after reopening");
+        "skipped narration stays absent after the Personal Meditation CTA reopens editor");
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
