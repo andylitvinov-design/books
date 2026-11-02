@@ -441,11 +441,12 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   assert.match(appUnit, /npm run pwa:check && npm run native:check/);
   assert.match(app, /run: npm run test:app:db/);
   const ia = workflow('ia-v2.yml');
+  const iaSkip = "if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && steps.dock-scope.outputs.dock_only != 'true' }}";
   for (const [name, command] of [
     ['Full lint outside production PR (core release-ready owns production lint)', 'npm run lint'],
     ['Full TypeScript outside production PR (core release-ready owns production typing)', 'npx --no-install tsc --noEmit'],
   ]) {
-    assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
+    assert.ok(ia.includes('- name: ' + name + '\n        ' + iaSkip + '\n        run: ' + command), name + ' must be scoped to non-production PR and the verified dock-only lane');
   }
   assert.match(ia, /name: IA security, ownership and navigation contracts/);
   assert.match(ia, /run: npm run test:app/);
