@@ -722,13 +722,54 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  const guardedMediaCondition = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))";
+  // Validate mandatory behavior and consistent browser scopes instead of a literal OR chain.
+  const mediaIfFor = name => {
+    const token = '- name: '+name+'\n        if: ';
+    const parts = yaml.split(token);
+    assert.equal(parts.length, 2, 'missing or ambiguous media action '+name);
+    return parts[1].split('\n')[0];
+  };
+  const mediaCondition = mediaIfFor('Build');
+  assert.match(mediaCondition, /^steps\.impact\.outputs\.browser == 'true' && /);
+  assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
+  assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
+  const requiredPrefixes = [
+    'codex/voice-studio-', 'codex/voice-mix-', 'fix/video-', 'fix/webkit-',
+    'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
+    'feat/video-chat-context-understanding-'
+  ];
+  for (const prefix of requiredPrefixes)
+    assert.ok(mediaCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'browser gate skips required PR prefix '+prefix);
   for (const name of [
-    'Build', 'Install isolated Chromium and WebKit (no external account)',
+    'Install isolated Chromium and WebKit (no external account)',
     'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
     'Public mandala photo, PNG and video browser flow · 320/390/430px'
-  ]) assert.ok(yaml.includes('- name: '+name+'\n        '+guardedMediaCondition),
-    'full media browser must remain available manually and mandatory on Voice PRs: '+name);
+  ]) assert.equal(mediaIfFor(name), mediaCondition,
+    'real media step must share the protected build guard: '+name);
+  assert.equal(mediaIfFor('Upload synthetic audio-only iPhone screenshots'),
+    'always() && '+mediaCondition, 'artifact step needs the same guard plus always()');
+  const macos=yaml.split(/^  voice-webkit-macos:\s*$/m)[1];
+  assert.ok(macos, 'mandatory macOS WebKit acceptance missing');
+  const macosCondition=macos.match(/^    if: (.+)$/m)?.[1];
+  assert.ok(macosCondition?.includes("github.event_name == 'pull_request' && github.event.pull_request.draft == false"),
+    'macOS WebKit requires a non-Draft PR');
+  for (const prefix of requiredPrefixes)
+    assert.ok(macosCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'macOS WebKit may not skip '+prefix);
+  for (const contract of [
+    'runs-on: macos-15', 'HH_VOICE_E2E_ENGINE: webkit',
+    "HH_VOICE_E2E_HEADED: '1'", 'node scripts/verify-affirmation-voice-browser.mjs',
+    'HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1',
+    'node scripts/benchmarking/first-video-live-export.mjs',
+    'ffprobe', 'ffmpeg'
+  ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
+  const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
+  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
+    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);
@@ -1228,7 +1269,7 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
-  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
@@ -1339,4 +1380,24 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/npm ci|npm run build|npx|playwright|continue-on-error/);
   assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
+});
+
+test('legacy PR CI backfill accepts PAT-authored edited event without skipping required checks',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
+  assert.ok(match,'Core must stay attached to a genuine PR event');
+  assert.match(match[1],/\bedited\b/,'metadata edit must produce genuine pull_request CI');
+  assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
+  assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
+    'required CI must not be skipped by a path filter');
+  const scope=source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0]??'';
+  const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
+  const gate=source.split(/^  hh-merge-check:/m)[1]??'';
+  assert.match(scope,/github\.event\.pull_request\.draft == false/,
+    'real scope must execute on non-draft edited PR');
+  assert.match(specialist,/if: always\(\)/);
+  assert.match(gate,/if: always\(\)/,
+    'required status must run and reject failed Core/Specialist');
+  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });

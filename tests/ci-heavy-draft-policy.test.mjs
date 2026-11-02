@@ -65,7 +65,7 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
 
 test('Draft cannot pass Specialist or required unified merge gate; Ready restores real validation',()=>{
  const core=read('hh-pr-core-release.yml');
- assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]"));
+ assert.ok(core.includes("  pull_request:\n") && core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]"));
  assert.match(core,/^  hh-specialist:/m);
  assert.match(core,/^  hh-merge-check:/m);
  assert.doesNotMatch(core,/^  release-ready:|^  hh-core-verified:/m);
@@ -158,7 +158,10 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
+  assert.ok(core.includes("  pull_request:\n") &&
+    core.includes("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]") &&
+    core.includes("    branches: ['codex/public-book-library']"),
+    'core must rerun on Ready, metadata wake, and keep production base');
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/ci-specialist-aggregate\.mjs/);
@@ -390,7 +393,12 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))";
+  const browserGate = source.match(/^      - name: Build\n        (if: [^\n]+)$/m)?.[1];
+  assert.ok(browserGate, 'real browser Build guard missing');
+  for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
+    "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
@@ -669,4 +677,25 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   const home=read('home-locale-switch.yml');
   assert.match(home,/^  push:/m);
   assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
+});
+
+test('Core SHA-scoped concurrency prevents older reruns from cancelling current valid builds',()=>{
+  const core=read('hh-pr-core-release.yml');
+  assert.ok(core.includes('group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}'),
+    'old and new SHA must never contend for one Core concurrency group');
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+    'keep same-SHA redundant-synchronize cancellation');
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.doesNotMatch(core,/^  release-ready:/m);
+});
+
+test('source-head concurrency also covers WebKit and Guard, not just Core',()=>{
+  for(const file of ['hh-pr-core-release.yml','holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
+    const workflow=read(file);
+    assert.ok(workflow.includes('group: '), file);
+    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+      file+' older PR rerun must never cancel a newer source HEAD');
+    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+      file+' retains exact same-head cancellation and no weakened gates');
+  }
 });
