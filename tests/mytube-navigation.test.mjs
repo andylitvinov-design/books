@@ -57,3 +57,32 @@ test("new TSX sources parse without diagnostics",()=>{
       .map(d=>ts.flattenDiagnosticMessageText(d.messageText," ")),[],file);
   }
 });
+
+test("MyTube PR must run actual macOS WebKit encoded-video gate without widening unrelated PRs",()=>{
+  const workflow=read(".github/workflows/holistic-support-mandala.yml");
+  const match=workflow.match(/\n  voice-webkit-macos:\n    if: ([^\n]+)\n    runs-on: macos-15/);
+  assert.ok(match,"macOS native WebKit job remains present and guarded");
+  const guard=match[1];
+  assert.match(guard,/github\.event_name == 'pull_request'/);
+  assert.match(guard,/github\.event\.pull_request\.draft == false/);
+  const prefixes=[...guard.matchAll(/startsWith\(github\.head_ref, '([^']+)'\)/g)].map(m=>m[1]);
+  for(const prefix of [
+    "codex/voice-studio-","codex/voice-mix-","fix/video-",
+    "feat/video-phrase-catalog-","codex/perf-video-studio-",
+    "codex/hypno-third-workspace-","feat/mytube-"
+  ]) assert.equal(prefixes.filter(value=>value===prefix).length,1,prefix);
+  const included=branch=>prefixes.some(prefix=>branch.startsWith(prefix));
+  for(const branch of ["feat/mytube-seventh-video-studio-tool-20261102",
+    "feat/video-phrase-catalog-new","fix/video-safari",
+    "codex/voice-studio-verified"])
+    assert.equal(included(branch),true,branch);
+  for(const branch of ["feat/unrelated-ui","fix/security-other","docs/mytube",
+    "feat/my-tube-typo","random/feature"])
+    assert.equal(included(branch),false,branch);
+  const job=workflow.slice(workflow.indexOf("\n  voice-webkit-macos:\n"));
+  assert.match(job,/HH_VOICE_E2E_ENGINE: webkit/);
+  assert.match(job,/HH_LIVE_VIDEO_ENGINE=webkit/);
+  assert.match(job,/first-video-live-export\.mjs/);
+  assert.match(job,/Preserve anonymous WebKit encoded video evidence/);
+  assert.doesNotMatch(guard,/\|\| true|always\(\)/);
+});
