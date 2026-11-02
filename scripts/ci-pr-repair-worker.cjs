@@ -368,6 +368,9 @@ async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=D
  return {status:'manual_required',number:prNumber,sha:expectedSha,
   outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',source_published:false};
 }
+const SAFE_NO_CLAIM_REASONS=new Set([
+ 'NO_UNCLAIMED_OWNER_PR','INCOMPLETE_QUEUE','GITHUB_API_BUDGET_PAUSE','GITHUB_API_RESERVE'
+]);
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',publishResult='',
   publishStatus='',publishSha='',dryRun=false}) {
@@ -421,9 +424,32 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     return fn();
   });
   if(!comments)throw Error('HH_REPAIR_OUTCOME_HISTORY_UNVERIFIED');
-  if(comments.some(c=>String(c.body||'').includes(marker)&&c.user?.id===41898282&&
-      c.performed_via_github_app?.id===15368))
+  if(comments.some(c=>String(c.body||'').includes(marker)&&trustedControlComment(c)))
     return {status:'already_finalized',number,expected_sha:expectedSha};
+  // An addressed worker that refused BEFORE claiming may be retried without
+  // touching source, but only after proving the exact dispatcher reservation.
+  let retryAfter=null,reservationRunId=null;
+  const suppliedRun=String(context.payload?.inputs?.reservation_run_id||'');
+  if(sameHead&&claimResult==='success'&&claimStatus==='skipped'&&
+     fixResult==='skipped'&&publishResult==='skipped'&&!publishStatus&&
+     SAFE_NO_CLAIM_REASONS.has(claimReason)&&/^\d+$/.test(suppliedRun)){
+    const signed=comments.filter(trustedControlComment);
+    const records=signed.flatMap(comment=>parseRecords([comment])||[]);
+    const reserved=records.some(x=>x.task_key===taskKey&&x.head_sha===expectedSha&&
+      x.pr_number===number&&x.state==='RESERVED'&&x.owner_run_id===suppliedRun);
+    const claimed=comments.some(c=>String(c.body||'').includes(
+      '<!-- '+MARKER+' '+expectedSha+' -->'));
+    const prior=records.filter(x=>x.task_key===taskKey&&x.head_sha===expectedSha&&
+      x.state==='NO_CLAIM_RETRYABLE').length;
+    if(reserved&&!claimed&&prior<2){
+      state='NO_CLAIM_RETRYABLE';
+      retryAfter=new Date(Date.now()+15*60_000).toISOString();
+      reservationRunId=suppliedRun;
+    }else if(reserved&&prior>=2){
+      state='REJECTED';reason='NO_CLAIM_RETRY_BUDGET_EXHAUSTED';
+    }else core.warning('HH_REPAIR_RETRY_PROOF_MISSING '+
+      (claimed?'SOURCE_CLAIM_PRESENT':'RESERVATION_NOT_VERIFIED'));
+  }
   let failedStep=null;
   if(['FAILED','REJECTED'].includes(state)){
     try{
@@ -437,7 +463,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,lane:'repair',state,reason_code:reason,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
-    claim_status:claimStatus||'unknown',fix_result:fixResult||'unknown',
+    claim_status:claimStatus||'unknown',claim_result:claimResult||'unknown',
+    reservation_run_id:reservationRunId,retry_after:retryAfter,
+    created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
   await github.rest.issues.createComment({owner,repo,issue_number:number,

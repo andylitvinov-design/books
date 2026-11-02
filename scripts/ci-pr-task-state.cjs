@@ -156,6 +156,13 @@ function reservationStatus(task,comments,now){
  if(matches.some(x=>x.state==='CLAIMED'))return 'CLAIMED_AWAITING_OUTCOME';
  const trusted=parseRecords(comments.filter(trustedControlComment));
  if(!trusted)return 'UNVERIFIED_HISTORY';
+ const noClaimRefusals=trusted.filter(x=>x.task_key===task.task_key &&
+   x.head_sha===task.head_sha&&x.state==='NO_CLAIM_RETRYABLE'&&
+   x.claim_status==='skipped'&&x.claim_result==='success'&&
+   x.source_published===false&&typeof x.reservation_run_id==='string'&&
+   /^\d+$/.test(x.reservation_run_id)&&
+   Number.isFinite(Date.parse(x.retry_after||''))&&
+   Number.isFinite(Date.parse(x.created_at||'')));
  const rejections=trusted.filter(x=>x.task_key===task.task_key &&
    x.head_sha===task.head_sha && x.state==='DISPATCH_REJECTED' &&
    x.outcome==='DEFINITIVELY_NOT_ACCEPTED' &&
@@ -167,11 +174,18 @@ function reservationStatus(task,comments,now){
    const rejection=rejections.find(x=>x.owner_run_id===item.owner_run_id &&
      Number.isFinite(at) && Date.parse(x.created_at||'')>=at &&
      Number.isFinite(Date.parse(x.retry_after||'')));
-   if(!rejection)return 'RESERVED_REQUIRES_REVIEW';
-   if(now<Date.parse(rejection.retry_after))return 'DISPATCH_RETRY_BACKOFF';
+   const refused=noClaimRefusals.find(x=>x.reservation_run_id===item.owner_run_id &&
+     Number.isFinite(at)&&Date.parse(x.created_at||'')>=at);
+   if(!rejection&&!refused)return 'RESERVED_REQUIRES_REVIEW';
+   if(now<Date.parse((rejection||refused).retry_after))
+     return refused?'NO_CLAIM_RETRY_BACKOFF':'DISPATCH_RETRY_BACKOFF';
    released=true;
   }else if(item.state==='DISPATCH_REJECTED'){
    if(!rejections.some(x=>x.owner_run_id===item.owner_run_id &&
+      x.created_at===item.created_at))return 'UNVERIFIED_HISTORY';
+  }else if(item.state==='NO_CLAIM_RETRYABLE'){
+   if(!noClaimRefusals.some(x=>x.owner_run_id===item.owner_run_id &&
+      x.reservation_run_id===item.reservation_run_id&&
       x.created_at===item.created_at))return 'UNVERIFIED_HISTORY';
   }else return 'UNRECOGNIZED_STATE';
  }

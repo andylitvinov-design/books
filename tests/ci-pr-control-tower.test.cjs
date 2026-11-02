@@ -96,6 +96,7 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
+ assert.equal(f.calls.dispatched[0].inputs.reservation_run_id,'42');
 });
 test('source repair lane cannot starve behind sixteen higher-ranked conflicts',()=>{
  const conflicts=Array.from({length:23},(_,i)=>pr(i+100,'conflict',{
@@ -862,4 +863,42 @@ test('orphan reconciliation does not interrupt an active Repair Worker',async()=
  assert.equal(result.unconfirmedHandoffs,0);
  assert.equal(f.calls.reserved.length,0);
  assert.equal(f.calls.labels.length,0);
+});
+
+
+test('signed preclaim refusal frees exact reservation only after backoff and no owner lease',()=>{
+ const t=taskFor(pr(1),{tier:'P1'}),hold=reservation(t,NOW,42);
+ const signed=x=>({...proof(),body:commentBody(x)});
+ const retry={...t,state:'NO_CLAIM_RETRYABLE',head_sha:SHA,
+  reservation_run_id:'42',owner_run_id:'9001',claim_status:'skipped',
+  claim_result:'success',reason_code:'NO_UNCLAIMED_OWNER_PR',
+  source_published:false,created_at:new Date(NOW+1000).toISOString(),
+  retry_after:new Date(NOW+900000).toISOString()};
+ const held=signed(hold),result=signed(retry);
+ assert.equal(reservationStatus(t,[held,result],NOW+100000),'NO_CLAIM_RETRY_BACKOFF');
+ assert.equal(reservationStatus(t,[held,result],NOW+900001),'FREE');
+ assert.equal(reservationStatus(t,[held,{body:commentBody(retry)}],NOW+900001),
+  'RESERVED_REQUIRES_REVIEW','unsigned refusal never frees a source reservation');
+ assert.equal(reservationStatus(t,[held,signed({...retry,reservation_run_id:'99'})],NOW+900001),
+  'RESERVED_REQUIRES_REVIEW');
+ assert.equal(reservationStatus(t,[held,signed({...retry,source_published:true})],NOW+900001),
+  'RESERVED_REQUIRES_REVIEW');
+ assert.equal(reservationStatus(t,[held,result,{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   owner:'another-coder',run_id:'active',head_sha:SHA,state:'active',
+   schema:'HH_PR_SWEEP_LEASE_V1',lease_id:'L'})
+ }],NOW+900001),'OWNER_LEASE_ACTIVE');
+ assert.equal(reservationStatus(t,[held,result,{
+  body:'<!-- HH_PR_REPAIR_WORKER_V1 '+SHA+' -->'
+ }],NOW+900001),'ALREADY_HANDLED');
+});
+test('Control Tower summary names PRs behind lease and handoff blockers',async()=>{
+ const conflicts=Array.from({length:14},(_,i)=>pr(i+900,'conflict',{
+  mergeable:false,mergeable_state:'dirty'}));
+ const f=fixture(conflicts);
+ const x=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ const examples=x.blockerExamples.CONFLICT_HANDOFF_LIMIT||[];
+ assert.ok(examples.length>0&&examples.length<=3);
+ assert.ok(examples.every(y=>Number.isSafeInteger(y.pr_number)&&y.head_sha===SHA.slice(0,12)));
+ assert.equal(x.dispatchAccepted,0,'conflict-only queue does not impersonate source repair');
 });
