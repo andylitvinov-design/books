@@ -7,13 +7,13 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
-  VIDEO_EN_CHANNEL_HANDLE,videoTargetValid,videoTargetLabel,ownerVideoTargetKeyboard,
+  VIDEO_EN_CHANNEL_HANDLE,videoTargetValid,ownerVideoTargetKeyboard,
   ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,verifyYoutubeEnOwner,verifyYoutubeTargetOwner,
-  uploadUnlistedRu,uploadUnlistedTarget,verifyUploadedRu,verifyUploadedTarget,waitForUploadedRu,waitForUploadedTarget}
+  uploadUnlistedRu,uploadUnlistedTarget,verifyUploadedRu,verifyUploadedTarget,waitForUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
