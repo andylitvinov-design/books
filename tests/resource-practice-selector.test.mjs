@@ -137,8 +137,13 @@ test("current practice page is exercised in real mobile Chromium/WebKit, not onl
 test("WebKit focus transitions never wipe newly generated scripts via a delayed effect",async()=>{
   const code=await readFile(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
   const browser=await readFile(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
-  assert.match(code,/setApprovedSignature\(current=>current===journeySignature\?current:""\)/);
-  assert.match(code,/setProgrammeSignature\(current=>current===journeySignature\?current:""\)/);
+  const passive=code.slice(code.indexOf("const previousSignatureRef="),code.indexOf("const selectState="));
+  assert.ok(passive.includes('previousSignatureRef.current=journeySignature'),
+    "focus transitions must still invalidate old external narration");
+  assert.doesNotMatch(passive,/setApprovedSignature|setProgrammeSignature|setMeditationOpen\(false\)/,
+    "a delayed passive effect must never dismiss a newly generated meditation");
+  assert.match(code,/setApprovedSignature\(journeySignature\)/);
+  assert.match(code,/setProgrammeSignature\(journeySignature\)/);
   assert.match(code,/includedSignatureRef\.current=journeySignature/);
   assert.match(code,/includedSignatureRef\.current!==journeySignature/);
   assert.match(browser,/vector generated result missing/);

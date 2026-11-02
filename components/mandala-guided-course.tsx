@@ -240,11 +240,11 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       includedSignatureRef.current=null;
       onOmitMeditation?.();
     }
-    // Functional guards protect a newly approved script or programme if WebKit
-    // flushes an older focus-change effect after the visitor presses Generate.
-    // Stale results are already hidden by the exact signature comparisons.
-    setApprovedSignature(current=>current===journeySignature?current:"");
-    setProgrammeSignature(current=>current===journeySignature?current:"");
+    // Never clear generated results in a passive effect: WebKit may flush this
+    // old focus-change effect *after* the user's next Generate click.
+    // currentMeditation/currentProgramme already compare exact signatures and
+    // hide stale results synchronously, while all explicit input handlers
+    // revoke stale narration and clear both approvals immediately.
   },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
