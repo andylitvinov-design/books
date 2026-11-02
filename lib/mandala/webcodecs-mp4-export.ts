@@ -6,6 +6,8 @@ import {
   AudioBufferSource, BufferTarget, CanvasSource, Mp4OutputFormat,
   Output, Quality, canEncodeVideo, canEncodeAudio,
 } from "mediabunny";
+import {presetAudioUrl} from "./local-video-music";
+import type {AmbientMusic} from "./local-video-music";
 
 const SAMPLE_RATE=48000;
 const MAX_DURATION=60;
@@ -53,9 +55,14 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     let file:File|Blob;
     if("preset" in entry){
       // First-party scored WAV only. No client text or external URL accepted.
-      if(!/^[a-z0-9-]{1,40}$/.test(entry.preset))
+      if(!/^[a-z0-9-]{1,96}$/.test(entry.preset))
         throw new Error("invalid_first_party_preset");
-      const response=await fetch("/audio/mandala/"+entry.preset+".wav",{
+      // Scenario and classical masters are build-generated MP3 under
+      // /audio/mandala/scenarios/; legacy presets remain WAV. Reuse exactly
+      // the URL selected by the existing native preview and MediaRecorder.
+      // Hardcoding *.wav here made all scenario soundtracks fail in Safari.
+      const audioUrl=presetAudioUrl(entry.preset as Exclude<AmbientMusic,"none">);
+      const response=await fetch(audioUrl,{
         credentials:"same-origin",cache:"force-cache",
       });
       if(!response.ok)throw new Error("first_party_audio_unavailable");
