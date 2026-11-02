@@ -70,7 +70,7 @@ test('Repair Worker reads source receipt beyond 300 comments',async()=>{
  const f=fixture();const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
   pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
-   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.status,'claimed');
