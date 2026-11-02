@@ -53,7 +53,13 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/effects:\{tab:"Efecto hipno",title:"Efectos de hipnosis"/);
   assert.match(studio,/data-workspace-section="effects"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
-  assert.match(studio,/onOpenAudioEditor=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
+  assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
+  assert.match(studio,/createHypnoAudioEffectFile/);
+  assert.match(ui,/data-hypno-speech-settings/);
+  assert.match(ui,/data-hypno-binaural-settings/);
+  assert.match(ui,/whisperEnabled/);
+  assert.match(ui,/binauralEnabled/);
+  assert.doesNotMatch(ui,/active=\{false\} unavailable/);
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
@@ -108,7 +114,7 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
   assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
   for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
-  assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
+  assert.doesNotMatch(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
 
