@@ -70,19 +70,41 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const seeded=await voice.locator("[data-meditation-script]").inputValue();
       assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
       await result.locator("[data-guided-skip-meditation]").click();
+      // WebKit may resolve the DOM click before React commits the reversible
+      // omission. Wait for both verified effects, never a timed sleep.
+      await page.waitForFunction(()=>{
+        const skip=document.querySelector("[data-guided-skip-meditation]");
+        const audio=document.querySelector("[data-video-therapy-meditation-audio]");
+        return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
+      },null,{timeout:15000});
       assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===false);
-      await voice.locator(":scope > summary").click();
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
-      await page.waitForFunction(()=>!document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"));
+      // Revoke the seeded narration completely before a visitor reopens the
+      // existing details. A rapid re-open must not race React's seed cleanup.
+      await page.waitForFunction(()=>
+        !document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"),
+        null,{timeout:15000});
+      // Reopen through the real Personal Meditation CTA in step 03, using
+      // the approved visible button instead of a tiny native details summary.
+      // This verifies the one existing editor is usable after the skip.
+      await course.locator("[data-guided-open-personal-meditation]").click();
+      await page.waitForFunction(()=>
+        document.querySelector("[data-video-therapy-meditation-audio]")?.open===true,
+        null,{timeout:15000});
+      assert.equal(await voice.locator("[data-meditation-script]").count(),0,
+        "skipped narration stays absent after the Personal Meditation CTA reopens editor");
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
       await programme.waitFor({state:"visible"});
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
-      assert.ok((await programme.locator("a").last().getAttribute("href")||"").includes("/services/imagery-therapy"),
-        "enquiry opens existing course request route without initiating payment");
+      const enquiry=programme.locator("[data-meditation-course-order]");
+      assert.equal(await enquiry.count(),1,"one consented course enquiry");
+      await enquiry.click();
+      const form=programme.locator("[data-meditation-course-contact]");
+      await form.waitFor({state:"visible"});
+      assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
+        "one-off reply consent gates the real course enquiry");
       const geometry=await course.evaluate((el)=>{
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];
@@ -101,6 +123,12 @@ export async function verifyGuidedPractices({browser,base,engine}){
 
       const modes=course.locator('[data-video-therapy-focus] [role="group"]').first().locator("button");
       await modes.nth(1).click();
+      // Confirm actual React state following the WebKit click, never infer
+      // success from a sleep, missing control, or a stale aria attribute.
+      await page.waitForFunction(()=>
+        document.querySelector('[data-video-therapy-focus] [role="group"] button:nth-child(2)')
+          ?.getAttribute("aria-pressed")==="true",
+        null,{timeout:15000});
       await expect(modes.nth(1)).toHaveAttribute("aria-pressed","true",{timeout:7000});
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
       assert.equal(await generate.isDisabled(),true,"vector requires both fields");

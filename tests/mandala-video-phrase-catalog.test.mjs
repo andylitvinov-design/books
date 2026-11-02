@@ -94,7 +94,10 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.doesNotMatch(studio,/quickSupportPhrases/);
   assert.match(studio,/data-video-phrase-catalog-details/);
   assert.match(studio,/setPhraseAudioExpanded\(true\)/);
-  assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
+  // Preserve the story-aware audio-panel handoff; the callback accepts a scenario ID.
+  assert.match(studio,/onOpenAudio=\{scenarioId=>\{/);
+  assert.match(studio,/setGoalTreeAudioScenarioId\(scenarioId\)/);
+  assert.match(studio,/setPhraseAudioExpanded\(true\)/);
   assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
     "reuse the approved single phrase editor");
   assert.match(studio,/setCatalogPhraseDraft\(phrase\)/);
