@@ -1086,3 +1086,44 @@ test('old denied CI bootstrap reconciliation is isolated from dispatch and fail-
   workflow.includes('tests/ci-pr-ci-legacy-recovery.test.cjs'));
  assert.ok(workflow.includes("node --check scripts/ci-pr-ci-legacy-recovery.cjs"));
 });
+
+
+test('complete historical previous_head/new_head releases never poison a newer unrelated HEAD',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const doc={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',
+   state:'released_after_concurrent_equivalent_fix',previous_head:old,new_head:next,
+   released_at:'2026-11-02T16:15:00Z'};
+ const actor={login:'andylitvinov-design'};
+ const wrap=x=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+JSON.stringify(x)});
+ assert.equal(externalOwnerLeaseStatus([wrap(doc)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...doc,new_head:'invalid'})],SHA,NOW),
+   'OWNER_LEASE_UNVERIFIED','incomplete historical release remains untrusted');
+ const live={schema:'HH_PR_SWEEP_LEASE_V1',owner:'another-agent',lease_id:'real-owner',
+   state:'active',head_sha:SHA,expires_at:'2026-11-02T10:00:00Z'};
+ assert.equal(externalOwnerLeaseStatus([wrap(live),wrap(doc)],SHA,NOW),
+   'OWNER_LEASE_ACTIVE','unrelated release must not clear a modern active writer');
+});
+
+test('completed transition snapshots cannot reserve a worker slot',()=>{
+ const stale=computeCapacity([{name:'HH PR source Repair Worker',status:'completed'}],
+   [{name:'HH PR core release gate',status:'completed'}],[]);
+ assert.equal(stale.activeWorker['HH PR source Repair Worker'],0);
+ assert.equal(stale.coreQueuedRuns,0);
+ assert.equal(admission('repair',stale),'ADMIT');
+ const live=computeCapacity([{name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
+ assert.equal(admission('repair',live),'WORKER_BUSY');
+});
+
+test('real workers run addressed dispatches rather than competing cron and push audits',()=>{
+ const fs=require('node:fs');
+ for(const path of ['.github/workflows/hh-pr-repair-worker.yml',
+                     '.github/workflows/hh-pr-ci-worker.yml']){
+  const content=fs.readFileSync(path,'utf8');
+  const triggers=content.slice(content.indexOf('\\non:\\n'),content.indexOf('\\npermissions:\\n'));
+  assert.match(triggers,/workflow_dispatch:/);
+  assert.doesNotMatch(triggers,/\\n  schedule:/);
+  assert.doesNotMatch(triggers,/\\n  push:/);
+  assert.match(content,/cancel-in-progress: false/);
+ }
+});
+
