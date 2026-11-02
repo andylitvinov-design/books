@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
-const {taskFor,commentBody}=require('../scripts/ci-pr-task-state.cjs');
+const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -428,8 +428,8 @@ test('head movement is recorded as superseded without touching fresh source',asy
 test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
  const marker='<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' '+outcomeContext.runId+' -->';
  const f=fixture({comments:[{body:marker,
-  user:{id:41898282,login:'github-actions[bot]'},
-  performed_via_github_app:{id:15368}}]});
+  user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}}]});
  const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
   claimResult:'success',fixResult:'failure'});
@@ -444,4 +444,76 @@ test('workflow guarantees a finalizer after all three stages with explicit resul
  assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
  assert.match(wf,/claim_status/);
  assert.match(wf,/publish_status/);
+});
+
+
+test('preclaim refusal has signed retry proof for an exact dispatcher reservation',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const actor={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const reserved={...actor,body:commentBody(reservation(task,Date.now()-1000,42))};
+ const f=fixture({comments:[reserved]});
+ const result=await finalize({github:f.github,core:outcomeCore,context:ctx,
+  number:11,expectedSha:sha,taskKey:task.task_key,claimStatus:'skipped',
+  claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+  fixResult:'skipped',publishResult:'skipped'});
+ assert.equal(result.state,'NO_CLAIM_RETRYABLE');
+ assert.equal(result.source_published,false);
+ assert.equal(result.reservation_run_id,'42');
+ assert.ok(Date.parse(result.retry_after)>Date.now());
+ assert.equal(f.log.labels,0,'no coding claim means no manual source escalation');
+ assert.equal(f.log.commit,0);
+ assert.equal(reservationStatus(task,[reserved,{...actor,
+  body:f.log.commentBodies.at(-1)}],Date.parse(result.retry_after)+1000),'FREE');
+});
+test('preclaim retry is refused for unsigned reservations, active claims or budget exhaustion',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const actor={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const reserveBody=commentBody(reservation(task,Date.now()-1000,42));
+ const cases=[
+  [{body:reserveBody}],
+  [{...actor,body:reserveBody},{body:'<!-- '+MARKER+' '+sha+' -->'}],
+  [{...actor,body:reserveBody},
+   {...actor,body:commentBody({...task,state:'NO_CLAIM_RETRYABLE'})},
+   {...actor,body:commentBody({...task,state:'NO_CLAIM_RETRYABLE'})}]
+ ];
+ for(const comments of cases){
+  const f=fixture({comments});
+  const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
+   number:11,expectedSha:sha,taskKey:task.task_key,claimStatus:'skipped',
+   claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'skipped',publishResult:'skipped'});
+  assert.equal(x.state,'REJECTED');
+  assert.equal(x.source_published,false);
+  assert.equal(f.log.labels,0);
+ }
+});
+test('missing owner token and interrupted claim may not unlock a source reservation',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const reserved={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody(reservation(task,Date.now()-1000,42))};
+ for(const props of [
+  {claimStatus:'skipped',claimReason:'HH_AUTOMERGE_TOKEN_MISSING',claimResult:'success'},
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'failure'},
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'success',publishResult:'skipped'}
+ ]){
+  const f=fixture({comments:[reserved]});
+  const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
+   number:11,expectedSha:sha,taskKey:task.task_key,...props});
+  assert.notEqual(x.state,'NO_CLAIM_RETRYABLE');
+  assert.equal(x.source_published,false);
+ }
+});
+test('existing Repair Worker workflow carries reservation identity without source tokens',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(wf.includes('reservation_run_id:'));
+ assert.ok(wf.includes('ref: codex/bootstrap-books'));
+ const dispatcher=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });
