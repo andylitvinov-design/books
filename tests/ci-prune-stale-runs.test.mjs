@@ -120,3 +120,20 @@ test('metrics monitor counts new checks separately from jobs actually running', 
   assert.equal(m.runnerMs, 300000);
   assert.equal(m.sampledRuns, 2);
 });
+
+test('optional conflict grouping cannot falsely fail a successful protected CI prune',()=>{
+ const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+ const marker='- name: Group unresolved PR merge-conflict candidates (read-only)';
+ const idx=yaml.indexOf(marker);
+ assert.ok(idx>0);
+ const prune=yaml.slice(0,idx);
+ const diag=yaml.slice(idx);
+ assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
+ assert.doesNotMatch(prune,/continue-on-error: true/);
+ assert.match(diag,/id: conflict_diagnostic/);
+ assert.match(diag,/continue-on-error: true/);
+ assert.match(diag,/timeout-minutes: 2/);
+ assert.match(diag,/steps\.conflict_diagnostic\.outcome == 'failure'/);
+ assert.match(diag,/Conflict grouping: PARTIAL/);
+ assert.doesNotMatch(yaml,/pull_request_target:/);
+});
