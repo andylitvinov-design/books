@@ -17,8 +17,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 64, "One consecutive course must have 64 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64]);
+assert.equal(expectedSequence.length, 68, "One consecutive course must have 68 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64,68]);
 // Generated at runtime from a local synthetic drawing: no personal or Stock photos.
 let photoFixture = null;
 const pageErrors = [];
@@ -458,7 +458,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 64 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 68 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   // The optional readiness review is on the final screen, not its own slide.
   await expect(page.locator("[data-initiation-readiness]")).toBeVisible();
@@ -762,7 +762,7 @@ try {
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 64,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 68,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();

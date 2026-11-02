@@ -12,7 +12,8 @@ test('expensive PR workflows cancel only superseded runs for the same ref', () =
     const source = readFileSync(path, 'utf8')
     assert.match(source, /^concurrency:\n  group: /m, path)
     const condition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after"
-    assert.ok(source.includes('group: ' + group + '${{ ' + condition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), path)
+    const groupCondition = "github.event_name == 'pull_request'"
+    assert.ok(source.includes('group: ' + group + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), path)
     assert.ok(source.includes('cancel-in-progress: ${{ ' + condition + ' }}'), path)
   }
 })

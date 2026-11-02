@@ -1,32 +1,232 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    # Only onboarding and review-state changes need an early preflight.
+    # Synchronize commits are reevaluated on successful Core CI completion,
+    # not before their new-HEAD tests have run; removes duplicate Action runs.
+    types: [opened, reopened, ready_for_review]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
+  # Core must verify its own gate and specialist CI before the merge review. Listening
+  # to every specialist produced redundant callbacks and exhausted the shared
+  # owner PAT's GitHub API rate budget (real 403 on 2026-11-01).
   workflow_run:
-    workflows: ['HH PR core release gate']
+    workflows:
+      - 'HH PR core release gate'
     types: [completed]
 permissions:
   contents: write
   pull-requests: write
+  actions: read
 jobs:
   enable:
-    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
+    name: event-driven exact-head auto-merge reevaluation
+    if: >-
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
+      # This privileged workflow executes trusted base/default-branch code only.
+      # Never checkout or execute code from the PR head with this token.
+      - name: Verify live PR and completed exact-head CI
+        id: ready
+        uses: actions/github-script@v7
+        with:
+          # Read-only preflight uses per-repository Actions token; reserve
+          # the scarce owner PAT for actual protected merge.
+          github-token: ${{ github.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const fullRepo = owner + "/" + repo;
+            let number = null;
+            let expectedHead = null;
+            let completedRunId = null;
+            const log = message => core.info("CI_AUTO_MERGE: " + message);
+            if (context.eventName === "pull_request_target") {
+              const source = context.payload.pull_request;
+              if (!source || source.head?.repo?.full_name !== fullRepo ||
+                  source.base?.ref !== "codex/public-book-library") return;
+              number = source.number;
+              expectedHead = source.head.sha;
+            } else if (context.eventName === "workflow_run") {
+              const run = context.payload.workflow_run;
+              if (!run || run.event !== "pull_request" || run.conclusion !== "success" ||
+                  run.repository?.full_name !== fullRepo ||
+                  (run.head_repository?.full_name && run.head_repository.full_name !== fullRepo)) return;
+              completedRunId = run.id;
+              const references = [...new Set((run.pull_requests || [])
+                .filter(item => item.base?.ref === "codex/public-book-library")
+                .map(item => item.number).filter(Number.isInteger))];
+              if (references.length === 1) {
+                number = references[0];
+              } else {
+                if (!run.head_branch) return;
+                const matches = await github.rest.pulls.list({
+                  owner, repo, head: owner + ":" + run.head_branch, state: "open", per_page: 100
+                });
+                const candidates = matches.data.filter(pr =>
+                  pr.base?.ref === "codex/public-book-library" &&
+                  pr.head?.repo?.full_name === fullRepo);
+                if (candidates.length !== 1) {
+                  log("SKIP ambiguous current PR for completed workflow " + run.id);
+                  return;
+                }
+                number = candidates[0].number;
+              }
+            } else return;
+            if (!Number.isInteger(number)) return;
+            let pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            if (pr.mergeable === null) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            }
+            if (pr.state !== "open" || pr.draft || pr.base.ref !== "codex/public-book-library" ||
+                pr.head.repo?.full_name !== fullRepo || !/^[0-9a-f]{40}$/.test(pr.head.sha) ||
+                pr.mergeable !== true || pr.mergeable_state === "dirty" ||
+                (expectedHead && expectedHead !== pr.head.sha)) {
+              log("SKIP Draft, conflict, changed HEAD, changed base or non-mergeable PR #" + number);
+              return;
+            }
+            // GitHub's temporarily empty hosted required-check list can merge immediately.
+            // Therefore ARM only after actual trusted PR CI has completed successfully.
+            // A pull_request workflow can report a synthetic test-merge head_sha.
+            // Its immutable PR association, not run.head_sha, identifies the actual
+            // source HEAD and the production base against which CI ran.
+            const matchesCurrentSource = run => run.event === "pull_request" &&
+              run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
+                item.number === number &&
+                item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
+                item.base?.ref === "codex/public-book-library" &&
+                item.base?.sha === pr.base.sha);
+            // Some active PRs have >100 CI runs on a single source HEAD.
+            // Read only as many pages as necessary (max 3) and never infer
+            // green from a truncated current-head page. Use the short path
+            // for normal PRs to preserve the shared GitHub API rate budget.
+            const pageSize = 100, maxPages = 3;
+            const currentRuns = [];
+            let complete = false;
+            for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+              const response = await github.rest.actions.listWorkflowRunsForRepo({
+                owner, repo, event: "pull_request", branch: pr.head.ref,
+                per_page: pageSize, page: pageNumber
+              });
+              const batch = response.data.workflow_runs;
+              const count = response.data.total_count;
+              if (!Array.isArray(batch) || batch.length === 0 ||
+                  !Number.isSafeInteger(count) || count < currentRuns.length + batch.length) {
+                log("SKIP incomplete branch-scoped CI pagination for PR #" + number);
+                return;
+              }
+              currentRuns.push(...batch);
+              // GitHub returns runs newest first; old HEAD forms the boundary.
+              // If it cannot be established within the bounded budget, fail closed.
+              if (currentRuns.length >= count || batch.length < pageSize ||
+                  !matchesCurrentSource(batch[batch.length - 1])) {
+                complete = true;
+                break;
+              }
+            }
+            if (!complete) {
+              log("SKIP current source HEAD extends beyond bounded CI pages for PR #" + number);
+              return;
+            }
+            const latest = new Map();
+            for (const run of currentRuns) {
+              if (!matchesCurrentSource(run)) continue;
+              const key = String(run.workflow_id || run.path || run.name);
+              const old = latest.get(key);
+              const newer = !old || (Date.parse(run.created_at) > Date.parse(old.created_at)) ||
+                (run.created_at === old.created_at && run.id > old.id);
+              if (newer) latest.set(key, run);
+            }
+            const observed = [...latest.values()];
+            if (completedRunId && !observed.some(run => run.id === completedRunId)) {
+              log("SKIP stale or misassociated CI completion " + completedRunId + " for PR #" + number);
+              return;
+            }
+            const coreRun = observed.find(run =>
+              run.name === "HH PR core release gate" &&
+              String(run.path || "").split("@")[0] === ".github/workflows/hh-pr-core-release.yml");
+            if (!coreRun || coreRun.status !== "completed" || coreRun.conclusion !== "success") {
+              log("SKIP core CI not green on current HEAD of PR #" + number);
+              return;
+            }
+            // Require the real Core job on the current PR's verified workflow.
+            // A successful workflow without this job is not source QA.
+            const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
+            })).data;
+            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
+                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
+                  job.status === "completed" && job.conclusion === "success")) {
+              log("SKIP current source missing verified Core job for PR #" + number);
+              return;
+            }
+            // Support both verified protection states without bypassing the
+            // old required status while the admin token is still insufficient.
+            const branchProtection = (await github.rest.repos.getBranch({
+              owner, repo, branch: "codex/public-book-library"
+            })).data;
+            const required = branchProtection.protection?.required_status_checks?.contexts;
+            const oldRequired = Array.isArray(required) && required.includes("release-ready");
+            const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            const specialistRequired = Array.isArray(required) && required.includes("hh-specialist");
+            // Safe transition states: legacy-only, both enforced, or fully migrated.
+            // Partial replacement is a configuration error, never an approval.
+            const legacyOnly = oldRequired && !coreRequired && !specialistRequired;
+            const dualEnforced = oldRequired && coreRequired && specialistRequired;
+            const migrated = !oldRequired && coreRequired && specialistRequired;
+            if (!branchProtection.protected || !Array.isArray(required) ||
+                !(legacyOnly || dualEnforced || migrated)) {
+              log("SKIP missing/partial/unknown required protection on PR #" + number);
+              return;
+            }
+            const passed = name => jobPage.jobs.some(job =>
+              job.name === name && job.status === "completed" && job.conclusion === "success");
+            if (oldRequired && !passed("release-ready")) {
+              log("SKIP old mandatory release-ready is not green for PR #" + number);
+              return;
+            }
+            if (specialistRequired && !passed("hh-specialist")) {
+              log("SKIP required hh-specialist missing or red for PR #" + number);
+              return;
+            }
+            const blocked = observed.find(run => run.status !== "completed" ||
+              !["success","skipped","neutral"].includes(run.conclusion));
+            if (blocked) {
+              log("SKIP exact-head CI " + blocked.name + "=" + blocked.status + "/" +
+                blocked.conclusion + " for PR #" + number);
+              return;
+            }
+            // Do not modify branches or mark checks green; GitHub still enforces
+            // current effective protection, unresolved discussions and merge method.
+            core.setOutput("eligible", "true");
+            core.setOutput("pr", String(number));
+            core.setOutput("head", pr.head.sha);
+            core.setOutput("base", pr.base.sha);
+            core.setOutput("branch", pr.head.ref);
+            log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
+              " after " + observed.length + " latest exact-head PR workflows");
       - name: Enable native auto-merge for this exact head
+        if: steps.ready.outputs.eligible == 'true'
         env:
           # A repo-scoped token lets resulting merges trigger push workflows.
           # Preserve native auto-merge if the optional credential is absent.
           GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
           GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ steps.ready.outputs.pr }}
+          PR_HEAD: ${{ steps.ready.outputs.head }}
+          PR_BASE_SHA: ${{ steps.ready.outputs.base }}
+          PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}
         run: |
+          set -euo pipefail
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
             echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
           fi
@@ -42,13 +242,59 @@ jobs:
             1) merge_option=--merge; export HH_EXPECTED_MERGE_METHOD=MERGE ;;
             *) echo '::error::Unexpected stacked-child count; refusing auto-merge' >&2; exit 1 ;;
           esac
+          # No duplicate ARM, wrong-method overwrite or stale-head merge.
+          current="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,headRefOid,autoMergeRequest --jq '[.state,.headRefOid,(.autoMergeRequest.mergeMethod // "NONE")] | @tsv')"
+          IFS=$'\t' read -r current_state current_head current_method <<< "$current"
+          if [[ "$current_state" != OPEN || "$current_head" != "$PR_HEAD" ]]; then
+            echo 'CI_AUTO_MERGE: SKIP PR merged/changed after CI preflight'
+            exit 0
+          fi
+          if [[ "$current_method" == "$HH_EXPECTED_MERGE_METHOD" ]]; then
+            echo 'CI_AUTO_MERGE: SKIP already armed with correct method'
+            exit 0
+          fi
+          if [[ "$current_method" != NONE ]]; then
+            echo '::error::Wrong existing auto-merge method; refusing silent override' >&2
+            exit 1
+          fi
           for ((attempt=1; attempt<=3; attempt++)); do
             if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
+              echo "CI_AUTO_MERGE: GitHub accepted ARM for PR #$PR_NUMBER at $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             cat "$RUNNER_TEMP/auto-merge-error" >&2
-            if [[ "$(gh pr view "$PR_NUMBER" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
+            if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
+            fi
+            # GitHub can reject --auto as "unstable" when hosted required
+            # contexts are empty, even after verified current-HEAD CI is green.
+            # Only then use normal GitHub-protected merge: no admin or bypass.
+            if grep -Eq 'Pull request is in (clean|unstable) status' "$RUNNER_TEMP/auto-merge-error"; then
+              ruleset="$(gh api "repos/$GH_REPO/rulesets/26269892" --jq '[.enforcement, ([.rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[]?] | length)] | @tsv')"
+              IFS=$'\t' read -r enforcement required_count <<< "$ruleset"
+              if [[ "$enforcement" != active || "$required_count" != 0 ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; hosted required contexts active or ruleset changed' >&2
+                exit 1
+              fi
+              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
+              if [[ "$current_base" != "$PR_BASE_SHA" ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; production advanced since CI evaluation' >&2
+                exit 1
+              fi
+              fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library") and (.autoMergeRequest == null)')"
+              if [[ "$fresh" != true ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; live PR or ARM already changed'
+                exit 0
+              fi
+              # The trusted preflight confirmed successful Core and all latest
+              # started applicable exact-HEAD PR workflows. GitHub still
+              # enforces classic branch protection and the hosted ruleset.
+              if gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/checked-direct-merge-error"; then
+                echo "CI_AUTO_MERGE: normal protected merge confirmed, PR #$PR_NUMBER HEAD $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              cat "$RUNNER_TEMP/checked-direct-merge-error" >&2
+              exit 1
             fi
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
@@ -56,133 +302,9 @@ jobs:
             if ((attempt < 3)); then sleep "$attempt"; fi
           done
           exit 1
-  recover-missing-required-ci:
-    name: recover-missing-required-ci
-    needs: enable
-    if: ${{ github.event_name == 'pull_request_target' && needs.enable.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 4
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    steps:
-      - name: Recover missing CI only for clean strict-behind current HEAD
-        uses: actions/github-script@v7
-        env:
-          HH_HAS_RECOVERY_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
-        with:
-          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
-          script: |
-            const {owner, repo} = context.repo;
-            const number = context.payload.pull_request?.number;
-            const head = context.payload.pull_request?.head?.sha;
-            function log(msg) { core.info("CI_RECOVERY: " + msg); }
-            if (process.env.HH_HAS_RECOVERY_TOKEN !== "true") {
-              core.warning("CI_RECOVERY: HH_AUTOMERGE_TOKEN unavailable; cannot safely retrigger required PR checks");
-              return;
-            }
-            if (!Number.isInteger(number) || !/^[0-9a-f]{40}$/.test(head || "")) {
-              core.warning("CI_RECOVERY: invalid PR or event SHA");
-              return;
-            }
-            await new Promise(resolve => setTimeout(resolve, 25000));
-            const live = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
-                live.head.repo?.full_name !== owner + "/" + repo || live.head.sha !== head) {
-              log("SKIP live PR state, repository, or HEAD changed");
-              return;
-            }
-            if (live.mergeable !== true || live.mergeable_state !== "behind") {
-              log("SKIP no clean behind-branch update is required: " + live.mergeable_state);
-              return;
-            }
-            const checkData = (await github.rest.checks.listForRef({owner, repo, ref: head, per_page: 100})).data;
-            if (checkData.total_count > 100 ||
-                checkData.check_runs.some(check => check.name === "release-ready" && check.app?.slug === "github-actions")) {
-              log("SKIP required release-ready already present or check list incomplete");
-              return;
-            }
-            const runData = (await github.rest.actions.listWorkflowRunsForRepo({
-              owner, repo, head_sha: head, event: "pull_request", per_page: 100
-            })).data;
-            if (runData.total_count > 100 || runData.workflow_runs.some(run => run.name === "HH PR core release gate")) {
-              log("SKIP normal pull_request core CI exists for exact HEAD");
-              return;
-            }
-            const ruleset = (await github.request("GET /repos/{owner}/{repo}/rulesets/{ruleset_id}", {
-              owner, repo, ruleset_id: 26269892
-            })).data;
-            const required = ruleset.rules?.find(rule => rule.type === "required_status_checks")?.parameters;
-            if (ruleset.enforcement !== "active" ||
-                required?.strict_required_status_checks_policy !== true ||
-                required.required_status_checks?.length !== 1 ||
-                required.required_status_checks[0].context !== "release-ready" ||
-                required.required_status_checks[0].integration_id !== 15368) {
-              log("SKIP current hosted ruleset differs; never infer required checks passed");
-              return;
-            }
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner, repo, issue_number: number, per_page: 100
-            });
-            if (comments.length >= 1000) {
-              log("SKIP lease history exceeds bounded review");
-              return;
-            }
-            const latest = new Map();
-            for (const comment of comments.sort((a,b) => a.id - b.id)) {
-              const body = comment.body || "";
-              if (!body.includes("HH_PR_SWEEP_LEASE_V1")) continue;
-              try {
-                const start = body.indexOf("{");
-                const end = body.indexOf("}", start);
-                const lease = JSON.parse(body.slice(start, end + 1));
-                if (!lease || lease.schema !== "HH_PR_SWEEP_LEASE_V1") {
-                  log("SKIP ambiguous lease marker");
-                  return;
-                }
-                const leaseId = lease.lease_id || "legacy:" + (lease.owner || "unknown");
-                latest.set(leaseId, lease);
-              } catch {
-                log("SKIP unparseable lease: fail closed");
-                return;
-              }
-            }
-            for (const lease of latest.values()) {
-              const activity = lease.state || lease.last_action;
-              const active = activity === "active" || activity === "claim" || activity === "heartbeat";
-              if (active && lease.head_sha === head && Date.parse(lease.expires_at || "") > Date.now()) {
-                log("SKIP live exclusive lease protects this HEAD");
-                return;
-              }
-            }
-            const fresh = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            if (fresh.head.sha !== head || fresh.state !== "open" ||
-                fresh.mergeable !== true || fresh.mergeable_state !== "behind") {
-              log("SKIP changed HEAD or mergeability before API write");
-              return;
-            }
-            try {
-              const update = await github.request("PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch", {
-                owner, repo, pull_number: number, expected_head_sha: head
-              });
-              if (update.status === 202) {
-                log("UPDATE_ACCEPTED for clean behind PR #" + number + " at " + head.slice(0, 12) +
-                    "; CI is NOT yet verified; require new current-head release-ready SUCCESS");
-              } else {
-                core.warning("CI_RECOVERY: unexpected update-branch HTTP " + update.status);
-              }
-            } catch (error) {
-              if ([409, 422].includes(error.status)) {
-                log("SKIP CAS/head conflict; no force, no retries");
-              } else {
-                core.warning("CI_RECOVERY: update-branch was not accepted: HTTP " + (error.status || "unknown"));
-              }
-            }
-
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && github.event.workflow_run.conclusion != 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -265,7 +387,7 @@ jobs:
             try {
               await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
               log("RERUN_ACCEPTED first-attempt interrupted workflow " + event.id +
-                  " on exact PR #" + reference.number + "; new release-ready SUCCESS still required");
+                  " on exact PR #" + reference.number + "; current verified Core and specialist CI still required");
             } catch (error) {
               if ([403,404,409,422].includes(error.status)) {
                 core.warning("CORE_CI_RECOVERY: rerun not permitted/eligible (HTTP " + error.status + ")");

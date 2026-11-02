@@ -7,6 +7,7 @@ import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import reviewedMeditationCandidates from "@/data/academy/meditation-catalog-candidates-20261028.json";
 import { publicReikiIntroAudio } from "@/lib/academy/reiki-intro-audio-store";
 import { listVideoProgress } from "@/lib/app/video-progress";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
@@ -63,7 +64,7 @@ function inputOf(body) {
     throw new AppError("INVALID_AGENT_INPUT",400);
   if (!Array.isArray(body.history) || body.history.length > 6 ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
-      typeof row.text !== "string" || row.text.length > 420 ||
+      typeof row.text !== "string" || row.text.length > 4000 ||
       Object.keys(row).some(key => !["role","text"].includes(key))))
     throw new AppError("INVALID_AGENT_HISTORY",400);
   return body;
@@ -93,7 +94,7 @@ export async function POST(request) {
     const actor = await auth.verified();
     const repository = createAppRepository(config);
     await repository.ensureAccount(actor);
-    const body = inputOf(await readBody(request,12000));
+    const body = inputOf(await readBody(request,32000));
     await consumeRate(config,{op:"holistic-agent-turn",actorId:actor.id},10,60);
     await consumeRate(config,{op:"holistic-agent-daily",actorId:actor.id},100,86400);
     const safety = preflight(body.message,body.locale);
@@ -120,9 +121,20 @@ export async function POST(request) {
     // Existing published source manifests and core offers only. No speculative
     // provider/video IDs, invented prices, bookings or private client media.
     const services=coreServiceOffers(body.locale);
+    const verifiedPublished=publishedVideos(body.locale);
     const axisOffers=publishedAxisOffers({
-      locale:body.locale, services, videos:publishedVideos(body.locale),
+      locale:body.locale, services, videos:verifiedPublished,
     });
+    // Only original records already present in the published site/Academy
+    // manifest may be suggested without a profile axis. Candidate-only and
+    // external YouTube recommendations remain excluded.
+    const publishedSourceIds=[...new Set(verifiedPublished
+      .map(item=>item.id||item.youtubeId)
+      .filter(id=>typeof id==="string"&&/^[A-Za-z0-9_-]{11}$/.test(id)))];
+    const trustedIds=new Set(publishedSourceIds);
+    const meditationVideos=reviewedMeditationCandidates.videos.filter(item=>
+      item.source_kind==="original"&&item.metadata_confidence==="owner_source"&&
+      trustedIds.has(item.youtube_id));
     // A chosen format is a hard user constraint, not a licence to fill empty
     // results with another medium. Public course introductions remain distinct
     // from nonplayable editor soundtracks and private practitioner recordings.
@@ -158,7 +170,8 @@ export async function POST(request) {
       profile:{measurements},
       history:{completedIds},
       feedback:body.feedback||{},
-      safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio},
+      safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio,
+        meditationVideos,publishedSourceIds},
     });
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({

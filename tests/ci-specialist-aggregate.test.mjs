@@ -1,11 +1,12 @@
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
-  inspectJobs, validateParameters,
+  inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -119,10 +120,73 @@ test('workflow status needs live matching PR HEAD, path, associated PR and lates
   assert.equal(inspectWorkflowRuns({...input,runs:[run({id:150,conclusion:'failure'}),run()]}).passed.length,1);
 });
 
+test('immutable run SHA survives GitHub rewriting associated PR head on subsequent pushes',()=>{
+  const associated = run({pull_requests:[{number:27,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  const input = {expected:[path],pr:pr()};
+  assert.equal(inspectWorkflowRuns({...input,runs:[associated]}).passed.length,1);
+  const wrongBranch=run({head_branch:'unrelated',pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongBranch]}).missing,[path]);
+  const wrongRepo=run({head_repository:{full_name:'other/repo'},pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongRepo]}).missing,[path]);
+  const wrongNumber=run({pull_requests:[{number:999,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongNumber]}).missing,[path]);
+  const wrongTarget=run({pull_requests:[{number:27,base:{ref:'other'},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
+});
+
 test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
   const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})]});
   assert.deepEqual(state.pushFailures,['300:failure']);
   assert.equal(state.passed.length,1);
+});
+
+test('general conditional jobs may skip only when BASE explicitly makes them optional',()=>{
+  const yaml = "on:\n  pull_request:\n    branches: ['codex/public-book-library']\njobs:\n  build:\n    runs-on: ubuntu-latest\n  optional:\n    if: ${{ github.event_name == 'workflow_dispatch' }}\n    runs-on: macos-latest\n  final:\n    if: always()\n    runs-on: ubuntu-latest\n";
+  assert.deepEqual(trustedConditionalJobs(yaml),['optional']);
+  const pair=[{name:'build',status:'completed',conclusion:'success'},
+    {name:'optional',status:'completed',conclusion:'skipped'}];
+  assert.equal(inspectJobs(pair,'.github/workflows/any-owner.yml',trustedConditionalJobs(yaml)),1);
+  assert.throws(()=>inspectJobs(pair,'.github/workflows/any-owner.yml'),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([{...pair[0],conclusion:'skipped'},pair[1]],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([pair[0],pair[1],
+    {name:'final',status:'completed',conclusion:'skipped'}],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([pair[1]],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
+  assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
+});
+test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  optional:','    if: '+guard,'    runs-on: ubuntu-latest',''
+  ].join('\n');
+  for(const guard of [
+    "github.event_name == 'workflow_dispatch'",
+    "${{ github.event_name != 'pull_request' }}",
+    "${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}",
+  ]) assert.deepEqual(trustedConditionalJobs(build(guard)),['optional'],
+    'provably non-PR job must not block '+guard);
+  for(const guard of [
+    "${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}",
+    "${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' }}",
+    "${{ github.event_name != 'pull_request' || always() }}",
+    "${{ success() && github.ref == 'refs/heads/main' }}",
+    "${{ !cancelled() }}",
+    "${{ startsWith(github.head_ref, 'feat/') }}",
+    "${{ always() }}",
+    'true','false',
+  ]) assert.deepEqual(trustedConditionalJobs(build(guard)),[],
+    'conditional job may actually be required on a PR: '+guard);
+  const readyJob=[
+    {name:'required',status:'completed',conclusion:'success'},
+    {name:'optional',status:'completed',conclusion:'skipped'},
+  ];
+  assert.throws(()=>inspectJobs(readyJob,'.github/workflows/owner.yml',
+    trustedConditionalJobs(build("${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"))),
+    /UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.equal(inspectJobs(readyJob,'.github/workflows/owner.yml',
+    trustedConditionalJobs(build("${{ github.event_name == 'workflow_dispatch' }}"))),1);
 });
 
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
@@ -170,8 +234,7 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // Exact-HEAD failed PUSH or unassociated PR run is never waived as unrelated:
-  // it has no trusted associated PR evidence for a safe exemption.
+  // An unassociated exact-head failure has unknown coverage and must block.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
@@ -1026,4 +1089,78 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
     ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
   ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
     'Own-module change must retain specialist ' + owner);
+});
+
+
+test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
+  const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
+  const compare = files => ({
+    status:'ahead', ahead_by:2, behind_by:0, total_commits:2,
+    base_commit:{sha:base}, merge_base_commit:{sha:base},
+    commits:[{sha:other},{sha:live}], files:files.map(filename=>({filename,status:'modified'})),
+  });
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['app/api/voice/route.ts']),true);
+  const forbidden = [
+    'docs/operations/CI_RELEASE_POLICY.md','docs/security/overview.md','docs/billing/overview.md',
+    'docs/guides/secret-rotation.md','.github/workflows/core.yml','components/mandala.tsx',
+    'package-lock.json','docs/../api.md',
+  ];
+  for (const filename of forbidden) {
+    assert.equal(safeDocumentationAdvance(compare([filename]),base,live,['app/api/voice/route.ts']),false,filename);
+  }
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['docs/guides/intro.md']),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),status:'diverged'},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),merge_base_commit:{sha:other}},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:other},{sha:other}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:live}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),total_commits:3},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),behind_by:1},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),ahead_by:100,total_commits:100,commits:Array(100).fill({sha:live})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
+});
+
+test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures stay blocking', () => {
+  const path = '.github/workflows/holistic-support-mandala.yml';
+  const workflow = "on:\n  pull_request:\n    paths: ['components/mandala-*']\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-latest\n  voice-webkit-macos:\n    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'fix/video-')) }}\n    runs-on: macos-15\n";
+  const files = {base:new Map([[path,workflow]]),current:new Map([[path,workflow]])};
+  const ui = ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'];
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  // A route/glob-only Mandala change is NOT a change to the BASE macOS job.
+  const updatedPaths = workflow.replace("paths: ['components/mandala-*']",
+    "paths: ['components/mandala-*', 'tests/video-chat-*.test.mjs']");
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,'tests/ci-specialist-aggregate.test.mjs']),true);
+  // PR-authored edits to macOS conditions or platform cannot self-certify.
+  for (const changedJob of [
+    updatedPaths.replace('runs-on: macos-15','runs-on: macos-14'),
+    updatedPaths.replace("startsWith(github.head_ref, 'fix/video-')",
+      "startsWith(github.head_ref, 'ci/')"),
+    updatedPaths.replace('  voice-webkit-macos:', '  voice-webkit-macos:\n    timeout-minutes: 1'),
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,changedJob]])},
+    'codex/ci-general-release-fastlane-20261101',[path]),false);
+  for(const critical of [
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'lib/mandala/audio-render.mjs',
+    'app/api/holistic-support/voice/route.js',
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,critical]),false);
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'fix/video-source-clock-parity-20261101',[path]),false);
+  assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[path,workflow+'# modified']])},'codex/perf-video-studio-lazy-panels-20261101',ui),false);
+  const jobs = [{name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'}];
+  assert.throws(()=>inspectJobs(jobs,path),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });

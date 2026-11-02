@@ -229,8 +229,18 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await templePath.getAttribute("aria-expanded"), "true",
       label + ": Temple Insights in-place panel remains open");
     // Free Taoist guidance still produces a fresh symbolic response to the typed question.
+    // Require a hydrated React form and a committed, controlled question.
+    // Focus changes during an iPhone touch can otherwise retarget the same tap.
+    await page.waitForFunction(() => {
+      const form = document.getElementById("ideas-question-form");
+      const key = Object.keys(form || {}).find(name => name.startsWith("__reactProps$"));
+      return Boolean(key && typeof form[key]?.onSubmit === "function");
+    }, null, {timeout:30000});
     await textarea.fill(phrases[locale]);
-    await hub.locator('[data-ideas-tao]').tap();
+    await textarea.blur();
+    const daoSubmit = hub.locator('[data-ideas-tao]');
+    await daoSubmit.scrollIntoViewIfNeeded();
+    await daoSubmit.tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
     await daoResult.waitFor({ state: "visible" });
     assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,

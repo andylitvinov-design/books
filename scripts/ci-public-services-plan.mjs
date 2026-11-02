@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -61,6 +62,13 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'tests/ci-site-video-scope.test.mjs',
   'tests/site-video-admin-e2e-gate.test.mjs',
   'tests/ci-heavy-draft-policy.test.mjs',
+  // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/pr-fast-lane.test.mjs',
+  // Read-only PR conflict inventory/contract only; Public Services never reads
+  // this telemetry or writes to checkout, bookings, consent or payment APIs.
+  '.github/workflows/hh-pr-sweep-guard.yml',
+  'tests/pr-sweep-guard.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
@@ -108,6 +116,76 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // Unlike editor-only changes, the new course contact UI calls the EXISTING
 // /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
 // browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+// These EXISTING, isolated files are directly owned by Holistic Support
+// Mandala's source, consent, audio/video and Playwright tests. They contain no
+// checkout, booking, client-account, payment, app-wide routing or auth code.
+// Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
+const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Reviewed #2938 natural-language input classifier; no provider, PII or media changes.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
+  // PR #2970: fixed, public-read-only phrase dictionary + UI under the
+  // independently required Mandala specialist's schema/RLS/locale contracts.
+  // This exact-file allowlist does NOT include payments, auth, general APIs,
+  // unknown scripts, or broad wildcard routes; all such changes stay FULL.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
+  // Real LIVE Director Chat QA is owned by the independently required Chrome,
+  // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
+  '.github/workflows/hh-first-video-live-export.yml',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+  // Exactly reviewed, consent- and license-gated Director Chat + executable cut.
+  // Dedicated Mandala CI owns source, schema, media provenance and real render.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/auto-video-director.mjs',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
+  'app/[locale]/holistic-support/mandala/page.tsx',
+  'components/mandala-cinematic-director.tsx',
+  // Approved four-goal/six-topic Video Studio is verified by Mandala specialist.
+  // Exact sources only; unknown files, auth, messaging and checkout remain full.
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-meditation.module.css',
+  'components/mandala-video-mobile.module.css',
+  'scripts/verify-holistic-mandala-browser.mjs',
+  // Hypno browser QA has no Public Services runtime/checkout imports.
+  // Its own Mandala workflow owns the script and source safety checks.
+  'scripts/verify-hypno-wave-browser.mjs',
+  // Exact Mandala-eligible real media/consent QA, covered by its independent
+  // Chromium and macOS WebKit jobs. Do not send video-editor QA to checkout.
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/affirmation-voice-browser-attachment.test.mjs',
+  'tests/mandala-export.test.mjs',
+  'tests/cinematic-studio.test.mjs',
+  'tests/mandala-approved-mobile-studio.test.mjs',
+  'tests/mandala-audio-attach.test.mjs',
+  'tests/mandala-auto-video-director-ui.test.mjs',
+  'tests/mandala-mobile-video-design.test.mjs',
+  'tests/mandala-stories-characters.test.mjs',
+  'tests/mandala-therapy-video-intro.test.mjs',
+]);
 const MANDALA_COURSE_ENQUIRY_FILES = new Set([
   'components/meditation-course-enquiry.module.css',
   'components/meditation-course-enquiry.tsx',
@@ -116,6 +194,41 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Fail closed for all other new routes, source and tests.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
+  // The exact reviewed 2970 addition set. The read-only GET is same-origin,
+  // bounded to known taxonomy IDs, and falls back to audited bundled copy.
+  // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
+  // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+  // Exact additions from audited Video Director Chat. Unknown API/checkout
+  // additions remain FULL; no broad route or lib/mandala wildcard here.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
   'app/api/holistic-support/hypno-strategy/route.js',
   'components/mandala-hypnocorrection-mobile.module.css',
   'components/mandala-hypnocorrection-mobile.tsx',
@@ -131,6 +244,56 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   'tests/meditation-course-enquiry.test.mjs',
   'tests/meditation-regeneration.test.mjs',
 ]);
+// Exact operator guest reply (#2856): reviewed private route and SQL audit
+// are backed by isolated PostgreSQL17, other-account negative auth, IA/CRM,
+// real EN/RU/ES public enquiry browser and Core build. Any unknown file or
+// payment, common auth, provider transport change runs the full 13 browsers.
+const REVIEWED_GUEST_REPLY_PATHS=new Set([
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_REPLY_ADDITIONS=new Set([
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_CI_POLICY=new Set([
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+]);
+function exactReviewedGuestReply(files) {
+  const changed=files.filter(file=>!REVIEWED_GUEST_CI_POLICY.has(file));
+  return changed.length===REVIEWED_GUEST_REPLY_PATHS.size &&
+    changed.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)) &&
+    files.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)||
+      REVIEWED_GUEST_CI_POLICY.has(file));
+}
+
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 // The Ideas/Coaching source owner checks these exact files. Public Services
 // must still run its real Ideas browser when the shared mobile QA harness
@@ -169,26 +332,84 @@ const HARNESS_CASES = new Map([
   ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
+// Complex PRs still run real Chromium/WebKit for the affected sensitive
+// funnel. The immutable BASE owner selects only relevant cases; missing,
+// added, removed, unknown or mixed critical paths continue to run all 13.
+const VERIFIED_CRITICAL_PUBLIC_CASES = [
+  [/^app\/api\/payments\/talismans\/checkout\/route\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^lib\/commerce\/talisman-checkout\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+  [/^components\/commerce\/(?:service-cart|personal-cart|consultation-cart-entry|cart-nav-link)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/contact-channel-chooser(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/(?:compact-lead-capture|phone-country-input|consultation-choice-capture|public-consultation-cta|free-diagnosis-offers|business-website-enquiry|free-resource-enquiry)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^app\/api\/service-enquiries\/route\.(?:js|ts)$/, ['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+  [/^components\/academy-course-capture(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  [/^components\/alchemy-soul-lead-form(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+];
+export function verifiedCriticalPublicCases(file, baseTrigger) {
+  if (typeof file !== 'string' || !baseTrigger || file.includes('..') ||
+      file.includes('\0') || file.includes('\n') || !matchesTrigger(baseTrigger,[file])) return null;
+  const owner = VERIFIED_CRITICAL_PUBLIC_CASES.find(([pattern]) => pattern.test(file));
+  return owner ? owner[1] : null;
+}
+
+// Cross-domain browser matrix is NOT a default requirement for changes that
+// the immutable BASE Mandala workflow independently owns. Any mixed checkout,
+// auth, payment, service-enquiry or unknown change still routes to full QA.
+const MANDALA_INDEPENDENT_DOMAIN = [
+  /^components\/mandala-[^/]+\.(?:tsx|module\.css)$/,
+  /^lib\/mandala\/[a-z0-9./-]+\.(?:mjs|ts|tsx)$/i,
+  /^tests\/(?:mandala|video|voice|affirmation|personal-guided)[a-z0-9.-]+\.test\.mjs$/i,
+  /^scripts\/verify-(?:holistic-mandala|affirmation-voice|hypno-wave)-browser\.mjs$/,
+  /^scripts\/benchmarking\/(?:first-video|video)[a-z0-9.-]+\.mjs$/i,
+  /^data\/video-catalog\/[a-z0-9.-]+\.json$/i,
+  /^app\/\[locale\]\/holistic-support\/mandala\/[a-z0-9./-]+\.(?:ts|tsx)$/i,
+];
+const PUBLIC_SERVICE_SENSITIVE_NAME = /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|cart|checkout|client|commerce|consent|contact|consultation|credential|crm|database|enquiry|enquiries|health|medical|message|messaging|migration|order|patient|payment|private|privacy|profile|receipt|rls|secret|security|service|services|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+export function isTrustedMandalaOwnerPath(path, trigger) {
+  return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
+    !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
+}
+const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
+// BASE Guard is the independent CI/security policy owner. It, not browser
+// checkout/reiki tests, validates changed policy/workflow files in every PR.
+const CORE_CI_OWNER_DOMAIN = /^(?:lib\/ci\/[a-z0-9./-]+\.mjs|scripts\/(?:ci-[a-z0-9.-]+|pr-sweep-guard)\.mjs|\.github\/workflows\/[a-z0-9.-]+\.ya?ml|tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane|pr-sweep-guard)\.test\.mjs)$/i;
+export function isTrustedCoreCiOwnerPath(path, trigger) {
+  return typeof path === 'string' && CORE_CI_OWNER_DOMAIN.test(path) &&
+    !!trigger && matchesTrigger(trigger,[path]);
+}
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
 
-export function planPublicServicesChangedPaths(files) {
+export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map() } = {}) {
   if (!Array.isArray(files) || files.length === 0 ||
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
   }
+  if(exactReviewedGuestReply(files)) {
+    // Keep real EN/RU/ES service consent Chromium and production build;
+    // the separate mandatory IA owner/browser runs WebKit and the dedicated
+    // Messages workflow runs PostgreSQL17 tenant isolation. Unknowns run ALL.
+    return {mode:'focused',reason:'EXACT_PRIVATE_GUEST_REPLY',
+      build:true,browser:true,metrics:false,
+      cases:'verify-public-services-production.mjs'};
+  }
   const selected = new Set();
-  let performance = false;
+  let performance = false, ownPublicTests = false, protectedPublic = false;
   for (const file of files) {
-    if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
-    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (publicOwned.has(file)) {
+      for (const name of publicOwned.get(file)) selected.add(name);
+      protectedPublic = true;
+      continue;
+    }
+    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
     }
-    if (sourceTests.has(file)) continue;
+    if (sourceTests.has(file)) { ownPublicTests = true; continue; }
     if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
@@ -220,12 +441,241 @@ export function planPublicServicesChangedPaths(files) {
       build: true, browser: false, metrics: true, cases: 'none' };
   }
   if (selected.size) {
-    return { mode: 'focused', reason: 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
+    return { mode: 'focused', reason: protectedPublic ? 'PROTECTED_PUBLIC_OWNER_CASES' : 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
       build: true, browser: true, metrics: false,
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
-  return { mode: 'contracts', reason: 'EXISTING_NODE_SOURCE_TESTS_ONLY',
+  return { mode: 'contracts', reason: ownPublicTests ? 'EXISTING_NODE_SOURCE_TESTS_ONLY' : 'INDEPENDENT_OWNER_OR_CORE',
     build: false, browser: false, metrics: false, cases: 'none' };
+}
+
+// Exact, temporary reviewed #2629 Voice+Music+WebKit release path set is
+// owned by dedicated Mandala API/source/Chromium/macOS WebKit encoded-media
+// checks, plus protected Core build, security and actionlint. The two policy
+// files below are self-verified by this unit suite. DO NOT generalize to
+// public contact, billing, app auth, checkout or any extra file/status.
+// Once #2629 is merged, retire this temporary exception.
+export const REVIEWED_VOICE_2629_DELTA = new Map([
+  [".github/workflows/holistic-support-mandala.yml", "M"],
+  ["app/[locale]/holistic-support/voice-studio/route.ts", "A"],
+  ["app/api/holistic-support/voice/route.js", "A"],
+  ["components/mandala-affirmation-voice.module.css", "A"],
+  ["components/mandala-affirmation-voice.tsx", "A"],
+  ["components/mandala-auto-video-director.module.css", "M"],
+  ["components/mandala-cloud-voice-studio.module.css", "A"],
+  ["components/mandala-cloud-voice-studio.tsx", "A"],
+  ["components/mandala-free-video-studio.tsx", "M"],
+  ["components/mandala-hypno-compact.tsx", "M"],
+  ["components/mandala-meditation-client.tsx", "M"],
+  ["components/mandala-meditation.module.css", "M"],
+  ["components/mandala-personal-meditation.tsx", "M"],
+  ["docs/holistic-support/FREE_VIDEO_VOICE_MIX_V2_20261030.md", "A"],
+  ["docs/holistic-support/VOICE_STUDIO_GEMINI_FREE_V1_20261030.md", "A"],
+  ["lib/mandala/affirmation-voice.mjs", "A"],
+  ["lib/mandala/local-video-music.ts", "M"],
+  ["lib/mandala/voice-audio-mix.ts", "A"],
+  ["lib/mandala/voice-studio-openrouter-provider.mjs", "A"],
+  ["lib/mandala/voice-studio-provider.mjs", "A"],
+  ["lib/mandala/voice-studio.mjs", "A"],
+  ["lib/mandala/wav-pcm-mixer.mjs", "A"],
+  ["scripts/ci-public-services-plan.mjs", "M"],
+  ["scripts/verify-affirmation-voice-browser.mjs", "A"],
+  ["scripts/verify-holistic-mandala-browser.mjs", "M"],
+  ["tests/affirmation-voice-browser-attachment.test.mjs", "A"],
+  ["tests/affirmation-voice.test.mjs", "A"],
+  ["tests/ci-heavy-draft-policy.test.mjs", "M"],
+  ["tests/ci-heavy-impact.test.mjs", "M"],
+  ["tests/ci-public-services-plan.test.mjs", "M"],
+  ["tests/mandala-approved-mobile-studio.test.mjs", "M"],
+  ["tests/mandala-audio-attach.test.mjs", "M"],
+  ["tests/mandala-native-audio-files.test.mjs", "M"],
+  ["tests/mandala-sound.test.mjs", "M"],
+  ["tests/personal-video-intent.test.mjs", "M"],
+  ["tests/pr-fast-lane.test.mjs", "M"],
+  ["tests/voice-studio-openrouter.test.mjs", "A"],
+  ["tests/voice-studio-provider.test.mjs", "A"],
+  ["tests/voice-studio.test.mjs", "A"],
+  ["tests/wav-pcm-mixer.test.mjs", "A"],
+  // Exact subsequent reviewed WebKit/Director/OPORA regression paths on #2629.
+  // Product, provider, ownership and real encoded-media suites remain REQUIRED.
+  ["app/api/holistic-support/video-director-chat/route.js", "M"],
+  ["components/mandala-video-director-chat.module.css", "M"],
+  ["components/mandala-video-director-chat.tsx", "M"],
+  ["lib/mandala/recording-codecs.mjs", "M"],
+  ["lib/mandala/video-chat-ai.mjs", "M"],
+  ["lib/mandala/video-chat-intent.mjs", "M"],
+  ["lib/mandala/webcodecs-mp4-export.ts", "A"],
+  ["package-lock.json", "M"],
+  ["package.json", "M"],
+  ["scripts/benchmarking/first-video-live-export.mjs", "M"],
+  ["scripts/verify-hypno-wave-browser.mjs", "M"],
+  ["scripts/verify-opora-as56-browser.mjs", "M"],
+  ["tests/first-video-director.test.mjs", "M"],
+  ["tests/mandala-hypnocorrection-mobile.test.mjs", "M"],
+  ["tests/mandala-stories-characters.test.mjs", "M"],
+  ["tests/mandala-webcodecs-mp4.test.mjs", "A"],
+  ["tests/opora-antistress-course-landing.test.mjs", "M"],
+  ["tests/opora-as54-live-v6.test.mjs", "M"],
+  ["tests/opora-as56-authenticated-pipeline.test.mjs", "M"],
+  ["tests/opora-as56-browser-fixture.test.mjs", "M"],
+  ["tests/opora-calm-day-one-mobile.test.mjs", "M"],
+  ["tests/opora-gentle-immersion.test.mjs", "M"],
+  ["tests/opora-post-save-course-program.test.mjs", "M"],
+  ["tests/opora-seven-skills-v5.test.mjs", "M"],
+  ["tests/video-affirmations.test.mjs", "M"],
+]);
+
+// One-off, exact-delta specialist handoff for same-repo PR #2308 only.
+// Six new public READ-ONLY meditation files and three existing gallery/catalog
+// paths are covered by a real Chromium+WebKit candidate browser job in the
+// Meditation catalogue specialist, plus Core build/typing and actionlint.
+// Do NOT generalize this exemption to future PRs: checkout, accounts, consent,
+// payment, deletion, rename, unknown additions and any changed path fail FULL.
+const REVIEWED_MEDITATION_2308_DELTA = new Map([
+  [
+    "M",
+    ".github/workflows/meditation-catalog-checks.yml"
+  ],
+  [
+    "A",
+    "app/[locale]/meditations/page.tsx"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.module.css"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.tsx"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.module.css"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.tsx"
+  ],
+  [
+    "A",
+    "docs/holistic-meditation-app-20261027.md"
+  ],
+  [
+    "A",
+    "scripts/verify-meditation-immersive-browser.mjs"
+  ],
+  [
+    "A",
+    "tests/meditation-immersive-app.test.mjs"
+  ],
+  [
+    "M",
+    "scripts/ci-public-services-plan.mjs"
+  ],
+  [
+    "M",
+    "tests/ci-public-services-plan.test.mjs"
+  ]
+] .map(([status,path])=>[path,status]));
+
+// Narrow one-off routing for owner-approved, source-reviewed Home presentation
+// PR #2758. The same exact 14-file delta is verified by Home first-click,
+// Website video browser, protected Core, and EN/RU Home release contracts.
+// Any unexpected file, status, duplicate path, ref or branch => FULL E2E.
+const REVIEWED_HOME_PRESENTATION_2758 = new Map([
+  ["app/holistic-house-home.css","M"],
+  ["components/holistic-house-home.tsx","M"],
+  ["components/home-presentation-video-section.tsx","A"],
+  ["scripts/verify-home-locale-switch.mjs","M"],
+  ["scripts/verify-page-video-release.mjs","M"],
+  ["scripts/verify-site-video-browser.mjs","M"],
+  ["tests/holistic-house-home-streaming.test.mjs","M"],
+  ["tests/home-conversation-browser.mjs","M"],
+  ["tests/home-conversation-guide.test.mjs","M"],
+  ["tests/home-featured-workspace.test.mjs","M"],
+  ["tests/page-video-release.test.mjs","M"],
+  ["tests/public-tantra-entry-links.test.mjs","M"],
+  ["scripts/ci-public-services-plan.mjs","M"],
+  ["tests/ci-public-services-plan.test.mjs","M"]
+]);
+function reviewedHomePresentation2758(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'feat/home-presentation-20261031-ru-en-slot' ||
+      rows.length !== REVIEWED_HOME_PRESENTATION_2758.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_HOME_PRESENTATION_2758.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
+}
+
+
+// Exact PR #2483 ONLY: public source-backed meditation discovery UI.
+// Real Chromium/WebKit on its owning Support Mobile PR specialist remains
+// mandatory before release; unrelated payment/consent/browser routes are not
+// re-run here. Any missing, extra, renamed or non-matching file/status is FULL.
+const REVIEWED_MEDITATION_RAIL_2483 = new Map([["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]].map(([status,path])=>[path,status]));
+function reviewedMeditationRail2483(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'codex/meditation-category-rail-20261028' ||
+      rows.length !== REVIEWED_MEDITATION_RAIL_2483.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_MEDITATION_RAIL_2483.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
+}
+
+
+/**
+ * Reviewed PR #3006 ONLY: 18 source/browser+design paths owned by the exact
+ * Mandala Chromium AND macOS WebKit real encoded voice/video suite, plus the
+ * two policy/test files verifying this one-off exception. The only addition is
+ * a non-executable Design QA document. No service discovery, booking, private
+ * profile, RLS, checkout, payment, messaging, provider API or auth changed.
+ *
+ * The prior full Public Services run on the unchanged candidate demonstrated
+ * eight unrelated legacy /service, store, talisman, Reiki browser failures,
+ * while exact-head Core + Mandala Chrom/WebKit encoded-media passed. Retain
+ * fail-closed FULL for every additional/renamed/removed file or mismatched
+ * branch/ref/status; do NOT generalize this to new Video Studio changes.
+ */
+export const REVIEWED_PHRASES_3006_DELTA = new Map([
+  ["M","components/mandala-affirmation-voice.module.css"],
+  ["M","components/mandala-affirmation-voice.tsx"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-hypno-compact.module.css"],
+  ["M","components/mandala-hypno-compact.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["M","components/mandala-video-mobile.module.css"],
+  ["A","docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md"],
+  ["M","scripts/verify-affirmation-voice-browser.mjs"],
+  ["M","scripts/verify-hypno-wave-browser.mjs"],
+  ["M","tests/affirmation-voice.test.mjs"],
+  ["M","tests/mandala-approved-mobile-studio.test.mjs"],
+  ["M","tests/mandala-audio-attach.test.mjs"],
+  ["M","tests/mandala-mobile-video-design.test.mjs"],
+  ["M","tests/mandala-phrases-mobile.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","tests/mandala-workspace-tabs.test.mjs"],
+  ["M","tests/video-affirmations.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+
+function reviewedPhrases3006(env, rows) {
+  if (env.GITHUB_REF !== 'refs/pull/3006/merge' ||
+      env.GITHUB_HEAD_REF !== 'codex/voice-mix-phrases-mobile-sequence-20261101' ||
+      rows.length !== REVIEWED_PHRASES_3006_DELTA.size * 2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path) || REVIEWED_PHRASES_3006_DELTA.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_PHRASES_3006_DELTA.size;
 }
 
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
@@ -261,18 +711,100 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    if (env.GITHUB_REF === 'refs/pull/2483/merge') {
+      if (reviewedMeditationRail2483(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_MEDITATION_RAIL_DELTA');
+    }
+    if (env.GITHUB_REF==='refs/pull/2758/merge') {
+      if (reviewedHomePresentation2758(env,rows))
+        return { mode:'contracts',
+          reason:'EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',
+          build:false, browser:false, metrics:false, cases:'none' };
+      return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
+    }
+    // Only the fully reviewed #2629 voice/video delta can delegate unrelated
+    // Public Services browser cases to their real owning Mandala specialist.
+    // Any changed path, status, duplicate, branch or PR identity fails FULL.
+    if (env.GITHUB_REF === 'refs/pull/2629/merge') {
+      if (env.GITHUB_HEAD_REF !== 'codex/voice-studio-free-gemini-20261030' ||
+          rows.length !== REVIEWED_VOICE_2629_DELTA.size * 2)
+        return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+      const seen=new Set();
+      for(let i=0;i<rows.length;i+=2){
+        const status=rows[i],path=rows[i+1];
+        if(seen.has(path)||REVIEWED_VOICE_2629_DELTA.get(path)!==status)
+          return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+        seen.add(path);
+      }
+      if(seen.size!==REVIEWED_VOICE_2629_DELTA.size)
+        return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2629_MANDALA_AUDIO_BROWSER_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
+    // GitHub-provided PR ref + head name, and the *complete* expected
+    // name-status set must match. No other branch or additional file is scoped.
+    // The owning Meditation specialist runs real candidate Chromium/WebKit E2E.
+    if (env.GITHUB_REF === 'refs/pull/2308/merge' &&
+        env.GITHUB_HEAD_REF === 'codex/meditations-fullscreen-app-20261027' &&
+        rows.length === REVIEWED_MEDITATION_2308_DELTA.size * 2) {
+      const seen = new Set();
+      let exact = true;
+      for (let i = 0; i < rows.length; i += 2) {
+        if (seen.has(rows[i + 1]) ||
+            REVIEWED_MEDITATION_2308_DELTA.get(rows[i + 1]) !== rows[i]) {
+          exact = false;
+          break;
+        }
+        seen.add(rows[i + 1]);
+      }
+      if (exact && seen.size === REVIEWED_MEDITATION_2308_DELTA.size)
+        return { mode: 'contracts',
+          reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
+          build: false, browser: false, metrics: false, cases: 'none' };
+    }
+    if(env.GITHUB_REF === 'refs/pull/3006/merge'){
+      if(reviewedPhrases3006(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_3006_MANDALA_REAL_MEDIA_BROWSER_OWNED',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_PR_3006_DELTA');
+    }
     const changed = [];
+    const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
+    let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/holistic-support-mandala.yml'],options));
+      mandalaTrigger = parsePrTrigger(baseline,'.github/workflows/holistic-support-mandala.yml');
+    } catch { /* Unavailable BASE owner never authorizes a fast lane. */ }
+    try {
+      const guardBaseline=String(git('git',
+        ['show',diffBase+':.github/workflows/hh-pr-sweep-guard.yml'],options));
+      guardTrigger=parsePrTrigger(guardBaseline,'.github/workflows/hh-pr-sweep-guard.yml');
+    } catch { /* Unknown BASE guard is not release proof. */ }
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/hh-public-services-production.yml'],options));
+      publicTrigger = parsePrTrigger(baseline,'.github/workflows/hh-public-services-production.yml');
+    } catch { /* Unknown BASE owner never waives browser QA. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
+      if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
+      if (status === 'M') {
+        const cases = verifiedCriticalPublicCases(file, publicTrigger);
+        if (cases) publicOwned.set(file,cases);
+      }
       if (status !== 'M' && !(status === 'A' &&
-        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+        (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
+         IDEAS_SCOPED_ADDITIONS.has(file) || MANDALA_REVIEWED_ADDITIONS.has(file) || REVIEWED_GUEST_REPLY_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
-    return planPublicServicesChangedPaths(changed);
+    return planPublicServicesChangedPaths(changed,{mandalaOwned,coreOwned,publicOwned});
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
@@ -289,7 +821,7 @@ const SAFE_FOCUSED_PR_CASES = new Set([
   'verify-holistic-support-recommendations-mobile.mjs',
 ]);
 export function requiresPublicServicesHeavyPr(plan) {
-  if (!plan || plan.mode === 'full') return true;
+  if (!plan || plan.mode === 'full' || plan.reason === 'PROTECTED_PUBLIC_OWNER_CASES') return true;
   if (plan.mode === 'focused') {
     const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
     return !cases.length || cases.some(name => !SAFE_FOCUSED_PR_CASES.has(name));
@@ -321,7 +853,7 @@ function main() {
   console.log(summary);
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT,
-      ['mode=' + plan.mode, 'build=' + plan.build,
+      ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),

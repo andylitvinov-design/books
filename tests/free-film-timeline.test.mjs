@@ -26,7 +26,7 @@ test("invalid durations and repeated source clips fail closed",()=>{
 test("Studio uses the same four-shot timeline and never indexes nonexistent clips",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const slice=source.slice(source.indexOf("function compileFreeFilmPreset("),source.indexOf("\n\nconst effects:"));
-  assert.match(slice,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/);
+  assert.match(slice,/allocateAdaptiveFilmTimeline\(/);
   assert.match(slice,/durationSeconds:20/);
   assert.match(slice,/shotCount:4/);
   assert.match(slice,/providerPrompt:""/);
