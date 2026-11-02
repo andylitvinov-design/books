@@ -101,3 +101,25 @@ test("compiled MP3s share one stable URL with the existing native Video Studio",
     }
   }
 });
+
+test("120-goal phrase catalogue sends the chosen storyboard ID to four playable audio choices",()=>{
+  const phrase=readFileSync(new URL("../components/mandala-phrase-catalog.tsx",import.meta.url),"utf8");
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(phrase,/onOpenAudio:\(scenarioId:string\)=>void/);
+  assert.match(phrase,/onClick=\{\(\)=>onOpenAudio\(path\.scenarioId\)\}/);
+  assert.match(studio,/getGoalTreeAudioChoices\(goalTreeAudioScenarioId\)/);
+  assert.match(studio,/setGoalTreeAudioScenarioId\(scenarioId\)/);
+  assert.match(studio,/const scenarioTracks=goalTreeTracks\.length\?goalTreeTracks:filmScenarioTracks/);
+  assert.match(studio,/setGoalTreeAudioScenarioId\(null\)/);
+  assert.match(studio,/setAttachedAudio\(null\)/);
+  assert.match(studio,/data-video-audio-now/);
+  // Retain the one native player/microphone and exact licensed film soundtrack
+  // selection; no autoplay, new provider, or false video-ready status.
+  assert.match(studio,/startPresetMixAudio/);
+  assert.match(studio,/data-video-music-preview/);
+  for(const row of manifest.assignments){
+    const choices=getGoalTreeAudioChoices(row.scenarioId);
+    assert.equal(choices.length,4,row.scenarioId);
+    assert.equal(new Set(choices.map(track=>track.mediaUrl)).size,4);
+  }
+});
