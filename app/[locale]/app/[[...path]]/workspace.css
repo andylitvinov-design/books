@@ -1766,3 +1766,23 @@
   display:none!important
  }
 }
+
+
+/* iPhone Safari can paint its native bottom toolbar over CSS fixed bottom:0.
+   Keep ONE shared private dock on the actually visible edge, with no arbitrary
+   80-120px body translation and no second floating navigation panel. */
+@media(max-width:760px){
+  .hh-app:has(.hh-mobile-app-nav){
+    --hh-app-dock-usable-inset:max(0px,var(--hh-app-visual-bottom-inset,0px),calc(100vh - 100dvh));
+    padding-bottom:max(
+      calc(116px + env(safe-area-inset-bottom)),
+      calc(var(--hh-app-mobile-nav-height,84px) + var(--hh-app-dock-usable-inset) + 20px)
+    );
+  }
+  .hh-app .hh-mobile-app-nav{
+    bottom:var(--hh-app-dock-usable-inset);
+  }
+  .hh-app .hh-mobile-app-nav[data-editor-focused]{
+    display:none!important;
+  }
+}
