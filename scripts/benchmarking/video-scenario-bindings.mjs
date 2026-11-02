@@ -9,6 +9,7 @@ import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {VIDEO_GOAL_SCENARIOS,VIDEO_GOAL_TOPICS,auditVideoGoalTaxonomy} from '../../lib/mandala/video-goal-taxonomy.mjs';
 import {auditScenarioMediaCandidates} from '../../lib/mandala/video-scenario-bindings.mjs';
+import {inspectVerifiedVideoAsset} from '../../lib/mandala/verified-asset-resolver.mjs';
 
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 export const OUTPUT_RELATIVE='artifacts/benchmarking/video-scenario-candidates.json';
@@ -21,6 +22,9 @@ export function auditCanonicalVideoScenarioCandidates({scenes,evidence}){
      evidence?.status!=='pass'||evidence?.schemaVersion!=='hh-verified-assets-v1'||
      evidence?.assets?.length!==44||
      new Set(evidence.assets.map(x=>x.id)).size!==44)fail();
+  // Evidence must match the *actual* exact scene paths/hashes for all 44.
+  // Merely declaring status=pass is never sufficient proof.
+  if(scenes.some(scene=>inspectVerifiedVideoAsset(scene,evidence).status!=='technical_ready'))fail();
   const report=auditScenarioMediaCandidates({
     scenarios:VIDEO_GOAL_SCENARIOS,topics:VIDEO_GOAL_TOPICS,scenes,evidence,
   });

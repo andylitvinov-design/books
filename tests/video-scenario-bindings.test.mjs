@@ -45,6 +45,14 @@ test('canonical 120 stories stay unbound even with synthetic positive asset evid
     report.summary.incompleteVisualCoverage,120);
 });
 
+test('canonical CLI rejects pass-labelled but tampered physical media evidence',()=>{
+  const positive=evidence(catalog);
+  const assets=positive.assets.map((asset,i)=>i===0?{...asset,path:'/wrong.mp4'}:asset);
+  assert.throws(()=>auditCanonicalVideoScenarioCandidates({
+    scenes:catalog,evidence:{...positive,assets},
+  }),/VIDEO_SCENARIO_CANDIDATE_AUDIT_FAILED/);
+});
+
 test('no verified MP4 inventory never produces executable or trusted candidates',()=>{
   const r=suggestScenarioMediaCandidates({scenario,topic,scenes,evidence:null});
   assert.equal(r.status,'awaiting_verified_media');
