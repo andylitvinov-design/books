@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
+import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -18,6 +19,103 @@ const covers = (patterns, file) => {
   return selected;
 };
 
+test('general BASE-owned Mandala routing works for all PRs, never for payment/private/unknown paths',()=>{
+  const yaml=workflow('holistic-support-mandala.yml');
+  const guardYaml=workflow('hh-pr-sweep-guard.yml');
+  const trigger=parsePrTrigger(yaml,'.github/workflows/holistic-support-mandala.yml');
+  const guardTrigger=parsePrTrigger(guardYaml,'.github/workflows/hh-pr-sweep-guard.yml');
+  for(const path of ['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-wait.test.mjs',
+    '.github/workflows/holistic-support-mandala.yml'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),true,
+      path+' must use BASE Guard+Core rather than 13 public browser journeys');
+  for(const path of ['app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-policy.mjs'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),false,path);
+  for(const path of ['components/mandala-new-public-editor.tsx',
+    'lib/mandala/video-new-renderer.mjs','tests/mandala-new-renderer.test.mjs',
+    'tests/video-chat-natural-language.test.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),true,path);
+  for(const path of ['components/mandala-payment-checkout.tsx',
+    'components/mandala-client-profile.tsx','components/mandala-service-cart.tsx',
+    'components/mandala-cart-nav.tsx','components/mandala-consultation-cta.tsx',
+    'components/mandala-receipt-template.tsx','app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-router.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),false,path);
+  const base='a'.repeat(40),head='b'.repeat(40),nullByte=String.fromCharCode(0);
+  const run=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_command,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(String(args[1]).includes('hh-pr-sweep-guard.yml') ? guardYaml : yaml);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);
+    throw Error('unexpected git request '+args[0]);
+  });
+  for(const rows of [
+    [['M','components/mandala-new-public-editor.tsx']],
+    [['A','components/mandala-brand-new-component.tsx']],
+    [['M','lib/mandala/video-new-renderer.mjs'],['A','tests/mandala-new-renderer.test.mjs']],
+    [['M','lib/ci/specialist-aggregate.mjs'],['M','scripts/ci-specialist-aggregate.mjs']],
+    [['M','.github/workflows/holistic-support-mandala.yml'],
+     ['M','lib/ci/specialist-aggregate.mjs'],['M','components/mandala-new-public-editor.tsx']],
+  ]) assert.deepEqual([run(rows).mode,run(rows).reason],
+      ['contracts','INDEPENDENT_OWNER_OR_CORE']);
+  for(const rows of [
+    [['M','components/mandala-payment-checkout.tsx']],
+    [['A','components/mandala-client-profile.tsx']],
+    [['A','components/unknown-new-component.tsx']],
+    [['D','components/mandala-new-public-editor.tsx']],
+    [['M','components/mandala-new-public-editor.tsx'],['M','app/api/payments/checkout/route.js']],
+  ]) assert.equal(run(rows).mode,'full','unsafe or unknown scope must retain real E2E');
+  assert.equal(run([['M','tests/ci-any-existing-policy.test.mjs']]).reason,'INDEPENDENT_OWNER_OR_CORE');
+  assert.equal(run([['A','tests/ci-new-policy.test.mjs']]).mode,'full');
+  assert.match(workflow('hh-public-services-production.yml'),
+    /steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE'/);
+});
+test('any verified complex PR uses its real owner browser cases instead of all 13',()=>{
+  const trigger=parsePrTrigger(workflow('hh-public-services-production.yml'));
+  const cases=[
+    ['app/api/payments/talismans/checkout/route.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['lib/commerce/talisman-checkout.js',['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
+    ['components/commerce/service-cart.tsx',['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
+    ['components/contact-channel-chooser.tsx',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['app/api/service-enquiries/route.ts',['verify-public-services-production.mjs','verify-home-consultation-first-screen.mjs']],
+    ['components/alchemy-soul-lead-form.tsx',['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+    ['components/academy-course-capture.tsx',['verify-reiki-mobile-order-browser.mjs','verify-public-services-production.mjs']],
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const simulate=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(workflow('hh-public-services-production.yml'));
+    if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+    throw Error('Unexpected command '+args[0]);
+  });
+  for(const [path,expected] of cases){
+    assert.deepEqual(verifiedCriticalPublicCases(path,trigger),expected,path);
+    const plan=simulate([['M',path]]);
+    assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser],
+      ['focused','PROTECTED_PUBLIC_OWNER_CASES',true,true],path);
+    assert.deepEqual(plan.cases.split(',').sort(),[...expected].sort(),path);
+    assert.equal(requiresPublicServicesHeavyPr(plan),true,path+' must run real browser QA');
+    assert.equal(planPublicServicesChangedPaths([path]).mode,'full','no BASE owner requires all QA');
+    assert.equal(simulate([['A',path]]).mode,'full','new path is unreviewed');
+  }
+  for(const path of [
+    'middleware.ts','package.json','app/api/payments/other/route.js',
+    'components/holistic-support-mobile.tsx','components/mandala-payment-checkout.tsx',
+  ]){
+    assert.equal(verifiedCriticalPublicCases(path,trigger),null,path);
+    assert.equal(simulate([['M',path]]).mode,'full',path);
+    assert.equal(simulate([['M','components/commerce/service-cart.tsx'],['M',path]]).mode,'full','mixed critical changes require all cases');
+  }
+  assert.equal(verifiedCriticalPublicCases('components/commerce/service-cart.tsx',null),null);
+  assert.equal(simulate([['D','components/commerce/service-cart.tsx']]).mode,'full');
+});
+
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.equal(PUBLIC_BROWSER_CASES.length, 13);
@@ -30,10 +128,79 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const file of PUBLIC_SOURCE_TESTS) {
     assert.match(source, new RegExp('node --test [^\\n]*' + file.replaceAll('.', '\\.')));
   }
-  assert.match(source, /npm run build > artifacts\/public-services-production\/build\.log/);
+  assert.match(source, /\.\/node_modules\/\.bin\/next build/);
+  for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
+    'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
+    'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('only exact reviewed guest operator bundle qualifies for real focused consent and privacy CI',()=>{
+ const full=[
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+ ];
+ const plan=planPublicServicesChangedPaths(full);
+ assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],[
+  'focused',true,true,
+  'verify-public-services-production.mjs']);
+ assert.equal(requiresPublicServicesHeavyPr(plan),true);
+ assert.equal(publicPlaywrightEngines(plan),'chromium');
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const additions=new Set(['components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',]);
+ const statuses=full.map(path=>[additions.has(path)?'A':'M',path]);
+ const event=planPublicServicesEvent({
+   GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,
+   HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(
+     statuses.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('Unexpected git command');
+ });
+ assert.equal(event.mode,'focused');
+ assert.equal(event.cases,plan.cases);
+ for(const extra of ['middleware.ts','app/api/payments/talismans/checkout/route.js',
+  'components/commerce/service-cart.tsx',
+  'app/api/service-enquiries/route.js','app/api/app/auth/callback/route.js']){
+  assert.equal(planPublicServicesChangedPaths([...full,extra]).mode,'full',
+    'additional sensitive/unknown file must not qualify: '+extra);
+ }
+ assert.equal(planPublicServicesChangedPaths(
+   full.filter(p=>p!=='lib/practitioners/public-service-enquiry.js')).mode,'full');
+ assert.equal(planPublicServicesChangedPaths([
+   'components/app/public-enquiry-reply.jsx']).mode,'full');
 });
 
 test('contracts-only changes do not repeat Next build or install Playwright', () => {
@@ -397,7 +564,8 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   const src = workflow('hh-public-services-production.yml');
   assert.match(src,/^  public-services:\s*$/m);
   assert.match(src,/id: scope/);
-  assert.match(src,/fetch-depth: 0/);
+  assert.match(src,/fetch-depth: 2/);
+  assert.match(src,/Verify bounded Public Services PR ancestry before impact routing/);
   assert.match(src,/steps.scope.outputs.browser/);
   assert.match(src,/steps.scope.outputs.build/);
   assert.match(src,/steps.scope.outputs.cases/);
@@ -1090,6 +1258,233 @@ test('PR #2970 69,120 read-only Mandala phrases use independently checked specia
     'tests/mandala-video-phrase-catalog.test.mjs',
   ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
     'deletions remain FULL: '+deleted);
+});
+
+test('Public Services performance guards preserve the exact-head and sensitive-browser gates', () => {
+  const src = workflow('hh-public-services-production.yml');
+  for (const fragment of [
+    'fetch-depth: 2',
+    'Verify bounded Public Services PR ancestry before impact routing',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'actions/cache/restore@v4',
+    'actions/cache/save@v4',
+    'hh-public-next-',
+    'steps.public_acceptance.outputs.build_ok',
+    'playwright install chromium',
+    'smoke_engines',
+    'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build',
+  ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
+  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  for (const unsafe of ['app/api/payments/checkout/route.js',
+    'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
+    const plan = planPublicServicesChangedPaths([unsafe]);
+    assert.equal(plan.mode, 'full');
+    assert.equal(requiresPublicServicesHeavyPr(plan), true);
+  }
+});
+test('Core-only PR fast-lane regression cannot summon unrelated public browser E2E', () => {
+  const ciOnly = [
+    '.github/workflows/hh-public-services-production.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-workflow-globs.test.mjs',
+    'tests/pr-fast-lane.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(ciOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for (const unsafe of [
+    'middleware.ts', 'app/api/payments/checkout/route.js',
+    'app/api/service-enquiries/route.js', 'components/commerce/service-cart.tsx',
+  ]) {
+    const sensitive=planPublicServicesChangedPaths([...ciOnly,unsafe]);
+    assert.deepEqual([sensitive.mode,sensitive.build,sensitive.browser,sensitive.cases],
+      ['full',true,true,'all'], 'must not suppress risk gate for ' + unsafe);
+  }
+});
+
+test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+  const serviceWorkflow=workflow('hh-public-services-production.yml');
+  const seed=workflow('hh-public-playwright-cache.yml');
+  const key='hh-public-browser-blobs-';
+  assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
+  assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
+    'pull-request jobs must not publish cross-PR browser caches');
+  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  assert.match(seed, /^  push:\s*$/m);
+  assert.ok(seed.includes("branches: ['codex/public-book-library']"));
+  assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
+  assert.ok(seed.includes('playwright@1.63.0'));
+  assert.ok(seed.includes('playwright install chromium webkit'));
+  assert.ok(seed.includes('actions/cache/save@v4'));
+  assert.ok(!seed.includes('pull_request_target:') && !seed.includes('pull_request:'),
+    'untrusted PR events cannot seed a production base cache');
+  const reviewed=[
+    '.github/workflows/hh-public-services-production.yml',
+    '.github/workflows/hh-public-playwright-cache.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(reviewed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  for(const dangerous of ['app/api/payments/talismans/checkout/route.js',
+    'app/api/service-enquiries/route.js','components/commerce/cart.tsx','middleware.ts']) {
+    assert.equal(planPublicServicesChangedPaths([...reviewed,dangerous]).mode,'full');
+  }
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const fakeGit=(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from('A'+nul+'.github/workflows/hh-public-playwright-cache.yml'+nul+
+      'M'+nul+'scripts/ci-public-services-plan.mjs'+nul);
+    throw Error('unexpected fake git operation '+args.join(' '));
+  };
+  assert.equal(planPublicServicesEvent(env,fakeGit).mode,'contracts',
+    'new reviewed CI workflow remains in the non-browser fast lane');
+});
+
+
+test('exact #3006 Video Studio PR owns only its reviewed Mandala + existing Core and WebKit routes', () => {
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.size,20);
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md'),'A');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  const mandatory=workflow('holistic-support-mandala.yml');
+  assert.match(mandatory,/voice-webkit-macos:/);
+  assert.ok(mandatory.includes('node scripts/verify-affirmation-voice-browser.mjs'));
+  assert.match(mandatory,/ffprobe -version/);
+  const head='b'.repeat(40), base='a'.repeat(40);
+  const accepted=[...REVIEWED_PHRASES_3006_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(files,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/3006/merge',
+      GITHUB_HEAD_REF:'codex/voice-mix-phrases-mobile-sequence-20261101',
+      HH_PUBLIC_BASE_SHA:base, HH_PUBLIC_HEAD_SHA:head, ...overrides,
+    };
+    const git=(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff'){const sep=String.fromCharCode(0);return Buffer.from(files.flatMap(([status,path])=>[status,path]).join(sep)+sep);}
+      throw Error('unexpected command');
+    };
+    return planPublicServicesEvent(env,git);
+  };
+  const good=invoke(accepted);
+  assert.deepEqual([good.mode,good.build,good.browser,good.metrics,good.cases,requiresPublicServicesHeavyPr(good)],
+    ['contracts',false,false,false,'none',false]);
+  // The actual *standalone* public pages/commerce journeys MUST remain full.
+  for(const bad of [
+    accepted.slice(1),
+    [...accepted,accepted[0]],
+    accepted.map((row,i)=>i===0?['A',row[1]]:row),
+    [...accepted,['M','app/api/payments/talismans/checkout/route.js']],
+    [...accepted,['M','components/holistic-support-mobile.tsx']],
+    [...accepted,['A','app/api/holistic-support/voice/route.js']],
+    accepted.map((row,i)=>i===1?['D',row[1]]:row),
+  ])assert.equal(invoke(bad).mode,'full','extra, removed, checkout, unknown or status change is FULL');
+  for(const env of [{GITHUB_REF:'refs/pull/3007/merge'},
+    {GITHUB_HEAD_REF:'different-voice-release'},
+    {HH_PUBLIC_HEAD_SHA:'invalid'}])
+    assert.equal(invoke(accepted,env).mode,'full','other ref/head never reuses the release shortcut');
+  assert.equal(planPublicServicesChangedPaths(['components/holistic-support-mobile.tsx']).mode,'full');
+  assert.equal(planPublicServicesChangedPaths(['app/api/payments/talismans/checkout/route.js']).mode,'full');
+});
+
+// Reviewed public release telemetry is CORE instrumentation, not checkout UX.
+// An exact SHA + ADDITION is mandatory: edited/new unknown APIs remain FULL.
+test('new LIVE evidence endpoint routes only audited immutable blobs to focused Node QA',()=>{
+  const approved=[...EXACT_RELEASE_PROOF_BLOBS.entries()];
+  assert.equal(approved.length,3);
+  for(const [path,blob] of approved){
+    assert.match(blob,/^[a-f0-9]{40}$/);
+    assert.equal(exactReleaseProofAddition(path,'A',blob),true);
+    assert.equal(exactReleaseProofAddition(path,'M',blob),false);
+    assert.equal(exactReleaseProofAddition(path,'A','f'.repeat(40)),false);
+  }
+  assert.equal(exactReleaseProofAddition('app/api/public/new-auth/route.js','A',approved[0][1]),false);
+  const safe=new Set(approved.map(x=>x[0]));
+  safe.add('.github/workflows/hh-app-r1.yml');
+  safe.add('.github/workflows/hh-app-browser.yml');
+  const coreOwned=new Set([...approved.map(x=>x[0]),'.github/workflows/hh-app-r1.yml']);
+  const plan=planPublicServicesChangedPaths([...safe],{coreOwned});
+  assert.equal(plan.mode,'contracts');
+  assert.equal(plan.build,false);
+  assert.equal(plan.browser,false);
+  assert.equal(plan.releaseProof,true);
+  assert.equal(planPublicServicesChangedPaths([...safe,'app/api/public/unknown/route.js'],
+    {coreOwned}).mode,'full');
+});
+
+
+// Preserve the full current consented Business QA plus SSR pre-hydration
+// oracle while reusing two real browser engines across isolated viewports.
+test('Business current UI keeps 15 real cases and pre-hydration safety in two browser engines',()=>{
+  const source=readFileSync(new URL('../scripts/verify-business-quiz-mobile.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes('[data-direction-offers="business"]'));
+  assert.ok(source.includes('javaScriptEnabled:false'));
+  assert.ok(source.includes('serviceWorkers:"block"'));
+  assert.ok(source.includes('data-business-website-enquiry'));
+  assert.ok(source.includes('externalPosts'));
+  assert.equal(source.includes('data-business-consultation-finder'),false);
+  assert.ok(source.includes('waitUntil:"domcontentloaded"'));
+  assert.equal(source.includes('networkidle'),false);
+  assert.equal((source.match(/\.launch\(/g)||[]).length,2,'two process launches, never 16');
+  assert.ok(source.includes('await browser.newContext('));
+  assert.ok(source.includes('await context.close()'));
+  assert.ok(source.includes('browsers.get(webkit)'));
+  assert.ok(source.includes('browsers.get(chromium)'));
+  assert.ok(source.includes('for (const width of [320,375,390,430])'));
+  assert.ok(source.includes('for (const locale of ["en","ru","es"])'));
+  assert.ok(source.includes('await Promise.all([...browsers.values()]'));
+  assert.ok(workflow('hh-public-services-production.yml')
+    .includes('node scripts/verify-business-quiz-mobile.mjs'));
+});
+
+test('private practitioner meditation is publicly smoke-tested without unrelated checkout matrices',()=>{
+  const owned=PRIVATE_PRACTITIONER_MEDIA_OWNERS;
+  assert.equal(owned.length,30);
+  assert.equal(new Set(owned).size,owned.length);
+  const additions=new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+  const rows=owned.flatMap(file=>[additions.has(file)?'A':'M',file]);
+  rows.push('M','scripts/ci-public-services-plan.mjs','M','tests/ci-public-services-plan.test.mjs');
+  const plan=planPrivatePractitionerMediaRows(rows);
+  assert.deepEqual([plan?.mode,plan?.build,plan?.browser,plan?.cases,requiresPublicServicesHeavyPr(plan),publicPlaywrightEngines(plan)],
+    ['focused',true,true,'verify-public-services-production.mjs',true,'chromium']);
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const run=changed=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changed.join(z)+z);
+    throw Error('unexpected git');
+  });
+  assert.deepEqual([run(rows).mode,run(rows).cases],['focused','verify-public-services-production.mjs']);
+  for(const unsafe of [
+    rows.concat('M','app/api/payments/checkout/route.js'),
+    rows.concat('A','app/api/admin/practitioners/meditations/new/route.js'),
+    rows.concat('M','middleware.ts'),
+    rows.concat('M','lib/practitioners/meditation-studio-service.js'),
+    rows.filter((x,i)=>i%2!==1||x!=='.github/workflows/ia-v2.yml'),
+    ['A','app/api/admin/practitioners/meditations/route.js'],
+    ['D','components/practice-showcase.jsx'],
+  ])assert.equal(run(unsafe).mode,'full','unknown, duplicated, unowned or incomplete security media changes cannot bypass full');
+  // Future routine edits of an existing owned media file are still scoped.
+  assert.equal(run(['M','components/practice-showcase.jsx']).cases,'verify-public-services-production.mjs');
+  assert.equal(run(['M','components/consultation-choice-capture.tsx']).mode,'full');
+});
+
+test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
+  const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
+  const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
+  const entry=src.indexOf('\nfunction main() {');
+  const execute=src.lastIndexOf('main();');
+  assert.ok(declaration>=0 && entry>declaration && execute>entry,
+    'private media ownership constants must be initialized before direct CLI invocation');
 });
 
 test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated public checkout journeys',()=>{

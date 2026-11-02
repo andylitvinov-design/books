@@ -116,7 +116,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/const baseAudioMatches=recommendMandalaAudio/);
   assert.match(studio,/const curatedMatches=recommendCuratedAudio/);
   assert.match(studio,/const audioMatches=\[\.\.\.matchingScenarioTracks,\.\.\.curatedMatches,\.\.\.baseAudioMatches,\.\.\.classicMatches\]/);
-  assert.match(studio,/const availableAudioTracks=\[\.\.\.scenarioTracks,\.\.\.curatedAudioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
+  assert.match(studio,/const availableAudioTracks=\[\.\.\.scenarioTracks,\s*\.\.\.filmScenarioTracks\.filter\(track=>!scenarioTracks\.some\(selected=>selected\.id===track\.id\)\),\s*\.\.\.curatedAudioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);

@@ -196,6 +196,6 @@ test('temporary backlog route leaves private, policy and unknown changes on full
   const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.match(gate,/needs\.scope\.outputs\.route == 'FULL'/);
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
-  const loose=readFileSync('.github/workflows/hh-loose-release-ready-once.yml','utf8');
-  assert.ok(loose.includes("      - '.github/workflows/hh-pr-core-release.yml'"));
+  assert.match(gate,/^  hh-merge-check:/m);
+  assert.doesNotMatch(gate,/^  release-ready:/m);
 });

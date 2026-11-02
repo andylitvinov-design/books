@@ -83,3 +83,21 @@ test('one complete latest-checks page safely replaces multiple per-name reads', 
   assert.equal(observationsFromCompletePage(policy,{...page,total_count:4}),null);
   assert.equal(assessRequiredGates({head:H,policy,observations:observationsFromCompletePage(policy,{total_count:0,check_runs:[]})}).state,'UNKNOWN');
 });
+
+// The staged migration accepts exactly one real current-head Actions status.
+// Mixed or unknown status sets remain fail-closed.
+test('single unified merge status is a supported exact-head required gate', () => {
+  const rules=[rule('hh-merge-check')];
+  assert.deepEqual(resolveRequiredGatePolicy(rules),{
+    mode:'unified',contexts:['hh-merge-check'],appId:APP
+  });
+  assert.equal(run(rules,observe(['hh-merge-check',[check('hh-merge-check')]])).state,'SUCCESS');
+  assert.equal(run(rules,observe(['hh-merge-check',[check('hh-merge-check',{conclusion:'failure'})]])).state,'FAILED');
+  assert.equal(run(rules,observe(['hh-merge-check',[]])).state,'UNKNOWN');
+  assert.equal(run(rules,observe(['hh-merge-check',[check('hh-merge-check',{head_sha:'b'.repeat(40)})]])).state,'UNKNOWN');
+  const dual=[rule('release-ready'),rule('hh-merge-check')];
+  assert.deepEqual(resolveRequiredGatePolicy(dual).mode,'unified-dual');
+  assert.equal(run(dual,observe(['release-ready',[check('release-ready')]],['hh-merge-check',[check('hh-merge-check')]])).state,'SUCCESS');
+  assert.equal(run(dual,observe(['release-ready',[check('release-ready')]],['hh-merge-check',[check('hh-merge-check',{conclusion:'failure'})]])).state,'FAILED');
+  assert.throws(()=>resolveRequiredGatePolicy([rule('hh-merge-check','hh-core-verified')]),/PARTIAL_MIGRATION/);
+});

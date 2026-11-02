@@ -10,14 +10,6 @@ on:
       - 'lib/benchmarking/hh-gauntlet-loop.mjs'
       - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
       - 'tests/hh-gauntlet-loop.test.mjs'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - '.github/workflows/hh-gauntlet-loop.yml'
-      - '.opencode/agents/hh-gauntlet-*.md'
-      - 'lib/benchmarking/hh-gauntlet-loop.mjs'
-      - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
-      - 'tests/hh-gauntlet-loop.test.mjs'
   workflow_dispatch:
 
 permissions:
