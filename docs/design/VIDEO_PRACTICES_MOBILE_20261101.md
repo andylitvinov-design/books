@@ -22,3 +22,9 @@
 - User action chain: state/vector selection → generated local text → add/omit decision → ritual selection → 8-session plan → first session editor / provider-independent inquiry.
 - No DB, RLS, account profiles, CRM, provider AI, automatic rendering or payment changes.
 - Screenshot comparison pending browser QA at matching guest state; authored art is design reference, not proof of rendered fidelity.
+
+## Post-merge mobile E2E hardening (2026-11-02)
+- New single-purpose `scripts/verify-practices-mobile-browser.mjs` verifies the **actual public** editor in Chromium and WebKit at RU 320/390/430, EN 390 and ES 390. It tests deep-link activation, state/vector focus gating, locally produced meditation, real add/omit audio draft transfer, three distinct practice kinds, refreshed content, eight session cards, stale invalidation, 44px taps, no horizontal overflow, and absence of outbound writes.
+- It runs inside the existing Mandala browser acceptance step on a `fix/video-*` PR; no duplicate workflow, new provider or private test records. Synthetic screenshots are stored in the existing browser artifacts bundle.
+- Legacy comprehensive manual script now switches into the actual vector tab before using vector textareas; this is an assertion update for the approved owner page, **not** a UI regression waiver.
+- Passing this synthetic guest test is **not** proof of real YouTube/HeyGen delivery, live provider billing, signed-in Google OAuth, physical iPhone Safari or purchase fulfilment.

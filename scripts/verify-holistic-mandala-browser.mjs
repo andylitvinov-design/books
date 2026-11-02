@@ -1716,6 +1716,7 @@ const runEngine = async ([engine, browserType]) => {
             programmeLayout.hero.bottom<=programmeLayout.course.top &&
             programmeLayout.course.bottom<=programmeLayout.nav.top,
             "therapy programme must follow its own player directly before extra video settings");
+          await page.locator("[data-video-therapy-focus]").getByRole("button",{name:"Вектор развития"}).click();
           await page.locator("[data-video-key-difficulty]").fill("Мне трудно расслабиться");
           await page.locator("[data-video-key-goal]").fill("Я хочу больше спокойствия");
           await page.locator("[data-video-goal-accents]").click();
