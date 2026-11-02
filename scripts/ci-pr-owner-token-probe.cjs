@@ -10,14 +10,15 @@ function safeBranch(value) {
     !value.includes('..') && !value.includes('//') && !value.includes('@{') &&
     !value.endsWith('/');
 }
-function probeResult(status, stages, prNumber) {
-  return {schema:'HH_OWNER_TOKEN_READ_PROBE_V1',mode:'READ_ONLY',
+function probeResult(status, stages, prNumber, mode='READ_ONLY') {
+  return {schema:'HH_OWNER_TOKEN_READ_PROBE_V1',mode,
     pr_number:prNumber,status,stages,sourceChanged:false,writePermissionVerified:false};
 }
 async function probeOwnerToken({github, ownerToken, prNumber=2169,
-  fetcher=globalThis.fetch, report=()=>{}}={}) {
+  fetcher=globalThis.fetch, report=()=>{}, writeProbe=false}={}) {
   const stages=[];
-  const finish=status=>probeResult(status,stages,prNumber);
+  const finish=status=>probeResult(status,stages,prNumber,
+    writeProbe?'UNREFERENCED_OBJECT_WRITE':'READ_ONLY');
   if (!Number.isSafeInteger(prNumber)||prNumber<1) return finish('INVALID_PR_NUMBER');
   if (!ownerToken || typeof ownerToken!=='string') return finish('SECRET_MISSING');
   if (typeof fetcher !== 'function') return finish('FETCH_UNAVAILABLE');
@@ -65,6 +66,33 @@ async function probeOwnerToken({github, ownerToken, prNumber=2169,
   if(!await get('SOURCE_COMMIT_READ','/repos/andylitvinov-design/books/git/commits/'+sha,
       x=>SHA.test(x?.tree?.sha||'')))
     return finish('SOURCE_COMMIT_UNVERIFIED');
+  if(writeProbe){
+    // Minimal permission probe: create an unreachable Git blob only. No branch,
+    // ref, commit, PR event, workflow status, or existing source is changed.
+    let response;
+    try {
+      response=await fetcher('https://api.github.com/repos/andylitvinov-design/books/git/blobs',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+          'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+        body:JSON.stringify({content:'HH_OWNER_TOKEN_WRITE_PROBE_V1\n',encoding:'utf-8'}),
+        signal:AbortSignal.timeout(20000)
+      });
+    } catch {
+      const observation={stage:'GIT_BLOB_WRITE',result:'NETWORK_ERROR'};
+      stages.push(observation);report(observation);
+      return finish('GIT_BLOB_WRITE_UNVERIFIED');
+    }
+    const observation={stage:'GIT_BLOB_WRITE',
+      http_status:Number.isInteger(response?.status)?response.status:null};
+    stages.push(observation);report(observation);
+    if(observation.http_status!==201)return finish('GIT_BLOB_WRITE_DENIED');
+    let data;
+    try {data=await response.json();} catch {return finish('GIT_BLOB_WRITE_UNVERIFIED');}
+    if(!SHA.test(data?.sha||''))return finish('GIT_BLOB_WRITE_UNVERIFIED');
+    observation.result='VERIFIED';
+    return finish('GIT_OBJECT_WRITE_OK_REF_UNVERIFIED');
+  }
   return finish('READ_OK_WRITE_UNVERIFIED');
 }
 module.exports={probeOwnerToken,safeBranch};

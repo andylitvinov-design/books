@@ -73,9 +73,9 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ci-worker.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
-            // Default-branch pushes test the owner secret read-only. Manual
-            // token_probe=true does the same for one selected PR. No leases,
-            // labels, commits or protected checks are modified by this path.
+            // Default-branch pushes check reads plus one UNREFERENCED Git blob
+            // to test Contents:write. Manual token_probe=true stays read-only.
+            // No leases, source refs, commits or required checks are modified.
             const tokenProbeRequested=context.eventName==='push' ||
               String(context.payload.inputs?.token_probe ?? 'false')==='true';
             if(tokenProbeRequested){
@@ -84,13 +84,14 @@ jobs:
               const result=await probeOwnerToken({
                 github,ownerToken:token,
                 prNumber:Number(context.payload.inputs?.pr_number||2169),
+                writeProbe:context.eventName==='push',
                 report:observation=>core.info('HH_OWNER_TOKEN_PROBE_STAGE '+JSON.stringify(observation))
               });
               core.info('HH_OWNER_TOKEN_PROBE '+JSON.stringify(result));
               await core.summary.addHeading('HH owner token read-only preflight')
                 .addCodeBlock(JSON.stringify(result,null,2)).write();
-              if(result.status!=='READ_OK_WRITE_UNVERIFIED')
-                core.setFailed('HH_OWNER_TOKEN_READ_PROBE_FAILED: '+result.status);
+              if(!['READ_OK_WRITE_UNVERIFIED','GIT_OBJECT_WRITE_OK_REF_UNVERIFIED'].includes(result.status))
+                core.setFailed('HH_OWNER_TOKEN_PROBE_FAILED: '+result.status);
               return;
             }
             // A GITHUB_TOKEN-created commit would suppress push/PR CI. Reuse
