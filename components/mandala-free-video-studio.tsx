@@ -2979,15 +2979,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   const startFromHero=()=>{
-    if(recording||preparing)return;
+    if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
     if(phrasePending){
       setNotice(locale==="ru"?"Сначала утвердите фразы в разделе «Фразы поддержки».":locale==="es"?"Confirma las frases en el apartado «Frases de apoyo».":"Approve the selected phrases before creating a video.");
       setActiveWorkspace("phrases");
       window.requestAnimationFrame(()=>document.querySelector("[data-hypno-approve]")?.scrollIntoView({block:"center",behavior:"smooth"}));
-      return;
+      return false;
     }
     setIntroPlaying(false);
-    if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
+    if(!photoUrl&&!backgroundOnly){onPickPhoto();return false;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
       // Outside Characters the shared consent panel lives in the Video workspace.
@@ -2997,20 +2997,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(coverOptions)coverOptions.open=true;
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
         document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"})));
-      return;
+      return false;
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
-      return;
+      return false;
     }
     if(uploadedAudio && !audioRights){
       setNotice(ui.audioRightsHelp);
       document.querySelector("[data-video-audio-rights]")?.scrollIntoView({behavior:"smooth",block:"center"});
-      return;
+      return false;
     }
-    if(!source){onPickPhoto();return;}
+    if(!source){onPickPhoto();return false;}
+    // A successful acknowledgement means that the source preflight was accepted.
+    // Encoding/decoding can still fail asynchronously and is reported separately.
+    if(!canGenerate)return false;
     void createVideo();
+    return true;
   };
 
   // This is a local, non-persistent preview. A click also unlocks muted
@@ -3167,7 +3171,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         locale==="es"?"Las afirmaciones cambiaron. Vuelve a generar la voz.":
         "Your affirmations or duration changed. Regenerate the voice track.");
       document.getElementById("video-affirmation-voice")?.scrollIntoView({behavior:"smooth",block:"center"});
-      return;
+      return false;
     }
     // Decode all four original MP4s from the trusted Create click, not a hidden preload.
     if(audioNeedsAttachment){
@@ -3187,8 +3191,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setNotice(quick.loading);
       return false;
     }
-    startFromHero();
-    return true;
+    return startFromHero();
   };
 
   const deepAudioPane = (
@@ -3909,6 +3912,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
+        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
+          data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
+
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
@@ -4216,6 +4222,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
             onPreview={openAffirmationPreview}
+            onCreate={startFromHero}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -5255,7 +5262,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
-      {studioMode==="pump" ? <>
+      {studioMode==="pump"&&activeWorkspace!=="effects" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
           data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
