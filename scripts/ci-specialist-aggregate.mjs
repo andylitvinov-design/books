@@ -93,6 +93,27 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
+// A skipped macOS job is optional ONLY when the unchanged, trusted BASE YAML
+// excludes this exact branch. A PR cannot edit its own guard to become exempt,
+// and voice/recorder changes must still prove real encoded audio and video.
+export function optionalMandalaMacosSkip(files, branch, changed) {
+  const name = '.github/workflows/holistic-support-mandala.yml';
+  const source = files?.base?.get(name);
+  if (typeof source !== 'string' || !source || source !== files?.current?.get(name) ||
+      typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
+      changed.includes(name) || changed.some(path =>
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+  const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
+  const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
+  if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
+  const predicates = guard.slice(fixed.length, -1).split(' || ');
+  if (!predicates.length || predicates.length > 12) return false;
+  const prefixes = predicates.map(item =>
+    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
+  if (prefixes.some(x => !x)) return false;
+  return !prefixes.some(prefix => branch.startsWith(prefix));
+}
+
 // Loose BASE is permitted only for recognizable, non-sensitive source paths.
 // A surprising path, CI/policy change, credential-related name, private-data
 // surface, API, or billing/security feature retains fresh production-base
@@ -101,11 +122,15 @@ export function githubReader(repo, token, transport = fetch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  // This exact Playwright-only QA harness is never imported by Next at runtime.
+  // Its changing selectors should not force a full rebase of an otherwise
+  // ordinary video-editor PR after an unrelated production promotion.
+  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    !ordinaryRoots.test(file) ||
+    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
     sensitiveName.test(file) ||
     sensitiveRoots.test(file)
@@ -310,7 +335,9 @@ export async function verify(api,ctx,files,options={}) {
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
+    const optionalSkipped = run.path === '.github/workflows/holistic-support-mandala.yml' &&
+      optionalMandalaMacosSkip(files, pr.head.ref, changed) ? ['voice-webkit-macos'] : [];
+    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
