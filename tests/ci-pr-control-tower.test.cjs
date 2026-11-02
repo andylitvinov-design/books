@@ -938,3 +938,68 @@ test('Control Tower summary names PRs behind lease and handoff blockers',async()
  assert.ok(examples.every(y=>Number.isSafeInteger(y.pr_number)&&y.head_sha===SHA.slice(0,12)));
  assert.equal(x.dispatchAccepted,0,'conflict-only queue does not impersonate source repair');
 });
+
+
+test('historical lease names in narrative are not source-ownership claims',()=>{
+ const t=taskFor(pr(1),{tier:'P1'});
+ const notes=[
+  {body:'<!-- HH_CONFLICT_REPAIR_PREFLIGHT_V1 -->\nNo active HH_PR_SWEEP_LEASE_V1 on this source.'},
+  {body:'<!-- HH_COLLISION_GUARD -->\nReview exact \`HH_PR_SWEEP_LEASE_V1\` records before a new claim.'}
+ ];
+ assert.equal(externalOwnerLeaseStatus(notes,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(t,notes,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([...notes,{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nstate: unknown\nbroken: yes'
+ }],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
+test('plain-text releases on older source heads no longer starve new PR work',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const history=[
+  {body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+[
+   'state: released_after_atomic_commit',
+   'owner: work-repair-codex',
+   'lease_id: work-repair-previous',
+   'previous_head_sha: '+old,
+   'head_sha: '+next,
+   'released_at: 2026-10-30T21:17:54Z',
+   'proof: Previous code was published safely'
+  ].join('\n')},
+  {body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+[
+   'owner: work-repair-mobile',
+   'state: released_without_write',
+   'lease_id: mobile-previous',
+   'lease_head_sha: '+old,
+   'observed_new_head_sha: '+next,
+   'released_at: 2026-10-31T05:25:00Z'
+  ].join('\n')}
+ ];
+ const task=taskFor(pr(1),{tier:'P1'});
+ assert.equal(externalOwnerLeaseStatus(history,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(task,history,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus(history,old,NOW),'OWNER_LEASE_UNVERIFIED',
+  'A current legacy release is never sufficient to cancel ownership');
+ assert.equal(externalOwnerLeaseStatus([...history,{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+[
+   'state: released_after_atomic_commit','owner: work-repair-codex',
+   'lease_id: changed','previous_head_sha: '+old,
+   'head_sha: INVALID','released_at: 2026-10-30T21:17:54Z'
+  ].join('\n')
+ }],SHA,NOW),'OWNER_LEASE_UNVERIFIED',
+  'Damaged source hashes fail closed');
+});
+
+test('old_head_sha and new_head_sha release pair does not obscure newer HEAD',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',
+  lease_id:'writer-old',owner:'chat-hypno-writer-restack',
+  state:'released_after_atomic_commit',old_head_sha:old,new_head_sha:next};
+ const wrap=v=>({user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(v)});
+ assert.equal(externalOwnerLeaseStatus([wrap(base)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(base)],old,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(base),wrap({
+  schema:'HH_PR_SWEEP_LEASE_V1',lease_id:'active-now',
+  owner:'chat-hypno-writer-restack',state:'active',head_sha:SHA
+ })],SHA,NOW),'OWNER_LEASE_ACTIVE');
+});
