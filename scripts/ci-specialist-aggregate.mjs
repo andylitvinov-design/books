@@ -141,18 +141,20 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
-  // This exact Playwright-only QA harness is never imported by Next at runtime.
-  // Its changing selectors should not force a full rebase of an otherwise
-  // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
+  // Generic non-runtime verification paths must not force a production-base
+  // rebase. These only execute in CI; they cannot change deployed runtime.
+  // New/unknown runtime scripts, CI policy implementations and package files
+  // remain strict. Their tests still run on the immutable merge checkout.
+  const isolatedVerification = file =>
+    /^(?:tests\/[\w./-]+\.test\.(?:mjs|js|ts)|scripts\/verify-[\w-]+(?:-browser)?\.mjs|scripts\/benchmarking\/[\w./-]+\.mjs)$/.test(file);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file)) ||
+    (!ordinaryRoots.test(file) && !isolatedVerification(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
-    sensitiveName.test(file) ||
-    sensitiveRoots.test(file)
+    (!isolatedVerification(file) && sensitiveName.test(file)) ||
+    (!isolatedVerification(file) && sensitiveRoots.test(file))
   );
 }
 

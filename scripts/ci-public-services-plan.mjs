@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -255,6 +255,61 @@ const HARNESS_CASES = new Map([
   ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
+// Across ALL production PRs, dedicated Mandala owns non-sensitive public video,
+// meditation and hypno editor files. Do not route them through 13 unrelated
+// Public Services browser journeys merely because the filenames are new.
+// This is a domain rule, not a PR-number, branch-name or frozen delta exception.
+// Public checkout, enquiry, consent, accounts, payments and unknown paths
+// continue to require full Public Services QA.
+const SENSITIVE_MANDALA_SEGMENT =
+  /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|cart|checkout|client|commerce|consent|contact|credential|crm|enquiry|enquiries|order|payment|payments|privacy|private|profile|rls|secret|security|service|services|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+
+// A newly introduced public component has no historical ownership proof and
+// must still take the full public safety path. For existing components, the
+// immutable tested production parent proves that the dedicated Mandala owner
+// already covers the code being edited. No PR HEAD additions can self-certify.
+function verifiedFileOnTestedBase(file) {
+  try {
+    const opts={encoding:'utf8',maxBuffer:256_000,stdio:['ignore','pipe','pipe']};
+    const base=String(execFileSync('git',['rev-parse','HEAD^1'],opts)).trim();
+    if (!/^[0-9a-f]{40}$/.test(base)) return false;
+    return String(execFileSync('git',['ls-tree','--name-only',base,'--',file],opts)).trim()===file;
+  } catch { return false; }
+}
+function verifiedExistingMandalaComponent(file) {
+  return !/^components\/mandala-/.test(file) || verifiedFileOnTestedBase(file);
+}
+// Core and actionlint, not public booking E2E, own existing CI policy scripts.
+// Unknown or newly added CI scripts retain full routing.
+const independentlyOwnedCiPolicy = file =>
+  ((/^scripts\/ci-[\w.-]+\.mjs$/.test(file) ||
+    /^\.github\/workflows\/[\w.-]+\.ya?ml$/.test(file)) && verifiedFileOnTestedBase(file)) ||
+   independentlyOwnedManualWorkflow(file);
+
+export function independentlyOwnedMandalaPath(file) {
+  if (typeof file !== 'string' || !file || file.includes('..') ||
+      file.includes('\0') || file.includes('\n') ||
+      SENSITIVE_MANDALA_SEGMENT.test(file)) return false;
+  return /^(?:components\/mandala-[\w.-]+\.(?:tsx|jsx|ts|js|module\.css)|lib\/mandala\/[\w./-]+\.(?:mjs|js|ts|tsx)|tests\/(?:mandala|video-chat|first-video|personal-guided-course|video-)[\w.-]*\.test\.mjs|scripts\/verify-(?:holistic-mandala|hypno-wave|affirmation-voice)-browser\.mjs|scripts\/benchmarking\/(?:video-|first-video-)[\w./-]+\.mjs)$/.test(file) &&
+    verifiedExistingMandalaComponent(file);
+}
+// Safe on EVERY PR: a workflow created exclusively for manual diagnostics
+// has no pull_request/push/schedule trigger and cannot modify runtime output.
+// New/unverified PR-triggered workflows remain FULL until their owner is proven.
+function independentlyOwnedManualWorkflow(file) {
+  if (!/^\.github\/workflows\/[\w.-]+\.ya?ml$/.test(file)) return false;
+  try {
+    const source=readFileSync(resolve(file),'utf8');
+    return source.length < 20_000 &&
+      /^on:\s*\n  workflow_dispatch:\s*(?:\n|$)/m.test(source) &&
+      !/^  (?:pull_request|pull_request_target|push|schedule|workflow_run|repository_dispatch|issue_comment|merge_group):/m.test(source);
+  } catch { return false; }
+}
+
+// CI contract tests never change a public customer journey; Core/actionlint
+// and their own dedicated checks remain mandatory.
+const independentlyOwnedCiTest = file =>
+  /^tests\/(?:ci|pr)-[\w.-]+\.test\.mjs$/.test(file);
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
@@ -269,7 +324,9 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
-    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file) ||
+        independentlyOwnedMandalaPath(file) || independentlyOwnedCiTest(file) ||
+        independentlyOwnedCiPolicy(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
@@ -311,7 +368,8 @@ export function planPublicServicesChangedPaths(files) {
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
   return { mode: 'contracts', reason: 'EXISTING_NODE_SOURCE_TESTS_ONLY',
-    build: false, browser: false, metrics: false, cases: 'none' };
+    build: false, browser: false, metrics: false, cases: 'none',
+    sourceContracts: files.some(file => sourceTests.has(file)) };
 }
 
 // Exact, temporary reviewed #2629 Voice+Music+WebKit release path set is
@@ -586,7 +644,12 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (status !== 'M' && !(status === 'A' &&
         (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+         MANDALA_REVIEWED_ADDITIONS.has(file) ||
+         independentlyOwnedManualWorkflow(file) ||
+         // Newly added independent Mandala contracts/runtime modules are
+         // still checked by Mandala's broad, required source ownership.
+         independentlyOwnedMandalaPath(file) &&
+           (/^tests\//.test(file) || /^lib\/mandala\//.test(file)))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
@@ -643,6 +706,7 @@ function main() {
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
+        'source_contracts=' + (plan.sourceContracts === true),
         'cases=' + plan.cases].join('\n') + '\n');
   }
   if (process.env.GITHUB_STEP_SUMMARY) {

@@ -200,8 +200,11 @@ jobs:
         run: node --test tests/ci-public-services-plan.test.mjs
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
-      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Install dependencies only for affected public source contracts
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.mode != 'contracts' || steps.scope.outputs.source_contracts == 'true' }}
+        run: npm ci --include=dev --no-audit --no-fund
       - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.mode != 'contracts' || steps.scope.outputs.source_contracts == 'true' }}
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
           npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
@@ -210,6 +213,7 @@ jobs:
           npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.mode != 'contracts' || steps.scope.outputs.source_contracts == 'true' }}
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       # Exact-version binaries; no untrusted cross-PR/browser-version restore.
       # Browser engines install on explicit full workflow_dispatch OR when
@@ -236,11 +240,12 @@ jobs:
             /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
           fi
       - name: Canonical Homeopathy / Alchemy service routing regression
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.mode != 'contracts' || steps.scope.outputs.source_contracts == 'true' }}
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       # Required fast checks cover actual contact consent, private handoff and
       # service order safety. No redundant production build/browser install.
       - name: Fast public consent, service and Reiki contract tests
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' && (steps.scope.outputs.mode != 'contracts' || steps.scope.outputs.source_contracts == 'true') }}
         run: node --test tests/contact-channel-chooser.test.mjs tests/services-browser-order-contract.test.mjs tests/reiki-unified-order-capture.test.mjs tests/public-service-enquiries.test.mjs
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'

@@ -32,11 +32,15 @@ test('loose base reuse is limited to normal public changes; privacy and policy r
   for (const files of [
     ['components/public-faq.js'], ['app/[locale]/academy/page.tsx'], ['public/images/new-image.webp'], ['docs/guide.md'],
     ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'],
+    ['components/public-faq.js','scripts/verify-public-facing-browser.mjs'],
+    ['components/public-faq.js','tests/privacy-acceptance.test.mjs'],
+    ['components/public-faq.js','scripts/benchmarking/another-visual-benchmark.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
-    ['scripts/verify-affirmation-voice-browser.mjs'],
+    ['scripts/verify-affirmation-voice-browser.mjs','app/api/payments/checkout/route.js'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
+    ['scripts/ci-unknown-router.mjs'], ['scripts/update-customer-status.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],

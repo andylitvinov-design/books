@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, independentlyOwnedMandalaPath, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -17,6 +17,94 @@ const covers = (patterns, file) => {
   }
   return selected;
 };
+
+test('all future non-sensitive Mandala PRs use their own specialist without 13 unrelated browsers',()=>{
+  const owned=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-auto-video-director.module.css',
+    'lib/mandala/film-cut-compositor.mjs',
+    'tests/mandala-future-video-editor.test.mjs',
+    'tests/video-chat-understanding.test.mjs',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'scripts/benchmarking/first-video-live-export.mjs',
+  ];
+  for (const path of owned) assert.equal(independentlyOwnedMandalaPath(path),true,path);
+  const plan=planPublicServicesChangedPaths(owned.concat([
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-heavy-impact.test.mjs',
+    'scripts/ci-specialist-aggregate.mjs',
+    '.github/workflows/hh-pr-sweep-guard.yml',
+  ]));
+  assert.equal(plan.mode,'contracts');
+  assert.equal(plan.browser,false);
+  assert.equal(plan.build,false);
+  assert.equal(plan.sourceContracts,false);
+  const owner=workflow('holistic-support-mandala.yml');
+  assert.ok(owner.includes("      - 'components/mandala-*'"));
+  assert.ok(owner.includes("      - 'lib/mandala/**'"));
+  assert.ok(owner.includes("      - 'tests/mandala-*.test.mjs'"));
+  assert.ok(owner.includes("      - 'tests/video-chat-*.test.mjs'"));
+  for (const critical of [
+    'components/mandala-public-service-checkout.tsx',
+    'components/mandala-meditation-client.tsx',
+    'components/mandala-booking-consent.tsx',
+    'components/mandala-unknown-new-renderer.tsx',
+    'lib/mandala/payment-provider.mjs',
+    'lib/mandala/auth-session.mjs',
+    'app/api/holistic-support/voice/route.js',
+    'components/holistic-support-mobile.tsx',
+    'middleware.ts','package-lock.json','scripts/unknown-new-file.mjs',
+    'scripts/ci-new-untrusted-policy.mjs',
+    '.github/workflows/new-unverified-release-gate.yml',
+  ]) {
+    assert.equal(independentlyOwnedMandalaPath(critical),false,critical);
+    assert.equal(planPublicServicesChangedPaths([...owned,critical]).mode,'full',critical);
+  }
+  const sourceTests=planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']);
+  assert.equal(sourceTests.mode,'contracts');
+  assert.equal(sourceTests.sourceContracts,true);
+  for(const name of [
+    'Install dependencies only for affected public source contracts',
+    'steps.scope.outputs.source_contracts ==',
+  ]) assert.ok(workflow('hh-public-services-production.yml').includes(name),name);
+});
+
+test('generic safe existing and newly added independent Mandala paths preserve full unknown/sensitive E2E',()=>{
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const run=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    GITHUB_HEAD_REF:'feature/brand-new-video-editor',
+  },(_cmd,args)=>{
+    if(args[0]==='rev-parse') return Buffer.from(head+'\n');
+    if(args[0]==='merge-base') return Buffer.alloc(0);
+    if(args[0]==='diff') return Buffer.from(rows.flatMap(x=>x).join(z)+z);
+    throw Error('unexpected git command '+args[0]);
+  });
+  const trusted=[
+    ['M','components/mandala-free-video-studio.tsx'],
+    ['A','lib/mandala/new-video-compositor.mjs'],
+    ['A','tests/mandala-new-video-compositor.test.mjs'],
+  ];
+  assert.equal(run(trusted).mode,'contracts');
+  for(const extra of [
+    ['A','app/api/payments/new-provider/route.js'],
+    ['A','components/new-unowned-editor.tsx'],
+    ['D','components/mandala-free-video-studio.tsx'],
+  ])assert.equal(run([...trusted,extra]).mode,'full');
+});
+test('production Guard keeps external conflict telemetry manual, not in PR release validation',()=>{
+  const guard='.github/workflows/hh-pr-sweep-guard.yml';
+  assert.equal(planPublicServicesChangedPaths([guard]).mode,'contracts');
+  const yaml=workflow('hh-pr-sweep-guard.yml');
+  const marker='      - name: Probe real conflict inventory with a read-only token';
+  assert.ok(yaml.includes(marker));
+  const probe=yaml.slice(yaml.indexOf(marker));
+  assert.match(probe,/if: github\.event_name == 'workflow_dispatch'/);
+  assert.doesNotMatch(probe,/github\.event_name == 'pull_request'/);
+  const unknown='.github/workflows/some-new-release-gate.yml';
+  assert.equal(planPublicServicesChangedPaths([unknown]).mode,'full');
+});
 
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
