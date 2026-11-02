@@ -113,3 +113,23 @@ test("one existing film and cloud-voice handoff remain",async()=>{
   assert.match(studio,/data-video-therapy-meditation-audio/);
   assert.match(studio,/onApplyFreeVideo=\{session=>/);
 });
+
+test("current practice page is exercised in real mobile Chromium/WebKit, not only static source assertions",async()=>{
+  const voice=await readFile(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const script=await readFile(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+  const legacy=await readFile(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
+  assert.match(voice,/await verifyGuidedPractices\(\{browser,base:BASE,engine\}\)/);
+  for(const marker of ["data-video-studio-hydrated","data-guided-focus-state","data-guided-add-meditation",
+    "data-guided-skip-meditation","data-guided-practice-step","data-guided-eight-sessions",
+    "data-video-key-difficulty","data-video-key-goal","data-meditation-script","pageErrors"]){
+    assert.ok(script.includes(marker),"real page acceptance covers "+marker);
+  }
+  assert.match(legacy,/the vector cannot generate content before both fields are filled/);
+  const {spawnSync}=await import("node:child_process");
+  for(const filename of ["verify-mandala-practices-browser.mjs","verify-affirmation-voice-browser.mjs",
+    "verify-holistic-mandala-browser.mjs"]){
+    const child=spawnSync(process.execPath,["--check",new URL("../scripts/"+filename,import.meta.url).pathname],
+      {encoding:"utf8",timeout:12000});
+    assert.equal(child.status,0,filename+" syntax failed: "+(child.stderr||child.error?.message||""));
+  }
+});

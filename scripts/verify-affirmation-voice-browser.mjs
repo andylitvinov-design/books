@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
 import {chromium,webkit,expect} from "@playwright/test";
+import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 function wav(seconds=3) {
@@ -58,6 +59,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     context.setDefaultTimeout(25000);
     context.setDefaultNavigationTimeout(90000);
     try{
+      phase(engine,"guided-practices-mobile");
+      await verifyGuidedPractices({browser,base:BASE,engine});
+      phase(engine,"guided-practices-passed");
       const page=await context.newPage();
       const payloads=[];
       const errors=[];

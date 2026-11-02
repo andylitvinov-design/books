@@ -22,3 +22,11 @@
 - User action chain: state/vector selection → generated local text → add/omit decision → ritual selection → 8-session plan → first session editor / provider-independent inquiry.
 - No DB, RLS, account profiles, CRM, provider AI, automatic rendering or payment changes.
 - Screenshot comparison pending browser QA at matching guest state; authored art is design reference, not proof of rendered fidelity.
+
+## Browser coverage handoff · 2026-11-02
+
+- Existing production: user-approved light Courses & Practices is implemented in the original Studio workspace (do not fork the route).
+- The earlier legacy visual regression script used vector-only input fields without first selecting `Вектор развития`; updated to navigate the actual two-mode interface.
+- A real Playwright path now runs from the existing mandala voice/browser acceptance: Chromium and macOS WebKit, guest RU/320, EN/390, ES/430; mode switch, focus validation, generated text, all three curated practices, refresh, real narration-editor seed and revoke, eight-session preview, and mutation without any third-party/private request.
+- Synthetic course screenshots are saved with the existing browser artifacts if `HH_HYPNO_SCREENSHOT_DIR` is configured. A screenshot does not prove a paid course, Google OAuth or voice provider delivery.
+- This does not auto-render videos, enable paid AI, or change database/CRM/security state.
