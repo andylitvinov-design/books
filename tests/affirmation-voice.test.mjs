@@ -143,6 +143,8 @@ test("all six voices can be selected and their real samples requested before phr
   assert.match(styles,/\.sampleButton\{/);
   assert.match(styles,/\.samplePlayer audio\{/);
   assert.doesNotMatch(editor,/autoPlay/);
+  assert.ok(editor.includes("if(textChanged)setConsent(false)"),
+    "newly approved phrase text must require new consent before external narration");
   const ownSample=editor.slice(editor.indexOf('async function previewSample('),
     editor.indexOf('async function createAudio()'));
   assert.doesNotMatch(ownSample,/speechText|consent:true|onAttach\(/,
