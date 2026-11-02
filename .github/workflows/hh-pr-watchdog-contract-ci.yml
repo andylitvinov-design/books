@@ -18,9 +18,15 @@ on:
       - '.github/workflows/hh-pr-full-inventory.yml'
       - 'scripts/ci-pr-live-verifier.cjs'
       - 'tests/ci-pr-live-verifier.test.cjs'
+      - 'scripts/ci-pr-kpi*.cjs'
+      - 'tests/ci-pr-kpi*.test.cjs'
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
       - '.github/workflows/hh-native-auto-merge.yml'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
+      - 'tests/ci-pr-merge-gates.test.cjs'
+      - 'scripts/ci-pr-base-freshness.cjs'
+      - 'tests/ci-pr-base-freshness.test.cjs'
+      - 'tests/ci-pr-base-classifier-integration.test.cjs'
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
       - '.github/workflows/hh-pr-ci-worker.yml'
       - '.github/workflows/hh-pr-repair-worker.yml'
@@ -32,6 +38,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
+  issues: read
+  pull-requests: read
 concurrency:
   group: hh-watchdog-contract-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -39,7 +48,7 @@ jobs:
   watchdog-contract:
     name: watchdog-contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +70,30 @@ jobs:
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-live-verifier.cjs
+          for f in scripts/ci-pr-kpi*.cjs tests/ci-pr-kpi*.test.cjs; do node --check "$f"; done
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-kpi*.test.cjs
+
+      - name: Checkout protected production classifier for integration test
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
+      - name: Verify production classifier integration without write credentials
+        run: node --test tests/ci-pr-base-classifier-integration.test.cjs
+
+      - name: Probe real KPI evidence without write credentials
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          startsWith(github.head_ref, 'codex/control-tower-kpi-')
+        timeout-minutes: 4
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const kpi=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-kpi-run.cjs');
+            await kpi.run({github,core,context});

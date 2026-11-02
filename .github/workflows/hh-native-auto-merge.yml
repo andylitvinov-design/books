@@ -34,6 +34,17 @@ jobs:
     steps:
       # This privileged workflow executes trusted base/default-branch code only.
       # Never checkout or execute code from the PR head with this token.
+      - name: Checkout trusted default-branch merge policy
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Checkout protected production classifier
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
       - name: Verify live PR and completed exact-head CI
         id: ready
         uses: actions/github-script@v7
@@ -162,10 +173,17 @@ jobs:
             const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
             })).data;
-            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
-                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
-                  job.status === "completed" && job.conclusion === "success")) {
-              log("SKIP current source missing verified Core job for PR #" + number);
+            function hasVerifiedCoreJobs(page){
+              if (!Array.isArray(page?.jobs) || !Number.isSafeInteger(page.total_count) ||
+                  page.total_count !== page.jobs.length || page.total_count > 100) return false;
+              return ["hh-core-verified","hh-specialist"].every(name=>{
+                const matching=page.jobs.filter(job=>job.name === name);
+                return matching.length === 1 && matching[0].status === "completed" &&
+                  matching[0].conclusion === "success";
+              });
+            }
+            if (!hasVerifiedCoreJobs(jobPage)) {
+              log("SKIP incomplete Core/Specialist evidence for PR #" + number);
               return;
             }
             // Support both verified protection states without bypassing the
@@ -181,9 +199,9 @@ jobs:
               log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
               return;
             }
-            if (oldRequired && !jobPage.jobs.some(job =>
-                job.name === "release-ready" && job.status === "completed" &&
-                job.conclusion === "success")) {
+            const legacyJobs=jobPage.jobs.filter(job=>job.name === "release-ready");
+            if (oldRequired && (legacyJobs.length !== 1 ||
+                legacyJobs[0].status !== "completed" || legacyJobs[0].conclusion !== "success")) {
               log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
               return;
             }
@@ -194,6 +212,11 @@ jobs:
                 blocked.conclusion + " for PR #" + number);
               return;
             }
+            const baseEvidence=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
+            const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
+              verifiedRunBase:()=>baseEvidence.coreRunBase(coreRun,pr,fullRepo,coreRun.check_suite_id)});
+            if(!freshness.ok){log('SKIP '+freshness.reason+' for PR #'+number);return;}
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");
@@ -256,36 +279,8 @@ jobs:
             if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
             fi
-            # GitHub can reject --auto as "unstable" when hosted required
-            # contexts are empty, even after verified current-HEAD CI is green.
-            # Only then use normal GitHub-protected merge: no admin or bypass.
-            if grep -Eq 'Pull request is in (clean|unstable) status' "$RUNNER_TEMP/auto-merge-error"; then
-              ruleset="$(gh api "repos/$GH_REPO/rulesets/26269892" --jq '[.enforcement, ([.rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[]?] | length)] | @tsv')"
-              IFS=$'\t' read -r enforcement required_count <<< "$ruleset"
-              if [[ "$enforcement" != active || "$required_count" != 0 ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; hosted required contexts active or ruleset changed' >&2
-                exit 1
-              fi
-              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
-              if [[ "$current_base" != "$PR_BASE_SHA" ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; production advanced since CI evaluation' >&2
-                exit 1
-              fi
-              fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library") and (.autoMergeRequest == null)')"
-              if [[ "$fresh" != true ]]; then
-                echo 'CI_AUTO_MERGE: SKIP fallback; live PR or ARM already changed'
-                exit 0
-              fi
-              # The trusted preflight confirmed successful Core and all latest
-              # started applicable exact-HEAD PR workflows. GitHub still
-              # enforces classic branch protection and the hosted ruleset.
-              if gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/checked-direct-merge-error"; then
-                echo "CI_AUTO_MERGE: normal protected merge confirmed, PR #$PR_NUMBER HEAD $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
-                exit 0
-              fi
-              cat "$RUNNER_TEMP/checked-direct-merge-error" >&2
-              exit 1
-            fi
+            # A denied native AutoMerge is a blocker, never a reason to
+            # issue a separate direct merge command.
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
             fi
