@@ -14,9 +14,14 @@ function readyHistory(history,now){
   if(!Array.isArray(history)||history.length>5)return false;
   return !history.some(r=>{
     if(!r||!Number.isSafeInteger(r.id)||!r.status)return true;
+    // PR contract and push audit run in separate jobs. They cannot own the
+    // single-writer dispatch lease or suppress a needed task handoff.
+    if(['pull_request','push'].includes(r.event))return false;
     if(BUSY.has(r.status))return true;
-    const created=Date.parse(r.created_at||'');
-    return !Number.isFinite(created)||created>now+60000||now-created<COOLDOWN_MS;
+    if(r.status!=='completed')return true;
+    // Cooldown starts after the real dispatcher exits, not when it was queued.
+    const completed=Date.parse(r.updated_at||r.created_at||'');
+    return !Number.isFinite(completed)||completed>now+60000||now-completed<COOLDOWN_MS;
   });
 }
 async function wake({github,owner,repo,summary,enabled,hasToken,dryRun,
