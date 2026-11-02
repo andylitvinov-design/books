@@ -7,11 +7,13 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
+  VIDEO_EN_CHANNEL_HANDLE,videoTargetValid,videoTargetLabel,ownerVideoTargetKeyboard,
   ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
-import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu,waitForUploadedRu}
+import {refreshYoutubeAccess,verifyYoutubeRuOwner,verifyYoutubeEnOwner,verifyYoutubeTargetOwner,
+  uploadUnlistedRu,uploadUnlistedTarget,verifyUploadedRu,verifyUploadedTarget,waitForUploadedRu,waitForUploadedTarget}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
@@ -822,4 +824,91 @@ test('Dot status and existing cron reconcile only recorded IDs, never re-upload'
  assert.match(cron,/HH_OWNER_VIDEO_ENABLED==='true'/)
  assert.match(cron,/await reconcilePendingOwnerYoutubeVideo\(config\)/)
  assert.doesNotMatch(cron,/unconditional.*upload|uploadUnlistedRu/)
+})
+
+test('RU/EN target selection is explicit, job-bound and backward-compatible only for RU',()=>{
+ const jobId='123e4567-e89b-12d3-a456-426614174000'
+ assert.equal(VIDEO_EN_CHANNEL_HANDLE,'@aatapro')
+ assert.equal(videoTargetValid('ru'),true)
+ assert.equal(videoTargetValid('en'),true)
+ assert.equal(videoTargetValid('fr'),false)
+ const ru=parsed(callback('hh-video:target:ru:'+jobId))
+ const en=parsed(callback('hh-video:target:en:'+jobId))
+ assert.equal(ru.action,'choose')
+ assert.equal(ru.target,'ru')
+ assert.equal(ru.jobId,jobId)
+ assert.equal(en.action,'choose')
+ assert.equal(en.target,'en')
+ assert.equal(en.jobId,jobId)
+ const publish=parsed(callback('hh-video:publish:en:'+jobId+':0'))
+ assert.equal(publish.action,'publish')
+ assert.equal(publish.target,'en')
+ assert.equal(publish.jobId,jobId)
+ assert.equal(publish.trimStartSeconds,0)
+ const legacy=parsed(callback('hh-video:publish:'+jobId))
+ assert.equal(legacy.action,'publish')
+ assert.equal(legacy.target,'ru')
+ assert.equal(legacy.jobId,jobId)
+ assert.equal(parsed(callback('hh-video:target:fr:'+jobId)),null)
+ const keyboard=ownerVideoTargetKeyboard(jobId)
+ assert.match(JSON.stringify(keyboard),/hh-video:target:ru/)
+ assert.match(JSON.stringify(keyboard),/hh-video:target:en/)
+ const enStart=ownerVideoStartMessage('en',jobId)
+ assert.match(enStart.text,/English YouTube/)
+ const enPreview=ownerVideoPreviewButtons(jobId,0,'en')
+ assert.match(JSON.stringify(enPreview),/hh-video:publish:en:/)
+ assert.match(JSON.stringify(enPreview),/English YouTube/)
+})
+
+test('RU/EN YouTube owner and readback checks require the exact selected channel',async()=>{
+ const enId='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const fetcher=async url=>{
+   const value=String(url)
+   if(value.includes('forHandle='))return Response.json({items:[{id:enId}]})
+   if(value.includes('channels?part=id&mine=true'))return Response.json({items:[{id:enId}]})
+   if(value.includes('videos?part=snippet,status'))return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:enId,title:'English test'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+   }]})
+   throw Error('unexpected YouTube endpoint')
+ }
+ assert.equal(await verifyYoutubeTargetOwner('x'.repeat(32),'en',fetcher),enId)
+ assert.equal(await verifyYoutubeEnOwner('x'.repeat(32),enId,fetcher),enId)
+ assert.equal((await verifyUploadedTarget('Yt123456abc','x'.repeat(32),{
+   target:'en',channelId:enId,fetcher
+ })).channelId,enId)
+ await assert.rejects(()=>verifyYoutubeTargetOwner('x'.repeat(32),'ru',fetcher),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(()=>verifyUploadedTarget('Yt123456abc','x'.repeat(32),{
+   target:'en',channelId:'UCbbbbbbbbbbbbbbbbbbbbbb',fetcher
+ }),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+})
+
+test('RU/EN target upload uses one resumable media request and preserves uncertainty',async()=>{
+ const enId='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const calls=[]
+ let begin=0,receipt=0
+ const fetcher=async (url,options={})=>{
+   const value=String(url);calls.push({url:value,method:options.method||'GET'})
+   if(value.includes('channels?part=id&mine=true'))return Response.json({items:[{id:enId}]})
+   if(value.includes('forHandle='))return Response.json({items:[{id:enId}]})
+   if(value.includes('uploadType=resumable'))return new Response(null,{status:200,headers:{
+     location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=receipt'
+   }})
+   if(value.includes('upload_id=receipt'))return Response.json({id:'Yt123456abc'})
+   if(value.includes('videos?part=snippet,status'))return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:enId,title:'English test'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+   }]})
+   throw Error('unexpected YouTube request')
+ }
+ const mp4=Buffer.alloc(1024);mp4.write('ftyp',4,'ascii')
+ const result=await uploadUnlistedTarget(mp4,'x'.repeat(32),{
+   target:'en',channelId:enId,fetcher,title:'English test',
+   onBeginUpload:async()=>{begin++},onUploaded:async()=>{receipt++}
+ })
+ assert.equal(result.id,'Yt123456abc')
+ assert.equal(begin,1)
+ assert.equal(receipt,1)
+ assert.equal(calls.filter(x=>x.method==='PUT').length,1)
+ assert.equal(calls.filter(x=>x.method==='POST'&&x.url.includes('uploadType=resumable')).length,1)
 })
