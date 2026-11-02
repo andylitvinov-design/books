@@ -56,10 +56,25 @@ test('receipt uses exact task id and never reassigns an old claimed SHA',()=>{
 test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(16,43)),'ADMIT');
  assert.equal(admission('ci',cap(16,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',cap(18,43)),'REPAIR_QUEUE_BUSY');
+ assert.equal(admission('repair',cap(18,43)),'ADMIT');
+ assert.equal(admission('repair',cap(23,43)),'ADMIT');
+ assert.equal(admission('repair',cap(24,43)),'RUNNERS_SATURATED');
+ assert.equal(admission('repair',cap(18,60)),'RUNNERS_SATURATED');
+ assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
  assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
+
+test('repair still fails closed when runner jobs or its own worker are saturated',()=>{
+ const unrelated=Array.from({length:18},(_,i)=>({name:'Other workflow '+i}));
+ const jobs=Array.from({length:38},()=>({status:'in_progress'}));
+ assert.equal(admission('repair',computeCapacity(unrelated,[],jobs)),'JOBS_SATURATED');
+ assert.equal(admission('repair',computeCapacity(
+  [{name:'HH PR source Repair Worker'},...unrelated],[],[]
+ )),'WORKER_BUSY');
+ assert.equal(admission('conflict',cap(18,43)),'ADMIT');
+});
+
 test('only trusted default-branch repository and known workflow callbacks are handled',()=>{
  assert.equal(trustedContext(context),true);
  assert.equal(trustedContext({...context,ref:'refs/heads/codex/public-book-library'}),false);
