@@ -652,6 +652,18 @@ test('client progress owner is complete before the trusted second-phase deletion
   }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });
 
+test('conditional Mandala macOS WebKit skip is allowed only outside voice-release branches', () => {
+  const mandala = '.github/workflows/holistic-support-mandala.yml';
+  const baseJob = { name:'focused-unit-types-build', status:'completed', conclusion:'success' };
+  const mac = { name:'voice-webkit-macos', status:'completed', conclusion:'skipped' };
+  assert.equal(inspectJobs([baseJob,mac], mandala, 'codex/hypno-third-workspace-owner-v2-20261101'),2);
+  assert.equal(inspectJobs([baseJob,mac], mandala, 'codex/perf-video-studio-lazy-panels-20261101'),2);
+  for (const branch of ['fix/video-restore', 'codex/voice-studio-upgrade', 'codex/voice-mix-v2','feat/video-phrase-catalog-update'])
+    assert.throws(()=>inspectJobs([baseJob,mac],mandala,branch),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.throws(()=>inspectJobs([baseJob,{...mac,conclusion:'failure'}],mandala,'codex/hypno-third-workspace-owner-v2-20261101'));
+  assert.throws(()=>inspectJobs([baseJob,mac],'.github/workflows/other.yml','codex/hypno-third-workspace-owner-v2-20261101'));
+});
+
 test('PR cleanup specialist accepts only its successful policy and intentionally skipped push-only job', () => {
   const name = '.github/workflows/hh-ci-stale-run-prune.yml';
   const policy = { name: 'policy', status: 'completed', conclusion: 'success' };

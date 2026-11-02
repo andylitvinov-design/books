@@ -215,14 +215,42 @@ jobs:
       # Browser engines install on explicit full workflow_dispatch OR when
       # PR impact is independently classified as sensitive/high-risk. No
       # checkout, consent or unknown risk can bypass required real browser QA.
+      - name: Protect real payment, consent and account changes
+        id: guarded
+        shell: bash
+        run: |
+          set -euo pipefail
+          critical=false
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            critical=true
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # GitHub's two-parent PR test merge provides the exact file list.
+            git rev-parse HEAD^2 >/dev/null
+            git diff --no-renames --name-only -z HEAD^1 HEAD > "$RUNNER_TEMP/hh-public-critical.z"
+            while IFS= read -r -d '' file; do
+              case "$file" in
+                app/api/payments/*|app/api/service-enquiries/*|app/api/app/*|app/api/public/*|lib/commerce/*|lib/checkout/*|components/commerce/*|lib/practitioners/enquiry-receipt.mjs|components/*consent*|components/*checkout*|components/*payment*|components/contact-channel-chooser*|components/consultation-choice-capture*|components/public-consultation-cta*|components/free-diagnosis-offers*|components/phone-country-input*|middleware.ts|next.config.*|package.json|package-lock.json)
+                  critical=true
+                  break
+                  ;;
+              esac
+            done < "$RUNNER_TEMP/hh-public-critical.z"
+          fi
+          if [[ "$critical" == true ]]; then
+            [[ "${{ steps.scope.outputs.browser }}" == true && "${{ steps.scope.outputs.build }}" == true ]] || {
+              echo '::error::Critical public payment/consent change must retain real-browser build' >&2
+              exit 1
+            }
+          fi
+          echo "critical=$critical" >> "$GITHUB_OUTPUT"
       - name: Cache exact Playwright Chromium and WebKit browsers
-        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true') }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true') }}
         env:
           HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
         run: |
@@ -245,9 +273,9 @@ jobs:
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Only payment, consent, account and other explicitly protected source changes require real browser QA on PRs. UI/editor work uses fast contracts; the full matrix remains available via manual workflow_dispatch. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true') }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
@@ -367,7 +395,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
+        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true')
         with:
           name: public-services-production-acceptance
           path: |

@@ -31,6 +31,7 @@ test('waits for a running exact-head specialist and still fails on an unsuccessf
 test('loose base reuse is limited to normal public changes; privacy and policy require current base', () => {
   for (const files of [
     ['components/public-faq.js'], ['app/[locale]/academy/page.tsx'], ['public/images/new-image.webp'], ['docs/guide.md'],
+    ['scripts/verify-holistic-mandala-browser.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],

@@ -431,10 +431,13 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('Public Services preserves protected high-risk real-browser QA and fast low-risk contracts', () => {
+test('Public Services runs real browsers for protected payments and consent, not unrelated Studio UI', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
+  assert.match(src, /- name: Protect real payment, consent and account changes\n        id: guarded/);
+  assert.match(src, /components\/commerce\/\*/);
+  assert.match(src, /app\/api\/payments\/\*/);
   for (const [name, output] of [
     ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
     ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
@@ -442,13 +445,13 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
-      'sensitive PR browser and build must remain blocking: ' + name);
+    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true') }}\n"),
+      'protected payment/consent browser and build must remain blocking: ' + name);
   }
-  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.guarded\.outputs\.critical == 'true'\)/);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
-  assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
+  assert.match(src, /Only payment, consent, account and other explicitly protected source changes require real browser QA/);
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {

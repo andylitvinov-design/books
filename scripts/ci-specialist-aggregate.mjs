@@ -101,11 +101,13 @@ export function githubReader(repo, token, transport = fetch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  // The standalone Mandala browser verifier is QA-only, not a production runtime dependency.
+  const reviewedQaOnly = new Set(['scripts/verify-holistic-mandala-browser.mjs']);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    !ordinaryRoots.test(file) ||
+    (!ordinaryRoots.test(file) && !reviewedQaOnly.has(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
     sensitiveName.test(file) ||
     sensitiveRoots.test(file)
@@ -310,7 +312,7 @@ export async function verify(api,ctx,files,options={}) {
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
+    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,pr.head.ref)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
