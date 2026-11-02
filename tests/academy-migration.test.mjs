@@ -480,7 +480,7 @@ test("Academy promotes DAO Reiki Yggdrasil and Tantra Reiki as separate programs
   assert.match(landing, /yggdrasil\/basic-course/);
   const moduleMap = await readFile("data/academy/yggdrasil-module-map.ts", "utf8");
   assert.match(moduleMap, /slug: "instructor-course"/);
-  assert.match(landing, /<Image src=\{module\.image\}/);
+  assert.match(landing, /<Image src=\{cardArtworkUrl\(module\.image\)\} unoptimized=\{hasCardArtwork\(module\.image\)\}/);
   assert.match(landing, /yggdrasil-module-card/);
   assert.match(landing, /yggdrasilModuleLandings/);
   const curriculumComponent = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
