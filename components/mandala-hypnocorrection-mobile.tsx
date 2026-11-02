@@ -12,7 +12,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
 export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number };
-type GroupId = "phrases" | "audio" | "visual" | "meditation";
+type GroupId = "phrases" | "visual" | "audio";
 type Props = {
   locale: PublicLocale;
   disabled: boolean;
@@ -35,7 +35,6 @@ type Props = {
   onRepeatEveryChange: (value: number) => void;
   onWhisperGainChange: (value: number) => void;
   onOpenScenes: () => void;
-  onOpenMeditation: () => void;
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
   onPreview: () => void;
@@ -168,7 +167,7 @@ export function MandalaHypnocorrectionMobile({
   onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
   const t=copy[locale];
-  const [open,setOpen]=useState<GroupId[]>(["audio","visual","meditation","phrases"]);
+  const [open,setOpen]=useState<GroupId[]>(["phrases","visual","audio"]);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [showSpeechSettings,setShowSpeechSettings]=useState(false);
   const [showWhisperSettings,setShowWhisperSettings]=useState(false);
@@ -188,10 +187,9 @@ export function MandalaHypnocorrectionMobile({
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
   const groups: {id:GroupId;title:string;help:string}[]=[
-    {id:"audio",title:t.audio,help:t.audioHelp},
-    {id:"visual",title:t.visual,help:t.visualHelp},
-    {id:"meditation",title:t.meditation,help:t.meditationHelp},
     {id:"phrases",title:t.phrases,help:t.phrasesHelp},
+    {id:"visual",title:t.visual,help:t.visualHelp},
+    {id:"audio",title:t.audio,help:t.audioHelp},
   ];
   const intro=<div className={styles.intro} data-hypno-intro>
     <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
@@ -294,32 +292,10 @@ export function MandalaHypnocorrectionMobile({
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
             onConfigure={onPickPhoto} disabled={disabled} settings={t.settings}/>
         </>:null}
-        {group.id==="meditation"?<div className={styles.meditation}>
-          <button type="button" className={styles.meditationStart} onClick={onOpenMeditation} disabled={disabled}>
-            <FileText size={27} aria-hidden="true"/>
-            <span><strong>{t.generateMeditation}</strong><small>{t.meditationDetail}</small></span>
-            <ArrowRight size={21} aria-hidden="true"/>
-          </button>
-          <div className={styles.meditationOptions}>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <Clock3 size={19} aria-hidden="true"/><strong>{t.meditationDuration}</strong><small>{t.meditationTime}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <SlidersHorizontal size={19} aria-hidden="true"/><strong>{t.meditationStyle}</strong><small>{t.meditationStyles}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <UserRound size={19} aria-hidden="true"/><strong>{t.meditationVoice}</strong><small>{t.meditationVoices}</small>
-            </button>
-          </div>
-        </div>:null}
+
       </div>
     </section>)}
     <div className={styles.actions} data-hypno-actions>
-      <button type="button" data-hypno-meditation-action className={styles.meditationAction}
-        disabled={disabled} onClick={onOpenMeditation}>
-        <Sparkles size={23} aria-hidden="true"/>
-        <strong>{locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create meditation"}</strong>
-      </button>
       <button type="button" data-hypno-create className={styles.create} disabled={disabled}
       onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
       <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
