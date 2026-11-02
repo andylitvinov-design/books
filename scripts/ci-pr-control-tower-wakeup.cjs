@@ -138,7 +138,8 @@ async function wakeStaleWatchdog({github,context,summary,dryRun=false,
       const data=response?.data;
       if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
          !Array.isArray(data.workflow_runs)||data.workflow_runs.length>5||
-         data.total_count<data.workflow_runs.length)
+         data.total_count<data.workflow_runs.length||
+         (data.total_count>0&&!data.workflow_runs.length))
         throw Error('INCOMPLETE_WATCHDOG_EVENT_HISTORY');
       return data.workflow_runs;
     };
