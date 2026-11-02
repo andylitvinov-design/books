@@ -51,7 +51,9 @@ test('malformed branch names and over-capacity are rejected',()=>{
   assert.equal(validBranch('codex/fix-123'),true);
   for(const x of ['../test','bad//branch','bad@{ref}','/leading','a'.repeat(161),''])assert.equal(validBranch(x),false);
   assert.equal(capacityAllows(11,5),true);
-  assert.equal(capacityAllows(12,0),false);
+  assert.equal(capacityAllows(12,0),true);
+  assert.equal(capacityAllows(15,0),true);
+  assert.equal(capacityAllows(16,0),false);
   assert.equal(capacityAllows(0,6),false);
   assert.equal(capacityAllows(NaN,0),false);
 });
