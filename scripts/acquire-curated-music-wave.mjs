@@ -78,7 +78,7 @@ function probeOriginal(path){
   if(audio.length!==1||audio[0].codec_name!=="mp3"||
     ![1,2].includes(audio[0].channels)||Number(audio[0].sample_rate)<22050||
     !Number.isFinite(seconds)||seconds<100||seconds>1800)
-    throw Error("source_recording_invalid_codec_or_duration");
+    throw Error("source_recording_invalid_codec_or_duration_"+JSON.stringify({seconds,streams:audio}));
   return {seconds,sampleRate:Number(audio[0].sample_rate),channels:audio[0].channels};
 }
 
