@@ -946,8 +946,11 @@ test('Native installer successor claims old native triggers before retiring dupl
     assert.ok(entries.length >= 17, 'expected full set of native steps');
     assert.ok(entries[0].includes('Verify delegated lightweight PR native coverage'));
     for (const entry of entries.slice(1)) {
+      // A workflow_dispatch-only signed compiler smoke is also safe: it
+      // cannot execute for a pull_request event, even if the PR is Ready.
       assert.ok(entry.includes("if: ${{ github.event_name != 'pull_request' }}") ||
-        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}"),
+        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}") ||
+        entry.includes("if: ${{ github.event_name == 'workflow_dispatch' }}"),
         'native build step must never execute on ordinary PR: '+entry.slice(0,110));
     }
   }
