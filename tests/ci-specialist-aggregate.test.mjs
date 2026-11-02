@@ -283,7 +283,7 @@ test('production workflow directory can be parsed without silently ignoring unkn
     const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
     assert.match(language,/language-contract:/,'Language Agent must retain focused privacy contracts');
     assert.match(language,/typed-ui:/,'Language Agent must retain independent TypeScript check');
-    assert.match(language,/holistic-language-agent\\.test\\.mjs/,'Language Agent must retain privacy tests');
+    assert.match(language,/holistic-language-agent\.test\.mjs/,'Language Agent must retain privacy tests');
     assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
