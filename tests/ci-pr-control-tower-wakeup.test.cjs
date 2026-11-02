@@ -50,7 +50,7 @@ test('unknown run status and API errors fail closed without source mutations',as
 test('only durable worker outcomes trigger one deferred slot refill',async()=>{
  const {wakeAfterWorker}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
  const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42};
- for(const [kind,status] of [['repair','manual_conflict'],['repair','manual_required'],['repair','committed'],['ci','started']]){
+ for(const [kind,status] of [['repair','manual_conflict'],['repair','manual_required'],['repair','committed'],['ci','started'],['ci','requested']]){
   const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>{calls.push(x)}}}};
   assert.equal(await wakeAfterWorker({github,context,kind,status,dryRun:false}), 'DISPATCH_ACCEPTED');
   assert.equal(calls.length,1);assert.deepEqual(calls[0].inputs,{dry_run:'false',completion_wake:'true',worker_run_id:'42'});
