@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build a signed Google Play AAB ONLY in a trusted, ephemeral Holistic House CI checkout.
+// Stage a signed direct-download Android APK and optional Play AAB in trusted CI.
 // The committed PsiAlchemy Android project and signing identities must not be changed.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -90,7 +90,7 @@ export function stagePlayRelease(env = process.env) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const result = stagePlayRelease()
-    console.log('Holistic House Android Play AAB staged:', result.appId,
+    console.log('Holistic House Android signed APK staged:', result.appId,
       'versionCode=' + result.versionCode, 'versionName=' + result.versionName,
       'targetSdk=' + result.targetSdk, '(NO store upload)')
   } catch (error) {

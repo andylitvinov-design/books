@@ -93,7 +93,7 @@ test('missing keys, incorrect identity, and unsafe version inputs fail before an
   })
 })
 
-test('Play candidate workflow is manual, guarded, private, API 36 and never publishes', () => {
+test('Android direct APK candidate is manual, signed and never publicly distributed', () => {
   const release = readSource('.github/workflows/holistic-house-play-aab.yml')
   assert.match(release, /workflow_dispatch:/)
   assert.doesNotMatch(release, /^  pull_request:/m)
@@ -108,7 +108,14 @@ test('Play candidate workflow is manual, guarded, private, API 36 and never publ
   assert.match(nativeCI,/apksigner/)
   assert.match(nativeCI,/disposable signature, NO store upload or artifact/)
   assert.match(release, /bundleRelease/)
-  assert.match(release, /bundleRelease assembleRelease/)
+  assert.ok(release.includes('run: ./gradlew --no-daemon assembleRelease'))
+  assert.ok(release.includes('run: ./gradlew --no-daemon bundleRelease'))
+  assert.ok(release.includes('if: ${{ inputs.build_play_aab }}'))
+  assert.ok(release.includes('default: false'))
+  assert.ok(release.includes('node scripts/verify-hh-direct-apk-candidate.mjs'))
+  assert.ok(release.includes('if [ -n "$HH_FIREBASE_CONFIG_B64" ]; then'))
+  assert.ok(!release.includes('HH_ANDROID_KEY_PASSWORD HH_FIREBASE_CONFIG_B64; do'))
+  assert.ok(!release.includes('run: ./gradlew --no-daemon bundleRelease assembleRelease'))
   assert.match(release, /apksigner/)
   assert.match(release, /certificate SHA-256 digest:/)
   assert.match(release, /HH_EXPECTED_WEBSITE_CERT_SHA256/)
@@ -126,4 +133,26 @@ test('Play candidate workflow is manual, guarded, private, API 36 and never publ
   assert.equal(JSON.parse(readSource('capacitor.holistic-house.config.json')).server.url,
     'https://holistichouse.vercel.app/en/app/messages')
   assert.match(readSource('scripts/prepare-holistic-house-play-release.mjs'), /targetSdkVersion = 36/)
+})
+
+test('Android website APK rejects version rollback and certificate rotation',async()=>{
+  const {verifyDirectApkCandidate}=await import('../scripts/verify-hh-direct-apk-candidate.mjs')
+  const empty=JSON.parse(readSource('data/native-public-releases.json'))
+  const cert='a'.repeat(64)
+  const first={versionCode:'3',versionName:'1.0.0',certificateSha256:cert}
+  assert.equal(verifyDirectApkCandidate(empty,first).versionCode,3)
+  const published=structuredClone(empty)
+  published.android={...published.android,status:'released',versionCode:3,signingCertificateSha256:cert}
+  const next={versionCode:'4',versionName:'1.0.1',certificateSha256:cert.toUpperCase()}
+  assert.equal(verifyDirectApkCandidate(published,next).priorVersionCode,3)
+  for(const [label,registry,input] of [
+    ['same version',published,{...next,versionCode:'3'}],
+    ['rollback',published,{...next,versionCode:'2'}],
+    ['different signer',published,{...next,certificateSha256:'b'.repeat(64)}],
+    ['no cert',empty,{...first,certificateSha256:''}],
+    ['zero version',empty,{...first,versionCode:'0'}],
+    ['malformed version',empty,{...first,versionName:'1.0.0"; bad'}],
+    ['wrong identity',{...empty,appId:'app.psialchemy.mobile'},first],
+    ['unknown status',{...empty,android:{status:'unknown'}},first]
+  ])assert.throws(()=>verifyDirectApkCandidate(registry,input),/HH_DIRECT_APK_/,label)
 })

@@ -6,6 +6,7 @@ on:
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-native.mjs'
       - 'scripts/prepare-holistic-house-play-release.mjs'
+      - 'scripts/verify-hh-direct-apk-candidate.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
       - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
@@ -42,6 +43,7 @@ on:
       - 'capacitor.config.json'
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-play-release.mjs'
+      - 'scripts/verify-hh-direct-apk-candidate.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
   workflow_dispatch:

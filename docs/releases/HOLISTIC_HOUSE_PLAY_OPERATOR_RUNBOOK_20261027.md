@@ -2,6 +2,14 @@
 
 **Status:** manual signed-candidate workflow implemented in source only. **No signature, AAB, upload or Play distribution is claimed.** Program: [Google Play release program](./HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md); ticket [#1310](https://github.com/andylitvinov-design/books/issues/1310).
 
+## Direct download from Holistic House — no Google Play required (1 Nov 2026)
+
+**Primary release:** existing protected `.github/workflows/holistic-house-play-aab.yml` produces a private **signed APK** by default. Keep its legacy file path and `google-play-release` protected environment so signing secrets are not copied, but **Google Play, AAB, Play registration and Firebase are not compilation requirements**. To optionally build an AAB, explicitly set `build_play_aab=true`.
+
+Use a stable website Android signing keystore and the approved certificate SHA-256 in `HH_EXPECTED_WEBSITE_CERT_SHA256`; the new source preflight checks both the versionCode (greater than last public `data/native-public-releases.json` Android version) and signing certificate continuity. A change of certificate must not silently break upgrades. An absent `HH_FIREBASE_CONFIG_B64` disables native push; do not advertise notifications.
+
+The workflow outputs private APK and optional AAB artifacts, **never publishes** them. After physically verifying installation, Google OAuth, private Messages, audio/video, logout, updates and account isolation, require owner approval, publish the verified APK to allowlisted GitHub Releases, then update the existing native release registry and production switch. Website download stays `/api/native-download/android`; PWA remains available on iPhone.
+
 ## Why AI Studio Personal Library is NOT this release
 
 Google AI Studio / Play Personal Library creates and installs *personal* apps, not a general customer distribution of the existing Capacitor `com.holistichouse.app`. This workflow instead builds a standard Android App Bundle ready for **manual review and internal Play Console upload**. It does not auto-publish.
