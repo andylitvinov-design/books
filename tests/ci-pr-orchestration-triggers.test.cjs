@@ -6,7 +6,9 @@ const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
 test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
-  assert.ok(s.includes("workflows: ['HH PR core release gate']"));
+  assert.ok(s.includes("      - 'HH PR core release gate'"));
+  assert.ok(s.includes("      - 'HH PR source Repair Worker'"));
+  assert.ok(s.includes("      - 'HH zero-cost PR CI worker'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'failure'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'timed_out'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
@@ -72,7 +74,7 @@ test('skipped successful Core events never replace a pending failed-Core watchdo
   assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
   assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
   assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
-  const reconcile=s.split('\n  core-slot-wakeup:\n')[0];
+  const reconcile=s.split('\n  completion-wait:\n')[0];
   assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
@@ -186,18 +188,19 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.doesNotMatch(s, /'vercel-event' \|\| 'periodic'/);
 });
 
-test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
- const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker'),dispatcher=read('hh-pr-queue-dispatcher');
- assert.ok(repair.includes("kind:'repair',status:result.status"));
- assert.match(ci, /kind:'ci',\s*status:result\.metadataEditAccepted\?'requested':'skipped'/);
- assert.ok(dispatcher.includes('completion_wake:'));
- assert.ok(dispatcher.includes('relayCompletionWake'));
- assert.ok(dispatcher.includes('worker_run_id:'));
- assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
- assert.ok(dispatcher.includes('const summary=await run({github,core,context,dryRun})'));
- assert.ok(dispatcher.includes('await wakeStaleWatchdog({github,context,summary,dryRun'));
+test('Worker completion refills Watchdog directly; Control Tower remains read-only',()=>{
+  const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker');
+  const observer=read('hh-pr-queue-dispatcher'),watchdog=read('hh-pr-ten-minute-watchdog');
+  assert.ok(repair.includes("kind:'repair',status:result.status"));
+  assert.match(ci, /kind:'ci',\s*status:result\.metadataEditAccepted\?'requested':'skipped'/);
+  assert.ok(watchdog.includes('completion_wake:'));
+  assert.ok(watchdog.includes('relayCompletionWake'));
+  assert.ok(watchdog.includes('worker_run_id:'));
+  assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
+  assert.ok(watchdog.includes('const report=await run({github,core,context,dryRun})'));
+  assert.ok(observer.includes('dryRun:true'));
+  assert.ok(!observer.includes('createWorkflowDispatch('));
 });
-
 test('hourly native merge requires explicit verified release for modern active ownership',()=>{
  const yml=read('hh-pr-full-inventory');
  assert.ok(yml.includes('leases.delete(key)'));
