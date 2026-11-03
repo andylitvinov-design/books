@@ -788,7 +788,10 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(fix,/continue-on-error: true/);
  assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
- assert.ok(wf.includes("core.setOutput('code_available','true')"));
+ assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false')"));
+ assert.match(wf,/HH_HAS_FREE_OPENCODE_TOKEN: \\$\\{\\{ secrets\\.HH_OPENCODE_FREE_API_KEY != '' \\$\\}\\}/);
+ assert.match(wf,/HH_OPENCODE_FREE_API_KEY: \\$\\{\\{ secrets\\.HH_OPENCODE_FREE_API_KEY \\$\\}\\}/);
+ assert.match(wf,/FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED/);
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
