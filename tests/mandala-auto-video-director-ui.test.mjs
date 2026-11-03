@@ -301,7 +301,10 @@ test("owner correction: two independent subtopics selected, input last and style
  assert.match(director,/selectedGoalIds\.length>=2/);
  assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-clarify"),
    "manual input is the final action of Describe your topic");
- assert.match(studio,/const selectedStyleScenario=cinematicPlan\?\.shots\.length/);
+ assert.match(studio,/const selectedStyleScenario=timelineTextClips\?\.length/,
+   "manual timed captions take precedence over the original film plan");
+ assert.match(studio,/\?cinematicPlan\?\.shots\.map/,
+   "the original shot captions remain the fallback when no timed edit exists");
  assert.match(studio,/data-video-montage-script/);
  assert.match(studio,/data-video-montage-script-update/);
 });
