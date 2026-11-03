@@ -120,6 +120,27 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
      result.reasonCode='NO_PR_CORE_AFTER_20_MINUTES';
    } else {
      result.coreRunId=run.id;
+     // GitHub can refresh run.pull_requests to the current HEAD after a
+     // historic synthetic merge was checked. Require the actual merge
+     // commit's second parent to be this exact source before any receipt.
+     if(run.head_sha!==task.head_sha){
+       if(!SHA.test(run.head_sha||'')){
+         result.state='CORE_SYNTHETIC_PARENT_UNVERIFIED';return result;
+       }
+       let parents;
+       try{
+         const verified=await limited('ci-wake-core-merge-parent',()=>github.request(
+           'GET /repos/{owner}/{repo}/git/commits/{commit_sha}',
+           {owner,repo,commit_sha:run.head_sha}));
+         parents=verified?.data?.parents;
+       }catch{
+         result.state='CORE_SYNTHETIC_PARENT_UNVERIFIED';return result;
+       }
+       if(!Array.isArray(parents)||parents.length!==2||
+          parents[1]?.sha!==task.head_sha){
+         result.state='CORE_SYNTHETIC_PARENT_UNVERIFIED';return result;
+       }
+     }
      const elapsed=now-previous.requestedAt;
      if(['queued','waiting','pending','requested'].includes(run.status)){
        result.state='CI_CORE_QUEUED';return result;
