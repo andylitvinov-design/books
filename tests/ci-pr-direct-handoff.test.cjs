@@ -50,3 +50,20 @@ test('public Watchdog KPI never calls HTTP dispatch a verified execution',()=>{
  assert.match(watchdog,/RUNNER_STARTED/);
  assert.doesNotMatch(watchdog,/worker_dispatches:number\(report\.dispatchAccepted\)/);
 });
+
+test('scheduled CI Worker completion wakes guarded Watchdog direct handoff',()=>{
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const block=watchdog.split('  direct-handoff:\n')[1]?.split('\n    runs-on:')[0];
+ assert.ok(block,'direct-handoff job exists');
+ assert.match(block,/needs: reconcile/);
+ assert.match(block,/always\(\)/);
+ assert.match(block,/github\.event\.workflow_run\.status == 'completed'/);
+ assert.match(block,/github\.event\.workflow_run\.head_branch == 'codex\/bootstrap-books'/);
+ assert.match(block,/github\.event\.workflow_run\.repository\.full_name == 'andylitvinov-design\/books'/);
+ assert.match(block,/github\.event\.workflow_run\.conclusion != 'cancelled'/);
+ assert.match(block,/github\.event\.workflow_run\.conclusion != 'skipped'/);
+ assert.match(block,/\(github\.event\.workflow_run\.event == 'workflow_dispatch' \|\|\s*\(github\.event\.workflow_run\.name == 'HH zero-cost PR CI worker' &&\s*github\.event\.workflow_run\.event == 'schedule'\)\)/);
+ const dispatcher=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.match(dispatcher,/\['workflow_dispatch','schedule'\]\.includes\(w\?\.event\)/);
+ assert.match(watchdog,/group: hh-control-tower-single-writer/);
+});
