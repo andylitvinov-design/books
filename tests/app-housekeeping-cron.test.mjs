@@ -243,10 +243,24 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
       'HH_CI_METADATA_WAKE '+JSON.stringify({
         schema:'HH_PR_CI_METADATA_WAKE_V1',pr_number:551,
         status:'CI_WAKE_REQUESTED',metadataEditAccepted:true}))}
-    if(url.includes('/workflows/400848212/runs?'))return f({total_count:1,
+    if(url.endsWith('/pulls/551'))return f({
+      number:551,state:'open',draft:false,
+      base:{ref:'codex/public-book-library'},
+      head:{sha,ref:'fix/test-ci-wake',
+        repo:{full_name:'andylitvinov-design/books'}}
+    })
+    if(url.includes('/workflows/400848212/runs?')){
+      assert.match(url,/branch=fix%2Ftest-ci-wake/)
+      assert.match(url,/created=%3E%3D/)
+      return f({total_count:1,
       workflow_runs:[{id:601,event:'pull_request',name:'HH PR core release gate',
         created_at:'2026-11-03T19:57:00Z',
-        pull_requests:[{number:551,head:{sha}}]}]})
+        status:'completed',head_branch:'fix/test-ci-wake',head_sha:sha,
+        path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',
+        repository:{full_name:'andylitvinov-design/books'},
+        head_repository:{full_name:'andylitvinov-design/books'},
+        pull_requests:[]}]})
+    }
     if(url.endsWith('/runs/601/jobs?per_page=50'))return f({total_count:1,
       jobs:[{id:602,run_id:601,name:'core-lint-types-build',status:'in_progress',runner_name:'GitHub Actions 4',
         started_at:'2026-11-03T19:58:00Z'}]})
@@ -337,4 +351,37 @@ test('green callback-only Watchdog does not suppress real independent CI wake',a
   assert.equal(outcome.body.dispatchRunId,601)
   assert.equal(outcome.body.executionVerified,false)
   assert.equal(outcome.body.status,'runner_pending')
+})
+
+
+test('Core runner provenance uses exact SHA when GitHub omits pull_requests',async()=>{
+  const {coreRunMatchesTask}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z')
+  const since=Date.parse('2026-11-03T19:55:00Z')
+  const sha='a'.repeat(40)
+  const task={pr_number:551,head_sha:sha}
+  const pr={number:551,state:'open',draft:false,
+    base:{ref:'codex/public-book-library'},
+    head:{ref:'fix/test-ci-wake',sha,
+      repo:{full_name:'andylitvinov-design/books'}}}
+  const run={id:601,name:'HH PR core release gate',
+    event:'pull_request',status:'completed',
+    path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',
+    repository:{full_name:'andylitvinov-design/books'},
+    head_repository:{full_name:'andylitvinov-design/books'},
+    head_branch:'fix/test-ci-wake',
+    head_sha:sha,created_at:'2026-11-03T19:57:00Z',
+    pull_requests:[]}
+  assert.equal(coreRunMatchesTask(run,task,pr,since,now),true)
+  assert.equal(coreRunMatchesTask({...run,head_sha:'b'.repeat(40)},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,head_branch:'other-branch'},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,repository:{full_name:'untrusted/repo'}},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,created_at:'2026-11-03T19:40:00Z'},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask(run,task,{...pr,draft:true},since,now),false)
+  assert.equal(coreRunMatchesTask(run,task,{...pr,head:{...pr.head,sha:'b'.repeat(40)}},since,now),false)
+  const synthetic={...run,head_sha:'b'.repeat(40),pull_requests:[
+    {number:551,head:{sha},base:{ref:'codex/public-book-library'}}]}
+  assert.equal(coreRunMatchesTask(synthetic,task,pr,since,now),true)
+  assert.equal(coreRunMatchesTask({...synthetic,pull_requests:[
+    {number:551,head:{sha},base:{ref:'wrong-base'}}]},task,pr,since,now),false)
 })
