@@ -283,18 +283,18 @@ test('production workflow directory can be parsed without silently ignoring unkn
     const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
     assert.match(language,/language-contract:/,'Language Agent must retain focused privacy contracts');
     assert.match(language,/typed-ui:/,'Language Agent must retain independent TypeScript check');
-    assert.match(language,/holistic-language-agent\\.test\\.mjs/,'Language Agent must retain privacy tests');
+    assert.match(language,/holistic-language-agent\.test\.mjs/,'Language Agent must retain privacy tests');
     assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
   }
   if(names.length > 95){
     assert.ok(names.includes('hh-gauntlet-free-smoke.yml'),'The 96th slot must be the reviewed isolated Gauntlet smoke');
     const gauntlet=readFileSync('.github/workflows/hh-gauntlet-free-smoke.yml','utf8');
-    assert.match(gauntlet,/branches: \\['codex\\/hh-gauntlet-run-\\*'\\]/,'Gauntlet smoke must be restricted to disposable branches');
-    assert.match(gauntlet,/github\\.event_name == 'push'/,'Gauntlet smoke must never run on pull requests');
-    assert.match(gauntlet,/permissions:\\s*contents: read/,'Gauntlet smoke must remain read-only');
-    assert.match(gauntlet,/@opencode\\/cli@2\\.1\\.2/,'Gauntlet smoke must pin the official CLI');
+    assert.match(gauntlet,/branches: \['codex\/hh-gauntlet-run-\*'\]/,'Gauntlet smoke must be restricted to disposable branches');
+    assert.match(gauntlet,/github\.event_name == 'push'/,'Gauntlet smoke must never run on pull requests');
+    assert.match(gauntlet,/permissions:\s*contents: read/,'Gauntlet smoke must remain read-only');
+    assert.match(gauntlet,/@opencode\/cli@2\.1\.2/,'Gauntlet smoke must pin the official CLI');
     assert.match(gauntlet,/env -i/,'Gauntlet smoke must isolate credentials');
-    assert.match(gauntlet,/opencode\\" run/,'Gauntlet smoke must invoke the isolated model runner');
+    assert.match(gauntlet,/opencode" run/,'Gauntlet smoke must invoke the isolated model runner');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
