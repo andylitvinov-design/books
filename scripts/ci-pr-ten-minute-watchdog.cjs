@@ -379,11 +379,20 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 }
 
 function coreRunForCurrentPR(r,pr) {
-  // The run's head_sha can be GitHub's synthetic merge commit, not PR HEAD.
-  return r?.name===CORE_NAME && r.head_branch===pr.head.ref &&
-    r.event==='pull_request' && (r.pull_requests||[]).some(p=>
-      p.number===pr.number && p.head?.sha===pr.head.sha &&
-      p.head?.ref===pr.head.ref);
+  // GitHub can report a genuine PR Core run with pull_requests:[] even on
+  // its exact source SHA. Do not misclassify it as missing CI: require the
+  // trusted workflow, source repo/ref and exact HEAD, never just the branch.
+  if(r?.name!==CORE_NAME||r.head_branch!==pr.head.ref||
+     r.event!=='pull_request'||!Array.isArray(r.pull_requests))return false;
+  if(r.pull_requests.length===0)
+    return r.head_sha===pr.head.sha &&
+      r.repository?.full_name==='andylitvinov-design/books' &&
+      r.head_repository?.full_name==='andylitvinov-design/books' &&
+      r.path?.split('@')[0]==='.github/workflows/hh-pr-core-release.yml';
+  // Synthetic PR merge SHA must be independently proven to have this
+  // source SHA as its second parent by verifyCoreRunOnExactHead().
+  return r.pull_requests.some(p=>p.number===pr.number &&
+    p.head?.sha===pr.head.sha&&p.head?.ref===pr.head.ref);
 }
 
 function hasActiveLease(comments, headSha, now) {
