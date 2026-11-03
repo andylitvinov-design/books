@@ -1309,7 +1309,11 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize, closed\]/);
+  assert.ok(native.includes("github.event.action == 'closed'"),
+    'close wakes the trusted janitor for orphaned queued checks');
+  assert.ok(native.includes("github.event.action != 'closed'"),
+    'close must never wake auto-merge readiness');
   assert.ok(native.includes('  prune-head:'), 'synchronize must wake only a scoped janitor');
   assert.ok(native.includes("github.event.action == 'synchronize'"));
   assert.match(native, /^  workflow_run:\s*$/m);
