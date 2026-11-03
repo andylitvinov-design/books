@@ -3014,3 +3014,11 @@
  .studio[data-active-workspace="effects"] .hypnoNavSlot>.quickVideoNav{
    display:grid;width:100%;min-width:0;margin:0}
 }
+
+/* Compact mobile title for the unified six-button navigation flow. */
+.quickBrandMobileTitle{display:none}
+@media(max-width:759px){
+  .studio .quickBrandIdentity{display:none}
+  .studio .quickBrandMobileTitle{display:block;min-width:0;flex:1;color:#233c2c;
+    font:700 clamp(16px,4.4vw,20px)/1.1 Georgia,serif}
+}
