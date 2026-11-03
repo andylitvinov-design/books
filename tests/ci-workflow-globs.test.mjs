@@ -246,9 +246,10 @@ test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
   const job=source.split('  recover-interrupted-core:')[1].split('  prune-head:')[0];
   assert.match(job,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/);
   assert.match(job,/new Set\(\["timed_out","startup_failure"\]\)/);
-  assert.match(job,/event\.head_sha !== live\.head\.sha/);
-  assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/);
-  assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/);
+  assert.ok(job.includes('live.head.sha !== reference.head.sha'), 'exact source HEAD association must remain');
+  assert.ok(job.includes('fresh.head_sha !== event.head_sha'), 'no stale workflow evidence may be retried');
+  assert.ok(job.includes('(reference.base?.sha && reference.base?.sha !== live.base.sha)'), 'live protected base must remain unchanged');
+  assert.ok(job.includes('event.head_repository?.full_name !== fullRepo'), 'cross-repository workflows cannot receive trusted retry');
   // A cancelled *job* may be evidence of a genuinely interrupted run; a
   // cancelled or failed *Core workflow* must not trigger an automatic rerun.
   // Inspect only event-level predicates, never broad text across comments.
