@@ -26,6 +26,8 @@ on:
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-monitor-feed.cjs'
+      - 'tests/ci-pr-monitor-feed.test.cjs'
       - 'scripts/ci-pr-ci-wake-reconcile.cjs'
       - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
@@ -203,6 +205,7 @@ jobs:
           node --check scripts/ci-pr-event-handoff.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-monitor-feed.cjs
           node --check scripts/ci-pr-ci-wake-reconcile.cjs
       - name: Classify proven failed Core and dispatch the targeted worker immediately
         uses: actions/github-script@v7
@@ -262,6 +265,7 @@ jobs:
           node --check scripts/ci-pr-task-state.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-monitor-feed.cjs
           node --check scripts/ci-pr-ci-wake-reconcile.cjs
           node --check scripts/ci-pr-ci-legacy-recovery.cjs
       - name: Start workers from Watchdog with signed HEAD reservations
@@ -281,52 +285,17 @@ jobs:
             // live direct handoff receipts, never a Control Tower observer.
             if(!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
                report.reason!=='UNTRUSTED_EVENT' &&
-               context.repo.owner==='andylitvinov-design' && context.repo.repo==='books'){
-              try{
-                const issueNumber=3128;
-                const issue=(await github.rest.issues.get({owner:context.repo.owner,
-                  repo:context.repo.repo,issue_number:issueNumber})).data;
-                const marker='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
-                if(issue.state!=='open'||issue.pull_request||
-                   !issue.body?.startsWith(marker))throw Error('MONITOR_FEED_MARKER_MISSING');
-                const number=v=>Number.isSafeInteger(v)&&v>=0?v:null;
-                const snapshot={schema:'HH_CONTROL_DISPATCH_METRICS_V1',
-                  checked_at:report.checkedAt,run_id:context.runId,source_dry_run:false,
-                  source_schema:report.schema,
-                  counts:{candidates:number(report.candidates),
-                    // Zero handoff candidates does not imply zero open PRs.
-                    discovered_open_prs:number(report.discovered),
-                    production_open_prs:number(report.production),
-                    actionable_prs:number(report.actionable),
-                    unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
-                    dispatch_requests_accepted:number(report.dispatchAccepted),
-                    worker_dispatches:number(report.runnerStartedConfirmed)},
-                  queue_states:{
-                    awaiting_core:number(report.ciWakePending??0),
-                    core_confirmed:number(report.ciCoreConfirmed??0),
-                    core_workflow_queued:number(report.ciCoreQueued??0),
-                    core_runner_running:number(report.ciCoreRunning??0),
-                    core_waiting_runner:number(report.ciCoreWaitingRunner??0),
-                    wake_undelivered:number(report.ciWakeEscalated??0),
-                    parent_blocked:number(report.blocked?.STACKED_PARENT??0),
-                    source_proof_missing:number(report.blocked?.SOURCE_PROOF_MISSING??0),
-                    conflict_unverified:number(report.blocked?.CONFLICT_NOT_VERIFIED??0),
-                    already_handled:number(report.blocked?.ALREADY_HANDLED??0)},
-                  reason:typeof report.reason==='string'?report.reason:null};
-                if(Object.values(snapshot.counts).some(v=>v===null)||
-                   Object.values(snapshot.queue_states).some(v=>v===null)||
-                   !Number.isFinite(Date.parse(snapshot.checked_at)))throw Error('BAD_MONITOR_COUNTS');
-                const body=[marker,'## Watchdog direct handoff — public snapshot',
-                  'Dispatch API acceptance is NOT execution. Worker starts count only trusted exact-task RUNNER_STARTED receipts from a real GitHub Actions runner observed in this inspected queue. Zero candidates means zero currently queued actionable tasks, NOT zero open PRs. Verified source commits and LIVE are separate.',
-                  '', '```json',JSON.stringify(snapshot,null,2),'```','',
-                  'Источник: https://github.com/andylitvinov-design/books/actions/runs/'+context.runId,''].join('\n');
-                if(issue.body!==body)await github.rest.issues.update({
-                  owner:context.repo.owner,repo:context.repo.repo,
-                  issue_number:issueNumber,body});
-                core.info('HH_DIRECT_HANDOFF_MONITOR_PUBLISHED #'+issueNumber);
+               context.repo.owner==='andylitvinov-design' &&
+               context.repo.repo==='books'){
+              try {
+                const {publishMonitorSnapshot}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-monitor-feed.cjs');
+                const outcome=await publishMonitorSnapshot({github,context,report});
+                core.info('HH_DIRECT_HANDOFF_MONITOR_'+outcome.status+
+                  ' #3128'+(outcome.run_id?' run='+outcome.run_id:''));
               }catch(error){
-                core.warning('HH_DIRECT_HANDOFF_MONITOR_UNAVAILABLE status='+
-                  (Number(error.status)||'unknown'));
+                core.warning('HH_DIRECT_HANDOFF_MONITOR_UNAVAILABLE '+
+                  String(error?.message||'unknown').slice(0,80));
               }
             }
   reactivate-schedules:
