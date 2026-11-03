@@ -135,7 +135,7 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 12) return false;
+  if (!predicates.length || predicates.length > 24) return false;
   const prefixes = predicates.map(item =>
     item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
   if (prefixes.some(x => !x)) return false;
