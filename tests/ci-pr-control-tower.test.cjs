@@ -6,6 +6,8 @@ test('Control Tower is read-only; Watchdog owns the worker dispatch lease',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  assert.ok(observer.includes('group: hh-control-contract-'));
  assert.ok(observer.includes('group: hh-control-tower-observer'));
+ assert.match(observer,/group: hh-control-contract-\$\{\{ github.event.pull_request.number \}\}[\s\S]{0,180}cancel-in-progress: true/,
+  'newer exact-HEAD PR contract must cancel the obsolete queued job');
  assert.ok(observer.includes('dryRun:true'));
  assert.ok(!observer.includes('createWorkflowDispatch('));
  assert.ok(!observer.includes('completion-wait:'));
