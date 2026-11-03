@@ -109,3 +109,10 @@ test('live catalog lookup fails closed before inference when unavailable',async(
  await assert.rejects(verifyFreeModelPrice({fetchImpl:async()=>({ok:true,json:async()=>({})})}),
   /FREE_AI_MODEL_PRICE_UNKNOWN/);
 });
+
+test('CLI entrypoint awaits the async price-checked proposer',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-free-agent.cjs'),'utf8');
+ assert.match(source,/async function main\(\)[\s\S]*?await propose\(\)/);
+ assert.match(source,/if\(require\.main===module\)main\(\)/);
+});
