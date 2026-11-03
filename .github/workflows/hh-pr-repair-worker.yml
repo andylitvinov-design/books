@@ -147,6 +147,7 @@ jobs:
     env:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+      REPAIR_STRATEGY: ${{ needs.claim.outputs.strategy }}
     steps:
       - name: Checkout untrusted PR HEAD without any write credentials or secrets
         uses: actions/checkout@v4
@@ -221,9 +222,17 @@ jobs:
               const gate=spawnSync(process.execPath,
                 ['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],
                 {stdio:'inherit',timeout:195000});
+              // A deterministic proposal is NOT publishable when the Core
+              // TypeScript failure remains. The initial check is diagnostic;
+              // this second exact-patch check is the actual proof.
+              const mustCompile=process.env.REPAIR_STRATEGY==='code'||
+                changed.some(p=>/\.(?:ts|tsx)$/.test(p));
+              const types=mustCompile?spawnSync('./node_modules/.bin/tsc',
+                ['--noEmit','--incremental','false','--pretty','false'],
+                {stdio:'inherit',timeout:210000}):{status:0};
               const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
                 .split('\0').filter(Boolean);
-              const verified=gate.status===0 && after.length===changed.length &&
+              const verified=gate.status===0 && types.status===0 && after.length===changed.length &&
                 after.every(p=>before.has(p)&&before.get(p)===digest(p));
               if(!verified) result.detail_code='SCOPED_TESTS_NOT_GREEN';
               for(const path of verified?changed:[]){
@@ -288,6 +297,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Fail early on unsupported or sensitive free-model source scope
+        run: node -e "require('./.hh-trusted/scripts/ci-pr-repair-free-agent.cjs').sourceScope()"
       - name: Install PR test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install exact free OpenCode CLI version outside PR worktree
