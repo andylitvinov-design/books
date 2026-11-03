@@ -150,7 +150,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
-      const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
+      // The real consented transcript lives in a closed native <details>.
+      // Reveal it through the visitor's summary control before reading
+      // innerText: WebKit correctly returns '' for visually hidden content.
+      const transcriptDisclosure=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-spoken-text]")});
+      if(await transcriptDisclosure.getAttribute("open")===null)
+        await transcriptDisclosure.locator("summary").click();
+      const spoken=page.locator("[data-video-affirmation-spoken-text]");
+      await expect(spoken).toBeVisible({timeout:10000});
+      const transcript=(await spoken.innerText()).trim();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
