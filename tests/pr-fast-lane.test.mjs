@@ -875,7 +875,7 @@ test('core production build is the single TypeScript gate and cannot ignore erro
 test('Core cancels superseded first attempts, never manually rerun current HEAD', () => {
   const source = workflow('hh-pr-core-release.yml');
   const group = "group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   assert.ok(source.includes(group), 'first-attempt HEADs of one PR share concurrency');
   assert.ok(source.includes(cancel), 'only a newer synchronize attempt cancels older checks');
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'), 'no obsolete SHA groups');
@@ -885,7 +885,7 @@ test('central CI utilities isolate non-PR runs and cancel only newer first attem
   for (const [file, prefix] of [['hh-actionlint.yml', 'hh-workflow-lint'], ['hh-pr-sweep-guard.yml', 'hh-pr-sweep-guard']]) {
     const source = workflow(file);
     const groupCond = "github.event_name == 'pull_request' && github.run_attempt == 1";
-    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     assert.ok(source.includes("group: " + prefix + "-${{ " + groupCond + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
     assert.ok(source.includes("cancel-in-progress: ${{ " + cancelCond + " }}"), file);
   }
