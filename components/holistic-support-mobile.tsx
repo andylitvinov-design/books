@@ -24,6 +24,7 @@ import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
+import { prepareBrowserPhoto, SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
@@ -102,7 +103,8 @@ const copy = {
     assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
     focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo", videoMandala: "Video mandala",
     photoPrivacy: "Photo stays on this device until you leave.",
-    photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
+    photoError: "Choose a JPG, PNG, WebP or supported HEIC photo up to 25 MB.",
+    photoSave:"Save to my Cabinet", photoSaving:"Saving…", photoSaved:"Saved in My House", photoSignIn:"Sign in to save", photoFailed:"Photo was not saved. Please try again.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
     goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
@@ -206,7 +208,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
+    private: "Private on this page", privateInfo: "Ratings and viewing history stay on your device. Your photo enters your private Cabinet only when you choose Save.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
@@ -215,7 +217,8 @@ const copy = {
     assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
     focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото", videoMandala: "Видео-мандала",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
-    photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
+    photoError: "Выберите JPG, PNG, WebP или поддерживаемый HEIC до 25 МБ.",
+    photoSave:"Сохранить в кабинет", photoSaving:"Сохраняем…", photoSaved:"Сохранено в кабинете", photoSignIn:"Войти для сохранения", photoFailed:"Фото не сохранилось. Повторите попытку.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
     goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
@@ -319,7 +322,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
+    private: "Лично на этом экране", privateInfo: "Оценки и история просмотра остаются на устройстве. Фото попадает в личный кабинет только после нажатия «Сохранить».",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
@@ -328,7 +331,8 @@ const copy = {
     assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
     focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto", videoMandala: "Vídeo mandala",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
-    photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
+    photoError: "Elige JPG, PNG, WebP o HEIC compatible de hasta 25 MB.",
+    photoSave:"Guardar en mi cuenta", photoSaving:"Guardando…", photoSaved:"Guardada en Mi Casa", photoSignIn:"Inicia sesión para guardar", photoFailed:"La foto no se guardó. Inténtalo de nuevo.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
     goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
@@ -432,7 +436,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
+    private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial permanecen en el dispositivo. La foto solo se guarda en tu cuenta cuando pulsas Guardar.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
@@ -517,6 +521,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [goalRecommendationFormats, setGoalRecommendationFormats] =
     useState<GoalRecommendationFormat[]>(() => [...GOAL_RECOMMENDATION_FORMATS]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [storedPhotoUrl, setStoredPhotoUrl] = useState<string | null>(null);
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoSaved, setPhotoSaved] = useState(false);
+  const [photoSignIn, setPhotoSignIn] = useState(false);
+  const photoEpoch = useRef(0);
+  const photoStorageEpoch = useRef(0);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
@@ -539,17 +550,47 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   }, []);
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
-  const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  // Public Support never reads a private portrait just because a guest lands
+  // on the page (including Google/checkout return flows). Saving is voluntary;
+  // authenticated My Videos performs its own private read when explicitly opened.
+  // Invalidate any pending on-device photo decode when this page unmounts.
+  useEffect(() => () => { photoEpoch.current += 1; }, []);
+  const onPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
-      setPhotoError(t.photoError);
-      event.target.value = "";
-      return;
+    const epoch = ++photoEpoch.current;
+    setPhotoBlob(null); setPhotoUrl(null); setPhotoBusy(true);
+    setPhotoError(""); setPhotoSaved(false); setPhotoSignIn(false);
+    try {
+      const blob = await prepareBrowserPhoto(file);
+      if (epoch !== photoEpoch.current) return;
+      setPhotoBlob(blob); setPhotoUrl(URL.createObjectURL(blob));
+    } catch {
+      if (epoch === photoEpoch.current) setPhotoError(t.photoError);
+    } finally {
+      if (epoch === photoEpoch.current) setPhotoBusy(false);
     }
-    setPhotoError("");
-    setPhotoUrl(URL.createObjectURL(file));
-    event.target.value = "";
+  };
+  const savePhoto = async () => {
+    if (photoBusy || !photoBlob) return;
+    setPhotoBusy(true); setPhotoError(""); setPhotoSignIn(false);
+    const form = new FormData(); form.set("photo", photoBlob, "portrait.jpg");
+    try {
+      const response = await fetch("/api/app/support-photo", {
+        method:"POST", credentials:"same-origin", cache:"no-store", body:form,
+      });
+      if (response.status === 401) { setPhotoSignIn(true); return; }
+      const data = await response.json().catch(() => null);
+      if (!response.ok || typeof data?.url !== "string" || data.saved !== true)
+        throw new Error("PHOTO_SAVE_FAILED");
+      photoStorageEpoch.current += 1;
+      setStoredPhotoUrl(data.url); setPhotoUrl(null); setPhotoBlob(null); setPhotoSaved(true);
+    } catch {
+      setPhotoError(t.photoFailed);
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   // Quick matching follows the lowest self-ratings. An explicitly applied goal
@@ -795,15 +836,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
 
           <section className={styles.profile} aria-label={t.upload}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
-              {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
+              {photoUrl || storedPhotoUrl ? <Image alt="" src={(photoUrl || storedPhotoUrl)!} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
                   <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={176} height={176} unoptimized className={styles.photoReference} />
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
-                aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
+              <input type="file" accept={SUPPORT_PHOTO_ACCEPT} onChange={event => { void onPhoto(event); }}
+                disabled={photoBusy} aria-label={photoUrl || storedPhotoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
+            {photoBlob && <button type="button" className={styles.photoSave} disabled={photoBusy}
+              data-support-photo-save onClick={() => { void savePhoto(); }}>{photoBusy ? t.photoSaving : t.photoSave}</button>}
+            {(photoSaved || storedPhotoUrl) && <Link href={"/" + locale + "/app/videos"} className={styles.photoSaved}
+              data-support-photo-saved>{t.photoSaved}</Link>}
+            {photoSignIn && <Link href={"/" + locale + "/app"} className={styles.photoSaved} data-support-photo-signin>{t.photoSignIn}</Link>}
             <button type="button" className={styles.testsShortcut} data-support-tool="tests"
               aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
               onClick={() => changeChoice("tests")}>

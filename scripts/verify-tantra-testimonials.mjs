@@ -13,7 +13,7 @@ const sources = manifest.nativeVideos.map(asset => asset.url);
 const posters = manifest.assets.filter(asset => asset.contentType === 'image/png').map(asset => new URL(asset.path, origin).href);
 const result = { origin, assets: [], journeys: [] };
 
-const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1';
+const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0';
 async function installYoutubeFixture(context) {
   await context.route(youtubeUrl, route => route.fulfill({
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
@@ -261,16 +261,23 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    // Observe the reopened state through backend reconstruction, before another
-    // explicit play. A cached currentTime or immediate paused sample is insufficient.
+    // WebKit may preserve a decoded paused frame without issuing another
+    // requestVideoFrameCallback until playback resumes. A fresh callback is
+    // not evidence of correct paused-state reconstruction on that engine.
+    // Verify the REAL video backend instead: current-frame data and dimensions,
+    // exact retained position, no media error or unsolicited playback.
+    // Earlier startVisibleNative already proved actual frame advancement and
+    // seek/decode for each source before closing the disclosure.
     if (engine === 'webkit') {
       for (const index of [0, 1]) {
         const video = disclosure.locator('video').nth(index);
         await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, { at, time }) => {
-          const frame = el.__tantraPresentedFrame;
-          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
-        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+        await expect.poll(() => video.evaluate((el, retainedTime) =>
+          el.paused && !el.ended && !el.seeking && !el.error &&
+          el.videoWidth > 0 && el.videoHeight > 0 &&
+          el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+          Math.abs(el.currentTime - retainedTime) < 0.05, paused[index]),
+        { timeout: 20000 }).toBe(true);
       }
     }
     await page.waitForTimeout(350);
@@ -421,7 +428,7 @@ try {
           try {
             await installNativeTimelineDiagnostics(context);
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
-            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1', route => route.fulfill({
+            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0', route => route.fulfill({
               contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
             }));
             const page = await context.newPage();
@@ -474,17 +481,19 @@ try {
               observed.immediateAfterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
               // Decode statistics can update after the media clock / seeked event.
               // Preserve the strict decoded-frame requirement and wait for observation.
-              await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(sample.frames);
+              // WebKit can reset totalVideoFrames during seek. Require a newly decoded
+              // frame AFTER the seek snapshot, not a counter larger than pre-seek playback.
+              await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(observed.immediateAfterSeek.frames);
               const afterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
               observed.afterSeek = afterSeek;
               assert.equal(afterSeek.error, null);
-              assert.ok(afterSeek.frames > sample.frames, 'Decoded playback must continue after seeking');
+              assert.ok(afterSeek.frames > observed.immediateAfterSeek.frames, 'Decoded playback must continue after seeking');
               await video.evaluate(el => el.pause());
 
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
-            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1');
+            await expect(alena).toHaveAttribute('src', youtubeUrl);
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };

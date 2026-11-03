@@ -19,7 +19,15 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
     '/en/app/messages/someone-else','/admin']){
     assert.equal(guardedPaths.test(path),false,path)
   }
-  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''\)/)
+  // Blob previews remain route-scoped: owner inbox, public Mandala, Support,
+  // and the authenticated private photo cabinet. Neither public marketing
+  // pages nor other account routes receive unrestricted blob image access.
+  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''\)/)
+  const privateCabinet=middleware.match(/const privateSupportPhotoCabinet = (\/\^.+\/)\.test\(pathname\)/)
+  assert.ok(privateCabinet,'private photo signed-image CSP requires exact cabinet route')
+  const onlyCabinet=runInNewContext(privateCabinet[1])
+  for(const path of ['/en/app/videos','/ru/app/videos','/es/app/videos/']) assert.equal(onlyCabinet.test(path),true,path)
+  for(const path of ['/','/en','/en/client/123','/en/app/messages','/en/app/portrait']) assert.equal(onlyCabinet.test(path),false,path)
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
   assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
