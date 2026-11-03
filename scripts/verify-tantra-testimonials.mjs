@@ -204,6 +204,19 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     observation.before = await video.evaluate(nativePlaybackSnapshot);
     observation.stage = 'request-playback';
     await video.evaluate(requestNativePlayback);
+    // After a real locale navigation the new remote MP4 may still be
+    // NETWORK_EMPTY/readyState=0 even though play() has been requested.
+    // Await the REAL declared source and decoded-media readiness before
+    // measuring its advancing clock; never accept a poster or stale frames.
+    if (scenario.phase === 'locale-navigation' && observation.before.ready < 2) {
+      observation.stage = 'await-new-locale-media';
+      await expect.poll(() => video.evaluate(el =>
+        el.readyState >= 2 && !el.error && Number.isFinite(el.duration) &&
+        el.duration > 2 && el.currentSrc ===
+          (el.querySelector('source')?.src || el.getAttribute('src'))),
+        { timeout: 20000 }).toBe(true);
+      observation.localeMediaReady = await video.evaluate(nativePlaybackSnapshot);
+    }
     await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
     let initial = await video.evaluate(el => ({
       time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
