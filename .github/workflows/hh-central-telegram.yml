@@ -43,7 +43,6 @@ on:
       - 'app/api/internal/telegram-owner-discovery/route.js'
       - 'tests/app-housekeeping-cron.test.mjs'
       - 'tests/practitioner-daily-telegram.test.mjs'
-      - '.github/workflows/hh-central-telegram.yml'
   workflow_dispatch:
 permissions:
   contents: read
