@@ -4,6 +4,7 @@ import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions} from "@/lib/mandala/video-montage-sources.mjs";
@@ -96,32 +97,25 @@ const copy={
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
 } as const;
-const videoGoalCategories=[
- {id:"strength",theme:"energy",poster:"clear-morning",Icon:Zap,
-   label:{ru:"Поддержка силы",en:"Strength & energy",es:"Fuerza y energía"}},
- {id:"calm",theme:"health",poster:"gentle-falls",Icon:Leaf,
-   label:{ru:"Антистресс и расслабление",en:"Stress relief & calm",es:"Calma y descanso"}},
- {id:"love",theme:"relationships",poster:"partners",Icon:Heart,
-   label:{ru:"Гармония и любовь",en:"Harmony & love",es:"Armonía y amor"}},
- {id:"possibilities",theme:"money",poster:"wealth-sunrise",Icon:Coins,
-   label:{ru:"Деньги и возможности",en:"Money & opportunities",es:"Dinero y oportunidades"}}
-] as const;
-const popularTopicOrder={
- strength:["confidence","connection","fresh-start","stability","calm","vitality"],
- calm:["calm","vitality","confidence","fresh-start","connection","stability"],
- love:["connection","fresh-start","confidence","calm","stability","vitality"],
- possibilities:["stability","confidence","vitality","fresh-start","connection","calm"]
+const CATEGORY_ICONS={
+ "goals-money":Coins,
+ "love-relationships":Heart,
+ "energy-confidence":Zap,
+ "stress-recovery":Leaf,
 } as const;
-const popularTopicCopy={
- ru:{confidence:"Обрести уверенность",connection:"Больше близости",
-   "fresh-start":"Начать новый этап",stability:"Опора в работе",
-   calm:"Спокойствие и сон",vitality:"Энергия и сила"},
- en:{confidence:"Build confidence",connection:"More closeness",
-   "fresh-start":"Start a new chapter",stability:"Support at work",
-   calm:"Calm and sleep",vitality:"Energy and strength"},
- es:{confidence:"Ganar confianza",connection:"Más cercanía",
-   "fresh-start":"Empezar nueva etapa",stability:"Apoyo en el trabajo",
-   calm:"Calma y sueño",vitality:"Energía y fuerza"}
+const SUBCATEGORY_THEME={
+ "goals-discipline":"goals","purpose-choice":"life",
+ "money-mindset":"money","business-career":"money",
+ "finding-love":"relationships","couple-relationships":"relationships",
+ "loneliness-breakups":"relationships","intimacy-family":"relationships",
+ "body-wellbeing":"health","energy-fatigue":"energy","life-energy":"energy",
+ "confidence-worth":"goals","sleep-rest":"health",
+ "stress-burnout":"health","anxiety-fears":"health",
+ "trauma-childhood":"health","depression-apathy":"health",
+} as const;
+const CATEGORY_DEFAULT_THEME={
+ "goals-money":"money","love-relationships":"relationships",
+ "energy-confidence":"energy","stress-recovery":"health",
 } as const;
 const allowedDurations=[10,15,20,30,60] as const;
 const allThemes=["energy","money","relationships","goals","life","health"] as const;
@@ -143,7 +137,9 @@ export function MandalaAutoVideoDirector({
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
- const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>("strength");
+ const [selectedCategoryId,setSelectedCategoryId]=useState("energy-confidence");
+ const [selectedSubcategoryId,setSelectedSubcategoryId]=useState("life-energy");
+ const [selectedTopicId,setSelectedTopicId]=useState<string|null>(null);
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
  const [refineOpen,setRefineOpen]=useState(false);
@@ -157,6 +153,11 @@ export function MandalaAutoVideoDirector({
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
  },[]);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
+ const taxonomyCategories=listMyTubeCategories(locale);
+ const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
+ const taxonomyTopics=listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale);
+ const selectedTaxonomyTopic=taxonomyTopics.find(item=>item.id===selectedTopicId);
+ const taxonomyScenarios=selectedTopicId?listMyTubeScenarios(selectedTopicId,locale):[];
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
  const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
@@ -210,60 +211,81 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
- const chooseReadyGoal=(goalId:string)=>{
-   const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
-   if(!item)return;
-   onInvalidate?.();
-   // All six suggestions write to the ONE shared wish and update real scene theme.
-   const nextGoal=popularTopicCopy[locale][goalId as keyof typeof popularTopicCopy.ru]||item.labels[locale];
-   // The main four-card objective stays selected while the user refines a
-   // topic. A topic may target a more specific underlying licensed theme.
-   const nextTheme=item.theme as VideoTheme;
-   onGoalChange(nextGoal);
-   onCategoryChange?.(nextTheme);
-   setProposalContext({goal:nextGoal,theme:nextTheme});
-   setSelectedGoalId(goalId);
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
-   setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,
-     fallbackTheme:nextTheme,presets,scenes}));
- };
- const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
+ const applyTaxonomyGoal=(nextGoal:string,nextTheme:VideoTheme,topicId:string|null=null)=>{
    if(disabled)return;
    onInvalidate?.();
+   onGoalChange(nextGoal);
    onCategoryChange?.(nextTheme);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   if(topicId)setSelectedTopicId(topicId);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+ };
+ const chooseCategory=(categoryId:string)=>{
+   if(disabled)return;
+   const nextTheme=(CATEGORY_DEFAULT_THEME[categoryId as keyof typeof CATEGORY_DEFAULT_THEME]||theme) as VideoTheme;
+   const firstSubcategory=listMyTubeSubcategories(categoryId,locale)[0];
+   onInvalidate?.();
    setSelectedCategoryId(categoryId);
-   setSelectedGoalId(null);setOverrideId(null);setSeconds(null);
-   setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setSelectedSubcategoryId(firstSubcategory?.id||"");
+   setSelectedTopicId(null);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   onCategoryChange?.(nextTheme);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal,theme:nextTheme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes}));
  };
- const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
-   const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
-     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
-     item.id==="calm"?Moon:Star;
-   return <button key={item.id} type="button" data-auto-video-goal={item.id}
-       aria-pressed={selectedGoalId===item.id}
-       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
-       <Icon size={18} aria-hidden="true"/><span>{
-         popularTopicCopy[locale][item.id as keyof typeof popularTopicCopy.ru]||item.labels[locale]
-       }</span>
-     </button>;
+ const chooseSubcategory=(subcategoryId:string)=>{
+   if(disabled)return;
+   const nextTheme=(SUBCATEGORY_THEME[subcategoryId as keyof typeof SUBCATEGORY_THEME]||theme) as VideoTheme;
+   setSelectedSubcategoryId(subcategoryId);setSelectedTopicId(null);
+   const nextLabel=listMyTubeSubcategories(selectedCategoryId,locale).find(item=>item.id===subcategoryId)?.label||"";
+   applyTaxonomyGoal(nextLabel,nextTheme);
+ };
+ const chooseTaxonomyTopic=(topicId:string)=>{
+   const item=taxonomyTopics.find(entry=>entry.id===topicId);
+   if(!item||disabled)return;
+   const nextTheme=(SUBCATEGORY_THEME[selectedSubcategoryId as keyof typeof SUBCATEGORY_THEME]||theme) as VideoTheme;
+   applyTaxonomyGoal(item.label,nextTheme,topicId);
  };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <div className={css.goalChoices} role="group" aria-label={
-     locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
-     {videoGoalCategories.map(item=><button type="button" key={item.id}
-       data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
-       aria-pressed={selectedCategoryId===item.id} disabled={disabled}
-       onClick={()=>chooseCategory(item.theme,item.id)}>
-       {scenePoster(item.poster)?<img src={scenePoster(item.poster)!}
-         className={css.categoryPoster} alt="" loading="lazy"/>:null}
-       <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
-       <strong>{item.label[locale]}</strong>
-       {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
-         <Check size={15} strokeWidth={3}/></span>:null}
-     </button>)}
+     locale==="ru"?"Выберите основное направление":locale==="es"?"Elige una dirección principal":"Choose a main direction"}>
+     {taxonomyCategories.map(item=>{
+       const Icon=CATEGORY_ICONS[item.id as keyof typeof CATEGORY_ICONS]||Star;
+       return <button type="button" key={item.id}
+         data-auto-video-category={item.id}
+         aria-pressed={selectedCategoryId===item.id} disabled={disabled}
+         onClick={()=>chooseCategory(item.id)}>
+         <span className={css.categoryIcon}><Icon size={21} aria-hidden="true"/></span>
+         <strong>{item.label}</strong>
+         {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+           <Check size={15} strokeWidth={3}/></span>:null}
+       </button>;
+     })}
+   </div>
+   <div className={css.subcategories} data-auto-video-subcategories>
+     <p className={css.popularHeading}>{locale==="ru"?"Подкатегория":locale==="es"?"Subcategoría":"Subcategory"}</p>
+     <div className={css.topicChoices} role="group" aria-label={locale==="ru"?"Подкатегории":locale==="es"?"Subcategorías":"Subcategories"}>
+       {taxonomySubcategories.map(item=><button key={item.id} type="button"
+         data-auto-video-subcategory={item.id}
+         aria-pressed={selectedSubcategoryId===item.id} disabled={disabled}
+         title={item.chooseWhen}
+         onClick={()=>chooseSubcategory(item.id)}>{item.label}</button>)}
+     </div>
+     <p className={css.notice}>{taxonomySubcategories.find(item=>item.id===selectedSubcategoryId)?.chooseWhen}</p>
+   </div>
+   <div className={css.subcategories} data-auto-video-topic-choices>
+     <p className={css.popularHeading}>{locale==="ru"?"Тема":locale==="es"?"Tema":"Topic"}</p>
+     <div className={css.popularTopics} role="group" aria-label={locale==="ru"?"Темы":locale==="es"?"Temas":"Topics"}>
+       {taxonomyTopics.map(item=><button key={item.id} type="button"
+         data-auto-video-topic={item.id}
+         aria-pressed={selectedTopicId===item.id} disabled={disabled}
+         onClick={()=>chooseTaxonomyTopic(item.id)}>{item.label}</button>)}
+     </div>
    </div>
  </div>;
  const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
@@ -340,7 +362,7 @@ export function MandalaAutoVideoDirector({
      </p>:null}
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
-       {selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
+       {selectedTaxonomyTopic?<p className={css.meta}>{t.selectedGoal}: {selectedTaxonomyTopic.label}</p>:selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
        <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
        <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
@@ -356,8 +378,8 @@ export function MandalaAutoVideoDirector({
              {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
                alt="" loading="lazy" className={css.storyPoster}/>:null}
              <span className={css.storyNumber}>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
-             <strong>{option.label[locale]}</strong>
-             <small>{sceneById.get(option.clips[0])?.description[locale]||""}</small>
+             <strong>{taxonomyScenarios[index]?.label||option.label[locale]}</strong>
+             <small>{taxonomyScenarios[index]?.creativeBrief||sceneById.get(option.clips[0])?.description[locale]||""}</small>
            </button>:null;
          })}
        </div>
