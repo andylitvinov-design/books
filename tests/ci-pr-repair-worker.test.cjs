@@ -737,15 +737,17 @@ test('trusted failed Core/TypeScript source routes directly to Code Repair',asyn
  assert.match(f.log.commentBodies[0],/verified Core\/TypeScript code repair/);
 });
 
-test('direct Code Repair with missing API key never claims a published source SHA',async()=>{
+test('Core task reaches manual review only after deterministic repair has no verified patch',async()=>{
  const f=fixture();
  const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
-  claimResult:'success',strategy:'code',fixResult:'skipped',
+  claimResult:'success',strategy:'code',fixResult:'success',
+  candidateStatus:'manual_required',candidateDetail:'NO_AUTOFIXABLE_ESLINT_CHANGE',
   codeAvailable:false,codeResult:'skipped',publishResult:'skipped'});
  assert.equal(r.state,'MANUAL');
  assert.equal(r.strategy,'code');
  assert.equal(r.reason_code,'FREE_AI_EXECUTOR_NOT_CONFIGURED');
+ assert.equal(r.detail_code,'NO_AUTOFIXABLE_ESLINT_CHANGE');
  assert.equal(r.source_published,false);
  assert.equal(f.log.commit,0);
 });
