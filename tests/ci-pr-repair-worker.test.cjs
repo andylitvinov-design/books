@@ -118,6 +118,18 @@ test('publisher verifies owner, SHA, changed file blob and commits exactly once'
   assert.equal(f.log.commit,1);
   assert.equal(f.log.read,1);
 });
+test('publisher preserves free-only identity in the signed commit receipt',async()=>{
+ const f=fixture(),candidate={head_sha:sha,repair_kind:'free_ai',
+   files:[{path:'lib/a.ts',original_sha:newSha,
+    base64:Buffer.from('export const a=2;\n').toString('base64')}]};
+ const out=await publish({github:f.github,core,context,prNumber:11,
+  expectedSha:sha,candidate,writer:f.writer});
+ assert.equal(out.status,'committed');
+ assert.equal(f.log.commit,1);
+ assert.match(f.log.commentBodies[0],/verified free-model source repair/);
+ assert.match(f.log.commentBodies[0],/"repair_kind":"free_ai"/);
+ assert.doesNotMatch(f.log.commentBodies[0],/Codex source repair|ESLint autofix/);
+});
 test('publisher refuses changed SHA, unauthorized owner and forged patch path',async()=>{
   const c={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,base64:'YQ=='}]};
   let f=fixture({fresh:pr({head:{ref:'fix/pr-11',sha:'e'.repeat(40),repo:{full_name:owner+'/'+repo}}})});
@@ -628,7 +640,7 @@ test('Repair no-op never launches privileged publish and retains exact-HEAD diag
  assert.match(workflow,/ESLINT_SCOPE_NOT_CONFIGURED/);
 });
 
-test('trusted code repair scope rejects unauthorized paths, duplicates and stale SHA',()=>{
+test('trusted free code repair scope rejects unauthorized paths, duplicates and stale SHA',()=>{
  const {sourceScope,validateCandidate,makePrompt}=
    require('../scripts/ci-pr-repair-code-candidate.cjs');
  const scope=sourceScope({REPAIR_SHA:sha,
@@ -638,9 +650,10 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
    ['lib/a.js','lib/a.js'],Array.from({length:9},(_,i)=>'lib/a'+i+'.js')])
    assert.throws(()=>sourceScope({REPAIR_SHA:sha,REPAIR_FILES_JSON:JSON.stringify(files)}));
  assert.throws(()=>sourceScope({REPAIR_SHA:'stale',REPAIR_FILES_JSON:'["lib/a.js"]'}));
- const good={head_sha:sha,repair_kind:'codex',
+ const good={head_sha:sha,repair_kind:'free_ai',
    files:[{path:'components/a.tsx',original_sha:sha,base64:'ZXhwb3J0IHt9Owo='}]};
  assert.equal(validateCandidate(good,scope).length,1);
+ assert.throws(()=>validateCandidate({...good,repair_kind:'codex'},scope));
  assert.throws(()=>validateCandidate({...good,head_sha:newSha},scope));
  assert.throws(()=>validateCandidate({...good,
    files:[{...good.files[0],path:'.github/workflows/attack.yml'}]},scope));
@@ -654,16 +667,16 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
 test('automatic repair has no paid Codex executor or API credential dependency',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/code_available: \$\{\{ steps\.select\.outputs\.code_available \}\}/);
- assert.match(wf,/core\.setOutput\('code_available','false'\)/);
- assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
- assert.match(wf,/  code_verify:\n[\s\S]*?if: false/);
+ assert.match(wf,/core\.setOutput\('code_available',result\.strategy==='code'\?'true':'false'\)/);
+ assert.match(wf,/  code_fix:\n[\s\S]*?needs\.fix\.outputs\.candidate_status != 'ready'/);
+ assert.match(wf,/  code_verify:\n[\s\S]*?needs\.code_fix\.outputs\.candidate_status == 'proposed'/);
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  const publisher=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(publisher,/HH_AUTOMERGE_TOKEN/);
  assert.doesNotMatch(wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0],
   /HH_AUTOMERGE_TOKEN/);
 });
-test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
+test('free-model failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
  const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
@@ -695,7 +708,7 @@ test('Codex failures report NO source commit while unverified proposals cannot p
  }
 });
 
-test('trusted Repair finalization fast paths preserve independent Codex verification',()=>{
+test('trusted Repair finalization fast paths preserve independent free-model verification',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  const claim=wf.split('  claim:\n')[1].split('  fix:\n')[0];
  const fix=wf.split('  fix:\n')[1].split('  code_fix:\n')[0];
@@ -762,11 +775,11 @@ test('direct code publisher requires verified parent commit on current PR HEAD',
   codeVerifyResult:'success',codeVerifyStatus:'ready',
   publishResult:'success',publishStatus:'committed',publishSha:newSha});
  assert.equal(r.state,'PUBLISHED');
- assert.equal(r.repair_kind,'codex');
+ assert.equal(r.repair_kind,'free_ai');
  assert.equal(r.new_sha,newSha);
 });
 
-test('direct Core failures run deterministic repair before remaining manual without free AI',()=>{
+test('direct Core failures run deterministic first before eligible free AI proposal',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  const fix=wf.split('  fix:\n')[1].split('  code_fix:\n')[0];
  assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
@@ -775,8 +788,8 @@ test('direct Core failures run deterministic repair before remaining manual with
  assert.match(fix,/Verify deterministic Core repair with TypeScript/);
  assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
- assert.ok(wf.includes("core.setOutput('code_available','false')"));
- assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
+ assert.match(wf,/core\.setOutput\('code_available',result\.strategy==='code'\?'true':'false'\)/);
+ assert.match(wf,/  code_fix:\n[\s\S]*?needs\.fix\.outputs\.candidate_status != 'ready'/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  assert.doesNotMatch(wf,/force: true/);
