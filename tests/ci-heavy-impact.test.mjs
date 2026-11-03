@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { decideHeavyImpact, readTestedCandidateChanges } from '../scripts/ci-heavy-impact.mjs';
+import { applyPrBrowserBudget, decideHeavyImpact, readTestedCandidateChanges } from '../scripts/ci-heavy-impact.mjs';
 import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const one = (filename, status = 'modified') => [{ filename, status }];
@@ -327,4 +327,22 @@ test('only audited CI-policy paths skip unrelated heavy browser matrices', () =>
   }
   assert.deepEqual(decideHeavyImpact('free-review',
     [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
+});
+
+test('Mandala PRs skip redundant Linux browsers but keep required source contracts and macOS media QA', () => {
+  const changed = [{filename:'app/api/holistic-support/voice/route.js',status:'modified'}];
+  const full = decideHeavyImpact('mandala', changed);
+  assert.deepEqual(full,{browser:true},'risk classifier remains fail-closed');
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',full),{browser:false},
+    'Core and macOS WebKit own the PR build and encoded-media gate');
+  assert.deepEqual(applyPrBrowserBudget('mandala','workflow_dispatch',full),{browser:true},
+    'manual full media QA remains available');
+  assert.deepEqual(applyPrBrowserBudget('mandala','push',full),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('free-review','pull_request',{browser:true}),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('app-r1','pull_request',{full_app:true}),{full_app:true});
+  const yaml = read('holistic-support-mandala.yml');
+  assert.match(yaml,/voice-webkit-macos:\n/);
+  assert.match(yaml,/HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1/);
+  assert.match(yaml,/Mandala and mobile support contracts/);
+  assert.match(yaml,/node --test tests\/video-chat-ai\.test\.mjs/);
 });
