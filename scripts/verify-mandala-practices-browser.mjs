@@ -158,7 +158,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // In headed iOS/WebKit the DOM value may update before React's controlled
+      // textarea onChange commits. The Generate button was already enabled by
+      // the selected vector, so waiting for !disabled could click against a
+      // stale focus signature. Assert the real React render has consumed the
+      // synthetic text before clicking; no sleep or second-click workaround.
+      await page.waitForFunction(expectedLength=>{
+        const action=document.querySelector("[data-guided-generate-meditation]");
+        const input=document.querySelector("[data-video-key-difficulty]");
+        return action?.getAttribute("data-guided-context-committed-length")===String(expectedLength) &&
+          input?.value==="I feel rushed" && action?.disabled===false;
+      },"I feel rushed".length,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
