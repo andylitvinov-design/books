@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -1225,6 +1225,74 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
     'Own-module change must retain specialist ' + owner);
 });
 
+
+test('a trusted CI-validator-only target advance reuses Core evidence only through the NEW production policy', async () => {
+  const current='c'.repeat(40);
+  const valid=filenames=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},commits:[{sha:current}],
+    files:filenames.map(filename=>({filename,status:'modified'})),
+  });
+  const policyFiles=['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-aggregate.test.mjs'];
+  assert.equal(safeTrustedPolicyAdvance(valid(policyFiles),BASE,current,['app/[locale]/about/page.tsx']),true);
+  for (const forbidden of [
+    '.github/workflows/hh-pr-core-release.yml','app/page.tsx','lib/ci/required-gate-policy.mjs',
+    'scripts/ci-source-preflight.mjs','package.json','tests/about-page.test.mjs','docs/operations/runbook.md',
+  ]) {
+    assert.equal(safeTrustedPolicyAdvance(valid([forbidden]),BASE,current,[]),false,forbidden);
+  }
+  assert.equal(safeTrustedPolicyAdvance(valid(policyFiles),BASE,current,['scripts/ci-specialist-aggregate.mjs']),false,
+    'the candidate must not itself touch the changed production policy');
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),status:'diverged'},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),files:[{filename:policyFiles[0],status:'removed'}]},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),commits:[]},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),behind_by:1},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),files:Array(100).fill({filename:policyFiles[0],status:'modified'})},BASE,current,[]),false);
+  const changedRows=[{filename:'app/[locale]/about/page.tsx',status:'modified'}];
+  let validated=false, cleanup=false, reads=0;
+  const api={target:async()=>{reads++;return current;},compare:async()=>valid(policyFiles)};
+  const result=await revalidateAfterTrustedPolicyAdvance(api,
+    {repo,number:27,head:SHA,base:BASE},{changedRows},{
+      loadPolicy:async sha=>({
+        verify:async (_api,context,sources,config)=>{
+          assert.equal(sha,current);
+          assert.equal(context.head,SHA);
+          assert.equal(sources.changedRows,changedRows);
+          assert.equal(config.trustedPolicyBaseSha,current);
+          validated=true;
+          return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+        },cleanup:()=>{cleanup=true;},
+      }),
+    });
+  assert.equal(result.policyRevalidatedAgainst,current);
+  assert.equal(validated,true);
+  assert.equal(cleanup,true);
+  assert.ok(reads>=3);
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(
+    {...api,compare:async()=>valid(['app/api/payments/route.ts'])},
+    {repo,number:27,head:SHA,base:BASE},{changedRows},{loadPolicy:async()=>{throw Error('must not load');}}),
+  /PRODUCTION_BASE_CHANGED/);
+});
+
+test('actual specialist verification still blocks CI-policy changes without trusted latest policy', async () => {
+  const current='c'.repeat(40);
+  const updated={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},commits:[{sha:current}],
+    files:[{filename:'lib/ci/specialist-aggregate.mjs',status:'modified'}]};
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
+  const api={pr:async()=>({...pr(),base:{...pr().base,sha:current}}),
+    target:async()=>current,compare:async()=>updated,runs:async()=>[run()],
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  const success=await verify(api,ctx,sources,{maxWaitMs:0,trustedPolicyBaseSha:current});
+  assert.deepEqual(success.expected,[path]);
+  await assert.rejects(()=>verify({...api,compare:async()=>({...updated,files:[
+    {filename:'.github/workflows/core.yml',status:'modified'}]})},ctx,sources,
+    {maxWaitMs:0,trustedPolicyBaseSha:current}),/PRODUCTION_BASE_CHANGED/);
+});
 
 test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
   const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
