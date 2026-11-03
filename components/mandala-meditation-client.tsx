@@ -294,6 +294,10 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
   async function handleImageFile(image?: File) {
     if (!image) return;
     const choice = ++photoChoiceEpoch.current;
+    // Invalidate the old source and exported PNG before decoding a new photo.
+    // A failed iPhone HEIC replacement must not leave the old portrait selected.
+    setImageUrl(null);
+    setPreparedPng(null);
     setPhotoPending(true);
     setImageError("");
     try {
