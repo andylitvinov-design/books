@@ -484,4 +484,4 @@
 
 /* Fourth hierarchy level: plot title must span the 4-card grid, and the logline stays legible. */
 [data-mytube-plot-choices] > .variantsTitle{grid-column:1/-1;margin:5px 0 3px}
-[data-mytube-plot-choices] button small:last-child{-webkit-line-clamp:4;line-clamp:4}
+.storyChoices[data-mytube-plot-choices] button small:last-child{-webkit-line-clamp:4;line-clamp:4}
