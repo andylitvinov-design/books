@@ -12,7 +12,7 @@ import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/pr
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
