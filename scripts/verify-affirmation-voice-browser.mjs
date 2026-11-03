@@ -94,22 +94,23 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
       phase(engine,"editor-ready");
-      // A real visitor sets duration in the visible Music panel, then moves to
-      // the visible Phrases workspace. The deprecated legacy disclosure is
-      // intentionally hidden; tests must not click an invisible summary.
-      await page.locator('[data-video-quick-control="video"]').click();
-      const advancedToggle=page.locator("[data-video-advanced-toggle]");
-      if(await advancedToggle.isVisible() && await advancedToggle.getAttribute("aria-expanded")==="false")
-        await advancedToggle.click();
-      const musicSettings=page.locator("[data-video-audio-details]");
-      await musicSettings.waitFor({state:"visible",timeout:25000});
-      // A previously opened disclosure must not be toggled closed. Exercise
-      // the actual visible 10 s control, not a hidden legacy copy.
-      if(await musicSettings.getAttribute("open")===null)
-        await musicSettings.locator(":scope > summary").click();
-      const lengthButton=musicSettings.locator('[data-video-audio-length="10"]');
+      // A real visitor sets duration using Montage → Music, then moves to
+      // Phrases. The retired Video quick-audio disclosure is intentionally
+      // hidden by the canonical six-workspace layout: do not bypass its CSS.
+      await page.locator('[data-video-quick-control="editor"]').click();
+      const montageSettings=page.locator('[data-video-montage-settings]');
+      await montageSettings.waitFor({state:"visible",timeout:25000});
+      if(await montageSettings.getAttribute("open")===null)
+        await montageSettings.locator(":scope > summary").click();
+      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
+      await musicTab.waitFor({state:"visible",timeout:25000});
+      await musicTab.click();
+      await expect(musicTab).toHaveAttribute("aria-pressed","true");
+      const lengthButton=montageSettings.locator(
+        '[data-video-music-editor] [data-video-audio-length="10"]');
       await lengthButton.waitFor({state:"visible",timeout:25000});
       await lengthButton.click();
+      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
