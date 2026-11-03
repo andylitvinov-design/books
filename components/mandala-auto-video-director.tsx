@@ -98,19 +98,27 @@ const copy={
 } as const;
 const videoGoalCategories=[
  {id:"strength",theme:"energy",poster:"clear-morning",Icon:Zap,
-   label:{ru:"Поддержка силы",en:"Strength & energy",es:"Fuerza y energía"}},
+   label:{ru:"Сила",en:"Strength",es:"Fuerza"},
+   fullLabel:{ru:"Поддержка силы",en:"Strength & energy",es:"Fuerza y energía"}},
  {id:"calm",theme:"health",poster:"gentle-falls",Icon:Leaf,
-   label:{ru:"Антистресс и расслабление",en:"Stress relief & calm",es:"Calma y descanso"}},
+   label:{ru:"Антистресс",en:"Calm",es:"Calma"},
+   fullLabel:{ru:"Антистресс и расслабление",en:"Stress relief & calm",es:"Calma y descanso"}},
  {id:"love",theme:"relationships",poster:"partners",Icon:Heart,
-   label:{ru:"Гармония и любовь",en:"Harmony & love",es:"Armonía y amor"}},
+   label:{ru:"Любовь",en:"Love",es:"Amor"},
+   fullLabel:{ru:"Гармония и любовь",en:"Harmony & love",es:"Armonía y amor"}},
  {id:"possibilities",theme:"money",poster:"wealth-sunrise",Icon:Coins,
-   label:{ru:"Деньги и возможности",en:"Money & opportunities",es:"Dinero y oportunidades"}}
+   label:{ru:"Деньги",en:"Money",es:"Dinero"},
+   fullLabel:{ru:"Деньги и возможности",en:"Money & opportunities",es:"Dinero y oportunidades"}},
+ {id:"growth",theme:"goals",poster:"clear-morning",Icon:Sparkles,
+   label:{ru:"Развитие",en:"Growth",es:"Crecer"},
+   fullLabel:{ru:"Развитие и новые возможности",en:"Personal growth",es:"Desarrollo personal"}
 ] as const;
 const popularTopicOrder={
  strength:["confidence","connection","fresh-start","stability","calm","vitality"],
  calm:["calm","vitality","confidence","fresh-start","connection","stability"],
  love:["connection","fresh-start","confidence","calm","stability","vitality"],
- possibilities:["stability","confidence","vitality","fresh-start","connection","calm"]
+ possibilities:["stability","confidence","vitality","fresh-start","connection","calm"],
+ growth:["fresh-start","confidence","vitality","stability","connection","calm"]
 } as const;
 const popularTopicCopy={
  ru:{confidence:"Обрести уверенность",connection:"Больше близости",
@@ -144,8 +152,9 @@ export function MandalaAutoVideoDirector({
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
  const [selectedGoalIds,setSelectedGoalIds]=useState<string[]>([]);
- const [subcategoriesOpen,setSubcategoriesOpen]=useState(false);
- const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>("strength");
+ const [subcategoriesOpen,setSubcategoriesOpen]=useState(true);
+ const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>(
+   ()=>videoGoalCategories.find(item=>item.theme===theme)?.id ?? "strength");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
  const [refineOpen,setRefineOpen]=useState(false);
@@ -243,11 +252,13 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes}));
  };
- const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
+ const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number],variant:"subcategory"|"popular"="subcategory")=>{
    const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
      item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
      item.id==="calm"?Moon:Star;
-   return <button key={item.id} type="button" data-auto-video-goal={item.id}
+   return <button key={item.id} type="button"
+       data-auto-video-goal={variant==="subcategory"?item.id:undefined}
+       data-auto-video-popular-topic={variant==="popular"?item.id:undefined}
        aria-pressed={selectedGoalIds.includes(item.id)}
        disabled={disabled||(!selectedGoalIds.includes(item.id)&&selectedGoalIds.length>=2)}
        onClick={()=>chooseReadyGoal(item.id)}>
@@ -261,7 +272,8 @@ export function MandalaAutoVideoDirector({
      locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
      {videoGoalCategories.map(item=><button type="button" key={item.id}
        data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
-       aria-pressed={selectedCategoryId===item.id} disabled={disabled}
+       aria-label={item.fullLabel[locale]}
+              aria-pressed={selectedCategoryId===item.id} disabled={disabled}
        onClick={()=>chooseCategory(item.theme,item.id)}>
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
        <strong>{item.label[locale]}</strong>
@@ -311,6 +323,18 @@ export function MandalaAutoVideoDirector({
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
+   <div className={css.popularRecommendations} data-auto-video-popular-topics>
+     <p className={css.popularHeading}>{locale==="ru"?"Популярные темы — выберите или напишите свою":
+       locale==="es"?"Temas populares: elige o escribe el tuyo":
+       "Popular themes — choose one or write your own"}</p>
+     <div className={css.popularTopics} role="group" aria-label={
+       locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular themes"}>
+       {popularTopicOrder.strength.map(id=>{
+         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
+         return item?renderTopic(item,"popular"):null;
+       })}
+     </div>
+   </div>
    <label className={css.topicInput}>
      <span className={css.srOnly}>{t.input}</span>
      <input type="text" data-auto-video-input value={goal}
