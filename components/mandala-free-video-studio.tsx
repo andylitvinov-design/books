@@ -2831,8 +2831,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         return;
       }
       const previousAudio=previousHypnoAudioRef.current??{audio:attachedAudio,rights:audioRights};
+      const includesNarration=Boolean(next.whisper||(attachedAudio?.kind==="file"&&attachedAudio.narration));
+      const speechSeconds=includesNarration&&hypnoSpeechSource
+        ?wavDurationFromHeader(await hypnoSpeechSource.slice(0,256).arrayBuffer())||0:0;
+      if(includesNarration&&speechSeconds>duration-0.35){
+        setNotice(locale==="ru"?"Озвучка длиннее ролика. Увеличьте длительность или создайте голос заново.":"The voice track is longer than this video. Increase its duration or regenerate the narration.");
+        return;
+      }
       const file=await createHypnoAudioEffectFile({
-        speechFile:(next.whisper||(attachedAudio?.kind==="file"&&attachedAudio.narration))?hypnoSpeechSource:null,
+        speechFile:includesNarration?hypnoSpeechSource:null,
         durationSeconds:duration,
         whisperEnabled:next.whisper,
         binauralEnabled:next.binaural,
