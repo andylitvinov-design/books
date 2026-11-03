@@ -3103,7 +3103,8 @@
     order:1; margin:0; grid-template-columns:repeat(6,minmax(0,1fr));
   }
   .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor] {
-    display:contents!important;
+    display:grid!important; order:4; width:100%; max-width:100%;
+    min-width:0; margin:0; padding:8px;
   }
   .studio[data-active-workspace="editor"] .quickBuilder [data-video-editor-scenario] {
     order:2; width:100%; max-width:100%; min-width:0; box-sizing:border-box;

@@ -236,7 +236,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
  const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
- const editor=studio.slice(studio.indexOf('data-video-basic-editor'),studio.indexOf('data-video-quick-personal'));
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
  assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
  assert.match(editor,/data-video-montage-script-update/);

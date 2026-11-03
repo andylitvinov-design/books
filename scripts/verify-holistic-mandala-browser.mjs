@@ -2121,6 +2121,10 @@ const runEngine = async ([engine, browserType]) => {
           if(id==="video"){
             await expect(page.locator("[data-video-workspace-heading]")).toBeHidden();
             await expect(page.locator('[data-video-quick-builder] [data-video-quick-section="1"]')).toBeVisible();
+          }else if(id==="editor"&&width<=759){
+            await expect(page.locator("[data-video-workspace-heading]")).toBeHidden();
+            await expect(page.locator("[data-video-editor-scenario]")).toBeVisible();
+            await expect(page.locator("[data-video-basic-editor]")).toBeVisible();
           }else{
             await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
             await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
@@ -2144,14 +2148,16 @@ const runEngine = async ([engine, browserType]) => {
           }
           assert.equal(await page.evaluate(()=>window.location.hash),originalHash,
             "workspace taps must not navigate to a legacy hash");
-          const geometry=await page.evaluate(()=>{
+          const geometry=await page.evaluate(activeId=>{
             const nav=document.querySelector("[data-video-quick-controls]")?.getBoundingClientRect();
-            const pane=(document.querySelector("[data-video-workspace-heading]")?.getClientRects().length
-              ?document.querySelector("[data-video-workspace-heading]")
-              :document.querySelector('[data-video-quick-section="1"]'))?.getBoundingClientRect();
+            const pane=(activeId==="editor"&&window.innerWidth<=759
+              ?document.querySelector("[data-video-editor-scenario]")
+              :document.querySelector("[data-video-workspace-heading]")?.getClientRects().length
+                ?document.querySelector("[data-video-workspace-heading]")
+                :document.querySelector('[data-video-quick-section="1"]'))?.getBoundingClientRect();
             return {navBottom:nav?.bottom,paneTop:pane?.top,width:document.documentElement.scrollWidth,
               viewport:document.documentElement.clientWidth};
-          });
+          },id);
           assert.ok(geometry.paneTop>geometry.navBottom &&
             geometry.paneTop-geometry.navBottom<130,
             engine+" "+locale+" "+width+" workspace immediately below video "+id+" "+JSON.stringify(geometry));

@@ -5097,10 +5097,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
 
-        {/* Fifth Montage: basic controls reuse existing video player, upload, voices and audio. */}
-        <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
-          data-workspace-section="editor" data-video-basic-editor aria-labelledby="video-basic-heading">
-          <div className={videoStyles.montageScenario} data-video-editor-scenario>
+        {/* Fifth Montage: one scenario bar and original source-backed editor. */}
+        <div className={videoStyles.montageScenario}
+          data-workspace-section="editor" data-video-editor-scenario>
             <label htmlFor="video-montage-scenario"><Film size={18} aria-hidden="true"/>
               {locale==="ru"?"Сценарий":locale==="es"?"Guion":"Script"}</label>
             <p>{locale==="ru"?"Сюжет выбран во вкладке «Стиль видео». Отредактируйте строки для надписей в видео.":
@@ -5139,6 +5138,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}><ArrowRight size={17} aria-hidden="true"/>
               {locale==="ru"?"Обновить сценарий":locale==="es"?"Actualizar guion":"Update script"}</button>
           </div>
+        <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
+          data-workspace-section="editor" data-video-basic-editor
+          aria-label={locale==="ru"?"Монтажные дорожки":locale==="es"?"Pistas de montaje":"Editing tracks"}>
           <MandalaMultiTrackTimeline locale={locale} seconds={duration}
             disabled={recording||preparing}
             shots={usingFreeFilmCompilation&&cinematicPlan
