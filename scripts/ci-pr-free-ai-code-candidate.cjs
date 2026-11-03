@@ -111,8 +111,8 @@ function main(){
   const scope=scopeFromEnv();sha=scope.sha;
   const sources=readSources(scope);
   // The original failure must reproduce independently. Do not patch green code.
-  const ts=command('./node_modules/.bin/tsc',['--noEmit','--incremental','false','--pretty','false'],{timeout:150000});
-  const tests=command(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...scope.files],{timeout:120000});
+  const ts=command('./node_modules/.bin/tsc',['--noEmit','--incremental','false','--pretty','false'],{timeout:90000});
+  const tests=command(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...scope.files],{timeout:90000});
   if(ts.ok&&(tests.ok||/NO_VERIFIED_BOUNDED_RELATED_TESTS/.test(tests.out+tests.err)))
    throw Error('FREE_AI_FAILURE_NOT_REPRODUCED');
   const diagnostics=sanitizeDiagnostic((ts.ok?'TypeScript passed.':'TypeScript failed:\n'+ts.out+'\n'+ts.err)+
@@ -122,13 +122,13 @@ function main(){
    createTextAgent(tmp);
    const env=minimalEnv(tmp),bin=process.env.HH_OPENCODE_BIN;
    if(!bin||!path.isAbsolute(bin)||!fs.existsSync(bin))throw Error('FREE_AI_CLI_NOT_INSTALLED');
-   const models=command(bin,['models','--standalone'],{cwd:tmp,env,timeout:45000});
+   const models=command(bin,['models','--standalone'],{cwd:tmp,env,timeout:30000});
    if(!models.ok||!models.out.split(/\r?\n/).some(l=>l.trim()===MODEL))
     throw Error('FREE_AI_MODEL_UNAVAILABLE');
    // Trust the effective ACL reported by OpenCode, not just our agent file.
    let acl=false;
    for(let attempt=0;attempt<3;attempt++){
-    const debug=command(bin,['debug','agents'],{cwd:tmp,env,timeout:30000});
+    const debug=command(bin,['debug','agents'],{cwd:tmp,env,timeout:15000});
     if(debug.ok&&hasDeniedEffectiveTools(debug.out)){acl=true;break;}
    }
    if(!acl)throw Error('FREE_AI_EFFECTIVE_ACL_NOT_DENIED');
@@ -139,7 +139,7 @@ function main(){
     'Approved original sources:\n'+JSON.stringify(sources.map(({path,content})=>({path,content})))].join('\n\n');
    if(prompt.length>85000)throw Error('FREE_AI_PROMPT_LIMIT');
    const attempt=command(bin,['run','--standalone','--model',MODEL,'--agent','hh-free-repair-text',
-    '--format','json',prompt],{cwd:tmp,env,timeout:150000});
+    '--format','json',prompt],{cwd:tmp,env,timeout:120000});
    if(!attempt.ok)throw Error('FREE_AI_NO_FREE_RESPONSE');
    record('proposed','FREE_AI_PATCH_PROPOSED',buildCandidate(extractReply(attempt.out),scope,sources));
   }finally{fs.rmSync(tmp,{recursive:true,force:true});}
