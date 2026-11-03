@@ -439,7 +439,17 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     window.setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
   const exploredSteps=currentProgramme?5:ritualReady?4:personalOpened?3:currentMeditation?2:focusReady?1:0;
-  return <section className={css.panel} data-video-guided-course aria-labelledby="guided-course-heading">
+  return <section className={css.panel} data-video-guided-course
+    data-guided-focus-ready={focusReady?"true":"false"}
+    data-guided-context-ready={keyDifficulty.trim()?"true":"false"}
+    data-guided-meditation-ready={currentMeditation?"true":"false"}
+    data-guided-programme-ready={currentProgramme?"true":"false"}
+    data-guided-focus-mode={focusMode}
+    data-guided-profile-status={profileStatus}
+    data-guided-selected={selectedState?"true":"false"}
+    data-guided-plan-open={planOpen?"true":"false"}
+    data-guided-programme-signature-match={programmeSignature===journeySignature?"true":"false"}
+    aria-labelledby="guided-course-heading">
     <div className={css.header}>
       <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
       <div className={css.heading}>

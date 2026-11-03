@@ -49,7 +49,7 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
   if(!audio.files.length||audio.files.length>3)throw new Error("unsupported_audio_count");
   if(!Number.isFinite(audio.volume)||audio.volume<0||audio.volume>100)
     throw new Error("invalid_audio_volume");
-  const offline=new OfflineAudioContext(1,Math.ceil(SAMPLE_RATE*seconds),SAMPLE_RATE);
+  const offline=new OfflineAudioContext(2,Math.ceil(SAMPLE_RATE*seconds),SAMPLE_RATE);
   const gainValue=(audio.volume/100)/Math.sqrt(audio.files.length);
   for(const entry of audio.files){
     let file:File|Blob;
@@ -115,7 +115,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   if(!h264)throw new Error("webcodecs_h264_unsupported");
   if(audio){
     const aac=await canEncodeAudio("aac",{
-      sampleRate:SAMPLE_RATE,numberOfChannels:1,
+      sampleRate:SAMPLE_RATE,numberOfChannels:2,
       quality:new Quality({bitrate:128000}),
     });
     if(!aac)throw new Error("webcodecs_aac_unsupported");

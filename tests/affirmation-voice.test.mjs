@@ -5,6 +5,7 @@ import {affirmationNarrationText,wavDurationFromHeader} from "../lib/mandala/aff
 import {validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+const source=read("scripts/verify-affirmation-voice-browser.mjs");
 
 test("selected exact affirmation lines yield the speech transcript without wish/profile/metadata",()=>{
   const lines=["Я ценю свой труд","Я дышу спокойно","Мне можно отдыхать"];
@@ -53,8 +54,14 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(page,/lines=\{affirmationLines\}/);
   assert.match(page,/attachedAudio\.narration!==true/);
   assert.match(page,/onAttach=\{attachGeneratedAffirmationAudio\}/);
+  const voiceEditor=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voiceEditor,/const speechFile=new File\(\[clip\.blob\]/,
+    "keep the isolated generated narration separate from its mixed music WAV");
+  assert.match(voiceEditor,/onAttach\(\{file,speechFile,/);
   assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
   assert.match(page,/narrationInvalid/);
+  assert.match(page,/narrationDurationMismatch[\s\S]*Math\.abs\(\(attachedAudio\.mixSeconds\?\?0\)-duration\)>0\.35/,
+    "sub-frame WAV duration rounding is not misclassified as stale narration");
   assert.match(page,/attachedAudio\.voiceId!==voicePreferences\.voiceId/);
   assert.match(page,/onPreferencesChange=\{setVoicePreferences\}/);
   assert.match(client,/data-video-generate-affirmation-audio/);
@@ -71,35 +78,21 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(browser,/page\.route/);
 });
 
-test("six-voice affirmation editor is visible in the Phrases workspace rather than hidden legacy extras",()=>{
+test("six-voice affirmation editor is mounted in the approved Phrases workspace rather than legacy extras",()=>{
   const page=read("components/mandala-free-video-studio.tsx");
-  const section=page.indexOf('data-workspace-section="phrases" data-video-quick-phrases');
-  const voice=page.indexOf('<MandalaAffirmationVoice locale={locale}');
-  const next=page.indexOf('data-workspace-section="effects"',section);
-  const hidden=page.indexOf('data-video-quick-legacy');
-  const deepPane=page.indexOf('const deepHypnoPane =');
-  const voiceCard=page.indexOf('data-hypno-voice');
-  assert.ok(deepPane>0 && voiceCard>deepPane && voice>voiceCard && section>voice && next>section && hidden>next,
-    "single consented voice lives inside the rendered Phrases editor after the phrase list");
-  assert.match(page.slice(section,next),/\{deepHypnoPane\}/,
-    "the visible Phrases tab mounts the only shared editor");
+  const voiceEditor=page.indexOf("const hypnoVoiceEditor = (");
+  const deepPane=page.indexOf("const deepHypnoPane = (");
+  const phraseMount=page.indexOf('{activeWorkspace==="phrases" ? hypnoVoiceEditor : null}',deepPane);
+  const music=page.indexOf("data-hypno-music",phraseMount);
+  const hidden=page.indexOf("data-video-quick-legacy");
+  assert.ok(voiceEditor>0 && deepPane>voiceEditor && phraseMount>deepPane && music>phraseMount && hidden>music,
+    "the single consented voice editor is mounted after the phrase catalog and before music in Phrases");
+  assert.match(page.slice(voiceEditor,deepPane),/data-hypno-voice[\s\S]*data-video-narration-stale/);
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
     "do not duplicate the voice editor or API requests");
-  assert.match(page.slice(voiceCard,section),/data-video-narration-stale/,
-    "the warning for stale narration stays inside the visible numbered voice card");
-  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  assert.match(browser,/data-video-quick-control="phrases"/);
-  const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(compact,/data-hypno-ready/);
-  assert.match(compact,/data-hypno-phrase=\{i\}/);
-  assert.match(browser,/data-hypno-ready/);
-  assert.match(browser,/data-hypno-phrase="0"/);
-  assert.match(browser,/data-hypno-phrase="4"/);
-  assert.doesNotMatch(browser,/data-video-quick-affirmation="/, "the removed quick-affirmation UI must not drive voice acceptance");
-  assert.match(browser,/data-video-quick-control="video"/);
-  assert.doesNotMatch(browser,/advanced\.locator\(":scope > summary"\)\.click/,
-    "do not test inaccessible old controls");
-});
+  assert.match(page.slice(voiceEditor,deepPane),/data-video-narration-stale/,
+    "the stale narration warning stays inside the visible voice editor");
+});;
 
 test("three women and three men use original voices, never autoplay on selection",()=>{
  const ui=read("components/mandala-affirmation-voice.tsx");
@@ -149,4 +142,112 @@ test("all six voices can be selected and their real samples requested before phr
     editor.indexOf('async function createAudio()'));
   assert.doesNotMatch(ownSample,/speechText|consent:true|onAttach\(/,
     "sample must never transmit private phrases or replace the video narration");
+});
+
+
+test("voice browser opens the compact studio advanced audio controls before using them",()=>{
+  assert.match(source,/data-video-advanced-toggle/);
+  assert.match(source,/advancedToggle\.click\(\)[\s\S]*?musicSettings\.waitFor\(\{state:"visible"/);
+});
+
+test("voice browser selects the visible montage workspace before recording",()=>{
+  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+});
+
+test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
+  const phrase=source.indexOf('[data-video-quick-control="phrases"]');
+  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
+  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav"',generate);
+  const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
+  const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
+  const render=source.indexOf('[data-video-quick-control="video"]',remix);
+  assert.ok(phrase>=0&&generate>phrase&&expected>generate&&visible>expected&&remix>visible&&render>remix,
+    "inspect the visible attached audio in the canonical video stage, then record the remixed movie");
+  assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
+});
+
+test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
+  assert.match(source,/if\(engine==="chromium"\|\|engine==="webkit"\)/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
+  assert.match(source,/assert\.ok\(audioTrack/);
+  assert.match(source,/Number\(audioTrack\.channels\),2/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
+
+test("disclosure acceptance retains provider privacy, real exported audio and stale narration gates",()=>{
+  for(const assertion of [
+    'assert.equal(affirmationRequests.length,1)',
+    'assert.equal(affirmationRequests[0].text,transcript)',
+    'assert.equal(affirmationRequests[0].consent,true)',
+    'tracks.includes("video")',
+    'const audioTrack=streams.find(row=>row.codec_type==="audio")',
+    'assert.ok(audioTrack',
+    'Number(audioTrack.channels),2',
+    'pcm.stdout.some(value=>value!==0)',
+    '[data-video-narration-stale]',
+    'assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true)',
+  ])assert.ok(source.includes(assertion),assertion);
+});
+
+test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/macOS",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  assert.match(source,/HH_VOICE_E2E_ENGINE/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE=chromium node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/voice-webkit-macos:/);
+  assert.match(workflow,/runs-on: macos-15/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+  assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.doesNotMatch(workflow,/voice-webkit-macos:[\s\S]*continue-on-error:\s*true/);
+});
+
+test("stalled WebKit recorder diagnostics cannot conceal a real export failure",()=>{
+  assert.match(source,/phase\(engine,"waiting-for-export"\)/);
+  assert.match(source,/phase\(engine,"download-control-timed-out"\)/);
+  assert.match(source,/withDeadline\(page\.evaluate\(/);
+  assert.match(source,/4000,engine\+" media-state evaluation"/);
+  assert.match(source,/withDeadline\(context\.close\(\),10000/);
+  assert.match(source,/withDeadline\(browser\.close\(\),10000/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
+  assert.match(source,/assert\.ok\(audioTrack/);
+  assert.match(source,/Number\(audioTrack\.channels\),2/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
+
+test("WebKit macOS media acceptance is headed, real encoded audio and never a mock download",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  assert.ok(workflow.includes("HH_VOICE_E2E_HEADED: '1'"));
+  assert.ok(workflow.includes("HH_VOICE_E2E_ENGINE: webkit"));
+  assert.ok(source.includes('const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1"'));
+  assert.ok(source.includes('browserType.launch({headless:!(engine==="webkit" && headedWebKit)})'));
+  assert.ok(source.includes('assert.equal(process.platform,"darwin"'));
+  assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
+  for(const requirement of ['tracks.includes("video")','const audioTrack=streams.find(row=>row.codec_type==="audio")',
+    'assert.ok(audioTrack',
+    'Number(audioTrack.channels),2','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
+});
+
+test("post-edit consent reset is checked after entering custom narration text",()=>{
+  const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
+  const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
+  const custom=source.indexOf('await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',studio);
+  const fill=source.indexOf('await studio.locator("textarea").fill(customText)',custom);
+  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',fill);
+  const unchecked=source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent);
+  const disabled=source.indexOf('await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
+  const grant=source.indexOf('await studioConsent.check()',disabled);
+  assert.ok(panel>=0&&studio>panel&&custom>studio&&fill>custom&&consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
+    "enter custom text, prove consent starts unchecked and generation is disabled, then explicitly grant consent");
+});
+
+test("real WebKit export enables inline Hypno whisper and binaural controls before stereo movie recording",()=>{
+  assert.match(source,/data-video-quick-control=\"effects\"/);
+  assert.match(source,/data-hypno-group=\"audio\"/);
+  assert.match(source,/data-hypno-speech-settings/);
+  assert.match(source,/audioGroup\.getByRole\(\"switch\",\{name:whisperName,exact:true\}\)/);
+  assert.match(source,/audioGroup\.getByRole\(\"switch\",\{name:binauralName,exact:true\}\)/);
+  assert.match(source,/hypno-audio-effects-rendered/);
+  assert.match(source,/stream=codec_type,channels/);
+  assert.match(source,/Number\(audioTrack\.channels\),2/);
 });

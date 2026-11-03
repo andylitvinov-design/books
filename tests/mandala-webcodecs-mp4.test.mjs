@@ -39,6 +39,13 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(studio,/HH_WEBKIT_MP4_EXPORT_FAILURE:/);
   assert.match(helper,/await output\.cancel\(\)/);
 });
+test("WebKit mixes local audio to stereo before AAC encoding",()=>{
+  assert.match(helper,/new OfflineAudioContext\(2,Math\.ceil\(SAMPLE_RATE\*seconds\),SAMPLE_RATE\)/,
+    "mixing into stereo prevents Safari from silently collapsing the encoded AAC track to mono");
+  assert.match(helper,/sampleRate:SAMPLE_RATE,numberOfChannels:2,/,
+    "AAC capability preflight must request the same two-channel stream that is encoded");
+  assert.match(helper,/new AudioBufferSource\(\{codec:"aac"/);
+});
 test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(studio,/loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
@@ -51,7 +58,9 @@ test("Narration does not loop and actual user gain is mastered into AAC",()=>{
 test("Real browser validation still requires downloaded video and non-silent audio",()=>{
   const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   for(const required of [
-    'tracks.includes("video")','tracks.includes("audio")',
+    'tracks.includes("video")','const audioTrack=streams.find(row=>row.codec_type==="audio")',
+    'assert.ok(audioTrack',
+    'Number(audioTrack.channels),2',
     "pcm.stdout.some(value=>value!==0)","await output.waitFor(",
     "assert.equal(affirmationRequests.length,1)",
   ])assert.ok(script.includes(required),required);

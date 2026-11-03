@@ -59,7 +59,7 @@ test("single approved phrases workspace with voice/music before the final Create
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
@@ -67,7 +67,10 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),studio.indexOf('data-workspace-section="effects"'));
  assert.match(section,/\{deepHypnoPane\}/,"single visible workspace mounts canonical editor");
  const definition=studio.slice(studio.indexOf("const deepHypnoPane = ("),studio.indexOf("const deepVideoPane",studio.indexOf("const deepHypnoPane = (")));
- assert.match(definition,/data-hypno-voice[\s\S]*data-hypno-music/,"voice and music are inside shared editor in the right order");
+ const voiceEditor=studio.slice(studio.indexOf("const hypnoVoiceEditor = ("),studio.indexOf("const deepHypnoPane = ("));
+ assert.match(voiceEditor,/data-hypno-voice/,"voice editor exposes the real voice control");
+ assert.match(definition,/\{activeWorkspace==="phrases" \? hypnoVoiceEditor : null\}/,"approved phrase workspace mounts the voice editor");
+ assert.ok(definition.indexOf("hypnoVoiceEditor")<definition.indexOf("data-hypno-music"),"voice precedes soundtrack in the shared editor");
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
@@ -99,7 +102,7 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
 test("TTS never speaks an outdated script when phrases are staged",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.ok(studio.includes("disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}"));
+  assert.match(studio,/disabled=\{recording\|\|preparing\}\s+approvalPending=\{phrasePending\}\s+initialPreferences=\{voicePreferences\}\s+onAttach=\{attachGeneratedAffirmationAudio\}/);
   // An unapproved draft blocks narration generation, not public voice comparisons.
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}"));
