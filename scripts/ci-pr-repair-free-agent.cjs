@@ -156,7 +156,10 @@ function isolatedEnvironment(dir){
    XDG_CACHE_HOME:path.join(dir,'cache'),TMPDIR:dir,
    PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C.UTF-8',CI:'true',
    OPENCODE_DISABLE_CLAUDE_CODE:'1',OPENCODE_ENABLE_EXA:'0',
-   OPENCODE_ENABLE_PARALLEL:'0'};
+   OPENCODE_ENABLE_PARALLEL:'0',
+   ...(typeof process.env.HH_OPENCODE_FREE_TIER_API_KEY==='string'&&
+      process.env.HH_OPENCODE_FREE_TIER_API_KEY.trim()
+      ?{OPENCODE_API_KEY:process.env.HH_OPENCODE_FREE_TIER_API_KEY.trim()}: {})};
 }
 
 function zeroPrice(value) {
