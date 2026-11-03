@@ -8,6 +8,7 @@
 .consent{display:flex;align-items:center;gap:8px;min-height:52px;padding:8px 6px;border-radius:9px;font-size:12px;line-height:1.45;color:#355f4c;cursor:pointer;
   scroll-margin-block-start:80px;scroll-margin-block-end:calc(128px + env(safe-area-inset-bottom))}
 .consent input{width:20px;height:20px;flex:none;accent-color:#087e5e;margin:0;scroll-margin-block-end:calc(128px + env(safe-area-inset-bottom))}
+.consent label{display:flex;align-items:center;flex:1;min-width:0;min-height:36px;cursor:pointer}
 .form small{font-size:11px;line-height:1.5;color:#627964}
 .form>button:disabled{opacity:.55;cursor:not-allowed}
 .success{margin:0;padding:12px;border-radius:12px;background:#e8f5eb;color:#17694d;font-size:13px;font-weight:750;line-height:1.5}
