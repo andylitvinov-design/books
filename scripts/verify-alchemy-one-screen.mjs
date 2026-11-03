@@ -10,8 +10,8 @@ const engine = process.env.HH_ALCHEMY_BROWSER === "webkit" ? "webkit" : "chromiu
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Alchemy QA requires an isolated loopback server");
 
-const chapters = ["featured-video", "hero", "situations", "method", "video", "reviews", "formats", "faq", "request"];
-const chapterMedia = { "featured-video":"video", hero:"photo", situations:"photo", method:"photo", video:"video", reviews:"video", formats:"photo", faq:"photo", request:"photo" };
+const chapters = ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"];
+const chapterMedia = { "featured-video":"video", hero:"photo", situations:"photo", method:"photo", report:"photo", video:"video", reviews:"video", formats:"photo", faq:"photo", request:"photo" };
 const cases = [
   ...["en", "ru", "es"].flatMap(locale => [320, 375, 390, 430].map(width => ({ locale, width, height: 844 }))),
   { locale: "en", width: 320, height: 568 },
@@ -92,7 +92,7 @@ try {
           issues.push("short Spanish request controls must remain at least 44px tall");
       }
       if (data.documentWidth > width + 1) issues.push("horizontal document overflow " + data.documentWidth);
-      if (data.panels.length !== chapters.length) issues.push("expected nine chapters, got " + data.panels.length);
+      if (data.panels.length !== chapters.length) issues.push("expected ten source-backed chapters, got " + data.panels.length);
       for (let i=0;i<data.panels.length;i++) {
         const p=data.panels[i];
         if (p.name !== chapters[i]) issues.push("incorrect chapter order "+i+":"+p.name);
@@ -100,20 +100,23 @@ try {
         if (p.name !== "reviews" && p.height > p.maxHeight) issues.push(p.name+" "+p.height+"px exceeds "+p.maxHeight+"px");
         if (p.escapingChildren) issues.push(p.name+" has "+p.escapingChildren+" escaping controls/content");
       }
-      // The one-screen rule applies to service chapters; the three locale-approved
-      // testimonial videos stack vertically without clipping or horizontal cards.
+      // Preserve the twelve authentic RU/EN original-audio reviews in their
+      // approved order. Only a genuine, decoded video can count as media;
+      // all reviews remain in a vertical, scrollable source-backed archive.
       const cards = data.reviews.cards;
-      if (cards.length !== 3) issues.push("expected three published testimonial videos for "+locale+", got " + cards.length);
-      if (new Set(cards.map(c => c.id)).size !== 3) issues.push("duplicate testimonial video IDs");
-      if (cards.some(c => c.audio !== (locale === "es" ? "en" : locale))) issues.push("missing truthful original-audio tags");
+      if (cards.length !== 12) issues.push("expected twelve original testimonial videos for "+locale+", got " + cards.length);
+      if (new Set(cards.map(c => c.id)).size !== cards.length) issues.push("duplicate testimonial video IDs");
+      const originalAudio=[...Array(6).fill(locale==="ru"?"ru":"en"),...Array(6).fill(locale==="ru"?"en":"ru")];
+      if (cards.some((c,i) => c.audio!==originalAudio[i])) issues.push("missing truthful RU/EN original-audio tags");
       if (cards.some((c, i) => i > 0 && c.top < cards[i - 1].bottom - 1)) issues.push("testimonials overlap instead of stacking");
       if (cards.some(c => c.width - c.videoWidth > 12 || c.videoWidth < width - 65))
         issues.push("testimonial videos must occupy nearly the full mobile width");
       if (data.reviews.topGap > 55 || data.reviews.bottomGap > 55)
         issues.push("testimonial section has empty space (top " + data.reviews.topGap + ", bottom " + data.reviews.bottomGap + ")");
-      if (data.panels.some(p => p.name === "report")) issues.push("obsolete report panel must not duplicate the nine-chapter landing");
-      if (await root.locator('[data-alchemy-panel="method"] .methodSteps > .methodStep').count() !== 4)
-        issues.push("all four method stages must be visible without expanding details");
+      if (await root.locator('[data-alchemy-panel="report"] [data-alchemy-report-example]').count() !== 1)
+        issues.push("the authentic illustrated report example must remain visible");
+      if (await root.locator('[data-alchemy-panel="method"] [data-alchemy-method-sequence] > li').count() !== 4)
+        issues.push("all four published method stages must be visible without expanding details");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("fictional sample report link missing");
       
@@ -150,7 +153,7 @@ try {
         failures.push(key+": "+issues.join("; "));
         console.error("ALCHEMY_GEOMETRY_FAIL "+key+" "+issues.join("; "));
       } else {
-        console.log("PASS Alchemy "+engine+" "+key+" nine chapters and three locale-specific full-width reviews pass with no overflowing controls");
+        console.log("PASS Alchemy "+engine+" "+key+" ten chapters and twelve original-audio reviews pass with no overflowing controls");
       }
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
       assert.equal(sampleResponse?.status(),200,key+": sample report");
