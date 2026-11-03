@@ -25,7 +25,7 @@ test('BASE condition false for this exact PR makes only that skipped job advisor
     {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
     {name:'axis-unit-types-build',status:'completed',conclusion:'success'},
   ];
-  assert.equal(inspectJobs(jobs,'.github/workflows/hh-profile-axis-matching.yml',allowed),2);
+  assert.equal(inspectJobs(jobs,'.github/workflows/hh-profile-axis-matching.yml',allowed),1);
   assert.throws(()=>inspectJobs(jobs,'.github/workflows/hh-profile-axis-matching.yml',[]),
     /UNSUCCESSFUL_SPECIALIST_JOB/);
 });
