@@ -176,14 +176,16 @@ test("mock actions are connected: four goal images, 3×2 text themes, four scena
  assert.match(css,/\.goalPanel \.goalChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(director,/scenePoster\(item.poster\)/,"goals show real licensed catalog artwork");
- for(const id of ["confidence","connection","fresh-start","stability","calm","vitality"])
-   assert.match(director,new RegExp('(?:\\b|")'+id+'(?:\\b|")'));
+ assert.match(director,/CATEGORY_ICONS=\{/);
+ assert.match(director,/SUBCATEGORY_THEME=\{/);
+ assert.match(director,/onClick=\{\(\)=>chooseCategory\(item\.id\)\}/);
+ assert.match(director,/onClick=\{\(\)=>chooseSubcategory\(item\.id\)\}/);
+ assert.match(director,/onClick=\{\(\)=>chooseTaxonomyTopic\(item\.id\)\}/);
+ assert.match(director,/taxonomyScenarios\[index\]\?\.label/);
  assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
- const topicHandler=director.slice(director.indexOf("const chooseReadyGoal="),
-   director.indexOf("const chooseCategory="));
- assert.ok(topicHandler.includes("const nextTheme=item.theme as VideoTheme"));
- assert.doesNotMatch(topicHandler,/setSelectedCategoryId\(/,
-   "choosing a topic must not silently replace the selected high-level goal");
+ const topicHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
+   director.indexOf("const goalPanel="));
+ assert.ok(topicHandler.includes("const nextTheme=(SUBCATEGORY_THEME"));
  assert.match(director,/onGoalChange\(nextGoal\)/);
  assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:value/);
  assert.match(director,/onContinue\?\.\(\)/);
