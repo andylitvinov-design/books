@@ -287,12 +287,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         "unapproved phrase cannot invalidate existing sound");
       await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
-      // The approved Video Studio puts narration in fifth Montage → Voice.
-      // Do not click the removed global voice disclosure in the first workspace.
+      // The canonical affirmation voice editor is mounted inline below the
+      // approved phrase list. Check the consent reset there, not the separate
+      // Montage voice/soundtrack workspace which intentionally has no such checkbox.
+      await page.locator('[data-video-quick-control="phrases"]').click();
+      const phraseConsent=page.locator("[data-video-affirmation-voice-consent]");
+      await phraseConsent.waitFor({state:"visible",timeout:10000});
+      // Consent for the previous transcript never carries over to new lines.
+      await expect(phraseConsent).not.toBeChecked({timeout:10000});
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
-      // Consent for the previous transcript never carries over to new lines.
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
