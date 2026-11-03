@@ -27,7 +27,12 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.match(src,/const consentId=formId\+"-contact-consent"/);
   assert.match(src,/id=\{consentId\} name="contactConsent" type="checkbox"/);
   assert.match(src,/label htmlFor=\{consentId\}/);
-  assert.match(src,/onClick=\{event=>\{event\.preventDefault\(\);setConsent\(value=>!value\);\}\}/);
+  // A normal label click must delegate to the native checkbox. Combining
+  // preventDefault and manual state inversion double-toggles consent in WebKit.
+  assert.match(src,/onChange=\\{event=>setConsent\\(event.target.checked\\)\\}/);
+  assert.match(src,/<label htmlFor=\\{consentId\\}>/);
+  assert.doesNotMatch(src,/onClick=\\{event=>\\{event\\.preventDefault\\(\\);setConsent/);
+  assert.match(src,/disabled=\\{busy\\|\\|!consent\\|\\|\\(!email\\.trim\\(\\)\\&\\&!phone\\.trim\\(\\)\\)\\}/);
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
   assert.match(src,/crypto.randomUUID/);
