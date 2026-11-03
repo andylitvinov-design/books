@@ -295,7 +295,8 @@ jobs:
                   source_schema:report.schema,
                   counts:{candidates:number(report.candidates),
                     unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
-                    worker_dispatches:number(report.dispatchAccepted)},
+                    dispatch_requests_accepted:number(report.dispatchAccepted),
+                    worker_dispatches:0}, // no runner acknowledgement in dispatch turn
                   queue_states:{
                     awaiting_core:number(report.ciWakePending??0),
                     core_confirmed:number(report.ciCoreConfirmed??0),
@@ -310,7 +311,7 @@ jobs:
                 if(Object.values(snapshot.counts).some(v=>v===null)||
                    !Number.isFinite(Date.parse(snapshot.checked_at)))throw Error('BAD_MONITOR_COUNTS');
                 const body=[marker,'## Watchdog direct handoff — public snapshot',
-                  'Worker dispatch receipts, not source repair or LIVE proof.',
+                  'HTTP dispatch acknowledgements are NOT execution. Real runner starts require a signed exact-task HH_EXECUTION_RUNNER_V1 / RUNNER_STARTED receipt on the PR; this dispatch snapshot confirms none.',
                   '', '```json',JSON.stringify(snapshot,null,2),'```','',
                   'Источник: https://github.com/andylitvinov-design/books/actions/runs/'+context.runId,''].join('\n');
                 if(issue.body!==body)await github.rest.issues.update({
