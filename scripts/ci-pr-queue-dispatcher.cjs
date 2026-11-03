@@ -270,6 +270,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
+  if(task.lane==='ci'&&status==='FREE'&&
+     fresh.labels?.some(l=>l.name==='hh:ci-wake-unverified')){
+   blocked('CI_WAKE_MANUAL_HOLD_UNVERIFIED');continue;
+  }
   if(status!=='FREE'){
    if(task.lane==='ci'&&['CI_WAKE_AWAITING_CORE','CI_WAKE_OUTCOME_RECORDED'].includes(status)){
     // A historical metadata wake cannot claim a successful Core check.
