@@ -317,6 +317,38 @@ function needsFailedCoreCronBackstop(state) {
   return state === 'STALE' || state === 'UNOBSERVED';
 }
 
+// A failed Core callback concerns one PR, not the complete 100+ PR inventory.
+// Match the authenticated run to exactly one live same-repo production PR.
+// This lookup does NOT prove a code failure: the normal exact-HEAD Core/job
+// verifier below must still authorize every Repair handoff.
+async function eventOnlyPR(github,owner,repo,limited,context) {
+  const run=context?.payload?.workflow_run;
+  const full=owner+'/'+repo;
+  if(context?.eventName!=='workflow_run'||run?.name!==CORE_NAME||
+     run?.event!=='pull_request'||run?.status!=='completed'||
+     !['failure','timed_out','startup_failure'].includes(run.conclusion)||
+     run?.repository?.full_name!==full||run?.head_repository?.full_name!==full||
+     !Number.isSafeInteger(run.id)||run.id<1||
+     !/^[a-f0-9]{40}$/i.test(run.head_sha||'')||
+     typeof run.head_branch!=='string'||!run.head_branch||
+     run.head_branch.length>255)return null;
+  const {data}=await limited('failed-core-exact-branch',()=>
+    github.rest.pulls.list({owner,repo,state:'open',head:owner+':'+run.head_branch,
+      per_page:100}));
+  // A shared source branch is ambiguous. Never choose a candidate speculatively.
+  if(!Array.isArray(data)||data.length!==1)return null;
+  const pr=data[0];
+  if(pr?.state!=='open'||pr.draft||pr.base?.ref!==PROD||
+     pr.head?.ref!==run.head_branch||pr.head?.repo?.full_name!==full||
+     !/^[a-f0-9]{40}$/i.test(pr.head?.sha||''))return null;
+  // GitHub sometimes returns pull_requests: [] for genuine Core events.
+  // A nonempty association must, however, agree with the selected PR.
+  if(!Array.isArray(run.pull_requests)||
+     (run.pull_requests.length>0&&!run.pull_requests.some(link=>link?.number===pr.number)))
+    return null;
+  return [pr];
+}
+
 async function listOpen(github, owner, repo, limited) {
   const all = [];
   for (let page = 1; page <= 30; page++) {
@@ -541,7 +573,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   const limited=quota.limited;
   let all;
   try {
-    all=await listOpen(github,owner,repo,limited);
+    all=eventFastPath
+      ? await eventOnlyPR(github,owner,repo,limited,context)
+      : await listOpen(github,owner,repo,limited);
+    if(!all){
+      core.warning('HH_EVENT_FOCUSED_PR_UNVERIFIED: cron backstop retains ownership');
+      return {inventoryComplete:false,reason:'EVENT_FOCUSED_PR_UNVERIFIED',
+        eventPrNumber:null,checkedAt:new Date(now).toISOString(),dryRun};
+    }
   } catch(error) {
     // Do not fail the scheduled workflow when the GitHub API reserve is low.
     // An incomplete inventory cannot authorize CI, branch updates or merging;
@@ -613,7 +652,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       String(priority.mergeRank).padStart(2,'0')+
       '('+priority.score+': '+priority.source+')';
   }).join(' | ');
-  const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
+  const summary = {open:eventFastPath?null:all.length,
+    production:eventFastPath?null:prod.length,
+    inventoryScope:eventFastPath?'VERIFIED_SINGLE_CORE_EVENT_PR':'ALL_OPEN_PRS',
+    inventoryComplete:true,
+    eligibleToInspect:review.length,inspected:0,
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
     repairNext:availableRepair ?
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
@@ -761,7 +804,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
   summary.repairBlockedByCapacity=!repairRoom;
-  log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
+  log((eventFastPath?'FOCUSED_CORE_EVENT':'FULL_INVENTORY')+
+    ` open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let liveBatch=null,staleGateTriageInspected=0;
   if (!budget.exhausted && typeof github.graphql === 'function' && selected.length) {
     try {
@@ -1139,7 +1183,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // The dispatcher no longer subscribes to every Watchdog completion: most
   // of those runs come from successful Core callbacks and never inspect a PR.
   // Wake the trusted single-writer directly only if the durable queues need it.
-  if (centralDispatch && !budget.exhausted) {
+  // Event handoff calls the focused dispatcher in this same runner.
+  // Waking the general control tower here creates a redundant second hop.
+  if (centralDispatch && !eventFastPath && !budget.exhausted) {
     summary.controlTowerWake=await notifyControlTower({github,owner,repo,
       summary,enabled:centralDispatch,hasToken:hasMergeToken,dryRun,
       limited,log,now});
@@ -1169,4 +1215,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
