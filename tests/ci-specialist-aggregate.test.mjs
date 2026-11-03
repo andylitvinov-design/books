@@ -359,6 +359,55 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
   assert.ok(requests.every(x=>x.method==='GET' && x.auth==='Bearer fake'));
 });
 
+test('Specialist read adapter retries transient GitHub HTTP 500 without a new HEAD or writer action',async()=>{
+  let calls=0;
+  const waits=[];
+  const seen=[];
+  const transport=async (url,options)=>{
+    calls++;
+    seen.push({url,method:options.method||'GET',auth:options.headers.Authorization});
+    if(calls<=2)return {ok:false,status:500};
+    return {ok:true,status:200,json:async()=>pr()};
+  };
+  const api=githubReader(repo,'test-token',transport,{sleep:async ms=>waits.push(ms)});
+  assert.equal((await api.pr(27)).head.sha,SHA);
+  assert.equal(calls,3);
+  assert.deepEqual(waits,[400,1200]);
+  assert.ok(seen.every(x=>x.url===seen[0].url&&x.method==='GET'&&x.auth==='Bearer test-token'));
+});
+
+test('Specialist API read fails closed after bounded retries and never retries a real 401/404',async()=>{
+  for(const status of [401,404]){
+    let calls=0;
+    const api=githubReader(repo,'test',async()=>{
+      calls++;
+      return {ok:false,status};
+    },{sleep:async()=>{}});
+    await assert.rejects(()=>api.runs(SHA),new RegExp('GitHub read /actions/runs HTTP '+status));
+    assert.equal(calls,1);
+  }
+  let exhausted=0;
+  const api=githubReader(repo,'test',async()=>{
+    exhausted++;
+    return {ok:false,status:503};
+  },{sleep:async()=>{}});
+  await assert.rejects(()=>api.jobs(151),/GitHub read \/actions\/runs\/151\/jobs HTTP 503/);
+  assert.equal(exhausted,4,'three retries, then a hard failure; never reinterpret missing evidence as green');
+});
+
+test('Specialist read adapter retries network timeouts but not malformed successful responses',async()=>{
+  let calls=0;
+  const timed=githubReader(repo,'test',async()=>{
+    calls++;
+    if(calls===1)throw Object.assign(new Error('timeout'),{name:'TimeoutError'});
+    return {ok:true,status:200,json:async()=>pr()};
+  },{sleep:async()=>{}});
+  assert.equal((await timed.pr(27)).number,27);
+  assert.equal(calls,2);
+  const invalid=githubReader(repo,'test',async()=>({ok:true,status:200,json:async()=>{throw Error('bad-json')}}),{sleep:async()=>{}});
+  await assert.rejects(()=>invalid.pr(27),/bad-json/,'success with broken JSON must not be accepted');
+});
+
 test('untrusted/malformed input context is rejected',()=>{
   assert.throws(()=>validateParameters({GITHUB_REPOSITORY:repo,GITHUB_TOKEN:'x',HH_PR_NUMBER:'0',HH_HEAD_SHA:SHA,HH_BASE_SHA:BASE}),/INVALID/);
   assert.deepEqual(validateParameters({GITHUB_REPOSITORY:repo,GITHUB_TOKEN:'x',HH_PR_NUMBER:'27',HH_HEAD_SHA:SHA,HH_BASE_SHA:BASE}),{repo,number:27,head:SHA,base:BASE,token:'x'});
