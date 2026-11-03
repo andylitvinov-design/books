@@ -159,9 +159,9 @@ test("real WebKit voice acceptance expands the approved transcript before compar
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.match(voice,/<details className=\{css\.transcriptDisclosure\}>/);
   assert.match(voice,/data-video-affirmation-spoken-text/);
-  assert.match(e2e,/const transcriptPanel=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
-  assert.match(e2e,/await transcriptPanel\.locator\("summary"\)\.click\(\)/);
-  assert.match(e2e,/await expect\(visibleTranscript\)\.toBeVisible\(\)/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
   assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
 });
 
@@ -171,7 +171,7 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(voice,/<details className=\{css\.voiceAdvanced\}>/);
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
-  assert.match(browser,/await voiceOptions\.locator\("summary"\)\.click\(\)/);
+  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/assert\.ok\(tracks\.includes\("audio"\)/);

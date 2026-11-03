@@ -32,8 +32,11 @@ test("client form needs explicit contact, keeps private text out and never check
   // WebKit can fail to activate the separate input under a fixed dock.
   // The browser acceptance independently checks that label click checks once.
   assert.match(src,/onChange=\{event=>setConsent\(event\.target\.checked\)\}/);
-  assert.match(src,/<label htmlFor=\{consentId\} onClick=\{event=>\{/);
-  assert.match(src,/event\.preventDefault\(\);\s*setConsent\(value=>!value\);/);
+  // A native input+htmlFor label supplies mouse, keyboard and Safari activation
+  // without a second React click handler or preventDefault that can double-toggle.
+  assert.match(src,/<label htmlFor=\{consentId\}>/);
+  assert.doesNotMatch(src,/<label htmlFor=\{consentId\}\s+onClick=/);
+  assert.doesNotMatch(src,/event\.preventDefault\(\);\s*setConsent\(value=>!value\);/);
   assert.match(src,/checked=\{consent\}/);
   assert.doesNotMatch(src,/setConsent\(true\)/);
   assert.match(src,/consent&&|!consent/);
