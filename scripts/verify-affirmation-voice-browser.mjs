@@ -178,6 +178,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
+      // Voice/music options are inside their own native disclosure. Open it
+      // with a real user click before using the visible first-party controls.
+      const voiceOptions=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-bed]")});
+      if(await voiceOptions.getAttribute("open")===null)
+        await voiceOptions.locator("summary").click();
+      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
