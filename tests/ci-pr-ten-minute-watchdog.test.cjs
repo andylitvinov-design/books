@@ -110,7 +110,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
     pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{
       listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?32:18}}),
-      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'Build',conclusion:'failure',
+      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
@@ -946,6 +946,76 @@ test('modern Core #3235 BASE_ADVANCED cannot consume Code Repair capacity',()=>{
   ]),'UNVERIFIED');
 });
 
+test('PR #3245 CI source-contract failure routes to policy, not product Source Repair',()=>{
+  const {classifyCoreFailureJobs,classifyIndependentSpecialistChecks}=
+    require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const failure=(name,steps=[])=>({name,conclusion:'failure',status:'completed',steps});
+  const contract={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
+    conclusion:'failure'};
+  const jobs=[
+    failure('core-lint-types-build',[contract]),failure('hh-specialist'),
+    {name:'hh-eslint-repair',conclusion:'success',status:'completed'},
+    failure('hh-merge-check'),
+  ];
+  assert.equal(classifyCoreFailureJobs(jobs),'CI_CONTRACT_OR_POLICY');
+  assert.equal(classifyCoreFailureJobs([
+    {...jobs[0],steps:[contract,{name:'Lint changed JS/TS sources on PR',conclusion:'failure'}]},
+    ...jobs.slice(1),
+  ]),'SOURCE_OR_PREFLIGHT','a genuine mixed contract + product source failure remains repairable');
+  assert.equal(classifyCoreFailureJobs([
+    {...jobs[0],steps:[{name:'TypeScript check',conclusion:'failure'}]},
+    ...jobs.slice(1),
+  ]),'SOURCE_OR_PREFLIGHT','a true product build failure is not hidden');
+  const check=(name,conclusion,id)=>({name,conclusion,id,status:'completed',app:{id:15368}});
+  assert.equal(classifyIndependentSpecialistChecks({
+    total_count:2,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2)],
+  }),'POLICY_OR_SKIPPED','Sweep Guard unit tests are CI policy, not product QA');
+  assert.equal(classifyIndependentSpecialistChecks({
+    total_count:3,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2),
+      check('real-browser-acceptance','failure',3)],
+  }),'PRODUCT_FAILURE','a real failed product browser suite is still routed to Product Repair');
+});
+
+test('CI contract-only failed Core labels release gate and does not hand off source',async()=>{
+  const current={...pr(3245),state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
+  let repairComments=0;const labels=[];
+  const contractStep={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
+    conclusion:'failure'};
+  const github={rest:{
+    pulls:{list:async()=>({data:[current]}),get:async()=>({data:current})},
+    actions:{
+      listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+      listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
+        {name:'core-lint-types-build',conclusion:'failure',steps:[contractStep]},
+        {name:'hh-specialist',conclusion:'failure'},
+        {name:'hh-merge-check',conclusion:'failure'},
+      ]}}),
+    },
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
+    issues:{addLabels:async({labels:added})=>{labels.push(...added);},
+      createComment:async()=>{repairComments++;}},
+  },request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{
+      total_count:1,workflow_runs:[{
+        id:41581262858,name:'HH PR core release gate',event:'pull_request',
+        head_sha:'c'.repeat(40),head_branch:current.head.ref,
+        pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}],
+        status:'completed',conclusion:'failure',run_attempt:1,
+        created_at:new Date(NOW-60*60000).toISOString(),
+        updated_at:new Date(NOW-40*60000).toISOString(),
+      }],
+    }};
+    return {data:{workflow_runs:[]}};
+  }};
+  const report=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  assert.equal(report.ciContractFailures,1);
+  assert.equal(report.sourceRepairQueued,0);
+  assert.equal(report.verifiedSourceFailures,0);
+  assert.equal(repairComments,0);
+  assert.deepEqual(labels,['hh:release-gate-review']);
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
@@ -960,6 +1030,14 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-specialist'),
     fail('hh-merge-check')]),'SPECIALIST_FAILED',
     'specialist failure must not reserve ESLint-only Repair Worker');
+  // Real #3235 Core run: green source build, no classify-change, red
+  // Specialist (PRODUCTION_BASE_CHANGED) and dependent merge gate.
+  assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
+    fail('hh-specialist'),fail('hh-merge-check')]),'SPECIALIST_FAILED');
+  // Without an executed Specialist job the root cause is unknown.
+  // Keep this fail-closed instead of inventing a policy/base failure.
+  assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
+    fail('hh-merge-check')]),'UNVERIFIED');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
     'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
   assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),
@@ -1123,6 +1201,23 @@ test('saturated Actions capacity defers new conflict Repair dispatch',async()=>{
   assert.equal(dispatched,0);
 });
 
+test('PR #3235 production-base Specialist failure cannot mint a source Repair receipt',async()=>{
+ const {classifyCoreFailureJobs,recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const jobs=[
+  {name:'core-lint-types-build',conclusion:'success'},
+  {name:'hh-specialist',conclusion:'failure',steps:[
+    {name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-merge-check',conclusion:'failure'}
+ ];
+ assert.equal(classifyCoreFailureJobs(jobs),'SPECIALIST_FAILED');
+ let writes=0;
+ const gh={rest:{issues:{listComments:async()=>{throw Error('should not read');},
+  createComment:async()=>{writes++}}}};
+ const result=await recordRepairHandoff(gh,'andylitvinov-design','books',
+  {number:3235,head:{sha:'a'.repeat(40)},labels:[]},
+  {id:41574864666,run_attempt:1},jobs,false,()=>{},async(_,fn)=>fn());
+ assert.equal(result,false);assert.equal(writes,0);
+});
 test('watchdog retries a missing durable label after the handoff receipt, without duplicate comments',async()=>{
   const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const head='a'.repeat(40), marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->';
@@ -1136,7 +1231,8 @@ test('watchdog retries a missing durable label after the handoff receipt, withou
   }}};
   const limited=async(_,fn)=>fn();
   const ok=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
-    {id:11,run_attempt:1},[],false,()=>{},limited);
+    {id:11,run_attempt:1},[{name:'core-lint-types-build',conclusion:'failure',
+     steps:[{name:'Lint changed sources',conclusion:'failure'}]}],false,()=>{},limited);
   assert.equal(ok,true);assert.equal(labeled,1);assert.equal(written,0);
 });
 test('a comment-only partial handoff cannot claim that Repair Worker was queued',async()=>{
@@ -1151,10 +1247,12 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   }}};
   const limited=async(_,fn)=>fn(), log=()=>{};
   assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
-    {id:33,run_attempt:1},[],false,log,limited),false);
+    {id:33,run_attempt:1},[{name:'core-lint-types-build',conclusion:'failure',
+     steps:[{name:'Lint changed sources',conclusion:'failure'}]}],false,log,limited),false);
   fail=false;
   assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
-    {id:33,run_attempt:1},[],false,log,limited),true);
+    {id:33,run_attempt:1},[{name:'core-lint-types-build',conclusion:'failure',
+     steps:[{name:'Lint changed sources',conclusion:'failure'}]}],false,log,limited),true);
   assert.equal(written,1);assert.equal(labeled,1);
 });
 
@@ -1328,7 +1426,8 @@ test('watchdog does not accept an outsider marker as a durable source handoff',a
  const sha='a'.repeat(40),pr={number:99,head:{sha},labels:[]};let written=0,labeled=0;
  const gh={rest:{issues:{listComments:async()=>({data:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}}]}),
   createComment:async()=>{written++},addLabels:async()=>{labeled++}}}};
- assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_,fn)=>fn()),true);
+ assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[{name:'core-lint-types-build',conclusion:'failure',
+     steps:[{name:'Lint changed sources',conclusion:'failure'}]}],false,()=>{},async(_,fn)=>fn()),true);
  assert.equal(written,1);assert.equal(labeled,1);
 });
 
@@ -1341,7 +1440,8 @@ test('watchdog finds an existing repair receipt after 300 comments',async()=>{
    [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  },createComment:async()=>{written++}}}};
  const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
- const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
+ const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[{name:'core-lint-types-build',conclusion:'failure',
+     steps:[{name:'Lint changed sources',conclusion:'failure'}]}],false,()=>{},async(_label,fn)=>fn());
  assert.deepEqual(pages,[1,2,3,4]);assert.equal(result,false);assert.equal(written,0);
 });
 

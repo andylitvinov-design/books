@@ -17,7 +17,7 @@ function fixture(options={}){
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
-      listComments:async()=>({data:options.comments ?? [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
+      listComments:async()=>({data:options.comments ?? [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->\nFailed jobs: core-lint-types-build.\n'}]}),
       createComment:async({body})=>{log.comments++;log.commentBodies.push(body)},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
@@ -46,7 +46,7 @@ test('a repair is claimed only once per exact HEAD; author assigned',async()=>{
   const f=fixture();core.outputs={};
   const r=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(r.status,'claimed');
-  assert.equal(core.outputs.strategy,'lint');
+  assert.equal(core.outputs.strategy,'code');
   assert.equal(f.log.comments,1);
   assert.equal(f.log.assigned,1);
   const already=fixture({comments:[{body:'<!-- '+MARKER+' '+sha+' -->'}]});
@@ -60,7 +60,7 @@ test('Repair Worker reads owner lease and exact-head source receipt beyond page 
  f.github.rest.issues.listComments=async({page,per_page})=>{
   assert.equal(per_page,100);pages.push(page);
   return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):
-   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'}]};
  };
  core.outputs={};
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
@@ -71,7 +71,7 @@ test('Repair Worker reads source receipt beyond 300 comments',async()=>{
  const f=fixture();const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
   pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
-   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'}]};
  };
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.status,'claimed');
@@ -174,7 +174,7 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
     lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
   assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
-  const f=fixture({comments:[{body:wrap(old)},{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
+  const f=fixture({comments:[{body:wrap(old)},{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'}]});
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
@@ -212,11 +212,11 @@ test('current mergeability overrides stale conflict labels for exact-head source
     labels:[{name:'hh:repair-needed'}]})),'conflict');
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'claimed');
-  assert.equal(core.outputs.strategy,'lint');
+  assert.equal(core.outputs.strategy,'code');
   assert.equal(f.log.comments,1);
 });
 test('a source label without a trusted receipt for exact HEAD never edits newer code',async()=>{
-  const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
+  const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->\nFailed jobs: core-lint-types-build.\n'}]});
   assert.equal(hasVerifiedSourceHandoff([{body:'not verified'}],sha),false);
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'skipped');
@@ -309,7 +309,7 @@ test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
 });
 
 test('forged source receipt cannot authorize a repair claim',async()=>{
- const forged={body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}};
+ const forged={body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n',user:{id:123,login:'outsider',type:'User'}};
  assert.equal(hasVerifiedSourceHandoff([forged],sha),false);
  const f=fixture({comments:[forged]});
  assert.equal((await claim({github:f.github,core,context,hasToken:true,number:11})).status,'skipped');
@@ -544,7 +544,7 @@ test('exact-head addressed Repair verifies signed dispatcher reservation without
  const task=taskFor(pr(),{tier:'P1'});
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
- const proof={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'};
+ const proof={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'};
  const hold={...bot,body:commentBody(reservation(task,now-1000,42))};
  const ctx={...context,eventName:'workflow_dispatch',runId:99};
  const f=fixture({comments:[proof,hold]});
@@ -555,7 +555,7 @@ test('exact-head addressed Repair verifies signed dispatcher reservation without
  const ok=await claim(args);
  assert.equal(ok.status,'claimed');
  assert.equal(f.log.comments,1);
- assert.equal(core.outputs.strategy,'lint');
+ assert.equal(core.outputs.strategy,'code');
  const unsigned=fixture({comments:[proof,{body:hold.body}]});
  assert.equal((await claim({...args,github:unsigned.github})).status,'skipped');
  assert.equal(unsigned.log.comments,0);
@@ -580,7 +580,7 @@ test('scheduled Repair avoids conflict-only queue and active dispatcher reservat
  const task=taskFor(pr(),{tier:'P1'}),now=Date.now();
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
- const f=fixture({comments:[{...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'},
+ const f=fixture({comments:[{...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'},
    {...bot,body:commentBody(reservation(task,now-1000,42))}]});
  const held=await claim({github:f.github,core,context:{...context,eventName:'schedule'},
    hasToken:true,number:0,now});
@@ -724,6 +724,15 @@ test('trusted Repair finalization fast paths preserve independent Codex verifica
 });
 
 
+test('signed but mistaken base-change Specialist handoff cannot claim source write',async()=>{
+ const signed={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+
+    ' -->\nFailed jobs: hh-specialist, hh-merge-check.\n'};
+ const f=fixture({comments:[signed]});
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+ assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
+});
 test('trusted failed Core/TypeScript source routes directly to Code Repair',async()=>{
  const body='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\n'+
    'Core CI failed on exact HEAD.\nFailed jobs: core-lint-types-build, release-ready.\n';
