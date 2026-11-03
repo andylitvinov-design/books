@@ -1,0 +1,550 @@
+{
+  "schemaVersion": "mytube-editorial-scenes-v3",
+  "categoryId": "love-relationships",
+  "topics": {
+    "loneliness": [
+      [
+        "Окно в тихий вечер",
+        "A Window on a Quiet Evening",
+        "Ventana a una tarde tranquila",
+        "Одинокий свет в окне → Замечены собственные чувства → Чашка тепла и место для себя → Вечер без самоосуждения",
+        "One lit window → Feelings are noticed → Warm tea and room for oneself → An evening without self-judgment",
+        "Una ventana iluminada → Reconocer emociones → Té caliente y espacio propio → Tarde sin juzgarse"
+      ],
+      [
+        "Невидимые нити",
+        "The Invisible Threads",
+        "Los hilos invisibles",
+        "Человек считает себя отдельным островом → На карте вспыхивают имена → Нити прошлых контактов видны → Одно доброжелательное сообщение",
+        "Feeling like an island → Names light up on a map → Connections become visible → One friendly message",
+        "Sentirse una isla → Nombres brillan en un mapa → Aparecen vínculos → Un mensaje amable"
+      ],
+      [
+        "Своя компания",
+        "Enjoying Your Own Company",
+        "Disfrutar de tu compañía",
+        "Пустая скамья вызывает грусть → Внимание возвращается к себе → Маленькая приятная прогулка → Одиночество не равно ненужности",
+        "An empty bench brings sadness → Attention turns inward → A small enjoyable walk → Alone does not mean unwanted",
+        "Banco vacío trae tristeza → Atención hacia uno mismo → Paseo agradable → Estar solo no es ser inútil"
+      ],
+      [
+        "Первый круг общения",
+        "The First Circle",
+        "El primer círculo",
+        "Закрытые двери города → Маленький общий интерес → Тёплый круг вокруг занятия → Один посильный шаг к людям",
+        "Closed city doors → One shared interest → A welcoming activity circle → A manageable social step",
+        "Puertas cerradas de la ciudad → Interés compartido → Grupo acogedor → Paso posible hacia otros"
+      ]
+    ],
+    "fear-alone": [
+      [
+        "Когда дом пустеет",
+        "When the House Goes Quiet",
+        "Cuando la casa queda en silencio",
+        "Тревога в пустом доме → Включается мягкий свет → Опора в привычных вещах → Спокойный вечер по своему плану",
+        "Worry in an empty home → A gentle lamp turns on → Familiar objects offer grounding → An evening with a simple plan",
+        "Inquietud en casa vacía → Se enciende luz suave → Apoyo en lo familiar → Noche con plan sencillo"
+      ],
+      [
+        "Карта поддерживающих людей",
+        "A Map of Support",
+        "Mapa de apoyo",
+        "Мысль «никого нет» → На карте появляются знакомые → Разные виды связи отмечены → Один контакт на случай нужды",
+        "The thought 'no one is there' → Familiar faces appear on a map → Different ties are marked → One contact when needed",
+        "Pensar «no tengo a nadie» → Aparecen conocidos en un mapa → Marcar apoyos → Un contacto disponible"
+      ],
+      [
+        "Быть с собой бережно",
+        "Being Kind to Yourself",
+        "Tratarte con cariño",
+        "Страх встретиться с тишиной → Ладони согревают чашку → Внутренний диалог смягчается → Короткая практика заботы",
+        "Fear of silence → Hands warm a cup → Self-talk softens → A brief self-care practice",
+        "Miedo al silencio → Manos calientan una taza → Diálogo interno se suaviza → Cuidado breve"
+      ],
+      [
+        "Безопасная самостоятельность",
+        "Safe Independence",
+        "Autonomía segura",
+        "Зависимость от постоянного присутствия → Маленькое самостоятельное дело → Рядом доступна помощь → Уверенность в посильном расстоянии",
+        "Needing constant company → A small solo errand → Support remains available → Confidence at a manageable distance",
+        "Necesidad de compañía constante → Pequeña tarea a solas → Apoyo disponible → Confianza a distancia posible"
+      ]
+    ],
+    "breakup-recovery": [
+      [
+        "Пустой стул",
+        "The Empty Chair",
+        "La silla vacía",
+        "Знакомый стул остался пустым → Грусть получает место → День продолжается медленно → Право скучать без возврата",
+        "A familiar chair is empty → Grief is given space → The day moves slowly → Missing someone without returning",
+        "La silla familiar está vacía → Dar lugar a la pena → El día avanza despacio → Extrañar sin volver"
+      ],
+      [
+        "Волны расставания",
+        "Waves After a Breakup",
+        "Olas tras la ruptura",
+        "Сильная волна воспоминаний → Берег остаётся рядом → Чувства приходят и уходят → Небольшая опора на сегодня",
+        "A strong wave of memories → The shore remains nearby → Feelings rise and fall → One support for today",
+        "Ola fuerte de recuerdos → La orilla sigue ahí → Emociones vienen y van → Un apoyo para hoy"
+      ],
+      [
+        "Коробка воспоминаний",
+        "A Box of Memories",
+        "Caja de recuerdos",
+        "Вещи напоминают о прошлом → Коробка открывается бережно → Что сохранить и убрать решается → Границы без стирания истории",
+        "Objects recall the past → A box opens gently → Choosing what to keep or store → Boundaries without erasing history",
+        "Objetos recuerdan el pasado → Abrir caja con cuidado → Elegir qué guardar → Límites sin borrar la historia"
+      ],
+      [
+        "Место для нового утра",
+        "Room for a New Morning",
+        "Espacio para otra mañana",
+        "Каждое утро напоминает об утрате → Окно распахивается → Появляется маленькая новая привычка → Будущее без спешки к новой любви",
+        "Each morning recalls the loss → A window opens → A small new ritual emerges → A future without rushing into love",
+        "Cada mañana recuerda la pérdida → Abrir la ventana → Nace un pequeño hábito → Futuro sin apresurar el amor"
+      ]
+    ],
+    "unrequited-love": [
+      [
+        "Письмо без отправки",
+        "The Unsent Letter",
+        "La carta sin enviar",
+        "Невысказанное письмо → Чувства записаны полностью → Конверт остаётся у автора → Забота о себе без требования ответа",
+        "An unwritten letter → Feelings are put on paper → The envelope stays with its writer → Care without demanding a reply",
+        "Carta no escrita → Poner sentimientos en papel → Guardar el sobre → Cuidarse sin exigir respuesta"
+      ],
+      [
+        "Мост в одну сторону",
+        "The One-Way Bridge",
+        "El puente de un solo sentido",
+        "Человек строит мост один → Другой берег не отвечает → Видна необходимость взаимности → Шаг назад к своим границам",
+        "One person builds a bridge → The other shore stays silent → Mutuality becomes important → Stepping back toward boundaries",
+        "Una persona construye puente → Otra orilla calla → Importancia de reciprocidad → Volver a los límites"
+      ],
+      [
+        "Любовь без присвоения",
+        "Caring Without Possessing",
+        "Querer sin poseer",
+        "Красивый сад за чужим забором → Можно любоваться издалека → Чужое решение уважается → Свой сад требует внимания",
+        "A lovely garden behind another gate → It can be admired from afar → Another's choice is respected → Tending one's own garden",
+        "Jardín tras cerca ajena → Admirar de lejos → Respetar decisión ajena → Cuidar jardín propio"
+      ],
+      [
+        "За пределами одного лица",
+        "Beyond One Face",
+        "Más allá de un rostro",
+        "Всё внимание сосредоточено на одном человеке → Горизонт расширяется → Возвращаются друзья и дела → Пространство для новых встреч",
+        "All focus rests on one person → The horizon widens → Friends and activities return → Room for new encounters",
+        "Toda atención en una persona → Se amplía horizonte → Vuelven amistades y actividades → Espacio para encuentros"
+      ]
+    ],
+    "find-love": [
+      [
+        "Открытая, но своя дверь",
+        "An Open Door of Your Own",
+        "Una puerta propia abierta",
+        "Закрытая дверь после неудач → Замок открывается по выбору → За порогом разные люди → Встреча без обязательного результата",
+        "A door stays closed after setbacks → The lock opens by choice → Different people outside → Meeting without a promised outcome",
+        "Puerta cerrada tras decepciones → Abrir por elección → Personas distintas afuera → Encontrarse sin promesas"
+      ],
+      [
+        "Знакомиться без роли",
+        "Meeting Without a Role",
+        "Conocer sin actuar un papel",
+        "Перед встречей надевается маска → Маска остаётся на полке → Разговор о настоящем интересе → Быть увиденным без игры",
+        "A mask is prepared before a date → It stays on the shelf → A real interest enters the conversation → Being seen without a role",
+        "Preparar máscara para cita → Dejarla en estante → Hablar de interés real → Dejarse ver sin papel"
+      ],
+      [
+        "Любовь начинается с связи",
+        "Connection Before Romance",
+        "Vínculo antes que romance",
+        "Погоня за идеальным образом → Совместная прогулка → Возникает живой разговор → Любопытство вместо спешки",
+        "Chasing an ideal image → Walking together → A real conversation starts → Curiosity rather than haste",
+        "Perseguir imagen ideal → Caminar juntos → Surge charla real → Curiosidad sin prisa"
+      ],
+      [
+        "Разрешение на медленное",
+        "Permission to Take It Slow",
+        "Permiso para ir despacio",
+        "Ожидание немедленной искры → Два человека встречаются спокойно → Внимание к реальному отклику → Право продолжить или нет",
+        "Pressure for instant sparks → Two people meet calmly → Checking genuine interest → Freedom to continue or not",
+        "Presión por chispa instantánea → Encuentro tranquilo → Percibir interés genuino → Libertad de seguir o no"
+      ]
+    ],
+    "ready-relationship": [
+      [
+        "Багаж прошлых историй",
+        "Luggage from the Past",
+        "Equipaje del pasado",
+        "Старый чемодан у новой двери → Он открывается без спешки → Нужное остаётся, тяжёлое признаётся → Входить не забывая себя",
+        "An old suitcase at a new door → Unpacking without hurry → Keeping lessons, naming weight → Entering without losing oneself",
+        "Maleta vieja ante puerta nueva → Abrir sin prisa → Guardar aprendizajes → Entrar sin perderse"
+      ],
+      [
+        "Границы до сближения",
+        "Boundaries Before Closeness",
+        "Límites antes de acercarse",
+        "Два круга на земле → Между ними появляется мостик → Оговорены пространство и время → Близость по согласию",
+        "Two circles on the ground → A small bridge appears → Space and time are discussed → Closeness by consent",
+        "Dos círculos en el suelo → Aparece puentecito → Hablar de espacio y tiempo → Cercanía con consentimiento"
+      ],
+      [
+        "Искать взаимность",
+        "Looking for Reciprocity",
+        "Buscar reciprocidad",
+        "Один человек тянет тяжёлую лодку → Второй берёт своё весло → Движение становится совместным → Проверка баланса усилий",
+        "One person pulls a heavy boat → The other takes an oar → Movement becomes shared → Checking balance of effort",
+        "Uno tira de barca pesada → Otro toma remo → Avance compartido → Observar equilibrio"
+      ],
+      [
+        "Моя жизнь остаётся моей",
+        "Keeping Your Own Life",
+        "Mantener tu propia vida",
+        "Появляется новый партнёр → Свои увлечения остаются на карте → Две дороги идут рядом → Союз без исчезновения себя",
+        "A new partner appears → Personal interests remain on the map → Two paths run alongside → Togetherness without self-erasure",
+        "Aparece nueva pareja → Intereses propios siguen en mapa → Caminos paralelos → Unión sin borrarse"
+      ]
+    ],
+    "dating": [
+      [
+        "Перед первой встречей",
+        "Before the First Date",
+        "Antes de la primera cita",
+        "Суета перед выходом → Человек чувствует землю под ногами → Встреча в обычном кафе → Важнее присутствие, не впечатление",
+        "Pre-date nervous bustle → Feet feel the ground → Meeting in a simple café → Presence matters more than performance",
+        "Nervios antes de salir → Sentir el suelo → Encuentro en café sencillo → Presencia, no actuación"
+      ],
+      [
+        "Неловкая пауза",
+        "The Awkward Silence",
+        "El silencio incómodo",
+        "Разговор ненадолго стихает → Пауза не заполняется паникой → На столе появляется улыбка → Встреча продолжается естественно",
+        "Conversation pauses → Silence need not be fixed → A smile appears across the table → The meeting goes on naturally",
+        "Pausa en la conversación → No llenar silencio con pánico → Sonrisa en la mesa → Encuentro natural"
+      ],
+      [
+        "Услышать взаимный интерес",
+        "Noticing Mutual Interest",
+        "Notar interés mutuo",
+        "Один человек старается понравиться → Взгляд замечает ответные вопросы → Внимание к обоим → Решение по реальному контакту",
+        "One person tries hard to impress → Noticing reciprocal questions → Paying attention to both → Deciding from real contact",
+        "Uno intenta impresionar → Notar preguntas recíprocas → Escuchar a ambos → Decidir según el contacto"
+      ],
+      [
+        "После свидания",
+        "After the Date",
+        "Después de la cita",
+        "Дверь кафе закрывается → Вместо оценки себя — воспоминание о чувствах → Отмечены приятное и сложное → Свой выбор следующего шага",
+        "The café door closes → Feelings replace self-grading → Noting what felt good or hard → Choosing the next step",
+        "Se cierra puerta del café → Sentir en vez de juzgarse → Anotar lo bueno y difícil → Elegir siguiente paso"
+      ]
+    ],
+    "partner-choice": [
+      [
+        "Два компаса пары",
+        "Two Compasses",
+        "Dos brújulas",
+        "Притяжение яркое, но ценности скрыты → Два компаса на столе → Сравниваются важные направления → Выбор с учётом совместимости",
+        "Strong attraction hides values → Two compasses on a table → Comparing key bearings → Choosing for compatibility",
+        "La atracción oculta valores → Dos brújulas en la mesa → Comparar rumbos importantes → Elegir compatibilidad"
+      ],
+      [
+        "Зелёные и тревожные сигналы",
+        "Signals Worth Noticing",
+        "Señales que importan",
+        "Красивый портрет незнакомца → Поступки проступают за словами → Уважение и безопасность оценены → Решение без самообмана",
+        "An appealing portrait → Actions emerge behind words → Respect and safety are noticed → Deciding without idealization",
+        "Retrato atractivo → Acciones detrás de palabras → Observar respeto y seguridad → Elegir sin idealizar"
+      ],
+      [
+        "Разговор о будущем",
+        "Talking About Tomorrow",
+        "Hablar del mañana",
+        "Двое идут навстречу → На развилке обсуждают планы → Различия становятся яснее → Возможность договориться проверена",
+        "Two people meet halfway → Plans are discussed at a fork → Differences become clear → Testing whether compromise is possible",
+        "Dos personas se acercan → Hablar de planes en cruce → Ver diferencias → Explorar acuerdos"
+      ],
+      [
+        "Право сказать «нет»",
+        "The Right to Say No",
+        "Derecho a decir no",
+        "Внимание со стороны льстит → Внутри нет согласия → Дверь мягко закрыта → Уважение к обоим людям",
+        "Attention feels flattering → An inner no is noticed → A door closes gently → Respect for both people",
+        "La atención halaga → Reconocer un no interior → Cerrar puerta con suavidad → Respetar a ambos"
+      ]
+    ],
+    "relationship-problems": [
+      [
+        "Повторяющийся круг",
+        "The Repeating Loop",
+        "El ciclo repetido",
+        "Ссора начинается знакомо → Видна повторяющаяся петля → Оба замечают свой участок → Поиск иного ответа",
+        "An argument starts the same way → A repeating loop becomes visible → Each sees a part → Trying a different response",
+        "La discusión empieza igual → Se ve ciclo repetido → Cada uno ve su parte → Probar respuesta distinta"
+      ],
+      [
+        "Что скрыто под претензией",
+        "What Lies Beneath a Complaint",
+        "Detrás del reproche",
+        "Резкие слова на поверхности → Под ними видны усталость и нужда → Просьба звучит яснее → Возможность услышать",
+        "Sharp words at the surface → Fatigue and needs underneath → A request becomes clearer → Space to listen",
+        "Palabras duras arriba → Debajo hay cansancio y necesidades → Petición más clara → Espacio para escuchar"
+      ],
+      [
+        "Починить маленький разрыв",
+        "Repairing a Small Rupture",
+        "Reparar una pequeña ruptura",
+        "После напряжения остаётся трещина → Один признаёт свой вклад → Прозрачная нить осторожно соединяет → Не обещание, а действие",
+        "A crack remains after tension → One person owns their part → A thread gently reconnects → An action instead of a promise",
+        "Queda una grieta tras tensión → Reconocer parte propia → Hilo une con cuidado → Acción en vez de promesa"
+      ],
+      [
+        "Разные ритмы близости",
+        "Different Rhythms",
+        "Ritmos distintos",
+        "Один ищет разговор, другой тишину → Два метронома звучат разом → Пауза согласована → Место для обоих ритмов",
+        "One wants talk, another silence → Two metronomes sound at once → A pause is agreed → Room for both rhythms",
+        "Uno quiere hablar y otro silencio → Dos metrónomos → Acordar pausa → Espacio para ambos ritmos"
+      ]
+    ],
+    "couple-communication": [
+      [
+        "Не читать мысли",
+        "No Mind Reading",
+        "Sin leer la mente",
+        "Человек угадывает за партнёра → Туман недосказанности густеет → Прямой вопрос меняет картину → Ответ услышан без догадок",
+        "One guesses a partner's thoughts → Fog of assumptions grows → A direct question changes the scene → Listening without guessing",
+        "Adivinar pensamiento ajeno → Crece niebla de supuestos → Pregunta directa → Escuchar sin adivinar"
+      ],
+      [
+        "Повторить, чтобы понять",
+        "Reflective Listening",
+        "Escuchar y reflejar",
+        "Два монолога пересекаются → Один человек делает паузу → Смысл услышанного отражён → Второй уточняет без обороны",
+        "Two monologues overlap → One person pauses → Reflecting back the meaning → The other clarifies safely",
+        "Dos monólogos se cruzan → Uno se detiene → Reflejar el significado → Otro aclara sin defenderse"
+      ],
+      [
+        "Подходящее время",
+        "Choosing a Better Moment",
+        "Elegir el momento",
+        "Серьёзный разговор начинается в спешке → Часы останавливаются → Пара выбирает спокойный момент → Внимание становится доступно",
+        "A big talk begins in a rush → The clock seems to stop → A calmer moment is chosen → Attention becomes available",
+        "Hablar en plena prisa → El reloj se detiene → Elegir momento tranquilo → Más atención"
+      ],
+      [
+        "Просьба вместо обвинения",
+        "A Request, Not a Blame",
+        "Pedir sin culpar",
+        "Слова звучат как нападение → За ними видна конкретная нужда → Формулируется посильная просьба → Можно честно ответить",
+        "Words sound like an attack → A specific need becomes visible → A manageable request is made → Honest response is possible",
+        "Palabras suenan a ataque → Aparece necesidad concreta → Formular petición viable → Responder con honestidad"
+      ]
+    ],
+    "couple-conflict": [
+      [
+        "Шторм и гавань",
+        "Storm and Harbor",
+        "Tormenta y puerto",
+        "Голоса громче волн → Оба отступают от шторма → Возвращение к разговору согласовано → Безопаснее обсуждать проблему",
+        "Voices rise like waves → Both step away from the storm → Agreeing when to return → A safer talk becomes possible",
+        "Voces como olas → Ambos se apartan → Acordar cuándo volver → Hablar con más seguridad"
+      ],
+      [
+        "Не победить, а понять",
+        "Understanding Over Winning",
+        "Comprender, no vencer",
+        "Двое держат разные концы каната → Канат лежит на земле → Появляется общий вопрос → Сотрудничество вместо борьбы",
+        "Two people pull opposite ends of a rope → The rope is set down → A shared question appears → Cooperation instead of winning",
+        "Dos tiran de cuerda → Dejarla en suelo → Surge pregunta compartida → Cooperar sin vencer"
+      ],
+      [
+        "Ответственность за свой шаг",
+        "Owning Your Part",
+        "Asumir tu parte",
+        "После ссоры все показывают пальцем → Один видит своё действие → Конкретное извинение → Практическое исправление",
+        "After a fight, fingers point → One person sees their part → A specific apology → A practical repair",
+        "Tras pelea todos señalan → Reconocer acción propia → Disculpa concreta → Reparación práctica"
+      ],
+      [
+        "Правила спорить бережно",
+        "Rules for Fair Conflict",
+        "Reglas para discutir con cuidado",
+        "Разговор снова заходит в тупик → Пара отмечает красные линии → Условие паузы установлено → Спор без угроз и унижения",
+        "A talk reaches a dead end → Both name hard limits → A pause rule is agreed → Disagreeing without threats",
+        "Conversación sin salida → Nombrar límites → Acordar pausa → Disentir sin amenazas"
+      ]
+    ],
+    "rebuilding-trust": [
+      [
+        "Трещина на чашке",
+        "The Cracked Cup",
+        "La taza agrietada",
+        "Доверие треснуло → Повреждение признаётся открыто → Чашку не прячут от взгляда → Решение о ремонте остаётся свободным",
+        "Trust has cracked → Harm is acknowledged → The crack is not hidden → Repair remains a choice",
+        "La confianza se agrieta → Reconocer daño → No ocultar grieta → Reparar es elección"
+      ],
+      [
+        "Поступки вместо обещаний",
+        "Actions Over Promises",
+        "Hechos, no promesas",
+        "Красивые слова звучат снова → На календаре отмечены поступки → Последовательность становится видимой → Доверие оценивается временем",
+        "Beautiful promises repeat → Actions appear on a calendar → Consistency becomes visible → Trust is assessed over time",
+        "Se repiten promesas → Registrar acciones en calendario → Ver consistencia → Evaluar con tiempo"
+      ],
+      [
+        "Границы как условие",
+        "Boundaries for Safety",
+        "Límites para la seguridad",
+        "После нарушения всё расплывчато → Условия и границы названы → Согласие или отказ допустимы → Личная безопасность важнее спешки",
+        "After a breach, things feel blurred → Conditions are named → Yes or no is allowed → Safety before speed",
+        "Tras la ruptura hay confusión → Nombrar condiciones → Se permite sí o no → Seguridad antes que prisa"
+      ],
+      [
+        "Не ускорять заживление",
+        "Healing Has Its Own Pace",
+        "Sanar sin apuro",
+        "Ожидают немедленного прощения → Часы замедляются → Сложные чувства допускаются → Право решать в своём темпе",
+        "Immediate forgiveness is expected → Clocks slow down → Complex feelings are allowed → Choosing at one's own pace",
+        "Se espera perdón inmediato → Relojes se ralentizan → Acoger sentimientos complejos → Decidir a ritmo propio"
+      ]
+    ],
+    "emotional-intimacy": [
+      [
+        "Сказать немного правды",
+        "A Little Honest Truth",
+        "Una pequeña verdad",
+        "Обычный разговор скользит по поверхности → Один делится важным чувством → Другой слушает → Небольшой шаг к подлинности",
+        "Conversation stays on the surface → One shares a real feeling → The other listens → A step toward authenticity",
+        "Charla queda en superficie → Compartir sentimiento real → Otra persona escucha → Paso hacia autenticidad"
+      ],
+      [
+        "Быть рядом молча",
+        "Companionship in Silence",
+        "Estar juntos en silencio",
+        "Не хватает правильных слов → Двое сидят у окна → Тишина не отталкивает → Тёплое присутствие достаточно",
+        "No perfect words come → Two sit by a window → Silence is not rejection → Warm presence can suffice",
+        "No salen palabras perfectas → Dos junto a ventana → Silencio sin rechazo → Presencia cálida basta"
+      ],
+      [
+        "Наш маленький ритуал",
+        "A Shared Little Ritual",
+        "Un pequeño ritual común",
+        "Дни проходят мимо друг друга → Чай заваривается вдвоём → Появляется время для встречи → Связь укрепляется вниманием",
+        "Days pass without contact → Tea is made together → Time for connection appears → Attention nurtures closeness",
+        "Días pasan separados → Preparar té juntos → Tiempo para encuentro → Atención nutre cercanía"
+      ],
+      [
+        "Близко, но не одинаково",
+        "Close, Not Identical",
+        "Cerca, no iguales",
+        "Две разные мелодии → Звуки слышны по отдельности → Возникает гармония без слияния → Уважение различий",
+        "Two different melodies → Each voice remains distinct → Harmony without fusion → Respecting differences",
+        "Dos melodías distintas → Cada voz se oye → Armonía sin fusión → Respetar diferencias"
+      ]
+    ],
+    "fear-intimacy": [
+      [
+        "У порога близости",
+        "At the Threshold",
+        "En el umbral",
+        "Кто-то подходит к открытой двери → Тело замирает → Можно остановиться у порога → Выбор расстояния остаётся своим",
+        "Someone approaches an open door → The body freezes → Pausing at the threshold is allowed → Distance remains a choice",
+        "Alguien llega a puerta abierta → El cuerpo se paraliza → Se puede parar → Elegir distancia propia"
+      ],
+      [
+        "Медленный мост доверия",
+        "A Slow Bridge of Trust",
+        "Un puente lento de confianza",
+        "Между берегами большой пролив → Появляется одна доска → Проверяется устойчивость → Следующий шаг только при готовности",
+        "A wide gap between shores → One plank is placed → Its stability is tested → Another step only if ready",
+        "Gran distancia entre orillas → Colocar tabla → Comprobar firmeza → Otro paso solo si se desea"
+      ],
+      [
+        "Сказать о границе",
+        "Naming a Boundary",
+        "Nombrar un límite",
+        "Близость кажется обязанностью → Чёткая граница произнесена → Другой её уважает → Напряжение получает пространство",
+        "Closeness feels obligatory → A clear boundary is voiced → The other respects it → Pressure has room to ease",
+        "Cercanía parece obligación → Expresar límite claro → Otro lo respeta → Menos presión"
+      ],
+      [
+        "Прошлое не равно настоящее",
+        "The Past Is Not Today",
+        "El pasado no es hoy",
+        "Старые тени накладываются на новую встречу → Взгляд различает людей → Замечены реальные сигналы → Решение опирается на настоящее",
+        "Old shadows overlap a new meeting → People become distinct → Actual signals are noticed → A decision based on today",
+        "Sombras viejas sobre nuevo encuentro → Distinguir personas → Ver señales actuales → Decidir desde presente"
+      ]
+    ],
+    "emotional-dependency": [
+      [
+        "Собственная орбита",
+        "An Orbit of Your Own",
+        "Tu propia órbita",
+        "Вся жизнь вращается вокруг одного человека → Видны собственные интересы → Орбиты становятся самостоятельными → Связь без растворения",
+        "Life orbits one person → Personal interests come into view → Each orbit becomes distinct → Connection without disappearing",
+        "Vida gira en torno a uno → Aparecen intereses propios → Órbitas diferentes → Vínculo sin desaparecer"
+      ],
+      [
+        "Корни по обе стороны",
+        "Roots on Both Sides",
+        "Raíces en ambos lados",
+        "Одно дерево держится за другое → У каждого появляются корни → Поддержка остаётся рядом → Самостоятельная устойчивость",
+        "One tree leans entirely on another → Both grow roots → Support remains nearby → Stability of one's own",
+        "Un árbol depende del otro → Ambos crean raíces → Apoyo cercano → Estabilidad propia"
+      ],
+      [
+        "Не ждать ответа каждую минуту",
+        "Beyond the Waiting Screen",
+        "Más allá de la pantalla",
+        "Телефон всё время в руке → Экран гаснет → Возвращаются дела и друзья → Ответ не определяет ценность",
+        "A phone stays in hand → The screen goes dark → Activities and friends return → A reply does not define worth",
+        "Teléfono siempre en mano → Pantalla se apaga → Vuelven actividades y amigos → Respuesta no define valor"
+      ],
+      [
+        "Просить, не цепляться",
+        "Asking Without Clinging",
+        "Pedir sin aferrarse",
+        "Страх потери превращается в контроль → Потребность названа словами → Другому оставлена свобода → Опора найдена и вне пары",
+        "Fear of loss becomes control → The need is spoken → The other keeps freedom → Support exists beyond the couple",
+        "Miedo a perder se vuelve control → Nombrar necesidad → Respetar libertad ajena → Apoyo fuera de pareja"
+      ]
+    ],
+    "family-relationships": [
+      [
+        "За семейным столом",
+        "Around the Family Table",
+        "En la mesa familiar",
+        "За столом привычные роли → Один человек замечает свой голос → Старая схема прерывается → Новый способ участия",
+        "Old roles appear at the table → One person notices their voice → A familiar pattern pauses → A new way to take part",
+        "Viejos papeles en la mesa → Notar voz propia → Interrumpir patrón → Otra forma de participar"
+      ],
+      [
+        "Разные поколения, разные карты",
+        "Different Generations, Different Maps",
+        "Generaciones y mapas distintos",
+        "Поколения показывают разные карты → Ни одна не обязана победить → Находится общая ценность → Различия получают уважение",
+        "Generations show different maps → Neither must win → A shared value appears → Differences receive respect",
+        "Generaciones con mapas distintos → Nadie debe ganar → Valor compartido → Respetar diferencias"
+      ],
+      [
+        "Дом и договорённости",
+        "The House of Agreements",
+        "La casa de acuerdos",
+        "Дом полон невысказанных обязанностей → Задачи видны на столе → Границы и вклад обсуждены → Справедливее повседневность",
+        "A home holds unspoken duties → Tasks become visible → Roles and limits are discussed → Fairer daily routines",
+        "Casa llena de deberes tácitos → Tareas visibles → Hablar de límites y aportes → Rutina más justa"
+      ],
+      [
+        "Тёплая дистанция",
+        "Warm Distance",
+        "Distancia cálida",
+        "Контакт слишком напряжён → Две скамьи на удобном расстоянии → Возможна короткая встреча → Близость не требует самоотмены",
+        "Contact feels too intense → Two benches at a comfortable distance → A shorter visit is possible → Connection without self-erasure",
+        "Contacto muy tenso → Bancos a distancia cómoda → Visita breve posible → Vínculo sin anularse"
+      ]
+    ]
+  }
+}
