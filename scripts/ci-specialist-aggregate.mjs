@@ -416,7 +416,9 @@ export async function verify(api,ctx,files,options={}) {
     trustedCoreSource.includes('Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)') &&
     trustedCoreSource.includes('node --test tests/affirmation-voice.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/mandala-audio-attach.test.mjs') &&
     files.current.get(core) === trustedCoreSource && !changed.includes(core);
-  if (coreMandalaGate && files.base.has(mandala) && files.current.has(mandala)) {
+  if (coreMandalaGate && files.base.has(mandala) &&
+      files.current.get(mandala) === files.base.get(mandala) &&
+      !changed.includes(mandala)) {
     advisoryPaths.add(mandala);
   }
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
