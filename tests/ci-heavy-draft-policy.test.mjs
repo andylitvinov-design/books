@@ -87,6 +87,7 @@ const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
   ['practice-google-browser.yml', 'hh-practice-google'],
@@ -103,7 +104,9 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
     const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
     assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
-    assert.ok(source.includes('cancel-in-progress: ' + (attemptScoped ? firstAttemptCancellation : prOnlyCancellation)));
+    const cancelCondition = workflow === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation :
+      (attemptScoped ? firstAttemptCancellation : prOnlyCancellation);
+    assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -144,7 +147,8 @@ for (const name of draftStageWorkflows) {
     }
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
-    const condition = attemptScoped ? "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'" : "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation.slice(3,-3) :
+      (attemptScoped ? firstAttemptCancellation.slice(3,-3) : prOnlyCancellation.slice(3,-3));
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
