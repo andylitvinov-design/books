@@ -45,13 +45,10 @@ test("four different project-original moving MP4s are allowed by the same protec
  assert.ok(plan.rightsProof.every(r=>r.rightsKind==="project_generated_original"));
 });
 test("production abstract motion library contains 320 individually encoded H264 source records",()=>{
- // The placeholder is allowed ONLY before the one-time batch artifacts exist
- // on the isolated integration preparation branch. A release must require 320.
- if(source.count===0){
-   assert.equal(source.status,"awaiting_one_time_encoded_media");
-   assert.equal(source.scenes.length,0);
-   return;
- }
+ // Fail closed: CI must never release an empty placeholder, partial library,
+ // or an editorial-only record pretending to be 320 real encoded MP4s.
+ assert.notEqual(source.status,"awaiting_one_time_encoded_media");
+ assert.equal(source.status,"generated_and_technical_verified");
  assert.equal(source.count,320);
  assert.equal(source.scenes.length,320);
  assert.equal(source.presets.length,64);
