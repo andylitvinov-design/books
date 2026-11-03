@@ -187,7 +187,7 @@ const runEngine = async ([engine, browserType]) => {
         await expect(topicCards.first()).toBeVisible({timeout:10000});
         assert.equal(await topicCards.count(),6,"subcategories appear beneath selected category");
         await topicCards.nth(0).click();await topicCards.nth(1).click();
-        assert.equal(await topicCards.locator('[aria-pressed="true"]').count(),2,
+        assert.equal(await quick.locator('[data-video-director-goal-controls] [data-auto-video-subcategories] [data-auto-video-goal][aria-pressed="true"]').count(),2,
           "exactly two subcategories can be selected");
         assert.equal(await topicCards.nth(2).isDisabled(),true,"third choice is blocked");
         await topicCards.nth(1).click();
