@@ -184,7 +184,33 @@ async function verifySiteMenu(page, header, { locale, surface, label, expectedMe
   await expect(header.locator('details.site-main-menu')).toHaveJSProperty('open', false)
 }
 
-async function verifyPublicHeaderMatrix(page, engine) {
+// Public navigation matrices are independent by locale. Keep every route,
+// breakpoint, keyboard and privacy assertion, but overlap their browser I/O.
+// Dedicated pages prevent viewport, focus and language navigation races.
+// Never shorten the matrix or treat a rejected case as an advisory check.
+async function verifyPublicByLocale(page, engine, locales, verify) {
+  const pages = [page]
+  const pageErrors = []
+  try {
+    for (let i = 1; i < locales.length; i++) {
+      const sibling = await page.context().newPage()
+      sibling.on('pageerror', error => pageErrors.push(engine + '/' + locales[i] + ': ' + error.message))
+      pages.push(sibling)
+    }
+    // Wait for every locale, including failures, before closing shared contexts.
+    const outcomes = await Promise.allSettled(
+      locales.map((locale, i) => verify(pages[i], engine, [locale]))
+    )
+    const failed = outcomes.find(result => result.status === 'rejected')
+    if (failed) throw failed.reason
+    assert.deepEqual(pageErrors, [], engine + ': secondary locale browser errors')
+  } finally {
+    await Promise.allSettled(pages.slice(1).map(sibling => sibling.close()))
+  }
+}
+
+async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es']) {
+  if (locales.length > 1) return verifyPublicByLocale(page, engine, locales, verifyPublicHeaderMatrix)
   const diagnostic = await observePublicNavigation(page, { engine, origin, record: event => publicNavigationDiagnostics.push(event) })
   try {
   const originalViewport = page.viewportSize()
@@ -203,7 +229,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
   const prWebkitHeaderWidths = [320, 390, 768, 1280]
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
-  for (const locale of ['en', 'ru', 'es']) {
+  for (const locale of locales) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
@@ -305,12 +331,13 @@ async function verifyPublicHeaderMatrix(page, engine) {
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at ' + publicHeaderWidths.join('/') + 'px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
+  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at ' + publicHeaderWidths.join('/') + 'px; verified locales ' + locales.join('/') + '; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
   } finally { diagnostic.stop() }
 }
-async function verifyPublicDiscoveryNavigation(page, engine) {
+async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'ru', 'es']) {
+  if (locales.length > 1) return verifyPublicByLocale(page, engine, locales, verifyPublicDiscoveryNavigation)
   const originalViewport = page.viewportSize()
-  for (const locale of ['en', 'ru', 'es']) {
+  for (const locale of locales) {
     for (const suffix of ['client', 'client/tests']) {
       for (const width of [320, 390, 768, 1280]) {
         const path = '/' + locale + '/' + suffix
@@ -348,7 +375,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
   }
     // Real mobile click into the canonical existing service, once per language.
     // A working link is not evidence of booking or payment.
-    for (const locale of ['en', 'ru', 'es']) {
+    for (const locale of locales) {
       await resizePublicViewport(page, { width: 390, height: 900 })
       const from = '/' + locale + '/services/free-situation-review'
       assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
@@ -361,7 +388,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
       await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
     }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
+  pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
 }
 
 try {
