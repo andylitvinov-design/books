@@ -168,8 +168,8 @@ jobs:
                   tests/ci-heavy-impact.test.mjs|\
                   tests/ci-growth-course-core-reuse.test.mjs|\
                   tests/ci-head-cancellation.test.mjs|\
-                  tests/ci-stale-run-deduplication.test.mjs|\\
-                  scripts/ci-deterministic-eslint-repair.mjs|\\
+                  tests/ci-stale-run-deduplication.test.mjs|\
+                  scripts/ci-deterministic-eslint-repair.mjs|\
                   tests/ci-deterministic-eslint-repair.test.mjs) ;;
                 *) ci_only=false ;;
               esac
