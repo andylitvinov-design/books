@@ -49,20 +49,22 @@ function repairMode(pr) {
   return 'unverified';
 }
 function hasVerifiedSourceHandoff(comments, sha) {
-  const marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+  const receipt='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+  // Verify the Actions application and exact HEAD, never PR-authored prose.
+  // A historical receipt that identifies ONLY Specialist/merge-gate errors
+  // must not become authorization to write application source code.
   return Array.isArray(comments) && comments.some(c=>{
     if(c?.user?.id!==41898282||c.user.login!=='github-actions[bot]'||
        c.user.type!=='Bot'||c.performed_via_github_app?.id!==15368||
        c.performed_via_github_app.slug!=='github-actions'||
-       typeof c.body!=='string'||!c.body.includes(marker))return false;
-    // Preserve trusted legacy marker-only handoffs, but reject structured
-    // Specialist/base/merge-only receipts from the earlier faulty classifier.
-    const jobs=/^Failed jobs: ([^\n]+)$/m.exec(c.body);
-    return !jobs || jobs[1].split(',').some(name=>
+       typeof c.body!=='string'||!c.body.includes(receipt))return false;
+    const failed=/^Failed jobs: ([^\n]+)$/m.exec(c.body);
+    return !failed || failed[1].split(',').some(name=>
       name.trim().replace(/\.$/,'')==='core-lint-types-build');
   });
 }
-// A failed legacy aggregate alone is not enough to launch source Code Repair.
+// An exact-HEAD, Actions-bot-authenticated Watchdog Core source failure
+// bypasses ESLint autofix. Never trust PR text or aggregate gate failures.
 function verifiedCoreCodeFailure(comments,sha){
  const marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
  return Array.isArray(comments)&&comments.some(comment=>{
@@ -75,7 +77,7 @@ function verifiedCoreCodeFailure(comments,sha){
      !comment.body.startsWith(marker+'\n'))return false;
   const match=/^Failed jobs: ([^\n]+)$/m.exec(comment.body);
   return !!match&&match[1].split(',').some(name=>
-    name.trim().replace(/\.$/,'')==='core-lint-types-build');
+   name.trim().replace(/\.$/,'')==='core-lint-types-build');
  });
 }
 function safeFiles(items) {
@@ -207,8 +209,9 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // A source label from an older HEAD is not permission to edit new code.
     // The trusted Watchdog must have diagnosed this exact HEAD as source-red.
-    if(!conflict && !hasVerifiedSourceHandoff(comments,pr.head.sha)){
-      log('SKIP_SOURCE_WITHOUT_EXACT_HEAD_REPAIR_RECEIPT #' + pr.number);
+    if(!conflict && (!hasVerifiedSourceHandoff(comments,pr.head.sha)||
+        !verifiedCoreCodeFailure(comments,pr.head.sha))){
+      log('SKIP_SOURCE_WITHOUT_VERIFIED_FAILED_CORE_BUILD #' + pr.number);
       continue;
     }
     let files = [];

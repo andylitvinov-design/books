@@ -142,7 +142,7 @@ function validatePatch(text,scope){
  // in the non-privileged worktree; verification later repeats from clean HEAD.
  return patch+'\n';
 }
-function isolatedEnvironment(dir){
+function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
  const config=path.join(dir,'config'),home=path.join(dir,'home');
  for(const p of [config,home,path.join(dir,'data'),path.join(dir,'cache'),
     path.join(config,'opencode','agents')])fs.mkdirSync(p,{recursive:true,mode:0o700});
@@ -156,9 +156,66 @@ function isolatedEnvironment(dir){
    XDG_CACHE_HOME:path.join(dir,'cache'),TMPDIR:dir,
    PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C.UTF-8',CI:'true',
    OPENCODE_DISABLE_CLAUDE_CODE:'1',OPENCODE_ENABLE_EXA:'0',
-   OPENCODE_ENABLE_PARALLEL:'0'};
+   OPENCODE_ENABLE_PARALLEL:'0',
+   ...(typeof freeApiKey==='string'&&freeApiKey.length>0?{OPENCODE_API_KEY:freeApiKey}:{})};
 }
-function propose(){
+
+
+function verifyFreeModelMetadata(payload,model=MODEL){
+ const suffix=String(model).split('/').at(-1);
+ const rows=Array.isArray(payload)?payload:Array.isArray(payload?.data)?payload.data:null;
+ if(!rows)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+ const entry=rows.find(item=>item&&(
+   item.id===model||item.id==='opencode/'+suffix||item.id===suffix||
+   (item.providerID==='opencode'&&item.modelID===suffix)
+ ));
+ if(!entry)throw Error('FREE_AI_MODEL_NOT_IN_FREE_CATALOG');
+ const costs=[];
+ if(Array.isArray(entry.variants)&&entry.variants.length){
+  for(const variant of entry.variants){
+   if(!variant||!Array.isArray(variant.cost)||variant.cost.length===0)
+    throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+   costs.push(...variant.cost);
+  }
+ }else if(Array.isArray(entry.cost)&&entry.cost.length){
+  costs.push(...entry.cost);
+ }else{
+  const pricing=entry.pricing||entry.cost;
+  if(!pricing||typeof pricing!=='object')throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+  costs.push({
+   input:pricing.input??pricing.prompt??pricing.input_price,
+   output:pricing.output??pricing.completion??pricing.output_price,
+   cache:{read:pricing.cache?.read??pricing.cached_read??pricing.cache_read,
+    write:pricing.cache?.write??pricing.cached_write??pricing.cache_write}
+  });
+ }
+ if(!costs.length)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+ for(const cost of costs){
+  const cache=cost?.cache||{};
+  const input=cost?.input,output=cost?.output;
+  const read=cache.read??cost?.cache_read??cost?.cached_read;
+  const write=cache.write??cost?.cache_write??cost?.cached_write;
+  if(typeof input!=='number'||typeof output!=='number'||
+    typeof read!=='number'||typeof write!=='number')
+   throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+  if(input!==0||output!==0||read!==0||write!==0)
+   throw Error('FREE_AI_MODEL_PRICE_NOT_ZERO');
+ }
+ return {model,costRows:costs.length,zeroCost:true};
+}
+
+async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutMs=10000}={}){
+ if(typeof fetchImpl!=='function')throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
+ let response;
+ try{response=await fetchImpl('https://opencode.ai/inference/v1/models',{
+   method:'GET',headers:{Accept:'application/json'},signal:AbortSignal.timeout(timeoutMs)});}
+ catch{throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');}
+ if(!response?.ok)throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
+ let payload;try{payload=await response.json();}catch{throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');}
+ return verifyFreeModelMetadata(payload,model);
+}
+
+async function propose(){
  const scope=sourceScope(),root=process.cwd();
  const sources=checkScopeFiles(root,scope);
  const signals=collectDiagnostics(root,scope);
@@ -168,8 +225,11 @@ function propose(){
  if(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile())
    throw Error('FREE_AI_CLI_NOT_INSTALLED');
  const isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
- const env=isolatedEnvironment(isolated);
+ const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
+ if(!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
  try{
+   const priceCheck=await verifyFreeModelPrice();
+   console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
    const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
    if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
    validateAgentAcl(acl.stdout);
@@ -201,13 +261,15 @@ function propose(){
    return paths;
  }finally{fs.rmSync(isolated,{recursive:true,force:true});}
 }
-if(require.main===module){
- try{propose();}catch(error){
+async function main(){
+ try{await propose();}
+ catch(error){
    const reason=String(error.message||error).replace(/[^A-Za-z0-9_-]/g,'_').slice(0,100);
    fs.writeFileSync('.hh-free-agent-status',reason+'\n',{mode:0o600});
    console.error('HH_FREE_AI_BLOCKED '+reason+'; no paid fallback, no source publication');
    process.exitCode=1;
  }
 }
+if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment};
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};

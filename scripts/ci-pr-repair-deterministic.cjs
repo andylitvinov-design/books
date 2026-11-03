@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const cp=require('node:child_process');
 const ts=require('typescript');
-const SOURCE=/^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:ts|tsx)$/;
+const SOURCE=/^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
 const SHA=/^[a-f0-9]{40}$/i;
 const MAX_FILES=8, MAX_BYTES=150000;
 
@@ -102,17 +102,28 @@ function repairTypeOnlyImports(source,filename='source.ts'){
  for(const position of unique)code=code.slice(0,position)+'type '+code.slice(position);
  return {changed:unique.length>0,code,detail:unique.length?'TYPE_ONLY_IMPORTS_FIXED':'NO_SAFE_TYPE_ONLY_IMPORTS',edits:unique.length};
 }
-function main(){
- const sha=String(process.env.REPAIR_SHA||'');
- let files;try{files=JSON.parse(process.env.REPAIR_FILES_JSON||'null');}catch{}
+function trustedRepairScope(env=process.env){
+ const sha=String(env.REPAIR_SHA||'');
+ let files;try{files=JSON.parse(env.REPAIR_FILES_JSON||'null');}catch{}
+ // The signed Repair Worker sends a mixed JS/TS source allowlist. This
+ // TypeScript-only codemod must skip JS, not reject the entire signed task.
  if(!SHA.test(sha)||!Array.isArray(files)||!files.length||files.length>MAX_FILES||
-   new Set(files).size!==files.length||!files.every(f=>typeof f==='string'&&SOURCE.test(f)))
+   new Set(files).size!==files.length||!files.every(f=>typeof f==='string'&&
+   SOURCE.test(f)&&!f.startsWith('tests/')&&!f.startsWith('.github/')&&
+   !f.includes('/__tests__/')))
   throw Error('INVALID_TRUSTED_REPAIR_SCOPE');
+ return {sha,files};
+}
+function main(){
+ const {sha,files}=trustedRepairScope();
  const root=fs.realpathSync(process.cwd());
  const head=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  if(head!==sha)throw Error('REPAIR_CHECKOUT_HEAD_MISMATCH');
  const changed=[];
  for(const file of files){
+  // No JS/JSX transformation is approved here. The later ESLint/free-only
+  // path retains those source files under its separate strict allowlist.
+  if(!/\.tsx?$/.test(file))continue;
   const abs=path.resolve(root,file);
   if(!abs.startsWith(root+path.sep)||fs.realpathSync(abs)!==abs||!fs.lstatSync(abs).isFile())
    throw Error('UNSAFE_REPAIR_PATH');
@@ -127,4 +138,4 @@ function main(){
  console.log('HH_DETERMINISTIC_REPAIR '+JSON.stringify({head_sha:sha,changed}));
 }
 if(require.main===module){try{main()}catch(error){console.error('HH_DETERMINISTIC_REPAIR_BLOCKED '+error.message);process.exitCode=1;}}
-module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced};
+module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope};

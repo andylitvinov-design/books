@@ -6,10 +6,11 @@ const {collectCompletedJobs}=require('./ci-pr-kpi-actions.cjs');
 const {collectDispatcherEvents}=require('./ci-pr-kpi-dispatch-collector.cjs');
 const {normalizeCoreEvidence}=require('./ci-pr-kpi-ci.cjs');
 const {buildReport}=require('./ci-pr-kpi-report.cjs');
+const {collectCancellationEvidence}=require('./ci-pr-kpi-cancellations.cjs');
 async function run({github,core,context,now=Date.now(),deps={}}){
  const {owner,repo}=context.repo;
  if(owner!=='andylitvinov-design'||repo!=='books'||!Number.isFinite(now))throw Error('INVALID_CONTEXT');
- const d={collectBacklog,collectReceiptEvents,collectMergeEvents,collectCompletedJobs,collectDispatcherEvents,normalizeCoreEvidence,...deps};
+ const d={collectBacklog,collectReceiptEvents,collectMergeEvents,collectCompletedJobs,collectDispatcherEvents,collectCancellationEvidence,normalizeCoreEvidence,...deps};
  const common={github,owner,repo,minRemaining:500};const since=now-14*86400000;
  const backlog=await d.collectBacklog({...common,maxRequests:12});
  const recentReceipts=await d.collectReceiptEvents({...common,since:now-2*3600000,until:now,maxRequests:20});
@@ -53,12 +54,20 @@ async function run({github,core,context,now=Date.now(),deps={}}){
   reads:snapshots.every(x=>Number.isSafeInteger(x.reads))?snapshots.reduce((n,x)=>n+x.reads,0):null,
   events:[...unique.values()],segments:snapshots.map(x=>({since:x.since,
    complete:x.complete===true&&!inconsistent,reason:inconsistent?'MERGE_SNAPSHOTS_DIFFER':x.reason}))};
+ // Target cancelled/failed runs first: broad fourteen-day job inventories
+ // often exhaust their request budget before reaching a single cancelled job.
+ const cancellations=await d.collectCancellationEvidence({...common,since,until:now,maxRequests:80,maxRuns:24});
  const actions=await d.collectCompletedJobs({...common,since,until:now,maxRequests:60});
  const dispatch=await d.collectDispatcherEvents({...common,runs:actions.workflowRuns,jobs:actions.jobs,runsComplete:actions.complete,jobsComplete:actions.complete,maxRequests:30});
  dispatch.since=actions.since;
  const ci=d.normalizeCoreEvidence(actions.workflowRuns,actions.jobs);
- const report=buildReport({now,backlog,receipts,merges,actions,dispatch,ci});
+ const report=buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellations});
  const text=JSON.stringify(report);core.info('HH_CONTROL_KPI '+text);
+ const recent=report.windows['1h'].cancellation_reasons.current;
+ core.info('HH_CANCELLATION_MONITOR '+JSON.stringify({checked_at:report.checked_at,
+  label:recent.label,counts:recent.counts,runner_minutes_observed:recent.runner_minutes_observed,
+  cancelled_runner_minutes_observed:recent.cancelled_runner_minutes_observed,
+  unverified_job_inventories:recent.unverified_job_inventories}));
  await core.summary.addHeading('HH Control Tower KPI: evidence and coverage').addCodeBlock(text,'json').write();
  return report;
 }

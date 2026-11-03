@@ -72,6 +72,8 @@ jobs:
           HH_HAS_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
           # Paid AI credentials are deliberately not inspected by the repair worker.
           HH_HAS_CODEX_TOKEN: 'false'
+          # Only a separately provisioned free-tier OpenCode key can enable inference.
+          HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -96,7 +98,7 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available','true');
+            core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -312,10 +314,12 @@ jobs:
         shell: bash
         env:
           HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
+          HH_OPENCODE_FREE_API_KEY: ${{ secrets.HH_OPENCODE_FREE_API_KEY }}
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
-          # HOME/XDG config, an effective deny-all ACL, and no GH/API secrets.
+          # HOME/XDG config and deny-all ACL. Only the dedicated free-tier
+          # OpenCode credential is passed; no GitHub or paid-provider secret.
           if ! node .hh-trusted/scripts/ci-pr-repair-free-agent.cjs; then
             echo 'Free model unavailable, quota-limited, or patch rejected.'
             echo 'No paid retry, commit, push, or relaxed safety gate.'
