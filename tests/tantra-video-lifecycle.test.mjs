@@ -393,3 +393,14 @@ test('hidden muted recovery never applies saved preferences to a new source',()=
   assert.equal(video.muted,false,'changed source must not inherit old mute choice');
   assert.equal(video.currentTime,24);
 });
+
+test('real WebKit browser acceptance requires new presented decoded frames after pipeline counter reset',()=>{
+  const verifier=readFileSync(new URL('../scripts/verify-tantra-testimonials.mjs',import.meta.url),'utf8');
+  const functionBody=verifier.split('async function startVisibleNative(')[1]?.split('async function focusWithoutScroll(')[0];
+  assert.ok(functionBody,'The real browser acceptance must execute startVisibleNative');
+  assert.match(functionBody,/frame\.at > \(before\.presentedFrame\?\.at \?\? -1\)/,'a frame after explicit native play is required');
+  assert.match(functionBody,/frame\.mediaTime > before\.time \+ 0\.35/,'a genuinely advanced presented frame is required');
+  assert.match(functionBody,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/,'the frame must match the active media clock');
+  assert.match(functionBody,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/,'paused, stalled-seek or errored media cannot pass');
+  assert.doesNotMatch(functionBody,/toBeGreaterThan\(initial\.frames\)/,'GStreamer resets this counter on a real decoder rebuild');
+});

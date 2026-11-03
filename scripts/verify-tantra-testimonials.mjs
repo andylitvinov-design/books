@@ -204,11 +204,30 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     observation.stage = 'request-playback';
     await video.evaluate(requestNativePlayback);
     await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
-    const initial = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames }));
+    const initial = await video.evaluate(el => ({
+      time: el.currentTime,
+      frames: el.getVideoPlaybackQuality().totalVideoFrames,
+      presentedFrame: el.__tantraPresentedFrame ?? null,
+    }));
     observation.initial = initial;
     observation.stage = 'observe-decoded-playback';
     await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
-    await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(initial.frames);
+    // Real WebKit/GStreamer can reset totalVideoFrames during the same-source
+    // decoder rebuild (24 -> 11 on actual WebKit EN 1365 in artifact 13274813238)
+    // even though media time and presented frame callbacks genuinely advance.
+    // Do not mistake a resettable counter for absent decoded playback. Require
+    // independent NEW presented-frame metadata, advancing mediaTime, healthy
+    // active controls and a media clock matching the presented frame instead.
+    await expect.poll(() => video.evaluate((el, before) => {
+      const frame = el.__tantraPresentedFrame;
+      return Boolean(frame &&
+        Number.isFinite(frame.at) && frame.at > (before.presentedFrame?.at ?? -1) &&
+        Number.isFinite(frame.mediaTime) && frame.mediaTime > before.time + 0.35 &&
+        (!before.presentedFrame || frame.presentedFrames > before.presentedFrame.presentedFrames) &&
+        Math.abs(frame.mediaTime - el.currentTime) < 0.35 &&
+        !el.paused && !el.seeking && !el.ended && !el.error &&
+        el.readyState >= 2 && el.currentSrc);
+    }, initial), { timeout: 20000 }).toBe(true);
     const sample = await video.evaluate(nativePlaybackSnapshot);
     observation.sample = sample;
     assert.equal(sample.paused, false);
