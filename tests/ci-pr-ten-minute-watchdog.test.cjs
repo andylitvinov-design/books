@@ -964,8 +964,10 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   // Specialist (PRODUCTION_BASE_CHANGED) and dependent merge gate.
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
     fail('hh-specialist'),fail('hh-merge-check')]),'SPECIALIST_FAILED');
+  // Without an executed Specialist job the root cause is unknown.
+  // Keep this fail-closed instead of inventing a policy/base failure.
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
-    fail('hh-merge-check')]),'RELEASE_GATE_ONLY');
+    fail('hh-merge-check')]),'UNVERIFIED');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
     'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
   assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),
