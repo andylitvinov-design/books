@@ -12,7 +12,7 @@ import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/pr
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -127,7 +127,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const source = files?.base?.get(name);
   const candidate = files?.current?.get(name);
   const baseJob = trustedMandalaMacosJob(source);
-  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
+  const candidateJob = trustedMandalaMacosJob(candidate);
+  // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
+  // A skipped WebKit job remains neutral only when the BASE branch predicate
+  // itself excludes this PR; the preflight cannot alter its guard or steps.
+  const withRequiredPreflight = baseJob?.replace(
+    /^(    if: .+)\n(    runs-on: macos-15)$/m,
+    '$1\n    needs: [webkit_preflight]\n$2');
+  const readyPreflight = typeof candidate === 'string' &&
+    /^  webkit_preflight:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m.test(candidate);
+  const trustedMacosJob = baseJob === candidateJob ||
+    (readyPreflight && withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob);
+  if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
@@ -282,6 +293,8 @@ export async function verify(api,ctx,files,options={}) {
   // Only *registered* queued/requested/waiting runs receive this 15m grace;
   // absent workflows still fail after missingGrace and failed runs fail at once.
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // A completed workflow's jobs API may lag; read only missing/pending job data.
+  const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
   const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
   const now = options.now ?? Date.now;
@@ -421,12 +434,24 @@ export async function verify(api,ctx,files,options={}) {
   }
   const executed=[];
   for (const run of state.passed) {
-    const jobs=await api.jobs(run.id);
+    const requiredJobs = pinnedChangeRows ? trustedRequiredJobs(files.base.get(run.path)) : [];
+    const jobDeadline = Math.min(deadline, now() + jobGrace);
+    let jobs;
+    for (;;) {
+      jobs = await api.jobs(run.id);
+      const missing = requiredJobs.filter(name => !jobs.some(job => job.name === name));
+      const pending = jobs.filter(job => job.status !== 'completed');
+      if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
+      // No workflow dispatch or retry; keep independent green runs untouched.
+      await sleep(Math.max(1, Math.min(pollMs, 5_000, jobDeadline - now())));
+    }
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path), pr.head.ref)
-      .filter(job => job !== 'voice-webkit-macos');
+    const optionalSkipped = [...new Set([
+      ...trustedConditionalJobs(files.base.get(run.path), pr.head.ref),
+      ...trustedConditionallyInapplicableJobs(files.base.get(run.path), files.current.get(run.path), pr),
+    ])].filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
@@ -440,7 +465,7 @@ export async function verify(api,ctx,files,options={}) {
       }
       optionalSkipped.push('writer-practical-focused');
     }
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
+    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
@@ -530,6 +555,8 @@ export function diagnoseAggregateError(error) {
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
+    ['MISSING_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_MISSING','Check the immutable BASE job contract and exact-HEAD evidence, not independent green workflows.'],
+    ['NO_EXECUTED_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_NOT_EXECUTED','Inspect the required job dispatch, not unrelated green jobs.'],
     ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
     ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
     ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
@@ -559,7 +586,7 @@ export function diagnoseAggregateError(error) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }
-  if (category === 'WORKFLOW_JOBLESS' || category === 'SPECIALIST_JOB_FAILED') {
+  if (['WORKFLOW_JOBLESS','SPECIALIST_JOB_FAILED','REQUIRED_JOB_MISSING','REQUIRED_JOB_NOT_EXECUTED'].includes(category)) {
     add('job',message.split(':')[1] || '');
   }
   // Shared SYMPTOM keys are a triage aid, not proof that the code root is shared.

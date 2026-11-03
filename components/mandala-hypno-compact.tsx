@@ -178,13 +178,13 @@ const profileDirections:Record<string,HypnoTestProposal>={
 export function MandalaHypnoCompact({
   locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
   externalPhraseDraft=null, onExternalPhraseClear, onPendingChange,
-  onSelectScene, onSelectTheme, onPreview, onCreate,
+  onSelectScene, onSelectTheme, onPreview, onCreate, onApply,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
   scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
   externalPhraseDraft?:string|null; onExternalPhraseClear?:()=>void; onPendingChange?:(pending:boolean)=>void;
-  onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
+  onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void; onApply?:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
@@ -211,6 +211,7 @@ export function MandalaHypnoCompact({
   const [length,setLength]=useState<"short"|"medium">("medium");
   const [generation,setGeneration]=useState(0);
   const [ownOpen,setOwnOpen]=useState(false);
+  const [replacingIndex,setReplacingIndex]=useState<number|null>(null);
   const [ownText,setOwnText]=useState("");
   const [testProposal,setTestProposal]=useState<HypnoTestProposal|null>(null);
   const [testBusy,setTestBusy]=useState(false);
@@ -314,7 +315,12 @@ export function MandalaHypnoCompact({
   function addCustom(){
     if(!ownText.trim())return;
     const custom=compactCustomAffirmationInput([customPhraseText,ownText.trim()].filter(Boolean).join("\n"));
-    setCustomDraft(custom);onExternalPhraseClear?.();setOwnText("");setApprovalKey("");
+    if(replacingIndex!==null){
+      if(draft)setDraftState(current=>current?{...current,selected:current.selected.filter(index=>index!==replacingIndex)}:current);
+      else setReadyDraft({selected:chosen.filter(index=>index!==replacingIndex),resetPreset:readyDraft?.resetPreset??false});
+    }
+    setCustomDraft(custom);onExternalPhraseClear?.();setOwnText("");
+    setReplacingIndex(null);setApprovalKey("");
   }
   function toggleSelected(i:number){
     if(draft)setDraftState({...draft,selected:draft.selected.includes(i)?
@@ -460,6 +466,9 @@ export function MandalaHypnoCompact({
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
+      <details className={css.ideaDisclosure} data-hypno-idea-details>
+        <summary><Target size={21} aria-hidden="true"/>
+          <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-request data-hypno-idea>
         <div className={css.cardHead}>
           <span className={css.emblem}><Target size={22} aria-hidden="true"/></span>
@@ -500,6 +509,7 @@ export function MandalaHypnoCompact({
         <button type="button" className={css.ideaApply} data-hypno-apply-request disabled={disabled}
           onClick={propose}><WandSparkles size={19} aria-hidden="true"/>{ideaCopy[locale].apply}<ChevronRight size={18} aria-hidden="true"/></button>
       </section>
+      </details>
 
       <details className={css.strategyDisclosure}>
         <summary>{extra.strategy} · {extra.wave}<ChevronDown size={17} aria-hidden="true"/></summary>
@@ -571,8 +581,34 @@ export function MandalaHypnoCompact({
             <strong>{extra.role}</strong><div>
               {(["support","possibility","action"] as const).map((id,i)=><button type="button" key={id}
                 aria-label={extra.roles[i]} aria-pressed={kind===id} disabled={disabled} onClick={()=>{setKind(id);filtered(theme,problemIndex,extraGoal,{kind:id});}}><span className={css.fullText}>{extra.roles[i]}</span><span className={css.mobileText}>{smallFilterLabels[locale].roles[i]}</span></button>)}
+              <button type="button" data-hypno-filter-confidence aria-pressed={focus==="confidence"} disabled={disabled}
+                onClick={()=>{setFocus("confidence");filtered(theme,problemIndex,extraGoal,{focus:"confidence"});}}>
+                {locale==="ru"?"Уверенность":locale==="es"?"Confianza":"Confidence"}
+              </button>
             </div>
           </div>
+          <div className={css.phraseSelects} data-hypno-phrase-selects>
+            <label>{extra.tone}
+              <select data-hypno-select-tone value={tone} disabled={disabled}
+                onChange={event=>{const value=event.currentTarget.value as typeof tone;setTone(value);filtered(theme,problemIndex,extraGoal,{tone:value});}}>
+                {(["gentle","balanced","uplifting"] as const).map((id,i)=><option key={id} value={id}>{extra.tones[i]}</option>)}
+              </select>
+            </label>
+            <label>{extra.focus}
+              <select data-hypno-select-focus value={focus} disabled={disabled}
+                onChange={event=>{const value=event.currentTarget.value as typeof focus;setFocus(value);filtered(theme,problemIndex,extraGoal,{focus:value});}}>
+                {(["support","confidence","action"] as const).map((id,i)=><option key={id} value={id}>{extra.focuses[i]}</option>)}
+              </select>
+            </label>
+            <label>{extra.length}
+              <select data-hypno-select-length value={length} disabled={disabled}
+                onChange={event=>{const value=event.currentTarget.value as typeof length;setLength(value);filtered(theme,problemIndex,extraGoal,{length:value});}}>
+                {(["short","medium"] as const).map((id,i)=><option key={id} value={id}>{extra.lengths[i]}</option>)}
+              </select>
+            </label>
+          </div>
+          <details className={css.filterAdvanced}>
+            <summary>{locale==="ru"?"Все варианты фильтров":locale==="es"?"Todas las opciones":"All filter options"}</summary>
           <div className={css.filterRow} data-hypno-filter-tone role="group" aria-label={extra.tone}>
             <strong>{extra.tone}</strong><div>
               {(["gentle","balanced","uplifting"] as const).map((id,i)=><button type="button" key={id}
@@ -591,20 +627,31 @@ export function MandalaHypnoCompact({
                 aria-pressed={length===id} disabled={disabled} onClick={()=>{setLength(id);filtered(theme,problemIndex,extraGoal,{length:id});}}>{extra.lengths[i]}</button>)}
             </div>
           </div>
+          </details>
         </div>
         <button type="button" className={css.regenerate} data-hypno-generate-new disabled={disabled||geminiBusy}
           onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
           <WandSparkles size={18} aria-hidden="true"/>{extra.generate}</button>
         <div className={css.phraseCounter}><strong>{locale==="ru"?"Выберите фразы":locale==="es"?"Elige frases":"Choose phrases"}</strong><span>{selectedCount}/5 {ui.selected}</span></div>
         <div className={css.phraseMiniList}>
-          {candidates.map((sentence,i)=><button type="button" key={i} data-hypno-phrase={i}
-            aria-pressed={chosen.includes(i)} disabled={disabled} onClick={()=>toggleSelected(i)}>
-            {chosen.includes(i)?<Check size={15}/>:<span aria-hidden="true">○</span>}
-            <span>{sentence}</span></button>)}
+          {candidates.map((sentence,i)=><div className={css.phraseRow} key={i}>
+            <button type="button" data-hypno-phrase={i} aria-pressed={chosen.includes(i)}
+              disabled={disabled} onClick={()=>toggleSelected(i)}>
+              <span className={css.phraseNumber}>{i+1}</span>
+              {chosen.includes(i)?<Check size={17} aria-hidden="true"/>:<span className={css.phraseUnchecked} aria-hidden="true">○</span>}
+              <span className={css.phraseText}>{sentence}</span>
+            </button>
+            <button type="button" className={css.phraseEdit} disabled={disabled}
+              aria-label={(locale==="ru"?"Изменить фразу ":locale==="es"?"Editar frase ":"Edit phrase ")+(i+1)}
+              onClick={()=>{
+                setOwnText(sentence);setReplacingIndex(i);setOwnOpen(true);
+                window.requestAnimationFrame(()=>document.querySelector<HTMLInputElement>("[data-hypno-own-phrase]")?.focus());
+              }}><Pencil size={19} aria-hidden="true"/></button>
+          </div>)}
         </div>
         {customPhraseText.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
-          <button type="button" disabled={disabled} onClick={()=>setOwnOpen(v=>!v)}>{extra.add}<ChevronDown size={14}/></button>
+          <button type="button" disabled={disabled} onClick={()=>{setReplacingIndex(null);setOwnOpen(v=>!v);}}>{extra.add}<ChevronDown size={14}/></button>
         </div>
         {ownOpen&&<div className={css.shortNote+" "+css.miniOwn}>
           <input value={ownText} data-hypno-own-phrase aria-label={extra.add} disabled={disabled} maxLength={36} placeholder={extra.add}
@@ -616,7 +663,7 @@ export function MandalaHypnoCompact({
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
-      <details className={css.advanced}><summary>{locale==="ru"?"Дополнительные настройки видео":locale==="es"?"Ajustes adicionales de vídeo":"Additional video settings"}<ChevronDown size={18} aria-hidden="true"/></summary>
+      <details className={css.advanced} data-hypno-video-advanced><summary>{locale==="ru"?"Дополнительные настройки видео":locale==="es"?"Ajustes adicionales de vídeo":"Additional video settings"}<ChevronDown size={18} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-display>
         <div className={css.cardHead}>
           <span className={css.emblem}><SlidersHorizontal size={20} aria-hidden="true"/></span>
@@ -716,7 +763,7 @@ export function MandalaHypnoCompact({
         {safetyBlocked?summary:locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
       </p>}
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}
-        onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
+        onClick={onApply??onCreate}><Sparkles size={18} aria-hidden="true"/>{onApply?(locale==="ru"?"Применить фразы в видео":locale==="es"?"Aplicar frases al vídeo":"Apply phrases to video"):ui.create}<ChevronRight size={16}/></button>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>
   );

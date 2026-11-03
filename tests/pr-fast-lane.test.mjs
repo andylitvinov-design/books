@@ -779,8 +779,12 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'ffprobe', 'ffmpeg'
   ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
   const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
-  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
-    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob/,
+    'only the exact prerequisite insertion may leave the BASE macOS job otherwise unchanged');
+  assert.match(aggregator,/readyPreflight &&/,
+    'the added prerequisite must execute for every ready PR');
+  assert.match(aggregator,/baseJob === candidateJob/,
+    'untouched BASE macOS job remains a trusted valid case');
   assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
@@ -1309,7 +1313,11 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize, closed\]/);
+  assert.ok(native.includes("github.event.action == 'closed'"),
+    'close wakes the trusted janitor for orphaned queued checks');
+  assert.ok(native.includes("github.event.action != 'closed'"),
+    'close must never wake auto-merge readiness');
   assert.ok(native.includes('  prune-head:'), 'synchronize must wake only a scoped janitor');
   assert.ok(native.includes("github.event.action == 'synchronize'"));
   assert.match(native, /^  workflow_run:\s*$/m);
@@ -1322,7 +1330,7 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   const recovery = native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0] ?? '';
-  assert.match(recovery,/contains\(fromJSON\('\["cancelled","timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/,
+  assert.match(recovery,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/,
     'recovery runner is reserved for infrastructure interruptions');
   assert.doesNotMatch(recovery,/workflow_run\.conclusion != 'success'/,
     'ordinary code failures must not allocate a retry runner');

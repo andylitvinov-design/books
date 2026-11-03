@@ -56,6 +56,17 @@ for (const browserType of [chromium, webkit]) {
             label + " four top check-ins; Goals is part of Meaning");
           assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
             label+" no duplicate Goals scale");
+          const newCategoryCopy = {
+            en: { energy: "Body & energy", confidence: "Confidence", category: "Confidence & harmony" },
+            ru: { energy: "Тело и энергия", confidence: "Уверенность", category: "Уверенность и гармония" },
+            es: { energy: "Cuerpo y energía", confidence: "Confianza", category: "Confianza y armonía" },
+          }[locale];
+          assert.equal((await root.locator('[data-support-scale="energy"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.energy, label + " Body & energy shared check-in");
+          assert.equal((await root.locator('[data-support-scale="meaning"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.confidence, label + " Confidence is the fourth check-in");
+          assert.ok((await root.locator('[data-support-active-focus]').innerText()).includes(newCategoryCopy.energy),
+            label + " profile focus uses same Body & energy label");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
@@ -190,6 +201,10 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await filter.locator('[data-goal-sector]').count(),4,label+" four merged goal sectors");
           assert.equal(await filter.locator('[data-goal-sector="goals"]').count(),0,
             label+" no standalone Goals category");
+          assert.ok((await filter.locator('[data-goal-sector="meaning"]').innerText()).includes(newCategoryCopy.category),
+            label + " detailed fourth category uses Confidence & harmony");
+          assert.ok((await filter.locator('[data-goal-sector="energy"]').innerText()).includes(newCategoryCopy.energy),
+            label + " filter Body & energy matches top scale");
           // Live two-way sync between upper-left check-ins and the new compact
           // first slider in the filter, without dragging the separate axes.
           const checkinPairs = [

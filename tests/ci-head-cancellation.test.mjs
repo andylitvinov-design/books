@@ -95,10 +95,14 @@ test('specialist concurrency isolates unrelated events and only cancels an older
   ]);
   for (const [file, prefix] of workflows) {
     const source = readFileSync(`.github/workflows/${file}`, 'utf8');
-    const groupCondition = retrySafe.has(file) ? "github.event_name == 'pull_request' && github.run_attempt == 1" :
+    // All migrated workflows share a first-attempt PR scope. Four unchanged
+    // noHeadDelta workflows retain their independently asserted original guard.
+    const groupCondition = !noHeadDelta.has(file) ? "github.event_name == 'pull_request' && github.run_attempt == 1" :
+      retrySafe.has(file) ? "github.event_name == 'pull_request' && github.run_attempt == 1" :
       stablePRConcurrency.has(file) ? "github.event_name == 'pull_request'" : condition;
     const cancelBase = noHeadDelta.has(file) ? noHeadDeltaCondition : condition;
-    const cancelCondition = retrySafe.has(file) ?
+    const cancelCondition = !noHeadDelta.has(file) ? "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'" :
+      retrySafe.has(file) ?
       cancelBase.replace("github.event.action", "github.run_attempt == 1 && github.event.action") : cancelBase;
     const groupExpression = `${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
     assert.ok(source.includes('group: ' + groupExpression) || source.includes('group: >-\n    ' + groupExpression), file);

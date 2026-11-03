@@ -78,7 +78,7 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  const ctx={repo,number:27,head:SHA,base:BASE};
  const failed=run({path:file,conclusion:'failure'});
  const syntaxRun=run({id:153,path:syntax});
- const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'syntax',status:'completed',conclusion:'success'}]};
  const result=await verify(api,ctx,files,{maxWaitMs:0});
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
@@ -890,7 +890,7 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const api = { pr: async () => currentPr(), target: async () => advanced,
     compare: async () => ({ status:'diverged' }),
     changed: async () => { throw Error('live diff must not replace tested checkout'); },
-    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+    runs: async () => [run()], jobs: async () => [{ name: 'test', status: 'completed', conclusion: 'success' }] };
   // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   // A stale pull_request.base.sha must not fail a tested checkout whose parent
@@ -1284,7 +1284,7 @@ test('actual specialist verification still blocks CI-policy changes without trus
     changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
   const api={pr:async()=>({...pr(),base:{...pr().base,sha:current}}),
     target:async()=>current,compare:async()=>updated,runs:async()=>[run()],
-    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}]};
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
   const ctx={repo,number:27,head:SHA,base:BASE};
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
   const success=await verify(api,ctx,sources,{maxWaitMs:0,trustedPolicyBaseSha:current});
@@ -1492,4 +1492,51 @@ test('Mandala macOS branch-gated skip is wired into exact-head specialist verify
     {jobRows:[focused,{...mac,conclusion:'failure'}]},
   ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB/,
     'all untrusted or failed jobs remain release-blocking');
+});
+
+test('Mandala accepts only an exact required-preflight dependency before optional macOS', () => {
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const base=[
+    'on:',
+    '  pull_request:',
+    "    paths: ['components/mandala-*']",
+    'jobs:',
+    '  focused-unit-types-build:',
+    '    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:',
+    "    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'fix/video-')) }}",
+    '    runs-on: macos-15',
+    '    steps:',
+    '      - run: node scripts/verify-affirmation-voice-browser.mjs',
+    '',
+  ].join('\n');
+  const extra=[
+    '  webkit_preflight:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    '    runs-on: ubuntu-slim',
+  ].join('\n')+'\n';
+  const candidate=base.replace('  voice-webkit-macos:',extra+'  voice-webkit-macos:')
+    .replace('    runs-on: macos-15', '    needs: [webkit_preflight]\n    runs-on: macos-15');
+  const run=(next,branch='codex/ci-cheap-browser-preflight-20261103',changed=[path])=>
+    optionalMandalaMacosSkip({
+      base:new Map([[path,base]]),current:new Map([[path,next]]),
+    },branch,changed);
+  assert.equal(run(candidate),true,
+    'unmodified BASE branch condition allows CI-only skip with one required preflight');
+  assert.equal(run(candidate,'fix/video-release-20261103'),false,
+    'original BASE-required WebKit must execute on matching video branch');
+  assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
+    ['scripts/verify-affirmation-voice-browser.mjs']),false,
+    'a relevant voice or encoded media change must still require WebKit');
+  const invalid=[
+    candidate.replace('needs: [webkit_preflight]', 'needs: [other_job]'),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight, other_job]\n'),
+    candidate.replace('    runs-on: macos-15','    runs-on: ubuntu-latest'),
+    candidate.replace('    steps:','    timeout-minutes: 1\n    steps:'),
+    candidate.replace("startsWith(github.head_ref, 'fix/video-')","startsWith(github.head_ref, 'codex/ci-')"),
+    candidate.replace("    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}","    if: ${{ false }}"),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight]\n    continue-on-error: true\n'),
+  ];
+  for (const changedJob of invalid)
+    assert.equal(run(changedJob),false,'unsafe macOS policy change must never self-waive');
 });
