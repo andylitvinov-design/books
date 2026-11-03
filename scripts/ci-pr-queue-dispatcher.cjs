@@ -113,7 +113,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
-  workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
+  workerRuns:[],blockerExamples:{},
+  ciWake:{waiting:0,queued:0,running:0,confirmed:0,stalled:0,unknown:0},
+  apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
@@ -267,6 +269,27 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
+  // A metadata-only Ready event is NOT proof that Core started. Reconcile
+  // every pending exact-HEAD wake before categorising it as handled.
+  if(status==='CI_WAKE_PENDING'&&task.lane==='ci'){
+   let outcome;
+   try{
+    const {reconcile}=require('./ci-pr-ci-wake-audit.cjs');
+    outcome=await reconcile({github,limited,owner,repo,task,pr:fresh,
+      comments,now,dryRun});
+   }catch(error){
+    log('CI_WAKE_AUDIT_UNAVAILABLE #'+task.pr_number+' '+
+      String(error?.message||error).slice(0,140));
+    outcome={state:'UNKNOWN',reason:'CI_WAKE_AUDIT_UNAVAILABLE'};
+   }
+   const key=String(outcome.state||'UNKNOWN').toLowerCase();
+   summary.ciWake[key in summary.ciWake?key:'unknown']++;
+   blocked(outcome.reason||'CI_WAKE_AUDIT_UNKNOWN');
+   log('CI_WAKE_RECONCILE #'+task.pr_number+' '+task.head_sha.slice(0,12)+
+     ' state='+outcome.state+' reason='+outcome.reason+
+     (outcome.runId?' run='+outcome.runId:''));
+   continue;
+  }
   if(status!=='FREE'){
    blocked(status);
    // A reserved/claimed HEAD with no terminal result must not be reported
