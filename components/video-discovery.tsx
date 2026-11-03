@@ -370,6 +370,10 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>{t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
         videoLayout={variant==="mytube"?"mytube":"default"}
+        mytubeFocus={variant==="mytube"?{
+          categoryId:mytubeCategoryId,subcategoryId:mytubeSubcategoryId,
+          topicId:mytubeTopicId,scenarioId:mytubeScenarioId,
+        }:undefined}
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
         saveText={t.save} unsaveText={t.unsave} dismissText={t.dismiss}/>}
   </div>;
