@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
@@ -64,6 +64,58 @@ test('V2 first-attempt lease advisory requires unchanged workflow bodies and non
    'real product change still requires its real browser specialist');
  assert.deepEqual(check(current,[...only,{filename:'lib/security/auth.ts',status:'M'}]),[],
    'unknown changed sources cannot make a heavy workflow advisory');
+});
+
+test('trusted exact removal of a domain workflow self-path reduces unnecessary PR jobs',()=>{
+ const file='.github/workflows/isolated-browser.yml';
+ const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/isolated-browser.yml'\n      - 'components/site-video-*'\n  workflow_dispatch:\npermissions:\n  contents: read\njobs:\n  browser:\n    runs-on: ubuntu-24.04\n";
+ const next=yaml.replace("      - '"+file+"'\n",'');
+ const base=new Map([[file,yaml]]);
+ const current=new Map([[file,next]]);
+ const input=[{filename:file,status:'M'}];
+ const advisory=(candidate=current,changedRows=input,expected=[file])=>
+   [...selfTriggerRemovalAdvisory({base,current:candidate,changedRows,expected})];
+ assert.deepEqual(advisory(),[file]);
+ assert.deepEqual(advisory(current,[...input,{filename:'.github/workflows/unrelated.yml',status:'M'}]),[file]);
+ assert.deepEqual(advisory(current,[...input,{filename:'components/site-video-player.tsx',status:'M'}]),[],
+   'real source changes must always retain browser acceptance');
+ for(const invalid of [
+   next.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+   next.replace('contents: read','contents: write'),
+   next.replace("  workflow_dispatch:","  schedule:"),
+   next.replace("components/site-video-*","lib/**"),
+   yaml,
+ ]) assert.deepEqual(advisory(new Map([[file,invalid]])),[],
+   'changing jobs, permissions, triggers or omitting removal is not safe');
+ for(const status of ['A','D','renamed']) assert.deepEqual(advisory(current,[{filename:file,status}]),[]);
+ assert.deepEqual(advisory(current,input,[]),[]);
+ for(const excluded of ['hh-actionlint.yml','hh-pr-sweep-guard.yml','hh-ci-stale-run-prune.yml']) {
+   const protectedFile='.github/workflows/'+excluded;
+   const protectedYaml=yaml.replaceAll(file,protectedFile);
+   const protectedNext=protectedYaml.replace("      - '"+protectedFile+"'\n",'');
+   assert.deepEqual([...selfTriggerRemovalAdvisory({
+     base:new Map([[protectedFile,protectedYaml]]),
+     current:new Map([[protectedFile,protectedNext]]),
+     changedRows:[{filename:protectedFile,status:'M'}],expected:[protectedFile],
+   })],[]);
+ }
+});
+
+test('self-trigger elimination never hides failed workflows if trusted actionlint was modified',async()=>{
+ const file='.github/workflows/isolated-browser.yml',syntax='.github/workflows/hh-actionlint.yml';
+ const old="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/isolated-browser.yml'\n      - 'components/site-video-*'\njobs:\n  browser:\n    runs-on: ubuntu-24.04\n";
+ const newContent=old.replace("      - '"+file+"'\n",'');
+ const syntaxSource="on:\n  pull_request:\n    paths:\n      - '.github/workflows/**'\njobs:\n  validate:\n    runs-on: ubuntu-24.04\n";
+ const files={base:new Map([[file,old],[syntax,syntaxSource]]),current:new Map([[file,newContent],[syntax,syntaxSource]]),changedRows:[{filename:file,status:'M'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const failing=run({path:file,conclusion:'failure'});
+ const passingLint=run({id:154,path:syntax});
+ const api={pr:async()=>pr(),runs:async()=>[failing,passingLint],jobs:async()=>[{name:'validate',status:'completed',conclusion:'success'}]};
+ const clean=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(clean.expected,[syntax]);
+ assert.deepEqual(clean.advisory.selfTriggerOnly,[file]);
+ const alteredSyntax={...files,current:new Map([[file,newContent],[syntax,syntaxSource+'# changed']])};
+ await assert.rejects(()=>verify(api,ctx,alteredSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
 });
 
 test('a failed run explicitly associated with a sibling PR on the same branch cannot block this PR',()=>{
