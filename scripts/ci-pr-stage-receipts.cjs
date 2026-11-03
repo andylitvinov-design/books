@@ -6,7 +6,7 @@ const STAGES=new Set(['ready','triage','claimed','repair_started','source_publis
 const SOURCES=new Set(['pr_opened_ready','ready_event_observed','ready_for_review_readback',
  'trusted_core_failure','repair_worker_claim','ci_worker_claim',
  'github_actions_fix_step','verified_git_ref']);
-const iso=x=>typeof x==='string'&&Number.isFinite(Date.parse(x))&&new Date(x).toISOString()===x;
+const iso=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(x)&&Number.isFinite(Date.parse(x));
 function validate(x){
  if(!x||!STAGES.has(x.stage)||!Number.isSafeInteger(x.pr_number)||x.pr_number<=0||
    !SHA.test(x.head_sha||'')||!/^[1-9][0-9]{0,18}$/.test(String(x.run_id||''))||
