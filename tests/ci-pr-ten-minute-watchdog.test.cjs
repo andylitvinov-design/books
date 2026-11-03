@@ -1256,8 +1256,8 @@ test('interrupted Core recovery allocates a runner only to eligible first-attemp
  // Only explicit infrastructure interruptions reserve the recovery runner.
  // Generic Core failure may be a source/contract regression and must not
  // spawn another Actions runner before the trusted failure classifier proves it.
- for(const result of ['cancelled','timed_out','startup_failure']) assert.ok(job.includes(result));
- assert.doesNotMatch(job,/['"]failure['"]/,'generic failed Core jobs do not reserve recovery runners');
+ for(const result of ['timed_out','startup_failure']) assert.ok(job.includes(result));
+ assert.doesNotMatch(job,/['"](?:cancelled|failure)['"]/,'new-HEAD cancellation and generic failed Core jobs do not reserve recovery runners');
  assert.match(job,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
  assert.match(job,/github\.event\.workflow_run\.status == 'completed'/);
 });
