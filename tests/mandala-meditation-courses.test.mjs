@@ -90,7 +90,7 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
   assert.match(studio,/const committedDifficultyRef=useRef\(keyDifficulty\);/);
   assert.doesNotMatch(studio,/committedDifficultyRef\.current=keyDifficulty;/,
     "unrelated React renders cannot rewind the last handled WebKit input");
-  assert.match(studio,/committedDifficultyRef\.current="";setKeyDifficulty\("");resetGeneratedMeditation\(\);/,
+  assert.ok(studio.includes('committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();'),
     "explicit mode reset must keep its ref and controlled input in sync");
   assert.match(studio,/data-guided-meditation-click-count=\{meditationActionCount\}/,
     "real Safari Generate taps are observable without collecting private text");

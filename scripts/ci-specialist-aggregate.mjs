@@ -59,17 +59,41 @@ export function verifiedCheckoutBase(env, ctx, cwd = process.cwd()) {
   return env.HH_TRUSTED_BASE_SHA;
 }
 
-export function githubReader(repo, token, transport = fetch) {
+export function githubReader(repo, token, transport = fetch, options = {}) {
   const root = 'https://api.github.com/repos/' + repo;
   const headers = {
     Authorization: 'Bearer ' + token,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
+  // Retrying only idempotent GETs prevents a transient GitHub Actions API
+  // HTTP 500 from invalidating an otherwise successful exact-HEAD Core.
+  // Never treat an exhausted retry as a passing specialist check.
+  const sleep = options.sleep ?? delay;
+  const retryDelaysMs = [400, 1200, 2400];
   async function get(path) {
-    const response = await transport(root + path,{headers});
-    if (!response.ok) throw Error('GitHub read ' + path.split('?')[0] + ' HTTP ' + response.status);
-    return response.json();
+    const endpoint = path.split('?')[0];
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await transport(root + path, {headers,signal:AbortSignal.timeout(12_000)});
+      } catch (error) {
+        const transient = ['AbortError', 'TimeoutError', 'TypeError'].includes(error?.name);
+        if (!transient || attempt >= retryDelaysMs.length)
+          throw Error('GitHub read ' + endpoint + ' NETWORK ' + (error?.name || 'UNKNOWN'));
+        await sleep(retryDelaysMs[attempt]);
+        continue;
+      }
+      if (response.ok) return response.json();
+      const rateLimited = response.status === 403 &&
+        (response.headers?.get('x-ratelimit-remaining') === '0' ||
+         Boolean(response.headers?.get('retry-after')));
+      const transientStatus = response.status === 429 ||
+        (response.status >= 500 && response.status <= 504) || rateLimited;
+      if (!transientStatus || attempt >= retryDelaysMs.length)
+        throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status);
+      await sleep(retryDelaysMs[attempt]);
+    }
   }
   async function pages(path, kind, maximum = 1000) {
     const out = [];
@@ -289,10 +313,13 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
-  // The real Actions queue can exceed three minutes during multi-PR batches.
-  // Only *registered* queued/requested/waiting runs receive this 15m grace;
-  // absent workflows still fail after missingGrace and failed runs fail at once.
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // A registered queued/requested/waiting workflow is evidence of dispatch,
+  // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
+  // while its runner is still waiting. Give it the same absolute 35-minute
+  // bounded deadline as running workflows; the parent job has a 45m timeout.
+  // Missing workflows retain their short discovery grace; genuine failures
+  // still abort immediately. An override may shorten, never extend, the cap.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? maxWait, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
@@ -551,7 +578,7 @@ export function diagnoseAggregateError(error) {
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
     ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
-    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Inspect GitHub runner capacity; rerun only after a confirmed transient interruption.'],
+    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Keep merge blocked. After every named queued exact-HEAD workflow finishes successfully, retry only the failed hh-specialist job once (by job ID), never re-run green Core or the whole workflow.'],
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
