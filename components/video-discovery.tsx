@@ -155,8 +155,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         ?(MYTUBE_CATEGORY_LEGACY_TAGS[myTubeCategory as keyof typeof MYTUBE_CATEGORY_LEGACY_TAGS]||[]):[];
   const selectedTopic=myTubeTopics.find(item=>item.id===myTubeTopic);
   const myTubeScopeTopicIds=new Set(myTubeScope.map(item=>item.id));
-  const myTubeScopeHasSpecificTags=videos.some(item=>
-    (item.topicTags||[]).some(tag=>myTubeScopeTopicIds.has(tag)));
+  const myTubeSelectedTopicHasSpecificTag=myTubeTopic!=="all"&&videos.some(item=>(item.topicTags||[]).includes(myTubeTopic));
   const sources=useMemo(()=>[...new Set(videos
     .map(item=>item.sourceLabel||item.author||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b,locale)),
     [videos,locale]);
@@ -173,7 +172,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         const tags=Array.isArray(item.topicTags)?item.topicTags:[];
         const directTopicTag=tags.some(tag=>myTubeScopeTopicIds.has(tag));
         const textMatch=myTubeScope.some(topic=>topic.searchTerms.some(term=>searchable.includes(term.toLocaleLowerCase(locale))));
-        const legacyMatch=!myTubeScopeHasSpecificTags&&myTubeLegacyTags.some(tag=>tags.includes(tag));
+        const legacyMatch=(myTubeTopic==="all"||!myTubeSelectedTopicHasSpecificTag)&&myTubeLegacyTags.some(tag=>tags.includes(tag));
         const matches=directTopicTag||textMatch||legacyMatch;
         if(!matches)return false;
       }
@@ -197,7 +196,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale,variant,myTubeScope,myTubeLegacyTags,myTubeScopeTopicIds,myTubeScopeHasSpecificTags]);
+  },[videos,search,source,period,durationRange,locale,variant,myTubeScope,myTubeLegacyTags,myTubeScopeTopicIds,myTubeSelectedTopicHasSpecificTag]);
   const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
     goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
   }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
