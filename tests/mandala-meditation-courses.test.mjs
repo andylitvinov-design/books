@@ -85,8 +85,14 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
   assert.ok(contextStart>0,"original controlled guided-course focus is retained");
   const context=studio.slice(contextStart,contextStart+550);
   assert.match(context,/const next=event\.currentTarget\.value;/);
-  assert.match(context,/if\(next===keyDifficulty\)return;/,
+  // React may deliver stale blur callbacks after the approved script is saved.
+  // Compare against the most recent ref, not a captured render closure.
+  assert.match(studio,/const committedDifficultyRef=useRef\(keyDifficulty\);/);
+  assert.match(studio,/committedDifficultyRef\.current=keyDifficulty;/);
+  assert.match(context,/if\(next===committedDifficultyRef\.current\)return;/,
     "duplicate WebKit input events cannot revoke a just-generated script");
+  assert.match(context,/committedDifficultyRef\.current=next;/,
+    "a new typed value becomes the latest committed input before invalidation");
   assert.match(context,/setKeyDifficulty\(next\);resetGeneratedMeditation\(\);/,
     "real changes must still invalidate old guided narration");
   assert.match(studio,/data-guided-signature-match=\{approvedSignature===journeySignature\?"true":"false"\}/,
