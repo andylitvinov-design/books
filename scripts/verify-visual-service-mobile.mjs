@@ -74,7 +74,7 @@ for (const engine of [chromium, webkit]) {
         const form=capture.locator("form[data-compact-lead-form]");
         await form.waitFor({state:"visible",timeout:20000});
         await page.waitForFunction(()=>document.querySelector(
-          '[data-service-visual-screen="final-capture"] [data-compact-lead-form]')?.getAttribute(
+          '[data-service-visual-screen="final-capture"] [data-compact-lead-form], [data-core-visual-screen="final-capture"] [data-compact-lead-form]')?.getAttribute(
           "data-compact-hydrated")==="true",null,{timeout:15000});
         assert.equal(await form.locator('input[name="contact"][required]').count(),1,
           label+" real contact input");
