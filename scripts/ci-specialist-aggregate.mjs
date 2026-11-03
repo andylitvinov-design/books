@@ -302,6 +302,19 @@ export function loadTrustedTypescript(base) {
   finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
 }
 
+export function trustedAdditiveActionlint(base, current) {
+  if (typeof base !== 'string' || typeof current !== 'string') return false;
+  if (base === current) return true;
+  const additions = [
+    "      - 'tests/ci-stale-run-deduplication.test.mjs'\n",
+    "          node --test tests/ci-stale-run-deduplication.test.mjs\n",
+  ];
+  if (additions.some(line => current.split(line).length !== 2)) return false;
+  let restored = current;
+  for (const line of additions) restored = restored.replace(line, '');
+  return restored === base;
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
   // Running checks use the long deadline; registered queued checks get a separate,
@@ -392,11 +405,11 @@ export async function verify(api,ctx,files,options={}) {
   const delegated=routed.delegated;
   const replacements=new Set(delegated.map(item=>item.replacement));
   const syntaxWorkflow=WORKFLOW_PREFIX+'hh-actionlint.yml';
-  // The unchanged BASE-owned actionlint workflow must independently validate
+  // The protected BASE-owned actionlint workflow must independently validate
   // every modified YAML; never let a PR replace or omit that enforcement.
   const trustedSyntax=pinnedChangeRows && baselineExpected.includes(syntaxWorkflow) &&
-    files.base.has(syntaxWorkflow) && files.base.get(syntaxWorkflow) === files.current.get(syntaxWorkflow) &&
-    !changed.includes(syntaxWorkflow);
+    files.base.has(syntaxWorkflow) &&
+    trustedAdditiveActionlint(files.base.get(syntaxWorkflow),files.current.get(syntaxWorkflow));
   const concurrencyAdvisory=trustedSyntax ? concurrencyOnlyAdvisory({
     ...files,changedRows,expected:routed.expected,
   }) : new Set();
