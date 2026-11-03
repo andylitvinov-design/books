@@ -204,6 +204,13 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0)'));
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
+  const speechChangeEffect=ui.slice(
+    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language]);'));
+  assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
+    "changing the spoken phrase must detach its previous WAV");
+  assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
+    "do not leave the removed spoken line attached merely because its text changed");
   assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
   assert.match(ui,/data-video-affimations-audio-ready/);
   assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/);

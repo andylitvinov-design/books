@@ -152,10 +152,11 @@ export function MandalaAffirmationVoice({
     // Consent applies to the exact approved transcript, not to future edits.
     // Public fixed voice samples remain available before new approval.
     if(textChanged)setConsent(false);
-    // Existing video marks a changed spoken script as STALE and shows
-    // a regenerate warning. Do not suppress that explicit safety feedback.
-    // A voice/language change with identical text instead detaches the file.
-    if(voiceDataRef.current&&!textChanged)onInvalidateRef.current?.();
+    // Any change to the actually spoken phrase, narrator or language
+    // detaches its previous WAV from video export before the next render.
+    // Editing unrelated approved lines leaves speechText unchanged, so the
+    // already-consented one-phrase recording remains attached.
+    if(voiceDataRef.current)onInvalidateRef.current?.();
     voiceDataRef.current=null;
     const previous=audioUrlRef.current;
     if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
