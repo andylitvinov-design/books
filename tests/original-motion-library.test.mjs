@@ -90,3 +90,39 @@ test("production abstract motion library contains 320 individually encoded H264 
    assert.equal(validateMontageClips(preset.clips,source.scenes),true);
  }
 });
+
+// The user's four public categories are editorial. Legacy renderer themes
+// must reflect the individual topic: goals != money; sleep != energy.
+test("new 320 animation presets follow topic-level legacy themes, not broad 4-category buckets",()=>{
+ const expected={
+  "goals-discipline": "goals",
+  "purpose-choice": "life",
+  "money-mindset": "money",
+  "business-career": "money",
+  "finding-love": "relationships",
+  "couple-relationships": "relationships",
+  "loneliness-breakups": "relationships",
+  "intimacy-family": "relationships",
+  "body-wellbeing": "health",
+  "energy-fatigue": "energy",
+  "confidence-worth": "energy",
+  "sleep-rest": "health",
+  "stress-burnout": "health",
+  "anxiety-fears": "health",
+  "trauma-childhood": "health",
+  "depression-apathy": "health"
+};
+ const byId=new Map(source.scenes.map(scene=>[scene.id,scene]));
+ const counts={};
+ for(const scene of source.scenes){
+   assert.equal(scene.theme,expected[scene.categories[2]],scene.id);
+   assert.equal(scene.categories[0],scene.theme,scene.id);
+   counts[scene.theme]=(counts[scene.theme]||0)+1;
+ }
+ assert.deepEqual(counts,{goals:20,life:20,money:40,relationships:80,health:120,energy:40});
+ for(const preset of source.presets){
+   const matching=preset.clips.map(id=>byId.get(id));
+   assert.ok(matching.every(Boolean),preset.id);
+   assert.ok(matching.every(scene=>scene.theme===preset.theme),preset.id);
+ }
+});

@@ -7,7 +7,7 @@
   "presets": [
     {
       "id": "motion-film-goal-achievement",
-      "theme": "money",
+      "theme": "goals",
       "label": {
         "ru": "Достижение целей",
         "en": "Goal Achievement",
@@ -23,7 +23,7 @@
     },
     {
       "id": "motion-film-procrastination",
-      "theme": "money",
+      "theme": "goals",
       "label": {
         "ru": "Прокрастинация",
         "en": "Procrastination",
@@ -39,7 +39,7 @@
     },
     {
       "id": "motion-film-self-discipline",
-      "theme": "money",
+      "theme": "goals",
       "label": {
         "ru": "Самодисциплина",
         "en": "Self-Discipline",
@@ -55,7 +55,7 @@
     },
     {
       "id": "motion-film-focus",
-      "theme": "money",
+      "theme": "goals",
       "label": {
         "ru": "Концентрация внимания",
         "en": "Focus & Concentration",
@@ -71,7 +71,7 @@
     },
     {
       "id": "motion-film-life-purpose",
-      "theme": "money",
+      "theme": "life",
       "label": {
         "ru": "Поиск предназначения",
         "en": "Life Purpose",
@@ -87,7 +87,7 @@
     },
     {
       "id": "motion-film-finding-self",
-      "theme": "money",
+      "theme": "life",
       "label": {
         "ru": "Поиск себя",
         "en": "Finding Yourself",
@@ -103,7 +103,7 @@
     },
     {
       "id": "motion-film-life-change",
-      "theme": "money",
+      "theme": "life",
       "label": {
         "ru": "Смена жизненного этапа",
         "en": "Life Transitions",
@@ -119,7 +119,7 @@
     },
     {
       "id": "motion-film-decision-making",
-      "theme": "money",
+      "theme": "life",
       "label": {
         "ru": "Трудный выбор",
         "en": "Difficult Decisions",
@@ -519,7 +519,7 @@
     },
     {
       "id": "motion-film-body-awareness",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Телесная осознанность",
         "en": "Body Awareness",
@@ -535,7 +535,7 @@
     },
     {
       "id": "motion-film-breathing",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Дыхательные практики",
         "en": "Breathing Practices",
@@ -551,7 +551,7 @@
     },
     {
       "id": "motion-film-muscle-relaxation",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Расслабление мышц",
         "en": "Muscle Relaxation",
@@ -567,7 +567,7 @@
     },
     {
       "id": "motion-film-gentle-movement",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Мягкое движение",
         "en": "Gentle Movement",
@@ -711,7 +711,7 @@
     },
     {
       "id": "motion-film-insomnia",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Бессонница",
         "en": "Insomnia",
@@ -727,7 +727,7 @@
     },
     {
       "id": "motion-film-fall-asleep",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Трудности с засыпанием",
         "en": "Trouble Falling Asleep",
@@ -743,7 +743,7 @@
     },
     {
       "id": "motion-film-night-waking",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Ночные пробуждения",
         "en": "Waking Up at Night",
@@ -759,7 +759,7 @@
     },
     {
       "id": "motion-film-sleep-quality",
-      "theme": "energy",
+      "theme": "health",
       "label": {
         "ru": "Качество сна",
         "en": "Sleep Quality",
@@ -1033,7 +1033,7 @@
   "scenes": [
     {
       "id": "motion-goals-money-goal-achievement-v1",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1050,7 +1050,7 @@
         "es": "Animación abstracta: Logro de objetivos"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1084,7 +1084,7 @@
     },
     {
       "id": "motion-goals-money-goal-achievement-v2",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1101,7 +1101,7 @@
         "es": "Animación abstracta: Logro de objetivos"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1135,7 +1135,7 @@
     },
     {
       "id": "motion-goals-money-goal-achievement-v3",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1152,7 +1152,7 @@
         "es": "Animación abstracta: Logro de objetivos"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1186,7 +1186,7 @@
     },
     {
       "id": "motion-goals-money-goal-achievement-v4",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1203,7 +1203,7 @@
         "es": "Animación abstracta: Logro de objetivos"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1237,7 +1237,7 @@
     },
     {
       "id": "motion-goals-money-goal-achievement-v5",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1254,7 +1254,7 @@
         "es": "Animación abstracta: Logro de objetivos"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1288,7 +1288,7 @@
     },
     {
       "id": "motion-goals-money-procrastination-v1",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1305,7 +1305,7 @@
         "es": "Animación abstracta: Procrastinación"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1339,7 +1339,7 @@
     },
     {
       "id": "motion-goals-money-procrastination-v2",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1356,7 +1356,7 @@
         "es": "Animación abstracta: Procrastinación"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1390,7 +1390,7 @@
     },
     {
       "id": "motion-goals-money-procrastination-v3",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1407,7 +1407,7 @@
         "es": "Animación abstracta: Procrastinación"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1441,7 +1441,7 @@
     },
     {
       "id": "motion-goals-money-procrastination-v4",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1458,7 +1458,7 @@
         "es": "Animación abstracta: Procrastinación"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1492,7 +1492,7 @@
     },
     {
       "id": "motion-goals-money-procrastination-v5",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1509,7 +1509,7 @@
         "es": "Animación abstracta: Procrastinación"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1543,7 +1543,7 @@
     },
     {
       "id": "motion-goals-money-self-discipline-v1",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1560,7 +1560,7 @@
         "es": "Animación abstracta: Autodisciplina"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1594,7 +1594,7 @@
     },
     {
       "id": "motion-goals-money-self-discipline-v2",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1611,7 +1611,7 @@
         "es": "Animación abstracta: Autodisciplina"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1645,7 +1645,7 @@
     },
     {
       "id": "motion-goals-money-self-discipline-v3",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1662,7 +1662,7 @@
         "es": "Animación abstracta: Autodisciplina"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1696,7 +1696,7 @@
     },
     {
       "id": "motion-goals-money-self-discipline-v4",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1713,7 +1713,7 @@
         "es": "Animación abstracta: Autodisciplina"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1747,7 +1747,7 @@
     },
     {
       "id": "motion-goals-money-self-discipline-v5",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1764,7 +1764,7 @@
         "es": "Animación abstracta: Autodisciplina"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1798,7 +1798,7 @@
     },
     {
       "id": "motion-goals-money-focus-v1",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1815,7 +1815,7 @@
         "es": "Animación abstracta: Enfoque y concentración"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1849,7 +1849,7 @@
     },
     {
       "id": "motion-goals-money-focus-v2",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1866,7 +1866,7 @@
         "es": "Animación abstracta: Enfoque y concentración"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1900,7 +1900,7 @@
     },
     {
       "id": "motion-goals-money-focus-v3",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1917,7 +1917,7 @@
         "es": "Animación abstracta: Enfoque y concentración"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -1951,7 +1951,7 @@
     },
     {
       "id": "motion-goals-money-focus-v4",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -1968,7 +1968,7 @@
         "es": "Animación abstracta: Enfoque y concentración"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -2002,7 +2002,7 @@
     },
     {
       "id": "motion-goals-money-focus-v5",
-      "theme": "money",
+      "theme": "goals",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2019,7 +2019,7 @@
         "es": "Animación abstracta: Enfoque y concentración"
       },
       "categories": [
-        "money",
+        "goals",
         "goals-money",
         "goals-discipline"
       ],
@@ -2053,7 +2053,7 @@
     },
     {
       "id": "motion-goals-money-life-purpose-v1",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2070,7 +2070,7 @@
         "es": "Animación abstracta: Propósito de vida"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2104,7 +2104,7 @@
     },
     {
       "id": "motion-goals-money-life-purpose-v2",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2121,7 +2121,7 @@
         "es": "Animación abstracta: Propósito de vida"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2155,7 +2155,7 @@
     },
     {
       "id": "motion-goals-money-life-purpose-v3",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2172,7 +2172,7 @@
         "es": "Animación abstracta: Propósito de vida"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2206,7 +2206,7 @@
     },
     {
       "id": "motion-goals-money-life-purpose-v4",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2223,7 +2223,7 @@
         "es": "Animación abstracta: Propósito de vida"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2257,7 +2257,7 @@
     },
     {
       "id": "motion-goals-money-life-purpose-v5",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2274,7 +2274,7 @@
         "es": "Animación abstracta: Propósito de vida"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2308,7 +2308,7 @@
     },
     {
       "id": "motion-goals-money-finding-self-v1",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2325,7 +2325,7 @@
         "es": "Animación abstracta: Encontrarse a uno mismo"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2359,7 +2359,7 @@
     },
     {
       "id": "motion-goals-money-finding-self-v2",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2376,7 +2376,7 @@
         "es": "Animación abstracta: Encontrarse a uno mismo"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2410,7 +2410,7 @@
     },
     {
       "id": "motion-goals-money-finding-self-v3",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2427,7 +2427,7 @@
         "es": "Animación abstracta: Encontrarse a uno mismo"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2461,7 +2461,7 @@
     },
     {
       "id": "motion-goals-money-finding-self-v4",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2478,7 +2478,7 @@
         "es": "Animación abstracta: Encontrarse a uno mismo"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2512,7 +2512,7 @@
     },
     {
       "id": "motion-goals-money-finding-self-v5",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2529,7 +2529,7 @@
         "es": "Animación abstracta: Encontrarse a uno mismo"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2563,7 +2563,7 @@
     },
     {
       "id": "motion-goals-money-life-change-v1",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2580,7 +2580,7 @@
         "es": "Animación abstracta: Transiciones vitales"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2614,7 +2614,7 @@
     },
     {
       "id": "motion-goals-money-life-change-v2",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2631,7 +2631,7 @@
         "es": "Animación abstracta: Transiciones vitales"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2665,7 +2665,7 @@
     },
     {
       "id": "motion-goals-money-life-change-v3",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2682,7 +2682,7 @@
         "es": "Animación abstracta: Transiciones vitales"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2716,7 +2716,7 @@
     },
     {
       "id": "motion-goals-money-life-change-v4",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2733,7 +2733,7 @@
         "es": "Animación abstracta: Transiciones vitales"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2767,7 +2767,7 @@
     },
     {
       "id": "motion-goals-money-life-change-v5",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2784,7 +2784,7 @@
         "es": "Animación abstracta: Transiciones vitales"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2818,7 +2818,7 @@
     },
     {
       "id": "motion-goals-money-decision-making-v1",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2835,7 +2835,7 @@
         "es": "Animación abstracta: Decisiones difíciles"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2869,7 +2869,7 @@
     },
     {
       "id": "motion-goals-money-decision-making-v2",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2886,7 +2886,7 @@
         "es": "Animación abstracta: Decisiones difíciles"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2920,7 +2920,7 @@
     },
     {
       "id": "motion-goals-money-decision-making-v3",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2937,7 +2937,7 @@
         "es": "Animación abstracta: Decisiones difíciles"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -2971,7 +2971,7 @@
     },
     {
       "id": "motion-goals-money-decision-making-v4",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -2988,7 +2988,7 @@
         "es": "Animación abstracta: Decisiones difíciles"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -3022,7 +3022,7 @@
     },
     {
       "id": "motion-goals-money-decision-making-v5",
-      "theme": "money",
+      "theme": "life",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -3039,7 +3039,7 @@
         "es": "Animación abstracta: Decisiones difíciles"
       },
       "categories": [
-        "money",
+        "life",
         "goals-money",
         "purpose-choice"
       ],
@@ -9193,7 +9193,7 @@
     },
     {
       "id": "motion-energy-confidence-body-awareness-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9210,7 +9210,7 @@
         "es": "Animación abstracta: Conciencia corporal"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9244,7 +9244,7 @@
     },
     {
       "id": "motion-energy-confidence-body-awareness-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9261,7 +9261,7 @@
         "es": "Animación abstracta: Conciencia corporal"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9295,7 +9295,7 @@
     },
     {
       "id": "motion-energy-confidence-body-awareness-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9312,7 +9312,7 @@
         "es": "Animación abstracta: Conciencia corporal"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9346,7 +9346,7 @@
     },
     {
       "id": "motion-energy-confidence-body-awareness-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9363,7 +9363,7 @@
         "es": "Animación abstracta: Conciencia corporal"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9397,7 +9397,7 @@
     },
     {
       "id": "motion-energy-confidence-body-awareness-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9414,7 +9414,7 @@
         "es": "Animación abstracta: Conciencia corporal"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9448,7 +9448,7 @@
     },
     {
       "id": "motion-energy-confidence-breathing-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9465,7 +9465,7 @@
         "es": "Animación abstracta: Prácticas de respiración"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9499,7 +9499,7 @@
     },
     {
       "id": "motion-energy-confidence-breathing-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9516,7 +9516,7 @@
         "es": "Animación abstracta: Prácticas de respiración"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9550,7 +9550,7 @@
     },
     {
       "id": "motion-energy-confidence-breathing-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9567,7 +9567,7 @@
         "es": "Animación abstracta: Prácticas de respiración"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9601,7 +9601,7 @@
     },
     {
       "id": "motion-energy-confidence-breathing-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9618,7 +9618,7 @@
         "es": "Animación abstracta: Prácticas de respiración"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9652,7 +9652,7 @@
     },
     {
       "id": "motion-energy-confidence-breathing-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9669,7 +9669,7 @@
         "es": "Animación abstracta: Prácticas de respiración"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9703,7 +9703,7 @@
     },
     {
       "id": "motion-energy-confidence-muscle-relaxation-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9720,7 +9720,7 @@
         "es": "Animación abstracta: Relajación muscular"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9754,7 +9754,7 @@
     },
     {
       "id": "motion-energy-confidence-muscle-relaxation-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9771,7 +9771,7 @@
         "es": "Animación abstracta: Relajación muscular"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9805,7 +9805,7 @@
     },
     {
       "id": "motion-energy-confidence-muscle-relaxation-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9822,7 +9822,7 @@
         "es": "Animación abstracta: Relajación muscular"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9856,7 +9856,7 @@
     },
     {
       "id": "motion-energy-confidence-muscle-relaxation-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9873,7 +9873,7 @@
         "es": "Animación abstracta: Relajación muscular"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9907,7 +9907,7 @@
     },
     {
       "id": "motion-energy-confidence-muscle-relaxation-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9924,7 +9924,7 @@
         "es": "Animación abstracta: Relajación muscular"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -9958,7 +9958,7 @@
     },
     {
       "id": "motion-energy-confidence-gentle-movement-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -9975,7 +9975,7 @@
         "es": "Animación abstracta: Movimiento suave"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -10009,7 +10009,7 @@
     },
     {
       "id": "motion-energy-confidence-gentle-movement-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -10026,7 +10026,7 @@
         "es": "Animación abstracta: Movimiento suave"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -10060,7 +10060,7 @@
     },
     {
       "id": "motion-energy-confidence-gentle-movement-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -10077,7 +10077,7 @@
         "es": "Animación abstracta: Movimiento suave"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -10111,7 +10111,7 @@
     },
     {
       "id": "motion-energy-confidence-gentle-movement-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -10128,7 +10128,7 @@
         "es": "Animación abstracta: Movimiento suave"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -10162,7 +10162,7 @@
     },
     {
       "id": "motion-energy-confidence-gentle-movement-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -10179,7 +10179,7 @@
         "es": "Animación abstracta: Movimiento suave"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "body-wellbeing"
       ],
@@ -12253,7 +12253,7 @@
     },
     {
       "id": "motion-energy-confidence-insomnia-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12270,7 +12270,7 @@
         "es": "Animación abstracta: Insomnio"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12304,7 +12304,7 @@
     },
     {
       "id": "motion-energy-confidence-insomnia-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12321,7 +12321,7 @@
         "es": "Animación abstracta: Insomnio"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12355,7 +12355,7 @@
     },
     {
       "id": "motion-energy-confidence-insomnia-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12372,7 +12372,7 @@
         "es": "Animación abstracta: Insomnio"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12406,7 +12406,7 @@
     },
     {
       "id": "motion-energy-confidence-insomnia-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12423,7 +12423,7 @@
         "es": "Animación abstracta: Insomnio"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12457,7 +12457,7 @@
     },
     {
       "id": "motion-energy-confidence-insomnia-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12474,7 +12474,7 @@
         "es": "Animación abstracta: Insomnio"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12508,7 +12508,7 @@
     },
     {
       "id": "motion-energy-confidence-fall-asleep-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12525,7 +12525,7 @@
         "es": "Animación abstracta: Dificultad para dormir"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12559,7 +12559,7 @@
     },
     {
       "id": "motion-energy-confidence-fall-asleep-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12576,7 +12576,7 @@
         "es": "Animación abstracta: Dificultad para dormir"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12610,7 +12610,7 @@
     },
     {
       "id": "motion-energy-confidence-fall-asleep-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12627,7 +12627,7 @@
         "es": "Animación abstracta: Dificultad para dormir"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12661,7 +12661,7 @@
     },
     {
       "id": "motion-energy-confidence-fall-asleep-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12678,7 +12678,7 @@
         "es": "Animación abstracta: Dificultad para dormir"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12712,7 +12712,7 @@
     },
     {
       "id": "motion-energy-confidence-fall-asleep-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12729,7 +12729,7 @@
         "es": "Animación abstracta: Dificultad para dormir"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12763,7 +12763,7 @@
     },
     {
       "id": "motion-energy-confidence-night-waking-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12780,7 +12780,7 @@
         "es": "Animación abstracta: Despertares nocturnos"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12814,7 +12814,7 @@
     },
     {
       "id": "motion-energy-confidence-night-waking-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12831,7 +12831,7 @@
         "es": "Animación abstracta: Despertares nocturnos"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12865,7 +12865,7 @@
     },
     {
       "id": "motion-energy-confidence-night-waking-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12882,7 +12882,7 @@
         "es": "Animación abstracta: Despertares nocturnos"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12916,7 +12916,7 @@
     },
     {
       "id": "motion-energy-confidence-night-waking-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12933,7 +12933,7 @@
         "es": "Animación abstracta: Despertares nocturnos"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -12967,7 +12967,7 @@
     },
     {
       "id": "motion-energy-confidence-night-waking-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -12984,7 +12984,7 @@
         "es": "Animación abstracta: Despertares nocturnos"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -13018,7 +13018,7 @@
     },
     {
       "id": "motion-energy-confidence-sleep-quality-v1",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -13035,7 +13035,7 @@
         "es": "Animación abstracta: Calidad del sueño"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -13069,7 +13069,7 @@
     },
     {
       "id": "motion-energy-confidence-sleep-quality-v2",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -13086,7 +13086,7 @@
         "es": "Animación abstracta: Calidad del sueño"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -13120,7 +13120,7 @@
     },
     {
       "id": "motion-energy-confidence-sleep-quality-v3",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -13137,7 +13137,7 @@
         "es": "Animación abstracta: Calidad del sueño"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -13171,7 +13171,7 @@
     },
     {
       "id": "motion-energy-confidence-sleep-quality-v4",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -13188,7 +13188,7 @@
         "es": "Animación abstracta: Calidad del sueño"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],
@@ -13222,7 +13222,7 @@
     },
     {
       "id": "motion-energy-confidence-sleep-quality-v5",
-      "theme": "energy",
+      "theme": "health",
       "collection": "original-motion-v1",
       "media": "original_motion_mp4",
       "status": "approved",
@@ -13239,7 +13239,7 @@
         "es": "Animación abstracta: Calidad del sueño"
       },
       "categories": [
-        "energy",
+        "health",
         "energy-confidence",
         "sleep-rest"
       ],

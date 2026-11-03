@@ -21,6 +21,30 @@ PALETTES=[
 ]
 THEMES={'goals-money':'money','love-relationships':'relationships',
         'energy-confidence':'energy','stress-recovery':'health'}
+THEMES_BY_SUBCATEGORY={
+ 'goals-discipline':'goals',
+ 'purpose-choice':'life',
+ 'money-mindset':'money',
+ 'business-career':'money',
+ 'finding-love':'relationships',
+ 'couple-relationships':'relationships',
+ 'loneliness-breakups':'relationships',
+ 'intimacy-family':'relationships',
+ 'body-wellbeing':'health',
+ 'energy-fatigue':'energy',
+ 'confidence-worth':'energy',
+ 'sleep-rest':'health',
+ 'stress-burnout':'health',
+ 'anxiety-fears':'health',
+ 'trauma-childhood':'health',
+ 'depression-apathy':'health',
+}
+
+def legacy_theme_for_subcategory(sub):
+    if sub['id'] not in THEMES_BY_SUBCATEGORY:
+        raise RuntimeError('unmapped_editorial_subcategory_'+sub['id'])
+    return THEMES_BY_SUBCATEGORY[sub['id']]
+
 FAMILIES=('horizon','lotus','constellation','river','portal','mountains','garden','spiral')
 MOTIFS={
  'horizon':['horizon','sky','light'],'lotus':['flowers','light','abstract'],
@@ -195,12 +219,12 @@ def generate(row,root,w,h,seconds,fps,verify):
         'ru':'Оригинальная анимация: '+topic_labels.get('ru',topic['id']),
         'es':'Animación abstracta: '+topic_labels.get('es',topic['id']),
     }
-    return {'id':id,'theme':THEMES[cat['id']],'collection':'original-motion-v1',
+    return {'id':id,'theme':legacy_theme_for_subcategory(sub),'collection':'original-motion-v1',
             'media':'original_motion_mp4','status':'approved',
             'video':'/videos/holistic-house/original-motion-v1/'+id+'.mp4',
             'poster':'/videos/holistic-house/original-motion-v1/'+id+'.jpg',
             'label':translated,'description':translated,
-            'categories':[THEMES[cat['id']],cat['id'],sub['id']],
+            'categories':[legacy_theme_for_subcategory(sub),cat['id'],sub['id']],
             'tags':[topic['id'],cat['id'],family,'motion','abstract'],
             'motifs':MOTIFS[family],'pace':'slow',
             'rightsReference':{'kind':'project_generated_original',
@@ -259,7 +283,7 @@ def run():
         topic=original[5]
         presets.append({
             'id':'motion-film-'+topic['id'],
-            'theme':THEMES[cat['id']],
+            'theme':scenes[index]['theme'],
             'label':topic['label'],
             'clips':[s['id'] for s in scenes[index:index+4]],
             'sourceKind':'original_abstract_motion'
