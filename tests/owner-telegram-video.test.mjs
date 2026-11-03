@@ -90,7 +90,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.equal(parsed(callback('hh-video:start')).action,'start')
  assert.equal(parsed(callback('hh-video:done')).action,'done')
  assert.equal(parsed(callback('hh-video:status')).action,'status')
- assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
+ assert.equal(parsed(callback('hh-video:publish:ru:'+fixed)).jobId,fixed)
  const manifestButton=ownerVideoConfirmationButtons(fixed,966890850,14).inline_keyboard[0][0]
  assert.match(manifestButton.text,/проверенный набор/)
  assert.ok(manifestButton.callback_data.length<=64)
@@ -562,13 +562,13 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  const cut=ownerVideoPreviewButtons(fixed,75)
  assert.equal(original.inline_keyboard[0][0].callback_data,'hh-video:cut:'+fixed)
  assert.equal(original.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed)
- assert.equal(cut.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed+':23')
+ assert.equal(cut.inline_keyboard[1][0].callback_data,'hh-video:publish:ru:'+fixed+':23')
  assert.ok(cut.inline_keyboard.flat().every(b=>!b.callback_data||b.callback_data.length<=64))
  assert.equal(parsed(callback(cut.inline_keyboard[0][0].callback_data))?.action,'cut_help')
  assert.deepEqual(
    (({action,jobId,trimStartSeconds})=>({action,jobId,trimStartSeconds}))(
      parsed(callback(cut.inline_keyboard[1][0].callback_data))),
-   {action:'publish',jobId:fixed,trimStartSeconds:75})
+   {action:'publish',target:'ru',jobId:fixed,trimStartSeconds:75})
  assert.equal(parsed(callback(original.inline_keyboard[1][0].callback_data))?.trimStartSeconds,0)
  assert.equal(parsed(callback('hh-video:publish:'+fixed+':zzz')),null)
  assert.throws(()=>ownerVideoPreviewButtons(fixed,1800),/INVALID_VIDEO_JOB/)
@@ -578,7 +578,7 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  assert.match(source,/state='trimming'/)
  assert.match(source,/background:\(\)=>cutVideo\(config,batch,owner,fetcher\)/)
  assert.match(source,/original\.storage_path!==ownerVideoMediaPath\(row\.job_id\)/)
- assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0\)/)
+ assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0,batch\.target\)/)
  assert.match(source,/trim_start_seconds=\$5/)
  assert.match(source,/VIDEO_TRIM_INTERRUPTED/)
  assert.match(source,/if\(event.updateId<=Number\(row.last_update_id\)\)return \{state:'stale'\}/)
