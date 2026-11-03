@@ -14,7 +14,7 @@ on:
       - 'app/[locale]/pro/page.tsx'
       - 'app/[locale]/academy/reiki/master/**'
       - 'tests/profi-hub.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/pro-reiki-master-paths.yml'
 permissions:
   contents: read
 concurrency:

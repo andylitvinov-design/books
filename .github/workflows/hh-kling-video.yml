@@ -14,7 +14,7 @@ on:
       - 'tests/kling-video.test.mjs'
       - 'lib/wealth-video-local.ts'
       - 'tests/kling-avatar.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/hh-kling-video.yml'
 permissions:
   contents: read
 

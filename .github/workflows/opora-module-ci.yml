@@ -27,7 +27,7 @@ on:
       - 'tests/course-compact-owner-ui.test.mjs'
       - 'tests/course-entry-selector.test.mjs'
       - 'tests/course-test-sequence.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/opora-module-ci.yml'
       - 'scripts/verify-opora-*.mjs'
       - 'middleware.ts'
       - 'package.json'

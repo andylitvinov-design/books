@@ -20,22 +20,16 @@ const ownerWorkflows = [
   "hh-home-conversation.yml",
   "hh-ideas-coaching-public.yml",
   "hh-live-seo-audit.yml",
-  "hh-kling-video.yml",
   "hh-live-audio-ci.yml",
   "hh-personal-coaching-session.yml",
-  "hh-public-journey-wave1.yml",
   "hh-public-performance-audit.yml",
-  "hh-public-test-collections.yml",
-  "hh-reports-development-program.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
   "hh-sitemap-runtime-assets.yml",
-  "hh-support-mobile-mock-browser.yml",
   "hh-video-feature-lab.yml",
   "holistic-house-ocean-audio.yml",
   "library-public-feed.yml",
   "mentor-community-acceptance.yml",
-  "opora-module-ci.yml",
   "practice-material-previews.yml",
   "hh-first-video-live-export.yml",
   "hh-direct-video-notes.yml",
@@ -43,10 +37,9 @@ const ownerWorkflows = [
   "hh-salesbot-remaster-feature.yml",
   "hh-profile-axis-matching.yml",
   "practice-visual-browser.yml",
-  "practitioner-presentations.yml",
-  "pro-reiki-master-paths.yml",
   "practice-google-browser.yml"
 ];
+const highRiskSelfChecks = ["opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
 const contractFile = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
@@ -97,4 +90,15 @@ test('mandatory security and messaging suites remain routed by actual sensitive 
     assert.equal(matchesTrigger(trigger(name),[sensitive],TARGET),true,name + ': dropped private Messenger gate');
   }
   assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),[sensitive],TARGET),true);
+});
+
+// Keep independently required domain test execution when an owner YAML changes.
+test('high-impact workflows still run their own domain validation on YAML edits', () => {
+  for (const name of highRiskSelfChecks) {
+    const routes = trigger(name);
+    assert.ok(routes?.paths?.includes('.github/workflows/' + name), name + ': required self-check missing');
+    assert.equal(routes.paths.includes(contractFile), false, name + ': optional migration marker must not fan out mandatory suites');
+    assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), true,
+      name + ': editing domain policy must trigger its genuine QA');
+  }
 });

@@ -37,7 +37,7 @@ on:
       - 'tests/personality-profiles-builder.test.mjs'
       - 'tests/profile-test-course-journey.test.mjs'
       - 'tests/guest-test-journey-progress.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/hh-public-test-collections.yml'
 permissions:
   contents: read
 

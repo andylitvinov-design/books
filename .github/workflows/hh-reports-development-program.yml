@@ -44,7 +44,7 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/hh-reports-development-program.yml'
       - 'lib/clients/session-delivery-service.js'
       - 'lib/documents/report-progress.js'
       - 'components/prescription-document.jsx'
