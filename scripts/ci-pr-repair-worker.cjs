@@ -458,8 +458,10 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
   }else if(claimStatus!=='claimed'){
     state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
-  }else if(strategy==='lint'&&fixResult!=='success'){
-    reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
+  }else if((strategy==='lint'||strategy==='code')&&fixResult!=='success'){
+    state=strategy==='code'?'MANUAL':'FAILED';
+    reason=(strategy==='code'?'DETERMINISTIC_REPAIR_JOB_':'FIX_JOB_')+
+      String(fixResult||'UNKNOWN').toUpperCase();
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
