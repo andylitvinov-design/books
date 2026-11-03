@@ -9,7 +9,7 @@ const pr={number:2169,state:'open',draft:false,user:{login:'andylitvinov-design'
 const task=taskFor(pr,{tier:'P3'});
 const bot={id:41898282,login:'github-actions[bot]',type:'Bot'};
 const app={id:15368,slug:'github-actions'};
-function signed(state,at=new Date(NOW-30*60000).toISOString()){
+function signed(state='CI_WAKE_REQUESTED',at=new Date(NOW-30*60000).toISOString()){
  return {id:9,user:bot,performed_via_github_app:app,body:commentBody({...task,
   state,created_at:at,observed_at:at})};
 }
