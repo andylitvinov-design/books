@@ -50,6 +50,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          # checkout@v4 uses a blobless fetch for sparse-checkout. The CI
+          # guard needs source/contracts, not the repository's large media.
+          # Keep every directory read by the existing guard suites.
+          sparse-checkout: |
+            .github
+            app
+            components
+            data
+            docs
+            lib
+            scripts
+            supabase
+            tests
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

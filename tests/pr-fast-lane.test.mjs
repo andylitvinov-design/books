@@ -1330,7 +1330,7 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   const recovery = native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0] ?? '';
-  assert.match(recovery,/contains\(fromJSON\('\["cancelled","timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/,
+  assert.match(recovery,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/,
     'recovery runner is reserved for infrastructure interruptions');
   assert.doesNotMatch(recovery,/workflow_run\.conclusion != 'success'/,
     'ordinary code failures must not allocate a retry runner');

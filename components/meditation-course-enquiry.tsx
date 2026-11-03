@@ -121,13 +121,7 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
         <div className={css.consent} data-meditation-course-consent>
           <input id={consentId} name="contactConsent" type="checkbox" checked={consent}
             onChange={event=>setConsent(event.target.checked)}/>
-          <label htmlFor={consentId} onClick={event=>{
-            // In mobile WebKit a tap on the visible label can fail to trigger
-            // the associated checkbox. Toggle only on this real user tap;
-            // prevent native label activation from toggling it a second time.
-            event.preventDefault();
-            setConsent(value=>!value);
-          }}>
+          <label htmlFor={consentId}>
             <span>{t.consent}</span>
           </label>
         </div>

@@ -23,6 +23,7 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-confirm"));
  assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
  assert.ok(director.includes("data-auto-video-category={item.id}"));
+ assert.ok(director.includes('data-auto-video-goal={variant==="subcategory"?item.id:undefined}'));
  assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
  assert.ok(director.includes('scene.description[locale]'));
  assert.ok(director.includes('scene.tags.slice(0,3)'));
@@ -97,7 +98,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
  assert.match(studio,/data-video-quick-music-check=\{id\}/);
  assert.match(studio,/data-video-quick-music-play=\{id\}/);
- assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+ assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
  assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed film assigns a real first-party soundtrack only when auto-music is enabled");
@@ -139,7 +140,7 @@ test("mobile six workspaces use short locale labels without changing full panel 
    "Video tab is selected on the initial one-screen mock");
 });
 
-test("desktop retains original six explicit theme choices while iPhone starts with four goals",()=>{
+test("desktop retains six explicit theme choices while iPhone offers five compact goal pills",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/quickThemeAdvancedRef=useRef<HTMLDetailsElement>\(null\)/);
  assert.match(studio,/window\.matchMedia\("\(min-width: 760px\)"\)/);
@@ -150,13 +151,13 @@ test("desktop retains original six explicit theme choices while iPhone starts wi
 });
 
 test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
- assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\)/,
+ assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
    "selected audio must begin from the same trusted Play tap on Safari");
  assert.match(studio,/if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}/,
    "pausing the video must pause its selected native audio");
  assert.match(studio,/function playQuickTrack\(choice:PresetId\)/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\);\s*setPreviewPlaying\(true\)/,
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
    "Play never starts audio during export");
 });
 
@@ -164,7 +165,7 @@ test("the selected real soundtrack is synchronized with the original central Can
 test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/recommendAutoVideo\(\{goal,locale,fallbackTheme:theme,presets,scenes\}\)/);
  assert.match(director,/const videoGoalCategories=\[/);
- assert.match(director,/const taxonomySubcategories=listMyTubeSubcategories\(selectedCategoryId,locale\)/);
+ assert.match(director,/const taxonomySubcategories=listMyTubeSubcategories\(taxonomyCategoryForGoal\[selectedCategoryId\],locale\)/);
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-preview-example/);
@@ -174,17 +175,22 @@ test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/data-auto-video-create/);
 });
 
-test("mock actions are connected: four goal images, 3×2 text themes, four scenarios, real support/audio continuation",()=>{
+test("five photo-free goal pills, two selectable inline subcategories, and real scenario/audio continuation",()=>{
  const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
- assert.match(css,/\.goalPanel \.goalChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,"five scrollable mobile goal pills override the former four columns");
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
- assert.match(director,/scenePoster\(item.poster\)/,"goals show real licensed catalog artwork");
- for(const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety"])
+ assert.doesNotMatch(director,/scenePoster\(item.poster\)/,"goal categories are text-only; film choices keep original artwork");
+ assert.match(director,/data-auto-video-subcategories/);
+ assert.match(director,/selectedGoalIds.length<2/);
+ for(const id of ["confidence","connection","fresh-start","stability","calm","vitality"])
    assert.match(director,new RegExp('(?:\\b|")'+id+'(?:\\b|")'));
  assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
- const topicHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
+ const topicHandler=director.slice(director.indexOf("const chooseReadyGoal="),
+   director.indexOf("const chooseCategory="));
+ assert.ok(topicHandler.includes("const selectedTheme="),"subtopics inherit the active category");
+ const taxonomyHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
    director.indexOf("const chooseTaxonomyScenario="));
- assert.ok(topicHandler.includes("const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme"));
+ assert.ok(taxonomyHandler.includes("const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme"));
  assert.doesNotMatch(topicHandler,/setSelectedCategoryId\(/,
    "choosing a topic must not silently replace the selected high-level goal");
  assert.match(director,/onGoalChange\(nextGoal\)/);
@@ -235,20 +241,26 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
  const autoCss=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
  assert.match(css,/Holistic Light — Warm & Alive, owner-approved 02 Nov 2026/);
  assert.match(css,/aspect-ratio:1\.54\/1!important/,"hero no longer uses a narrow 2.78:1 strip");
- assert.match(css,/\.studio \.quickVideoNav\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);gap:9px/,
-   "six real workspaces form 3×2, not an unreadable row");
- assert.match(autoCss,/\.goalPanel \.goalChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
-   "four photo goals form 2×2");
- assert.match(autoCss,/\.topicChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:9px/,
-   "the six local topic chips are readable in two columns");
- assert.match(autoCss,/\.storyChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
-   "four real licensed film stories form 2×2");
- assert.match(autoCss,/\.topicInput input\{\s*height:60px;min-height:60px/,
-   "real editable local topic input is tall enough for iPhone");
- assert.match(autoCss,/\.storyChoices button\{\s*gap:7px;min-height:194px/,
-   "film posters and labels remain readable");
- assert.match(autoCss,/\.confirm\{\s*width:100%;min-height:70px/,
-   "original support-and-audio CTA is prominent and touch-safe");
+ const finalNavCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
+ assert.match(finalNavCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
+   "the latest mobile cascade restores six tabs in one row");
+ const finalGoalCss=autoCss.slice(autoCss.lastIndexOf("/* Owner-approved 03 Nov Video Studio first screen:"));
+ assert.match(finalGoalCss,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,
+   "five photo-free goal buttons scroll horizontally instead of using tall cards");
+ assert.match(finalGoalCss,/\.subcategories \.topicChoices\{\s*display:flex;flex-wrap:nowrap/,
+   "subtopics use one horizontal swipe rail with two real selections");
+ assert.match(finalGoalCss,/\.popularTopics\{\s*display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+   "popular recommendations are visible before typing");
+ assert.match(finalGoalCss,/\.storyChoices\{\s*display:grid;grid-template-columns:none;grid-auto-flow:column/,
+   "four licensed story previews appear in one horizontal row");
+ assert.match(finalGoalCss,/\.topicPanel \.topicInput input\{\s*min-height:56px;height:56px/,
+   "iPhone text entry stays at readable 16px below recommendations");
+ assert.match(finalGoalCss,/\.confirm\{\s*min-height:65px/,
+   "support-and-audio CTA stays prominent");
+ assert.match(css,/\.studio\[data-active-workspace="video"\] \.quickBuilder>\.quickVideoNav,\s*\.studio\[data-active-workspace="editor"\] \.quickBuilder>\.quickVideoNav\{\s*order:1/,
+   "six workspaces precede the actual player in the first screen");
+ assert.match(css,/\.studio\[data-active-workspace="video"\] \.previewStage \.hero,\s*\.studio\[data-active-workspace="video"\]\[data-video-studio-mode="therapy"\] \.previewStage \.hero\{\s*width:100%;aspect-ratio:16\/9!important/,
+   "the original playable hero is a mobile 16:9 video frame");
  assert.match(studio,/className=\{videoStyles\.heroEyebrow\}/);
  assert.match(studio,/Создавайте видео для поддержки, баланса и развития/);
  assert.equal((studio.match(/data-video-practice-shortcuts/g)||[]).length,1);
@@ -266,7 +278,7 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 
 test("owner-approved second Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(studio,/\{id:"video",Icon:Film\},\{id:"editor",Icon:Scissors\},\{id:"phrases",Icon:Heart\}/);
+ assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -277,7 +289,7 @@ test("owner-approved second Montage and sixth PRO reuse one operational video/au
  assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
  assert.match(studio,/basicPanelTab==="music" \? <div className=\{videoStyles.basicMusicPane\}/);
  assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1,
-   "only the original voice panel is mounted in fifth");
+   "only the original voice panel is mounted in Montage");
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1,
    "single shared audio editor and native playback dock");
  assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
@@ -285,7 +297,7 @@ test("owner-approved second Montage and sixth PRO reuse one operational video/au
  assert.match(studio,/data-video-basic-format=\{value\}/);
  assert.match(studio,/data-video-basic-duration=\{value\}/);
  assert.match(studio,/data-video-final-editor/);
- assert.match(studio,/data-video-pro-advanced/);
+ assert.match(studio,/data-video-editor-style-settings/);
  assert.match(studio,/data-video-quick-generate/);
  assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
@@ -298,6 +310,28 @@ test("MyTube cards display the original scenario, not the four generic archetype
  assert.match(director,/sceneOutline\.map\(\(beat,index\)=>/);
  assert.ok(!director.includes("scenarioCardHeading"),"generic shared titles must never override unique story concepts");
  assert.match(director,/Scenario concept; matching footage is verified separately/);
+});
+
+test("owner correction: two independent subtopics selected, input last and style script shared",()=>{
+ const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
+ const goalBlock=goals.slice(0,goals.indexOf("const topicPanel="));
+ const topicBlock=goals.slice(goals.indexOf("const topicPanel="));
+ assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
+ assert.match(goalBlock,/popularTopicOrder\[selectedCategoryId\]\.map/);
+ assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
+ assert.match(director,/setSelectedGoalIds\(nextIds\)/);
+ assert.match(director,/goalId:nextIds\[0\],locale,\s*fallbackTheme:selectedTheme,preferredTheme:selectedTheme/,
+   "subtopics must refine, never silently replace, the selected parent video category");
+ assert.match(director,/selectedGoalIds\.includes\(item\.id\)/);
+ assert.match(director,/selectedGoalIds\.length>=2/);
+ assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-popular-topics"),
+   "manual input is the final action of Describe your topic");
+ assert.match(studio,/const selectedStyleScenario=timelineTextClips\?\.length/,
+   "manual timed captions take precedence over the original film plan");
+ assert.match(studio,/:cinematicPlan\?\.shots\.length[\s\S]*?\?cinematicPlan\.shots\.map/,
+   "the original shot captions remain the fallback when no timed edit exists");
+ assert.match(studio,/data-video-montage-script/);
+ assert.match(studio,/data-video-montage-script-update/);
 });
 
 test("local prompt director selects four different APPROVED scenes for individual storyboard beats",()=>{

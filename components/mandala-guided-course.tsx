@@ -272,7 +272,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [profileStatus,setProfileStatus] = useState<Status>("idle");
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
   const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
-  const [planOpen,setPlanOpen] = useState(false);
+  // One committed programme signature, not two independently batched state values.
+  const [planActionCount,setPlanActionCount] = useState(0);
+  const [meditationActionCount,setMeditationActionCount] = useState(0);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
   const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
@@ -297,6 +299,12 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const journeySignature=JSON.stringify([focusMode,selectedState,activeTheme,goals,detailGoals,keyDifficulty,keyGoal,profileEvidence,selfRatings]);
   const [approvedSignature,setApprovedSignature]=useState("");
   const [programmeSignature,setProgrammeSignature]=useState("");
+  // Compare delayed WebKit change/blur events with the latest committed value,
+  // not an older onChange closure that can revoke a freshly approved script.
+  const committedDifficultyRef=useRef(keyDifficulty);
+  // Do not rewind this ref during an unrelated React render. A delayed WebKit
+  // change/blur event must compare against the last *handled* input value.
+  const planOpen=programmeSignature.length>0;
   const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;
   const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;
   // Only the visitor's explicit, on-device focus is shared with the
@@ -313,12 +321,15 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   // Track the exact user-approved narration independently of React render timing.
   // A delayed effect from an edited focus must never erase a fresh Generate click.
   const includedSignatureRef=useRef<string|null>(null);
+  // Count explicit state-changing focus actions without recording private text.
+  const focusResetCountRef=useRef(0);
   const resetGeneratedMeditation=()=>{
+    focusResetCountRef.current+=1;
     if(includedSignatureRef.current){
       includedSignatureRef.current=null;
       onOmitMeditation?.();
     }
-    setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
+    setMeditationOpen(false);setMeditationChoice(null);
     setRitualReady(false);setPersonalOpened(false);
     setApprovedSignature("");setProgrammeSignature("");
   };
@@ -330,17 +341,22 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       includedSignatureRef.current=null;
       onOmitMeditation?.();
     }
-    // Never clear generated results in a passive effect: WebKit may flush this
-    // old focus-change effect *after* the user's next Generate click.
-    // currentMeditation/currentProgramme already compare exact signatures and
-    // hide stale results synchronously, while all explicit input handlers
-    // revoke stale narration and clear both approvals immediately.
+    // The currentMeditation/currentProgramme signature gates hide stale results
+    // synchronously. Revoke any separately attached narration here; do NOT
+    // clear the approval in a passive effect, because WebKit can flush delayed
+    // textarea events after the user's Generate click.
   },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
+    // A duplicate tap on the already selected choice must not revoke a
+    // separately approved meditation or course. An actual focus change still does.
+    if(focusMode==="state"&&selectedState===id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===f.stateOptions[id as keyof typeof f.stateOptions])return;
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
     resetGeneratedMeditation();
   };
   const selectVector=(id:(typeof vectorOptions)[number]["id"],goalTheme:VideoTheme)=>{
+    if(focusMode==="vector"&&selectedState==="vector-"+id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===t.themes[goalTheme])return;
     setSelectedState("vector-"+id);setGoals([goalTheme]);setKeyGoal(t.themes[goalTheme]);
     resetGeneratedMeditation();
   };
@@ -394,6 +410,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   function generateMeditation(){
     if(disabled||!focusReady||!firstScript)return;
+    setMeditationActionCount(count=>count+1);
     if(includedSignatureRef.current){
       includedSignatureRef.current=null;
       onOmitMeditation?.();
@@ -416,8 +433,8 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   function createProgramme(){
     if(disabled||!focusReady||profileStatus==="loading")return;
+    setPlanActionCount(count=>count+1);
     setProgrammeSignature(journeySignature);
-    setPlanOpen(true);
     if(consent && !["ready","empty"].includes(profileStatus))void loadPrivateProfile();
   }
   function speak(script:string){
@@ -444,6 +461,17 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-personal-opened={personalOpened ? "true" : "false"}
     data-guided-plan-requested={planOpen ? "true" : "false"}
     data-guided-plan-current={currentProgramme ? "true" : "false"}
+    data-guided-focus-ready={focusReady?"true":"false"}
+    data-guided-has-script={firstScript.trim().length>0?"true":"false"}
+    data-guided-meditation-open={meditationOpen?"true":"false"}
+    data-guided-meditation-click-count={meditationActionCount}
+    data-guided-focus-reset-count={focusResetCountRef.current}
+    data-guided-plan-open={planOpen?"true":"false"}
+    data-guided-plan-click-count={planActionCount}
+    data-guided-plan-signature-match={programmeSignature===journeySignature?"true":"false"}
+    data-guided-signature-match={approvedSignature===journeySignature?"true":"false"}
+    data-guided-meditation-ready={currentMeditation?"true":"false"}
+    data-guided-programme-ready={currentProgramme?"true":"false"}
     aria-labelledby="guided-course-heading">
     <div className={css.header}>
       <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
@@ -461,9 +489,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       <div className={css.flowTitle}><span>01</span><Target size={23} aria-hidden="true"/><h4>{f.focus}</h4></div>
       <div className={css.focusSwitch} role="group" aria-label={f.focus}>
         <button type="button" aria-pressed={focusMode==="state"} disabled={disabled}
-          onClick={()=>{setFocusMode("state");setSelectedState(null);setGoals([]);setKeyGoal("");setKeyDifficulty("");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
+          onClick={()=>{setFocusMode("state");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
         <button type="button" aria-pressed={focusMode==="vector"} disabled={disabled}
-          onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
+          onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
       </div>
       <p className={css.focusChoiceHeading}>{focusMode==="state"?f.stateQuestion:f.vectorQuestion}</p>
       {focusMode==="state"?<div className={css.stateGrid} role="group" aria-label={f.state}>
@@ -485,7 +513,15 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         <span>{f.contextLabel}</span>
         <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
           data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
-          disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);resetGeneratedMeditation();}}/>
+          disabled={disabled} onChange={event=>{
+            const next=event.currentTarget.value;
+            // Safari may deliver a delayed input/blur after Generate.
+            // Exact-signature render gates immediately hide stale output when
+            // the text really changes, without clearing a newer approval.
+            if(next===committedDifficultyRef.current)return;
+            committedDifficultyRef.current=next;
+            setKeyDifficulty(next);
+          }}/>
       </label></div>
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
       {safetyBlocked?<p role="alert" className={css.profileNotice}>{safetyMessage}</p>:
@@ -561,7 +597,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     <section className={css.flowBlock} data-guided-meditation-step>
       <div className={css.flowTitle}><span>02</span><Headphones size={23} aria-hidden="true"/><h4>{f.meditation}</h4></div>
       <button type="button" className={css.flowPrimary} data-guided-generate-meditation
-        disabled={disabled||!firstScript||!focusReady} onClick={generateMeditation}>
+        disabled={disabled||!firstScript||!focusReady}
+        data-guided-context-committed-length={keyDifficulty.length}
+        onClick={generateMeditation}>
         <Sparkles size={22} aria-hidden="true"/>{f.generateMeditation}<ArrowRight size={20} aria-hidden="true"/>
       </button>
       {currentMeditation?<div className={css.flowResult} data-guided-meditation-result>
