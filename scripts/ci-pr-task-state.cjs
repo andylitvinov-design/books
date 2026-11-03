@@ -19,6 +19,9 @@ function validPR(pr){
 function laneOf(pr){
  if(!validPR(pr))return null;
  const l=labels(pr);
+ // Retain a recovery lane only while stale CI queue hint still exists.
+ // A confirmed undelivered wake can finish its two-label cleanup later.
+ if(l.has('hh:ci-wake-unverified'))return l.has('hh:ci-needed')?'ci':null;
  if(l.has('hh:repair-needed'))return 'repair';
  if(l.has('hh:ci-needed')&&!l.has('hh:ci-bootstrap-attempted'))return 'ci';
  if(l.has('hh:conflict-repair-needed'))return 'conflict';
@@ -218,8 +221,13 @@ function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
- if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_WAKE_REQUESTED','FAILED',
+ if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','FAILED',
   'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
+ if(matches.some(x=>['CI_CORE_CONFIRMED','CI_WAKE_UNDELIVERED'].includes(x.state)))
+  return 'CI_WAKE_OUTCOME_RECORDED';
+ // An accepted metadata wake is not an observed Core run. Reconcile it
+ // separately instead of hiding a stalled PR behind ALREADY_HANDLED.
+ if(matches.some(x=>x.state==='CI_WAKE_REQUESTED'))return 'CI_WAKE_AWAITING_CORE';
  if(matches.some(x=>x.state==='CLAIMED'))return 'CLAIMED_AWAITING_OUTCOME';
  const trusted=parseRecords(comments.filter(trustedControlComment));
  if(!trusted)return 'UNVERIFIED_HISTORY';
