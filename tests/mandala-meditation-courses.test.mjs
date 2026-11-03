@@ -116,3 +116,13 @@ test("iPhone guided-course create-plan handler has a one-tap state receipt witho
  assert.match(browser,/planClickCount:root\?\.getAttribute\("data-guided-plan-click-count"\)/);
  assert.match(browser,/planSignatureMatch:root\?\.getAttribute\("data-guided-plan-signature-match"\)/);
 });
+
+test("Safari first-click eight-session programme uses one committed approval, not two racing state values",()=>{
+  const guided=read("components/mandala-guided-course.tsx");
+  assert.match(guided,/const planOpen=programmeSignature\.length>0/);
+  assert.doesNotMatch(guided,/\bsetPlanOpen\b|\[planOpen,setPlanOpen\]/);
+  assert.match(guided,/setProgrammeSignature\(journeySignature\)/);
+  assert.match(guided,/const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;/);
+  assert.match(guided,/setApprovedSignature\(""\);setProgrammeSignature\(""\);/,
+    "real goal changes must still invalidate the approved course");
+});

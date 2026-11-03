@@ -272,7 +272,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [profileStatus,setProfileStatus] = useState<Status>("idle");
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
   const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
-  const [planOpen,setPlanOpen] = useState(false);
+  // One committed programme signature, not two independently batched state values.
   const [planActionCount,setPlanActionCount] = useState(0);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
@@ -298,6 +298,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const journeySignature=JSON.stringify([focusMode,selectedState,activeTheme,goals,detailGoals,keyDifficulty,keyGoal,profileEvidence,selfRatings]);
   const [approvedSignature,setApprovedSignature]=useState("");
   const [programmeSignature,setProgrammeSignature]=useState("");
+  const planOpen=programmeSignature.length>0;
   const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;
   const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;
   // Only the visitor's explicit, on-device focus is shared with the
@@ -319,7 +320,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       includedSignatureRef.current=null;
       onOmitMeditation?.();
     }
-    setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
+    setMeditationOpen(false);setMeditationChoice(null);
     setRitualReady(false);setPersonalOpened(false);
     setApprovedSignature("");setProgrammeSignature("");
   };
@@ -418,7 +419,6 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     if(disabled||!focusReady||profileStatus==="loading")return;
     setPlanActionCount(count=>count+1);
     setProgrammeSignature(journeySignature);
-    setPlanOpen(true);
     if(consent && !["ready","empty"].includes(profileStatus))void loadPrivateProfile();
   }
   function speak(script:string){
