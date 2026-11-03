@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","effects","practices","editor","pro"]);
+ assert.deepEqual(ids,["video","editor","phrases","effects","practices","pro"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
