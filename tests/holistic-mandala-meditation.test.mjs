@@ -34,13 +34,19 @@ test("public mandala adapts original seven Power Place geometries and stone-mosa
   assert.match(mosaic, /id="pebbles"/);
 });
 
-test("private photo never leaves the browser and can be cropped or removed", () => {
+test("mandala accepts decoded iPhone photos locally, without background upload or persistence", () => {
   const client = read("components/mandala-meditation-client.tsx");
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /image\.size > 10 \* 1024 \* 1024/);
-  assert.match(client, /URL\.createObjectURL\(image\)/);
+  const helper = read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(helper, /SUPPORT_PHOTO_ACCEPT = "image\/\*,\.heic,\.heif,\.jpg,\.jpeg,\.png,\.webp"/);
+  assert.match(helper, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(helper, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
+  assert.match(helper, /canvas\.toBlob\(resolve, "image\/jpeg"/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /setImageUrl\(URL\.createObjectURL\(prepared\)\)/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
+  assert.match(client, /setPreparedPng\(null\)/);
   assert.match(client, /setZoom\(/);
   assert.match(client, /setOffsetX\(/);
   assert.match(client, /setOffsetY\(/);
