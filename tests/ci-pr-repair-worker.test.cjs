@@ -654,7 +654,7 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
 test('free model is activated only after deterministic failure and never sees write token',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('code_available: ${{ steps.select.outputs.code_available }}'));
- assert.match(wf,/core\.setOutput\('code_available','true'\)/);
+ assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false')"));
  const codeFix=wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0];
  const codeVerify=wf.split('\n  code_verify:\n')[1].split('\n  publish:\n')[0];
  assert.match(codeFix,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
@@ -788,7 +788,10 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(fix,/continue-on-error: true/);
  assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
- assert.ok(wf.includes("core.setOutput('code_available','true')"));
+ assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false')"));
+ assert.ok(wf.includes("HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}"));
+ assert.ok(wf.includes('HH_OPENCODE_FREE_API_KEY: ${{ secrets.HH_OPENCODE_FREE_API_KEY }}'));
+ assert.match(require('node:fs').readFileSync('scripts/ci-pr-repair-free-agent.cjs','utf8'),/FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED/);
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
