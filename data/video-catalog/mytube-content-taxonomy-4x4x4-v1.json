@@ -1442,7 +1442,7 @@
               "legacyTopicIds": [],
               "scenarios": [
                 {
-                  "id": "fear-of-failure-s1",
+                  "id": "entrepreneurial-risk-s1",
                   "archetype": "journey",
                   "label": {
                     "ru": "Путь: Предпринимательский риск",
@@ -1456,7 +1456,7 @@
                   }
                 },
                 {
-                  "id": "fear-of-failure-s2",
+                  "id": "entrepreneurial-risk-s2",
                   "archetype": "shelter",
                   "label": {
                     "ru": "Опора: Предпринимательский риск",
@@ -1470,7 +1470,7 @@
                   }
                 },
                 {
-                  "id": "fear-of-failure-s3",
+                  "id": "entrepreneurial-risk-s3",
                   "archetype": "reframe",
                   "label": {
                     "ru": "Новый взгляд: Предпринимательский риск",
@@ -1484,7 +1484,7 @@
                   }
                 },
                 {
-                  "id": "fear-of-failure-s4",
+                  "id": "entrepreneurial-risk-s4",
                   "archetype": "integration",
                   "label": {
                     "ru": "Интеграция: Предпринимательский риск",
@@ -2664,6 +2664,7 @@
                 ],
                 "es": [
                   "autoaceptación",
+                  "amor propio",
                   "aceptarme",
                   "autocompasión"
                 ]
