@@ -127,7 +127,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const source = files?.base?.get(name);
   const candidate = files?.current?.get(name);
   const baseJob = trustedMandalaMacosJob(source);
-  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
+  const candidateJob = trustedMandalaMacosJob(candidate);
+  // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
+  // A skipped WebKit job remains neutral only when the BASE branch predicate
+  // itself excludes this PR; the preflight cannot alter its guard or steps.
+  const withRequiredPreflight = baseJob?.replace(
+    /^(    if: .+)\n(    runs-on: macos-15)$/m,
+    '$1\n    needs: [webkit_preflight]\n$2');
+  const readyPreflight = typeof candidate === 'string' &&
+    /^  webkit_preflight:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m.test(candidate);
+  const trustedMacosJob = baseJob === candidateJob ||
+    (readyPreflight && withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob);
+  if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
