@@ -143,6 +143,12 @@ test("all six voices can be selected and their real samples requested before phr
     assert.ok(editor.includes(marker),marker);
   assert.match(styles,/\.sampleButton\{/);
   assert.match(styles,/\.samplePlayer audio\{/);
+  const previewAt=editor.indexOf('data-video-affirmation-voice-preview={v.id}');
+  assert.ok(previewAt>=0,"six genuine preview controls exist");
+  const previewHandler=editor.slice(previewAt,previewAt+520);
+  assert.match(previewHandler,/if\(voiceId!==v\.id\)\{setVoiceId\(v\.id\);setConsent\(false\);\}/,
+    "Preview must also select that voice and revoke older narration consent");
+
   assert.doesNotMatch(editor,/autoPlay/);
   assert.ok(editor.includes("if(textChanged)setConsent(false)"),
     "newly approved phrase text must require new consent before external narration");

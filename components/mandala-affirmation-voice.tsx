@@ -362,7 +362,12 @@ export function MandalaAffirmationVoice({
             </button>
             <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
               aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
-              onClick={()=>void previewSample(v.id)}>
+              onClick={()=>{
+                // The voice heard in Preview is also the chosen voice for the
+                // approved phrase and final WAV; no hidden mismatch on export.
+                if(voiceId!==v.id){setVoiceId(v.id);setConsent(false);}
+                void previewSample(v.id);
+              }}>
               {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
               <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
             </button>
