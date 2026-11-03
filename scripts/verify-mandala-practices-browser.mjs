@@ -175,6 +175,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
         "switching from state invalidates previous eight-session outline");
       await generate.click();
       try{
+        await page.waitForFunction(()=>document.querySelector("[data-video-guided-course]")
+          ?.getAttribute("data-guided-meditation-ready")==="true",null,{timeout:15000});
         await result.waitFor({state:"visible",timeout:15000});
       }catch(error){
         const state=await course.evaluate(el=>({
