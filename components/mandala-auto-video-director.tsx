@@ -111,11 +111,6 @@ const legacyThemeForSubcategory:Record<string,VideoTheme>={
  "stress-fatigue":"health","body-health":"health","vital-energy":"energy","confidence-calm":"goals",
  "stress-burnout":"health","anxiety-fears":"health","psychological-trauma":"health","depression-apathy":"health",
 };
-const scenarioCardHeading={
- ru:["Новый маршрут","Точка опоры","Новый взгляд","Первый шаг"],
- en:["A New Path","A Place to Stand","A New Perspective","A First Step"],
- es:["Un nuevo camino","Un punto de apoyo","Una nueva perspectiva","Un primer paso"],
-} as const;
 const allowedDurations=[10,15,20,30,60] as const;
 const allThemes=["energy","money","relationships","goals","life","health"] as const;
 const themeLabels={
@@ -351,7 +346,7 @@ export function MandalaAutoVideoDirector({
        data-mytube-scenario={scenario.id} aria-pressed={selectedScenarioId===scenario.id}
        disabled={disabled} onClick={()=>chooseTaxonomyScenario(scenario.id)}>
        <span className={css.storyNumber}>{index+1}. {selectedScenarioId===scenario.id?<Check size={15} aria-hidden="true"/>:null}</span>
-       <strong>{scenarioCardHeading[locale][index]} · {selectedTaxonomyTopic?.topic.label[locale]}</strong>
+       <strong>{scenario.label}</strong>
        <small>{scenario.creativeBrief}</small>
        <small data-scenario-source-coverage={coverage.candidateCount}>
          {locale==="ru"?`Подходящих видеофрагментов: ${coverage.candidateCount}; для монтажа нужно минимум 4`:
@@ -362,8 +357,17 @@ export function MandalaAutoVideoDirector({
      </button>;
      })}
    </div>:null}
-   {selectedScenarioId?<MyTubeScenarioPlotPicker key={selectedScenarioId}
-     locale={locale} scenarioId={selectedScenarioId} context="director"/>:null}
+   {selectedScenarioId&&taxonomyScenarios.some(item=>item.id===selectedScenarioId)?
+     <div className={css.notice} data-mytube-concept-storyboard>
+       <strong>{locale==="ru"?"Четыре этапа выбранного сюжета":locale==="es"?"Cuatro escenas de la historia":"Four beats of the selected story"}</strong>
+       <ol>{taxonomyScenarios.find(item=>item.id===selectedScenarioId)?.sceneOutline.map((beat,index)=>
+         <li key={index}>{index+1}. {beat}</li>)}</ol>
+       <small>{locale==="ru"?"Это творческая концепция; перед экспортом проверьте реальные кадры ниже.":
+         locale==="es"?"Este es un concepto creativo; revisa los clips reales antes de exportar.":
+         "This is a creative concept; review the actual clips below before export."}</small>
+     </div>:null}
+   {selectedScenarioId?<MyTubeScenarioPlotPicker key={selectedScenarioId} locale={locale}
+     scenarioId={selectedScenarioId} context="director"/>:null}
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
      <label htmlFor="auto-video-refine">{t.refine}</label>
      <textarea id="auto-video-refine" rows={2} maxLength={120}
