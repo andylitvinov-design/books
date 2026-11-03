@@ -42,31 +42,37 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\}/);
 });
 
-test("free written review keeps personal scope, optional long questionnaire and no paid or false clinical claims", () => {
+test("free written review keeps personal scope, optional private questionnaire and no paid or clinical claims", () => {
   const route = read("app/[locale]/services/free-situation-review/page.tsx");
   const landing = read("components/free-entry-landing.tsx");
-  const enquiry = read("components/free-resource-enquiry.tsx");
+  const express = read("components/personal-express-enquiry.tsx");
   const css = read("components/free-entry-landing.module.css");
   assert.match(route, /kind="situation"/);
-  assert.match(landing, /t\.steps\.map/);
-  assert.match(landing, /t\.outcomes\.map/);
-  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
+  assert.match(landing, /t\\.steps\\.map/);
+  assert.match(landing, /t\\.outcomes\\.map/);
+  assert.match(landing, /<FreeSituationReviewForm locale=\\{locale\\}/);
+  assert.match(landing, /<details className=\\{styles\\.fullQuestionnaire\\} data-optional-written-review>/);
+  assert.match(landing, /<PersonalExpressEnquiry locale=\\{locale\\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\\{locale\\}/);
   assert.match(landing, /"request-free-review"/);
+  // The current Free Express introduction is an initial written review.
+  // An optional paid consultation is separate, and clinical data stays private.
   for (const phrase of [
-    "It does not include a video call or live consultation",
-    "Он не включает видеозвонок",
-    "No incluye videollamada ni consulta en directo",
+    "no appointment or call is needed",
+    "без записи на звонок",
+    "sin cita o videollamada",
+    "Live consultations are separate and optional",
+    "Живая консультация — отдельно и по желанию",
+    "Una consulta en directo es opcional y aparte",
     "educational and symbolic",
     "не диагностируют и не лечат заболевания",
-    "No incluye videollamada ni consulta en directo",
+    "No diagnostican ni tratan enfermedades",
   ]) assert.ok(landing.includes(phrase), phrase);
-  assert.match(enquiry, /<ContactChannelChooser/);
-  assert.match(enquiry, /publicTopic=\{broadTopic\}/);
-  assert.match(enquiry, /whatsappEnquiryUrl/);
-  assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
-  assert.match(css, /@media\(max-width:600px\)/);
-  assert.match(css, /min-height:calc\(100svh - 150px\)/);
+  assert.match(express, /data-personal-express-enquiry/);
+  assert.match(express, /data-express-inline-disclosure/);
+  assert.doesNotMatch(landing, /guaranteed cure|medical diagnosis provided|€50|€100/i);
+  assert.match(css, /@media\\(max-width:600px\\)/);
+  assert.match(css, /min-height:calc\\(100svh - 150px\\)/);
 });
 
 test("all personal services have source-backed educational language, approved prices and no medical claims", () => {
