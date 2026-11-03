@@ -416,7 +416,13 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual runs cannot be cancelled by unrelated PRs');
+  assert.ok(source.includes('group: >-') && source.includes("holistic-support-mandala-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), 'PR runs share a PR-scoped group and manual attempts stay run-scoped');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only superseded first-attempt PR runs are cancelled');
+  assert.ok(source.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
+  assert.ok(source.includes('Restore Next.js build cache') && source.includes('Restore pinned Playwright WebKit browser'));
+  const macosGuard=source.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1] || '';
+  assert.ok(macosGuard.includes("startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-')"));
+  assert.ok(!browserGate.includes("codex/mandala-cancel-stale-head-cache-"), 'CI-only PR does not trigger Linux product browser matrix');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -728,8 +734,9 @@ test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard 
   assert.ok(core.includes('github.run_attempt == 1'));
   assert.ok(core.includes("format('run-{0}', github.run_id)"));
   const webkit=read('holistic-support-mandala.yml');
-  assert.ok(webkit.includes('${{ github.event.pull_request.head.sha || github.sha }}'));
-  assert.ok(webkit.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(webkit.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
+  assert.ok(webkit.includes("format('pr-{0}', github.event.pull_request.number)"));
+  assert.ok(webkit.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   const guard=read('hh-pr-sweep-guard.yml');
   assert.ok(!guard.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
     'Guard first-attempt concurrency must not isolate obsolete HEADs');
