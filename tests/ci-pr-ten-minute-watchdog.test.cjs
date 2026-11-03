@@ -917,6 +917,35 @@ test('classify-change ancestry failure with skipped source build never dispatche
   ]),'SOURCE_OR_PREFLIGHT');
 });
 
+test('modern Core #3235 BASE_ADVANCED cannot consume Code Repair capacity',()=>{
+  const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const green=name=>({name,conclusion:'success',status:'completed'});
+  const failed=name=>({name,conclusion:'failure',status:'completed'});
+  // Actual #3235 completed Core job layout (no legacy classify-change).
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),failed('hh-specialist'),failed('hh-merge-check')
+  ]),'SPECIALIST_FAILED');
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),green('hh-specialist'),failed('hh-merge-check')
+  ]),'RELEASE_GATE_ONLY');
+  // A genuine failing source job must still be routed to source triage.
+  assert.equal(classifyCoreFailureJobs([
+    {...failed('core-lint-types-build'),steps:[{name:'TypeScript check',conclusion:'failure'}]},
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'SOURCE_OR_PREFLIGHT');
+  // No completed source job is not evidence of a source defect.
+  assert.equal(classifyCoreFailureJobs([
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'UNVERIFIED');
+  assert.equal(classifyCoreFailureJobs([
+    {name:'core-lint-types-build',conclusion:'skipped'},
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'UNVERIFIED');
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),failed('hh-specialist')
+  ]),'UNVERIFIED');
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});

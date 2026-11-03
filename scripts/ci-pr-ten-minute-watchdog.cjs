@@ -202,7 +202,12 @@ function classifyCoreFailureJobs(jobs) {
   // policy-green. A red present legacy Core must still fail closed.
   const coreVerified=core?.conclusion==='success' ||
     (core===undefined&&byName.has('hh-merge-check'));
-  const sourceGreen=scope?.conclusion==='success' &&
+  // Modern Core no longer emits classify-change / hh-core-verified.
+  // A successful real source build plus both modern gates proves source success.
+  const modernCore=scope===undefined && core===undefined &&
+    byName.has('hh-merge-check') && byName.has('hh-specialist') &&
+    build?.conclusion==='success';
+  const sourceGreen=(scope?.conclusion==='success'||modernCore) &&
     (build?.conclusion==='success' || build?.conclusion==='skipped') &&
     coreVerified;
   // Do not consume a deterministic ESLint source-writing slot for a verified
@@ -229,6 +234,10 @@ function classifyCoreFailureJobs(jobs) {
     const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
     return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
   })) return 'CI_INFRA_OR_ENVIRONMENT';
+  // A red Specialist/aggregate without a completed source job is insufficient
+  // evidence for privileged source repair.
+  if(failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
+    return 'UNVERIFIED';
   if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
   return 'UNVERIFIED';
 }
