@@ -302,9 +302,8 @@ export function loadTrustedTypescript(base) {
   finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
 }
 
-// This exception accepts only the two exact additive regression lines shipped
-// with the HEAD-storm migration. An edited/removed existing syntax check is not
-// trusted: the whole applicable Specialist gate remains fail-closed.
+// Allow only exact additive actionlint regression coverage during the HEAD-storm
+// migration. Existing syntax-validation removal or modification fails closed.
 export function trustedAdditiveActionlint(base, current) {
   if (typeof base !== 'string' || typeof current !== 'string') return false;
   if (base === current) return true;

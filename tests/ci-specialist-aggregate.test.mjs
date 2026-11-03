@@ -41,6 +41,31 @@ test('only verified concurrency-only edits can avoid unrelated specialists',()=>
   changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
 });
 
+test('V2 first-attempt lease advisory requires unchanged workflow bodies and non-applicable source',()=>{
+ const file='.github/workflows/ci-heavy.yml';
+ const first="github.event_name == 'pull_request' && github.run_attempt == 1";
+ const sync=first+" && github.event.action == 'synchronize'";
+ const old="on:\n  pull_request:\n    paths:\n      - '.github/workflows/ci-heavy.yml'\n      - 'app/**'\nconcurrency:\n  group: ci-heavy-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  validate:\n    runs-on: ubuntu-24.04\n";
+ const next=old.replace("  group: ci-heavy-${{ github.ref }}\n  cancel-in-progress: true",
+   "  group: ci-heavy-${{ "+first+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"+
+   "\n  cancel-in-progress: ${{ "+sync+" }}");
+ const base=new Map([[file,old]]);
+ const current=new Map([[file,next]]);
+ const only=[{filename:file,status:'M'}];
+ const check=(candidate=current,changedRows=only)=>[...concurrencyOnlyAdvisory({base,current:candidate,changedRows,expected:[file]})];
+ assert.deepEqual(check(),[file],'correct v2 lease with no changed job or trigger is advisory');
+ for(const broken of [
+   next.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+   next.replace('  cancel-in-progress: ${{ '+sync+' }}','  cancel-in-progress: true'),
+   next.replace('  group: ci-heavy-${{ '+first,'  group: ci-heavy-${{ '+"github.event_name == 'pull_request'"),
+   next.replace("      - 'app/**'","      - 'lib/**'"),
+ ]) assert.deepEqual(check(new Map([[file,broken]])),[],'changed jobs/triggers/lease must stay strict');
+ assert.deepEqual(check(current,[...only,{filename:'app/video/route.ts',status:'M'}]),[],
+   'real product change still requires its real browser specialist');
+ assert.deepEqual(check(current,[...only,{filename:'lib/security/auth.ts',status:'M'}]),[],
+   'unknown changed sources cannot make a heavy workflow advisory');
+});
+
 test('approved first-attempt concurrency only is advisory, not changed browser or security work', () => {
   const file='.github/workflows/example.yml';
   const trigger="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml', 'scripts/verify-tantra-testimonials.mjs']\n";
