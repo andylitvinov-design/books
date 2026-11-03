@@ -1,0 +1,550 @@
+{
+  "schemaVersion": "mytube-editorial-scenes-v3",
+  "categoryId": "goals-money",
+  "topics": {
+    "life-purpose": [
+      [
+        "Чужой компас",
+        "A Borrowed Compass",
+        "Una brújula prestada",
+        "Чужая карта успеха → Компас не слушается → Свои ценности на горизонте → Выбор собственного курса",
+        "Someone else's success map → The compass wavers → Personal values appear → Choosing one's own bearing",
+        "Mapa de éxito ajeno → La brújula vacila → Aparecen valores propios → Elegir rumbo propio"
+      ],
+      [
+        "Три искры",
+        "Three Small Sparks",
+        "Tres pequeñas chispas",
+        "Привычный серый день → Три момента интереса → Искры соединяются в узор → Один интерес для исследования",
+        "An ordinary grey day → Three moments of curiosity → Sparks form a pattern → One interest to explore",
+        "Un día gris cualquiera → Tres momentos de curiosidad → Chispas forman un dibujo → Explorar un interés"
+      ],
+      [
+        "Мастерская смыслов",
+        "The Meaning Workshop",
+        "El taller del sentido",
+        "Разрозненные умения на столе → Руки собирают мозаику → Из деталей возникает образ → Смысл без единственного ответа",
+        "Scattered skills on a table → Hands assemble a mosaic → A personal image emerges → Meaning without one final answer",
+        "Capacidades dispersas en la mesa → Manos arman un mosaico → Surge una imagen personal → Sentido sin respuesta única"
+      ],
+      [
+        "Пробный маршрут",
+        "The Trial Route",
+        "La ruta de prueba",
+        "Ожидание великого знака → Небольшая открытая тропа → Один безопасный эксперимент → Проверка собственного отклика",
+        "Waiting for a grand sign → A small open trail → One safe experiment → Noticing the personal response",
+        "Esperar una gran señal → Aparece un sendero breve → Un experimento seguro → Observar la propia respuesta"
+      ]
+    ],
+    "finding-self": [
+      [
+        "Чьи это голоса?",
+        "Whose Voices Are These?",
+        "¿De quién son estas voces?",
+        "Зеркала чужих мнений → Голоса постепенно стихнут → Собственный вопрос прозвучит → Спокойный личный ответ",
+        "Mirrors of others' opinions → Outside voices fade → One personal question emerges → A quiet personal answer",
+        "Espejos de opiniones ajenas → Las voces se atenúan → Surge una pregunta propia → Una respuesta serena"
+      ],
+      [
+        "Тихое желание",
+        "The Quiet Wish",
+        "El deseo silencioso",
+        "Шум обязательств → Маленький цветок среди бумаг → Внимание к своему желанию → Бережное место для него",
+        "A pile of obligations → A small flower among papers → Listening to a wish → Making space for it",
+        "Montón de obligaciones → Una flor entre papeles → Escuchar un deseo → Darle espacio"
+      ],
+      [
+        "Без маски",
+        "Without the Mask",
+        "Sin la máscara",
+        "Смена ролей перед людьми → Маска на подоконнике → Лицо в естественном свете → Право быть многогранным",
+        "Changing roles around others → A mask on the windowsill → A face in natural light → Room for complexity",
+        "Cambiar de papel ante otros → Máscara en la ventana → Rostro bajo luz natural → Permiso para ser complejo"
+      ],
+      [
+        "День исследования",
+        "A Day of Exploration",
+        "Un día de exploración",
+        "Список чужих ожиданий → Три открытые двери → Маленькая новая проба → Записанное чувство после неё",
+        "A list of expectations → Three open doors → A small new experience → Writing down how it felt",
+        "Lista de expectativas → Tres puertas abiertas → Una experiencia nueva → Anotar cómo se sintió"
+      ]
+    ],
+    "life-change": [
+      [
+        "Станция между главами",
+        "The Station Between Chapters",
+        "La estación entre capítulos",
+        "Поезд прошлого отъезжает → Пауза на перроне → Вдали появляется новый путь → Двигаться в своём темпе",
+        "The old train leaves → A pause on the platform → A new route appears → Moving at one's own pace",
+        "Parte el tren del pasado → Pausa en el andén → Aparece una ruta nueva → Avanzar al propio ritmo"
+      ],
+      [
+        "Что взять с собой",
+        "What to Carry Forward",
+        "Qué llevar contigo",
+        "Чемодан старых привычек → Сортировка ценного и лишнего → Остаются важные вещи → Лёгкий багаж для нового этапа",
+        "A suitcase of old habits → Sorting what matters → Keeping essential things → Lighter luggage for change",
+        "Maleta de costumbres → Separar lo valioso → Conservar lo esencial → Equipaje ligero para cambiar"
+      ],
+      [
+        "Мост без спешки",
+        "The Unhurried Bridge",
+        "El puente sin prisa",
+        "Неизвестный берег → Прочный мост над водой → Пауза посередине → Разрешение ещё не знать всего",
+        "An unfamiliar shore → A steady bridge over water → Pausing halfway → Not needing every answer yet",
+        "Orilla desconocida → Puente firme sobre agua → Pausa a mitad → No tener todas las respuestas"
+      ],
+      [
+        "Новый ритм",
+        "A New Rhythm",
+        "Un ritmo nuevo",
+        "Прежние часы спешат → Тишина рассвета → Ритм подстраивается под жизнь → Один новый ежедневный ритуал",
+        "Old clocks race → A quiet dawn → A rhythm fits present life → One new daily ritual",
+        "Relojes viejos corren → Amanecer tranquilo → Ritmo adaptado a la vida → Un ritual cotidiano"
+      ]
+    ],
+    "decision-making": [
+      [
+        "Два моста",
+        "Two Bridges",
+        "Dos puentes",
+        "Развилка над рекой → Два моста без подсказок → Взвешивание цены выбора → Первый осознанный шаг",
+        "A fork above a river → Two bridges without signs → Weighing each trade-off → One considered first step",
+        "Bifurcación sobre un río → Dos puentes sin señales → Sopesar cada costo → Primer paso consciente"
+      ],
+      [
+        "Цена каждого «да»",
+        "The Cost of Every Yes",
+        "El costo de cada sí",
+        "Множество открытых дверей → Силы распыляются → Одна дверь мягко закрыта → Пространство для важного",
+        "Too many open doors → Energy spreads thin → One door closes gently → Space for what matters",
+        "Demasiadas puertas abiertas → Energía dispersa → Una puerta se cierra → Espacio para lo importante"
+      ],
+      [
+        "Чужой совет, своё решение",
+        "Advice Is Not a Decision",
+        "Consejo no es decisión",
+        "Шум чужих советов → Письма на столе → Собственные критерии рядом → Выбор без обещания идеала",
+        "A chorus of advice → Letters on a desk → Personal criteria beside them → Choosing without perfection",
+        "Coro de consejos → Cartas sobre la mesa → Criterios propios al lado → Elegir sin perfección"
+      ],
+      [
+        "Обратимая проба",
+        "A Reversible Experiment",
+        "Un ensayo reversible",
+        "Страх неверного выбора → Макет двух вариантов → Малый обратимый тест → Новые сведения вместо догадок",
+        "Fear of choosing badly → Two small prototypes → A reversible test → Information replaces guesses",
+        "Miedo a equivocarse → Dos prototipos pequeños → Prueba reversible → Datos en vez de suposiciones"
+      ]
+    ],
+    "goal-achievement": [
+      [
+        "Маяк конкретной цели",
+        "The Goal Lighthouse",
+        "El faro de la meta",
+        "Туман больших мечтаний → Один маяк становится виден → Маршрут отмечен вехами → Ближайший посильный шаг",
+        "Fog around big dreams → One lighthouse emerges → Milestones mark a route → The next manageable step",
+        "Niebla de grandes sueños → Aparece un faro → Hitos marcan la ruta → Siguiente paso posible"
+      ],
+      [
+        "Лестница одной ступени",
+        "One Step at a Time",
+        "Un peldaño a la vez",
+        "Громадная лестница пугает → Видна лишь первая ступень → Нога на устойчивой опоре → Отмечен маленький прогресс",
+        "An enormous staircase feels daunting → Only step one comes into focus → A steady foothold → Small progress noticed",
+        "Escalera inmensa intimida → Solo se ve un peldaño → Pie en apoyo firme → Notar un pequeño avance"
+      ],
+      [
+        "Погода на пути",
+        "Weather Along the Way",
+        "El clima del camino",
+        "Солнце сменяется дождём → Путник укрывается → План меняется, цель остаётся → Продолжение без самокритики",
+        "Sun turns into rain → The traveler finds shelter → Plans change, aim remains → Continuing without self-blame",
+        "El sol se vuelve lluvia → La persona se refugia → Cambia el plan, no la meta → Seguir sin reproches"
+      ],
+      [
+        "Тихая победа",
+        "The Quiet Milestone",
+        "El logro silencioso",
+        "Недооценённая работа → Маленькие отметки на карте → Собранная цепочка достижений → Пауза для признания труда",
+        "Work goes unnoticed → Small marks on a map → Progress becomes visible → A pause to acknowledge effort",
+        "Trabajo poco reconocido → Marcas en un mapa → El avance se vuelve visible → Reconocer el esfuerzo"
+      ]
+    ],
+    "procrastination": [
+      [
+        "Гора на столе",
+        "The Mountain on the Desk",
+        "La montaña en la mesa",
+        "Задача выглядит огромной → Гора превращается в листы → Выбран один маленький лист → Начало без подвига",
+        "A task looms like a mountain → It becomes a stack of pages → One page is chosen → Beginning without heroics",
+        "La tarea parece montaña → Se vuelve pila de hojas → Elegir una sola hoja → Empezar sin heroicidad"
+      ],
+      [
+        "Право на черновик",
+        "Permission for a Draft",
+        "Permiso para un borrador",
+        "Пустая страница пугает → Карандаш оставляет неровную линию → Черновик можно исправить → Работа становится возможной",
+        "The blank page feels scary → A pencil draws an imperfect line → The draft can change → Work becomes possible",
+        "La página vacía intimida → Lápiz dibuja una línea imperfecta → Se puede corregir → Trabajar se hace posible"
+      ],
+      [
+        "Пять минут",
+        "Just Five Minutes",
+        "Solo cinco minutos",
+        "Часы напоминают о задержке → Таймер на пять минут → Короткое действие завершено → Выбор продолжить или остановиться",
+        "A clock marks the delay → A five-minute timer → One brief task is done → Choice to continue or pause",
+        "El reloj recuerda la demora → Temporizador de cinco minutos → Tarea breve terminada → Elegir seguir o parar"
+      ],
+      [
+        "Не одному",
+        "Not Doing It Alone",
+        "No hacerlo solo",
+        "Долгое откладывание в одиночку → Друг сидит рядом → Первые слова или движения → Поддержка без контроля",
+        "Procrastinating in isolation → A companion sits nearby → The first words or motions → Support without pressure",
+        "Aplazar a solas → Alguien acompaña → Primeras palabras o movimientos → Apoyo sin presión"
+      ]
+    ],
+    "self-discipline": [
+      [
+        "Ритм вместо кнута",
+        "Rhythm Instead of Pressure",
+        "Ritmo en vez de presión",
+        "Жёсткий график ломается → Спокойный повторяемый ритм → Перерывы в нём естественны → Привычка без наказания",
+        "A rigid schedule breaks → A steady repeating rhythm → Rest fits inside it → Habit without punishment",
+        "Horario rígido se rompe → Ritmo constante → Descanso incluido → Hábito sin castigo"
+      ],
+      [
+        "Обещание по силам",
+        "A Promise You Can Keep",
+        "Una promesa posible",
+        "Список невозможных обещаний → Одно выполнимое условие → Маленькое действие сегодня → Доверие к себе растёт",
+        "An impossible list of promises → One manageable commitment → A small action today → Self-trust grows",
+        "Lista de promesas imposibles → Un compromiso viable → Acción pequeña hoy → Crece la confianza propia"
+      ],
+      [
+        "Среда за меня",
+        "Designing the Environment",
+        "El entorno ayuda",
+        "Отвлечения по всей комнате → Пространство упрощено → Нужные вещи под рукой → Начать стало легче",
+        "Distractions fill the room → The space is simplified → Tools are within reach → Starting feels easier",
+        "Distracciones llenan el cuarto → Se simplifica el espacio → Herramientas a mano → Es más fácil empezar"
+      ],
+      [
+        "Возвращение после паузы",
+        "Returning After a Break",
+        "Volver tras una pausa",
+        "Цепочка привычки прерывается → Нет красного креста → Спокойный новый день → Возврат без стыда",
+        "A habit streak breaks → No red cross appears → A calm new morning → Returning without shame",
+        "Se rompe una racha → No aparece una cruz roja → Nuevo día tranquilo → Retomar sin vergüenza"
+      ]
+    ],
+    "focus": [
+      [
+        "Море уведомлений",
+        "A Sea of Notifications",
+        "Mar de notificaciones",
+        "Экраны вспыхивают со всех сторон → Оповещения затихают → Стол становится яснее → Выбран один предмет внимания",
+        "Screens flash everywhere → Notifications quiet down → The desk clears → One point of focus",
+        "Pantallas brillan por todas partes → Avisos se apagan → Mesa despejada → Un punto de atención"
+      ],
+      [
+        "Один луч",
+        "One Beam of Light",
+        "Un solo haz de luz",
+        "Множество рассеянных лучей → Свет собирается в пучок → Видна одна важная задача → Внимание удерживается мягко",
+        "Light scatters in many directions → It gathers into one beam → One task becomes visible → A gentle sustained focus",
+        "La luz se dispersa → Se reúne en un haz → Una tarea aparece → Atención sostenida con suavidad"
+      ],
+      [
+        "Между задачами",
+        "The Space Between Tasks",
+        "Entre tareas",
+        "Скачки между окнами → Ладони отдыхают → Короткая пауза перед переходом → Следующая задача начинается яснее",
+        "Jumping between windows → Hands settle → A brief transition pause → The next task begins clearly",
+        "Saltos entre ventanas → Descansan las manos → Breve pausa de transición → Próxima tarea con claridad"
+      ],
+      [
+        "Точка завершения",
+        "A Finishing Point",
+        "Un punto final",
+        "Десять незаконченных дел → Отмечена граница одной задачи → Последняя деталь поставлена → Освободившееся внимание",
+        "Ten unfinished tasks → One boundary is marked → The last detail is placed → Attention is freed",
+        "Diez tareas abiertas → Delimitar una tarea → Colocar el último detalle → Liberar atención"
+      ]
+    ],
+    "money-mindset": [
+      [
+        "Семейная копилка",
+        "The Family Money Box",
+        "La alcancía familiar",
+        "Старые семейные фразы о деньгах → Копилка открывается → Полезное отделяется от страха → Собственное отношение к деньгам",
+        "Old family sayings about money → A money box opens → Useful lessons separate from fear → A personal money outlook",
+        "Viejas frases familiares sobre dinero → Se abre la alcancía → Separar aprendizaje y miedo → Visión propia del dinero"
+      ],
+      [
+        "Цена и ценность",
+        "Price and Value",
+        "Precio y valor",
+        "Ценники заслоняют вещи → На весах появляются потребности → Цена отделяется от ценности → Выбор без стыда",
+        "Price tags obscure objects → Real needs enter the scales → Price differs from value → Choosing without shame",
+        "Precios tapan los objetos → Necesidades en la balanza → Precio no equivale a valor → Elegir sin vergüenza"
+      ],
+      [
+        "Встреча с цифрами",
+        "Meeting the Numbers",
+        "Encuentro con los números",
+        "Цифры вызывают напряжение → Таблица раскрывается постепенно → Факты отделяются от опасений → Один понятный вопрос",
+        "Numbers cause tension → A table unfolds slowly → Facts separate from worries → One answerable question",
+        "Los números generan tensión → Tabla se abre poco a poco → Separar hechos y temores → Una pregunta concreta"
+      ],
+      [
+        "Достаточно — это сколько?",
+        "What Is Enough?",
+        "¿Cuánto es suficiente?",
+        "Бесконечная гонка за большим → Пауза у тихого дома → Личные критерии достатка → Реалистичная финансовая цель",
+        "An endless chase for more → A pause by a quiet home → Personal sense of enough → A realistic money goal",
+        "Carrera interminable por más → Pausa frente a casa tranquila → Definir lo suficiente → Meta financiera realista"
+      ]
+    ],
+    "money-blocks": [
+      [
+        "Невидимый потолок",
+        "The Invisible Ceiling",
+        "El techo invisible",
+        "Возможность за прозрачной преградой → Старое убеждение становится видимым → Появляется проход сбоку → Проверка новой возможности",
+        "An opportunity behind glass → An old belief becomes visible → A side opening appears → Testing a possibility",
+        "Oportunidad tras un cristal → Aparece una vieja creencia → Surge una salida lateral → Probar una posibilidad"
+      ],
+      [
+        "Стыд назвать цену",
+        "Naming Your Price",
+        "Decir tu precio",
+        "Слова застревают перед клиентом → Цена написана на бумаге → Спокойная репетиция вслух → Ясное предложение без извинений",
+        "Words catch in front of a client → The price is written down → A calm spoken rehearsal → A clear offer without apology",
+        "Palabras atascadas ante un cliente → Precio escrito → Ensayo tranquilo en voz alta → Propuesta clara sin disculpas"
+      ],
+      [
+        "Право получать",
+        "Permission to Receive",
+        "Permiso para recibir",
+        "Рука привычно отказывается → Чашка наполняется водой → Принимать и отдавать можно по выбору → Простое благодарю",
+        "A hand reflexively refuses → A cup fills with water → Receiving and giving are both choices → A simple thank-you",
+        "La mano rechaza por costumbre → Una taza se llena → Dar y recibir son elecciones → Un gracias sencillo"
+      ],
+      [
+        "Малый разговор о деньгах",
+        "A Small Money Conversation",
+        "Una charla sobre dinero",
+        "Страшный разговор откладывается → Две чашки на столе → Один факт произносится спокойно → Пространство для ответа",
+        "A dreaded conversation is delayed → Two cups on a table → One fact is calmly spoken → Space for a response",
+        "Se aplaza charla difícil → Dos tazas en la mesa → Se expresa un hecho con calma → Espacio para responder"
+      ]
+    ],
+    "financial-security": [
+      [
+        "Подушка из маленьких шагов",
+        "A Cushion Built Slowly",
+        "Un colchón paso a paso",
+        "Тревожная пустая полка → Небольшие суммы складываются → Появляется резерв → Опора без обещания полной безопасности",
+        "An empty shelf feels worrying → Small amounts accumulate → A reserve takes shape → Support without guarantees",
+        "Estante vacío preocupa → Se juntan pequeñas sumas → Toma forma una reserva → Apoyo sin garantías"
+      ],
+      [
+        "Карта расходов",
+        "A Map of Spending",
+        "Mapa de gastos",
+        "Деньги будто исчезают → Расходы отмечены на карте → Видны повторяющиеся пути → Один выбор становится ясным",
+        "Money seems to vanish → Spending is mapped → Repeating routes emerge → One choice becomes clearer",
+        "El dinero parece desaparecer → Gastos en un mapa → Se ven rutas repetidas → Una elección clara"
+      ],
+      [
+        "Три корзины",
+        "Three Baskets",
+        "Tres canastas",
+        "Покупки переплелись в узел → Корзины для нужного и желаемого → Приоритеты разложены → Небольшой план на месяц",
+        "Purchases form a knot → Baskets for needs and wants → Priorities are sorted → A simple monthly plan",
+        "Compras hechas un nudo → Canastas de necesidades y deseos → Ordenar prioridades → Plan mensual simple"
+      ],
+      [
+        "План Б без паники",
+        "A Calm Plan B",
+        "Un plan B sereno",
+        "Неопределённая погода за окном → На столе запасной маршрут → Контакты и шаги под рукой → Больше управляемости, не контроля всего",
+        "Uncertain weather outside → A backup route on the table → Steps and contacts ready → More agency, not total control",
+        "Clima incierto afuera → Ruta alternativa en la mesa → Pasos y contactos a mano → Más margen, no control total"
+      ]
+    ],
+    "income-growth": [
+      [
+        "Невидимый труд",
+        "Making Work Visible",
+        "Hacer visible tu trabajo",
+        "Полезная работа остаётся в тени → Результаты собраны в папку → Ценность показана на встрече → Конкретный запрос о вознаграждении",
+        "Useful work stays unseen → Evidence goes into a folder → Value is shown in a meeting → A specific pay request",
+        "Trabajo útil queda invisible → Resultados en carpeta → Mostrar valor en reunión → Petición concreta de pago"
+      ],
+      [
+        "Новый навык — новый путь",
+        "A Skill Opens a Path",
+        "Una habilidad abre camino",
+        "Привычный маршрут дохода → В мастерской рождается навык → Появляется новая дверь → Малый учебный проект",
+        "The familiar income route → A skill grows in a workshop → A new door appears → A small learning project",
+        "Ruta habitual de ingresos → Nueva habilidad en taller → Aparece una puerta → Proyecto de aprendizaje"
+      ],
+      [
+        "Разговор о цене",
+        "A Price Conversation",
+        "Conversar sobre precios",
+        "Цена давно не пересматривалась → На столе реальные затраты → Предложение сформулировано → Спокойный разговор с клиентом",
+        "A price stays unchanged → Real costs are laid out → An offer is framed → A calm client conversation",
+        "El precio no cambia → Costes reales sobre mesa → Formular propuesta → Conversación tranquila con cliente"
+      ],
+      [
+        "Второй ручей",
+        "A Second Stream",
+        "Un segundo arroyo",
+        "Один источник зависит от погоды → Рядом появляется небольшой ручей → Тест альтернативной услуги → Выбор с учётом сил и рисков",
+        "One income stream depends on weather → A smaller stream appears → Testing another service → Choosing with capacity and risk in mind",
+        "Un ingreso depende del clima → Aparece un arroyo menor → Probar otro servicio → Elegir según fuerzas y riesgos"
+      ]
+    ],
+    "entrepreneurship": [
+      [
+        "Первая витрина",
+        "The First Shop Window",
+        "La primera vitrina",
+        "Идея закрыта в блокноте → Простая витрина создана → Первый посетитель смотрит → Обратная связь без грандиозного запуска",
+        "An idea stays in a notebook → A simple shop window appears → A first visitor looks → Feedback without a grand launch",
+        "Idea guardada en cuaderno → Vitrina sencilla creada → Mira un primer visitante → Opiniones sin gran lanzamiento"
+      ],
+      [
+        "Слушая клиента",
+        "Listening to a Customer",
+        "Escuchar al cliente",
+        "Предприниматель влюблён в идею → Вопрос задан покупателю → Ответ удивляет → Продукт меняется по фактам",
+        "A founder loves the idea → One customer question → A surprising answer → The offer adapts to evidence",
+        "La persona ama su idea → Pregunta al cliente → Respuesta inesperada → Adaptar oferta a los hechos"
+      ],
+      [
+        "Прототип на салфетке",
+        "A Napkin Prototype",
+        "Prototipo en una servilleta",
+        "Идеальный план недостижим → Рисунок на салфетке → Первая маленькая проверка → Следующая версия без стыда",
+        "The perfect plan feels distant → A sketch on a napkin → One small test → A new version without shame",
+        "Plan perfecto parece lejano → Dibujo en servilleta → Prueba pequeña → Nueva versión sin vergüenza"
+      ],
+      [
+        "Бизнес и личные границы",
+        "Business With Boundaries",
+        "Negocio con límites",
+        "Работа занимает все часы → Дверь офиса закрывается вовремя → Место для собственной жизни → Устойчивый темп владельца",
+        "Work fills every hour → The office door closes on time → Room for personal life → A sustainable founder pace",
+        "Trabajo ocupa todo el día → Puerta cierra a tiempo → Espacio para la vida → Ritmo sostenible"
+      ]
+    ],
+    "career-growth": [
+      [
+        "Лестница или тропа?",
+        "A Ladder or a Trail?",
+        "¿Escalera o sendero?",
+        "Перед человеком две карьерные дороги → Звание и интерес расходятся → Ценности помогают сравнить → Свой критерий роста",
+        "Two career paths appear → Status and interest diverge → Values help compare → A personal definition of growth",
+        "Dos caminos profesionales → Cargo e interés divergen → Comparar con valores → Definición propia de progreso"
+      ],
+      [
+        "Папка доказательств",
+        "A Portfolio of Strengths",
+        "Carpeta de logros",
+        "Успехи забываются → Примеры работы собираются → Становятся видимы навыки → Подготовка к разговору о роли",
+        "Achievements go unnoticed → Work examples are collected → Strengths become visible → Preparing for a role discussion",
+        "Se olvidan logros → Reunir ejemplos de trabajo → Habilidades visibles → Preparar charla sobre puesto"
+      ],
+      [
+        "Разговор о повышении",
+        "A Growth Conversation",
+        "Conversación de crecimiento",
+        "Неясность ожиданий → Встреча с руководителем → Конкретные цели обсуждены → Понятный следующий этап",
+        "Unclear expectations → A manager meeting → Specific goals are discussed → A clear next stage",
+        "Expectativas poco claras → Reunión con responsable → Metas concretas → Próxima etapa clara"
+      ],
+      [
+        "Примерить новую роль",
+        "Trying On a New Role",
+        "Probar un rol nuevo",
+        "Страх перемен → Небольшая новая ответственность → Поддержка наставника → Решение после реального опыта",
+        "Fear of change → A small new responsibility → Mentor support → A decision after experience",
+        "Miedo al cambio → Responsabilidad nueva y pequeña → Apoyo de mentor → Decidir tras probar"
+      ]
+    ],
+    "business-growth": [
+      [
+        "Узкое горлышко",
+        "Finding the Bottleneck",
+        "Encontrar el cuello de botella",
+        "Работа скапливается в одном месте → Узкий проход становится виден → Один процесс упрощён → Поток выравнивается",
+        "Work piles up in one place → A bottleneck becomes visible → One process is simplified → Work flows better",
+        "Trabajo se acumula → Cuello de botella visible → Simplificar un proceso → Flujo más claro"
+      ],
+      [
+        "Система вместо пожара",
+        "Systems, Not Firefighting",
+        "Sistemas, no incendios",
+        "Команда тушит срочные пожары → Повторяющиеся причины отмечены → Появляется простое правило → Меньше аварийного хаоса",
+        "A team puts out constant fires → Repeating causes are noted → A simple rule appears → Less reactive chaos",
+        "Equipo apaga incendios → Identificar causas repetidas → Crear regla simple → Menos caos reactivo"
+      ],
+      [
+        "Мост к партнёрам",
+        "A Bridge to Partners",
+        "Puente hacia aliados",
+        "Бизнес тянет всё один → Две мастерские видят друг друга → Общая ценность обсуждена → Пробное сотрудничество",
+        "A business does everything alone → Two workshops meet → Shared value is discussed → A trial partnership",
+        "Negocio carga con todo → Dos talleres se encuentran → Hablar del valor común → Probar colaboración"
+      ],
+      [
+        "Предел здорового роста",
+        "Healthy Growth Limits",
+        "Límites del crecimiento sano",
+        "Кривая роста резко взлетает → Люди устают → Темп согласуется с ресурсами → Рост, который можно выдержать",
+        "A growth curve soars → People become tired → Pace matches capacity → Growth that can last",
+        "Curva de crecimiento sube → Personas se agotan → Ajustar ritmo a recursos → Crecer de forma sostenible"
+      ]
+    ],
+    "leadership": [
+      [
+        "Маяк без прожектора",
+        "A Lighthouse, Not a Spotlight",
+        "Faro, no reflector",
+        "Все ждут указаний → Маяк показывает направление → Команда выбирает свой путь → Лидер не контролирует каждый шаг",
+        "Everyone waits for orders → A lighthouse gives direction → The team chooses its route → Leading without micromanaging",
+        "Todos esperan órdenes → Faro indica rumbo → Equipo elige ruta → Liderar sin vigilar todo"
+      ],
+      [
+        "Передать ключ",
+        "Handing Over the Key",
+        "Entregar la llave",
+        "Лидер держит все ключи → Один ключ доверен коллеге → Появляется пространство для инициативы → Проверка договорённого результата",
+        "A leader holds every key → One key is entrusted to a colleague → Initiative has room → Reviewing agreed outcomes",
+        "Líder guarda todas las llaves → Confía una a colega → Espacio para iniciativa → Revisar acuerdos"
+      ],
+      [
+        "Трудный разговор",
+        "The Difficult Conversation",
+        "La conversación difícil",
+        "Конфликт замалчивается → Стол переговоров готов → Факт отделён от обвинений → Договорённость о следующем шаге",
+        "A conflict is avoided → A table is prepared → Facts separate from blame → Agreement on a next step",
+        "Se evita un conflicto → Mesa preparada → Hechos sin acusaciones → Acordar siguiente paso"
+      ],
+      [
+        "Голос тихого участника",
+        "Making Space for Quiet Voices",
+        "Dar lugar a voces discretas",
+        "Говорят только самые громкие → Круг становится шире → Тихий участник услышан → Решение учитывает больше взглядов",
+        "Only loud voices speak → The circle opens → A quieter member is heard → More perspectives inform the choice",
+        "Solo hablan voces fuertes → Se amplía el círculo → Escuchar a alguien discreto → Decidir con más perspectivas"
+      ]
+    ]
+  }
+}
