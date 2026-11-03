@@ -39,18 +39,17 @@
       "energy-confidence",
       "stress-recovery"
     ],
-    "subcategoryChoicePolicy": "Use the primary user need, not a contributing factor. Low energy and fatigue recovery are in Energy & Confidence; overload and burnout are in Stress & Anxiety. Relationship anxiety belongs to Love when the issue is the relationship; generalized anxiety belongs to Stress & Anxiety.",
+    "subcategoryChoicePolicy": "Classify by the primary need. Low energy, fatigue and rest or sleep belong to Energy & Confidence → Fatigue & Recovery. Long-term overload and burnout belong to Stress & Anxiety → Stress & Burnout. Relationship-specific worry belongs to Love & Relationships; anxiety that exists across situations belongs to Stress & Anxiety.",
     "scenarioCardsMustBeTopicSpecific": true,
     "scenarioCardsMustNotUseGenericCategoryTitles": true
   },
   "classificationPrinciples": [
-    "Classify by the user's primary intent, not by every related feeling.",
-    "Money anxiety belongs to Money & Mindset when money is the trigger; general anxiety belongs to Anxiety & Panic.",
-    "Fatigue and low energy belong to Energy & Fatigue; work-related burnout belongs to Stress & Burnout.",
-    "Confidence and self-esteem belong to Energy & Confidence; fear of a specific situation belongs to Fears & Phobias.",
-    "Sleep difficulty belongs to Sleep & Rest even when stress is a contributing factor.",
-    "Breakup grief belongs to Love & Relationships; childhood rejection wounds belong to Trauma & Childhood.",
-    "Fear or worry without a specific trigger belongs to Anxiety & Fears; a defined phobia or social fear also remains in that same branch."
+    "Classify each topic by the user's primary need; related words are search synonyms or tags, not duplicate placements.",
+    "Money worry belongs to Goals & Money → Money & Abundance when money is the trigger; general anxiety belongs to Stress & Anxiety → Anxiety & Fears.",
+    "Low energy, physical or mental fatigue and sleep or rest belong to Energy & Confidence → Fatigue & Recovery; prolonged overload and burnout belong to Stress & Anxiety → Stress & Burnout.",
+    "Self-confidence and self-esteem belong to Energy & Confidence → Confidence & Calm. Fear of a specific situation belongs to Stress & Anxiety → Anxiety & Fears.",
+    "Relationship-specific fears belong to Love & Relationships when the issue is closeness, a partner or a breakup; generalized worry belongs to Stress & Anxiety.",
+    "Childhood experiences, rejection and abandonment belong to Stress & Anxiety → Psychological Trauma; persistent low mood, apathy and loss of joy belong to Depression & Apathy."
   ],
   "scenarioArchetypes": [
     {
