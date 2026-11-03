@@ -917,40 +917,47 @@ test('classify-change ancestry failure with skipped source build never dispatche
   ]),'SOURCE_OR_PREFLIGHT');
 });
 
-test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
-  const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
-  const success=name=>({name,conclusion:'success',status:'completed'});
-  const fail=name=>({name,conclusion:'failure',status:'completed'});
-  const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
-  assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
-  assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
-  assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
-  // Reproduces real run 41465939704 on PR #3121: source jobs green;
-  // modern Core no longer emits separate hh-core-verified.
-  const unified=[success('classify-change'),success('core-lint-types-build')];
-  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-specialist'),
-    fail('hh-merge-check')]),'SPECIALIST_FAILED',
-    'specialist failure must not reserve ESLint-only Repair Worker');
-  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
-    'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
-  assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),
-    fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
-    'a genuinely failed source build must not be hidden');
-  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-core-verified'),
-    fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
-    'an explicitly failed legacy Core job blocks specialist-only classification');
-  assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
-    fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
-  assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
-  assert.equal(classifyCoreFailureJobs(null),'UNVERIFIED');
-  assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
-    {id:1,name:'release-ready',status:'completed',conclusion:'failure'}
-  ]},'release-ready'),true);
-  assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
-    {id:1,name:'release-ready',status:'in_progress',conclusion:null}
-  ]},'release-ready'),false);
+test('Core classifier separates changed production base, Specialist contract and executed source failures',()=>{
+ const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const success=name=>({name,conclusion:'success',status:'completed'});
+ const fail=(name,step)=>({name,conclusion:'failure',status:'completed',
+   ...(step?{steps:[{name:step,conclusion:'failure'}]}:{})});
+ const legacy=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
+ assert.equal(classifyCoreFailureJobs([...legacy,fail('release-ready')]),'RELEASE_GATE_ONLY');
+ assert.equal(classifyCoreFailureJobs([...legacy,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
+ assert.equal(classifyCoreFailureJobs([...legacy,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
+ // Actual modern production workflow contains no classify-change job.
+ const modern=[success('core-lint-types-build')];
+ for(const code of ['PRODUCTION_BASE_CHANGED','NO_EXECUTED_REQUIRED_SPECIALIST_JOB']){
+   assert.equal(classifyCoreFailureJobs([...modern,
+     {...fail('hh-specialist','Validate exact-head risk and required specialist workflows'),
+       diagnostic:code},fail('hh-merge-check')]),'SPECIALIST_FAILED',code);
+ }
+ assert.equal(classifyCoreFailureJobs([...modern,fail('hh-merge-check')]),'RELEASE_GATE_ONLY');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Verify bounded shallow scope ancestry before PR routing'),fail('hh-merge-check')]),
+   'CI_PREFLIGHT_OR_ROUTING');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Verify Source Preflight unit contracts'),fail('hh-merge-check')]),
+   'CI_PREFLIGHT_OR_ROUTING');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Exact proposed release production build and TypeScript check'),fail('hh-merge-check')]),
+   'SOURCE_OR_PREFLIGHT');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build'),fail('hh-merge-check')]),
+   'UNVERIFIED','source repair requires a known executed failing source step');
+ assert.equal(classifyCoreFailureJobs([...modern,fail('hh-core-verified'),
+   fail('hh-specialist'),fail('hh-merge-check')]),'CI_PREFLIGHT_OR_ROUTING');
+ assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('hh-core-verified'),
+   fail('release-ready')]),'CI_PREFLIGHT_OR_ROUTING');
+ assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('release-ready')]),'UNVERIFIED');
+ assert.equal(classifyCoreFailureJobs(null),'UNVERIFIED');
+ assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
+   {id:1,name:'release-ready',status:'completed',conclusion:'failure'}
+ ]},'release-ready'),true);
+ assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
+   {id:1,name:'release-ready',status:'in_progress',conclusion:null}
+ ]},'release-ready'),false);
 });
-
 test('green Core plus failed mandatory legacy release gate queues one gate-review not code repair',async()=>{
   const source=pr(2508);
   const live={...source,state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
@@ -1413,6 +1420,12 @@ test('independent specialist failures require complete trusted same-HEAD evidenc
   const rows=[row(1,'hh-core-verified','success'),row(2,'hh-specialist','failure'),
     row(3,'public-services','failure')];
   assert.equal(classify({total_count:3,check_runs:rows}),'PRODUCT_FAILURE');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],
+    row(3,'guard-unit','failure')]}),'SPECIALIST_CONTRACT_FAILED');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],
+    row(3,'actionlint-changed','failure')]}),'SPECIALIST_CONTRACT_FAILED');
+  assert.equal(classify({total_count:4,check_runs:[...rows,
+    row(4,'guard-unit','failure')]}),'SPECIALIST_CONTRACT_FAILED');
   assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'voice-webkit-macos','skipped')]}),'POLICY_OR_SKIPPED');
   assert.equal(classify({total_count:3,check_runs:rows.slice(0,2)}),'UNKNOWN');
   assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services',null,'in_progress')]}),'UNKNOWN');

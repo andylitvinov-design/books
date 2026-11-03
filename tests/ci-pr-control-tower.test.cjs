@@ -798,26 +798,48 @@ test('unproven source label with exact-HEAD red product QA moves to specialist q
  assert.deepEqual(changed,[['add','hh:specialist-repair-needed'],['remove','hh:repair-needed']]);
  assert.equal(f.calls.dispatched.length,0);
 });
-test('no exact-head independent QA or live HEAD change never releases source-repair label',async()=>{
- for(const mode of ['all-green','incomplete','moved','untrusted']){
+test('stale source hints move to Specialist policy on verified modern Core, not incomplete/moved HEAD',async()=>{
+ for(const mode of ['all-green','incomplete','moved','untrusted','contract']){
   const source=pr(121,'repair',{mergeable:true,mergeable_state:'behind'});
   const f=fixture([source],{comments:{121:[]}});
-  let writes=0;
+  const live={...source,labels:[...source.labels]},writes=[];
   f.github.rest.checks={listForRef:async()=>({data:{total_count:mode==='incomplete'?4:3,check_runs:[
-   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:1,name:'core-lint-types-build',status:'completed',conclusion:'success',app:{id:15368}},
    {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
    {id:3,name:'guard-unit',status:'completed',conclusion:mode==='all-green'?'success':'failure',
     app:{id:mode==='untrusted'?900:15368}}
   ]}})};
-  f.github.rest.issues.addLabels=async()=>{writes++;};
-  f.github.rest.issues.removeLabel=async()=>{writes++;};
-  if(mode==='moved')f.github.rest.pulls.get=async()=>({data:{...source,
-   head:{...source.head,sha:'b'.repeat(40)}}});
-  await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
-  if(mode==='moved')assert.equal(writes,0);
-  else assert.equal(writes,0);
+  f.github.rest.issues.addLabels=async({labels})=>{
+   writes.push('add:'+labels[0]);live.labels.push({name:labels[0]});};
+  f.github.rest.issues.removeLabel=async({name})=>{writes.push('remove:'+name);};
+  f.github.rest.pulls.get=async()=>({data:mode==='moved'?{...live,
+   head:{...live.head,sha:'c'.repeat(40)}}:live});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  if(['moved','incomplete'].includes(mode)){
+   assert.deepEqual(writes,[],mode);
+   assert.equal(result.specialistReclassified,0);
+  }else{
+   assert.deepEqual(writes,['add:hh:release-gate-review','remove:hh:repair-needed'],mode);
+   assert.equal(result.specialistReclassified,1);
+  }
   assert.equal(f.calls.dispatched.length,0);
  }
+});
+test('production unified Core reclassifies real Specialist product QA, not CI contract failure',()=>{
+ const {verifiedSpecialistProductFailure,verifiedSpecialistOutcome}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const check=(id,name,conclusion,app=15368)=>({id,name,status:'completed',conclusion,app:{id:app}});
+ const core=[check(1,'core-lint-types-build','success'),check(2,'hh-specialist','failure')];
+ assert.equal(verifiedSpecialistProductFailure({total_count:3,check_runs:[
+   ...core,check(3,'browser','failure')]}),true);
+ assert.equal(verifiedSpecialistOutcome({total_count:3,check_runs:[
+   ...core,check(3,'guard-unit','failure')]}),'SPECIALIST_CONTRACT_FAILED');
+ assert.equal(verifiedSpecialistProductFailure({total_count:3,check_runs:[
+   ...core,check(3,'guard-unit','failure')]}),false);
+ assert.equal(verifiedSpecialistOutcome({total_count:3,check_runs:[
+   ...core,check(3,'browser','success')]}),'POLICY_OR_SKIPPED');
+ assert.equal(verifiedSpecialistProductFailure({total_count:3,check_runs:[
+   check(1,'core-lint-types-build','failure'),check(2,'hh-specialist','failure'),
+   check(3,'browser','failure')]}),false);
 });
 test('dry run reports potential specialist reroute without label mutation',async()=>{
  const source=pr(122,'repair',{mergeable:true,mergeable_state:'behind'});

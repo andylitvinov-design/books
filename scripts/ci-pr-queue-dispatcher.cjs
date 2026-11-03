@@ -10,15 +10,25 @@ const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
-function verifiedSpecialistProductFailure(checks){
- if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
- const rows=[...checks.check_runs].sort((a,b)=>b.id-a.id);
+function verifiedSpecialistOutcome(checks){
+ const decision=classifyIndependentSpecialistChecks(checks);
+ if(decision==='UNKNOWN')return null;
  const latest=new Map();
- for(const check of rows)if(!latest.has(check.name))latest.set(check.name,check);
- const core=latest.get('hh-core-verified'),specialist=latest.get('hh-specialist');
- return core?.app?.id===15368&&core.status==='completed'&&core.conclusion==='success'&&
-  specialist?.app?.id===15368&&specialist.status==='completed'&&
-  specialist.conclusion==='failure';
+ for(const check of [...checks.check_runs].sort((a,b)=>b.id-a.id))
+   if(!latest.has(check.name))latest.set(check.name,check);
+ const legacy=latest.get('hh-core-verified'),modern=latest.get('core-lint-types-build');
+ const specialist=latest.get('hh-specialist');
+ // Modern unified Core does not publish the old hh-core-verified check.
+ // Any explicitly red present Core vetoes a product/contract reclassification.
+ const cores=[legacy,modern].filter(Boolean);
+ const coreGreen=cores.length>0&&cores.every(check=>
+   check.app?.id===15368&&check.status==='completed'&&check.conclusion==='success');
+ if(!coreGreen||specialist?.app?.id!==15368||
+    specialist.status!=='completed'||specialist.conclusion!=='failure')return null;
+ return decision;
+}
+function verifiedSpecialistProductFailure(checks){
+ return verifiedSpecialistOutcome(checks)==='PRODUCT_FAILURE';
 }
 function trustedContext(context){
  if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
@@ -474,31 +484,28 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&!hasVerifiedSourceHandoff(comments,task.head_sha)){
-   // A stale hh:repair-needed hint must not launch privileged source Repair.
-   // When independent current-HEAD specialist tests are genuinely red, send
-   // the owner to Product Repair rather than leaving an impossible ESLint
-   // worker candidate at the front of every scan.
+   // Retire an old SOURCE_REPAIR hint only with current trusted same-HEAD
+   // Specialist evidence; separately route policy/contracts from product QA.
    let checks;
    try{
     checks=(await limited('source-without-proof-checks',()=>github.rest.checks.listForRef({
      owner,repo,ref:task.head_sha,per_page:100,filter:'latest'
     }))).data;
    }catch(err){blocked('SOURCE_PROOF_UNVERIFIED');continue;}
-   if(!verifiedSpecialistProductFailure(checks)||
-      fresh.mergeable!==true||
+   const outcome=verifiedSpecialistOutcome(checks);
+   if(!outcome||fresh.mergeable!==true||
       !['clean','behind','blocked'].includes(fresh.mergeable_state)){
     blocked('SOURCE_PROOF_MISSING');continue;
    }
+   const to=outcome==='PRODUCT_FAILURE'?
+     'hh:specialist-repair-needed':'hh:release-gate-review';
    if(dryRun){summary.wouldSpecialistReclassify++;continue;}
    try{
-    if(!fresh.labels.some(l=>l.name==='hh:specialist-repair-needed')){
-     await limited('label-verified-specialist-repair',()=>github.rest.issues.addLabels({
-      owner,repo,issue_number:task.pr_number,labels:['hh:specialist-repair-needed']
+    if(!fresh.labels.some(l=>l.name===to)){
+     await limited('label-verified-specialist-route',()=>github.rest.issues.addLabels({
+      owner,repo,issue_number:task.pr_number,labels:[to]
      }));
     }
-    // Recheck source HEAD and both labels before retiring the old queue hint.
-    // The reservationStatus check above already rejected active/ambiguous
-    // owners, exact-HEAD task claims and incomplete issue-comment history.
     const current=(await limited('verify-specialist-relabel',()=>github.rest.pulls.get({
      owner,repo,pull_number:task.pr_number
     }))).data;
@@ -506,20 +513,22 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
        current.head?.sha!==task.head_sha||current.base?.ref!==PROD||
        current.head?.repo?.full_name!==REPO||
        !current.labels?.some(l=>l.name==='hh:repair-needed')||
-       !current.labels?.some(l=>l.name==='hh:specialist-repair-needed')){
+       !current.labels?.some(l=>l.name===to)){
      blocked('SPECIALIST_RELABEL_RECHECK_FAILED');continue;
     }
     await limited('retire-unproven-source-label',()=>github.rest.issues.removeLabel({
      owner,repo,issue_number:task.pr_number,name:'hh:repair-needed'
     }));
     summary.specialistReclassified++;
-    log('INDEPENDENT_SPECIALIST_RECLASSIFIED #'+task.pr_number+' '+task.head_sha.slice(0,12));
+    log('INDEPENDENT_SPECIALIST_RECLASSIFIED #'+task.pr_number+
+      ' '+task.head_sha.slice(0,12)+' outcome='+outcome);
    }catch(err){
     blocked('SPECIALIST_RELABEL_UNAVAILABLE');
     log('Specialist classification #'+task.pr_number+': '+err.message);
    }
    continue;
   }
+
   if(task.lane==='repair'){
    if(repairMode(fresh)!=='lint'){blocked('SOURCE_MERGEABILITY_UNVERIFIED');continue;}
    let files;
@@ -726,4 +735,4 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  log();return state;
 }
 module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
- DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure};
+ DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,verifiedSpecialistOutcome};

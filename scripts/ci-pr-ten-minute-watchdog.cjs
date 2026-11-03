@@ -185,43 +185,31 @@ function transientFailure(run, jobs, now) {
 }
 
 function classifyCoreFailureJobs(jobs) {
-  // No complete job evidence => no source-repair claim or gate diagnosis.
+  // A red aggregate or moving production base is not source-code evidence.
+  // Only an executed, identifiable failing source step can authorize Repair.
   if (!Array.isArray(jobs) || !jobs.length) return 'UNVERIFIED';
   const byName=new Map(jobs.map(job=>[job.name,job]));
   const failed=jobs.filter(job=>['failure','timed_out','startup_failure'].includes(job.conclusion));
   if (!failed.length) return 'UNVERIFIED';
   const gateOnly=new Set(['release-ready','hh-specialists-verified','hh-merge-check']);
+  const aggregate=new Set([...gateOnly,'hh-core-verified','hh-specialist']);
   const core=byName.get('hh-core-verified');
   const scope=byName.get('classify-change');
   const build=byName.get('core-lint-types-build');
-  // Current unified Core has classify-change + core-lint-types-build and
-  // hh-merge-check; old Core also emitted a separate hh-core-verified.
-  // Its ABSENCE is not a source failure, but a present failed Core is.
-  // Only the unified hh-merge-check explicitly identifies the modern
-  // workflow. Old release-ready without hh-core-verified is INCOMPLETE, not
-  // policy-green. A red present legacy Core must still fail closed.
-  const coreVerified=core?.conclusion==='success' ||
-    (core===undefined&&byName.has('hh-merge-check'));
-  const sourceGreen=scope?.conclusion==='success' &&
-    (build?.conclusion==='success' || build?.conclusion==='skipped') &&
-    coreVerified;
-  // Do not consume a deterministic ESLint source-writing slot for a verified
-  // specialist/policy failure. Independent Specialist checks still determine
-  // whether Product Repair is allowed; no result is treated as merge approval.
-  if(sourceGreen&&failed.some(job=>job.name==='hh-specialist') &&
+  // The unified production workflow has core-lint-types-build + hh-merge-check,
+  // NOT a distinct classify-change or hh-core-verified job.
+  const unified=byName.has('hh-merge-check') && !byName.has('classify-change');
+  const sourceGreen=(build?.conclusion==='success' &&
+      (scope?.conclusion==='success'||unified)) ||
+    (scope?.conclusion==='success' && build?.conclusion==='skipped' &&
+      core?.conclusion==='success');
+  if(sourceGreen && failed.some(job=>job.name==='hh-specialist') &&
      failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
     return 'SPECIALIST_FAILED';
-  if(sourceGreen&&failed.every(job=>gateOnly.has(job.name)))
+  if(sourceGreen && failed.every(job=>gateOnly.has(job.name)))
     return 'RELEASE_GATE_ONLY';
-  // A failed classify-change is an ancestry/routing preflight, not evidence
-  // that a TypeScript/ESLint build even ran. For old PR bases the source job
-  // can be skipped and must not reserve the source-coding Repair Worker.
-  if(scope?.conclusion==='failure' && build?.conclusion!=='failure')
-    return 'CI_PREFLIGHT_OR_ROUTING';
-  // Aggregate gates report downstream consequences, not the causal step.
-  // Treat setup/checkout failures as environment triage at any age; the
-  // separate retry policy still decides whether and when a rerun is safe.
-  const aggregate=new Set(['release-ready','hh-specialists-verified','hh-core-verified','hh-specialist']);
+  // The legacy separate scope job is a routing preflight, not a source test.
+  if(scope?.conclusion==='failure') return 'CI_PREFLIGHT_OR_ROUTING';
   const causal=failed.filter(job=>!aggregate.has(job.name));
   const setupStep=/^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i;
   if(causal.length && causal.every(job=>{
@@ -229,7 +217,21 @@ function classifyCoreFailureJobs(jobs) {
     const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
     return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
   })) return 'CI_INFRA_OR_ENVIRONMENT';
-  if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
+  if(build?.conclusion==='failure') {
+    const steps=(build.steps||[]).filter(step=>step.conclusion==='failure')
+      .map(step=>String(step.name||''));
+    // Exact names from the production source pipeline (and legacy tests).
+    // A failed CI contract, ancestry or policy step is NOT an app defect.
+    const sourceStep=/^(?:TypeScript check|Source Preflight — syntax and TypeScript before costly Next build|Lint changed JS\/TS sources on PR(?:;.*)?|Mobile Dock Core geometry and iPhone keyboard contracts|Exact proposed release production build and TypeScript check|Run (?:targeted )?(?:ESLint|TypeScript|build))$/i;
+    if(steps.some(name=>sourceStep.test(name)) &&
+       steps.every(name=>sourceStep.test(name)||setupStep.test(name)))
+      return 'SOURCE_OR_PREFLIGHT';
+    if(steps.length && steps.every(name=>!sourceStep.test(name)))
+      return 'CI_PREFLIGHT_OR_ROUTING';
+    return 'UNVERIFIED'; // mixed or incomplete evidence: fail closed
+  }
+  if(failed.some(job=>job.name==='hh-specialist'||job.name==='hh-core-verified'))
+    return 'CI_PREFLIGHT_OR_ROUTING';
   return 'UNVERIFIED';
 }
 function latestCompletedFailedGate(checks, name) {
@@ -261,10 +263,15 @@ function classifyIndependentSpecialistChecks(checks) {
   const latest=latestByName(checks.check_runs);
   if([...latest.values()].some(check=>check.status!=='completed'))
     return 'UNKNOWN';
-  if([...latest.values()].some(check=>
-      check.conclusion==='failure' && check.app?.id===15368 &&
-      !INHERITED_CORE_CHECKS.has(check.name)))
-    return 'PRODUCT_FAILURE';
+  // CI-policy jobs are not product/browser test failures. A mixed red
+  // set is routed to the CI contract lane first, never app-source repair.
+  const ciContractJobs=new Set(['guard-unit','actionlint-changed']);
+  const red=[...latest.values()].filter(check=>
+    check.conclusion==='failure' && check.app?.id===15368 &&
+    !INHERITED_CORE_CHECKS.has(check.name));
+  if(red.some(check=>ciContractJobs.has(check.name)))
+    return 'SPECIALIST_CONTRACT_FAILED';
+  if(red.length) return 'PRODUCT_FAILURE';
   return 'POLICY_OR_SKIPPED';
 }
 function needsFailedCoreCronBackstop(state) {
@@ -556,7 +563,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
-    specialistPolicyHolds:0,specialistEvidenceUnverified:0,
+    specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
     policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,infraOrEnvironment:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
@@ -593,13 +600,19 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     const to=product?SPECIALIST_LABEL:RELEASE_GATE_LABEL;
     const from=product?RELEASE_GATE_LABEL:SPECIALIST_LABEL;
     if(product)summary.specialistFailures++;
-    else {summary.specialistPolicyHolds++;summary.releaseGateOnly++;}
+    else {
+      summary.specialistPolicyHolds++;
+      if(decision==='SPECIALIST_CONTRACT_FAILED')summary.specialistContractFailures++;
+      summary.releaseGateOnly++;
+    }
     const max=product?MAX_RELEASE_GATE_LABELS:MAX_RELEASE_GATE_LABELS;
     const count=product?summary.specialistQueued:summary.releaseGateQueued;
     if(!hasLabel(live,to)&&count>=max)return decision;
     const newly=await ensureQueueLabel(github,owner,repo,live,to,
       product?'Verified independent exact-HEAD specialist failure: fix actual source/browser QA':
-      'Specialist aggregate failed without a failed independent QA check; inspect skipped/policy/base cause',
+      decision==='SPECIALIST_CONTRACT_FAILED'?
+        'Trusted Specialist CI contract failed: repair workflow/policy, not application code':
+        'Specialist aggregate failed: inspect PRODUCTION_BASE_CHANGED, missing jobs and policy; not app code',
       product?'d93f0b':'fbca04',dryRun,limited,log);
     if(newly){
       if(product)summary.specialistQueued++;
