@@ -436,7 +436,7 @@ jobs:
     # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
     if: ${{ !cancelled() }}
     # Read-only required aggregator: no Next build, npm or privileged tools.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       contents: read
