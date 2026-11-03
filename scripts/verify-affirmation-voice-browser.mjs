@@ -164,6 +164,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         {timeout:15000,message:"approved selected affirmations must reach voice text"})
         .toBeGreaterThan(5);
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
+      // Review the actual approved text as a visitor: WebKit innerText is empty
+      // while this native disclosure is closed, even when textContent exists.
+      const transcriptDisclosure=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:speech});
+      if(await transcriptDisclosure.getAttribute("open")===null)
+        await transcriptDisclosure.locator(":scope > summary").click();
+      await expect(speech).toBeVisible();
       const transcript=(await speech.innerText()).trim();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
@@ -172,6 +179,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="female"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      // The sound controls live inside their own visitor-opened disclosure.
+      const voiceOptions=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-bed]")});
+      if(await voiceOptions.getAttribute("open")===null)
+        await voiceOptions.locator(":scope > summary").click();
+      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();

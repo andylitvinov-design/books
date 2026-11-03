@@ -2,6 +2,8 @@ import test from "node:test";
 import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {recommendPromptShotPlan} from "../lib/mandala/prompt-shot-director.mjs";
+import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
 
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
@@ -312,4 +314,59 @@ test("owner correction: two independent subtopics selected, input last and style
    "the original shot captions remain the fallback when no timed edit exists");
  assert.match(studio,/data-video-montage-script/);
  assert.match(studio,/data-video-montage-script-update/);
+});
+
+test("local prompt director selects four different APPROVED scenes for individual storyboard beats",()=>{
+ const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+ const baseClipIds=["solar-surge","ocean-pulse","sunbeam-flow","river-power"];
+ const plan=recommendPromptShotPlan({
+   goal:"Хочу почувствовать спокойствие в лесу, увидеть утреннее солнце и путь вперёд",
+   theme:"energy",scenes,baseClipIds,
+ });
+ assert.equal(plan.version,"hh-prompt-four-shot-v1");
+ assert.equal(plan.mode,"personalized");
+ assert.equal(plan.canExport,true);
+ assert.equal(plan.clipIds.length,4);
+ assert.equal(new Set(plan.clipIds).size,4,"the same source is never repeated");
+ assert.deepEqual(plan.stages.map(stage=>stage.id),["arrival","support","movement","integration"]);
+ assert.ok(plan.matchedSignals.includes("forest"),"visual forest signal must not be lost");
+ assert.ok(plan.matchedSignals.includes("sun"),"sun is a separately retrieved visual cue");
+ assert.ok(validateMontageClips(plan.clipIds,scenes));
+ assert.match(director,/recommendPromptShotPlan\(\{/);
+ assert.match(director,/data-auto-video-per-shot/);
+ assert.match(director,/personalizedShotIds\|\|\[\.\.\.chosen\.clips\]/);
+ assert.match(director,/onApply\(chosen\.id,length/,"use original real export path");
+});
+
+test("per-shot matching enforces water exclusions and never selects unlicensed or duplicate URLs",()=>{
+ const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+ const forged={...scenes[0],id:"fake-mountain",video:"https://example.com/fake.mp4",
+   tags:["mountain","sun","forest"],motifs:["mountain"],
+   rightsReference:{kind:"unlicensed_remote_source"}};
+ const plan=recommendPromptShotPlan({
+   goal:"Хочу спокойствия, лес, горы, но без моря",
+   theme:"health",scenes:[...scenes,forged],excludedMotifs:["water"],
+   baseClipIds:["calm-sea","ocean-pulse","river-power","soft-horizon"],
+ });
+ assert.equal(plan.canExport,true);
+ assert.equal(plan.mode,"personalized");
+ assert.ok(!plan.clipIds.includes("fake-mountain"));
+ assert.ok(!plan.clipIds.includes("calm-sea"));
+ assert.ok(validateMontageClips(plan.clipIds,scenes,["water"]));
+ const disallowed=recommendPromptShotPlan({goal:"mountain",theme:"energy",
+   scenes:scenes.slice(0,3),baseClipIds:[]});
+ assert.equal(disallowed.canExport,false,"fewer than four distinct verified sources is not a movie");
+ assert.deepEqual(disallowed.clipIds,[]);
+});
+
+test("unrecognized video prompts retain only the source-backed preset, without invented footage",()=>{
+ const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+ const baseClipIds=["wealth-sunrise","golden-harvest","prosperity-coast","radiant-portal"];
+ const plan=recommendPromptShotPlan({goal:"unrecognized fantasy figure",theme:"money",scenes,baseClipIds});
+ assert.equal(plan.mode,"template");
+ assert.deepEqual(plan.clipIds,baseClipIds);
+ assert.deepEqual(plan.matchedSignals,[]);
+ const source=readFileSync(new URL("../lib/mandala/prompt-shot-director.mjs",import.meta.url),"utf8");
+ assert.doesNotMatch(source,/\bfetch\s*\(/);
+ assert.doesNotMatch(source,/\b(?:localStorage|sessionStorage|paidRenderApproved)\b/);
 });
