@@ -228,4 +228,90 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
  }catch{result.state='CI_WAKE_QUEUE_RETIRE_UNAVAILABLE';}
  return result;
 }
-module.exports={receiptState,provenCoreRun,verifiedCoreJob,reconcileCiWake};
+
+/**
+ * Recover only a *signed* former manual CI wake hold when independent,
+ * exact-current-HEAD Core evidence now exists. The original unverified wake
+ * is NOT retried, a green Core job is NOT a green Specialist/merge gate, and
+ * neither a label nor a GitHub HTTP response counts as runner execution.
+ * On any uncertain association, preserve both labels and hand off for review.
+ */
+async function recoverVerifiedCiManualHold({task,comments,now,dryRun,github,owner,repo,limited}){
+ const fail=reason=>({state:'CI_MANUAL_HOLD_REMAINS',reason,cleared:false});
+ if(!task||task.lane!=='ci'||!SHA.test(task.head_sha||'')||
+    !Number.isSafeInteger(task.pr_number)||task.pr_number<1||
+    !Array.isArray(comments)||!Number.isFinite(now))
+   return fail('INVALID_CURRENT_TASK');
+ const signed=parseRecords(comments.filter(trustedControlComment));
+ const holds=signed?.filter(r=>r.pr_number===task.pr_number&&r.lane==='ci'&&
+    r.state==='CI_WAKE_UNDELIVERED'&&SHA.test(r.head_sha||''))||[];
+ if(!holds.length)return fail('NO_SIGNED_UNDELIVERED_WAKE');
+ try{
+  const data=(await limited('ci-hold-current-core-check',()=>github.rest.checks.listForRef({
+   owner,repo,ref:task.head_sha,check_name:'core-lint-types-build',
+   per_page:100,filter:'latest'
+  }))).data;
+  if(!Number.isSafeInteger(data?.total_count)||data.total_count<1||
+     data.total_count>100||!Array.isArray(data.check_runs)||
+     data.check_runs.length!==data.total_count)
+   return fail('CURRENT_CORE_CHECKS_INCOMPLETE');
+  const check=data.check_runs.find(c=>c?.name==='core-lint-types-build'&&
+   Number.isSafeInteger(c.id)&&c.id>0&&c.app?.id===15368&&
+   c.head_sha===task.head_sha&&c.status==='completed'&&
+   c.conclusion==='success'&&Number.isFinite(Date.parse(c.started_at||''))&&
+   c.pull_requests?.some(p=>p.number===task.pr_number&&p.head?.sha===task.head_sha));
+  if(!check)return fail('CURRENT_HEAD_CORE_NOT_GREEN');
+  const job=(await limited('ci-hold-real-core-job',()=>
+   github.rest.actions.getJobForWorkflowRun({owner,repo,job_id:check.id}))).data;
+  if(job?.id!==check.id||job.name!=='core-lint-types-build'||
+     !Number.isSafeInteger(job.run_id)||job.run_id<1||
+     job.status!=='completed'||job.conclusion!=='success'||
+     !Number.isFinite(Date.parse(job.started_at||''))||
+     typeof job.runner_name!=='string'||!job.runner_name.trim())
+   return fail('CURRENT_HEAD_CORE_RUNNER_NOT_PROVEN');
+  const run=(await limited('ci-hold-core-workflow-ancestry',()=>
+   github.rest.actions.getWorkflowRun({owner,repo,run_id:job.run_id}))).data;
+  if(run?.id!==job.run_id||run.name!=='HH PR core release gate'||
+     run.event!=='pull_request'||run.status!=='completed'||
+     run.repository?.full_name!==REPO||run.head_repository?.full_name!==REPO||
+     run.head_sha!==task.head_sha||run.head_branch!==task.head_ref||
+     !Array.isArray(run.pull_requests)||
+     !run.pull_requests.some(p=>p.number===task.pr_number&&
+       p.head?.sha===task.head_sha&&p.base?.ref===PROD))
+   return fail('CURRENT_HEAD_CORE_ANCESTRY_NOT_PROVEN');
+  const sameHead=holds.filter(h=>h.head_sha===task.head_sha);
+  const latestHold=sameHead.length?Math.max(...sameHead.map(h=>
+    Date.parse(h.created_at||''))):null;
+  if(sameHead.length&&(!Number.isFinite(latestHold)||
+     Date.parse(job.started_at)<latestHold))
+   return fail('SAME_HEAD_HOLD_NOT_SUPERSEDED_BY_CORE');
+  const current=async(requireBoth)=>{
+   const p=(await limited('ci-hold-read-current-pr',()=>github.rest.pulls.get({
+    owner,repo,pull_number:task.pr_number
+   }))).data;
+   const labels=new Set((p?.labels||[]).map(l=>l.name));
+   return p?.state==='open'&&!p.draft&&p.head?.sha===task.head_sha&&
+     p.head?.ref===task.head_ref&&p.head?.repo?.full_name===REPO&&
+     p.base?.ref===PROD&&labels.has('hh:ci-wake-unverified')&&
+     (!requireBoth||labels.has('hh:ci-needed'));
+  };
+  if(!await current(true))return fail('CURRENT_HEAD_OR_LABEL_CHANGED');
+  const proof={coreRunId:run.id,coreJobId:job.id,headSha:task.head_sha};
+  if(dryRun)return {state:'CI_HOLD_RECOVERABLE_DRY_RUN',cleared:false,...proof};
+  // Remove the optional wake request first. A partial cleanup must never
+  // generate a redundant CI worker dispatch on the following sweep.
+  await limited('ci-hold-retire-ci-needed',()=>github.rest.issues.removeLabel({
+   owner,repo,issue_number:task.pr_number,name:'hh:ci-needed'
+  }));
+  if(!await current(false))
+   return {state:'CI_HOLD_PARTIAL_CLEANUP_VERIFY_HEAD',cleared:false,...proof};
+  await limited('ci-hold-retire-unverified',()=>github.rest.issues.removeLabel({
+   owner,repo,issue_number:task.pr_number,name:'hh:ci-wake-unverified'
+  }));
+  return {state:'CI_HOLD_RECOVERED_VERIFIED_CORE',cleared:true,...proof};
+ }catch(error){
+  return fail('CORE_EVIDENCE_OR_CLEANUP_UNAVAILABLE');
+ }
+}
+
+module.exports={receiptState,provenCoreRun,verifiedCoreJob,reconcileCiWake,recoverVerifiedCiManualHold};
