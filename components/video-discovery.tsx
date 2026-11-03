@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from "react";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
 import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
+import {MyTubeScenarioPlotPicker} from "@/components/mytube-scenario-plot-picker";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import styles from "./video-discovery.module.css";
@@ -285,6 +286,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               onClick={()=>setMyTubeScenarioId(item.id)}>{item.label}</button>)}
           </div>
         </>:null}
+        {variant==="mytube"&&mytubeScenarioId!=="all"?<MyTubeScenarioPlotPicker
+          key={mytubeScenarioId} locale={locale} scenarioId={mytubeScenarioId} context="catalog"/>:null}
       </div>
       <div className={styles.controls}>
         <label>{t.original}
