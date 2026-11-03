@@ -4,7 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-benchmark-public-browser.yml'
       - 'scripts/benchmarking/public-browser-smoke.mjs'
   workflow_dispatch:
 
