@@ -105,7 +105,6 @@ on:
       - 'components/contact-channel-chooser.tsx'
       - 'tests/service-paid-consultation-enquiry-offer.test.mjs'
       - 'docs/crm/**'
-      - '.github/workflows/hh-crm-source-check.yml'
   workflow_dispatch:
 
 concurrency:
