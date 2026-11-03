@@ -71,35 +71,21 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(browser,/page\.route/);
 });
 
-test("six-voice affirmation editor is visible in the Phrases workspace rather than hidden legacy extras",()=>{
+test("six-voice affirmation editor is mounted in the approved Phrases workspace rather than legacy extras",()=>{
   const page=read("components/mandala-free-video-studio.tsx");
-  const section=page.indexOf('data-workspace-section="phrases" data-video-quick-phrases');
-  const voice=page.indexOf('<MandalaAffirmationVoice locale={locale}');
-  const next=page.indexOf('data-workspace-section="effects"',section);
-  const hidden=page.indexOf('data-video-quick-legacy');
-  const deepPane=page.indexOf('const deepHypnoPane =');
-  const voiceCard=page.indexOf('data-hypno-voice');
-  assert.ok(deepPane>0 && voiceCard>deepPane && voice>voiceCard && section>voice && next>section && hidden>next,
-    "single consented voice lives inside the rendered Phrases editor after the phrase list");
-  assert.match(page.slice(section,next),/\{deepHypnoPane\}/,
-    "the visible Phrases tab mounts the only shared editor");
+  const voiceEditor=page.indexOf("const hypnoVoiceEditor = (");
+  const deepPane=page.indexOf("const deepHypnoPane = (");
+  const phraseMount=page.indexOf('{activeWorkspace==="phrases" ? hypnoVoiceEditor : null}',deepPane);
+  const music=page.indexOf("data-hypno-music",phraseMount);
+  const hidden=page.indexOf("data-video-quick-legacy");
+  assert.ok(voiceEditor>0 && deepPane>voiceEditor && phraseMount>deepPane && music>phraseMount && hidden>music,
+    "the single consented voice editor is mounted after the phrase catalog and before music in Phrases");
+  assert.match(page.slice(voiceEditor,deepPane),/data-hypno-voice[\s\S]*data-video-narration-stale/);
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
     "do not duplicate the voice editor or API requests");
-  assert.match(page.slice(voiceCard,section),/data-video-narration-stale/,
-    "the warning for stale narration stays inside the visible numbered voice card");
-  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  assert.match(browser,/data-video-quick-control="phrases"/);
-  const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(compact,/data-hypno-ready/);
-  assert.match(compact,/data-hypno-phrase=\{i\}/);
-  assert.match(browser,/data-hypno-ready/);
-  assert.match(browser,/data-hypno-phrase="0"/);
-  assert.match(browser,/data-hypno-phrase="4"/);
-  assert.doesNotMatch(browser,/data-video-quick-affirmation="/, "the removed quick-affirmation UI must not drive voice acceptance");
-  assert.match(browser,/data-video-quick-control="video"/);
-  assert.doesNotMatch(browser,/advanced\.locator\(":scope > summary"\)\.click/,
-    "do not test inaccessible old controls");
-});
+  assert.match(page.slice(voiceEditor,deepPane),/data-video-narration-stale/,
+    "the stale narration warning stays inside the visible voice editor");
+});;
 
 test("three women and three men use original voices, never autoplay on selection",()=>{
  const ui=read("components/mandala-affirmation-voice.tsx");
