@@ -51,7 +51,8 @@ jobs:
     if: github.event_name == 'pull_request'
     concurrency:
       group: hh-control-contract-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
+      # Old PR HEAD contracts are obsolete; current HEAD still runs every check.
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
