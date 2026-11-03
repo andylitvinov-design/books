@@ -131,7 +131,9 @@ test('publisher refuses to claim SHA publication without remote ref and parent p
  assert.equal(wrongRef.log.commit,1);
  assert.equal(wrongRef.log.comments,0,'no false PUBLISHED receipt');
  const wrongParent=fixture();
- wrongParent.github.rest.git.getCommit=async()=>({data:{parents:[{sha:'f'.repeat(40)}]}});
+ wrongParent.github.rest.git.getCommit=async({commit_sha})=>({data:
+   commit_sha===sha ? {tree:{sha:'c'.repeat(40)},parents:[{sha:'f'.repeat(40)}]} :
+   {parents:[{sha:'f'.repeat(40)}]}});
  await assert.rejects(publish({github:wrongParent.github,core,context,prNumber:11,
    expectedSha:sha,candidate,writer:wrongParent.writer}),
    /HH_REPAIR_PUBLISH_PARENT_UNVERIFIED/);
