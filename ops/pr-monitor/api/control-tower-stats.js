@@ -46,7 +46,7 @@ function normalize(source,now=Date.now()){
  }
  const age=Math.max(0,Math.floor((now-checked)/60000));
  return {
-   schema:SCHEMA,generated_at:new Date(now).toISOString(),
+   schema:SCHEMA,source_dry_run:false,source_schema:'HH_CONTROL_DISPATCH_V1',generated_at:new Date(now).toISOString(),
    checked_at:source.checked_at,run_id:source.run_id,
    run_url:'https://github.com/andylitvinov-design/books/actions/runs/'+source.run_id,
    source_issue:'https://github.com/andylitvinov-design/books/issues/3128',
