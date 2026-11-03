@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 import { hypnoWavePhase, paintHypnoLightOverlay, recommendHypnoLight } from "../lib/mandala/hypno-visual-overlay.mjs";
 
 test("Wave selects different calm or focused effects from local goal and theme",()=>{
@@ -176,4 +178,45 @@ test("Hypno Effects audio helper rejects stale/unapproved speech and builds boun
   assert.match(helper,/SPEECH_TRACK_REQUIRED/);
   assert.match(helper,/OFFLINE_AUDIO_UNAVAILABLE/);
   assert.match(helper,/oscillator\\.frequency\\.value = frequency/);
+});
+
+
+test("Hypno audio renderer emits a real stereo PCM WAV with audible quiet repeats and binaural carrier split",async()=>{
+  const helper=readFileSync(new URL("../lib/mandala/hypno-audio-effects.ts",import.meta.url),"utf8");
+  const compiled=ts.transpileModule(helper,{fileName:"hypno-audio-effects.ts",reportDiagnostics:true,
+    compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
+  assert.equal((compiled.diagnostics||[]).filter(item=>item.category===ts.DiagnosticCategory.Error).length,0);
+  const events=[];
+  class FakeOfflineAudioContext {
+    constructor(channels,frames,rate){this.numberOfChannels=channels;this.length=frames;this.sampleRate=rate;this.destination={};}
+    async decodeAudioData(){return {duration:3};}
+    createBufferSource(){const node={buffer:null,connect(){},start:(...args)=>events.push({kind:"speech",args})};return node;}
+    createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){}},connect(){}};}
+    createChannelMerger(channels){events.push({kind:"merger",channels});return {connect(){}};}
+    createOscillator(){const node={type:"",frequency:{value:0},connect(){},start(){events.push({kind:"tone",frequency:node.frequency.value});},stop(){}};return node;}
+    async startRendering(){
+      const data=Array.from({length:this.numberOfChannels},()=>new Float32Array(this.length));
+      data[0][0]=.25;data[1][0]=-.25;
+      return {numberOfChannels:this.numberOfChannels,length:this.length,sampleRate:this.sampleRate,
+        getChannelData(index){return data[index];}};
+    }
+  }
+  class FakeFile {constructor(parts,name,options){this.parts=parts;this.name=name;this.type=options.type;}}
+  const api={};
+  runInNewContext(compiled.outputText,{exports:api,OfflineAudioContext:FakeOfflineAudioContext,File:FakeFile});
+  const speechFile={arrayBuffer:async()=>new ArrayBuffer(16)};
+  const result=await api.createHypnoAudioEffectFile({speechFile,durationSeconds:15,
+    whisperEnabled:true,binauralEnabled:true,beatHz:4,repeatEverySeconds:7,whisperGain:.16});
+  assert.equal(result.type,"audio/wav");
+  const bytes=result.parts[0];
+  const view=new DataView(bytes);
+  assert.equal(String.fromCharCode(...new Uint8Array(bytes,0,4)),"RIFF");
+  assert.equal(view.getUint16(22,true),2,"WAV contains two independently rendered channels");
+  assert.equal(view.getUint32(24,true),16000);
+  assert.equal(view.getUint16(34,true),16);
+  assert.equal(events.filter(item=>item.kind==="speech").length,2,
+    "a 3s phrase repeats at 0s and 10s when a 7s pause is selected");
+  assert.deepEqual(events.filter(item=>item.kind==="tone").map(item=>item.frequency),[180,184]);
+  assert.equal(events.find(item=>item.kind==="merger")?.channels,2);
+  assert.ok(bytes.byteLength>44);
 });
