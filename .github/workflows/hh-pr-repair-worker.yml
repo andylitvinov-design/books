@@ -67,7 +67,8 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_HAS_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
-          HH_HAS_CODEX_TOKEN: ${{ secrets.OPENAI_API_KEY != '' }}
+          # Paid AI credentials are deliberately not inspected by the repair worker.
+          HH_HAS_CODEX_TOKEN: 'false'
         with:
           github-token: ${{ github.token }}
           script: |
@@ -92,7 +93,7 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available',process.env.HH_HAS_CODEX_TOKEN==='true'?'true':'false');
+            core.setOutput('code_available','false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -236,117 +237,36 @@ jobs:
           path: candidate.json
           retention-days: 1
           if-no-files-found: error
+  # Retired safety stub: paid Codex is not an automatic repair dependency.
+  # Keep stable job IDs for downstream finalization compatibility. Free AI is
+  # not enabled here until a zero-cost provider allowlist and quota checks land.
   code_fix:
-    # Codex never receives a GitHub write token, owner token or deployment secret.
-    # Its output is untrusted until independently checked by code_verify.
     needs: [claim,fix]
-    if: >-
-      !cancelled() &&
-      needs.claim.result == 'success' &&
-      needs.claim.outputs.code_available == 'true' &&
-      (needs.claim.outputs.strategy == 'code' ||
-       (needs.claim.outputs.strategy == 'lint' &&
-        needs.fix.result == 'success' &&
-        needs.fix.outputs.candidate_status == 'manual_required'))
+    if: false
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 1
     permissions:
       contents: read
     outputs:
-      candidate_status: ${{ steps.capture.outputs.candidate_status }}
-      candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
-    env:
-      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
-      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+      candidate_status: disabled
+      candidate_detail: PAID_AI_ROUTE_RETIRED
     steps:
-      - name: Checkout isolated PR source without credentials
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.claim.outputs.sha }}
-          persist-credentials: false
-      - name: Checkout trusted instructions without credentials
-        uses: actions/checkout@v4
-        with:
-          ref: codex/bootstrap-books
-          path: .hh-trusted
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install dependencies without untrusted lifecycle scripts
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Prepare strict allowlist and root-cause coding instructions
-        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs prepare
-      - name: Codex isolated source repair (never publishes)
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .hh-code-repair-task.txt
-          permission-profile: ':workspace'
-          safety-strategy: drop-sudo
-          allow-bots: true
-      - id: capture
-        name: Capture untrusted Codex source proposal
-        if: always()
-        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: hh-code-repair-proposal
-          path: candidate-raw.json
-          retention-days: 1
-          if-no-files-found: warn
+      - name: Paid AI route intentionally disabled
+        run: echo "No paid AI fallback is permitted."
 
   code_verify:
-    # Fresh source checkout and fresh trusted verifier: Codex cannot modify
-    # this verifier or attest its own tests, and no write credentials exist.
     needs: [claim,fix,code_fix]
-    if: >-
-      !cancelled() &&
-      needs.code_fix.result == 'success' &&
-      needs.code_fix.outputs.candidate_status == 'proposed'
+    if: false
     runs-on: ubuntu-24.04
-    timeout-minutes: 18
+    timeout-minutes: 1
     permissions:
       contents: read
     outputs:
-      candidate_status: ${{ steps.verify_code.outputs.candidate_status }}
-      candidate_detail: ${{ steps.verify_code.outputs.candidate_detail }}
-    env:
-      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
-      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+      candidate_status: disabled
+      candidate_detail: FREE_AI_EXECUTOR_NOT_CONFIGURED
     steps:
-      - name: Checkout original exact PR HEAD without credentials
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.claim.outputs.sha }}
-          persist-credentials: false
-      - name: Checkout independent trusted verifier without credentials
-        uses: actions/checkout@v4
-        with:
-          ref: codex/bootstrap-books
-          path: .hh-trusted
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install test dependencies without lifecycle scripts
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - uses: actions/download-artifact@v4
-        with:
-          name: hh-code-repair-proposal
-          path: hh-code-candidate
-      - id: verify_code
-        name: Validate allowlist, exact blobs, lint, TypeScript and related tests
-        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hh-code-repair-verified
-          path: candidate.json
-          retention-days: 1
-          if-no-files-found: error
+      - name: Free AI verifier is not yet configured
+        run: echo "No AI patch can be accepted without a configured free executor."
 
   publish:
     needs: [claim,fix,code_fix,code_verify]
