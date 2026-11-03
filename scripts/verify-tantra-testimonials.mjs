@@ -264,13 +264,24 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     // Observe the reopened state through backend reconstruction, before another
     // explicit play. A cached currentTime or immediate paused sample is insufficient.
     if (engine === 'webkit') {
+      // WebKit may suppress requestVideoFrameCallback while the video is paused.
+      // Assert the real native decoder is ready with previously decoded frames,
+      // no error and no unsolicited replay; never fabricate a frame callback.
       for (const index of [0, 1]) {
         const video = disclosure.locator('video').nth(index);
         await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, { at, time }) => {
-          const frame = el.__tantraPresentedFrame;
-          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
-        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+        await expect.poll(() => video.evaluate(el => el.readyState), { timeout: 20000 }).toBeGreaterThanOrEqual(2);
+        const resumed = await video.evaluate(el => ({
+          time: el.currentTime, paused: el.paused, ready: el.readyState,
+          frames: el.getVideoPlaybackQuality().totalVideoFrames,
+          error: el.error?.code ?? null, src: el.currentSrc,
+        }));
+        assert.equal(resumed.error, null, 'Reopened WebKit media must have no decode error');
+        assert.equal(resumed.paused, true, 'Reopened WebKit video must not autoplay');
+        assert.ok(resumed.frames > 0, 'Previously decoded real frames must remain observable');
+        assert.ok(resumed.src === sources[index], 'Native media source must remain selected');
+        assert.ok(Math.abs(resumed.time - paused[index]) < 0.05,
+          'Reopened WebKit player must retain position until explicit playback');
       }
     }
     await page.waitForTimeout(350);

@@ -275,6 +275,7 @@ export function ConsultationChoiceCapture({
       </div>
       {isPaidRequest ? (
         <ContactChannelChooser
+          key={serviceChoice}
           locale={locale}
           whatsappUrl={whatsappUrl}
           publicServiceTitle={t.serviceOptions[serviceChoice]}
