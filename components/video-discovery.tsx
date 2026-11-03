@@ -219,7 +219,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       </div>
       <div className={styles.areaSection} data-mytube-taxonomy="v2">
         <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
-        <div className={styles.lifeAreas} role="group" aria-label={t.mytubeCategoryTitle}>
+        <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
           <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
             onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");}}>{t.mytubeAny}</button>
           {mytubeCategories.map(item=><button type="button" key={item.id} data-mytube-category={item.id}
@@ -228,7 +228,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         </div>
         {mytubeCategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeSubcategoryTitle}</strong></div>
-          <div className={styles.goals} role="group" aria-label={t.mytubeSubcategoryTitle}>
+          <div className={styles.goals} data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
             <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
               onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");}}>{t.mytubeAllSubcategories}</button>
             {mytubeSubcategories.map(item=><button type="button" key={item.id} data-mytube-subcategory={item.id}
@@ -239,7 +239,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         </>:null}
         {mytubeSubcategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeTopicTitle}</strong></div>
-          <div className={styles.goals} role="group" aria-label={t.mytubeTopicTitle}>
+          <div className={styles.goals} data-mytube-topics role="group" aria-label={t.mytubeTopicTitle}>
             <button type="button" data-mytube-topic="all" aria-pressed={mytubeTopicId==="all"}
               onClick={()=>setMyTubeTopicId("all")}>{t.mytubeAllTopics}</button>
             {mytubeTopics.map(item=><button type="button" key={item.id} data-mytube-topic={item.id}
@@ -328,7 +328,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     <div className={styles.results} aria-live="polite">
       <span>{area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span>{ordered.length}</span>
     </div>
-    {ordered.length===0?<p className={styles.empty}>{t.empty}</p>:
+    {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>{t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
         videoLayout={variant==="mytube"?"mytube":"default"}
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
