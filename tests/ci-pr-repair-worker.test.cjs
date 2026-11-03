@@ -638,7 +638,7 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
    ['lib/a.js','lib/a.js'],Array.from({length:9},(_,i)=>'lib/a'+i+'.js')])
    assert.throws(()=>sourceScope({REPAIR_SHA:sha,REPAIR_FILES_JSON:JSON.stringify(files)}));
  assert.throws(()=>sourceScope({REPAIR_SHA:'stale',REPAIR_FILES_JSON:'["lib/a.js"]'}));
- const good={head_sha:sha,repair_kind:'codex',
+ const good={head_sha:sha,repair_kind:'free_ai',
    files:[{path:'components/a.tsx',original_sha:sha,base64:'ZXhwb3J0IHt9Owo='}]};
  assert.equal(validateCandidate(good,scope).length,1);
  assert.throws(()=>validateCandidate({...good,head_sha:newSha},scope));
@@ -651,17 +651,22 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
  assert.match(prompt,/components\/a.tsx/);
  assert.match(prompt,/Do not run git commit, git push/);
 });
-test('automatic repair has no paid Codex executor or API credential dependency',()=>{
+test('free model is activated only after deterministic failure and never sees write token',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- assert.match(wf,/code_available: \$\{\{ steps\.select\.outputs\.code_available \}\}/);
- assert.match(wf,/core\.setOutput\('code_available','false'\)/);
- assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
- assert.match(wf,/  code_verify:\n[\s\S]*?if: false/);
- assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
- const publisher=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
- assert.match(publisher,/HH_AUTOMERGE_TOKEN/);
- assert.doesNotMatch(wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0],
-  /HH_AUTOMERGE_TOKEN/);
+ assert.match(wf,/code_available: \\$\\{\\{ steps\\.select\\.outputs\\.code_available \\$\\}\\}/);
+ assert.match(wf,/core\\.setOutput\\('code_available','true'\\)/);
+ const codeFix=wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0];
+ const codeVerify=wf.split('\n  code_verify:\n')[1].split('\n  publish:\n')[0];
+ assert.match(codeFix,/needs\\.fix\\.outputs\\.candidate_status == 'manual_required'/);
+ assert.match(codeFix,/ci-pr-repair-free-agent\\.cjs/);
+ assert.match(codeFix,/opencode\\/cli@2\\.1\\.2/);
+ assert.match(codeFix,/persist-credentials: false/);
+ assert.match(codeVerify,/ci-pr-repair-code-candidate\\.cjs verify/);
+ assert.match(codeVerify,/candidate_status == 'proposed'/);
+ assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\\/codex-action@v1/);
+ const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(pub,/HH_AUTOMERGE_TOKEN/);
+ for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
 });
 test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
@@ -762,22 +767,33 @@ test('direct code publisher requires verified parent commit on current PR HEAD',
   codeVerifyResult:'success',codeVerifyStatus:'ready',
   publishResult:'success',publishStatus:'committed',publishSha:newSha});
  assert.equal(r.state,'PUBLISHED');
- assert.equal(r.repair_kind,'codex');
+ assert.equal(r.repair_kind,'free_ai');
  assert.equal(r.new_sha,newSha);
 });
 
-test('direct Core failures run deterministic repair before remaining manual without free AI',()=>{
+test('direct Core failures reach deterministic checks and then free AI without paid fallback',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- const fix=wf.split('  fix:\n')[1].split('  code_fix:\n')[0];
- assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
- assert.match(fix,/if: needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
+ const fix=wf.split('\n  fix:\n')[1].split('\n  code_fix:\n')[0];
  assert.match(fix,/Apply trusted TypeScript type-only import codemods/);
  assert.match(fix,/Verify deterministic Core repair with TypeScript/);
+ assert.match(fix,/continue-on-error: true/);
  assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
- assert.ok(wf.includes("core.setOutput('code_available','false')"));
- assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
+ assert.ok(wf.includes("core.setOutput('code_available','true')"));
+ assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
+ assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  assert.doesNotMatch(wf,/force: true/);
+});
+
+test('free AI publisher rejects sensitive path even if PR lists it',async()=>{
+ const f=fixture();
+ f.github.rest.pulls.listFiles=async()=>({data:[{filename:'lib/private/records.ts',status:'modified'}]});
+ const candidate={head_sha:sha,repair_kind:'free_ai',files:[{
+   path:'lib/private/records.ts',original_sha:newSha,
+   base64:Buffer.from('export {};').toString('base64')}]};
+ await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+   expectedSha:sha,candidate,writer:f.writer}),/HH_REPAIR_PUBLISH_UNSAFE_PATH/);
+ assert.equal(f.log.commit,0);
 });
