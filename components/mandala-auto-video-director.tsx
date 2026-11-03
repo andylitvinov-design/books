@@ -351,6 +351,13 @@ export function MandalaAutoVideoDirector({
        <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
+       {taxonomyScenarios.length===4?<p className={css.warning} data-auto-video-concept-only>
+         {locale==="ru"
+           ?"Четыре истории ниже — сценарные концепции, не связанные пока с показанными MP4. «Создать видео» монтирует реальные кадры из предпросмотра, а не обещает съёмку описанных сюжетов."
+           :locale==="es"
+           ?"Las cuatro historias son conceptos aún no vinculados a los MP4 mostrados. «Crear vídeo» monta solamente los clips reales de la vista previa; no genera esas escenas."
+           :"These four stories are editorial concepts not yet bound to the shown MP4 clips. Create video assembles only the actual preview footage; it does not generate these scenes."}
+       </p>:null}
        <div className={css.storyChoices} role="group" aria-label={t.variants} data-auto-video-story-options>
          {alternatives.map((id,index)=>{
            const option=presets.find(item=>item.id===id);
@@ -371,6 +378,12 @@ export function MandalaAutoVideoDirector({
          <summary>{locale==="ru"?"Предпросмотр 4 кадров и настройки монтажа":
            locale==="es"?"Ver las 4 escenas y editar":"Preview 4 shots and edit"}</summary>
        <p className={css.variantsTitle}>{t.storyboard}</p>
+       {taxonomyScenarios[alternatives.indexOf(chosen.id)]?.sceneOutline?.length===4?
+         <div className={css.meta} data-auto-video-editorial-storyboard>
+           <strong>{locale==="ru"?"Концептуальная раскадровка":locale==="es"?"Guion visual propuesto":"Proposed story beats"}</strong>
+           <ol>{taxonomyScenarios[alternatives.indexOf(chosen.id)].sceneOutline.map((beat,index)=>
+             <li key={index}>{index+1}. {beat}</li>)}</ol>
+         </div>:null}
        <ol className={css.shots} data-auto-video-storyboard>
          {stageClipIds.map((clip,index)=>{
            const scene=sceneById.get(clip);
