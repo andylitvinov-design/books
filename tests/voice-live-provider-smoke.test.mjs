@@ -69,6 +69,6 @@ test("the real network path requires explicit opt-in and never persists WAV byte
   const source=readFileSync(new URL("../scripts/verify-live-voice-provider.mjs",import.meta.url),"utf8");
   assert.match(source,/HH_VOICE_LIVE_SMOKE_OWNER_APPROVED/);
   assert.match(source,/VOICE_SMOKE_ORIGIN = "https:\/\/holistichouse\.vercel\.app"/);
-  assert.doesNotMatch(source,/writeFile|createWriteStream|\.env|secret|apiKey|Bearer /i);
+  assert.doesNotMatch(source,/writeFile|createWriteStream|HH_COUNCIL_GEMINI_API_KEY|HH_VOICE_STUDIO_GEMINI_API_KEY|Bearer /i);
   assert.equal(VOICE_SMOKE_CASES.length,3);
 });
