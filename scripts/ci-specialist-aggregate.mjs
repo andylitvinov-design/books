@@ -313,10 +313,13 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
-  // The real Actions queue can exceed three minutes during multi-PR batches.
-  // Only *registered* queued/requested/waiting runs receive this 15m grace;
-  // absent workflows still fail after missingGrace and failed runs fail at once.
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // A registered queued/requested/waiting workflow is evidence of dispatch,
+  // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
+  // while its runner is still waiting. Give it the same absolute 35-minute
+  // bounded deadline as running workflows; the parent job has a 45m timeout.
+  // Missing workflows retain their short discovery grace; genuine failures
+  // still abort immediately. An override may shorten, never extend, the cap.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? maxWait, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
@@ -400,6 +403,24 @@ export async function verify(api,ctx,files,options={}) {
   for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
   const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
     files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
+  // Explicit owner budget policy: Mandala's large browser/macOS workflow is
+  // a non-blocking diagnostic ONLY when immutable production Core contains
+  // mandatory fast consent/narration/MP4 regression tests, and the PR has
+  // not modified that trusted Core gate. Other specialist workflows retain
+  // their strict exact-HEAD success requirements and all failures remain
+  // visible as diagnostics; this is never a generic waive-on-failure switch.
+  const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
+  const core = WORKFLOW_PREFIX + 'hh-pr-core-release.yml';
+  const trustedCoreSource = files.base.get(core);
+  const coreMandalaGate = typeof trustedCoreSource === 'string' &&
+    trustedCoreSource.includes('Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)') &&
+    trustedCoreSource.includes('node --test tests/affirmation-voice.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/mandala-audio-attach.test.mjs') &&
+    files.current.get(core) === trustedCoreSource && !changed.includes(core);
+  if (coreMandalaGate && files.base.has(mandala) &&
+      files.current.get(mandala) === files.base.get(mandala) &&
+      !changed.includes(mandala)) {
+    advisoryPaths.add(mandala);
+  }
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
@@ -575,7 +596,7 @@ export function diagnoseAggregateError(error) {
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
     ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
-    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Inspect GitHub runner capacity; rerun only after a confirmed transient interruption.'],
+    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Keep merge blocked. After every named queued exact-HEAD workflow finishes successfully, retry only the failed hh-specialist job once (by job ID), never re-run green Core or the whole workflow.'],
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
