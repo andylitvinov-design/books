@@ -142,6 +142,32 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   return !prefixes.some(prefix => branch.startsWith(prefix));
 }
 
+
+/**
+ * Only the unmodified, BASE-owned Profile Axis workflow may skip its one
+ * writer-only job on unrelated source branches. Its main axis suite is still
+ * mandatory, and a changed workflow/guard or the writer's own branch fails
+ * closed. Generic branch predicates remain disallowed by trustedConditionalJobs.
+ */
+export function optionalProfileWriterSkip(files, branch) {
+  const name = '.github/workflows/hh-profile-axis-matching.yml';
+  const source = files?.base?.get(name);
+  if (typeof source !== 'string' || source !== files?.current?.get(name) ||
+      typeof branch !== 'string' || !branch ||
+      branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
+  const onlyWriter = [
+    '  writer-practical-focused:',
+    "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}",
+    '    runs-on: ubuntu-24.04',
+  ].join('\n');
+  const requiredAxis = [
+    '  axis-unit-types-build:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+  ].join('\n');
+  return source.split(onlyWriter).length === 2 &&
+    source.split(requiredAxis).length === 2;
+}
+
 // Loose BASE is permitted only for recognizable, non-sensitive source paths.
 // A surprising path, CI/policy change, credential-related name, private-data
 // surface, API, or billing/security feature retains fresh production-base
@@ -390,6 +416,15 @@ export async function verify(api,ctx,files,options={}) {
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
+    }
+    if (run.path === '.github/workflows/hh-profile-axis-matching.yml' &&
+        optionalProfileWriterSkip(files, pr.head.ref)) {
+      // Fail closed on missing, failed, or skipped primary axis verification.
+      if (!jobs.some(job => job.name === 'axis-unit-types-build' &&
+          job.status === 'completed' && job.conclusion === 'success')) {
+        throw Error('NO_EXECUTED_REQUIRED_SPECIALIST_JOB:' + run.path);
+      }
+      optionalSkipped.push('writer-practical-focused');
     }
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }

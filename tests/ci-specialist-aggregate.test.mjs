@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -213,6 +213,45 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
     /UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.equal(inspectJobs(readyJob,'.github/workflows/owner.yml',
     trustedConditionalJobs(build("${{ github.event_name == 'workflow_dispatch' }}"))),1);
+});
+
+
+test('BASE-excluded writer-only job is neutral for unrelated dock PR only when axis suite passes', async () => {
+  const filename = '.github/workflows/hh-profile-axis-matching.yml';
+  const source = readFileSync(filename,'utf8');
+  const branch = 'feat/mytube-unified-six-bottom-prod-20261103';
+  const files = candidate => ({
+    base:new Map([[filename,source]]),
+    current:new Map([[filename,candidate]]),
+    changedRows:[{filename:'components/holistic-agent-chat.tsx',status:'M'}],
+  });
+  assert.equal(optionalProfileWriterSkip(files(source),branch),true);
+  assert.equal(optionalProfileWriterSkip(files(source),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  assert.equal(optionalProfileWriterSkip(files(source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')),branch),false);
+  assert.equal(optionalProfileWriterSkip(files(source),''),false);
+  const primary = {name:'axis-unit-types-build',status:'completed',conclusion:'success'};
+  const writer = {name:'writer-practical-focused',status:'completed',conclusion:'skipped'};
+  const check = ({headRef=branch,rows=[primary,writer],candidate=source}={}) => {
+    const current = pr();
+    current.head.ref = headRef;
+    return verify({
+      pr:async()=>current,
+      runs:async()=>[run({path:filename,head_branch:headRef})],
+      jobs:async()=>rows,
+    },{repo,number:27,head:SHA,base:BASE},files(candidate),{maxWaitMs:0});
+  };
+  const result = await check();
+  assert.deepEqual(result.executed.map(x=>x.jobs),[1],
+    'branch-specific writer skips only while actual axis suite succeeds');
+  for (const scenario of [
+    {headRef:'feat/meditation-writer-device-voice-v1-20261030'},
+    {rows:[{...primary,conclusion:'failure'},writer]},
+    {rows:[{...primary,conclusion:'skipped'},writer]},
+    {rows:[primary,{...writer,conclusion:'failure'}]},
+    {candidate:source.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'")},
+    {candidate:source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')},
+  ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB|NO_EXECUTED_REQUIRED_SPECIALIST_JOB|SPECIALIST_FAILED|MISSING/,
+    'own-branch skips, edited workflow, and any failed required job are not accepted');
 });
 
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
