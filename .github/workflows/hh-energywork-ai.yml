@@ -72,7 +72,6 @@ on:
       - 'docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md'
       - 'public/images/holistic-house/reiki-practitioner-sunrise.webp'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
-      - '.github/workflows/hh-energywork-ai.yml'
   workflow_dispatch:
 
 permissions:
