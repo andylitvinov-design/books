@@ -298,6 +298,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const journeySignature=JSON.stringify([focusMode,selectedState,activeTheme,goals,detailGoals,keyDifficulty,keyGoal,profileEvidence,selfRatings]);
   const [approvedSignature,setApprovedSignature]=useState("");
   const [programmeSignature,setProgrammeSignature]=useState("");
+  // Compare delayed WebKit change/blur events with the latest committed value,
+  // not an older onChange closure that can revoke a freshly approved script.
+  const committedDifficultyRef=useRef(keyDifficulty);
+  committedDifficultyRef.current=keyDifficulty;
   const planOpen=programmeSignature.length>0;
   const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;
   const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;
@@ -496,7 +500,8 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
             const next=event.currentTarget.value;
             // WebKit may send a duplicate change/blur after the Generate click.
             // A no-op must not revoke a newly approved exact-signature script.
-            if(next===keyDifficulty)return;
+            if(next===committedDifficultyRef.current)return;
+            committedDifficultyRef.current=next;
             setKeyDifficulty(next);resetGeneratedMeditation();
           }}/>
       </label></div>
