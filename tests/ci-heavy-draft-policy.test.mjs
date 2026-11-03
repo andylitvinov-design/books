@@ -89,7 +89,7 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
@@ -237,7 +237,7 @@ test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-producti
   assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
   assert.ok(source.includes('npx --no-install tsc --noEmit'));
   assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
-  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.match(source,/^  workflow_dispatch:/m);
 });
 test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{
