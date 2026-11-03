@@ -57,17 +57,17 @@ for (const [locale, label] of Object.entries(labels)) {
     const model = mount({ ...label, videos, initiallyOpen: locale !== 'en' });
     const tree = model.render();
     let pauses = 0;
-    const media = { pause() { pauses++; } };
+    const media = { paused: false, pause() { pauses++; this.paused = true; } };
     const details = { open: true, querySelectorAll() { return [media]; } };
     tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 0);
     details.open = false; tree.props.onToggle({ currentTarget: details });
     tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 2);
-    assert.equal(pauses, 2);
+    assert.equal(pauses, 1, 'Repeat close must not pause a stopped decoder again');
     details.open = true; tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 2);
-    assert.equal(pauses, 2);
+    assert.equal(pauses, 1);
   });
   test(`${locale}: missed pre-hydration open still cleans up the first observed closed toggle`, () => {
     const model = mount({ ...label, videos, initiallyOpen: locale !== 'en' });
@@ -104,6 +104,27 @@ for (const locale of Object.keys(labels)) test(`${locale}: summary activation pa
   assert.deepEqual(media.map(x => x.currentTime), [12.5, 47]);assert.deepEqual(media.map(x=>x.openWhenPaused),[true,true]);assert.equal(details.open, true);assert.equal(model.updates(), 0);
   details.open = false;tree.props.onToggle({currentTarget: details});assert.equal(model.updates(), 1);
 });
+test('closing a mixed native video section pauses only active media, once across both event handlers', () => {
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render(),summary=flatten(tree).find(node=>node.type==='summary');
+  const active={currentTime:30.5,currentSrc:videos[0].src,paused:false,calls:0,
+    pause(){this.calls++;this.paused=true}};
+  const stopped={currentTime:17.9,currentSrc:videos[1].src,paused:true,calls:0,
+    pause(){this.calls++;throw Error('Redundant pause poisons the idle WebKit decoder')}};
+  const details={open:true,querySelectorAll(selector){
+    assert.equal(selector,'video');return [active,stopped];
+  }};
+  summary.props.onClickCapture({currentTarget:{closest(){return details}}});
+  assert.equal(active.calls,1);assert.equal(stopped.calls,0);
+  details.open=false;
+  tree.props.onToggle({currentTarget:details});
+  tree.props.onToggle({currentTarget:details});
+  assert.equal(active.calls,1,'close toggle cannot pause the same decoder twice');
+  assert.equal(stopped.calls,0,'already-paused video must never receive pause()');
+  assert.deepEqual([active.currentTime,stopped.currentTime],[30.5,17.9]);
+  assert.equal(model.updates(),2,'YouTube poster cleanup still runs on close');
+});
+
 test('opening summary and absent ancestor never pause or reset any player', () => {
   const model=mount({...labels.en,videos,initiallyOpen:false});const summary=flatten(model.render()).find(x=>x.type==='summary');
   for(const details of [null,{open:false,querySelectorAll(){assert.fail('Opening must not access media')}}])summary.props.onClickCapture({currentTarget:{closest(){return details}}});
@@ -120,7 +141,8 @@ test('native explicit play observer never controls playback and media identity i
   assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);
  }
  assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|\.load\(|setTimeout\(|setInterval\(/);
- assert.equal((source.match(/currentTime\s*=/g)||[]).length,1,'Only the explicit reconstruction seek may assign time');
+ assert.equal((source.match(/currentTime\s*=/g)||[]).length,2,'Only paused reconstruction and an actually decoded-frame resume may seek; stalled playback cannot be blindly rewound');
+ assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);
  assert.match(source,/video\.currentTime = saved\.time/);
 });
 
@@ -154,7 +176,7 @@ test('repeated close notifications retain the first position and subsequent user
  assert.deepEqual(f.writes,[5.391310898,12.25]);
 });
 
-for(const action of ['onPlay','onSeeking','onPointerDown','onKeyDown'])test(`${action} after reopening cancels obsolete recovery without changing user controls`,()=>{
+for(const action of ['onPlay','onSeeking'])test(`${action} after reopening cancels obsolete recovery without changing user controls`,()=>{
  const f=recoveryFixture();f.close();f.reopen();f.handlers.onLoadStart(f.event);
  const before=f.media.paused;f.handlers[action](f.event);assert.equal(f.media.paused,before);
  f.handlers.onLoadedMetadata(f.event);assert.deepEqual(f.writes,[]);
@@ -187,7 +209,7 @@ test('already-ended media at close is not rewound by later reconstruction',()=>{
  const f=recoveryFixture({ended:true});f.close();f.reopen();f.media.ended=false;f.reconstruct();assert.deepEqual(f.writes,[]);
 });
 
-for(const action of ['onPlay','onSeeking','onPointerDown','onKeyDown'])test(`${action} before loadstart cancels obsolete recovery`,()=>{
+for(const action of ['onPlay','onSeeking'])test(`${action} before loadstart cancels obsolete recovery`,()=>{
  const f=recoveryFixture();f.close();f.reopen();f.handlers[action](f.event);f.reconstruct();assert.deepEqual(f.writes,[]);
 });
 
@@ -214,4 +236,172 @@ test('native seek rejection is contained once without retry or control side effe
  f.media.pause=()=>assert.fail('Recovery cannot pause user controls');
  assert.doesNotThrow(()=>f.reconstruct());assert.equal(attempts,1);assert.equal(f.media.paused,true);
  assert.doesNotThrow(()=>f.reconstruct());f.reopen();assert.equal(attempts,1);assert.deepEqual(f.writes,[]);
+});
+
+
+function deferredWebKitFixture(overrides={}) {
+  const callbacks=[];
+  const f=recoveryFixture({
+    requestVideoFrameCallback(fn){callbacks.push(fn);return callbacks.length;},
+    ...overrides
+  });
+  function frame(mediaTime) {
+    assert.ok(callbacks.length>0,'Expected a genuinely new decoded frame callback');
+    callbacks.shift()(0,{mediaTime});
+  }
+  return {...f,callbacks,frame};
+}
+test('WebKit defers saved-position seek until an actual new decoded frame after explicit play',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  assert.deepEqual(f.writes,[],'Reopening a paused disclosure must never seek');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.handlers.onPlaying(f.event);
+  assert.deepEqual(f.writes,[],'Preroll play/playing must not seek');
+  assert.equal(f.callbacks.length,1,'Only one resumed-frame observation may run');
+  f.frame(0.066666);
+  f.frame(0.2);
+  f.frame(0.366666);
+  assert.deepEqual(f.writes,[],'Early WebKit preroll frames must never trigger a seek');
+  f.frame(0.533333);
+  assert.deepEqual(f.writes,[5.391310898],'Only a warmed decoded pipeline authorizes one exact recovery');
+  f.handlers.onPlaying(f.event);
+  assert.equal(f.writes.length,1,'Never repeat a resolved native seek');
+});
+
+test('reopened WebKit decoder cannot be sought by repeated unadvanced preroll frames',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();f.media.paused=false;
+  f.handlers.onPlay(f.event);
+  for(let i=0;i<7;i++)f.frame(0.066666);
+  assert.deepEqual(f.writes,[],'A stuck frame-zero decoder cannot authorize another seek');
+  assert.equal(f.callbacks.length,1,'Native controls remain available without a retry timer');
+});
+test('healthy same-source native replay advances two real frames without mutating time',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(5.42);assert.deepEqual(f.writes,[]);assert.equal(f.callbacks.length,1);
+  f.frame(5.46);assert.deepEqual(f.writes,[]);
+  assert.equal(f.callbacks.length,0,'Two correctly decoded frames finish recovery monitoring');
+});
+test('real user seek, source replacement or paused media cancels a pending frame callback',()=>{
+  for(const cancel of [
+    f=>f.handlers.onSeeking(f.event),
+    f=>f.handlers.onKeyDown({...f.event,key:'ArrowRight'}),
+    f=>{f.media.currentSrc=videos[1].src},
+    f=>{f.media.paused=true},
+    f=>{f.media.seeking=true},
+    f=>{f.media.ended=true}
+  ]){
+    const f=deferredWebKitFixture();f.close();f.reopen();
+    f.media.paused=false;f.handlers.onPlay(f.event);
+    cancel(f);f.frame(0.066666);
+    assert.deepEqual(f.writes,[],'A new user/media state must veto the recovery seek');
+  }
+});
+test('Space and pointer activation preserve a true play while native seeking remains authoritative',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  assert.equal(f.handlers.onPointerDown,undefined,'Do not intercept native play controls');
+  f.handlers.onKeyDown({...f.event,key:' '});
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,1);
+  f.frame(0.066666);assert.equal(f.writes.length,0,'Native play stays untouched during preroll');
+  for(const at of [0.2,0.366666,0.533333])f.frame(at);
+  assert.equal(f.writes.length,1,'One restored seek follows decoded warmup');
+});
+test('closing during an unfinished frame observer rejects stale callbacks without losing the paused position',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,1);
+  f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,2);
+  f.frame(0.066666);assert.deepEqual(f.writes,[],'Old frame generation cannot override new state');
+  f.frame(0.066666);assert.deepEqual(f.writes,[],'Fresh generation must also warm its decoder');
+  for(const at of [0.2,0.366666,0.533333])f.frame(at);
+  assert.deepEqual(f.writes,[5.391310898]);
+});
+
+
+test('WebKit stalled same-source play never seeks a decoder without decoded frame proof',()=>{
+  const callbacks=[];
+  const f=deferredWebKitFixture({ownerDocument:{defaultView:{requestAnimationFrame(callback){callbacks.push(callback);return callbacks.length;}}}});
+  f.close();f.reopen();
+  assert.deepEqual(callbacks,[],'Disclosure reopening alone never schedules recovery');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(callbacks.length,1,'Only explicit native play starts observation');
+  callbacks.shift()(0);
+  assert.deepEqual(f.writes,[],'Preroll play may never seek');
+  callbacks.shift()(1800);
+  assert.deepEqual(f.writes,[],'A stalled WebKit decoder cannot be rewound into an endless seeking state');
+  assert.equal(f.media.paused,false,'Native user play must not be paused or auto-restarted');
+  f.handlers.onPlaying(f.event);
+  assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
+  assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
+});
+test('WebKit healthy clock advance, native seeking and paused media cancel recovery',()=>{
+  for(const cancel of [
+    f=>f.setPosition(5.8),
+    f=>f.handlers.onSeeking(f.event),
+    f=>{f.media.paused=true},
+  ]){
+    const callbacks=[];
+    const f=deferredWebKitFixture({ownerDocument:{defaultView:{requestAnimationFrame(callback){callbacks.push(callback);return callbacks.length;}}}});
+    f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+    callbacks.shift()(0);
+    cancel(f);
+    callbacks.shift()(1800);
+    assert.deepEqual(f.writes,[],'Healthy clock or real user/media state must veto recovery');
+  }
+});
+
+
+test('muted same-source native video avoids hidden WebKit suspend and restores mute when visible',()=>{
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render(),summary=flatten(tree).find(node=>node.type==='summary');
+  const original={currentSrc:videos[0].src,currentTime:30.5,muted:true,
+    paused:false,seeking:false,ended:false,pauses:0,
+    pause(){this.paused=true;this.pauses++},
+    play(){assert.fail('Never start playback when a disclosure opens')}};
+  const alreadyAudible={currentSrc:videos[1].src,currentTime:15.3,muted:false,
+    paused:false,seeking:false,ended:false,pauses:0,
+    pause(){this.paused=true;this.pauses++},
+    play(){assert.fail('Never start playback while a disclosure is closed')}};
+  const details={open:true,querySelectorAll(selector){
+    assert.equal(selector,'video');return [original,alreadyAudible];}};
+  summary.props.onClickCapture({currentTarget:{closest(){return details}}});
+  assert.deepEqual([original.paused,alreadyAudible.paused],[true,true]);
+  assert.equal(original.muted,false,'paused hidden WebKit decoder is not suspended as muted');
+  assert.equal(alreadyAudible.muted,false,'an unmuted user choice stays unmuted');
+  details.open=false;tree.props.onToggle({currentTarget:details});
+  assert.equal(original.muted,false,'duplicate close does not restore mute while hidden');
+  details.open=true;tree.props.onToggle({currentTarget:details});
+  assert.equal(original.muted,true,'original mute choice is restored after visibility');
+  assert.equal(alreadyAudible.muted,false);
+  assert.equal(original.currentTime,30.5,'close/reopen never seeks or resets position');
+  assert.equal(original.paused,true,'reopening never auto-plays');
+  assert.equal(original.pauses,1,'no redundant pause to poison WebKit decoder');
+});
+
+test('hidden muted recovery never applies saved preferences to a new source',()=>{
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render();
+  const video={currentSrc:videos[0].src,currentTime:24,muted:true,
+    paused:false,seeking:false,ended:false,
+    pause(){this.paused=true},play(){assert.fail('No automatic media play')}};
+  const details={open:false,querySelectorAll(){return [video]}};
+  tree.props.onToggle({currentTarget:details});
+  assert.equal(video.muted,false);
+  video.currentSrc=videos[1].src;video.muted=false;
+  details.open=true;tree.props.onToggle({currentTarget:details});
+  assert.equal(video.muted,false,'changed source must not inherit old mute choice');
+  assert.equal(video.currentTime,24);
+});
+
+test('real WebKit browser acceptance requires new presented decoded frames after pipeline counter reset',()=>{
+  const verifier=readFileSync(new URL('../scripts/verify-tantra-testimonials.mjs',import.meta.url),'utf8');
+  const functionBody=verifier.split('async function startVisibleNative(')[1]?.split('async function focusWithoutScroll(')[0];
+  assert.ok(functionBody,'The real browser acceptance must execute startVisibleNative');
+  assert.match(functionBody,/frame\.at > \(before\.presentedFrame\?\.at \?\? -1\)/,'a frame after explicit native play is required');
+  assert.match(functionBody,/frame\.mediaTime > before\.time \+ 0\.35/,'a genuinely advanced presented frame is required');
+  assert.match(functionBody,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/,'the frame must match the active media clock');
+  assert.match(functionBody,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/,'paused, stalled-seek or errored media cannot pass');
+  assert.doesNotMatch(functionBody,/toBeGreaterThan\(initial\.frames\)/,'GStreamer resets this counter on a real decoder rebuild');
 });
