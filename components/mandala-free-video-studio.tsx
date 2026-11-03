@@ -4734,10 +4734,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}
         onOmitMeditation={()=>{
           const epoch=++meditationDisclosureEpochRef.current;
-          if(courseMeditationDraft){
-            setCourseMeditationDraft("");
-            setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
-          }
+          // Explicit omission always revokes the parent's seed and transient narration.
+          // Do not depend on a render-captured draft value: WebKit can re-open the
+          // same details before the previous state transition has committed.
+          setCourseMeditationDraft("");
+          setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
           const closeDetails=()=>{
             if(epoch!==meditationDisclosureEpochRef.current)return;
             const details=document.querySelector("[data-video-therapy-meditation-audio]");
@@ -5195,7 +5196,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"Configurar voz y añadir la meditación al vídeo":
               "Set up narration and add meditation to video"}<ChevronDown size={19} aria-hidden="true"/></summary>
             <div data-video-meditation-course-panel className={videoStyles.workspaceCourses}>
-              <MandalaPersonalMeditation coursePreview seedScript={courseMeditationDraft}
+              <MandalaPersonalMeditation key={courseMeditationDraft ? "guided-seeded" : "guided-empty"}
+                coursePreview seedScript={courseMeditationDraft}
                 locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
                 sound={attachedAudio?appliedAudioName:""}
                 audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
