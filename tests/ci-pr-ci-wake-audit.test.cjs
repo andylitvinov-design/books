@@ -108,11 +108,13 @@ test('ambiguous or incomplete run inventory cannot trigger a manual hold',async(
  assert.equal(r.state,'UNKNOWN');
  assert.equal(r.reason,'CORE_HISTORY_INCOMPLETE');
 });
-test('a cancelled Core is a visible stalled CI wake after grace',async()=>{
- const f=fixture({runs:[coreRun({conclusion:'cancelled'})]});
- const r=await inspectCore({github:f.github,limited:f.limited,
-  owner:'andylitvinov-design',repo:'books',task,wake:wake(),now:NOW});
- assert.equal(r.state,'STALLED');
+test('cancelled, startup-failed or action-required Core never counts as executed',async()=>{
+ for(const conclusion of ['cancelled','startup_failure','action_required']){
+  const f=fixture({runs:[coreRun({conclusion})]});
+  const r=await inspectCore({github:f.github,limited:f.limited,
+   owner:'andylitvinov-design',repo:'books',task,wake:wake(),now:NOW});
+  assert.equal(r.state,'STALLED');
+ }
 });
 test('dry-run audit creates no labels, comments, PR edits or source writes',async()=>{
  const f=fixture({runs:[]});
