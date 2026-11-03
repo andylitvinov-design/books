@@ -1,0 +1,1902 @@
+{
+  "schemaVersion": "mytube-topic-plots-v1",
+  "categoryId": "love-relationships",
+  "status": "editorial_storyboards_unbound",
+  "createdAt": "2026-11-03",
+  "plotsPerTopic": 4,
+  "locales": [
+    "ru",
+    "en",
+    "es"
+  ],
+  "topics": {
+    "loneliness": [
+      {
+        "id": "loneliness-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Пустое кресло у окна",
+          "en": "The empty chair by the window",
+          "es": "Silla vacía junto a la ventana"
+        },
+        "shots": {
+          "ru": [
+            "Вечером заметно пустое кресло",
+            "Человек признаёт желание контакта",
+            "Пишет знакомому без ожиданий",
+            "Открывает окно свежему воздуху"
+          ],
+          "en": [
+            "An empty chair stands out at night",
+            "The wish for connection is acknowledged",
+            "A friend receives a simple message",
+            "The window opens to fresh air"
+          ],
+          "es": [
+            "Se nota una silla vacía al anochecer",
+            "Se reconoce el deseo de conexión",
+            "Se escribe a alguien sin exigencias",
+            "Se abre la ventana"
+          ]
+        }
+      },
+      {
+        "id": "loneliness-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Острова и мосты",
+          "en": "Islands and bridges",
+          "es": "Islas y puentes"
+        },
+        "shots": {
+          "ru": [
+            "На воде видны далёкие острова",
+            "Небольшой мост появляется между берегами",
+            "Путник пробует перейти часть пути",
+            "Возвращается с чувством возможности"
+          ],
+          "en": [
+            "Distant islands appear on the water",
+            "A small bridge joins two shores",
+            "The traveler crosses partway",
+            "Possibility replaces certainty of isolation"
+          ],
+          "es": [
+            "Se ven islas lejanas",
+            "Un puente une dos orillas",
+            "Se cruza solo un tramo",
+            "Surge una posibilidad de encuentro"
+          ]
+        }
+      },
+      {
+        "id": "loneliness-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Созвездие встреч",
+          "en": "A constellation of meetings",
+          "es": "Constelación de encuentros"
+        },
+        "shots": {
+          "ru": [
+            "Тёмное небо кажется пустым",
+            "Появляется одна знакомая звезда",
+            "Соседние точки образуют созвездие",
+            "Человек выбирает одну связь для заботы"
+          ],
+          "en": [
+            "The sky seems empty",
+            "One familiar star becomes visible",
+            "Nearby lights form a constellation",
+            "One connection is chosen for care"
+          ],
+          "es": [
+            "El cielo parece vacío",
+            "Se ve una estrella familiar",
+            "Las luces forman una constelación",
+            "Se cuida un vínculo"
+          ]
+        }
+      },
+      {
+        "id": "loneliness-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Приглашение без давления",
+          "en": "An invitation without pressure",
+          "es": "Invitación sin presión"
+        },
+        "shots": {
+          "ru": [
+            "Телефон долго лежит без дела",
+            "Человек выбирает доступного знакомого",
+            "Предлагает короткую прогулку",
+            "Уважает и согласие и отказ"
+          ],
+          "en": [
+            "The phone lies untouched",
+            "One approachable acquaintance is chosen",
+            "A short walk is suggested",
+            "Both yes and no are respected"
+          ],
+          "es": [
+            "El teléfono queda quieto",
+            "Se elige una persona conocida",
+            "Se propone un paseo breve",
+            "Se respeta cualquier respuesta"
+          ]
+        }
+      }
+    ],
+    "fear-alone": [
+      {
+        "id": "fear-alone-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Вечер наедине",
+          "en": "An evening on one's own",
+          "es": "Una noche a solas"
+        },
+        "shots": {
+          "ru": [
+            "В квартире становится очень тихо",
+            "Человек замечает тревожные мысли",
+            "Создаёт маленький уютный уголок",
+            "Планирует контакт на завтра"
+          ],
+          "en": [
+            "An apartment becomes very quiet",
+            "Anxious thoughts are noticed",
+            "A comfortable corner is prepared",
+            "Tomorrow's contact is planned"
+          ],
+          "es": [
+            "La casa queda silenciosa",
+            "Se reconocen pensamientos de miedo",
+            "Se prepara un rincón acogedor",
+            "Se planea un contacto mañana"
+          ]
+        }
+      },
+      {
+        "id": "fear-alone-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Дерево среди поля",
+          "en": "A tree in an open field",
+          "es": "Árbol en el campo"
+        },
+        "shots": {
+          "ru": [
+            "Одинокое дерево видно издалека",
+            "Корни связывают его с землёй",
+            "Над кроной пролетают птицы",
+            "Путник останавливается рядом спокойно"
+          ],
+          "en": [
+            "A lone tree stands in a field",
+            "Its roots connect with the earth",
+            "Birds cross above its crown",
+            "A traveler rests beside it"
+          ],
+          "es": [
+            "Un árbol parece estar solo",
+            "Sus raíces lo sostienen",
+            "Pájaros cruzan su copa",
+            "Una persona descansa a su lado"
+          ]
+        }
+      },
+      {
+        "id": "fear-alone-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Дом с внутренним светом",
+          "en": "The house with an inner light",
+          "es": "Casa de luz interior"
+        },
+        "shots": {
+          "ru": [
+            "Тёмный дом кажется покинутым",
+            "Внутри зажигается тёплая лампа",
+            "Окна становятся приветливыми",
+            "Хозяин может открыть дверь по желанию"
+          ],
+          "en": [
+            "A dark house appears deserted",
+            "A warm lamp lights the inside",
+            "The windows become inviting",
+            "The door opens by choice"
+          ],
+          "es": [
+            "Una casa oscura parece vacía",
+            "Se enciende una lámpara cálida",
+            "Las ventanas se iluminan",
+            "La puerta se abre libremente"
+          ]
+        }
+      },
+      {
+        "id": "fear-alone-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "План безопасного вечера",
+          "en": "A plan for a safe evening",
+          "es": "Plan para una noche segura"
+        },
+        "shots": {
+          "ru": [
+            "Приходит волна страха одиночества",
+            "Человек называет три доступные опоры",
+            "Готовит музыку и контакт на случай нужды",
+            "Возвращается к одной спокойной задаче"
+          ],
+          "en": [
+            "A wave of fear of solitude arrives",
+            "Three available supports are named",
+            "Music and a contact are prepared",
+            "Attention returns to a simple task"
+          ],
+          "es": [
+            "Llega miedo de estar a solas",
+            "Se nombran tres apoyos",
+            "Se prepara música y un contacto",
+            "Se vuelve a una tarea sencilla"
+          ]
+        }
+      }
+    ],
+    "breakup-recovery": [
+      {
+        "id": "breakup-recovery-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Коробка воспоминаний",
+          "en": "A box of memories",
+          "es": "Caja de recuerdos"
+        },
+        "shots": {
+          "ru": [
+            "Вещи напоминают о завершившейся связи",
+            "Человек выбирает что сохранить",
+            "Убирает болезненное из ежедневного взгляда",
+            "Оставляет место для настоящего"
+          ],
+          "en": [
+            "Objects recall a finished relationship",
+            "A few keepsakes are selected",
+            "Painful reminders leave daily view",
+            "Room remains for the present"
+          ],
+          "es": [
+            "Los objetos recuerdan una relación acabada",
+            "Se elige qué guardar",
+            "Se apartan recordatorios dolorosos",
+            "Queda espacio para el presente"
+          ]
+        }
+      },
+      {
+        "id": "breakup-recovery-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Берег после шторма",
+          "en": "The shore after a storm",
+          "es": "Orilla tras la tormenta"
+        },
+        "shots": {
+          "ru": [
+            "Волны ещё шумят после бури",
+            "На берегу обнаруживается твёрдая земля",
+            "Вдали появляется полоска света",
+            "Путник не торопится уходить"
+          ],
+          "en": [
+            "Waves still roar after the storm",
+            "Solid ground appears on the shore",
+            "A line of light emerges far away",
+            "The traveler does not hurry"
+          ],
+          "es": [
+            "El mar sigue agitado",
+            "Se descubre suelo firme",
+            "Aparece una línea de luz",
+            "No hay prisa por partir"
+          ]
+        }
+      },
+      {
+        "id": "breakup-recovery-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Нить без узла",
+          "en": "A thread without a knot",
+          "es": "Hilo sin nudo"
+        },
+        "shots": {
+          "ru": [
+            "Две нити расходятся в разные стороны",
+            "Узел воспоминаний постепенно ослабевает",
+            "Каждая нить сохраняет свой цвет",
+            "Одна нить продолжает собственный узор"
+          ],
+          "en": [
+            "Two threads move in different directions",
+            "A knot of memories loosens",
+            "Each thread keeps its color",
+            "One continues its own pattern"
+          ],
+          "es": [
+            "Dos hilos toman caminos distintos",
+            "El nudo de recuerdos se afloja",
+            "Cada hilo conserva su color",
+            "Uno sigue tejiendo"
+          ]
+        }
+      },
+      {
+        "id": "breakup-recovery-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "День маленькой заботы",
+          "en": "A day of small care",
+          "es": "Día de cuidado pequeño"
+        },
+        "shots": {
+          "ru": [
+            "Утро начинается с тяжёлых мыслей",
+            "Человек выбирает простое питание и отдых",
+            "Пишет близкому о своём состоянии",
+            "Отмечает один пережитый день"
+          ],
+          "en": [
+            "The morning begins with heavy thoughts",
+            "Simple food and rest are chosen",
+            "A trusted person hears how things feel",
+            "One lived-through day is recognized"
+          ],
+          "es": [
+            "La mañana pesa",
+            "Se eligen comida simple y descanso",
+            "Se comparte el estado con alguien",
+            "Se reconoce el día vivido"
+          ]
+        }
+      }
+    ],
+    "unrequited-love": [
+      {
+        "id": "unrequited-love-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Неотправленное письмо",
+          "en": "The unsent letter",
+          "es": "Carta no enviada"
+        },
+        "shots": {
+          "ru": [
+            "В письме живут несказанные чувства",
+            "Человек выражает их честно на бумаге",
+            "Кладёт письмо в личный конверт",
+            "Возвращает внимание к своей жизни"
+          ],
+          "en": [
+            "Unspoken feelings fill a letter",
+            "They are written honestly",
+            "The letter stays in a private envelope",
+            "Attention returns to one's own life"
+          ],
+          "es": [
+            "Una carta guarda sentimientos",
+            "Se escriben con sinceridad",
+            "Se guarda en sobre privado",
+            "La atención vuelve a la propia vida"
+          ]
+        }
+      },
+      {
+        "id": "unrequited-love-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Птица на ветке",
+          "en": "The bird on a branch",
+          "es": "Ave en una rama"
+        },
+        "shots": {
+          "ru": [
+            "Птица ждёт другую на ветке",
+            "В небе открывается широкий простор",
+            "Она замечает собственные крылья",
+            "Летит туда где ей интересно"
+          ],
+          "en": [
+            "A bird waits for another",
+            "The sky opens wide",
+            "Its own wings come into view",
+            "It flies toward its own curiosity"
+          ],
+          "es": [
+            "Un ave espera a otra",
+            "El cielo se abre",
+            "Descubre sus propias alas",
+            "Vuela hacia lo que le interesa"
+          ]
+        }
+      },
+      {
+        "id": "unrequited-love-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Сад без замка",
+          "en": "A garden without a lock",
+          "es": "Jardín sin candado"
+        },
+        "shots": {
+          "ru": [
+            "Сад окружён высоким забором ожиданий",
+            "Ворота другого человека остаются закрыты",
+            "Герой находит свой сад рядом",
+            "Начинает ухаживать за ним"
+          ],
+          "en": [
+            "A garden is fenced by expectations",
+            "Another person's gate remains closed",
+            "A separate garden is discovered nearby",
+            "Care begins there"
+          ],
+          "es": [
+            "Las expectativas cercan un jardín",
+            "La puerta ajena sigue cerrada",
+            "Se descubre un jardín propio",
+            "Se comienza a cuidarlo"
+          ]
+        }
+      },
+      {
+        "id": "unrequited-love-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Граница надежды",
+          "en": "The boundary of hope",
+          "es": "Límite de la esperanza"
+        },
+        "shots": {
+          "ru": [
+            "Телефон проверяется снова и снова",
+            "Человек замечает зависимость от ответа",
+            "Выбирает время без проверки сообщений",
+            "Встречается с собственной потребностью в тепле"
+          ],
+          "en": [
+            "The phone is checked repeatedly",
+            "Dependence on a reply is noticed",
+            "A no-checking period is chosen",
+            "The need for warmth receives attention"
+          ],
+          "es": [
+            "Se revisa el móvil sin parar",
+            "Se nota dependencia de una respuesta",
+            "Se elige un rato sin mirar",
+            "Se atiende la necesidad de cariño"
+          ]
+        }
+      }
+    ],
+    "find-love": [
+      {
+        "id": "find-love-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Встреча в книжном",
+          "en": "A meeting in a bookshop",
+          "es": "Encuentro en librería"
+        },
+        "shots": {
+          "ru": [
+            "В книжном магазине люди выбирают книги",
+            "Герой замечает общую тему разговора",
+            "Начинает дружелюбную беседу без сценария",
+            "Принимает любой результат спокойно"
+          ],
+          "en": [
+            "People browse books in a shop",
+            "A shared interest sparks conversation",
+            "A friendly exchange begins naturally",
+            "Any outcome is accepted"
+          ],
+          "es": [
+            "La gente elige libros",
+            "Un interés común abre conversación",
+            "Se habla sin guion",
+            "Se acepta cualquier resultado"
+          ]
+        }
+      },
+      {
+        "id": "find-love-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тропа навстречу",
+          "en": "Paths toward meeting",
+          "es": "Caminos al encuentro"
+        },
+        "shots": {
+          "ru": [
+            "Два путника идут разными тропами",
+            "Каждый замечает своё направление",
+            "На поляне есть место для встречи",
+            "Они узнают друг друга без спешки"
+          ],
+          "en": [
+            "Two travelers walk different trails",
+            "Each respects their own direction",
+            "A clearing offers space to meet",
+            "They approach without rushing"
+          ],
+          "es": [
+            "Dos personas siguen sendas distintas",
+            "Cada una tiene su rumbo",
+            "Un claro permite encontrarse",
+            "Se conocen sin prisa"
+          ]
+        }
+      },
+      {
+        "id": "find-love-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Два открытых окна",
+          "en": "Two open windows",
+          "es": "Dos ventanas abiertas"
+        },
+        "shots": {
+          "ru": [
+            "Два окна светятся в разных домах",
+            "Оба человека смотрят на один закат",
+            "Между домами появляется пространство разговора",
+            "Никто не обязан открывать дверь"
+          ],
+          "en": [
+            "Two windows glow in different homes",
+            "Both people watch the same sunset",
+            "A shared conversation becomes possible",
+            "Neither must open a door"
+          ],
+          "es": [
+            "Brillan ventanas en dos casas",
+            "Ambas miran un atardecer",
+            "Surge ocasión de hablar",
+            "Nadie está obligado"
+          ]
+        }
+      },
+      {
+        "id": "find-love-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Три качества встречи",
+          "en": "Three qualities of connection",
+          "es": "Tres cualidades de conexión"
+        },
+        "shots": {
+          "ru": [
+            "На листе записан длинный идеал",
+            "Человек выделяет важные три качества",
+            "Замечает живых людей за критериями",
+            "Выбирает доступное место для знакомства"
+          ],
+          "en": [
+            "An idealized list covers a page",
+            "Three essentials are selected",
+            "Real people become visible beyond criteria",
+            "A natural place to meet is chosen"
+          ],
+          "es": [
+            "Hay una lista ideal interminable",
+            "Se eligen tres valores esenciales",
+            "Se mira a personas reales",
+            "Se elige dónde conocer gente"
+          ]
+        }
+      }
+    ],
+    "ready-relationship": [
+      {
+        "id": "ready-relationship-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Место для двоих",
+          "en": "Room for two",
+          "es": "Espacio para dos"
+        },
+        "shots": {
+          "ru": [
+            "В уютной комнате стоит один стул",
+            "Человек проверяет свои границы и желания",
+            "Рядом появляется второй стул",
+            "Оба остаются свободными передвигаться"
+          ],
+          "en": [
+            "A cozy room holds one chair",
+            "Wishes and boundaries are considered",
+            "A second chair comes alongside",
+            "Both chairs can move freely"
+          ],
+          "es": [
+            "Una sala tiene una silla",
+            "Se piensan deseos y límites",
+            "Aparece otra silla",
+            "Ambas pueden moverse libremente"
+          ]
+        }
+      },
+      {
+        "id": "ready-relationship-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два дерева",
+          "en": "Two trees",
+          "es": "Dos árboles"
+        },
+        "shots": {
+          "ru": [
+            "Два молодых дерева растут отдельно",
+            "Каждое укрепляет собственные корни",
+            "Ветви встречаются над тропой",
+            "Между стволами остаётся пространство"
+          ],
+          "en": [
+            "Two young trees grow separately",
+            "Each develops strong roots",
+            "Branches meet above a path",
+            "Space remains between trunks"
+          ],
+          "es": [
+            "Crecen dos árboles separados",
+            "Cada uno fortalece raíces",
+            "Las ramas se acercan",
+            "Permanece espacio entre troncos"
+          ]
+        }
+      },
+      {
+        "id": "ready-relationship-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Рюкзак ожиданий",
+          "en": "The backpack of expectations",
+          "es": "Mochila de expectativas"
+        },
+        "shots": {
+          "ru": [
+            "Перед встречей герой несёт тяжёлый рюкзак",
+            "Достаёт старые ожидания",
+            "Оставляет нужные ценности и границы",
+            "Идёт навстречу без лишнего груза"
+          ],
+          "en": [
+            "A heavy pack precedes a new relationship",
+            "Old expectations are unpacked",
+            "Values and boundaries stay inside",
+            "The path ahead feels lighter"
+          ],
+          "es": [
+            "Una mochila pesa antes de vincularse",
+            "Se sacan expectativas antiguas",
+            "Quedan valores y límites",
+            "Se camina más ligero"
+          ]
+        }
+      },
+      {
+        "id": "ready-relationship-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Личный список согласия",
+          "en": "A personal consent list",
+          "es": "Lista personal de consentimiento"
+        },
+        "shots": {
+          "ru": [
+            "Человек представляет будущую близость",
+            "Называет что ему подходит",
+            "Отмечает где нужно время",
+            "Сохраняет право менять решение"
+          ],
+          "en": [
+            "A person imagines future intimacy",
+            "What feels welcome is named",
+            "Places needing more time are marked",
+            "The right to change one's mind remains"
+          ],
+          "es": [
+            "Se imagina una futura cercanía",
+            "Se nombra lo que gusta",
+            "Se reconoce dónde falta tiempo",
+            "Se puede cambiar de idea"
+          ]
+        }
+      }
+    ],
+    "dating": [
+      {
+        "id": "dating-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Кофе без экзамена",
+          "en": "Coffee without an exam",
+          "es": "Café sin examen"
+        },
+        "shots": {
+          "ru": [
+            "Перед встречей человек репетирует идеальные ответы",
+            "Замечает напряжение в плечах",
+            "За столиком задаёт настоящий вопрос",
+            "Уходит с опытом а не оценкой"
+          ],
+          "en": [
+            "Perfect answers are rehearsed before a date",
+            "Tension in shoulders is noticed",
+            "A sincere question replaces the script",
+            "The date becomes experience not a grade"
+          ],
+          "es": [
+            "Se ensayan respuestas perfectas",
+            "Se nota tensión corporal",
+            "Se hace una pregunta sincera",
+            "La cita no es un examen"
+          ]
+        }
+      },
+      {
+        "id": "dating-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Прогулка по парку",
+          "en": "A walk in the park",
+          "es": "Paseo por el parque"
+        },
+        "shots": {
+          "ru": [
+            "Двое идут по аллее среди деревьев",
+            "Разговор движется в естественном темпе",
+            "Один предлагает остановиться у пруда",
+            "Оба выбирают продолжать ли прогулку"
+          ],
+          "en": [
+            "Two people walk beneath trees",
+            "Conversation finds a natural rhythm",
+            "One suggests stopping at a pond",
+            "Both choose whether to continue"
+          ],
+          "es": [
+            "Dos personas caminan bajo árboles",
+            "La charla toma su ritmo",
+            "Se detienen junto a un estanque",
+            "Ambas eligen seguir"
+          ]
+        }
+      },
+      {
+        "id": "dating-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Маски у входа",
+          "en": "Masks at the entrance",
+          "es": "Máscaras en la entrada"
+        },
+        "shots": {
+          "ru": [
+            "В прихожей лежат красивые маски",
+            "Человек замечает желание понравиться",
+            "Оставляет маску на полке",
+            "В разговоре звучит подлинное мнение"
+          ],
+          "en": [
+            "Beautiful masks rest by the doorway",
+            "The urge to impress is noticed",
+            "A mask stays on the shelf",
+            "A genuine opinion is spoken"
+          ],
+          "es": [
+            "Hay máscaras bonitas",
+            "Surge el deseo de impresionar",
+            "Una máscara queda en la mesa",
+            "Se expresa una opinión real"
+          ]
+        }
+      },
+      {
+        "id": "dating-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Пауза после свидания",
+          "en": "The pause after a date",
+          "es": "Pausa tras una cita"
+        },
+        "shots": {
+          "ru": [
+            "После встречи хочется срочно получить ответ",
+            "Телефон кладут экраном вниз",
+            "Человек отмечает собственные ощущения",
+            "Выбирает ясное уважительное сообщение"
+          ],
+          "en": [
+            "A quick answer feels urgent",
+            "The phone is set face down",
+            "One's own feelings are noticed",
+            "A clear respectful message is chosen"
+          ],
+          "es": [
+            "Urge recibir respuesta",
+            "Se deja el móvil boca abajo",
+            "Se observan las sensaciones propias",
+            "Se elige un mensaje respetuoso"
+          ]
+        }
+      }
+    ],
+    "partner-choice": [
+      {
+        "id": "partner-choice-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Не только искра",
+          "en": "More than a spark",
+          "es": "Más que una chispa"
+        },
+        "shots": {
+          "ru": [
+            "На первой встрече возникает сильное влечение",
+            "Позже видны поступки и разговоры",
+            "Человек сопоставляет их с ценностями",
+            "Решает узнавать другого постепенно"
+          ],
+          "en": [
+            "Attraction appears at a first meeting",
+            "Behavior and conversation become visible later",
+            "They are compared with values",
+            "Knowing the other takes time"
+          ],
+          "es": [
+            "Surge atracción al conocerse",
+            "Luego se ven actos y palabras",
+            "Se comparan con valores propios",
+            "Se elige conocer sin prisa"
+          ]
+        }
+      },
+      {
+        "id": "partner-choice-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два маршрута",
+          "en": "Two routes",
+          "es": "Dos rutas"
+        },
+        "shots": {
+          "ru": [
+            "У каждого путника своя карта",
+            "Они показывают важные направления",
+            "Находят общий участок и различия",
+            "Решают идти ли рядом"
+          ],
+          "en": [
+            "Each traveler carries a map",
+            "Important directions are shared",
+            "Common ground and differences appear",
+            "They decide whether to walk together"
+          ],
+          "es": [
+            "Cada persona lleva un mapa",
+            "Comparten rumbos importantes",
+            "Se ven coincidencias y diferencias",
+            "Deciden si caminar juntas"
+          ]
+        }
+      },
+      {
+        "id": "partner-choice-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Прозрачные весы",
+          "en": "The clear scales",
+          "es": "Balanza transparente"
+        },
+        "shots": {
+          "ru": [
+            "На весах сначала лежат яркие обещания",
+            "Появляются повседневные поступки",
+            "Весы показывают другой баланс",
+            "Человек доверяет наблюдениям а не фантазии"
+          ],
+          "en": [
+            "Bright promises fill the scales",
+            "Ordinary actions are added",
+            "The balance changes",
+            "Observation matters more than fantasy"
+          ],
+          "es": [
+            "Pesan promesas brillantes",
+            "Se añaden acciones cotidianas",
+            "Cambia el equilibrio",
+            "Importan los hechos"
+          ]
+        }
+      },
+      {
+        "id": "partner-choice-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Вопрос о границах",
+          "en": "The boundary question",
+          "es": "Una pregunta de límites"
+        },
+        "shots": {
+          "ru": [
+            "Разговор касается неудобной темы",
+            "Человек спокойно обозначает потребность",
+            "Слушает ответ и наблюдает уважение",
+            "Даёт себе время решить"
+          ],
+          "en": [
+            "A difficult subject enters conversation",
+            "A personal need is stated calmly",
+            "The response and respect are observed",
+            "Time is allowed for a decision"
+          ],
+          "es": [
+            "Surge un tema incómodo",
+            "Se expresa una necesidad",
+            "Se observa si hay respeto",
+            "Se toma tiempo para decidir"
+          ]
+        }
+      }
+    ],
+    "relationship-problems": [
+      {
+        "id": "relationship-problems-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Точка остановки",
+          "en": "The pause point",
+          "es": "Punto de pausa"
+        },
+        "shots": {
+          "ru": [
+            "Один и тот же спор повторяется",
+            "Партнёры замечают знакомый поворот",
+            "Делают паузу вместо новой атаки",
+            "Выбирают время для спокойного разговора"
+          ],
+          "en": [
+            "The same argument repeats",
+            "Both notice the familiar turning point",
+            "A pause replaces another attack",
+            "A calmer conversation is scheduled"
+          ],
+          "es": [
+            "La misma discusión se repite",
+            "Ambos reconocen el patrón",
+            "Se hace pausa sin atacar",
+            "Se acuerda hablar luego"
+          ]
+        }
+      },
+      {
+        "id": "relationship-problems-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Мост с повреждённой доской",
+          "en": "A bridge with a broken plank",
+          "es": "Puente con tabla rota"
+        },
+        "shots": {
+          "ru": [
+            "Пара идёт по старому мосту",
+            "Одна доска оказывается ненадёжной",
+            "Они обсуждают как пройти безопасно",
+            "Решают чинить вместе или искать иной путь"
+          ],
+          "en": [
+            "A couple approaches an old bridge",
+            "One plank is unsafe",
+            "They discuss how to cross safely",
+            "They choose repair or another route"
+          ],
+          "es": [
+            "La pareja llega a un puente",
+            "Una tabla es insegura",
+            "Hablan de cómo cruzar",
+            "Deciden reparar o buscar otro camino"
+          ]
+        }
+      },
+      {
+        "id": "relationship-problems-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Две разные карты",
+          "en": "Two different maps",
+          "es": "Dos mapas diferentes"
+        },
+        "shots": {
+          "ru": [
+            "Одинаковая улица показана по-разному",
+            "Каждый указывает на важные детали",
+            "Карты кладут рядом",
+            "Появляется более полная картина"
+          ],
+          "en": [
+            "The same street appears differently on maps",
+            "Each points to important details",
+            "The maps are placed side by side",
+            "A fuller picture emerges"
+          ],
+          "es": [
+            "La misma calle parece distinta",
+            "Cada quien muestra detalles",
+            "Los mapas se comparan",
+            "Surge una vista más completa"
+          ]
+        }
+      },
+      {
+        "id": "relationship-problems-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Запрос вместо обвинения",
+          "en": "A request instead of blame",
+          "es": "Petición sin acusación"
+        },
+        "shots": {
+          "ru": [
+            "Звучит привычное ты никогда",
+            "Человек замечает резкость формулировки",
+            "Называет конкретный случай и чувство",
+            "Просит об одном выполнимом изменении"
+          ],
+          "en": [
+            "The familiar you never appears",
+            "The harsh wording is noticed",
+            "A specific moment and feeling are named",
+            "One feasible change is requested"
+          ],
+          "es": [
+            "Aparece un tú nunca",
+            "Se nota la dureza",
+            "Se nombra un hecho y un sentimiento",
+            "Se pide un cambio concreto"
+          ]
+        }
+      }
+    ],
+    "couple-communication": [
+      {
+        "id": "couple-communication-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Разговор на кухне",
+          "en": "The kitchen conversation",
+          "es": "Charla en la cocina"
+        },
+        "shots": {
+          "ru": [
+            "Двое говорят одновременно за завтраком",
+            "Останавливаются и слушают по очереди",
+            "Каждый повторяет услышанное своими словами",
+            "Согласуют одну маленькую просьбу"
+          ],
+          "en": [
+            "Two people speak at once over breakfast",
+            "They take turns listening",
+            "Each reflects what they heard",
+            "One small request becomes clear"
+          ],
+          "es": [
+            "Ambos hablan a la vez",
+            "Se turnan para escuchar",
+            "Cada uno refleja lo oído",
+            "Acuerdan una petición pequeña"
+          ]
+        }
+      },
+      {
+        "id": "couple-communication-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Две радиоволны",
+          "en": "Two radio frequencies",
+          "es": "Dos frecuencias"
+        },
+        "shots": {
+          "ru": [
+            "Два радио настроены на разные частоты",
+            "Каждое звучит всё громче",
+            "Приёмники постепенно находят общий канал",
+            "Слышно содержание а не шум"
+          ],
+          "en": [
+            "Two radios use different frequencies",
+            "Both grow louder",
+            "The receivers find shared tuning",
+            "The message replaces the noise"
+          ],
+          "es": [
+            "Dos radios emiten distinto",
+            "Sube el volumen",
+            "Se encuentra un canal común",
+            "Se escucha el mensaje"
+          ]
+        }
+      },
+      {
+        "id": "couple-communication-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Окно между мирами",
+          "en": "A window between worlds",
+          "es": "Ventana entre mundos"
+        },
+        "shots": {
+          "ru": [
+            "Каждый видит свой пейзаж",
+            "В стене открывается окно разговора",
+            "Они показывают друг другу детали",
+            "Окно можно закрыть для отдыха"
+          ],
+          "en": [
+            "Each person sees a different landscape",
+            "A window of conversation opens",
+            "They share details of their views",
+            "The window can close for rest"
+          ],
+          "es": [
+            "Cada quien ve otro paisaje",
+            "Se abre una ventana de diálogo",
+            "Comparten detalles",
+            "Pueden descansar cuando quieran"
+          ]
+        }
+      },
+      {
+        "id": "couple-communication-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Пятиминутное слушание",
+          "en": "Five minutes of listening",
+          "es": "Cinco minutos de escucha"
+        },
+        "shots": {
+          "ru": [
+            "Один начинает рассказывать о дне",
+            "Другой убирает телефон",
+            "Пять минут не даёт советов",
+            "Затем спрашивает нужна ли помощь"
+          ],
+          "en": [
+            "One person begins sharing their day",
+            "The other puts the phone away",
+            "Five minutes pass without advice",
+            "Help is offered only if wanted"
+          ],
+          "es": [
+            "Una persona cuenta su día",
+            "La otra deja el móvil",
+            "Escucha sin aconsejar",
+            "Pregunta si desea ayuda"
+          ]
+        }
+      }
+    ],
+    "couple-conflict": [
+      {
+        "id": "couple-conflict-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Слова на паузе",
+          "en": "Words on pause",
+          "es": "Palabras en pausa"
+        },
+        "shots": {
+          "ru": [
+            "Разговор становится громче",
+            "Один замечает перегрузку",
+            "Пара договаривается о перерыве",
+            "Возвращается к одному вопросу позже"
+          ],
+          "en": [
+            "Voices rise during a disagreement",
+            "One partner notices overload",
+            "A break is agreed",
+            "They return to one issue later"
+          ],
+          "es": [
+            "Sube el tono de discusión",
+            "Se nota saturación",
+            "Se acuerda una pausa",
+            "Se retoma un tema después"
+          ]
+        }
+      },
+      {
+        "id": "couple-conflict-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два костра",
+          "en": "Two campfires",
+          "es": "Dos fogatas"
+        },
+        "shots": {
+          "ru": [
+            "Два огня горят рядом слишком жарко",
+            "Между ними освобождают пространство",
+            "Пламя становится управляемым",
+            "Люди подходят лишь когда готовы"
+          ],
+          "en": [
+            "Two fires burn too close together",
+            "Space is cleared between them",
+            "The flames become manageable",
+            "People approach when ready"
+          ],
+          "es": [
+            "Dos fuegos arden demasiado cerca",
+            "Se deja espacio entre ellos",
+            "El calor se suaviza",
+            "Se acercan al sentirse listos"
+          ]
+        }
+      },
+      {
+        "id": "couple-conflict-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Красный флаг и белый лист",
+          "en": "A red flag and white page",
+          "es": "Bandera roja y hoja blanca"
+        },
+        "shots": {
+          "ru": [
+            "Красный флаг сообщает о перегрузке",
+            "Партнёры останавливают взаимные обвинения",
+            "На белом листе появляется общая потребность",
+            "Они выбирают безопасный следующий разговор"
+          ],
+          "en": [
+            "A red flag signals overwhelm",
+            "Accusations stop for the moment",
+            "A shared need appears on a blank page",
+            "A safer follow-up is chosen"
+          ],
+          "es": [
+            "La bandera indica saturación",
+            "Se detienen acusaciones",
+            "Se escribe una necesidad común",
+            "Se elige hablar con seguridad"
+          ]
+        }
+      },
+      {
+        "id": "couple-conflict-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Я-сообщение",
+          "en": "An I-statement",
+          "es": "Mensaje en primera persona"
+        },
+        "shots": {
+          "ru": [
+            "Начинается спор о бытовом деле",
+            "Человек описывает факт без ярлыка",
+            "Называет своё чувство и просьбу",
+            "Даёт другому право ответить"
+          ],
+          "en": [
+            "A household dispute begins",
+            "A fact is described without labeling",
+            "A feeling and request are named",
+            "The other person may respond"
+          ],
+          "es": [
+            "Empieza una disputa doméstica",
+            "Se describe el hecho sin etiqueta",
+            "Se nombra emoción y petición",
+            "La otra persona puede responder"
+          ]
+        }
+      }
+    ],
+    "rebuilding-trust": [
+      {
+        "id": "rebuilding-trust-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Маленькое обещание",
+          "en": "A small promise",
+          "es": "Una promesa pequeña"
+        },
+        "shots": {
+          "ru": [
+            "После нарушения доверия разговор труден",
+            "Звучит конкретное выполнимое обещание",
+            "Позже поступок подтверждает слова",
+            "Оба решают что им нужно дальше"
+          ],
+          "en": [
+            "Conversation is hard after a breach",
+            "A specific doable promise is made",
+            "A later action matches the words",
+            "Both consider what they need next"
+          ],
+          "es": [
+            "Cuesta hablar tras una ruptura de confianza",
+            "Se hace promesa concreta",
+            "Un acto respalda las palabras",
+            "Ambos deciden qué necesitan"
+          ]
+        }
+      },
+      {
+        "id": "rebuilding-trust-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Мост по одной доске",
+          "en": "A bridge rebuilt plank by plank",
+          "es": "Puente tabla por tabla"
+        },
+        "shots": {
+          "ru": [
+            "Мост после шторма повреждён",
+            "Люди проверяют каждую новую доску",
+            "Шагают только по надёжной части",
+            "Сохраняют возможность отойти"
+          ],
+          "en": [
+            "A storm has damaged the bridge",
+            "Each new plank is checked",
+            "Steps stay on stable ground",
+            "Turning back remains possible"
+          ],
+          "es": [
+            "Una tormenta dañó el puente",
+            "Se revisa cada tabla nueva",
+            "Solo se pisa lo firme",
+            "Se puede retroceder"
+          ]
+        }
+      },
+      {
+        "id": "rebuilding-trust-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Прозрачное стекло",
+          "en": "The clear glass",
+          "es": "Cristal transparente"
+        },
+        "shots": {
+          "ru": [
+            "Между людьми стоит мутное стекло",
+            "Они договариваются о ясных условиях",
+            "Стекло постепенно становится прозрачнее",
+            "Близость остаётся добровольной"
+          ],
+          "en": [
+            "Clouded glass divides two people",
+            "Clear conditions are agreed",
+            "The glass becomes more transparent",
+            "Closeness stays voluntary"
+          ],
+          "es": [
+            "Un vidrio turbio separa a dos personas",
+            "Se acuerdan condiciones claras",
+            "El cristal se aclara",
+            "La cercanía sigue libre"
+          ]
+        }
+      },
+      {
+        "id": "rebuilding-trust-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Проверяемые действия",
+          "en": "Actions that can be checked",
+          "es": "Actos comprobables"
+        },
+        "shots": {
+          "ru": [
+            "Человек слышит новые заверения",
+            "Записывает что ему нужно видеть",
+            "Наблюдает поведение во времени",
+            "Решает не торопить собственное доверие"
+          ],
+          "en": [
+            "New assurances are heard",
+            "Observable needs are written down",
+            "Behavior is watched over time",
+            "Trust is not rushed"
+          ],
+          "es": [
+            "Se escuchan nuevas promesas",
+            "Se anotan necesidades observables",
+            "Se mira la conducta con tiempo",
+            "No se fuerza la confianza"
+          ]
+        }
+      }
+    ],
+    "emotional-intimacy": [
+      {
+        "id": "emotional-intimacy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Разговор у окна",
+          "en": "Talking by the window",
+          "es": "Conversación junto a la ventana"
+        },
+        "shots": {
+          "ru": [
+            "Двое смотрят на вечерний город",
+            "Один делится небольшим переживанием",
+            "Другой слушает без исправления",
+            "Между ними появляется спокойная тишина"
+          ],
+          "en": [
+            "Two people watch the evening city",
+            "One shares a small personal feeling",
+            "The other listens without fixing it",
+            "A comfortable silence follows"
+          ],
+          "es": [
+            "Dos miran la ciudad nocturna",
+            "Uno comparte algo íntimo",
+            "El otro escucha sin arreglar",
+            "Llega un silencio cómodo"
+          ]
+        }
+      },
+      {
+        "id": "emotional-intimacy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два ручья",
+          "en": "Two streams",
+          "es": "Dos arroyos"
+        },
+        "shots": {
+          "ru": [
+            "Два ручья текут рядом",
+            "Их воды встречаются в тихой заводи",
+            "Течения сохраняют свои источники",
+            "Они продолжают движение вместе"
+          ],
+          "en": [
+            "Two streams run side by side",
+            "Their waters meet in a quiet pool",
+            "Each still has its own source",
+            "They continue moving together"
+          ],
+          "es": [
+            "Corren dos arroyos cercanos",
+            "Se encuentran en una poza",
+            "Cada uno conserva su fuente",
+            "Siguen juntos"
+          ]
+        }
+      },
+      {
+        "id": "emotional-intimacy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Тёплый фонарь",
+          "en": "The warm lantern",
+          "es": "Farol cálido"
+        },
+        "shots": {
+          "ru": [
+            "В сумерках люди держат закрытые фонари",
+            "Один осторожно приоткрывает свет",
+            "Другой отвечает своим небольшим огнём",
+            "Оба регулируют яркость сами"
+          ],
+          "en": [
+            "People hold shuttered lanterns at dusk",
+            "One reveals a little light",
+            "Another responds with a small flame",
+            "Each adjusts their own brightness"
+          ],
+          "es": [
+            "Dos personas tienen faroles cerrados",
+            "Una deja salir un poco de luz",
+            "Otra responde con su llama",
+            "Cada cual regula el brillo"
+          ]
+        }
+      },
+      {
+        "id": "emotional-intimacy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Вопрос без советов",
+          "en": "A question without advice",
+          "es": "Pregunta sin consejos"
+        },
+        "shots": {
+          "ru": [
+            "Партнёр признаётся в непростом чувстве",
+            "Другой спрашивает хочешь чтобы я слушал",
+            "Слушает до конца",
+            "Благодарит за доверие без давления"
+          ],
+          "en": [
+            "A partner shares a difficult feeling",
+            "The other asks whether listening is wanted",
+            "They listen to the end",
+            "Trust is thanked without pressure"
+          ],
+          "es": [
+            "Alguien comparte algo difícil",
+            "Se pregunta si quiere escucha",
+            "Se escucha hasta el final",
+            "Se agradece la confianza"
+          ]
+        }
+      }
+    ],
+    "fear-intimacy": [
+      {
+        "id": "fear-intimacy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Стул у двери",
+          "en": "A chair by the door",
+          "es": "Silla junto a la puerta"
+        },
+        "shots": {
+          "ru": [
+            "Человек сидит близко к выходу",
+            "Замечает потребность в дистанции",
+            "Говорит об этом спокойно",
+            "Другой уважает выбранное расстояние"
+          ],
+          "en": [
+            "A person sits near the exit",
+            "A need for distance is noticed",
+            "It is communicated calmly",
+            "The distance is respected"
+          ],
+          "es": [
+            "Alguien se sienta cerca de la salida",
+            "Reconoce necesidad de distancia",
+            "Lo comunica con calma",
+            "La otra persona respeta"
+          ]
+        }
+      },
+      {
+        "id": "fear-intimacy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Робкий ёж",
+          "en": "The cautious hedgehog",
+          "es": "Erizo cauteloso"
+        },
+        "shots": {
+          "ru": [
+            "Ёж прячется среди листьев",
+            "Вокруг становится спокойно",
+            "Он выглядывает по собственному желанию",
+            "Может вернуться в укрытие"
+          ],
+          "en": [
+            "A hedgehog hides in the leaves",
+            "The surroundings become calm",
+            "It peeks out by choice",
+            "Its shelter stays available"
+          ],
+          "es": [
+            "Un erizo se esconde",
+            "El entorno se calma",
+            "Sale cuando quiere",
+            "Su refugio sigue disponible"
+          ]
+        }
+      },
+      {
+        "id": "fear-intimacy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Дверь с ручкой изнутри",
+          "en": "A door with an inside handle",
+          "es": "Puerta con manija interior"
+        },
+        "shots": {
+          "ru": [
+            "Дверь кажется тяжёлой и закрытой",
+            "Человек находит ручку с собственной стороны",
+            "Приоткрывает её на ладонь",
+            "Решает насколько открывать дальше"
+          ],
+          "en": [
+            "A door looks heavy and closed",
+            "The handle is on one's own side",
+            "The door opens a handspan",
+            "How far to open stays optional"
+          ],
+          "es": [
+            "La puerta parece pesada",
+            "La manija está dentro",
+            "Se abre un poco",
+            "Cada cual decide cuánto"
+          ]
+        }
+      },
+      {
+        "id": "fear-intimacy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Согласие на маленький шаг",
+          "en": "Consent for a small step",
+          "es": "Consentimiento paso a paso"
+        },
+        "shots": {
+          "ru": [
+            "Возникает желание приблизиться и отойти",
+            "Человек называет комфортный формат контакта",
+            "Пробует короткий разговор",
+            "Останавливается без оправданий если нужно"
+          ],
+          "en": [
+            "The wish to approach and retreat coexists",
+            "A comfortable contact format is named",
+            "A short conversation is tried",
+            "Stopping needs no justification"
+          ],
+          "es": [
+            "Se quiere acercar y alejar",
+            "Se expresa un formato cómodo",
+            "Se prueba una charla breve",
+            "Se puede parar sin justificarse"
+          ]
+        }
+      }
+    ],
+    "emotional-dependency": [
+      {
+        "id": "emotional-dependency-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Два расписания",
+          "en": "Two calendars",
+          "es": "Dos agendas"
+        },
+        "shots": {
+          "ru": [
+            "Весь календарь вращается вокруг другого",
+            "Человек отмечает собственные занятия",
+            "Возвращает время на личный интерес",
+            "Связь не исчезает от отдельности"
+          ],
+          "en": [
+            "The calendar revolves around another person",
+            "Personal activities are marked",
+            "Time returns to an individual interest",
+            "Connection survives separateness"
+          ],
+          "es": [
+            "Toda agenda gira en torno a otra persona",
+            "Se apuntan intereses propios",
+            "Se recupera tiempo personal",
+            "El vínculo admite autonomía"
+          ]
+        }
+      },
+      {
+        "id": "emotional-dependency-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два растения в горшках",
+          "en": "Two potted plants",
+          "es": "Dos plantas"
+        },
+        "shots": {
+          "ru": [
+            "Одно растение заслоняет другое",
+            "Садовник даёт каждому достаточно света",
+            "Оба растут самостоятельными корнями",
+            "Между ними остаётся дружелюбная близость"
+          ],
+          "en": [
+            "One plant shades the other",
+            "The gardener gives each enough light",
+            "Both grow with separate roots",
+            "They remain close without crowding"
+          ],
+          "es": [
+            "Una planta tapa a la otra",
+            "Cada una recibe luz",
+            "Ambas tienen raíces propias",
+            "Pueden estar cerca sin ahogarse"
+          ]
+        }
+      },
+      {
+        "id": "emotional-dependency-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Нити без пут",
+          "en": "Threads without restraints",
+          "es": "Hilos sin ataduras"
+        },
+        "shots": {
+          "ru": [
+            "Между людьми тянутся яркие нити",
+            "Часть нитей слишком натянута",
+            "Узлы аккуратно ослабляют",
+            "Связь остаётся без перетягивания"
+          ],
+          "en": [
+            "Bright threads connect two people",
+            "Some threads pull too tightly",
+            "Tense knots are loosened",
+            "Connection remains without control"
+          ],
+          "es": [
+            "Los hilos unen a dos personas",
+            "Algunos tensan demasiado",
+            "Se aflojan nudos",
+            "Permanece el vínculo sin controlar"
+          ]
+        }
+      },
+      {
+        "id": "emotional-dependency-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Час для себя",
+          "en": "An hour for oneself",
+          "es": "Una hora propia"
+        },
+        "shots": {
+          "ru": [
+            "Отсутствие сообщения вызывает тревогу",
+            "Человек замечает импульс проверять",
+            "Выбирает занятие на один час",
+            "Потом решает нужен ли контакт"
+          ],
+          "en": [
+            "A missing message triggers worry",
+            "The urge to check is noticed",
+            "One personal activity fills an hour",
+            "Contact is reconsidered later"
+          ],
+          "es": [
+            "Un mensaje ausente inquieta",
+            "Se nota impulso de revisar",
+            "Se hace una actividad propia",
+            "Después se decide si escribir"
+          ]
+        }
+      }
+    ],
+    "family-relationships": [
+      {
+        "id": "family-relationships-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Ужин с границами",
+          "en": "Dinner with boundaries",
+          "es": "Cena con límites"
+        },
+        "shots": {
+          "ru": [
+            "За столом снова звучит старый спор",
+            "Человек замечает привычную роль",
+            "Спокойно меняет тему или выходит",
+            "После ужина сохраняет контакт на своих условиях"
+          ],
+          "en": [
+            "An old argument returns at dinner",
+            "A familiar role becomes visible",
+            "The subject changes or one person steps away",
+            "Contact continues on chosen terms"
+          ],
+          "es": [
+            "Vuelve una discusión familiar",
+            "Se reconoce un papel antiguo",
+            "Se cambia de tema o se sale",
+            "Se mantiene contacto con límites"
+          ]
+        }
+      },
+      {
+        "id": "family-relationships-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Семейное дерево",
+          "en": "The family tree",
+          "es": "Árbol familiar"
+        },
+        "shots": {
+          "ru": [
+            "На дереве много непохожих ветвей",
+            "Каждая выросла в своём направлении",
+            "Ствол удерживает общую историю",
+            "Листья могут двигаться отдельно"
+          ],
+          "en": [
+            "A tree has many different branches",
+            "Each grows in its own direction",
+            "The trunk holds shared history",
+            "Leaves can move independently"
+          ],
+          "es": [
+            "Un árbol tiene ramas distintas",
+            "Cada una crece a su modo",
+            "El tronco guarda historia común",
+            "Las hojas se mueven libres"
+          ]
+        }
+      },
+      {
+        "id": "family-relationships-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Стол разных поколений",
+          "en": "The table of generations",
+          "es": "Mesa de generaciones"
+        },
+        "shots": {
+          "ru": [
+            "У длинного стола стоят разные чашки",
+            "Каждая символизирует чьи-то правила",
+            "Люди выбирают что сохранить",
+            "Новые места появляются за столом"
+          ],
+          "en": [
+            "Different cups stand along a long table",
+            "Each cup reflects someone's rules",
+            "Useful traditions are kept by choice",
+            "New places appear at the table"
+          ],
+          "es": [
+            "Tazas distintas llenan una mesa",
+            "Cada una representa reglas",
+            "Se elige qué conservar",
+            "Hay lugar para lo nuevo"
+          ]
+        }
+      },
+      {
+        "id": "family-relationships-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Семейное сообщение",
+          "en": "A family message",
+          "es": "Mensaje familiar"
+        },
+        "shots": {
+          "ru": [
+            "Возникает непростой семейный вопрос",
+            "Человек пишет кратко о своей потребности",
+            "Не пытается контролировать ответ",
+            "После отправки заботится о себе"
+          ],
+          "en": [
+            "A difficult family topic arises",
+            "A brief personal need is expressed",
+            "The response is not controlled",
+            "Self-care follows sending"
+          ],
+          "es": [
+            "Surge un tema difícil",
+            "Se expresa una necesidad breve",
+            "No se controla la respuesta",
+            "Después se cuida uno mismo"
+          ]
+        }
+      }
+    ]
+  }
+}
