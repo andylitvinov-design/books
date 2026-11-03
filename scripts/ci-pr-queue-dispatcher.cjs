@@ -4,21 +4,45 @@ const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,rese
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
-const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
+const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {reconcileCiWake}=require('./ci-pr-ci-wake-reconcile.cjs');
-const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
+const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
+function verifiedSourceGreen(checks){
+ if(!checks||!Array.isArray(checks.check_runs)||
+    !Number.isSafeInteger(checks.total_count)||
+    checks.check_runs.length!==checks.total_count)return false;
+ const latest=latestByName(checks.check_runs);
+ const green=c=>c?.app?.id===15368&&c.status==='completed'&&c.conclusion==='success';
+ const build=latest.get('core-lint-types-build'),scope=latest.get('classify-change');
+ if(build&&build.conclusion!=='success')return false;
+ return green(latest.get('hh-core-verified'))||
+   (green(build)&&latest.get('hh-merge-check')?.app?.id===15368&&
+    (!scope||green(scope)));
+}
 function verifiedSpecialistProductFailure(checks){
- if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
- const rows=[...checks.check_runs].sort((a,b)=>b.id-a.id);
- const latest=new Map();
- for(const check of rows)if(!latest.has(check.name))latest.set(check.name,check);
- const core=latest.get('hh-core-verified'),specialist=latest.get('hh-specialist');
- return core?.app?.id===15368&&core.status==='completed'&&core.conclusion==='success'&&
-  specialist?.app?.id===15368&&specialist.status==='completed'&&
-  specialist.conclusion==='failure';
+ if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE'||
+    !verifiedSourceGreen(checks))return false;
+ const specialist=latestByName(checks.check_runs).get('hh-specialist');
+ return specialist?.app?.id===15368&&specialist.status==='completed'&&
+   specialist.conclusion==='failure';
+}
+// Red aggregate gates with green source and no failed independent QA are
+// policy/stale-base blockers, not a source-writing authorization.
+function verifiedAggregatePolicyHold(checks){
+ if(classifyIndependentSpecialistChecks(checks)!=='POLICY_OR_SKIPPED'||
+    !verifiedSourceGreen(checks))return false;
+ const latest=latestByName(checks.check_runs);
+ const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
+ if(specialist?.app?.id!==15368||specialist.status!=='completed'||
+    specialist.conclusion!=='failure'||merge?.app?.id!==15368||
+    merge.status!=='completed'||merge.conclusion!=='failure')return false;
+ const inherited=new Set(['hh-specialist','hh-merge-check','hh-specialists-verified',
+   'release-ready','hh-core-verified','classify-change','core-lint-types-build']);
+ return ![...latest.values()].some(c=>!inherited.has(c.name)&&
+   ['failure','timed_out','startup_failure','cancelled','action_required'].includes(c.conclusion));
 }
 function trustedContext(context){
  if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
@@ -111,6 +135,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,conflictQueueReleased:0,unconfirmedHandoffs:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
+  policyReclassified:0,wouldPolicyReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
@@ -477,7 +502,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
-  if(task.lane==='repair'&&!hasVerifiedSourceHandoff(comments,task.head_sha)){
+  if(task.lane==='repair'&&(!hasVerifiedSourceHandoff(comments,task.head_sha)||
+      !verifiedCoreCodeFailure(comments,task.head_sha))){
    // A stale hh:repair-needed hint must not launch privileged source Repair.
    // When independent current-HEAD specialist tests are genuinely red, send
    // the owner to Product Repair rather than leaving an impossible ESLint
@@ -488,39 +514,44 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      owner,repo,ref:task.head_sha,per_page:100,filter:'latest'
     }))).data;
    }catch(err){blocked('SOURCE_PROOF_UNVERIFIED');continue;}
-   if(!verifiedSpecialistProductFailure(checks)||
-      fresh.mergeable!==true||
+   const product=verifiedSpecialistProductFailure(checks);
+   const policy=verifiedAggregatePolicyHold(checks);
+   if((!product&&!policy)||fresh.mergeable!==true||
       !['clean','behind','blocked'].includes(fresh.mergeable_state)){
     blocked('SOURCE_PROOF_MISSING');continue;
    }
-   if(dryRun){summary.wouldSpecialistReclassify++;continue;}
+   if(dryRun){
+    if(product)summary.wouldSpecialistReclassify++;
+    else summary.wouldPolicyReclassify++;
+    continue;
+   }
+   const replacement=product?'hh:specialist-repair-needed':'hh:release-gate-review';
    try{
-    if(!fresh.labels.some(l=>l.name==='hh:specialist-repair-needed')){
-     await limited('label-verified-specialist-repair',()=>github.rest.issues.addLabels({
-      owner,repo,issue_number:task.pr_number,labels:['hh:specialist-repair-needed']
+    if(!fresh.labels.some(l=>l.name===replacement)){
+     await limited('label-verified-non-source',()=>github.rest.issues.addLabels({
+      owner,repo,issue_number:task.pr_number,labels:[replacement]
      }));
     }
-    // Recheck source HEAD and both labels before retiring the old queue hint.
-    // The reservationStatus check above already rejected active/ambiguous
-    // owners, exact-HEAD task claims and incomplete issue-comment history.
-    const current=(await limited('verify-specialist-relabel',()=>github.rest.pulls.get({
+    const current=(await limited('verify-non-source-relabel',()=>github.rest.pulls.get({
      owner,repo,pull_number:task.pr_number
     }))).data;
     if(current?.state!=='open'||current.draft||
        current.head?.sha!==task.head_sha||current.base?.ref!==PROD||
        current.head?.repo?.full_name!==REPO||
        !current.labels?.some(l=>l.name==='hh:repair-needed')||
-       !current.labels?.some(l=>l.name==='hh:specialist-repair-needed')){
-     blocked('SPECIALIST_RELABEL_RECHECK_FAILED');continue;
+       !current.labels?.some(l=>l.name===replacement)){
+     blocked('NON_SOURCE_RELABEL_RECHECK_FAILED');continue;
     }
-    await limited('retire-unproven-source-label',()=>github.rest.issues.removeLabel({
+    await limited('retire-false-source-label',()=>github.rest.issues.removeLabel({
      owner,repo,issue_number:task.pr_number,name:'hh:repair-needed'
     }));
-    summary.specialistReclassified++;
-    log('INDEPENDENT_SPECIALIST_RECLASSIFIED #'+task.pr_number+' '+task.head_sha.slice(0,12));
+    if(product)summary.specialistReclassified++;
+    else summary.policyReclassified++;
+    log((product?'INDEPENDENT_SPECIALIST_RECLASSIFIED #':'BASE_OR_POLICY_GATE_RECLASSIFIED #')+
+      task.pr_number+' '+task.head_sha.slice(0,12));
    }catch(err){
-    blocked('SPECIALIST_RELABEL_UNAVAILABLE');
-    log('Specialist classification #'+task.pr_number+': '+err.message);
+    blocked('NON_SOURCE_RELABEL_UNAVAILABLE');
+    log('Non-source classification #'+task.pr_number+': '+err.message);
    }
    continue;
   }
@@ -545,7 +576,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
         laneOf(ownerPr)!=='repair'){blocked('SCOPE_OWNER_HEAD_CHANGED');continue;}
      const history=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
      if(!history||reservationStatus(task,history,now)!=='FREE'||
-        !hasVerifiedSourceHandoff(history,task.head_sha)){
+        (!hasVerifiedSourceHandoff(history,task.head_sha)||
+         !verifiedCoreCodeFailure(history,task.head_sha))){
       blocked('SCOPE_OWNER_LEASE_UNVERIFIED');continue;
      }
      if(history.some(c=>trustedControlComment(c)&&String(c.body||'').includes(marker))){

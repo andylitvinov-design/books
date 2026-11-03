@@ -357,6 +357,16 @@ async function ensureQueueLabel(github, owner, repo, pr, name, description, colo
 }
 
 async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
+  // Exact-HEAD infrastructure/policy failures must not mint or recover a
+  // source-writing receipt. In particular, PRODUCTION_BASE_CHANGED is not
+  // evidence that a code repair is possible.
+  if(classifyCoreFailureJobs(jobs)!=='SOURCE_OR_PREFLIGHT' ||
+     !Array.isArray(jobs) || !jobs.some(j=>
+       ['core-lint-types-build','hh-core-verified'].includes(j.name) &&
+       j.conclusion==='failure')){
+    log('SKIP source handoff: no proven failed source Core job');
+    return false;
+  }
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
   // Complete history is required to avoid duplicating an older receipt.
   // The watchdog's existing API budget and rate reserve bound pagination.

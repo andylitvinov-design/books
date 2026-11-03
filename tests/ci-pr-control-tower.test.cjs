@@ -44,7 +44,7 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  request:async()=>({data:{workflow_runs:recent}})};
  return {github,calls,capacityFn:async()=>cap(active,queued)};
 }
-const proof=(sha=SHA)=>({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'});
+const proof=(sha=SHA)=>({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\nFailed jobs: core-lint-types-build.\n'});
 test('task identity includes PR, exact HEAD and lane; manual holds are excluded',()=>{
  const a=pr(1);assert.equal(validPR(a),true);assert.equal(laneOf(a),'repair');
  const x=taskFor(a,{tier:'P1',direction:'video'});
@@ -774,6 +774,29 @@ test('live Watchdog direct dispatch runs syntax only; tests run in PR contract',
  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
  assert.ok(contract.includes('tests/ci-pr-control-tower.test.cjs'));
  assert.ok(contract.includes('tests/ci-pr-direct-handoff.test.cjs'));
+});
+test('PR #3235 base-changed gate is reclassified to release review without Code Repair',async()=>{
+ const source=pr(3235,'repair',{mergeable:true,mergeable_state:'behind'});
+ const invalid={...proof(),body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+SHA+
+   ' -->\nFailed jobs: hh-specialist, hh-merge-check.\n'};
+ const f=fixture([source],{comments:{3235:[invalid]}});
+ const fresh={...source,labels:[...source.labels]},changes=[];
+ f.github.rest.checks={listForRef:async()=>({data:{total_count:4,check_runs:[
+  {id:1,name:'core-lint-types-build',status:'completed',conclusion:'success',app:{id:15368}},
+  {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+  {id:3,name:'hh-merge-check',status:'completed',conclusion:'failure',app:{id:15368}},
+  {id:4,name:'ia-v2',status:'completed',conclusion:'success',app:{id:15368}}
+ ]}})};
+ f.github.rest.issues.addLabels=async({labels})=>{
+  fresh.labels.push({name:labels[0]});changes.push(['add',labels[0]]);
+ };
+ f.github.rest.issues.removeLabel=async({name})=>{changes.push(['remove',name]);};
+ f.github.rest.pulls.get=async()=>({data:fresh});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.policyReclassified,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(changes,[['add','hh:release-gate-review'],['remove','hh:repair-needed']]);
+ assert.equal(f.calls.dispatched.length,0);
 });
 test('unproven source label with exact-HEAD red product QA moves to specialist queue, never a worker',async()=>{
  const source=pr(120,'repair',{mergeable:true,mergeable_state:'behind'});
