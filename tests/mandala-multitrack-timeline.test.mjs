@@ -63,6 +63,8 @@ test("iPhone scrub repaints decoded frames and delayed audio starts on the user 
   assert.match(studio,/onSeeked=\{\(\)=>\{if\(!previewPlaying\)setPreviewFrameRevision/);
   assert.match(studio,/players\.forEach\(player=>void player\.play\(\)\.catch/);
   assert.match(studio,/player\.volume=delayed\?0:masterVolume/);
+  assert.match(studio,/player\.muted=delayed/,"iPhone must mute until the audio clip begins");
+  assert.match(studio,/player\.muted=false/,"the scheduled clip must become audible at its timecode");
   assert.doesNotMatch(studio,/session\.timer=window\.setTimeout\(play/);
   assert.match(component,/if\(kind==="ruler"\)onSeek\(position/);
   assert.match(safari,/const available=seconds-startSeconds/);

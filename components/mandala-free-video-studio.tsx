@@ -1749,6 +1749,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       player.preload="auto";
       // A delayed voice stays alive silently until the scheduled transition.
       player.loop=delayed||!isNonLoop;
+      // iPhone Safari can ignore programmatic volume but honors muted.
+      // Never leak a delayed voice before its user-selected timecode.
+      player.muted=delayed;
       try{player.volume=delayed?0:masterVolume;}
       catch{/* iOS hardware volume remains authoritative. */}
       if(!delayed&&fromSeconds>audioStartSeconds){
@@ -1778,6 +1781,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       players.forEach(player=>{
         try{player.currentTime=0;player.volume=masterVolume;}
         catch{/* Browser controls fixed output volume. */}
+        player.muted=false;
         player.loop=!isNonLoop;
       });
       session.timer=null;
