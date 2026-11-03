@@ -43,10 +43,10 @@ test("search matching resolves an exact localized label or seed phrase without f
     categoryId: "goals-money", subcategoryId: "goals-discipline", topicId: "goal-achievement",
   });
   assert.deepEqual(resolveMyTubeTopic("panic attacks", "en"), {
-    categoryId: "stress-anxiety", subcategoryId: "panic-fears", topicId: "panic-attacks",
+    categoryId: "stress-recovery", subcategoryId: "anxiety-panic", topicId: "panic-attacks",
   });
-  assert.deepEqual(resolveMyTubeTopic("amor propio", "es"), {
-    categoryId: "love-confidence", subcategoryId: "self-worth", topicId: "self-acceptance",
+  assert.deepEqual(resolveMyTubeTopic("autoaceptación", "es"), {
+    categoryId: "energy-confidence", subcategoryId: "confidence-worth", topicId: "self-acceptance",
   });
   assert.equal(resolveMyTubeTopic("ambiguous partial"), null);
   assert.equal(resolveMyTubeTopic(""), null);
