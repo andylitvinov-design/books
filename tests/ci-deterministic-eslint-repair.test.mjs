@@ -30,6 +30,8 @@ test('deterministic autofix accepts only ordinary, non-sensitive application sou
     'lib/practitioners/consent-policy.mjs','supabase/migrations/001_private.sql',
     '../outside.mjs','app/[locale]/admin/page.tsx','scripts/auth-bootstrap.mjs',
     'components/widget.css','tests/private-session.test.mjs','/tmp/outside.mjs',
+    'lib/ci/specialist-aggregate.mjs','scripts/ci-prune-stale-runs.mjs',
+    'scripts/pr-sweep-guard.mjs','tests/ci-prune-stale-runs.test.mjs',
   ]) assert.equal(isSafeEslintFixPath(file),false,file);
 });
 
