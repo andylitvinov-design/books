@@ -7,6 +7,10 @@ on:
       - 'components/app/messages-orders-clients.*'
       - 'components/app/messages-simple-inbox.*'
       - 'components/app/messages-hub.*'
+      - 'components/app/messages-bottom-navigation.jsx'
+      - 'app/**/workspace.css'
+      - 'lib/mobile-visual-bottom.mjs'
+      - 'tests/mobile-visual-dock.test.mjs'
       - 'components/app/practice-request-conversation.*'
       - 'lib/practitioners/request-media*'
       - 'lib/practitioners/client-messages.js'
@@ -20,7 +24,7 @@ permissions:
   contents: read
 concurrency:
   group: hh-messages-wellness-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   focused:
     runs-on: ubuntu-latest
@@ -33,7 +37,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Protected orders and owner Messages regression contracts
         run: |
-          node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs tests/practitioner-request-voice.test.mjs tests/practitioner-request-multimedia.test.mjs
+          node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/mobile-visual-dock.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs tests/practitioner-request-voice.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: New wellness layout and private flow contracts
         run: node --conditions=react-server --test tests/messages-wellness-v2.test.mjs
       - name: Guest enquiry one-off consent and truthful reply handoff
@@ -41,7 +45,7 @@ jobs:
       - name: Lint guest reply composer and recipient policy
         run: npx --no-install eslint components/app/public-enquiry-reply.jsx components/app/public-enquiry-operator-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs lib/practitioners/public-enquiry-operator-contact.js 'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js' tests/public-enquiry-reply-handoff.test.mjs tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       - name: Lint edited Messages components and route
-        run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/practice-request-conversation.jsx lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
+        run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/messages-bottom-navigation.jsx components/app/practice-request-conversation.jsx lib/mobile-visual-bottom.mjs lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit

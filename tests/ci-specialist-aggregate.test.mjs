@@ -275,6 +275,10 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
     if(url.includes('/files?')) return {ok:true,json:async()=>[{filename:'lib/crm/a.js'}]};
     if(url.includes('/jobs?')) return {ok:true,json:async()=>({jobs:[{name:'test',status:'completed',conclusion:'success'}]})};
     if(url.includes('/actions/runs?'))return {ok:true,json:async()=>({workflow_runs:[run()]})};
+    if(url.includes('/git/matching-refs/heads/'))return {ok:true,json:async()=>[
+      {ref:'refs/heads/' + TARGET,object:{sha:BASE}},
+      {ref:'refs/heads/' + TARGET + '/archive',object:{sha:'c'.repeat(40)}},
+    ]};
     return {ok:true,json:async()=>pr()};
   };
   const api=githubReader(repo,'fake',transport);
@@ -282,6 +286,7 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
   assert.equal((await api.changed(27))[0].filename,'lib/crm/a.js');
   assert.equal((await api.runs(SHA)).length,1);
   assert.equal((await api.jobs(151)).length,1);
+  assert.equal(await api.target(),BASE,'read the exact protected target ref, not similarly-prefixed branches');
   assert.ok(requests.every(x=>x.method==='GET' && x.auth==='Bearer fake'));
 });
 
@@ -316,6 +321,10 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.match(smoke,/env -i/,'Gauntlet smoke starts with a credential-scrubbed environment');
     assert.match(smoke,/opencode\/glm-5\.3-flash-free/,'Gauntlet smoke is pinned to an explicit free-only model');
     assert.doesNotMatch(smoke,/pull_request:|schedule:/,'Gauntlet smoke has no PR or scheduled trigger');
+    assert.match(smoke,/docs\/benchmarking\/gauntlet-runs\/\*\*/,'Gauntlet smoke requires an explicit run marker');
+    assert.match(smoke,/No paid retry is permitted/,'Gauntlet smoke forbids paid inference fallback');
+    assert.match(smoke,/node --test tests\/hh-gauntlet-loop\.test\.mjs/,'Gauntlet smoke retains dedicated ACL/loop tests');
+    assert.match(smoke,/timeout-minutes: 18/,'Gauntlet smoke keeps the runtime bounded');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
@@ -808,15 +817,26 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
     changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
   const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
-  const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
+  const advanced = 'c'.repeat(40);
+  const api = { pr: async () => currentPr(), target: async () => advanced,
+    compare: async () => ({ status:'diverged' }),
+    changed: async () => { throw Error('live diff must not replace tested checkout'); },
     runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
-  api.pr = async () => pr();
-  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  let reads = 0;
-  api.pr = async () => (++reads === 1 ? pr() : currentPr());
-  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'base may not advance during specialist aggregation');
+  // A stale pull_request.base.sha must not fail a tested checkout whose parent
+  // is still the actual current production branch HEAD.
+  api.target = async () => BASE;
   api.pr = async () => currentPr();
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  // Detect a real target move during Specialist aggregation, not stale PR metadata.
+  let targetReads = 0;
+  api.target = async () => (++targetReads === 1 ? BASE : advanced);
+  api.compare = async () => ({ status:'diverged' });
+  api.pr = async () => currentPr();
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
+    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'production target may not advance unsafely during aggregation');
+  api.target = async () => advanced;
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });

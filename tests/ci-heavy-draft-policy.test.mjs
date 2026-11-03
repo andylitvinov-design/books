@@ -87,6 +87,7 @@ const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
   ['practice-google-browser.yml', 'hh-practice-google'],
@@ -101,9 +102,11 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.match(source, /^  pull_request:/m);
     assert.match(source, /^jobs:/m);
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
-    const attemptScoped = ['hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
+    const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
     assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
-    assert.ok(source.includes('cancel-in-progress: ' + (attemptScoped ? firstAttemptCancellation : prOnlyCancellation)));
+    const cancelCondition = workflow === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation :
+      (attemptScoped ? firstAttemptCancellation : prOnlyCancellation);
+    assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -143,8 +146,12 @@ for (const name of draftStageWorkflows) {
       assert.ok(jobs.includes('  ' + job + ':\n' + stage), 'Draft gate missing: ' + name + '/' + job);
     }
     assert.match(source, /^concurrency:\s*\n  group:/m);
-    const attemptScoped = ['hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
-    const condition = attemptScoped ? "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after" : "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
+    const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
+    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyCondition :
+      (attemptScoped ? firstAttemptCondition : prOnlyCondition);
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -538,6 +545,28 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
+test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {
+  const proof = {
+    status: 'ahead',
+    base_sha: earlyLive.base.sha,
+    head_sha: earlyLive.head.sha,
+    merge_base_sha: earlyLive.base.sha,
+  };
+  const staleDirty = { ...earlyLive, mergeable: false, mergeable_state: 'dirty' };
+  assert.equal(assessPrReadiness(earlyEvent, staleDirty, earlyRepo, proof).ready, true);
+  const mutations = [
+    [{ ...proof, status: 'diverged' }, 'diverged'],
+    [{ ...proof, base_sha: 'c'.repeat(40) }, 'wrong-base'],
+    [{ ...proof, head_sha: 'c'.repeat(40) }, 'wrong-head'],
+    [{ ...proof, merge_base_sha: 'c'.repeat(40) }, 'not-fast-forward'],
+  ];
+  for (const [candidate, label] of mutations) {
+    const result = assessPrReadiness(earlyEvent, staleDirty, earlyRepo, candidate);
+    assert.equal(result.ready, false, label);
+    assert.equal(result.code, 'conflict', label);
+  }
+});
+
 test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
   const mutations = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
@@ -688,7 +717,7 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
 test('Core auto first attempts supersede old HEAD but manual reruns cannot evict current',()=>{
   const core=read('hh-pr-core-release.yml');
   assert.ok(core.includes("group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.ok(!core.includes('github.event.pull_request.head.sha || github.sha'));
   assert.match(core,/^  hh-merge-check:/m);
   assert.doesNotMatch(core,/^  release-ready:/m);
@@ -705,5 +734,5 @@ test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard 
   assert.ok(!guard.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
     'Guard first-attempt concurrency must not isolate obsolete HEADs');
   assert.ok(guard.includes("group: hh-pr-sweep-guard-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(guard.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(guard.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
 });
