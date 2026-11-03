@@ -13,6 +13,8 @@ export interface MyTubePlot {
   synopsis: string;
   transformationIdea: string;
   beats: string[];
+  /** English visual cues for source ranking, not evidence that actions were filmed. */
+  visualCues: string[];
   sourceStatus: "editorial_only_unbound";
   conceptOnly: true;
   canExport: false;
