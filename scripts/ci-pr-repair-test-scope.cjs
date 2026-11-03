@@ -27,12 +27,16 @@ function selectTests(root,changed,candidates){
     .filter(l=>!/^\s*\/\//.test(l));
   const hasNodeTest=lines.some(line=>/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*)['"]node:test['"]/.test(line));
   const hasTestCall=lines.some(line=>/^\s*(?:test|it|describe)\s*\(/.test(line));
+  // A literal read through this exact repository-root helper is observable
+  // source coverage too. Reject generic/dynamic fs reads and templates.
+  const staticRootRead=/^\s*const read\s*=\s*path\s*=>\s*readFileSync\(\s*new URL\(\s*['"]\.\.\/['"]\s*\+\s*path\s*,\s*import\.meta\.url\s*\)\s*,\s*['"]utf8['"]\s*\)\s*;?\s*$/m.test(source);
   if(!hasNodeTest||!hasTestCall)continue;
   let hit=false;
   for(const line of lines){
-   const match=line.match(/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|}\s*from\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/);
-   if(!match||!match[1].startsWith('.'))continue;
-   const resolved=path.resolve(path.dirname(full),match[1]);
+   const staticRead=staticRootRead?line.match(/^\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*read\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*$/):null;
+   const match=staticRead||line.match(/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|}\s*from\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/);
+   if(!match||(!staticRead&&!match[1].startsWith('.')))continue;
+   const resolved=path.resolve(staticRead?realRoot:path.dirname(full),match[1]);
    if(target.has(resolved)){coverage.add(resolved);hit=true;}
   }
   if(hit)selected.push(file);
