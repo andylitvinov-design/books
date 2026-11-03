@@ -299,8 +299,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await voicePanel.locator(":scope > summary").click();
       const studio=voicePanel.locator("[data-voice-studio]");
       await studio.waitFor({state:"visible"});
-      const studioConsent=studio.locator('input[type="checkbox"]');
-      await expect(studioConsent).not.toBeChecked({timeout:10000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
@@ -313,7 +311,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click();
       const customText=locale==="ru"?"Сегодня я выбираю спокойствие.":"Today I choose calm.";
       await studio.locator("textarea").fill(customText);
-      await studio.locator("input[type=checkbox]").check();
+      // The consent checkbox exists only in custom-script mode. A new script
+      // must start unchecked and cannot be generated until the visitor agrees.
+      const studioConsent=studio.locator('input[type="checkbox"]');
+      await expect(studioConsent).not.toBeChecked({timeout:10000});
+      await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled();
+      await studioConsent.check();
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");
