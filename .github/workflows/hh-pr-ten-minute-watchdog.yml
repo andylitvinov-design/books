@@ -265,6 +265,7 @@ jobs:
           node --check scripts/ci-pr-task-state.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-monitor-feed.cjs
           node --check scripts/ci-pr-ci-wake-reconcile.cjs
           node --check scripts/ci-pr-ci-legacy-recovery.cjs
       - name: Start workers from Watchdog with signed HEAD reservations
