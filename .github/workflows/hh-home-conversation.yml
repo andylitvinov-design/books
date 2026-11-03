@@ -13,7 +13,6 @@ on:
       - 'tests/home-conversation-browser.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'tests/home-diagnosis-messenger.test.mjs'
-      - '.github/workflows/hh-home-conversation.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
