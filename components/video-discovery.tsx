@@ -133,6 +133,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
 
       if(mytubeCategoryId!=="all"||mytubeSubcategoryId!=="all"||mytubeTopicId!=="all"){
+        const taxonomyItem=item as LibraryFeedItem & {mytubeCategoryIds?:string[];mytubeSubcategoryIds?:string[];mytubeTopicIds?:string[]};
         const tags=Array.isArray(item.topicTags)?item.topicTags:[];
         const text=[item.title,item.description||"",item.seriesTitle||""].join(" ").toLocaleLowerCase(locale);
         const categoryTags={
@@ -160,17 +161,17 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           "depression-apathy":["emotions","recovery","health"],
         };
         if(mytubeCategoryId!=="all"){
-          const explicit=Array.isArray(item.mytubeCategoryIds)?item.mytubeCategoryIds:[];
+          const explicit=Array.isArray(taxonomyItem.mytubeCategoryIds)?taxonomyItem.mytubeCategoryIds:[];
           const allowed=categoryTags[mytubeCategoryId]||[];
           if(!explicit.includes(mytubeCategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
         }
         if(mytubeSubcategoryId!=="all"){
-          const explicit=Array.isArray(item.mytubeSubcategoryIds)?item.mytubeSubcategoryIds:[];
+          const explicit=Array.isArray(taxonomyItem.mytubeSubcategoryIds)?taxonomyItem.mytubeSubcategoryIds:[];
           const allowed=subcategoryTags[mytubeSubcategoryId]||[];
           if(!explicit.includes(mytubeSubcategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
         }
         if(mytubeTopicId!=="all"){
-          const explicit=Array.isArray(item.mytubeTopicIds)?item.mytubeTopicIds:[];
+          const explicit=Array.isArray(taxonomyItem.mytubeTopicIds)?taxonomyItem.mytubeTopicIds:[];
           const found=getMyTubeTopic(mytubeTopicId);
           const terms=found?[found.topic.label[locale],...found.topic.searchIntent[locale]]:[];
           const legacyTags=found?.topic.legacyTags||[];
