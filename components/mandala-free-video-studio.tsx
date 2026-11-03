@@ -3661,7 +3661,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onInvalidate={()=>{
             const staleHypnoTrack=Boolean(hypnoWhisperEnabled||hypnoBinauralEnabled||
               (attachedAudio?.kind==="file"&&attachedAudio.narration));
-            setHypnoSpeechSource(null);setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
+            setHypnoSpeechSource(null);setHypnoSpeechText("");setHypnoSpeechDuration(0);
+            setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
