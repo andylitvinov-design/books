@@ -87,7 +87,7 @@ function buildMonitorSnapshot(report,context){
 function parseExisting(body){
   if(typeof body!=='string'||!body.startsWith(MARKER))
     throw Error('MONITOR_FEED_MARKER_MISSING');
-  const match=/``json\s*([\s\S]*?)\s*```/.exec(body);
+  const match=/\x60{3}json\s*([\s\S]*?)\s*\x60{3}/.exec(body);
   if(!match)throw Error('MONITOR_FEED_JSON_MISSING');
   let prior;try{prior=JSON.parse(match[1]);}catch{throw Error('MONITOR_FEED_JSON_INVALID');}
   if(prior?.schema!==SCHEMA||!Number.isFinite(Date.parse(prior.checked_at||''))||
