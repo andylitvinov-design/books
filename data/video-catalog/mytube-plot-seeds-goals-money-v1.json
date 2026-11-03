@@ -1,0 +1,1902 @@
+{
+  "schemaVersion": "mytube-topic-plots-v1",
+  "categoryId": "goals-money",
+  "status": "editorial_storyboards_unbound",
+  "createdAt": "2026-11-03",
+  "plotsPerTopic": 4,
+  "locales": [
+    "ru",
+    "en",
+    "es"
+  ],
+  "topics": {
+    "life-purpose": [
+      {
+        "id": "life-purpose-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Письмо себе",
+          "en": "A letter to yourself",
+          "es": "Carta a uno mismo"
+        },
+        "shots": {
+          "ru": [
+            "На столе чистый лист",
+            "Вспоминается дело которое увлекало",
+            "На листе появляются три ценности",
+            "Выбирается одно занятие на неделю"
+          ],
+          "en": [
+            "A blank sheet lies on a desk",
+            "A forgotten passion comes back",
+            "Three values appear on paper",
+            "One activity is chosen for the week"
+          ],
+          "es": [
+            "Una hoja vacía sobre la mesa",
+            "Regresa una pasión olvidada",
+            "Aparecen tres valores en el papel",
+            "Se elige una actividad para esta semana"
+          ]
+        }
+      },
+      {
+        "id": "life-purpose-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тропа среди сосен",
+          "en": "Pine forest trail",
+          "es": "Sendero entre pinos"
+        },
+        "shots": {
+          "ru": [
+            "Путник стоит у развилки",
+            "Замечает следы своих интересов",
+            "Тропы сходятся у маленькой поляны",
+            "Пробует пройти первые сто шагов"
+          ],
+          "en": [
+            "A traveler reaches a fork",
+            "Footprints of past interests appear",
+            "Paths meet in a sunlit clearing",
+            "The first hundred steps begin"
+          ],
+          "es": [
+            "Una persona llega a una bifurcación",
+            "Surgen huellas de viejos intereses",
+            "Los caminos convergen en un claro",
+            "Da sus primeros cien pasos"
+          ]
+        }
+      },
+      {
+        "id": "life-purpose-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Компас ценностей",
+          "en": "A compass of values",
+          "es": "Brújula de valores"
+        },
+        "shots": {
+          "ru": [
+            "Компас беспокойно вращается",
+            "На шкале появляются личные ценности",
+            "Стрелка останавливается у одной",
+            "В блокнот записывается возможное направление"
+          ],
+          "en": [
+            "A compass spins without direction",
+            "Personal values appear on its dial",
+            "The needle rests near one value",
+            "A possible direction enters a notebook"
+          ],
+          "es": [
+            "Una brújula gira sin rumbo",
+            "Aparecen valores personales en la esfera",
+            "La aguja señala uno de ellos",
+            "Se anota una dirección posible"
+          ]
+        }
+      },
+      {
+        "id": "life-purpose-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Маленькая проба",
+          "en": "A small experiment",
+          "es": "Un pequeño experimento"
+        },
+        "shots": {
+          "ru": [
+            "На доске много чужих советов",
+            "Человек закрывает лишние вкладки",
+            "Пробует интересное дело без оценки",
+            "Записывает что принесло живой отклик"
+          ],
+          "en": [
+            "A board is filled with outside advice",
+            "Unneeded tabs are closed",
+            "A curious activity is tried without judgment",
+            "The felt response is written down"
+          ],
+          "es": [
+            "Una pizarra llena de consejos ajenos",
+            "Se cierran pestañas innecesarias",
+            "Se prueba una actividad sin juicio",
+            "Se anota lo que produjo entusiasmo"
+          ]
+        }
+      }
+    ],
+    "finding-self": [
+      {
+        "id": "finding-self-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Зеркало без ярлыков",
+          "en": "The mirror without labels",
+          "es": "Espejo sin etiquetas"
+        },
+        "shots": {
+          "ru": [
+            "На зеркале десятки наклеек",
+            "Рука снимает чужие определения",
+            "Появляется спокойное отражение",
+            "Остаётся одна честная фраза о себе"
+          ],
+          "en": [
+            "A mirror is covered in labels",
+            "Other people's definitions are removed",
+            "A calmer reflection becomes visible",
+            "One honest self-description remains"
+          ],
+          "es": [
+            "Un espejo cubierto de etiquetas",
+            "Se retiran definiciones ajenas",
+            "Aparece un reflejo más sereno",
+            "Queda una frase honesta sobre uno mismo"
+          ]
+        }
+      },
+      {
+        "id": "finding-self-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Сад интересов",
+          "en": "The garden of interests",
+          "es": "Jardín de intereses"
+        },
+        "shots": {
+          "ru": [
+            "Сад разделён на чужие грядки",
+            "Из земли пробиваются свои растения",
+            "Человек заботится о выбранном ростке",
+            "На календаре появляется время для него"
+          ],
+          "en": [
+            "A garden follows someone else's design",
+            "Personal shoots break through the soil",
+            "One chosen shoot receives care",
+            "Time for it is placed on a calendar"
+          ],
+          "es": [
+            "Un jardín sigue un diseño ajeno",
+            "Brotan plantas que sí son propias",
+            "Se cuida un brote elegido",
+            "Se reserva tiempo en el calendario"
+          ]
+        }
+      },
+      {
+        "id": "finding-self-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Комната ролей",
+          "en": "The room of roles",
+          "es": "Sala de papeles"
+        },
+        "shots": {
+          "ru": [
+            "В комнате висят разные костюмы",
+            "Человек примеряет привычные роли",
+            "Снимает тесный костюм ожиданий",
+            "Выбирает одежду в которой свободно"
+          ],
+          "en": [
+            "Many costumes hang in a room",
+            "A person tries familiar roles",
+            "An uncomfortable costume is set aside",
+            "Clothes that fit are chosen"
+          ],
+          "es": [
+            "Cuelgan muchos disfraces",
+            "Se prueban papeles conocidos",
+            "Se deja un disfraz incómodo",
+            "Se elige ropa que sienta bien"
+          ]
+        }
+      },
+      {
+        "id": "finding-self-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Три вопроса",
+          "en": "Three questions",
+          "es": "Tres preguntas"
+        },
+        "shots": {
+          "ru": [
+            "В дневнике пустая страница",
+            "Записываются радость боль и желание",
+            "Находится повторяющаяся тема",
+            "Человек задаёт один вопрос другу"
+          ],
+          "en": [
+            "A journal opens to a blank page",
+            "Joy hurt and longing are named",
+            "A recurring thread becomes visible",
+            "One sincere question is shared with a friend"
+          ],
+          "es": [
+            "Un diario abierto en blanco",
+            "Se nombran alegría dolor y deseo",
+            "Surge un hilo común",
+            "Se comparte una pregunta sincera"
+          ]
+        }
+      }
+    ],
+    "life-change": [
+      {
+        "id": "life-change-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Коробки нового дома",
+          "en": "Boxes in a new home",
+          "es": "Cajas de una casa nueva"
+        },
+        "shots": {
+          "ru": [
+            "В старой комнате стоят коробки",
+            "Одна вещь вызывает тёплую память",
+            "Для неё находится место в новом доме",
+            "В окне открывается другой вид"
+          ],
+          "en": [
+            "Boxes fill an old room",
+            "One object carries a warm memory",
+            "It finds a place in the new home",
+            "The window offers another view"
+          ],
+          "es": [
+            "Hay cajas en la habitación antigua",
+            "Un objeto guarda un recuerdo cálido",
+            "Encuentra lugar en la casa nueva",
+            "La ventana muestra otra vista"
+          ]
+        }
+      },
+      {
+        "id": "life-change-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Мост между берегами",
+          "en": "A bridge between shores",
+          "es": "Puente entre orillas"
+        },
+        "shots": {
+          "ru": [
+            "На одном берегу привычный город",
+            "Мост виден сквозь утренний туман",
+            "Путник берёт с собой нужное",
+            "Переходит не торопясь"
+          ],
+          "en": [
+            "The familiar city stays on one shore",
+            "A bridge emerges from morning mist",
+            "The traveler keeps what matters",
+            "The crossing happens slowly"
+          ],
+          "es": [
+            "La ciudad conocida queda atrás",
+            "Surge un puente entre la niebla",
+            "La persona conserva lo importante",
+            "Cruza sin prisa"
+          ]
+        }
+      },
+      {
+        "id": "life-change-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Смена времён года",
+          "en": "Changing seasons",
+          "es": "Cambio de estaciones"
+        },
+        "shots": {
+          "ru": [
+            "Листья старого сезона опадают",
+            "Под снегом видны живые корни",
+            "Первые почки открываются весной",
+            "Человек встречает новый ритм"
+          ],
+          "en": [
+            "Leaves from the old season fall",
+            "Living roots persist under snow",
+            "New buds open in spring",
+            "A different rhythm becomes welcome"
+          ],
+          "es": [
+            "Caen las hojas de otra etapa",
+            "Las raíces siguen vivas bajo nieve",
+            "Se abren brotes en primavera",
+            "Se recibe un ritmo nuevo"
+          ]
+        }
+      },
+      {
+        "id": "life-change-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Прощальный ритуал",
+          "en": "A farewell ritual",
+          "es": "Ritual de despedida"
+        },
+        "shots": {
+          "ru": [
+            "На столе фотография прошлого этапа",
+            "Человек называет что было важно",
+            "Благодарит и закрывает альбом",
+            "В расписании отмечает новый первый шаг"
+          ],
+          "en": [
+            "A photo marks the previous chapter",
+            "What mattered is named aloud",
+            "The album is closed with gratitude",
+            "A first new step enters the calendar"
+          ],
+          "es": [
+            "Una foto recuerda la etapa anterior",
+            "Se nombra lo que fue importante",
+            "Se cierra el álbum con gratitud",
+            "Se agenda un primer paso nuevo"
+          ]
+        }
+      }
+    ],
+    "decision-making": [
+      {
+        "id": "decision-making-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Два письма из будущего",
+          "en": "Two letters from the future",
+          "es": "Dos cartas del futuro"
+        },
+        "shots": {
+          "ru": [
+            "На столе две пустые открытки",
+            "Каждая описывает один возможный выбор",
+            "В теле замечается разный отклик",
+            "Выбирается вопрос для проверки"
+          ],
+          "en": [
+            "Two blank postcards lie on a table",
+            "Each describes one possible choice",
+            "Different bodily responses are noticed",
+            "A question for testing is chosen"
+          ],
+          "es": [
+            "Hay dos postales vacías",
+            "Cada una describe una opción",
+            "Se observan respuestas distintas del cuerpo",
+            "Se elige qué comprobar primero"
+          ]
+        }
+      },
+      {
+        "id": "decision-making-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Развилка в горах",
+          "en": "A fork in the mountains",
+          "es": "Bifurcación en la montaña"
+        },
+        "shots": {
+          "ru": [
+            "Два пути уходят в разные долины",
+            "Путник сверяется с погодой и силами",
+            "С видовой точки видит оба маршрута",
+            "Выбирает следующий безопасный участок"
+          ],
+          "en": [
+            "Two paths enter different valleys",
+            "The hiker checks weather and energy",
+            "Both routes become visible from a lookout",
+            "One safe next stretch is chosen"
+          ],
+          "es": [
+            "Dos caminos llevan a valles distintos",
+            "Se comprueban clima y fuerzas",
+            "Desde un mirador se ven ambos",
+            "Se elige el próximo tramo seguro"
+          ]
+        }
+      },
+      {
+        "id": "decision-making-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Весы без приговора",
+          "en": "Scales without a verdict",
+          "es": "Balanza sin sentencia"
+        },
+        "shots": {
+          "ru": [
+            "На чаши кладут выгоды и риски",
+            "Весы колеблются от новых факторов",
+            "Появляется третья чаша ценностей",
+            "Человек выбирает обратимый опыт"
+          ],
+          "en": [
+            "Benefits and risks fill two pans",
+            "New factors make the scales move",
+            "A third pan holds personal values",
+            "A reversible experiment is chosen"
+          ],
+          "es": [
+            "Se pesan ventajas y riesgos",
+            "Nuevos factores mueven la balanza",
+            "Un tercer plato sostiene los valores",
+            "Se elige una prueba reversible"
+          ]
+        }
+      },
+      {
+        "id": "decision-making-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Пробный день",
+          "en": "A trial day",
+          "es": "Día de prueba"
+        },
+        "shots": {
+          "ru": [
+            "Календарь предлагает два варианта",
+            "Один вариант пробуют мысленно",
+            "Затем проверяют реальное ограничение",
+            "Назначают срок пересмотра решения"
+          ],
+          "en": [
+            "A calendar shows two alternatives",
+            "One option is rehearsed mentally",
+            "A real constraint is checked",
+            "A decision review date is set"
+          ],
+          "es": [
+            "El calendario muestra dos opciones",
+            "Se ensaya mentalmente una de ellas",
+            "Se comprueba una limitación real",
+            "Se fija fecha para revisar la decisión"
+          ]
+        }
+      }
+    ],
+    "goal-achievement": [
+      {
+        "id": "goal-achievement-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Один квадрат на плане",
+          "en": "One square on the plan",
+          "es": "Un cuadro del plan"
+        },
+        "shots": {
+          "ru": [
+            "Перед героем огромная схема",
+            "Он отмечает ближайший квадрат",
+            "Выполняет один посильный пункт",
+            "Отмечает прогресс без гонки"
+          ],
+          "en": [
+            "A huge plan covers the wall",
+            "The nearest square is highlighted",
+            "One manageable task gets done",
+            "Progress is marked without rushing"
+          ],
+          "es": [
+            "Un plan enorme ocupa la pared",
+            "Se señala el cuadro más cercano",
+            "Se hace una tarea posible",
+            "Se marca el avance sin prisa"
+          ]
+        }
+      },
+      {
+        "id": "goal-achievement-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Лестница на холм",
+          "en": "A staircase up the hill",
+          "es": "Escalera hacia la colina"
+        },
+        "shots": {
+          "ru": [
+            "Вершина скрыта облаками",
+            "Путник замечает ступень у ног",
+            "Делает паузу после подъёма",
+            "Поднимается ещё на ступень"
+          ],
+          "en": [
+            "The summit hides behind clouds",
+            "A step appears underfoot",
+            "The walker rests after climbing",
+            "One more step is taken"
+          ],
+          "es": [
+            "La cima está entre nubes",
+            "Aparece un peldaño cercano",
+            "Se descansa tras subir",
+            "Se da otro paso"
+          ]
+        }
+      },
+      {
+        "id": "goal-achievement-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Строительство маяка",
+          "en": "Building a lighthouse",
+          "es": "Construir un faro"
+        },
+        "shots": {
+          "ru": [
+            "На берегу лежат отдельные камни",
+            "Из камней возникает основание",
+            "В башне зажигают первый огонь",
+            "Свет виден лишь на небольшом расстоянии"
+          ],
+          "en": [
+            "Loose stones lie on the shore",
+            "A foundation is assembled",
+            "The first beacon is lit",
+            "Its light reaches a modest distance"
+          ],
+          "es": [
+            "Hay piedras en la costa",
+            "Se forma una base sólida",
+            "Se enciende la primera luz",
+            "Su alcance aún es pequeño"
+          ]
+        }
+      },
+      {
+        "id": "goal-achievement-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Договор на десять минут",
+          "en": "A ten-minute agreement",
+          "es": "Acuerdo de diez minutos"
+        },
+        "shots": {
+          "ru": [
+            "Большое дело пугает своим размером",
+            "Таймер ставят на десять минут",
+            "Человек начинает без идеального плана",
+            "Решает продолжать или остановиться"
+          ],
+          "en": [
+            "A large task feels overwhelming",
+            "A timer is set for ten minutes",
+            "Work begins without a perfect plan",
+            "Continuing or stopping remains a choice"
+          ],
+          "es": [
+            "Una gran tarea abruma",
+            "Se pone un temporizador breve",
+            "Se empieza sin plan perfecto",
+            "Se decide seguir o parar"
+          ]
+        }
+      }
+    ],
+    "procrastination": [
+      {
+        "id": "procrastination-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Незакрытая вкладка",
+          "en": "The unfinished tab",
+          "es": "La pestaña pendiente"
+        },
+        "shots": {
+          "ru": [
+            "Ноутбук переполнен отвлечениями",
+            "Выбирается один ожидающий документ",
+            "Пишется несовершенная первая строка",
+            "Работа сохраняется для завтра"
+          ],
+          "en": [
+            "A laptop overflows with distractions",
+            "One waiting document is opened",
+            "An imperfect first line is written",
+            "The work is saved for tomorrow"
+          ],
+          "es": [
+            "El portátil rebosa de distracciones",
+            "Se abre un documento pendiente",
+            "Se escribe una primera línea imperfecta",
+            "Se guarda el trabajo"
+          ]
+        }
+      },
+      {
+        "id": "procrastination-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тяжёлая дверь",
+          "en": "The heavy door",
+          "es": "La puerta pesada"
+        },
+        "shots": {
+          "ru": [
+            "Перед дверью лежит груз ожиданий",
+            "Человек замечает маленькую ручку",
+            "Открывает дверь на несколько сантиметров",
+            "Входит лишь на одну минуту"
+          ],
+          "en": [
+            "Expectations weigh down a door",
+            "A small handle comes into view",
+            "The door opens a few centimeters",
+            "Only one minute is spent inside"
+          ],
+          "es": [
+            "Las expectativas pesan sobre una puerta",
+            "Se descubre una manija pequeña",
+            "La puerta se entreabre",
+            "Se entra solo un minuto"
+          ]
+        }
+      },
+      {
+        "id": "procrastination-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Песочные часы",
+          "en": "The hourglass",
+          "es": "Reloj de arena"
+        },
+        "shots": {
+          "ru": [
+            "Песок будто застыл",
+            "Огромное дело разбивается на части",
+            "Первая песчинка начинает падать",
+            "Следующая задача остаётся на потом"
+          ],
+          "en": [
+            "Sand seems frozen in place",
+            "The task is broken into pieces",
+            "One grain starts to fall",
+            "The next piece can wait"
+          ],
+          "es": [
+            "Parece que la arena no cae",
+            "La tarea se divide en partes",
+            "Cae el primer grano",
+            "El siguiente paso puede esperar"
+          ]
+        }
+      },
+      {
+        "id": "procrastination-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Начало без оценки",
+          "en": "Starting without judgment",
+          "es": "Empezar sin juicio"
+        },
+        "shots": {
+          "ru": [
+            "Список дел вызывает напряжение",
+            "Человек пишет черновик нарочно плохо",
+            "Наблюдает как уменьшается страх старта",
+            "Оставляет короткую заметку о результате"
+          ],
+          "en": [
+            "The to-do list creates tension",
+            "A deliberately rough draft begins",
+            "The fear of starting softens",
+            "One note records what happened"
+          ],
+          "es": [
+            "La lista de tareas genera tensión",
+            "Se crea un borrador imperfecto",
+            "Baja el miedo al comienzo",
+            "Se anota lo ocurrido"
+          ]
+        }
+      }
+    ],
+    "self-discipline": [
+      {
+        "id": "self-discipline-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Тихий календарь",
+          "en": "The quiet calendar",
+          "es": "Calendario tranquilo"
+        },
+        "shots": {
+          "ru": [
+            "Календарь заполнен невозможными обещаниями",
+            "Остаётся один реалистичный ритуал",
+            "Маленькая отметка появляется вечером",
+            "Пропуск не отменяет следующего дня"
+          ],
+          "en": [
+            "The calendar holds impossible promises",
+            "One realistic ritual remains",
+            "A small checkmark appears at night",
+            "Missing a day does not end the habit"
+          ],
+          "es": [
+            "El calendario rebosa de promesas",
+            "Queda un hábito realista",
+            "Aparece una marca al anochecer",
+            "Un día perdido no anula el siguiente"
+          ]
+        }
+      },
+      {
+        "id": "self-discipline-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Русло реки",
+          "en": "The riverbed",
+          "es": "Cauce del río"
+        },
+        "shots": {
+          "ru": [
+            "Вода разбегается по лужам",
+            "Небольшое русло собирает поток",
+            "Река постепенно находит ритм",
+            "Берега остаются гибкими"
+          ],
+          "en": [
+            "Water spreads into shallow puddles",
+            "A narrow channel gathers the flow",
+            "The river settles into rhythm",
+            "Its banks remain flexible"
+          ],
+          "es": [
+            "El agua se dispersa en charcos",
+            "Un cauce pequeño reúne la corriente",
+            "El río encuentra su ritmo",
+            "Las orillas siguen flexibles"
+          ]
+        }
+      },
+      {
+        "id": "self-discipline-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Ремесло мастера",
+          "en": "A craftsperson's practice",
+          "es": "El oficio del artesano"
+        },
+        "shots": {
+          "ru": [
+            "Мастер смотрит на незаконченную вещь",
+            "Повторяет одно простое движение",
+            "Из повторения возникает навык",
+            "Инструменты убраны до следующей встречи"
+          ],
+          "en": [
+            "A maker sees unfinished work",
+            "One simple motion is repeated",
+            "Skill grows through repetition",
+            "Tools are laid aside until tomorrow"
+          ],
+          "es": [
+            "Se observa una obra sin terminar",
+            "Se repite un movimiento sencillo",
+            "La práctica desarrolla habilidad",
+            "Se guardan herramientas hasta mañana"
+          ]
+        }
+      },
+      {
+        "id": "self-discipline-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Подготовленный стол",
+          "en": "The prepared desk",
+          "es": "Mesa preparada"
+        },
+        "shots": {
+          "ru": [
+            "Утром всё мешает начать",
+            "Вечером заранее готовят материалы",
+            "На рассвете первый шаг лёгок",
+            "Человек отмечает что сработало"
+          ],
+          "en": [
+            "Morning friction delays the start",
+            "Materials are prepared the evening before",
+            "The first step feels easier at dawn",
+            "What helped is noted"
+          ],
+          "es": [
+            "Por la mañana cuesta empezar",
+            "Se prepara todo la noche anterior",
+            "Al amanecer resulta más fácil",
+            "Se anota qué ayudó"
+          ]
+        }
+      }
+    ],
+    "focus": [
+      {
+        "id": "focus-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Один свет на столе",
+          "en": "One lamp on the desk",
+          "es": "Una lámpara en la mesa"
+        },
+        "shots": {
+          "ru": [
+            "Вокруг светятся десятки экранов",
+            "Лишние экраны постепенно гаснут",
+            "В освещённом круге остаётся задача",
+            "Взгляд возвращается после отвлечения"
+          ],
+          "en": [
+            "Many screens glow at once",
+            "Unneeded screens go dark",
+            "One task remains in the pool of light",
+            "Attention gently returns after distraction"
+          ],
+          "es": [
+            "Brillan demasiadas pantallas",
+            "Las innecesarias se apagan",
+            "Una tarea queda bajo la luz",
+            "La atención vuelve suavemente"
+          ]
+        }
+      },
+      {
+        "id": "focus-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Пруд без ветра",
+          "en": "The still pond",
+          "es": "Estanque en calma"
+        },
+        "shots": {
+          "ru": [
+            "Рябь скрывает отражение",
+            "Ветер на минуту стихает",
+            "На воде становится виден берег",
+            "Внимание выбирает одну точку"
+          ],
+          "en": [
+            "Ripples obscure the reflection",
+            "The wind eases for a moment",
+            "The shore appears in the water",
+            "Attention rests on one point"
+          ],
+          "es": [
+            "Las ondas ocultan el reflejo",
+            "El viento se calma un momento",
+            "Aparece la orilla reflejada",
+            "La atención elige un punto"
+          ]
+        }
+      },
+      {
+        "id": "focus-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Луч через призму",
+          "en": "A beam through a prism",
+          "es": "Rayo a través de un prisma"
+        },
+        "shots": {
+          "ru": [
+            "Свет рассеивается в разные стороны",
+            "Призма собирает один ясный луч",
+            "Луч освещает одну страницу",
+            "Пауза завершает короткий отрезок"
+          ],
+          "en": [
+            "Light scatters in many directions",
+            "A prism channels a clear beam",
+            "The beam lights one page",
+            "A pause closes a short work interval"
+          ],
+          "es": [
+            "La luz se dispersa",
+            "Un prisma concentra un rayo",
+            "El rayo ilumina una página",
+            "Una pausa cierra el intervalo"
+          ]
+        }
+      },
+      {
+        "id": "focus-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Возврат к строке",
+          "en": "Returning to the line",
+          "es": "Volver a la línea"
+        },
+        "shots": {
+          "ru": [
+            "Человек читает и теряет место",
+            "Ставит маленькую закладку",
+            "После отвлечения находит строку",
+            "Благодарит себя за возвращение"
+          ],
+          "en": [
+            "A reader loses their place",
+            "A small bookmark is inserted",
+            "The line is found after interruption",
+            "Returning is treated kindly"
+          ],
+          "es": [
+            "Se pierde el lugar al leer",
+            "Se coloca un marcapáginas",
+            "Se encuentra la línea tras la pausa",
+            "Se reconoce el regreso"
+          ]
+        }
+      }
+    ],
+    "money-mindset": [
+      {
+        "id": "money-mindset-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Старые фразы о деньгах",
+          "en": "Old sayings about money",
+          "es": "Viejas frases sobre dinero"
+        },
+        "shots": {
+          "ru": [
+            "На листе записаны семейные поговорки",
+            "Человек выбирает одну тревожную фразу",
+            "Сопоставляет её с сегодняшними фактами",
+            "Формулирует более точный взгляд"
+          ],
+          "en": [
+            "Family sayings fill a page",
+            "One worrying phrase is selected",
+            "It is compared with present facts",
+            "A more accurate view is written"
+          ],
+          "es": [
+            "Se anotan dichos familiares",
+            "Se elige una frase inquietante",
+            "Se compara con hechos actuales",
+            "Se escribe una mirada más precisa"
+          ]
+        }
+      },
+      {
+        "id": "money-mindset-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Река расходов",
+          "en": "A river of spending",
+          "es": "Río de gastos"
+        },
+        "shots": {
+          "ru": [
+            "Монеты уплывают по разным ручьям",
+            "Ручьи становятся видимыми на карте",
+            "Часть потока направляется к запасу",
+            "Человек наблюдает без стыда"
+          ],
+          "en": [
+            "Coins flow into many streams",
+            "The streams appear on a map",
+            "Some water feeds a small reserve",
+            "Spending is observed without shame"
+          ],
+          "es": [
+            "Las monedas fluyen por arroyos",
+            "Se dibuja un mapa de gastos",
+            "Parte del flujo crea una reserva",
+            "Se observa sin vergüenza"
+          ]
+        }
+      },
+      {
+        "id": "money-mindset-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Сундук правил",
+          "en": "A chest of rules",
+          "es": "Cofre de reglas"
+        },
+        "shots": {
+          "ru": [
+            "Старый сундук полон чужих запретов",
+            "Каждое правило рассматривают отдельно",
+            "Несколько правил оказываются устаревшими",
+            "Остаётся личное финансовое правило"
+          ],
+          "en": [
+            "An old chest holds inherited prohibitions",
+            "Each rule is examined separately",
+            "Some rules prove outdated",
+            "One personal money rule remains"
+          ],
+          "es": [
+            "Un cofre guarda prohibiciones heredadas",
+            "Se examina cada regla",
+            "Algunas ya no sirven",
+            "Queda una regla propia"
+          ]
+        }
+      },
+      {
+        "id": "money-mindset-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Денежный разговор",
+          "en": "A money conversation",
+          "es": "Conversación sobre dinero"
+        },
+        "shots": {
+          "ru": [
+            "Человек избегает смотреть на счёт",
+            "Садится с чашкой воды и блокнотом",
+            "Записывает сумму без самообвинения",
+            "Выбирает одну спокойную беседу о бюджете"
+          ],
+          "en": [
+            "A person avoids looking at the account",
+            "A notebook and water are prepared",
+            "The balance is written without blame",
+            "One calm budget conversation is planned"
+          ],
+          "es": [
+            "Cuesta mirar la cuenta",
+            "Se prepara agua y cuaderno",
+            "Se anota el saldo sin culpas",
+            "Se planea hablar del presupuesto"
+          ]
+        }
+      }
+    ],
+    "money-blocks": [
+      {
+        "id": "money-blocks-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Невидимый ценник",
+          "en": "The invisible price tag",
+          "es": "La etiqueta invisible"
+        },
+        "shots": {
+          "ru": [
+            "Услуга готова но цена не названа",
+            "Человек замечает страх просить оплату",
+            "Пробует назвать цену вслух",
+            "Решает проверить её на практике"
+          ],
+          "en": [
+            "The service is ready but unpriced",
+            "Fear of asking for payment appears",
+            "A price is spoken aloud privately",
+            "A practical test is planned"
+          ],
+          "es": [
+            "El servicio está listo sin precio",
+            "Surge miedo a cobrar",
+            "Se pronuncia un precio en voz alta",
+            "Se planea comprobarlo"
+          ]
+        }
+      },
+      {
+        "id": "money-blocks-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Ворота обмена",
+          "en": "The gate of exchange",
+          "es": "Puerta del intercambio"
+        },
+        "shots": {
+          "ru": [
+            "Через ворота проходят труд и деньги",
+            "Одна створка долго закрыта",
+            "Путник проверяет что мешает обмену",
+            "Открывает ворота на безопасную ширину"
+          ],
+          "en": [
+            "Work and money pass through a gate",
+            "One side remains shut",
+            "The obstacle to exchange is examined",
+            "The gate opens a little"
+          ],
+          "es": [
+            "Trabajo y dinero pasan por una puerta",
+            "Un lado permanece cerrado",
+            "Se examina el obstáculo",
+            "La puerta se abre un poco"
+          ]
+        }
+      },
+      {
+        "id": "money-blocks-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Сломанный договор",
+          "en": "The old contract",
+          "es": "El contrato antiguo"
+        },
+        "shots": {
+          "ru": [
+            "На пергаменте написано нельзя",
+            "Буквы оказываются старыми страхами",
+            "Новый договор включает границы и ценность",
+            "Человек сохраняет обновлённый текст"
+          ],
+          "en": [
+            "A scroll carries the word forbidden",
+            "The letters reveal inherited fear",
+            "A new agreement includes value and boundaries",
+            "The updated text is kept"
+          ],
+          "es": [
+            "Un pergamino dice prohibido",
+            "Las letras muestran temores heredados",
+            "Un acuerdo nuevo incluye valor y límites",
+            "Se guarda el texto"
+          ]
+        }
+      },
+      {
+        "id": "money-blocks-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Маленький запрос",
+          "en": "A small request",
+          "es": "Una pequeña petición"
+        },
+        "shots": {
+          "ru": [
+            "Возникает желание помочь бесплатно",
+            "Человек уточняет объём работы",
+            "Спокойно предлагает конкретную стоимость",
+            "Выдерживает паузу для ответа"
+          ],
+          "en": [
+            "An urge to help for free appears",
+            "The scope of work is clarified",
+            "A specific fee is offered calmly",
+            "Silence leaves room for an answer"
+          ],
+          "es": [
+            "Surge impulso de trabajar gratis",
+            "Se aclara el alcance",
+            "Se propone un precio con calma",
+            "Se deja espacio para responder"
+          ]
+        }
+      }
+    ],
+    "financial-security": [
+      {
+        "id": "financial-security-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Полка запасов",
+          "en": "A shelf of reserves",
+          "es": "Estante de reservas"
+        },
+        "shots": {
+          "ru": [
+            "Счета лежат беспорядочной стопкой",
+            "Человек сортирует обязательные расходы",
+            "Отмечает доступный небольшой резерв",
+            "Ставит дату следующего обзора"
+          ],
+          "en": [
+            "Bills lie in an untidy pile",
+            "Essential expenses are sorted",
+            "A modest reserve is identified",
+            "The next review date is marked"
+          ],
+          "es": [
+            "Las facturas están desordenadas",
+            "Se separan gastos esenciales",
+            "Se identifica una reserva pequeña",
+            "Se fija la próxima revisión"
+          ]
+        }
+      },
+      {
+        "id": "financial-security-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Дом с прочным фундаментом",
+          "en": "A house on solid foundations",
+          "es": "Casa de cimientos firmes"
+        },
+        "shots": {
+          "ru": [
+            "Дом покачивает сильный ветер",
+            "Под ним укрепляют важную опору",
+            "Остальные комнаты приводят в порядок постепенно",
+            "Ночью горит один спокойный свет"
+          ],
+          "en": [
+            "Strong wind shakes a house",
+            "One essential foundation is reinforced",
+            "Other rooms are repaired gradually",
+            "One steady light remains at night"
+          ],
+          "es": [
+            "El viento sacude una casa",
+            "Se refuerza un cimiento esencial",
+            "Se ordena lo demás paso a paso",
+            "Queda una luz estable"
+          ]
+        }
+      },
+      {
+        "id": "financial-security-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Три конверта",
+          "en": "Three envelopes",
+          "es": "Tres sobres"
+        },
+        "shots": {
+          "ru": [
+            "На столе смешаны разные монеты",
+            "Появляются конверты нужд запаса планов",
+            "Небольшая сумма находит своё место",
+            "Человек знает что проверять дальше"
+          ],
+          "en": [
+            "Different coins cover a table",
+            "Envelopes mark needs reserve and plans",
+            "A small sum finds its place",
+            "The next check becomes clear"
+          ],
+          "es": [
+            "Hay monedas mezcladas",
+            "Sobres para necesidades reserva y planes",
+            "Una suma pequeña encuentra lugar",
+            "Se sabe qué revisar"
+          ]
+        }
+      },
+      {
+        "id": "financial-security-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Десять минут с бюджетом",
+          "en": "Ten minutes with a budget",
+          "es": "Diez minutos de presupuesto"
+        },
+        "shots": {
+          "ru": [
+            "Вид цифр вызывает напряжение",
+            "Человек включает короткий таймер",
+            "Проверяет одну строку доходов и расходов",
+            "Закрывает таблицу с понятным следующим шагом"
+          ],
+          "en": [
+            "Numbers trigger discomfort",
+            "A short timer is started",
+            "One income-and-expense line is reviewed",
+            "The sheet closes with a clear next step"
+          ],
+          "es": [
+            "Las cifras causan tensión",
+            "Se activa un temporizador corto",
+            "Se revisa una línea de ingresos y gastos",
+            "Se cierra con un paso claro"
+          ]
+        }
+      }
+    ],
+    "income-growth": [
+      {
+        "id": "income-growth-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Неиспользованный навык",
+          "en": "An overlooked skill",
+          "es": "Habilidad desaprovechada"
+        },
+        "shots": {
+          "ru": [
+            "В блокноте перечислены рабочие умения",
+            "Один навык получает конкретное описание",
+            "Появляется пример его пользы клиенту",
+            "Отправляется одно предложение без давления"
+          ],
+          "en": [
+            "Work skills fill a notebook",
+            "One skill receives a clear description",
+            "A client benefit becomes visible",
+            "One low-pressure proposal is sent"
+          ],
+          "es": [
+            "Se anotan habilidades laborales",
+            "Una recibe descripción concreta",
+            "Se ve cómo ayuda a alguien",
+            "Se envía una propuesta sin presión"
+          ]
+        }
+      },
+      {
+        "id": "income-growth-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Сад возможностей",
+          "en": "A garden of opportunities",
+          "es": "Jardín de oportunidades"
+        },
+        "shots": {
+          "ru": [
+            "В саду растут разные источники урожая",
+            "Человек оценивает нужный уход",
+            "Поддерживает один жизнеспособный росток",
+            "Наблюдает результат прежде чем расширять"
+          ],
+          "en": [
+            "Many sources of harvest grow",
+            "The care each requires is considered",
+            "One viable shoot gets attention",
+            "Its progress is observed before expansion"
+          ],
+          "es": [
+            "Hay varios posibles frutos",
+            "Se evalúa el cuidado necesario",
+            "Se cultiva un brote viable",
+            "Se observa antes de ampliar"
+          ]
+        }
+      },
+      {
+        "id": "income-growth-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Мост между ценностью и оплатой",
+          "en": "Bridge from value to payment",
+          "es": "Puente del valor al pago"
+        },
+        "shots": {
+          "ru": [
+            "На одном берегу хороший результат",
+            "На другом стоит понятная цена",
+            "Мост складывается из примеров и условий",
+            "Начинается спокойный разговор об обмене"
+          ],
+          "en": [
+            "Useful work stands on one bank",
+            "A clear price stands on the other",
+            "Examples and terms form a bridge",
+            "A calm conversation about payment starts"
+          ],
+          "es": [
+            "A un lado hay buen trabajo",
+            "Al otro un precio claro",
+            "Ejemplos y condiciones forman un puente",
+            "Se conversa del intercambio"
+          ]
+        }
+      },
+      {
+        "id": "income-growth-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Новый разговор о доходе",
+          "en": "A new income conversation",
+          "es": "Nueva conversación salarial"
+        },
+        "shots": {
+          "ru": [
+            "Возникает мысль о повышении",
+            "Человек собирает факты о своей работе",
+            "Готовит одно уважительное предложение",
+            "Назначает встречу вместо угадывания ответа"
+          ],
+          "en": [
+            "The idea of a raise arises",
+            "Evidence of work is gathered",
+            "One respectful proposal is prepared",
+            "A conversation is scheduled"
+          ],
+          "es": [
+            "Surge idea de aumentar ingresos",
+            "Se reúnen datos del trabajo",
+            "Se prepara una petición respetuosa",
+            "Se agenda una conversación"
+          ]
+        }
+      }
+    ],
+    "entrepreneurship": [
+      {
+        "id": "entrepreneurship-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Первый клиент",
+          "en": "The first customer",
+          "es": "Primer cliente"
+        },
+        "shots": {
+          "ru": [
+            "На столе лежит бизнес-идея",
+            "Человек описывает конкретную проблему клиента",
+            "Проводит короткий разговор для проверки",
+            "Исправляет предложение по обратной связи"
+          ],
+          "en": [
+            "A business idea sits on a desk",
+            "A specific customer problem is defined",
+            "One short validation conversation takes place",
+            "The offer is adjusted from feedback"
+          ],
+          "es": [
+            "Una idea de negocio sobre la mesa",
+            "Se define un problema del cliente",
+            "Se hace una breve entrevista",
+            "Se ajusta la propuesta"
+          ]
+        }
+      },
+      {
+        "id": "entrepreneurship-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Мастерская у дороги",
+          "en": "The roadside workshop",
+          "es": "Taller junto al camino"
+        },
+        "shots": {
+          "ru": [
+            "Маленькая мастерская ещё закрыта",
+            "Хозяин делает один образец работы",
+            "Показывает его прохожему",
+            "Понимает что стоит улучшить"
+          ],
+          "en": [
+            "A small workshop is not yet open",
+            "The maker creates one sample",
+            "A passerby sees the sample",
+            "Useful feedback guides the next version"
+          ],
+          "es": [
+            "Un taller pequeño aún está cerrado",
+            "Se crea una muestra",
+            "Alguien la observa",
+            "La opinión guía la mejora"
+          ]
+        }
+      },
+      {
+        "id": "entrepreneurship-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Корабль до первого рейса",
+          "en": "The ship's first voyage",
+          "es": "Primer viaje del barco"
+        },
+        "shots": {
+          "ru": [
+            "Корабль строят по огромному плану",
+            "Команда выбирает короткий пробный маршрут",
+            "Проверяет самые важные детали",
+            "Возвращается с наблюдениями"
+          ],
+          "en": [
+            "A ship is built from a huge plan",
+            "The crew picks a short trial route",
+            "Essential parts are checked",
+            "They return with observations"
+          ],
+          "es": [
+            "Un barco sigue un gran plano",
+            "Se elige una ruta de prueba",
+            "Se revisa lo esencial",
+            "Regresan con observaciones"
+          ]
+        }
+      },
+      {
+        "id": "entrepreneurship-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Малый запуск",
+          "en": "A modest launch",
+          "es": "Lanzamiento pequeño"
+        },
+        "shots": {
+          "ru": [
+            "Идеальный логотип задерживает проект",
+            "Человек публикует понятное описание услуги",
+            "Получает первый вопрос от посетителя",
+            "Отвечает и уточняет предложение"
+          ],
+          "en": [
+            "Perfect branding delays a project",
+            "A clear service description is published",
+            "A first visitor asks a question",
+            "The offer is clarified in response"
+          ],
+          "es": [
+            "La marca perfecta retrasa el proyecto",
+            "Se publica un servicio claro",
+            "Llega la primera pregunta",
+            "Se mejora la propuesta"
+          ]
+        }
+      }
+    ],
+    "career-growth": [
+      {
+        "id": "career-growth-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Невидимая работа",
+          "en": "Invisible work",
+          "es": "Trabajo invisible"
+        },
+        "shots": {
+          "ru": [
+            "Рабочая неделя состоит из незаметных задач",
+            "Человек собирает три результата",
+            "Показывает вклад без преувеличения",
+            "Просит обратную связь о следующем уровне"
+          ],
+          "en": [
+            "A week is filled with unseen work",
+            "Three results are collected",
+            "Contributions are shown without exaggeration",
+            "Feedback about the next level is requested"
+          ],
+          "es": [
+            "La semana está llena de tareas poco vistas",
+            "Se reúnen tres resultados",
+            "Se muestra el aporte sin exagerar",
+            "Se pide orientación"
+          ]
+        }
+      },
+      {
+        "id": "career-growth-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Лестница компетенций",
+          "en": "The ladder of skills",
+          "es": "Escalera de competencias"
+        },
+        "shots": {
+          "ru": [
+            "Перед человеком высокая лестница",
+            "Он находит уже освоенную ступень",
+            "Видит один недостающий навык",
+            "Выбирает способ потренировать его"
+          ],
+          "en": [
+            "A tall ladder stands ahead",
+            "A mastered step is recognized",
+            "One missing skill becomes visible",
+            "A way to practice it is chosen"
+          ],
+          "es": [
+            "Hay una escalera alta",
+            "Se reconoce un peldaño dominado",
+            "Se ve una habilidad pendiente",
+            "Se elige cómo practicar"
+          ]
+        }
+      },
+      {
+        "id": "career-growth-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Новый кабинет",
+          "en": "The next office",
+          "es": "El próximo despacho"
+        },
+        "shots": {
+          "ru": [
+            "Дверь желанной роли закрыта",
+            "За стеклом видны реальные обязанности",
+            "Человек сравнивает ожидания с задачами",
+            "Готовит вопрос человеку из этой роли"
+          ],
+          "en": [
+            "A desired role sits behind a door",
+            "Real responsibilities show through glass",
+            "Expectations are compared with the work",
+            "One question is prepared for a role-holder"
+          ],
+          "es": [
+            "La puerta de un puesto está cerrada",
+            "Se ven responsabilidades reales",
+            "Se comparan expectativas y tareas",
+            "Se prepara una pregunta"
+          ]
+        }
+      },
+      {
+        "id": "career-growth-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Разговор о развитии",
+          "en": "A development conversation",
+          "es": "Conversación de desarrollo"
+        },
+        "shots": {
+          "ru": [
+            "В расписании нет времени на карьеру",
+            "Человек выбирает одну цель роста",
+            "Формулирует конкретный запрос руководителю",
+            "Назначает разговор о развитии"
+          ],
+          "en": [
+            "Career growth has no place in the schedule",
+            "One growth goal is selected",
+            "A specific request is prepared",
+            "A development meeting is scheduled"
+          ],
+          "es": [
+            "No se reserva tiempo para crecer",
+            "Se elige una meta profesional",
+            "Se prepara una petición concreta",
+            "Se agenda una charla"
+          ]
+        }
+      }
+    ],
+    "business-growth": [
+      {
+        "id": "business-growth-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Карта узких мест",
+          "en": "A map of bottlenecks",
+          "es": "Mapa de cuellos de botella"
+        },
+        "shots": {
+          "ru": [
+            "Заказы растут а команда устает",
+            "На доске показывают поток работы",
+            "Находят один участок перегрузки",
+            "Тестируют небольшое изменение процесса"
+          ],
+          "en": [
+            "Orders grow while the team tires",
+            "The workflow appears on a board",
+            "One bottleneck is identified",
+            "A small process change is tested"
+          ],
+          "es": [
+            "Crecen pedidos y cansancio",
+            "Se dibuja el flujo de trabajo",
+            "Se encuentra un punto de atasco",
+            "Se prueba una mejora pequeña"
+          ]
+        }
+      },
+      {
+        "id": "business-growth-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Сад с разными ветвями",
+          "en": "A tree with many branches",
+          "es": "Árbol de muchas ramas"
+        },
+        "shots": {
+          "ru": [
+            "Дерево растёт в одну сторону",
+            "Садовник проверяет крепость корней",
+            "Поддерживает перспективную ветку",
+            "Следит чтобы дерево не ломалось"
+          ],
+          "en": [
+            "A tree leans toward one side",
+            "The gardener checks its roots",
+            "One promising branch gets support",
+            "Growth remains balanced"
+          ],
+          "es": [
+            "El árbol crece hacia un lado",
+            "Se revisan las raíces",
+            "Se apoya una rama prometedora",
+            "Se cuida el equilibrio"
+          ]
+        }
+      },
+      {
+        "id": "business-growth-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Оркестр процессов",
+          "en": "An orchestra of processes",
+          "es": "Orquesta de procesos"
+        },
+        "shots": {
+          "ru": [
+            "Музыканты играют без общего ритма",
+            "Дирижёр слушает каждую секцию",
+            "Появляется ясный общий темп",
+            "Слышно где нужна новая репетиция"
+          ],
+          "en": [
+            "Musicians play without shared timing",
+            "The conductor listens to each section",
+            "A common tempo emerges",
+            "The next rehearsal need becomes clear"
+          ],
+          "es": [
+            "Cada músico toca a su ritmo",
+            "Se escucha a cada sección",
+            "Surge un tempo común",
+            "Se ve qué ensayar"
+          ]
+        }
+      },
+      {
+        "id": "business-growth-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Один эксперимент роста",
+          "en": "One growth experiment",
+          "es": "Un experimento de crecimiento"
+        },
+        "shots": {
+          "ru": [
+            "На стене много идей масштабирования",
+            "Команда выбирает одну гипотезу",
+            "Определяет измеримый результат и срок",
+            "Сравнивает цифры до следующего решения"
+          ],
+          "en": [
+            "Growth ideas cover the wall",
+            "One hypothesis is selected",
+            "A measurable outcome and time are set",
+            "Numbers inform the next decision"
+          ],
+          "es": [
+            "La pared llena de ideas",
+            "Se elige una hipótesis",
+            "Se define medida y plazo",
+            "Los datos guían la decisión"
+          ]
+        }
+      }
+    ],
+    "leadership": [
+      {
+        "id": "leadership-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Сложный разговор",
+          "en": "A difficult conversation",
+          "es": "Una conversación difícil"
+        },
+        "shots": {
+          "ru": [
+            "Руководитель замечает напряжение команды",
+            "Сначала выслушивает без защиты",
+            "Называет общую задачу и границы",
+            "Договаривается о следующей проверке"
+          ],
+          "en": [
+            "A leader senses team tension",
+            "Listening comes before defense",
+            "A shared task and boundaries are named",
+            "The team agrees on a follow-up"
+          ],
+          "es": [
+            "La persona líder nota tensión",
+            "Primero escucha sin defenderse",
+            "Aclara tarea y límites",
+            "Acuerdan revisar avances"
+          ]
+        }
+      },
+      {
+        "id": "leadership-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Проводник на тропе",
+          "en": "Guide on the trail",
+          "es": "Guía en el sendero"
+        },
+        "shots": {
+          "ru": [
+            "Группа стоит у неясного поворота",
+            "Проводник проверяет возможности каждого",
+            "Предлагает понятное направление",
+            "Идёт рядом а не тащит за собой"
+          ],
+          "en": [
+            "A group reaches an uncertain turn",
+            "The guide checks everyone's capacity",
+            "A clear direction is suggested",
+            "The guide walks alongside"
+          ],
+          "es": [
+            "Un grupo llega a un cruce",
+            "La guía consulta capacidades",
+            "Propone dirección clara",
+            "Camina junto a todos"
+          ]
+        }
+      },
+      {
+        "id": "leadership-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Факел ответственности",
+          "en": "The torch of responsibility",
+          "es": "Antorcha de responsabilidad"
+        },
+        "shots": {
+          "ru": [
+            "Один человек держит все факелы",
+            "Замечает кто готов принять свет",
+            "Передаёт часть ответственности",
+            "Наблюдает как появляются новые огни"
+          ],
+          "en": [
+            "One person holds every torch",
+            "Others ready to help are noticed",
+            "Responsibility is shared",
+            "New lights begin to appear"
+          ],
+          "es": [
+            "Una persona sostiene todas las antorchas",
+            "Ve quién puede participar",
+            "Comparte responsabilidades",
+            "Surgen nuevas luces"
+          ]
+        }
+      },
+      {
+        "id": "leadership-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Чёткое поручение",
+          "en": "A clear delegation",
+          "es": "Encargo claro"
+        },
+        "shots": {
+          "ru": [
+            "Задача звучит слишком расплывчато",
+            "Руководитель описывает результат и срок",
+            "Спрашивает что нужно для выполнения",
+            "Оставляет человеку пространство для решения"
+          ],
+          "en": [
+            "A task sounds too vague",
+            "The outcome and deadline are clarified",
+            "Support needs are checked",
+            "Space is left for individual judgment"
+          ],
+          "es": [
+            "La tarea es demasiado vaga",
+            "Se aclaran resultado y plazo",
+            "Se pregunta qué apoyo se necesita",
+            "Se deja autonomía"
+          ]
+        }
+      }
+    ]
+  }
+}
