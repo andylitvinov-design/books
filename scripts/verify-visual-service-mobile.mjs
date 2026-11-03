@@ -71,10 +71,32 @@ for (const engine of [chromium, webkit]) {
         const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         assert.ok(docWidth <= width + 2, label + " document must not overflow horizontally");
         const capture = screens.last();
-        assert.ok(await capture.locator("input").count() >= 2, label + " contact and consent");
-        assert.equal(await capture.locator('input[type="checkbox"]').count(), 1, label + " opt in");
-        const submit = capture.locator('button[type="submit"]');
-        assert.ok(await submit.isDisabled(), label + " no accidental submission before consent");
+        const form=capture.locator("form[data-compact-lead-form]");
+        await form.waitFor({state:"visible",timeout:20000});
+        await page.waitForFunction(()=>document.querySelector(
+          '[data-service-visual-screen="final-capture"] [data-compact-lead-form]')?.getAttribute(
+          "data-compact-hydrated")==="true",null,{timeout:15000});
+        assert.equal(await form.locator('input[name="contact"][required]').count(),1,
+          label+" real contact input");
+        const consent=form.locator('input[type="checkbox"][required]');
+        assert.equal(await consent.count(),1,label+" explicit reply consent");
+        assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
+        assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
+          label+" attribution is optional and separate");
+        // The current CRM-first capture uses an explicit messenger button, not
+        // a legacy form submit. Before consent it MUST NOT dispatch a POST.
+        assert.equal(await form.locator('button[type="submit"]').count(),0,
+          label+" no default form submission");
+        const action=form.locator('button[data-compact-channel="whatsapp"]');
+        await action.waitFor({state:"visible"});
+        let unexpectedWrites=0;
+        await page.route("**/api/service-enquiries",route=>{
+          if(route.request().method()==="POST"){unexpectedWrites++;return route.abort("blockedbyclient");}
+          return route.continue();
+        });
+        await action.click();
+        await form.locator('[role="alert"]').waitFor({state:"visible",timeout:10000});
+        assert.equal(unexpectedWrites,0,label+" no CRM request without consent");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
           label + " no duplicate generic form");
         assert.deepEqual(errors, [], label + " unexpected page errors");
