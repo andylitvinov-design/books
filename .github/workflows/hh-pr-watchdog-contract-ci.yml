@@ -46,6 +46,9 @@ on:
       - '.github/workflows/hh-pr-repair-worker.yml'
       - '.github/workflows/hh-pr-cron-owner-repair.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
+      - 'scripts/ci-pr-free-ai-code-candidate.cjs'
+      - 'scripts/ci-pr-repair-code-candidate.cjs'
+      - 'tests/ci-pr-free-ai-code-candidate.test.cjs'
       - 'scripts/ci-pr-repair-test-scope.cjs'
       - 'scripts/ci-pr-repair-deterministic.cjs'
       - 'tests/ci-pr-repair-worker.test.cjs'
@@ -102,6 +105,9 @@ jobs:
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
+          node --check scripts/ci-pr-free-ai-code-candidate.cjs
+          node --check scripts/ci-pr-repair-code-candidate.cjs
+          node --check tests/ci-pr-free-ai-code-candidate.test.cjs
           node --check tests/ci-pr-repair-deterministic.test.cjs
           node --check scripts/ci-pr-live-verifier.cjs
           node --check scripts/ci-pr-base-freshness.cjs
@@ -114,7 +120,7 @@ jobs:
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-free-ai-code-candidate.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:
