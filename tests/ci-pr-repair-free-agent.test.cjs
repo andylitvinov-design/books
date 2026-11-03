@@ -100,6 +100,8 @@ test('live model catalog must prove every input/output/cache price is exactly ze
  const unknown=structuredClone(payload);delete unknown.data[0].variants[0].cost[0].cache;
  assert.throws(()=>verifyFreeModelMetadata(unknown),/FREE_AI_MODEL_PRICE_UNKNOWN/);
  assert.throws(()=>verifyFreeModelMetadata({data:[]}),/FREE_AI_MODEL_NOT_IN_FREE_CATALOG/);
+ assert.deepEqual(verifyFreeModelMetadata({data:[{id:'glm-5.3-flash-free',pricing:{input:0,output:0,cache_read:0,cache_write:0}}]}),{model:MODEL,costRows:1,zeroCost:true});
+ assert.throws(()=>verifyFreeModelMetadata({data:[{id:'glm-5.3-flash-free',pricing:{input:0,output:0,cache_read:0}}]}),/FREE_AI_MODEL_PRICE_UNKNOWN/);
 });
 test('live catalog lookup fails closed before inference when unavailable',async()=>{
  await assert.rejects(verifyFreeModelPrice({fetchImpl:async()=>({ok:false})}),
