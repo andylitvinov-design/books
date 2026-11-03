@@ -16,7 +16,6 @@ on:
       - 'components/admin-acquisition-links.jsx'
       - 'tests/acquisition-report.test.mjs'
       - 'scripts/verify-acquisition-admin.mjs'
-      - '.github/workflows/admin-seo-dashboard.yml'
 permissions:
   contents: read
 concurrency:
