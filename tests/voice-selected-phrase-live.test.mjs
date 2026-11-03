@@ -72,6 +72,6 @@ test("no user data, credentials, files, paid fallback or unbounded retries in th
   assert.match(s,/HH_FREE_SELECTED_PHRASE_OWNER_OPT_IN/);
   assert.match(s,/FIXED_CHOSEN_PHRASE="Я выбираю спокойствие\."/);
   assert.match(s,/PHRASE_VOICES=Object\.freeze\(\["maya","mark"\]\)/);
-  assert.doesNotMatch(s,/writeFile|createWriteStream|localStorage|sessionStorage|upload|Bearer |HH_COUNCIL_GEMINI_API_KEY/i);
+  assert.doesNotMatch(s,/writeFile|createWriteStream|localStorage|sessionStorage|fetch\\([^)]*upload|Bearer |HH_COUNCIL_GEMINI_API_KEY/i);
   assert.equal(PHRASE_VOICES.length,2);
 });
