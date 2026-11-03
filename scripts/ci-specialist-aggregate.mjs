@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 // Read-only exact-HEAD and exact-BASE coverage of applicable specialist workflows.
 // Runs from the PR merge checkout; no third-party API and no write permissions.
-import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -127,7 +127,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const source = files?.base?.get(name);
   const candidate = files?.current?.get(name);
   const baseJob = trustedMandalaMacosJob(source);
-  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
+  const candidateJob = trustedMandalaMacosJob(candidate);
+  // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
+  // A skipped WebKit job remains neutral only when the BASE branch predicate
+  // itself excludes this PR; the preflight cannot alter its guard or steps.
+  const withRequiredPreflight = baseJob?.replace(
+    /^(    if: .+)\n(    runs-on: macos-15)$/m,
+    '$1\n    needs: [webkit_preflight]\n$2');
+  const readyPreflight = typeof candidate === 'string' &&
+    /^  webkit_preflight:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m.test(candidate);
+  const trustedMacosJob = baseJob === candidateJob ||
+    (readyPreflight && withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob);
+  if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
@@ -135,11 +146,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 12) return false;
-  const prefixes = predicates.map(item =>
-    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
-  if (prefixes.some(x => !x)) return false;
-  return !prefixes.some(prefix => branch.startsWith(prefix));
+  if (!predicates.length || predicates.length > 24) return false;
+  // Trusted BASE guards may include literal startsWith prefixes and one
+  // literal exact branch. Reject every computed or unknown expression.
+  const rules = predicates.map(item => {
+    const prefix = item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1];
+    if (prefix) return {kind:'prefix', value:prefix};
+    const exact = item.match(/^github\.head_ref == '([a-z][a-z0-9/-]+)'$/)?.[1];
+    return exact ? {kind:'exact', value:exact} : null;
+  });
+  if (rules.some(rule => !rule)) return false;
+  return !rules.some(rule => rule.kind === 'prefix'
+    ? branch.startsWith(rule.value) : branch === rule.value);
 }
 
 
@@ -314,7 +332,14 @@ export async function verify(api,ctx,files,options={}) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
       const diff = await api.compare(ctx.base, liveBaseSha);
-      if (!safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed)) {
+      const documentationOnly = safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed);
+      // This option is set ONLY after loading the validator, dependencies and
+      // helper from this exact protected production commit (never the PR HEAD).
+      // The new BASE must contain CI-only policy/test changes: no workflows or
+      // application source may have advanced without new proposed-merge CI.
+      const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
+        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       approvedBaseChanges.add(liveBaseSha);
@@ -423,8 +448,10 @@ export async function verify(api,ctx,files,options={}) {
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path), pr.head.ref)
-      .filter(job => job !== 'voice-webkit-macos');
+    const optionalSkipped = [...new Set([
+      ...trustedConditionalJobs(files.base.get(run.path), pr.head.ref),
+      ...trustedConditionallyInapplicableJobs(files.base.get(run.path), files.current.get(run.path), pr),
+    ])].filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
@@ -450,6 +477,67 @@ export async function verify(api,ctx,files,options={}) {
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+}
+
+// Reuse the successful Core and domain jobs for CI-policy-only production
+// advances. A new trusted validator must re-check all required run evidence;
+// the OLD validator cannot certify that its own replacement is compatible.
+// This path never executes candidate PR code or changes a branch/status.
+const TRUSTED_VALIDATOR_FILES = Object.freeze([
+  'scripts/ci-specialist-aggregate.mjs',
+  'lib/ci/specialist-aggregate.mjs',
+  'lib/ci/fast-static-ui-text.mjs',
+  'lib/ci/production-base-impact.mjs',
+]);
+function loadProtectedValidator(liveSha) {
+  const dir = mkdtempSync(join(tmpdir(), 'hh-specialist-policy-recheck-'));
+  try {
+    execFileSync('git', ['fetch', '--quiet', '--no-tags', '--depth=1', 'origin', liveSha],
+      {timeout: 90_000, maxBuffer: 1_000_000, stdio: ['ignore','pipe','pipe']});
+    for (const path of TRUSTED_VALIDATOR_FILES) {
+      const content = execFileSync('git', ['show', liveSha + ':' + path],
+        {encoding:'utf8', maxBuffer: 2_000_000, stdio:['ignore','pipe','pipe']});
+      const destination = join(dir, path);
+      mkdirSync(join(destination, '..'), {recursive:true});
+      writeFileSync(destination, content, {mode:0o600});
+    }
+    return {
+      path: join(dir, 'scripts/ci-specialist-aggregate.mjs'),
+      cleanup: () => rmSync(dir, {recursive:true, force:true}),
+    };
+  } catch (error) {
+    rmSync(dir, {recursive:true, force:true});
+    throw error;
+  }
+}
+
+export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
+  const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  const target = await api.target();
+  const changed = files.changedRows?.flatMap(row => row.previous_filename
+    ? [row.filename, row.previous_filename] : [row.filename]);
+  if (!Array.isArray(changed) || !changed.length || changed.some(path => typeof path !== 'string')) throw blocked();
+  const diff = await api.compare(ctx.base, target);
+  if (!safeTrustedPolicyAdvance(diff, ctx.base, target, changed)) throw blocked();
+  // Avoid wasting a policy recheck while production is still moving.
+  if (await api.target() !== target) throw blocked();
+  const loader = options.loadPolicy ?? (async sha => {
+    const extracted = loadProtectedValidator(sha);
+    try {
+      const policyModule = await import(pathToFileURL(extracted.path).href);
+      return {verify:policyModule.verify,cleanup:extracted.cleanup};
+    } catch (error) { extracted.cleanup(); throw error; }
+  });
+  const policy = await loader(target);
+  try {
+    if (typeof policy?.verify !== 'function') throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
+    const result = await policy.verify(api, ctx, files, {trustedPolicyBaseSha:target});
+    // No second moving-base exception: fail closed and coalesce at next run.
+    if (await api.target() !== target) throw blocked();
+    return {...result, policyRevalidatedAgainst:target};
+  } finally {
+    if (typeof policy?.cleanup === 'function') policy.cleanup();
+  }
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.
@@ -517,12 +605,24 @@ async function main() {
   // The verified merge parent is always the trusted tested BASE. Only
   // non-sensitive ordinary paths permit a newer live production BASE; security,
   // payment, privacy, auth, policy and unknown paths still require freshness.
-  const result=await verify(api,{...ctx,base:testedBase},files);
+  const checkedCtx={...ctx,base:testedBase};
+  let result;
+  try {
+    result=await verify(api,checkedCtx,files);
+  } catch (error) {
+    // A changed production CI *policy* cannot be ignored by the old policy.
+    // Re-execute the new trusted policy against the same exact-HEAD evidence,
+    // but ONLY when the production delta is confined to the approved CI files.
+    if (!String(error?.message || error).includes(
+      'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED')) throw error;
+    result=await revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files);
+  }
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
+    '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
