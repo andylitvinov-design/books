@@ -152,3 +152,15 @@ test("Wave retains the chosen idea when a filtered five-phrase list needs fallba
  assert.match(local,/phrases:completed\.length===5\?completed:fallbackPhrases/);
  assert.match(phrases,/data-hypno-own-phrase aria-label=\{extra\.add\}/);
 });
+
+
+test("real WebKit voice acceptance expands the approved transcript before comparing selected speech",()=>{
+  const e2e=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.transcriptDisclosure\}>/);
+  assert.match(voice,/data-video-affirmation-spoken-text/);
+  assert.match(e2e,/const transcriptPanel=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/await transcriptPanel\.locator\("summary"\)\.click\(\)/);
+  assert.match(e2e,/await expect\(visibleTranscript\)\.toBeVisible\(\)/);
+  assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
+});
