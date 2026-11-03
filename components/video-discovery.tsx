@@ -175,7 +175,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           const explicit=Array.isArray(item.mytubeTopicIds)?item.mytubeTopicIds:[];
           const found=getMyTubeTopic(mytubeTopicId);
           const terms=found?[found.topic.label[locale],...found.topic.searchIntent[locale]]:[];
-          if(!explicit.includes(mytubeTopicId)&&!terms.some(term=>text.includes(term.toLocaleLowerCase(locale))))return false;
+          const legacyTags=found?.topic.legacyTags||[];
+          const tagMatch=tags.some(tag=>legacyTags.includes(tag));
+          if(!explicit.includes(mytubeTopicId)&&!tagMatch&&!terms.some(term=>text.includes(term.toLocaleLowerCase(locale))))return false;
         }
       }
 
