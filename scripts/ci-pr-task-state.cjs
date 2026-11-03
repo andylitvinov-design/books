@@ -218,8 +218,12 @@ function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
- if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_WAKE_REQUESTED','FAILED',
-  'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
+ // Metadata wake is not a Core execution. Keep it visible until an authenticated
+ // Actions run is observed or a bounded CI-wake manual hold is recorded.
+ if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_CORE_CONFIRMED',
+  'CI_WAKE_UNCONFIRMED','FAILED','REJECTED','SUPERSEDED',
+  'VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
+ if(matches.some(x=>x.state==='CI_WAKE_REQUESTED'))return 'CI_WAKE_PENDING';
  if(matches.some(x=>x.state==='CLAIMED'))return 'CLAIMED_AWAITING_OUTCOME';
  const trusted=parseRecords(comments.filter(trustedControlComment));
  if(!trusted)return 'UNVERIFIED_HISTORY';
