@@ -57,7 +57,10 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/MandalaHypnocorrectionMobile/);
   assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
   assert.match(studio,/createHypnoAudioEffectFile/);
-  assert.match(studio,/setHypnoSpeechSource\(clip\.speechFile\)/);
+  // Private microphone tracks must never be treated as verified generated speech.
+  // The hypno mixer receives only the explicit, consented generated narration.
+  assert.match(studio,/setHypnoSpeechSource\(clip\.source==="local"\?null:\(clip\.speechFile\?\?null\)\)/);
+  assert.match(studio,/if\(clip\.source==="local"\)/);
   assert.match(studio,/backgroundFile,/);
   assert.match(ui,/data-hypno-speech-settings/);
   assert.match(ui,/data-hypno-binaural-settings/);
