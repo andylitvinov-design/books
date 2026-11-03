@@ -56,7 +56,7 @@ async function run({github,core,context,now=Date.now(),deps={}}){
    complete:x.complete===true&&!inconsistent,reason:inconsistent?'MERGE_SNAPSHOTS_DIFFER':x.reason}))};
  // Target cancelled/failed runs first: broad fourteen-day job inventories
  // often exhaust their request budget before reaching a single cancelled job.
- const cancellations=await d.collectCancellationEvidence({...common,since,until:now,maxRequests:40,maxRuns:24});
+ const cancellations=await d.collectCancellationEvidence({...common,since,until:now,maxRequests:80,maxRuns:24});
  const actions=await d.collectCompletedJobs({...common,since,until:now,maxRequests:60});
  const dispatch=await d.collectDispatcherEvents({...common,runs:actions.workflowRuns,jobs:actions.jobs,runsComplete:actions.complete,jobsComplete:actions.complete,maxRequests:30});
  dispatch.since=actions.since;

@@ -11,15 +11,19 @@ The bounded Actions sample adds six *mutually exclusive* categories to
 windows.{1h,24h,7d}.cancellation_reasons.{current,previous}:
 
 - **EXPECTED_STALE** — a newer run of the same workflow/event/PR was created
-  before cancellation, with a different PR HEAD; for push workflows only,
+  before cancellation, with a different PR HEAD confirmed by immutable git commit evidence; for push workflows only,
   branch + workflow + event and changed SHA are accepted.
 - **CLOSED_UNMERGED** — GitHub PR metadata confirms a PR was closed without
   merge **no later than the cancellation**.
 - **BASE_MOVED** — same PR/HEAD/workflow/event, but a newer run created before
-  cancellation records a different base SHA. This is observable supersession
+  cancellation records a different **immutably verified** base SHA. If GitHub only returns
+mutable PR refs, classify as unresolved rather than inventing a base cause.
+This is observable supersession
   by a changed base, **not proof** of the exact worker error code.
 - **DUPLICATE** — a newer run of the same workflow/PR, head SHA, base SHA and
-  event was created before the older cancellation.
+  event was created before the older cancellation; when the historical base is
+unavailable, an exact duplicate execution SHA is accepted with a warning
+that a hidden base movement cannot be excluded.
 - **SUSPICIOUS_CANCEL** — cancelled but no supported causal evidence was
   available. It means *triage required*, not wrongdoing or a confirmed bug.
 - **REAL_FAILURE** — a completed workflow with a failure, timed_out, or
@@ -52,7 +56,8 @@ runner_minutes_observed is a per-bucket breakdown.
 
 ## Coverage, guardrails, and usage
 
-The dedicated collector uses bounded, read-only GitHub Actions queries and one
+The dedicated collector uses bounded, read-only GitHub Actions and immutable
+Git commit queries plus one
 optional batched GraphQL query for PR closed/merged metadata. It caps selected
 workflows, counts reads, stops at rate-limit reserve, and marks
 label=SAMPLE_NOT_TOTAL, complete=false **even if** all selected jobs were

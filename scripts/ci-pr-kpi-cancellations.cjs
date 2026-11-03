@@ -9,22 +9,24 @@ const finiteTime=x=>{const n=Date.parse(x||'');return Number.isFinite(n)?n:null;
 const round=x=>Math.round(x*100)/100;
 const path=x=>String(x?.path||'').split('@')[0];
 const isFailure=x=>['failure','timed_out','startup_failure'].includes(x?.conclusion);
-function prRef(run){
+function prRef(run,commitEvidence={}){
  const refs=run?.pull_requests;
  if(!Array.isArray(refs)||refs.length!==1)return null;
  const p=refs[0];
- if(!Number.isSafeInteger(p?.number)||p.number<1||!SHA.test(p.head?.sha||'')||
-    !SHA.test(p.base?.sha||''))return null;
- return {number:p.number,head:p.head.sha,base:p.base.sha};
+ if(!Number.isSafeInteger(p?.number)||p.number<1)return null;
+ // pull_requests[].head/base.sha are CURRENT mutable refs, not run snapshots.
+ const proof=run.event==='pull_request'&&commitEvidence[String(run.id)];
+ return {number:p.number,head:SHA.test(proof?.head||'')?proof.head:null,
+  base:SHA.test(proof?.base||'')?proof.base:null};
 }
 function isLater(a,b){
  const left=finiteTime(a?.created_at),right=finiteTime(b?.created_at);
  return left!==null&&right!==null&&(left>right||(left===right&&a.id>b.id));
 }
-function classifyRun(run,runs,prStates={}){
+function classifyRun(run,runs,prStates={},commitEvidence={}){
  if(isFailure(run))return {reason:'REAL_FAILURE',evidence:'RUN_CONCLUSION'};
  if(run?.conclusion!=='cancelled')return null;
- const ref=prRef(run),ended=finiteTime(run.updated_at),started=finiteTime(run.created_at);
+ const ref=prRef(run,commitEvidence),ended=finiteTime(run.updated_at),started=finiteTime(run.created_at);
  if(ended===null||started===null||ended<started)return {reason:'SUSPICIOUS_CANCEL',evidence:'INVALID_CANCEL_TIMESTAMP'};
  const state=ref&&prStates[String(ref.number)];
  if(state?.merged===false){
@@ -34,21 +36,26 @@ function classifyRun(run,runs,prStates={}){
  const successors=(Array.isArray(runs)?runs:[]).filter(next=>{
   if(next?.id===run.id||path(next)!==path(run)||next.event!==run.event||
      !isLater(next,run)||finiteTime(next.created_at)>ended)return false;
-  const nextRef=prRef(next);
+  const nextRef=prRef(next,commitEvidence);
   if(ref&&nextRef)return nextRef.number===ref.number;
   return !ref&&!nextRef&&run.event==='push'&&
     typeof run.head_branch==='string'&&run.head_branch===next.head_branch;
  }).sort((a,b)=>(finiteTime(b.created_at)-finiteTime(a.created_at))||b.id-a.id);
  // PR identity + one workflow + a newer run created before cancellation are
  // required; merely seeing a different current base is not evidence.
- if(ref){
-  const samePR=successors.filter(next=>prRef(next)?.number===ref.number);
-  const changedHead=samePR.find(next=>prRef(next).head!==ref.head);
-  if(changedHead)return {reason:'EXPECTED_STALE',evidence:'NEWER_PR_HEAD_RUN',successor_run_id:changedHead.id};
-  const movedBase=samePR.find(next=>prRef(next).base!==ref.base);
-  if(movedBase)return {reason:'BASE_MOVED',evidence:'SAME_HEAD_NEW_PRODUCTION_BASE_RUN',successor_run_id:movedBase.id};
-  if(samePR.length)return {reason:'DUPLICATE',evidence:'SAME_HEAD_SAME_BASE_RUN',successor_run_id:samePR[0].id};
- }else for(const next of successors){
+ if(ref?.head){
+  const samePR=successors.map(next=>({next,proof:prRef(next,commitEvidence)}))
+   .filter(x=>x.proof?.number===ref.number&&x.proof.head);
+  const changedHead=samePR.find(x=>x.proof.head!==ref.head);
+  if(changedHead)return {reason:'EXPECTED_STALE',evidence:'IMMUTABLE_NEWER_PR_HEAD',successor_run_id:changedHead.next.id};
+  const movedBase=samePR.find(x=>ref.base&&x.proof.head===ref.head&&x.proof.base&&x.proof.base!==ref.base);
+  if(movedBase)return {reason:'BASE_MOVED',evidence:'IMMUTABLE_SAME_HEAD_NEW_BASE',successor_run_id:movedBase.next.id};
+  const sameBase=samePR.find(x=>ref.base&&x.proof.base===ref.base&&x.proof.head===ref.head);
+  if(sameBase)return {reason:'DUPLICATE',evidence:'IMMUTABLE_SAME_HEAD_SAME_BASE',successor_run_id:sameBase.next.id};
+  const sameExecution=samePR.find(x=>x.next.head_sha===run.head_sha&&x.proof.head===ref.head);
+  if(sameExecution)return {reason:'DUPLICATE',evidence:'SAME_EXECUTION_SHA_BASE_UNVERIFIED',
+   successor_run_id:sameExecution.next.id};
+ }else if(!ref)for(const next of successors){
   if(SHA.test(run.head_sha||'')&&SHA.test(next.head_sha||'')){
    return {reason:run.head_sha===next.head_sha?'DUPLICATE':'EXPECTED_STALE',
     evidence:'NEWER_PUSH_RUN',successor_run_id:next.id};
@@ -56,13 +63,13 @@ function classifyRun(run,runs,prStates={}){
  }
  return {reason:'SUSPICIOUS_CANCEL',evidence:'NO_CONFIRMED_CAUSE_REQUIRES_TRIAGE'};
 }
-async function collectCancellationEvidence({github,owner,repo,since,until=Date.now(),maxRequests=40,
+async function collectCancellationEvidence({github,owner,repo,since,until=Date.now(),maxRequests=80,
  minRemaining=500,maxRuns=24}){
  const out={complete:false,reason:'BOUNDED_SAMPLE',since,until,reads:0,remaining:null,
-  workflowRuns:[],candidateRunIds:[],jobs:[],verifiedJobRunIds:[],prStates:{},truncated:false};
+  workflowRuns:[],candidateRunIds:[],jobs:[],verifiedJobRunIds:[],prStates:{},commitEvidence:{},truncated:false};
  if(owner!=='andylitvinov-design'||repo!=='books'||!Number.isFinite(since)||
     !Number.isFinite(until)||since>=until||!Number.isSafeInteger(maxRequests)||maxRequests<6||
-    maxRequests>100||!Number.isSafeInteger(minRemaining)||minRemaining<100||
+    maxRequests>120||!Number.isSafeInteger(minRemaining)||minRemaining<100||
     !Number.isSafeInteger(maxRuns)||maxRuns<1||maxRuns>40){
   out.reason='INVALID_INPUT';return out;
  }
@@ -143,6 +150,36 @@ async function collectCancellationEvidence({github,owner,repo,since,until=Date.n
    out.jobs.push(...recorded);
    out.verifiedJobRunIds.push(run.id);
   }
+  // Actions PR refs are mutable. Verify historical commit identity instead.
+  const proofRuns=[...selected];
+  for(const old of selected){
+   if(old.event!=='pull_request'||!prRef(old))continue;
+   const peers=[...seen.values()].filter(next=>next.id!==old.id&&
+     next.event===old.event&&path(next)===path(old)&&
+     prRef(next)?.number===prRef(old).number&&isLater(next,old)&&
+     finiteTime(next.created_at)<=finiteTime(old.updated_at))
+    .sort((a,b)=>(finiteTime(b.created_at)-finiteTime(a.created_at))||b.id-a.id)
+    .slice(0,4);
+   proofRuns.push(...peers);
+  }
+  const commits=new Map();
+  for(const run of proofRuns){
+   if(run.event!=='pull_request'||!SHA.test(run.head_sha||''))continue;
+   if(!commits.has(run.head_sha)){
+    if(halted||out.reads>=maxRequests){out.reason='COMMIT_EVIDENCE_BUDGET';break;}
+    try{
+     const data=await read(()=>github.rest.git.getCommit({owner,repo,commit_sha:run.head_sha}));
+     if(data?.sha!==run.head_sha||!Array.isArray(data.parents))continue;
+     const synthetic=data.parents.length===2&&
+      /^Merge [a-f0-9]{7,40} into [a-f0-9]{7,40}(?:\s|$)/i.test(data.message||'');
+     const parents=data.parents.map(p=>p?.sha);
+     if(synthetic&&(!SHA.test(parents[0]||'')||!SHA.test(parents[1]||'')))continue;
+     commits.set(run.head_sha,synthetic?{head:parents[1],base:parents[0]}:
+      {head:run.head_sha,base:null});
+    }catch{out.reason='COMMIT_EVIDENCE_UNVERIFIED';}
+   }
+   if(commits.has(run.head_sha))out.commitEvidence[String(run.id)]=commits.get(run.head_sha);
+  }
  }catch(error){out.reason=String(error?.message||error).slice(0,100);}
  return out;
 }
@@ -160,7 +197,7 @@ function summarizeCancellationWindow({source={},now=Date.now(),windowMs}){
   if(!ids.has(run.id)||!(run.conclusion==='cancelled'||isFailure(run)))continue;
   const at=finiteTime(run.updated_at);
   if(at===null||at<=now-windowMs||at>now)continue;
-  const detail=classifyRun(run,runs,source.prStates);
+  const detail=classifyRun(run,runs,source.prStates,source.commitEvidence);
   if(!detail)continue;
   counts[detail.reason]++;
   let cost=null;
@@ -193,7 +230,7 @@ function summarizeCancellationWindow({source={},now=Date.now(),windowMs}){
    }
   }
   if(cost===null)unverified++;
-  sample.push({run_id:run.id,pr:prRef(run)?.number||null,workflow:path(run),reason:detail.reason,
+  sample.push({run_id:run.id,pr:prRef(run,source.commitEvidence)?.number||null,workflow:path(run),reason:detail.reason,
    evidence:detail.evidence,successor_run_id:detail.successor_run_id||null,
    runner_minutes:cost});
  }

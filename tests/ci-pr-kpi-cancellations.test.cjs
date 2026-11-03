@@ -11,7 +11,11 @@ const run=(id,conclusion,created=30,updated=10,head=A,base=C)=>({
  id,status:'completed',conclusion,created_at:at(created),updated_at:at(updated),
  run_attempt:1,event:'pull_request',head_sha:head,head_branch:'some-pr',
  path:'.github/workflows/core.yml',pull_requests:[pr(head,base)]});
-const outcome=(r,next,states={})=>classifyRun(r,next?[r,next]:[r],states);
+const outcome=(r,next,states={})=>{
+ const runs=next?[r,next]:[r],proofs=Object.fromEntries(runs.filter(x=>x.event==='pull_request')
+  .map(x=>[String(x.id),{head:x.pull_requests[0].head.sha,base:x.pull_requests[0].base.sha}]));
+ return classifyRun(r,runs,states,proofs);
+};
 test('six distinct classifications require a newer run on the same PR and workflow',()=>{
  const old=run(11,'cancelled');
  assert.deepEqual(REASONS,['EXPECTED_STALE','CLOSED_UNMERGED','BASE_MOVED','DUPLICATE','SUSPICIOUS_CANCEL','REAL_FAILURE']);
@@ -38,6 +42,30 @@ test('push-based supersession requires matching workflow and branch, not arbitra
  const newer={...run(5,'success',20,5,B),event:'push',pull_requests:[],head_branch:'codex/bootstrap-books'};
  assert.equal(outcome(base,newer).reason,'EXPECTED_STALE');
  assert.equal(outcome(base,{...newer,event:'workflow_run'}).reason,'SUSPICIOUS_CANCEL');
+});
+test('current mutable PR refs never replace immutable historical run HEAD',()=>{
+ const old=run(11,'cancelled',30,10,A),newer=run(12,'success',20,5,B);
+ // GitHub can retroactively report the newest PR head on both older runs.
+ old.pull_requests=[pr(B,D)];newer.pull_requests=[pr(B,D)];
+ assert.equal(classifyRun(old,[old,newer],{},{}).reason,'SUSPICIOUS_CANCEL');
+ assert.equal(classifyRun(old,[old,newer],{},{
+  '11':{head:A,base:null},'12':{head:B,base:null}
+ }).reason,'EXPECTED_STALE');
+});
+test('unverified base changes never become a fabricated BASE_MOVED cause',()=>{
+ const old=run(11,'cancelled',30,10,A,C),newer=run(12,'success',20,5,A,D);
+ old.pull_requests=[pr(A,D)];newer.pull_requests=[pr(A,D)];
+ assert.equal(classifyRun(old,[old,newer],{},{
+  '11':{head:A,base:null},'12':{head:A,base:null}
+ }).reason,'DUPLICATE');
+ // Different immutable execution SHA with no verified base is unknown.
+ newer.head_sha=B;
+ assert.equal(classifyRun(old,[old,newer],{},{
+  '11':{head:A,base:null},'12':{head:A,base:null}
+ }).reason,'SUSPICIOUS_CANCEL');
+ assert.equal(classifyRun(old,[old,newer],{},{
+  '11':{head:A,base:C},'12':{head:A,base:D}
+ }).reason,'BASE_MOVED');
 });
 test('runner-minute sample counts actual job execution, not workflow duration or queue wait',()=>{
  const cancelled=run(11,'cancelled');
@@ -90,7 +118,7 @@ test('bounded collector records verified job inventories, prior state and real A
  const h={'x-ratelimit-remaining':'4000'};
  let reads=0;
  const gh={
-  rest:{actions:{
+  rest:{git:{getCommit:async args=>{reads++;return {headers:h,data:{sha:args.commit_sha,parents:[{sha:C}],message:'test'}};}},actions:{
    listWorkflowRunsForRepo:async args=>{
     reads++;const values=args.status==='cancelled'?[cancelled]:args.status==='failure'?[failed]:
      args.status?[ ]:[cancelled,succeed,failed];
@@ -109,7 +137,7 @@ test('bounded collector records verified job inventories, prior state and real A
  assert.equal(s.complete,false);assert.equal(s.candidateRunIds.length,2);
  assert.deepEqual(new Set(s.verifiedJobRunIds),new Set([11,13]));
  assert.equal(s.prStates['42'].merged,false);
- assert.equal(reads,7);
+ assert.ok(reads>=9);
  const w=summarizeCancellationWindow({source:s,now:NOW,windowMs:3600000});
  assert.equal(w.counts.EXPECTED_STALE,1);assert.equal(w.counts.REAL_FAILURE,1);
  assert.equal(w.runner_minutes_observed.EXPECTED_STALE,5);
