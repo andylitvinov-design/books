@@ -138,6 +138,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Propósito de vida."
                   }
                 }
+              ],
+              "legacyTags": [
+                "meaning",
+                "life",
+                "goals"
               ]
             },
             {
@@ -221,6 +226,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Encontrarse a uno mismo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "meaning",
+                "life",
+                "goals"
               ]
             },
             {
@@ -304,6 +314,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Desarrollo personal."
                   }
                 }
+              ],
+              "legacyTags": [
+                "meaning",
+                "life",
+                "goals"
               ]
             },
             {
@@ -387,6 +402,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Transiciones vitales."
                   }
                 }
+              ],
+              "legacyTags": [
+                "meaning",
+                "life",
+                "goals"
               ]
             }
           ]
@@ -486,6 +506,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Establecer objetivos."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "work"
               ]
             },
             {
@@ -569,6 +594,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Llevarlo hasta el final."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "work"
               ]
             },
             {
@@ -652,6 +682,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Procrastinación."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "work"
               ]
             },
             {
@@ -735,6 +770,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Autodisciplina."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "work"
               ]
             }
           ]
@@ -833,6 +873,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Mentalidad financiera."
                   }
                 }
+              ],
+              "legacyTags": [
+                "money",
+                "business"
               ]
             },
             {
@@ -915,6 +959,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Bloqueos con el dinero."
                   }
                 }
+              ],
+              "legacyTags": [
+                "money",
+                "business"
               ]
             },
             {
@@ -998,6 +1046,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Estabilidad financiera."
                   }
                 }
+              ],
+              "legacyTags": [
+                "money",
+                "business"
               ]
             },
             {
@@ -1081,6 +1133,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Aumentar ingresos."
                   }
                 }
+              ],
+              "legacyTags": [
+                "money",
+                "business"
               ]
             }
           ]
@@ -1179,6 +1235,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Emprendimiento."
                   }
                 }
+              ],
+              "legacyTags": [
+                "business",
+                "work",
+                "money"
               ]
             },
             {
@@ -1262,6 +1323,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Crecimiento profesional."
                   }
                 }
+              ],
+              "legacyTags": [
+                "business",
+                "work",
+                "money"
               ]
             },
             {
@@ -1345,6 +1411,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Liderazgo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "business",
+                "work",
+                "money"
               ]
             },
             {
@@ -1428,6 +1499,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Decisiones empresariales."
                   }
                 }
+              ],
+              "legacyTags": [
+                "business",
+                "work",
+                "money"
               ]
             }
           ]
@@ -1536,6 +1612,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Soledad."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -1619,6 +1700,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Miedo a estar solo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -1702,6 +1788,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Superar una ruptura."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -1785,6 +1876,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Amor no correspondido."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             }
           ]
@@ -1883,6 +1979,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Cómo encontrar el amor."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love"
               ]
             },
             {
@@ -1966,6 +2066,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Prepararse para una relación."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love"
               ]
             },
             {
@@ -2049,6 +2153,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Citas y conocer personas."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love"
               ]
             },
             {
@@ -2132,6 +2240,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Elegir pareja."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love"
               ]
             }
           ]
@@ -2230,6 +2342,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Problemas de pareja."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2313,6 +2430,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Comunicación en pareja."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2396,6 +2518,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Conflicto y reconciliación."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2479,6 +2606,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Recuperar la confianza."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             }
           ]
@@ -2577,6 +2709,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Intimidad emocional."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2660,6 +2797,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Miedo a la intimidad."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2743,6 +2885,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Dependencia emocional."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             },
             {
@@ -2826,6 +2973,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Relaciones familiares."
                   }
                 }
+              ],
+              "legacyTags": [
+                "relationships",
+                "love",
+                "connection"
               ]
             }
           ]
@@ -2934,6 +3086,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Tensión cotidiana."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "recovery",
+                "body"
               ]
             },
             {
@@ -3017,6 +3175,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Cansancio al final del día."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "recovery",
+                "body"
               ]
             },
             {
@@ -3100,6 +3264,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Fatiga mental."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "recovery",
+                "body"
               ]
             },
             {
@@ -3183,6 +3353,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Recuperación tras el esfuerzo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "recovery",
+                "body"
               ]
             }
           ]
@@ -3281,6 +3457,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Conciencia corporal."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "body",
+                "energy"
               ]
             },
             {
@@ -3364,6 +3545,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Prácticas de respiración."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "body",
+                "energy"
               ]
             },
             {
@@ -3447,6 +3633,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Relajación muscular."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "body",
+                "energy"
               ]
             },
             {
@@ -3530,6 +3721,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Hábitos saludables."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "body",
+                "energy"
               ]
             }
           ]
@@ -3628,6 +3824,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Baja energía."
                   }
                 }
+              ],
+              "legacyTags": [
+                "energy",
+                "recovery"
               ]
             },
             {
@@ -3711,6 +3911,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Energía por la mañana."
                   }
                 }
+              ],
+              "legacyTags": [
+                "energy",
+                "recovery"
               ]
             },
             {
@@ -3794,6 +3998,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Motivación e impulso."
                   }
                 }
+              ],
+              "legacyTags": [
+                "energy",
+                "recovery"
               ]
             },
             {
@@ -3877,6 +4085,10 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Claridad mental."
                   }
                 }
+              ],
+              "legacyTags": [
+                "energy",
+                "recovery"
               ]
             }
           ]
@@ -3975,6 +4187,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Autoconfianza."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "energy",
+                "relationships"
               ]
             },
             {
@@ -4058,6 +4276,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Baja autoestima."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "energy",
+                "relationships"
               ]
             },
             {
@@ -4141,6 +4365,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Autoaceptación."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "energy",
+                "relationships"
               ]
             },
             {
@@ -4224,6 +4454,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Calma en situaciones importantes."
                   }
                 }
+              ],
+              "legacyTags": [
+                "goals",
+                "meaning",
+                "energy",
+                "relationships"
               ]
             }
           ]
@@ -4332,6 +4568,13 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Alivio del estrés."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "stress",
+                "recovery",
+                "emotions"
               ]
             },
             {
@@ -4415,6 +4658,13 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Estrés crónico."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "stress",
+                "recovery",
+                "emotions"
               ]
             },
             {
@@ -4498,6 +4748,13 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Estrés laboral."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "stress",
+                "recovery",
+                "emotions"
               ]
             },
             {
@@ -4581,6 +4838,13 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Agotamiento emocional."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "energy",
+                "stress",
+                "recovery",
+                "emotions"
               ]
             }
           ]
@@ -4679,6 +4943,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Ansiedad constante."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "stress",
+                "emotions"
               ]
             },
             {
@@ -4762,6 +5031,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Ansiedad sin motivo aparente."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "stress",
+                "emotions"
               ]
             },
             {
@@ -4845,6 +5119,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Ataques de pánico."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "stress",
+                "emotions"
               ]
             },
             {
@@ -4928,6 +5207,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Miedos y fobias."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "stress",
+                "emotions"
               ]
             }
           ]
@@ -5026,6 +5310,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Trauma infantil."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "relationships",
+                "meaning"
               ]
             },
             {
@@ -5109,6 +5399,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Niño interior."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "relationships",
+                "meaning"
               ]
             },
             {
@@ -5192,6 +5488,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Heridas de rechazo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "relationships",
+                "meaning"
               ]
             },
             {
@@ -5275,6 +5577,12 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Heridas de abandono."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "relationships",
+                "meaning"
               ]
             }
           ]
@@ -5373,6 +5681,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Ánimo bajo."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "recovery"
               ]
             },
             {
@@ -5456,6 +5769,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Apatía."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "recovery"
               ]
             },
             {
@@ -5539,6 +5857,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Pérdida de alegría."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "recovery"
               ]
             },
             {
@@ -5622,6 +5945,11 @@
                     "es": "Translate the story into one small, optional everyday action. Tema: Vacío emocional."
                   }
                 }
+              ],
+              "legacyTags": [
+                "health",
+                "emotions",
+                "recovery"
               ]
             }
           ]
