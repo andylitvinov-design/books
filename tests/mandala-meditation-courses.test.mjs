@@ -92,3 +92,14 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
   assert.match(studio,/data-guided-signature-match=\{approvedSignature===journeySignature\?"true":"false"\}/,
     "the exact signature remains observable for real WebKit failure diagnostics");
 });
+
+test("WebKit guided-course diagnostics never read Node closures inside browser evaluate",()=>{
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ const begin=browser.indexOf("const state=await course.evaluate(el=>({");
+ const end=browser.indexOf("}));",begin);
+ assert.ok(begin>=0&&end>begin,"real guided-course WebKit state inspection remains");
+ assert.doesNotMatch(browser.slice(begin,end),/\bpageErrors\b/,
+   "Playwright page.evaluate must not reference Node-only pageErrors");
+ assert.match(browser,/JSON\.stringify\(\{\.\.\.state,pageErrors:pageErrors\.slice\(-5\)\}\)/,
+   "diagnostics include guest console errors outside the browser context");
+});

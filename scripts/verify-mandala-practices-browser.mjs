@@ -192,9 +192,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
           signatureMatch:el.getAttribute('data-guided-signature-match'),
           meditationReady:el.getAttribute('data-guided-meditation-ready'),
           committedLength:el.querySelector('[data-guided-generate-meditation]')?.getAttribute('data-guided-context-committed-length'),
-          pageErrors:pageErrors.slice(-5),
         }));
-        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify({...state,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       await course.locator("[data-guided-create-plan]").click();
       await programme.waitFor({state:"visible"});
