@@ -2833,7 +2833,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const previousAudio=previousHypnoAudioRef.current??{audio:attachedAudio,rights:audioRights};
       const file=await createHypnoAudioEffectFile({
-        speechFile:(next.whisper||(attachedAudio?.kind==="file"&&attachedAudio.narration))?hypnoSpeechSource:null,
+        speechFile:needsSpeech?hypnoSpeechSource:null,
         durationSeconds:duration,
         whisperEnabled:next.whisper,
         binauralEnabled:next.binaural,
