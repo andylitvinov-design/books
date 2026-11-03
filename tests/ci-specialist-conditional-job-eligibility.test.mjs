@@ -44,8 +44,7 @@ test('unknown functions, contexts and non-single-line guards never waive a skipp
     "github.head_ref == 'feat/meditation-writer-device-v1-20261030'",
     "startsWith(github.head_ref, 'feat/meditation-writer-device-')");
   const unknownContext=workflow.replace('github.head_ref','github.actor');
-  const multiline=workflow.replace(/    if: (.+)/, "    if: >-
-      $1");
+  const multiline=workflow.replace(/    if: (.+)/, () => '    if: >-\\n      $1');
   assert.deepEqual(trustedConditionallyInapplicableJobs(unknownFunction,pr()),[]);
   assert.deepEqual(trustedConditionallyInapplicableJobs(unknownContext,pr()),[]);
   assert.deepEqual(trustedConditionallyInapplicableJobs(multiline,pr()),[]);
