@@ -169,15 +169,15 @@ test("Hypno Effects audio helper rejects stale/unapproved speech and builds boun
   assert.match(studio,/setHypnoSpeechDuration\(clip\.mixSeconds\)/);
   const helper=readFileSync(new URL("../lib/mandala/hypno-audio-effects.ts",import.meta.url),"utf8");
   assert.match(helper,/export async function createHypnoAudioEffectFile/);
-  assert.match(helper,/new OfflineContext\\(2,/);
-  assert.match(helper,/createChannelMerger\\(2\\)/);
+  assert.match(helper,/new OfflineContext\(2,/);
+  assert.match(helper,/createChannelMerger\(2\)/);
   assert.match(helper,/repeatEverySeconds/);
   assert.match(helper,/whisperGain/);
   assert.match(helper,/encodePcmWav/);
-  assert.match(helper,/15 \\* 1024 \\* 1024/);
+  assert.match(helper,/15 \* 1024 \* 1024/);
   assert.match(helper,/SPEECH_TRACK_REQUIRED/);
   assert.match(helper,/OFFLINE_AUDIO_UNAVAILABLE/);
-  assert.match(helper,/oscillator\\.frequency\\.value = frequency/);
+  assert.match(helper,/oscillator\.frequency\.value = frequency/);
 });
 
 
