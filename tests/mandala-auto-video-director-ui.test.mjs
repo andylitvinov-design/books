@@ -70,7 +70,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/listMyTubeCategories\(locale\)/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
- assert.match(director,/listMyTubeSubcategories\(selectedCategoryId,locale\)/);\n assert.match(director,/listMyTubeTopics\(selectedCategoryId,selectedSubcategoryId,locale\)/);\n assert.match(director,/data-auto-video-subcategory=\{item.id\}/);\n assert.match(director,/data-auto-video-topic=\{item.id\}/);
+ assert.match(director,/listMyTubeSubcategories\(selectedCategoryId,locale\)/);
+ assert.match(director,/listMyTubeTopics\(selectedCategoryId,selectedSubcategoryId,locale\)/);
+ assert.match(director,/data-auto-video-subcategory=\{item.id\}/);
+ assert.match(director,/data-auto-video-topic=\{item.id\}/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
