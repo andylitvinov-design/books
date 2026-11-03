@@ -67,3 +67,18 @@ test('scheduled CI Worker completion wakes guarded Watchdog direct handoff',()=>
  assert.match(dispatcher,/\['workflow_dispatch','schedule'\]\.includes\(w\?\.event\)/);
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
 });
+
+test('watchdog direct-handoff condition must be balanced',()=>{
+ const text=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const job=text.split('  direct-handoff:\n')[1]?.split('\n    runs-on:')[0];
+ assert.ok(job,'direct-handoff job exists');
+ const condition=job.split('if: >-')[1];
+ assert.ok(condition,'direct-handoff guard exists');
+ let depth=0;
+ for(const ch of condition.replace(/'[^']*'/g,'')){
+   if(ch==='(')depth++;
+   else if(ch===')')depth--;
+   assert.ok(depth>=0,'unmatched closing parenthesis');
+ }
+ assert.equal(depth,0,'GitHub Actions if expression has no unclosed parentheses');
+});
