@@ -273,6 +273,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
   const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
   const [planOpen,setPlanOpen] = useState(false);
+  const [planActionCount,setPlanActionCount] = useState(0);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
   const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
@@ -409,12 +410,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       setPersonalOpened(true);
       window.requestAnimationFrame(()=>{
         const editor=document.getElementById("personal-meditation");
-        (editor||editorDetails).scrollIntoView({behavior:"smooth",block:"start"});
+        (editor||editorDetails).scrollIntoView({behavior:"auto",block:"start"});
       });
     }
   }
   function createProgramme(){
     if(disabled||!focusReady||profileStatus==="loading")return;
+    setPlanActionCount(count=>count+1);
     setProgrammeSignature(journeySignature);
     setPlanOpen(true);
     if(consent && !["ready","empty"].includes(profileStatus))void loadPrivateProfile();
@@ -443,6 +445,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-focus-ready={focusReady?"true":"false"}
     data-guided-has-script={firstScript.trim().length>0?"true":"false"}
     data-guided-meditation-open={meditationOpen?"true":"false"}
+    data-guided-plan-open={planOpen?"true":"false"}
+    data-guided-plan-click-count={planActionCount}
+    data-guided-plan-signature-match={programmeSignature===journeySignature?"true":"false"}
     data-guided-signature-match={approvedSignature===journeySignature?"true":"false"}
     data-guided-meditation-ready={currentMeditation?"true":"false"}
     data-guided-programme-ready={currentProgramme?"true":"false"}

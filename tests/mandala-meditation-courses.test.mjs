@@ -103,3 +103,16 @@ test("WebKit guided-course diagnostics never read Node closures inside browser e
  assert.match(browser,/JSON\.stringify\(\{\.\.\.state,pageErrors:pageErrors\.slice\(-5\)\}\)/,
    "diagnostics include guest console errors outside the browser context");
 });
+
+test("iPhone guided-course create-plan handler has a one-tap state receipt without animated-scroll race",()=>{
+ const guided=read("components/mandala-guided-course.tsx");
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ assert.match(guided,/data-guided-plan-open=\{planOpen\?"true":"false"\}/);
+ assert.match(guided,/data-guided-plan-click-count=\{planActionCount\}/);
+ assert.match(guided,/data-guided-plan-signature-match=\{programmeSignature===journeySignature\?"true":"false"\}/);
+ assert.match(guided,/setPlanActionCount\(count=>count\+1\);\s*setProgrammeSignature\(journeySignature\);\s*setPlanOpen\(true\)/);
+ assert.match(guided,/scrollIntoView\(\{behavior:"auto",block:"start"\}\)/,
+   "personal editor focus must not leave a smooth-scroll animation over the next user click");
+ assert.match(browser,/planClickCount:root\?\.getAttribute\("data-guided-plan-click-count"\)/);
+ assert.match(browser,/planSignatureMatch:root\?\.getAttribute\("data-guided-plan-signature-match"\)/);
+});

@@ -112,11 +112,15 @@ export async function verifyGuidedPractices({browser,base,engine}){
             selectedState:q('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state")??null,
             selectedVector:q('[data-guided-focus-vector][aria-pressed="true"]')?.getAttribute("data-guided-focus-vector")??null,
             journeyStep:q('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            planOpen:root?.getAttribute("data-guided-plan-open")??null,
+            planClickCount:root?.getAttribute("data-guided-plan-click-count")??null,
+            planSignatureMatch:root?.getAttribute("data-guided-plan-signature-match")??null,
+            programmeReady:root?.getAttribute("data-guided-programme-ready")??null,
             meditationPresent:Boolean(q("[data-guided-meditation-result]")),
             pagePath:location.pathname,
           };
         });
-        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify(snapshot),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify({...snapshot,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
