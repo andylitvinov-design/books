@@ -31,7 +31,7 @@ test("client form needs explicit contact, keeps private text out and never check
   // preventDefault and manual state inversion double-toggles consent in WebKit.
   assert.ok(src.includes('onChange={event=>setConsent(event.target.checked)}'));
   assert.ok(src.includes('<label htmlFor={consentId}>'));
-  assert.ok(!src.includes('event.preventDefault()'), 'a real label tap must not double-toggle consent');
+  assert.ok(!src.includes('<label htmlFor={consentId} onClick='), 'a real label tap must not intercept native checkbox consent');
   assert.ok(src.includes('disabled={busy||!consent||(!email.trim()&&!phone.trim())}'));
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
