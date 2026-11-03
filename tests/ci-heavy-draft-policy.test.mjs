@@ -538,6 +538,28 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
+test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {
+  const proof = {
+    status: 'ahead',
+    base_sha: earlyLive.base.sha,
+    head_sha: earlyLive.head.sha,
+    merge_base_sha: earlyLive.base.sha,
+  };
+  const staleDirty = { ...earlyLive, mergeable: false, mergeable_state: 'dirty' };
+  assert.equal(assessPrReadiness(earlyEvent, staleDirty, earlyRepo, proof).ready, true);
+  const mutations = [
+    [{ ...proof, status: 'diverged' }, 'diverged'],
+    [{ ...proof, base_sha: 'c'.repeat(40) }, 'wrong-base'],
+    [{ ...proof, head_sha: 'c'.repeat(40) }, 'wrong-head'],
+    [{ ...proof, merge_base_sha: 'c'.repeat(40) }, 'not-fast-forward'],
+  ];
+  for (const [candidate, label] of mutations) {
+    const result = assessPrReadiness(earlyEvent, staleDirty, earlyRepo, candidate);
+    assert.equal(result.ready, false, label);
+    assert.equal(result.code, 'conflict', label);
+  }
+});
+
 test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
   const mutations = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
