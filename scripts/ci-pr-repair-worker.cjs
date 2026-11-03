@@ -461,7 +461,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   }else if(strategy==='lint'&&fixResult!=='success'){
     reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
   }else if(strategy==='code'&&!codeAvailable){
-    state='MANUAL';reason='CODEX_API_KEY_NOT_CONFIGURED';
+    state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
     reason='CODEX_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeVerifyStatus==='ready'){
@@ -474,7 +474,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if(publishStatus==='manual_required' || candidateStatus==='manual_required' || strategy==='code'){
     state='MANUAL';
-    reason=!codeAvailable?'CODEX_API_KEY_NOT_CONFIGURED':
+    reason=!codeAvailable?'FREE_AI_EXECUTOR_NOT_CONFIGURED':
       codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
       'CODEX_NO_VERIFIED_SOURCE_CHANGE';
   }else if(publishResult!=='success'){
