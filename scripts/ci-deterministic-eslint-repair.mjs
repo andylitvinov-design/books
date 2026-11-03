@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -78,7 +78,18 @@ async function main(){
     if(!state.claimed){note('NO_REPAIR: another worker owns the exact PR lease.');return;}
     leased=true;
     const files=run('git',['diff','--name-only','-z',base,head],cwd).split('\0').filter(Boolean);
-    if(!files.length||files.length>20||files.some(f=>!isSafeEslintFixPath(f))){
+    const regularFiles = files.every(file => {
+      try {
+        let current = cwd;
+        for (const part of file.split('/')) {
+          current = join(current, part);
+          const stat = lstatSync(current);
+          if (stat.isSymbolicLink()) return false;
+        }
+        return lstatSync(current).isFile();
+      } catch { return false; }
+    });
+    if(!files.length||files.length>20||files.some(f=>!isSafeEslintFixPath(f))||!regularFiles){
       await markManual(repo,token,n,head,'Changed paths are mixed, too large or outside the safe allowlist.');
       note('MANUAL_HANDOFF: source scope is not wholly eligible; no file was modified.');return;
     }
@@ -87,6 +98,11 @@ async function main(){
     if(!isEligiblePullRequest(await gh(repo,token,'/pulls/'+n),expected)){note('NO_REPAIR: PR moved during setup.');return;}
     const eslint=join(trusted,'node_modules','.bin','eslint'),config=join(trusted,'eslint.config.mjs');
     run(eslint,['--no-config-lookup','--config',config,'--fix',...files],cwd,{},180000);
+    const status=run('git',['status','--porcelain=v1','--untracked-files=all'],cwd).split('\n').filter(Boolean);
+    if(status.some(line=>line.length<4||line.slice(0,2).includes('?')||!files.includes(line.slice(3)))){
+      run('git',['restore','--worktree','--staged','.'],cwd);
+      throw new Error('AUTOFIX_CREATED_UNTRACKED_OR_UNAPPROVED_PATH');
+    }
     const diff=run('git',['diff','--name-only','-z','HEAD'],cwd).split('\0').filter(Boolean);
     if(!diff.length){await markManual(repo,token,n,head,'ESLint produced no automatic fix.');note('MANUAL_HANDOFF: no deterministic autofix.');return;}
     if(diff.some(f=>!files.includes(f))){run('git',['restore','--worktree','--staged','.'],cwd);throw new Error('AUTOFIX_CHANGED_UNAPPROVED_PATH');}
