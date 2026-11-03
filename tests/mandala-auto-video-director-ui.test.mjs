@@ -303,7 +303,7 @@ test("owner correction: two independent subtopics selected, input last and style
    "manual input is the final action of Describe your topic");
  assert.match(studio,/const selectedStyleScenario=timelineTextClips\?\.length/,
    "manual timed captions take precedence over the original film plan");
- assert.match(studio,/\?cinematicPlan\?\.shots\.map/,
+ assert.match(studio,/:cinematicPlan\?\.shots\.length[\s\S]*?\?cinematicPlan\.shots\.map/,
    "the original shot captions remain the fallback when no timed edit exists");
  assert.match(studio,/data-video-montage-script/);
  assert.match(studio,/data-video-montage-script-update/);
