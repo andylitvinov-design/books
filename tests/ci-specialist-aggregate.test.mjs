@@ -1297,6 +1297,10 @@ test('VideoProjectV2 source changes require real macOS WebKit acceptance on vide
     path,
   ];
   const files = {base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/support-confidence-harmony-goal-filter-20261102',
+    ['components/holistic-support-goal-filter.tsx']),true,
+    'the full trusted BASE allowlist must not fail closed merely because it now has more than twelve entries');
   assert.equal(optionalMandalaMacosSkip(
     files,'feat/video-studio-project-renderplan-v2-20261102',changed),false,
     'A video render plan must not be incorrectly excused from real WebKit acceptance');
