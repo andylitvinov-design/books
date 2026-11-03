@@ -37,6 +37,14 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(!studio.includes("setWish(graphemeTrim(next))"),"do not trim the final word boundary");
  assert.ok(studio.includes("aspect={aspect}"),"retain user-selected aspect");
 });
+test("topic story cards disclose that original storyboards are not yet linked to media",()=>{
+ assert.match(director,/data-auto-video-concept-only/);
+ assert.match(director,/data-auto-video-editorial-storyboard/);
+ assert.match(director,/taxonomyScenarios\[alternatives\.indexOf\(chosen\.id\)\]\.sceneOutline/);
+ assert.match(director,/Create video assembles only the actual preview footage/);
+ assert.match(director,/data-auto-video-storyboard/);
+});
+
 test("recommendation never initiates external paid generation or user-data upload",()=>{
  assert.ok(policy.includes("paidRenderApproved:false"));
  assert.ok(policy.includes("noExternalClientData:true"));
