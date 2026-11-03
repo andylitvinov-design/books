@@ -21,7 +21,10 @@ const fail = (error, auth) => {
 export async function GET() {
   const providers=voiceStudioProviders(process.env)
   const configured = voiceStudioReady(process.env)
-  const languages=providers.gemini||providers.openrouter?['en','ru','es']:
+  // Guest voices must reflect only provider routes that cannot bill.
+  // The optional paid custom-voice provider never makes public samples ready.
+  const publicFree=providers.gemini||providers.openrouterFree
+  const languages=providers.gemini?['en','ru','es']:
     providers.openrouterFree?['en']:[]
   return NextResponse.json({
     enabled:configured,
@@ -32,7 +35,7 @@ export async function GET() {
     languages,
     mode:'gemini-free-openrouter-free-optional-paid',
     customRequiresSignIn:true,
-    publicAffirmationsEnabled:configured,
+    publicAffirmationsEnabled:publicFree,
   },{headers:PRIVATE_HEADERS})
 }
 export async function POST(request) {
