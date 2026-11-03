@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {existsSync,readFileSync} from "node:fs";
+import {auditGoalTreeAV} from "../scripts/audit-goal-tree-av.mjs";
+import {buildVideoGoalScenarioPlan,VIDEO_GOAL_SCENARIOS} from "../lib/mandala/video-goal-taxonomy.mjs";
+import {isUsableFilm} from "../lib/mandala/scenario-media-coverage.mjs";
+import licensedScenes from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
 import {
   SCENARIO_AUDIO_REGISTRY,SCENARIO_AUDIO_VARIANTS,isScenarioAudioId,
 } from "../lib/mandala/scenario-audio-catalog.mjs";
@@ -122,4 +126,94 @@ test("120-goal phrase catalogue sends the chosen storyboard ID to four playable 
     assert.equal(choices.length,4,row.scenarioId);
     assert.equal(new Set(choices.map(track=>track.mediaUrl)).size,4);
   }
+});
+
+
+test("all five branches, thirty topics and 120 scenarios have auditable 4+4 coverage",()=>{
+  const report=auditGoalTreeAV();
+  assert.equal(report.schemaVersion,"hh-goal-av-coverage-v1");
+  assert.equal(report.acceptance,"incomplete","unbound creative concepts must not claim completed video");
+  assert.deepEqual(
+    [report.totals.categories,report.totals.topics,report.totals.scenarios],
+    [5,30,120]
+  );
+  assert.equal(report.totals.requiredVideo,480);
+  assert.equal(report.totals.requiredAudio,480);
+  assert.equal(report.totals.approvedVideoMasters,44);
+  assert.equal(report.totals.audioAssignedScenarios,120);
+  assert.equal(report.totals.distinctAssignedAudioMasters,192);
+  assert.equal(report.totals.videoBoundScenarios,0);
+  assert.equal(report.totals.missingVideoAssignments,480);
+  assert.equal(report.totals.missingAudioAssignments,0);
+  assert.equal(report.totals.readyForExport,0);
+  assert.equal(report.physicalChecked,false);
+  assert.ok(report.totals.matchedCandidateBeats>0,
+    "candidates must be visible as suggestions, without counting as approved bindings");
+  for(const category of report.categories){
+    assert.equal(category.topics,6,category.id);
+    assert.equal(category.scenarios,24,category.id);
+    assert.equal(category.requiredTotal,96,category.id);
+    assert.equal(category.uniqueAudioIds,96,category.id);
+    assert.equal(category.uniqueVideoIds,0,category.id);
+    assert.equal(category.missingVideoAssignments,96,category.id);
+    assert.equal(category.missingAudioAssignments,0,category.id);
+    assert.deepEqual(category.duplicateAudioIds,[]);
+  }
+  for(const topic of report.topics){
+    assert.equal(topic.scenarios,4,topic.id);
+    assert.equal(topic.uniqueAudioIds,16,topic.id);
+    assert.equal(topic.uniqueVideoIds,0,topic.id);
+  }
+  for(const scenario of report.scenarios){
+    assert.equal(scenario.video.bound,0,scenario.scenarioId);
+    assert.equal(scenario.video.expected,4,scenario.scenarioId);
+    assert.equal(scenario.audio.assigned,4,scenario.scenarioId);
+    assert.equal(new Set(scenario.audio.uniqueAudioIds).size,4,scenario.scenarioId);
+    assert.equal(scenario.readyForExport,false,scenario.scenarioId);
+  }
+});
+
+test("candidate, unlicensed and repeated clips cannot pass the four-video gate",()=>{
+  const first=VIDEO_GOAL_SCENARIOS[0];
+  const approved=licensedScenes.scenes.filter(isUsableFilm).slice(0,4).map(x=>x.id);
+  assert.equal(approved.length,4);
+  const original=buildVideoGoalScenarioPlan;
+  const videoPlan=clips=>(input)=>input.scenarioId===first.id?{
+    mediaStatus:"approved",canExport:true,
+    shots:clips.map(id=>({assetId:id,rightsVerifiedForThisBinding:true})),
+  }:original(input);
+  const duplicates=auditGoalTreeAV({planFor:videoPlan([approved[0],approved[0],approved[1],approved[2]])});
+  assert.equal(duplicates.totals.videoBoundScenarios,0);
+  const unlicensed=auditGoalTreeAV({planFor:videoPlan([...approved.slice(0,3),"invented-clip"])});
+  assert.equal(unlicensed.totals.videoBoundScenarios,0);
+  const candidateOnly=auditGoalTreeAV({planFor:input=>input.scenarioId===first.id?{
+    mediaStatus:"candidate_clips_need_editorial_approval",canExport:false,
+    shots:approved.map(id=>({assetId:id,rightsVerifiedForThisBinding:true})),
+  }:original(input)});
+  assert.equal(candidateOnly.totals.videoBoundScenarios,0);
+  const missingRights=auditGoalTreeAV({planFor:input=>input.scenarioId===first.id?{
+    mediaStatus:"approved",canExport:true,
+    shots:approved.map(id=>({assetId:id,rightsVerifiedForThisBinding:false})),
+  }:original(input)});
+  assert.equal(missingRights.totals.videoBoundScenarios,0);
+  const approvedWithoutPhysicalProof=auditGoalTreeAV({planFor:videoPlan(approved)});
+  assert.equal(approvedWithoutPhysicalProof.totals.videoBoundScenarios,1);
+  assert.equal(approvedWithoutPhysicalProof.totals.readyForExport,0);
+  assert.equal(approvedWithoutPhysicalProof.acceptance,"incomplete");
+});
+
+test("audio file identities need real hashes; spoofing four labels is not acceptance",()=>{
+  const first=VIDEO_GOAL_SCENARIOS[0].id;
+  const audio=auditGoalTreeAV({tracksFor:id=>{
+    const rows=getGoalTreeAudioChoices(id);
+    return id===first?[rows[0],rows[0],rows[1],rows[2]]:rows;
+  }});
+  assert.equal(audio.totals.audioAssignedScenarios,119);
+  assert.equal(audio.totals.missingAudioAssignments,4);
+  assert.equal(audio.scenarios.find(x=>x.scenarioId===first).audio.assigned,0);
+  const fakeProbe=auditGoalTreeAV({fileProbe:()=>({ok:true,sha256:"1".repeat(64)})});
+  assert.equal(fakeProbe.physicalChecked,true);
+  assert.equal(fakeProbe.totals.audioPhysicalScenarios,0,
+    "reusing a byte-identical recording under different IDs is not unique");
+  assert.equal(fakeProbe.acceptance,"incomplete");
 });
