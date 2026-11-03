@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {affirmationNarrationText,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
-import {validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
+import {affirmationNarrationText,affirmationNarrationForSelection,isApprovedAffirmationNarration,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
+import {validateStudioRequest,buildStudioPayload,VOICE_STUDIO_VOICES,voiceStudioProviders} from "../lib/mandala/voice-studio.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -149,4 +149,57 @@ test("all six voices can be selected and their real samples requested before phr
     editor.indexOf('async function createAudio()'));
   assert.doesNotMatch(ownSample,/speechText|consent:true|onAttach\(/,
     "sample must never transmit private phrases or replace the video narration");
+});
+
+test("one approved phrase is free narration default; all-phrases stays explicit",()=>{
+  const phrases=["Я спокоен","Я выбираю жизнь","Я могу действовать"];
+  assert.equal(affirmationNarrationForSelection(phrases,0),"Я спокоен.");
+  assert.equal(affirmationNarrationForSelection(phrases,1),"Я выбираю жизнь.");
+  assert.equal(affirmationNarrationForSelection(phrases,2),"Я могу действовать.");
+  assert.equal(affirmationNarrationForSelection(phrases,"all"),
+    "Я спокоен. Я выбираю жизнь. Я могу действовать.");
+  for(const bad of [-1,3,"1",null,undefined,1.5]) {
+    if(bad===undefined)continue; // default intentionally selects first phrase
+    assert.equal(affirmationNarrationForSelection(phrases,bad),"");
+  }
+  assert.equal(isApprovedAffirmationNarration(phrases,"Я выбираю жизнь."),true);
+  assert.equal(isApprovedAffirmationNarration(phrases,"Я выбираю жизнь.",false),false);
+  assert.equal(isApprovedAffirmationNarration(["Я спокоен"],"Я выбираю жизнь."),false);
+  assert.equal(isApprovedAffirmationNarration(phrases,"Чужая фраза."),false);
+  assert.equal(affirmationNarrationForSelection(["<script>"],0),"");
+});
+
+test("all six selected Gemini voices synthesize precisely the selected phrase, no paid provider",()=>{
+  const expected={mark:"Enceladus",alexander:"Charon",leon:"Puck",sofia:"Gacrux",maya:"Sulafat",alisa:"Zephyr"};
+  assert.equal(VOICE_STUDIO_VOICES.length,6);
+  assert.equal(new Set(VOICE_STUDIO_VOICES.map(v=>v.provider)).size,6);
+  for(const voice of VOICE_STUDIO_VOICES){
+    const text=affirmationNarrationForSelection(["Я могу отдыхать.","Я выбираю спокойствие."],1);
+    const validated=validateStudioRequest({mode:"affirmations",voiceId:voice.id,language:"ru",text,consent:true});
+    const payload=buildStudioPayload(validated);
+    assert.equal(payload.input[0].content[0].text,"Я выбираю спокойствие.");
+    assert.deepEqual(payload.generation_config.speech_config,[{voice:expected[voice.id]}]);
+    assert.equal(payload.response_format.type,"audio");
+    assert.throws(()=>validateStudioRequest({mode:"affirmations",voiceId:voice.id,language:"ru",text,consent:false}));
+  }
+  assert.deepEqual(voiceStudioProviders({
+    HH_VOICE_STUDIO_ENABLED:"true",
+    HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:"true",
+    HH_VOICE_STUDIO_GEMINI_API_KEY:"synthetic-free-gemini-key-not-real",
+  }),{gemini:true,openrouterFree:false,openrouter:false});
+});
+
+test("mobile one-phrase selection uses approved lines only, revokes consent and stale audio",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  const parent=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  assert.ok(ui.includes('data-video-affirmation-phrase'));
+  assert.ok(ui.includes('affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0)'));
+  assert.ok(ui.includes('setConsent(false)'));
+  assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
+  assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
+  assert.match(ui,/data-video-affimations-audio-ready/);
+  assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/);
+  assert.match(css,/\.phrasePick select\{/);
+  assert.doesNotMatch(ui,/autoPlay/);
 });
