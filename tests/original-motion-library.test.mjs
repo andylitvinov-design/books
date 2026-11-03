@@ -6,6 +6,7 @@ import {fileURLToPath} from "node:url";
 import {resolve,dirname} from "node:path";
 import {isApprovedMontageScene,validateMontageClips,montageReplacementOptions} from "../lib/mandala/video-montage-sources.mjs";
 import {compileVerifiedRenderPlanV2} from "../lib/mandala/render-plan-v2.mjs";
+import {recommendAutoVideo} from "../lib/mandala/auto-video-director.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const source=JSON.parse(readFileSync(resolve(root,"data/video-catalog/original-motion-scenes-v1.json"),"utf8"));
@@ -44,6 +45,22 @@ test("four different project-original moving MP4s are allowed by the same protec
  const plan=compileVerifiedRenderPlanV2({scenario:script,scenes});
  assert.equal(plan.shots.length,4);
  assert.ok(plan.rightsProof.every(r=>r.rightsKind==="project_generated_original"));
+});
+
+test("Auto Video Director can propose a real four-clip original motion preset without pretending it is stock",()=>{
+ const scenes=[1,2,3,4,5].map(i=>fixture("motion-stress-recovery-stress-relief-v"+i));
+ const preset={id:"motion-film-stress-relief",theme:"health",
+   clips:scenes.slice(0,4).map(s=>s.id),
+   sourceKind:"original_abstract_motion"};
+ const plan=recommendAutoVideo({
+   goal:"Я хочу спокойствия",locale:"ru",preferredTheme:"health",
+   presets:[preset],scenes
+ });
+ assert.equal(plan.kind,"existing_mp4_compilation");
+ assert.equal(plan.presetId,preset.id);
+ assert.deepEqual(plan.sourceClipIds,preset.clips);
+ assert.equal(plan.paidRenderApproved,false);
+ assert.equal(plan.noExternalClientData,true);
 });
 test("production abstract motion library contains 320 individually encoded H264 source records",()=>{
  // Fail closed: CI must never release an empty placeholder, partial library,
