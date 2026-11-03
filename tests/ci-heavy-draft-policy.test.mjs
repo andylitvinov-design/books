@@ -748,3 +748,16 @@ test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard 
   assert.ok(guard.includes("group: hh-pr-sweep-guard-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(guard.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
 });
+
+// Playwright's pinned WebKit build needs ICU 74 / libxml2.so.2. The moving
+// ubuntu-latest image can lose these ABIs while JS and Chromium suites stay green.
+// Keep REAL WebKit acceptance: pin the compatible runner instead of skipping it.
+test('IA WebKit host pins Ubuntu 24.04 and keeps full authenticated browser acceptance',()=>{
+  const source=read('ia-v2.yml');
+  assert.match(source,/runs-on: ubuntu-24\.04/);
+  assert.doesNotMatch(source,/runs-on: ubuntu-latest/);
+  assert.match(source,/playwright install --with-deps chromium webkit/);
+  assert.match(source,/postgres:\s*\n/);
+  assert.match(source,/redis:\s*\n/);
+  assert.match(source,/scripts\/verify-ia-v2\.mjs/);
+});

@@ -108,6 +108,13 @@ jobs:
           node --check scripts/verify-relationships-assessments.mjs
           node --test tests/ci-heavy-impact.test.mjs
           echo 'Temporary CI fast lane: full App R1 browser/database journey deferred to explicit manual QA; separate App R1 DB/unit, Core and specialist security checks remain.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Isolated test tools
         if: github.event_name != 'pull_request'
         run: |
