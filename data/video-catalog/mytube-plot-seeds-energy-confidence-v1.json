@@ -1,0 +1,1902 @@
+{
+  "schemaVersion": "mytube-topic-plots-v1",
+  "categoryId": "energy-confidence",
+  "status": "editorial_storyboards_unbound",
+  "createdAt": "2026-11-03",
+  "plotsPerTopic": 4,
+  "locales": [
+    "ru",
+    "en",
+    "es"
+  ],
+  "topics": {
+    "constant-fatigue": [
+      {
+        "id": "constant-fatigue-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "После тяжёлого дня",
+          "en": "After a draining day",
+          "es": "Tras un día agotador"
+        },
+        "shots": {
+          "ru": [
+            "Человек возвращается домой без сил",
+            "Откладывает необязательные дела",
+            "Готовит воду и удобное место",
+            "Разрешает себе спокойную паузу"
+          ],
+          "en": [
+            "Someone arrives home exhausted",
+            "Nonessential tasks are set aside",
+            "Water and a comfortable seat are prepared",
+            "A real pause is allowed"
+          ],
+          "es": [
+            "Alguien vuelve sin fuerzas",
+            "Se apartan tareas no esenciales",
+            "Se prepara agua y descanso",
+            "Se permite una pausa"
+          ]
+        }
+      },
+      {
+        "id": "constant-fatigue-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Долина отдыха",
+          "en": "The valley of rest",
+          "es": "Valle del descanso"
+        },
+        "shots": {
+          "ru": [
+            "Путник долго шёл по камням",
+            "Находит укрытую от ветра долину",
+            "Садится у тихого ручья",
+            "Не требует от себя нового похода"
+          ],
+          "en": [
+            "A traveler has walked over stones",
+            "A sheltered valley appears",
+            "They sit beside a quiet stream",
+            "No further journey is demanded"
+          ],
+          "es": [
+            "Una persona cruzó piedras",
+            "Encuentra un valle protegido",
+            "Descansa junto a un arroyo",
+            "No se exige seguir"
+          ]
+        }
+      },
+      {
+        "id": "constant-fatigue-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Фонарь с малым огнём",
+          "en": "The lantern with a small flame",
+          "es": "Farol de luz suave"
+        },
+        "shots": {
+          "ru": [
+            "Фонарь тускнеет после долгой дороги",
+            "Его ставят в защищённое место",
+            "Пламя горит ровно без усилия",
+            "Света хватает на ближайший шаг"
+          ],
+          "en": [
+            "A lantern dims after a long trip",
+            "It is placed out of the wind",
+            "A small flame burns steadily",
+            "Its light is enough for one step"
+          ],
+          "es": [
+            "El farol se atenúa",
+            "Se protege del viento",
+            "La llama queda estable",
+            "Basta para el próximo paso"
+          ]
+        }
+      },
+      {
+        "id": "constant-fatigue-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Честный уровень сил",
+          "en": "An honest energy check",
+          "es": "Revisar fuerzas"
+        },
+        "shots": {
+          "ru": [
+            "Список дел кажется бесконечным",
+            "Человек оценивает силы без упрёков",
+            "Выбирает что можно отложить",
+            "При стойкой усталости планирует консультацию врача"
+          ],
+          "en": [
+            "The to-do list seems endless",
+            "Energy is assessed without blame",
+            "One task is postponed",
+            "Persistent fatigue prompts medical advice"
+          ],
+          "es": [
+            "La lista de tareas no acaba",
+            "Se valoran fuerzas sin culpa",
+            "Se aplaza una tarea",
+            "Si persiste se consulta al médico"
+          ]
+        }
+      }
+    ],
+    "mental-fatigue": [
+      {
+        "id": "mental-fatigue-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Закрытые вкладки",
+          "en": "Closing the tabs",
+          "es": "Cerrar pestañas"
+        },
+        "shots": {
+          "ru": [
+            "После множества звонков мысли путаются",
+            "На экране закрываются лишние окна",
+            "Глаза отдыхают от текста",
+            "Человек возвращается к одной простой задаче"
+          ],
+          "en": [
+            "Thoughts blur after many calls",
+            "Extra windows close on screen",
+            "Eyes rest away from text",
+            "One simple task remains"
+          ],
+          "es": [
+            "Tras muchas llamadas todo confunde",
+            "Se cierran ventanas",
+            "Descansa la mirada",
+            "Queda una tarea sencilla"
+          ]
+        }
+      },
+      {
+        "id": "mental-fatigue-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Туман над озером",
+          "en": "Mist over the lake",
+          "es": "Niebla sobre el lago"
+        },
+        "shots": {
+          "ru": [
+            "Озеро скрыто утренним туманом",
+            "Ветер постепенно утихает",
+            "Берег становится различимым",
+            "Путник остаётся на месте сколько нужно"
+          ],
+          "en": [
+            "Morning mist hides a lake",
+            "The wind grows quiet",
+            "The shoreline becomes visible",
+            "The traveler stays as long as needed"
+          ],
+          "es": [
+            "La niebla oculta el lago",
+            "El viento baja",
+            "Aparece la orilla",
+            "Se descansa lo necesario"
+          ]
+        }
+      },
+      {
+        "id": "mental-fatigue-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Библиотека мыслей",
+          "en": "The library of thoughts",
+          "es": "Biblioteca mental"
+        },
+        "shots": {
+          "ru": [
+            "Книги падают с переполненных полок",
+            "Библиотекарь закрывает дверь на паузу",
+            "Оставляет одну книгу на столе",
+            "Возвращает остальные позже"
+          ],
+          "en": [
+            "Books tumble from crowded shelves",
+            "The librarian pauses admissions",
+            "One book remains on the table",
+            "The others can wait"
+          ],
+          "es": [
+            "Caen libros de estantes llenos",
+            "Se cierra la puerta un rato",
+            "Queda un solo libro",
+            "Los demás esperan"
+          ]
+        }
+      },
+      {
+        "id": "mental-fatigue-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Тихие двадцать минут",
+          "en": "Twenty quiet minutes",
+          "es": "Veinte minutos tranquilos"
+        },
+        "shots": {
+          "ru": [
+            "Человек снова пытается решить всё",
+            "Убирает уведомления",
+            "Делает паузу без новых задач",
+            "Проверяет стало ли легче думать"
+          ],
+          "en": [
+            "Someone tries to solve everything at once",
+            "Notifications are silenced",
+            "A task-free pause follows",
+            "Clarity is checked afterward"
+          ],
+          "es": [
+            "Se intenta resolver todo",
+            "Se silencian avisos",
+            "Se descansa sin tareas",
+            "Se revisa la claridad"
+          ]
+        }
+      }
+    ],
+    "physical-fatigue": [
+      {
+        "id": "physical-fatigue-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Тело после нагрузки",
+          "en": "The body after exertion",
+          "es": "Cuerpo tras el esfuerzo"
+        },
+        "shots": {
+          "ru": [
+            "Человек снимает тяжёлую сумку",
+            "Проверяет где мышцы устали",
+            "Устраивается с опорой для спины",
+            "Выбирает восстановление вместо преодоления"
+          ],
+          "en": [
+            "A heavy bag is put down",
+            "Tired muscles are noticed",
+            "The back receives comfortable support",
+            "Recovery is chosen over pushing"
+          ],
+          "es": [
+            "Se deja una bolsa pesada",
+            "Se observan músculos cansados",
+            "La espalda recibe apoyo",
+            "Se prioriza recuperar"
+          ]
+        }
+      },
+      {
+        "id": "physical-fatigue-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Поляна после подъёма",
+          "en": "A clearing after the climb",
+          "es": "Claro tras la subida"
+        },
+        "shots": {
+          "ru": [
+            "Путник добирается до поляны",
+            "Ставит рюкзак на землю",
+            "Слышит птиц и ветер",
+            "Решает сколько отдыха нужно"
+          ],
+          "en": [
+            "A walker reaches a clearing",
+            "The backpack is set on the ground",
+            "Birds and wind become audible",
+            "The needed rest is considered"
+          ],
+          "es": [
+            "Se llega a un claro",
+            "Se deja la mochila",
+            "Se oyen aves y viento",
+            "Se decide cuánto descansar"
+          ]
+        }
+      },
+      {
+        "id": "physical-fatigue-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Ремонт ткани",
+          "en": "Mending the fabric",
+          "es": "Reparar tejido"
+        },
+        "shots": {
+          "ru": [
+            "На ткани видны следы натяжения",
+            "Мастер не тянет её сильнее",
+            "Осторожно укрепляет ослабленный край",
+            "Даёт материалу полежать"
+          ],
+          "en": [
+            "A fabric shows signs of strain",
+            "The maker stops pulling",
+            "A weak edge is gently supported",
+            "The fabric is left to rest"
+          ],
+          "es": [
+            "La tela muestra tensión",
+            "Se deja de tirar",
+            "Se refuerza suavemente el borde",
+            "Se permite reposar"
+          ]
+        }
+      },
+      {
+        "id": "physical-fatigue-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Вечерняя разгрузка",
+          "en": "Evening recovery",
+          "es": "Descarga vespertina"
+        },
+        "shots": {
+          "ru": [
+            "Ноги ощущают тяжесть дня",
+            "Человек выбирает удобную позу",
+            "Пьёт воду и замечает ощущения",
+            "При необъяснимой слабости ищет медицинскую оценку"
+          ],
+          "en": [
+            "Legs feel heavy after the day",
+            "A comfortable position is chosen",
+            "Water and body cues are noticed",
+            "Unexplained weakness is medically checked"
+          ],
+          "es": [
+            "Las piernas pesan",
+            "Se busca postura cómoda",
+            "Se bebe agua y observa el cuerpo",
+            "Debilidad inexplicable requiere valoración médica"
+          ]
+        }
+      }
+    ],
+    "sleep-rest": [
+      {
+        "id": "sleep-rest-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Завершённый день",
+          "en": "A finished day",
+          "es": "Día cerrado"
+        },
+        "shots": {
+          "ru": [
+            "В комнате светит яркий экран",
+            "Уведомления выключают до утра",
+            "Тёплый свет становится мягче",
+            "Человек ложится без требования уснуть сразу"
+          ],
+          "en": [
+            "A bright screen lights the room",
+            "Notifications are silenced until morning",
+            "The room lighting grows softer",
+            "Sleep is not forced"
+          ],
+          "es": [
+            "Una pantalla ilumina la habitación",
+            "Se silencian avisos",
+            "Se baja la luz",
+            "No se fuerza el sueño"
+          ]
+        }
+      },
+      {
+        "id": "sleep-rest-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Ночная бухта",
+          "en": "The nighttime harbor",
+          "es": "Puerto nocturno"
+        },
+        "shots": {
+          "ru": [
+            "Волны медленно входят в бухту",
+            "Лодка пришвартовывается к причалу",
+            "Фонари на берегу тускнеют",
+            "Вода остаётся спокойной ночью"
+          ],
+          "en": [
+            "Waves enter a sheltered bay",
+            "A boat ties to the dock",
+            "Harbor lights grow dim",
+            "The water stays quiet"
+          ],
+          "es": [
+            "Las olas entran en la bahía",
+            "Una barca amarra",
+            "Las luces bajan",
+            "El agua queda tranquila"
+          ]
+        }
+      },
+      {
+        "id": "sleep-rest-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Покрывало звёзд",
+          "en": "A blanket of stars",
+          "es": "Manta de estrellas"
+        },
+        "shots": {
+          "ru": [
+            "Над домом появляются первые звёзды",
+            "Тихое небо раскрывается шире",
+            "Дом словно укрыт ночным светом",
+            "Утро может прийти своим чередом"
+          ],
+          "en": [
+            "First stars appear above a house",
+            "The quiet sky opens wider",
+            "The home rests under starlight",
+            "Morning may arrive in its own time"
+          ],
+          "es": [
+            "Surgen estrellas sobre una casa",
+            "El cielo se ensancha",
+            "El hogar descansa bajo la noche",
+            "La mañana llegará"
+          ]
+        }
+      },
+      {
+        "id": "sleep-rest-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Ритуал отхода ко сну",
+          "en": "A bedtime routine",
+          "es": "Rutina para dormir"
+        },
+        "shots": {
+          "ru": [
+            "Человек замечает вечернее возбуждение",
+            "Записывает одну мысль на завтра",
+            "Подготавливает спокойную обстановку",
+            "Разрешает отдыху быть достаточно хорошим"
+          ],
+          "en": [
+            "Evening restlessness is noticed",
+            "One thought is noted for tomorrow",
+            "A restful environment is prepared",
+            "Rest need not be perfect"
+          ],
+          "es": [
+            "Se nota inquietud nocturna",
+            "Se anota una idea para mañana",
+            "Se prepara un ambiente tranquilo",
+            "El descanso no debe ser perfecto"
+          ]
+        }
+      }
+    ],
+    "body-awareness": [
+      {
+        "id": "body-awareness-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Карта ощущений",
+          "en": "A map of sensations",
+          "es": "Mapa de sensaciones"
+        },
+        "shots": {
+          "ru": [
+            "На рисунке тела пустые области",
+            "Человек спокойно отмечает зоны контакта",
+            "Замечает давление одежды и пола",
+            "Останавливается на нейтральном ощущении"
+          ],
+          "en": [
+            "An outline of the body is empty",
+            "Areas of contact are gently marked",
+            "Clothing and floor pressure are noticed",
+            "Attention rests on something neutral"
+          ],
+          "es": [
+            "Se dibuja el contorno del cuerpo",
+            "Se señalan zonas de contacto",
+            "Se nota la ropa y el suelo",
+            "Se elige una sensación neutra"
+          ]
+        }
+      },
+      {
+        "id": "body-awareness-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Ступни на берегу",
+          "en": "Feet on the shore",
+          "es": "Pies en la orilla"
+        },
+        "shots": {
+          "ru": [
+            "Песок удерживает следы ступней",
+            "Лёгкий ветер касается кожи",
+            "Волна подходит и отступает",
+            "Человек замечает опору под ногами"
+          ],
+          "en": [
+            "Sand holds footprints",
+            "A breeze touches the skin",
+            "A wave advances and retreats",
+            "Ground underfoot becomes noticeable"
+          ],
+          "es": [
+            "La arena guarda huellas",
+            "La brisa toca la piel",
+            "Una ola va y viene",
+            "Se nota el apoyo del suelo"
+          ]
+        }
+      },
+      {
+        "id": "body-awareness-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Внутренний атлас",
+          "en": "The inner atlas",
+          "es": "Atlas interior"
+        },
+        "shots": {
+          "ru": [
+            "В атласе открывается карта тела",
+            "Разные места отмечены цветами",
+            "Не нужно исправлять каждое ощущение",
+            "Карта закрывается по желанию"
+          ],
+          "en": [
+            "An atlas opens to a body map",
+            "Different areas receive colors",
+            "Not every sensation needs fixing",
+            "The atlas can close whenever needed"
+          ],
+          "es": [
+            "Se abre un mapa del cuerpo",
+            "Las zonas reciben colores",
+            "No hay que cambiar cada sensación",
+            "Se cierra libremente"
+          ]
+        }
+      },
+      {
+        "id": "body-awareness-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Три точки контакта",
+          "en": "Three contact points",
+          "es": "Tres puntos de contacto"
+        },
+        "shots": {
+          "ru": [
+            "Человек сидит на устойчивом стуле",
+            "Замечает стопы и спину",
+            "Отмечает прикосновение ладоней",
+            "Выбирает закончить или продолжить"
+          ],
+          "en": [
+            "A person sits on a stable chair",
+            "Feet and back are noticed",
+            "Hands become a third point",
+            "Stopping or continuing is optional"
+          ],
+          "es": [
+            "Alguien se sienta con apoyo",
+            "Nota pies y espalda",
+            "Percibe las manos",
+            "Elige seguir o parar"
+          ]
+        }
+      }
+    ],
+    "breathing": [
+      {
+        "id": "breathing-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Дыхание у окна",
+          "en": "Breathing by the window",
+          "es": "Respirar junto a la ventana"
+        },
+        "shots": {
+          "ru": [
+            "Человек открывает окно и садится",
+            "Замечает привычное естественное дыхание",
+            "Не пытается удлинять вдох",
+            "Наблюдает паузу в комфортном ритме"
+          ],
+          "en": [
+            "A window opens and a seat is taken",
+            "Natural breathing is noticed",
+            "No longer inhale is forced",
+            "Pauses follow a comfortable rhythm"
+          ],
+          "es": [
+            "Se abre la ventana y se sienta",
+            "Se nota la respiración natural",
+            "No se fuerza la inhalación",
+            "Se sigue un ritmo cómodo"
+          ]
+        }
+      },
+      {
+        "id": "breathing-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Волна без команды",
+          "en": "A wave without commands",
+          "es": "Ola sin órdenes"
+        },
+        "shots": {
+          "ru": [
+            "Волна приходит к берегу сама",
+            "Затем мягко отступает",
+            "Следующая волна не обязана быть больше",
+            "Наблюдение остаётся спокойным"
+          ],
+          "en": [
+            "A wave reaches shore naturally",
+            "Then retreats gently",
+            "The next wave need not be bigger",
+            "Observation stays relaxed"
+          ],
+          "es": [
+            "La ola llega sola",
+            "Después se retira",
+            "La siguiente no tiene que crecer",
+            "Se observa con calma"
+          ]
+        }
+      },
+      {
+        "id": "breathing-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Воздушный шар без усилия",
+          "en": "An effortless balloon",
+          "es": "Globo sin esfuerzo"
+        },
+        "shots": {
+          "ru": [
+            "На картинке маленький шар плывёт",
+            "Ветер несёт его свободно",
+            "Никто не тянет за верёвку",
+            "Шар остаётся в поле зрения"
+          ],
+          "en": [
+            "A small balloon floats into view",
+            "A breeze carries it",
+            "No one pulls its string",
+            "It stays within sight"
+          ],
+          "es": [
+            "Un globo aparece flotando",
+            "La brisa lo lleva",
+            "Nadie tira de la cuerda",
+            "Se sigue con la mirada"
+          ]
+        }
+      },
+      {
+        "id": "breathing-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Минутное наблюдение",
+          "en": "One minute of noticing",
+          "es": "Un minuto de observar"
+        },
+        "shots": {
+          "ru": [
+            "Человек кладёт руку на опору",
+            "Слышит окружающие звуки",
+            "Замечает один обычный выдох",
+            "При дискомфорте возвращается к привычному ритму"
+          ],
+          "en": [
+            "A hand rests on a surface",
+            "Nearby sounds come into awareness",
+            "One natural exhale is noticed",
+            "Discomfort prompts a return to normal breathing"
+          ],
+          "es": [
+            "La mano descansa en apoyo",
+            "Se escuchan sonidos",
+            "Se nota una exhalación natural",
+            "Ante malestar se respira normalmente"
+          ]
+        }
+      }
+    ],
+    "muscle-relaxation": [
+      {
+        "id": "muscle-relaxation-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Тяжёлый рюкзак",
+          "en": "The heavy backpack",
+          "es": "Mochila pesada"
+        },
+        "shots": {
+          "ru": [
+            "Плечи несут воображаемый рюкзак",
+            "Рюкзак ставят рядом",
+            "Мышцы могут немного отпустить",
+            "Человек проверяет удобство позы"
+          ],
+          "en": [
+            "Shoulders carry an imaginary pack",
+            "The pack is put down",
+            "Muscles can soften a little",
+            "The position is adjusted comfortably"
+          ],
+          "es": [
+            "Los hombros llevan peso imaginario",
+            "Se deja la mochila",
+            "Los músculos aflojan un poco",
+            "Se busca comodidad"
+          ]
+        }
+      },
+      {
+        "id": "muscle-relaxation-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Снег на ветвях",
+          "en": "Snow on branches",
+          "es": "Nieve en las ramas"
+        },
+        "shots": {
+          "ru": [
+            "Тяжёлый снег сгибает ветви",
+            "Солнце растапливает часть снега",
+            "Ветки понемногу возвращают форму",
+            "Дерево остаётся устойчивым"
+          ],
+          "en": [
+            "Heavy snow bends branches",
+            "Sunlight melts some snow",
+            "Branches slowly regain shape",
+            "The tree remains rooted"
+          ],
+          "es": [
+            "La nieve dobla las ramas",
+            "El sol derrite una parte",
+            "Las ramas recuperan forma",
+            "El árbol queda firme"
+          ]
+        }
+      },
+      {
+        "id": "muscle-relaxation-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Камень становится тёплым",
+          "en": "The warming stone",
+          "es": "Piedra tibia"
+        },
+        "shots": {
+          "ru": [
+            "На ладони холодный гладкий камень",
+            "Солнечный свет касается поверхности",
+            "Камень постепенно нагревается",
+            "Ладонь разжимается по желанию"
+          ],
+          "en": [
+            "A smooth cool stone rests in a hand",
+            "Sunlight touches its surface",
+            "The stone gradually warms",
+            "The hand can open when ready"
+          ],
+          "es": [
+            "Una piedra fresca en la mano",
+            "La luz toca la superficie",
+            "Se calienta poco a poco",
+            "La mano se abre si quiere"
+          ]
+        }
+      },
+      {
+        "id": "muscle-relaxation-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Проверка напряжения",
+          "en": "Checking for tension",
+          "es": "Revisar tensión"
+        },
+        "shots": {
+          "ru": [
+            "Человек замечает сжатые челюсти",
+            "Выбирает удобное положение головы",
+            "Позволяет лицу стать чуть мягче",
+            "Не заставляет мышцы расслабляться"
+          ],
+          "en": [
+            "A clenched jaw is noticed",
+            "The head finds comfortable support",
+            "Facial muscles may soften slightly",
+            "Relaxation is not forced"
+          ],
+          "es": [
+            "Se nota la mandíbula apretada",
+            "La cabeza encuentra apoyo",
+            "El rostro puede suavizarse",
+            "No se fuerza la relajación"
+          ]
+        }
+      }
+    ],
+    "gentle-movement": [
+      {
+        "id": "gentle-movement-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Шаг у стула",
+          "en": "A step beside the chair",
+          "es": "Paso junto a la silla"
+        },
+        "shots": {
+          "ru": [
+            "Человек стоит рядом с опорой",
+            "Пробует небольшое движение кистью",
+            "Замечает комфортный диапазон",
+            "Останавливается пока движение приятно"
+          ],
+          "en": [
+            "A person stands near a support",
+            "A small hand movement is tried",
+            "A comfortable range is noticed",
+            "Movement stops while it still feels good"
+          ],
+          "es": [
+            "Alguien está junto a un apoyo",
+            "Prueba un movimiento de mano",
+            "Nota el rango cómodo",
+            "Se detiene sin forzar"
+          ]
+        }
+      },
+      {
+        "id": "gentle-movement-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Трава на ветру",
+          "en": "Grass in the breeze",
+          "es": "Hierba al viento"
+        },
+        "shots": {
+          "ru": [
+            "Трава слегка качается на лугу",
+            "Каждый стебель движется по-своему",
+            "Ветер постепенно стихает",
+            "Стебли возвращаются к покою"
+          ],
+          "en": [
+            "Grass sways gently in a meadow",
+            "Each blade follows its own motion",
+            "The breeze gradually fades",
+            "The grass returns to stillness"
+          ],
+          "es": [
+            "La hierba se mueve en el prado",
+            "Cada tallo tiene su ritmo",
+            "La brisa se calma",
+            "Regresa la quietud"
+          ]
+        }
+      },
+      {
+        "id": "gentle-movement-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Маятник малого хода",
+          "en": "A small pendulum",
+          "es": "Péndulo pequeño"
+        },
+        "shots": {
+          "ru": [
+            "Маятник сначала неподвижен",
+            "Начинает очень небольшое движение",
+            "Его размах остаётся скромным",
+            "Он мягко приходит к остановке"
+          ],
+          "en": [
+            "A pendulum begins at rest",
+            "A tiny motion appears",
+            "The arc remains modest",
+            "It gently settles again"
+          ],
+          "es": [
+            "Un péndulo empieza quieto",
+            "Aparece movimiento suave",
+            "El arco es pequeño",
+            "Vuelve a detenerse"
+          ]
+        }
+      },
+      {
+        "id": "gentle-movement-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Три минуты подвижности",
+          "en": "Three minutes of mobility",
+          "es": "Tres minutos de movilidad"
+        },
+        "shots": {
+          "ru": [
+            "Человек выбирает безопасную позу",
+            "Мягко двигает плечами без боли",
+            "Проверяет самочувствие после паузы",
+            "Решает остановиться или повторить"
+          ],
+          "en": [
+            "A safe position is chosen",
+            "Shoulders move gently without pain",
+            "Comfort is checked after a pause",
+            "Stopping or repeating remains optional"
+          ],
+          "es": [
+            "Se elige postura segura",
+            "Se mueven hombros sin dolor",
+            "Se revisa cómo se siente",
+            "Se decide parar o repetir"
+          ]
+        }
+      }
+    ],
+    "low-energy": [
+      {
+        "id": "low-energy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Утро без рывка",
+          "en": "A morning without a sprint",
+          "es": "Mañana sin carrera"
+        },
+        "shots": {
+          "ru": [
+            "Человек смотрит на длинный список дел",
+            "Открывает шторы и пьёт воду",
+            "Выбирает одну посильную задачу",
+            "Оставляет запас сил на потом"
+          ],
+          "en": [
+            "A long to-do list feels heavy",
+            "Curtains open and water is poured",
+            "One manageable task is chosen",
+            "Energy is saved for later"
+          ],
+          "es": [
+            "La lista parece pesada",
+            "Se abren cortinas y se bebe agua",
+            "Se elige tarea pequeña",
+            "Se reserva energía"
+          ]
+        }
+      },
+      {
+        "id": "low-energy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тлеющие угли",
+          "en": "Quiet embers",
+          "es": "Brasas tranquilas"
+        },
+        "shots": {
+          "ru": [
+            "В очаге остались тихие угли",
+            "Их прикрывают от сильного ветра",
+            "Пламя не нужно раздувать насильно",
+            "Тепла хватает для спокойного утра"
+          ],
+          "en": [
+            "A hearth holds a few embers",
+            "They are sheltered from strong wind",
+            "No one forces a roaring blaze",
+            "Gentle warmth is enough"
+          ],
+          "es": [
+            "Quedan brasas en el hogar",
+            "Se protegen del viento",
+            "No se fuerza gran fuego",
+            "El calor suave basta"
+          ]
+        }
+      },
+      {
+        "id": "low-energy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Солнечный круг",
+          "en": "A circle of sunlight",
+          "es": "Círculo solar"
+        },
+        "shots": {
+          "ru": [
+            "На стене появляется маленький круг света",
+            "Солнце медленно сдвигает его",
+            "Комната становится немного светлее",
+            "Герой отмечает достаточно ли сил"
+          ],
+          "en": [
+            "A small light circle appears on a wall",
+            "The sun slowly moves it",
+            "The room becomes a little brighter",
+            "Available energy is acknowledged"
+          ],
+          "es": [
+            "Un círculo de luz toca la pared",
+            "El sol lo mueve despacio",
+            "La sala se ilumina un poco",
+            "Se reconocen las fuerzas disponibles"
+          ]
+        }
+      },
+      {
+        "id": "low-energy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Проверить ресурс",
+          "en": "Checking the resource",
+          "es": "Revisar recursos"
+        },
+        "shots": {
+          "ru": [
+            "Дела требуют немедленной активности",
+            "Человек замечает усталость и голод",
+            "Выбирает отдых еду или помощь",
+            "Делает только доступный шаг"
+          ],
+          "en": [
+            "Tasks demand instant activity",
+            "Tiredness and hunger are noticed",
+            "Rest food or help is chosen",
+            "Only an available step is taken"
+          ],
+          "es": [
+            "Las tareas exigen actividad",
+            "Se nota hambre o cansancio",
+            "Se elige comida descanso o ayuda",
+            "Se hace un paso posible"
+          ]
+        }
+      }
+    ],
+    "vitality": [
+      {
+        "id": "vitality-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Живой интерес",
+          "en": "A spark of curiosity",
+          "es": "Chispa de curiosidad"
+        },
+        "shots": {
+          "ru": [
+            "Человек идёт по знакомой улице",
+            "Замечает необычную витрину",
+            "Останавливается с любопытством",
+            "Находит место маленькому открытию"
+          ],
+          "en": [
+            "Someone walks a familiar street",
+            "An unusual shop window catches the eye",
+            "They pause with curiosity",
+            "A small discovery has room to grow"
+          ],
+          "es": [
+            "Se camina por calle conocida",
+            "Llama la atención una vitrina",
+            "Se para con curiosidad",
+            "Hay lugar para descubrir"
+          ]
+        }
+      },
+      {
+        "id": "vitality-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Родник в горах",
+          "en": "A mountain spring",
+          "es": "Manantial de montaña"
+        },
+        "shots": {
+          "ru": [
+            "Из камней пробивается чистый родник",
+            "Вода наполняет маленькую чашу",
+            "Ручей находит свой путь",
+            "Путник наблюдает без спешки"
+          ],
+          "en": [
+            "A clear spring emerges from stone",
+            "Water fills a small basin",
+            "The stream finds its way",
+            "A traveler watches calmly"
+          ],
+          "es": [
+            "Brota agua de la roca",
+            "Llena una poza pequeña",
+            "El arroyo encuentra camino",
+            "Alguien lo observa"
+          ]
+        }
+      },
+      {
+        "id": "vitality-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Искра в мастерской",
+          "en": "The spark in a workshop",
+          "es": "Chispa en taller"
+        },
+        "shots": {
+          "ru": [
+            "Мастерская стоит тихой",
+            "Один инструмент привлекает внимание",
+            "Начинается простая творческая проба",
+            "Герой чувствует интерес а не обязанность"
+          ],
+          "en": [
+            "A workshop sits quietly",
+            "One tool catches attention",
+            "A simple creative experiment begins",
+            "Interest replaces obligation"
+          ],
+          "es": [
+            "El taller está silencioso",
+            "Una herramienta atrae",
+            "Empieza una prueba creativa",
+            "Interesa sin obligación"
+          ]
+        }
+      },
+      {
+        "id": "vitality-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Место для радости",
+          "en": "Room for aliveness",
+          "es": "Lugar para lo vivo"
+        },
+        "shots": {
+          "ru": [
+            "Расписание занято обязанностями",
+            "Человек вспоминает приятную мелочь",
+            "Выделяет ей короткое время",
+            "Отмечает свой отклик без оценки"
+          ],
+          "en": [
+            "A schedule is full of duties",
+            "A small pleasure is remembered",
+            "A little time is reserved for it",
+            "The response is noticed without judgment"
+          ],
+          "es": [
+            "La agenda está llena de deberes",
+            "Se recuerda algo agradable",
+            "Se reserva un rato",
+            "Se observa la respuesta sin juicio"
+          ]
+        }
+      }
+    ],
+    "boost-energy": [
+      {
+        "id": "boost-energy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Перерыв вместо кофе на бегу",
+          "en": "A break instead of rushing",
+          "es": "Pausa en vez de prisa"
+        },
+        "shots": {
+          "ru": [
+            "Рука тянется к новой стимуляции",
+            "Человек проверяет усталость",
+            "Меняет положение и пьёт воду",
+            "Решает какой объём дел реалистичен"
+          ],
+          "en": [
+            "A hand reaches for another quick stimulant",
+            "Tiredness is checked",
+            "Posture changes and water is taken",
+            "A realistic workload is chosen"
+          ],
+          "es": [
+            "Se busca otro impulso rápido",
+            "Se revisa el cansancio",
+            "Se cambia postura y bebe agua",
+            "Se decide una carga realista"
+          ]
+        }
+      },
+      {
+        "id": "boost-energy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Солнечная поляна",
+          "en": "The sunlit clearing",
+          "es": "Claro soleado"
+        },
+        "shots": {
+          "ru": [
+            "Лесная тропа выводит на свет",
+            "Путник останавливается на поляне",
+            "Солнечные пятна движутся по траве",
+            "Он выбирает идти или отдохнуть"
+          ],
+          "en": [
+            "A forest path opens into light",
+            "A traveler pauses in the clearing",
+            "Sun patches move across grass",
+            "Walking or resting stays optional"
+          ],
+          "es": [
+            "El sendero sale a la luz",
+            "La persona se detiene",
+            "El sol dibuja manchas en hierba",
+            "Elige caminar o descansar"
+          ]
+        }
+      },
+      {
+        "id": "boost-energy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Часы с живым ритмом",
+          "en": "A clock with a human rhythm",
+          "es": "Reloj a ritmo humano"
+        },
+        "shots": {
+          "ru": [
+            "Большие часы идут слишком быстро",
+            "Стрелки постепенно замедляются",
+            "Появляется устойчивый собственный темп",
+            "Один небольшой цикл завершается"
+          ],
+          "en": [
+            "A giant clock runs too fast",
+            "The hands gradually slow",
+            "A workable personal tempo appears",
+            "One small cycle finishes"
+          ],
+          "es": [
+            "El reloj corre demasiado",
+            "Las agujas bajan velocidad",
+            "Aparece ritmo propio",
+            "Termina un ciclo breve"
+          ]
+        }
+      },
+      {
+        "id": "boost-energy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Микропауза для сил",
+          "en": "A microbreak for energy",
+          "es": "Micropausa para fuerzas"
+        },
+        "shots": {
+          "ru": [
+            "Человек хочет ускорить работу",
+            "Выпрямляет позу как удобно",
+            "Смотрит вдаль от экрана",
+            "Возвращается к одному посильному делу"
+          ],
+          "en": [
+            "Work seems to demand more speed",
+            "Posture is adjusted comfortably",
+            "Eyes look away from the screen",
+            "One manageable task resumes"
+          ],
+          "es": [
+            "Parece que hay que acelerar",
+            "Se ajusta la postura",
+            "Se mira lejos de la pantalla",
+            "Se retoma algo posible"
+          ]
+        }
+      }
+    ],
+    "morning-energy": [
+      {
+        "id": "morning-energy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Первый свет на кухне",
+          "en": "First light in the kitchen",
+          "es": "Primera luz en la cocina"
+        },
+        "shots": {
+          "ru": [
+            "Утром кухня ещё полутёмная",
+            "Человек открывает занавеску",
+            "Готовит воду и простой завтрак",
+            "Выбирает мягкое начало дня"
+          ],
+          "en": [
+            "The kitchen is dim at dawn",
+            "A curtain is opened",
+            "Water and a simple breakfast are prepared",
+            "The day starts gently"
+          ],
+          "es": [
+            "La cocina está oscura",
+            "Se abre la cortina",
+            "Se prepara agua y desayuno",
+            "El día empieza suave"
+          ]
+        }
+      },
+      {
+        "id": "morning-energy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Птицы до рассвета",
+          "en": "Birds before sunrise",
+          "es": "Aves antes del alba"
+        },
+        "shots": {
+          "ru": [
+            "Небо ещё прохладное и серое",
+            "Слышны первые птицы",
+            "Розовый свет касается деревьев",
+            "Утро развивается своим ритмом"
+          ],
+          "en": [
+            "The sky is cool and gray",
+            "The first birds are heard",
+            "Pink light touches the trees",
+            "Morning unfolds at its own pace"
+          ],
+          "es": [
+            "El cielo está gris",
+            "Se oyen primeros pájaros",
+            "La luz rosa toca árboles",
+            "La mañana sigue su ritmo"
+          ]
+        }
+      },
+      {
+        "id": "morning-energy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Дом просыпается",
+          "en": "The waking house",
+          "es": "La casa despierta"
+        },
+        "shots": {
+          "ru": [
+            "Тёмные комнаты постепенно светлеют",
+            "Открывается одно окно",
+            "В доме появляются простые звуки",
+            "День начинается без спешки"
+          ],
+          "en": [
+            "Dark rooms slowly grow lighter",
+            "One window opens",
+            "Simple daily sounds begin",
+            "The day starts without hurry"
+          ],
+          "es": [
+            "Las habitaciones se iluminan",
+            "Se abre una ventana",
+            "Surgen sonidos cotidianos",
+            "El día empieza sin prisa"
+          ]
+        }
+      },
+      {
+        "id": "morning-energy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Два спокойных шага",
+          "en": "Two calm morning steps",
+          "es": "Dos pasos matinales"
+        },
+        "shots": {
+          "ru": [
+            "Будильник вызывает желание спешить",
+            "Человек замечает опору стоп",
+            "Выбирает два простых утренних действия",
+            "Остальное оставляет по самочувствию"
+          ],
+          "en": [
+            "An alarm triggers a rush",
+            "The feet find the ground",
+            "Two simple morning actions are chosen",
+            "The rest follows available energy"
+          ],
+          "es": [
+            "El despertador invita a correr",
+            "Se nota apoyo de los pies",
+            "Se eligen dos acciones simples",
+            "Lo demás depende de fuerzas"
+          ]
+        }
+      }
+    ],
+    "self-confidence": [
+      {
+        "id": "self-confidence-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Слово на собрании",
+          "en": "Speaking in a meeting",
+          "es": "Hablar en una reunión"
+        },
+        "shots": {
+          "ru": [
+            "Человек молчит хотя есть идея",
+            "Записывает мысль одним предложением",
+            "Произносит её спокойным голосом",
+            "Замечает что выдержал момент"
+          ],
+          "en": [
+            "A person has an idea but stays quiet",
+            "The thought becomes one sentence",
+            "It is spoken in a steady voice",
+            "The moment is recognized as progress"
+          ],
+          "es": [
+            "Hay una idea pero se calla",
+            "Se escribe en una frase",
+            "Se comparte con voz tranquila",
+            "Se reconoce el esfuerzo"
+          ]
+        }
+      },
+      {
+        "id": "self-confidence-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Первый шаг по камням",
+          "en": "The first stepping stone",
+          "es": "La primera piedra"
+        },
+        "shots": {
+          "ru": [
+            "Перед путником неглубокий ручей",
+            "Он ищет устойчивый первый камень",
+            "Проверяет опору под ногой",
+            "Переходит не прыгая через всё сразу"
+          ],
+          "en": [
+            "A shallow stream lies ahead",
+            "A stable first stone is found",
+            "The footing is tested",
+            "Crossing happens without one huge leap"
+          ],
+          "es": [
+            "Hay un arroyo delante",
+            "Se busca una piedra estable",
+            "Se prueba el apoyo",
+            "Se cruza paso a paso"
+          ]
+        }
+      },
+      {
+        "id": "self-confidence-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Маленький щит",
+          "en": "The right-sized shield",
+          "es": "Escudo adecuado"
+        },
+        "shots": {
+          "ru": [
+            "В мастерской лежит тяжёлый щит",
+            "Человек выбирает подходящий по размеру",
+            "Держит его без напряжённой позы",
+            "Может опустить когда безопасно"
+          ],
+          "en": [
+            "A heavy shield lies in a workshop",
+            "A lighter fitting shield is chosen",
+            "It is held without strain",
+            "It may be lowered in safety"
+          ],
+          "es": [
+            "Hay un escudo pesado",
+            "Se elige uno manejable",
+            "Se sostiene sin tensión",
+            "Se puede dejar"
+          ]
+        }
+      },
+      {
+        "id": "self-confidence-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Запись достижений",
+          "en": "A record of evidence",
+          "es": "Registro de logros"
+        },
+        "shots": {
+          "ru": [
+            "В уме слышится голос сомнения",
+            "Человек открывает дневник реальных дел",
+            "Записывает три конкретных действия",
+            "Выбирает одно следующее посильное"
+          ],
+          "en": [
+            "A doubtful voice appears",
+            "A notebook of real actions opens",
+            "Three concrete efforts are listed",
+            "One manageable next step is chosen"
+          ],
+          "es": [
+            "Aparece voz de duda",
+            "Se abre diario de acciones reales",
+            "Se anotan tres esfuerzos",
+            "Se elige paso posible"
+          ]
+        }
+      }
+    ],
+    "low-self-esteem": [
+      {
+        "id": "low-self-esteem-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Чужая оценка",
+          "en": "Someone else's rating",
+          "es": "La nota ajena"
+        },
+        "shots": {
+          "ru": [
+            "На экране появляется резкий комментарий",
+            "Человек замечает свою реакцию",
+            "Разделяет факт и оценку",
+            "Возвращает себе право на собственный взгляд"
+          ],
+          "en": [
+            "A harsh comment appears on screen",
+            "The emotional response is noticed",
+            "Fact is separated from judgment",
+            "Personal perspective regains space"
+          ],
+          "es": [
+            "Aparece un comentario duro",
+            "Se nota la reacción",
+            "Se separan hechos y juicio",
+            "Se recupera perspectiva"
+          ]
+        }
+      },
+      {
+        "id": "low-self-esteem-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Старое дерево",
+          "en": "The weathered tree",
+          "es": "Árbol marcado"
+        },
+        "shots": {
+          "ru": [
+            "На коре дерева много отметин",
+            "Внутри сохраняются живые кольца",
+            "Ветви тянутся к свету",
+            "Дерево не сравнивают с соседними"
+          ],
+          "en": [
+            "Many marks cover a tree's bark",
+            "Living rings remain inside",
+            "Branches still reach the light",
+            "It need not resemble nearby trees"
+          ],
+          "es": [
+            "La corteza tiene cicatrices",
+            "Los anillos siguen vivos",
+            "Las ramas buscan luz",
+            "No se compara con otros"
+          ]
+        }
+      },
+      {
+        "id": "low-self-esteem-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Сломанная линейка",
+          "en": "The broken ruler",
+          "es": "Regla equivocada"
+        },
+        "shots": {
+          "ru": [
+            "Герой меряет себя чужой линейкой",
+            "Замечает что деления не подходят",
+            "Убирает инструмент сравнения",
+            "Оценивает конкретный поступок отдельно"
+          ],
+          "en": [
+            "A person uses someone else's measuring stick",
+            "The markings do not fit",
+            "The ruler is put away",
+            "A concrete action is evaluated on its own"
+          ],
+          "es": [
+            "Se mide con regla ajena",
+            "Las marcas no encajan",
+            "Se guarda la regla",
+            "Se evalúa una acción concreta"
+          ]
+        }
+      },
+      {
+        "id": "low-self-esteem-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Доброжелательный факт",
+          "en": "One kind fact",
+          "es": "Un hecho amable"
+        },
+        "shots": {
+          "ru": [
+            "Человек видит только ошибки",
+            "Записывает одно то что получилось",
+            "Признаёт усилие без громких похвал",
+            "Продолжает день с реалистичным взглядом"
+          ],
+          "en": [
+            "Only mistakes come to mind",
+            "One thing that worked is written",
+            "Effort is acknowledged without exaggeration",
+            "The day continues more fairly"
+          ],
+          "es": [
+            "Solo se recuerdan errores",
+            "Se anota algo que salió bien",
+            "Se reconoce esfuerzo sin exagerar",
+            "Se sigue con más equilibrio"
+          ]
+        }
+      }
+    ],
+    "self-acceptance": [
+      {
+        "id": "self-acceptance-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Фотография без фильтра",
+          "en": "A photo without a filter",
+          "es": "Foto sin filtro"
+        },
+        "shots": {
+          "ru": [
+            "Человек рассматривает своё фото",
+            "Замечает желание немедленно исправить",
+            "Ставит изображение рядом с тёплым воспоминанием",
+            "Относится к себе как к живому человеку"
+          ],
+          "en": [
+            "A person looks at their photo",
+            "The urge to edit is noticed",
+            "A warm memory comes to mind",
+            "A human view of oneself remains"
+          ],
+          "es": [
+            "Se mira una fotografía propia",
+            "Surge deseo de corregirla",
+            "Viene un recuerdo cálido",
+            "Se mira a sí mismo con humanidad"
+          ]
+        }
+      },
+      {
+        "id": "self-acceptance-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Сад разных цветов",
+          "en": "A garden of different flowers",
+          "es": "Jardín de flores distintas"
+        },
+        "shots": {
+          "ru": [
+            "На клумбе цветы разной формы",
+            "Один цветок пытается стать другим",
+            "Садовник замечает красоту различий",
+            "Все растения получают достаточно места"
+          ],
+          "en": [
+            "Flowers have different shapes",
+            "One flower seems to want another form",
+            "The gardener notices their variety",
+            "Every plant gets room"
+          ],
+          "es": [
+            "Hay flores de todas formas",
+            "Una intenta parecerse a otra",
+            "Se aprecia la diversidad",
+            "Todas tienen espacio"
+          ]
+        }
+      },
+      {
+        "id": "self-acceptance-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Керамика с неровностями",
+          "en": "The uneven pottery bowl",
+          "es": "Cerámica imperfecta"
+        },
+        "shots": {
+          "ru": [
+            "Гончар смотрит на неровную чашу",
+            "Поворачивает её к свету",
+            "Замечает характер ручной работы",
+            "Чаша остаётся пригодной для жизни"
+          ],
+          "en": [
+            "A potter sees an uneven bowl",
+            "It turns toward the light",
+            "The marks of handwork become visible",
+            "The bowl still serves its purpose"
+          ],
+          "es": [
+            "Se mira una taza irregular",
+            "Se gira hacia la luz",
+            "Se ven huellas del trabajo",
+            "La taza sirve tal cual"
+          ]
+        }
+      },
+      {
+        "id": "self-acceptance-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Слова без борьбы",
+          "en": "Words without a fight",
+          "es": "Palabras sin lucha"
+        },
+        "shots": {
+          "ru": [
+            "Появляется неприятное чувство",
+            "Человек называет его без оценки",
+            "Позволяет ему быть некоторое время",
+            "Выбирает заботливое действие без борьбы"
+          ],
+          "en": [
+            "An uncomfortable feeling arises",
+            "It is named without judgment",
+            "It may exist for a moment",
+            "One caring action follows"
+          ],
+          "es": [
+            "Aparece emoción incómoda",
+            "Se nombra sin juicio",
+            "Se permite por un momento",
+            "Se elige un gesto de cuidado"
+          ]
+        }
+      }
+    ],
+    "assertiveness": [
+      {
+        "id": "assertiveness-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Вежливое нет",
+          "en": "A respectful no",
+          "es": "Un no respetuoso"
+        },
+        "shots": {
+          "ru": [
+            "Человек получает неудобную просьбу",
+            "Чувствует желание согласиться автоматически",
+            "Произносит короткий уважительный отказ",
+            "Выдерживает паузу без длинных оправданий"
+          ],
+          "en": [
+            "An inconvenient request is made",
+            "The reflex to agree appears",
+            "A brief respectful no is spoken",
+            "Silence needs no lengthy defense"
+          ],
+          "es": [
+            "Llega una petición incómoda",
+            "Surge impulso de aceptar",
+            "Se dice no con respeto",
+            "No hacen falta largas excusas"
+          ]
+        }
+      },
+      {
+        "id": "assertiveness-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Два берега",
+          "en": "Two riverbanks",
+          "es": "Dos orillas"
+        },
+        "shots": {
+          "ru": [
+            "Река разделяет два соседних участка",
+            "Каждый берег имеет свою границу",
+            "Мост позволяет встречаться добровольно",
+            "Берега остаются на месте"
+          ],
+          "en": [
+            "A river divides two neighboring lands",
+            "Each bank has its boundary",
+            "A bridge makes meeting possible",
+            "The boundaries remain"
+          ],
+          "es": [
+            "Un río separa terrenos",
+            "Cada orilla tiene límites",
+            "Un puente permite encontrarse",
+            "Los límites se respetan"
+          ]
+        }
+      },
+      {
+        "id": "assertiveness-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Круг мелом",
+          "en": "The chalk circle",
+          "es": "Círculo de tiza"
+        },
+        "shots": {
+          "ru": [
+            "На площади нарисован круг",
+            "Человек занимает место внутри",
+            "Другой подходит к линии",
+            "Хозяин приглашает или просит остановиться"
+          ],
+          "en": [
+            "A circle is drawn in a square",
+            "A person stands inside it",
+            "Someone approaches its edge",
+            "Invitation or a stop is freely given"
+          ],
+          "es": [
+            "Hay un círculo en la plaza",
+            "Una persona se sitúa dentro",
+            "Otra se acerca",
+            "Se invita o se pide parar"
+          ]
+        }
+      },
+      {
+        "id": "assertiveness-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Я могу попросить",
+          "en": "I can make a request",
+          "es": "Puedo pedir"
+        },
+        "shots": {
+          "ru": [
+            "Человек работает сверх оговорённого",
+            "Замечает растущее напряжение",
+            "Говорит что реально успевает",
+            "Предлагает конкретный новый срок"
+          ],
+          "en": [
+            "Someone works beyond what was agreed",
+            "Growing strain is noticed",
+            "Actual capacity is stated",
+            "A realistic deadline is offered"
+          ],
+          "es": [
+            "Se trabaja más de lo acordado",
+            "Se nota tensión",
+            "Se expresan capacidades reales",
+            "Se propone otro plazo"
+          ]
+        }
+      }
+    ]
+  }
+}
