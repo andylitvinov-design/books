@@ -1856,7 +1856,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
-  const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
+  // Phrase edits remain drafts until explicitly approved. Do not mark or clear
+  // the currently attached narration while the draft is pending; once approved,
+  // the changed transcript becomes stale and the user must regenerate it.
+  const narrationInvalid=Boolean(!phrasePending&&attachedAudio?.kind==="file"&&attachedAudio.narration&&
     (attachedAudio.spokenText!==currentAffirmationSpeech || attachedAudio.mixSeconds!==duration ||
       attachedAudio.voiceId!==voicePreferences.voiceId || attachedAudio.language!==voicePreferences.language ||
       attachedAudio.bed!==voicePreferences.bed ||
