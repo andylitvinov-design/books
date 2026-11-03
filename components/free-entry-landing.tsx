@@ -9,7 +9,6 @@ import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry"
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
-import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PersonalTestimonials, locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
