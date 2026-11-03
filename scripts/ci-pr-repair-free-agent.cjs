@@ -261,13 +261,15 @@ async function propose(){
    return paths;
  }finally{fs.rmSync(isolated,{recursive:true,force:true});}
 }
-if(require.main===module){
- try{propose();}catch(error){
+async function main(){
+ try{await propose();}
+ catch(error){
    const reason=String(error.message||error).replace(/[^A-Za-z0-9_-]/g,'_').slice(0,100);
    fs.writeFileSync('.hh-free-agent-status',reason+'\n',{mode:0o600});
    console.error('HH_FREE_AI_BLOCKED '+reason+'; no paid fallback, no source publication');
    process.exitCode=1;
  }
 }
+if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};
