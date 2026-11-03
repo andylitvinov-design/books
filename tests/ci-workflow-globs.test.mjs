@@ -195,6 +195,38 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.match(s, /const mobileDockExpected=new Map\(\[/);
   assert.match(s, /mobileDockOnly=fields\.at\(-1\)===''/);
   assert.match(s, /\|\|operatorOnly\|\|mobileDockOnly/);
+  for (const line of [
+    '["app/[locale]/app/[[...path]]/workspace.css","M"]',
+    '["app/[locale]/app/messages/messages-page.css","M"]',
+    '["components/app/messages-bottom-navigation.jsx","M"]',
+    '["lib/mobile-visual-bottom.mjs","M"]',
+    '["tests/mobile-visual-dock.test.mjs","M"]',
+  ]) assert.ok(s.includes(line), 'repeatable mobile dock change must use exact modified-file manifest: ' + line);
+  const detect = s.indexOf('Detect exact Mobile Dock-only batch before costly IA work');
+  const install = s.indexOf('      - run: npm ci --no-audit --no-fund');
+  assert.ok(detect >= 0 && install > detect, 'dock scope must be proven before npm install or heavy IA checks');
+  assert.match(s, /id: dock-scope/);
+  assert.match(s, /secondParent===expectedHead/);
+  assert.match(s, /merge-base','--is-ancestor',expectedBase,firstParent/);
+  assert.match(s, /Mobile Dock geometry and iPhone keyboard contracts/);
+  assert.ok(s.includes("steps.dock-scope.outputs.dock_only == 'true'"));
+  for (const step of [
+    'IA security, ownership and navigation contracts',
+    'Application, CRM and billing functional contracts',
+    'Guest test access and privacy contracts',
+    'Select exact-merge Messenger fast lane (fail closed)',
+    'Source-content validators',
+    'Restore trusted production-owned scenario media cache',
+    'Restore trusted production Next compiler cache',
+    'Isolated browser tools and Redis CLI',
+    'Initialize disposable owner database with real app migrations',
+    'Synthetic encrypted-store and owner/client browser acceptance',
+  ]) {
+    const start = s.indexOf('- name: ' + step);
+    assert.ok(start >= 0, 'expected full IA step ' + step);
+    const condition = s.slice(start, start + 300).split('\n').find(line => line.trim().startsWith('if:')) || '';
+    assert.ok(condition.includes("steps.dock-scope.outputs.dock_only != 'true'"), step + ' must remain mandatory outside the exact dock lane');
+  }
   assert.ok(!s.includes('/^\\.github\\/workflows\\/ia-v2\\.yml$/'),
     'editing the IA workflow itself must retain the full specialist path');
   assert.match(s, /uses: actions\/cache\/restore@v4/);
