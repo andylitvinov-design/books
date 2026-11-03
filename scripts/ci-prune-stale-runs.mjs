@@ -34,6 +34,20 @@ export function context(env, event) {
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
 const CORE_FORCE_PATH = '.github/workflows/hh-pr-core-release.yml';
+// An obsolete open-PR HEAD may interrupt only already-running browser jobs.
+// Active Core/Specialist/Repair and unrelated jobs are not source-repair waste.
+// A verified CLOSED PR keeps its separate exact-SHA cleanup semantics.
+const IN_PROGRESS_BROWSER_WORKFLOWS = new Set([
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-messages-wellness-browser.yml',
+  '.github/workflows/practice-visual-browser.yml',
+]);
+const isRunningBrowserWorkflow = path => typeof path === 'string' &&
+  [...IN_PROGRESS_BROWSER_WORKFLOWS].some(file =>
+    path === file || path.startsWith(file + '@refs/'));
 const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
   'hh-specialist', 'hh-merge-check', 'hh-eslint-repair', 'release-ready']);
 
@@ -57,6 +71,7 @@ export function eligible(run, pr, ctx) {
   if (!run || run.event !== 'pull_request' ||
       (run.status !== 'queued' && run.status !== 'in_progress') ||
       (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha)) ||
+      (run.status === 'in_progress' && pr?.state === 'open' && !isRunningBrowserWorkflow(run.path)) ||
       !pr || !Number.isSafeInteger(pr.number) || pr.number < 1 ||
       (ctx.number && pr.number !== ctx.number) ||
       pr.base?.ref !== TARGET || run.head_repository?.full_name !== ctx.repo ||

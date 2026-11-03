@@ -172,6 +172,13 @@ jobs:
         run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs tests/ru-about-video-presentation.test.mjs tests/page-video-release.test.mjs
       - name: Original About video source lint
         run: npx --no-install eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Install isolated browser test dependencies without changing the app lockfile
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         timeout-minutes: 12
@@ -289,6 +296,13 @@ jobs:
       - name: Initialize disposable empty PostgreSQL with exact app migrations
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Install pinned Chromium and Redis client for authenticated E2E
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |

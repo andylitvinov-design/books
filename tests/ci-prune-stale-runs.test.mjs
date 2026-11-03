@@ -433,3 +433,40 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
 });
+
+test('running obsolete open-PR checks cancel only allowlisted browsers, not Core or active non-browser verification',()=>{
+  const lease={...ctx,headSha:NEW};
+  const linked=run({status:'in_progress'});
+  assert.equal(eligible({...linked,path:'.github/workflows/ia-v2.yml'},pr(),lease),true);
+  assert.equal(eligible({...linked,path:'.github/workflows/site-video-browser.yml@refs/pull/5/merge'},pr(),lease),true);
+  for(const path of [
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-pr-sweep-guard.yml',
+    '.github/workflows/hh-pr-repair-worker.yml',
+    '.github/workflows/unrecognized-browser.yml',
+    '.github/workflows/site-video-browser.yml@untrusted-branch'
+  ]) assert.equal(eligible({...linked,path},pr(),lease),false,path);
+  assert.equal(eligible(run({status:'queued'}),pr(),lease),true);
+  const terminal=pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:'2026-11-03T05:05:59Z'});
+  const closed=run({status:'in_progress',head_sha:NEW,pull_requests:[],
+    created_at:'2026-11-03T05:05:44Z'});
+  assert.equal(eligible(closed,terminal,{...ctx,closedHeadSha:NEW}),true,
+    'closed-PR cleanup still removes stranded real Core runs on exact SHA');
+});
+
+test('production-seeded Playwright binaries restore read-only and never bypass browser acceptance',()=>{
+  const seed=readFileSync('.github/workflows/hh-public-playwright-cache.yml','utf8');
+  const key='hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1';
+  assert.ok(seed.includes('actions/cache/save@v4')&&seed.includes(key));
+  for(const path of [
+    '.github/workflows/ia-v2.yml',
+    '.github/workflows/hh-app-browser.yml',
+    '.github/workflows/site-video-browser.yml',
+  ]){
+    const source=readFileSync(path,'utf8');
+    assert.ok(source.includes('actions/cache/restore@v4')&&source.includes(key),path);
+    assert.ok(!source.includes('actions/cache/save@v4'),path);
+    assert.ok(source.includes('playwright install --with-deps'),path+' must retain browser installation');
+  }
+});
