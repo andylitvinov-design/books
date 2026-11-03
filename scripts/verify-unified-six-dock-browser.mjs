@@ -45,13 +45,31 @@ async function inspect(browserType,locale,width){
   },null,{timeout:10000});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<=2,id+" horizontal overflow "+overflow);
-  assert.equal(await page.locator("[data-video-life-area]").count(),4,id);
+  // MyTube now uses the approved 4×4×4 editorial hierarchy, rather than the
+  // retired general-library four life-area filter. Wait for hydration so Safari
+  // cannot swallow the real first click on a server-rendered category.
+  const categories=page.locator('[data-mytube-categories] [data-mytube-category]');
+  assert.equal(await categories.count(),4,id+" four unique directions");
+  await page.waitForFunction(()=>{
+    const button=document.querySelector("[data-mytube-category]");
+    return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
+  },null,{timeout:15000});
+  const area=categories.locator('[data-mytube-category="energy-confidence"]');
+  await area.click();
+  await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
+    ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
+  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]');
+  await subcategories.first().waitFor({state:"visible",timeout:15000});
+  assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
+  await page.locator('[data-mytube-subcategory="energy-fatigue"]').click();
+  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]');
+  await topics.first().waitFor({state:"visible",timeout:15000});
+  assert.equal(await topics.count(),4,id+" four distinct topics");
+  await area.click();
+  await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
+    null,{timeout:15000});
   const cards=page.locator('[data-video-layout="mytube"] article');
-  assert.ok(await cards.count()>0,id+" reviewed public video cards");
-  const area=page.locator('[data-video-life-area="energy_health"]');
-  await area.click();
-  assert.equal(await area.getAttribute("aria-pressed"),"true",id);
-  await area.click();
+  assert.ok(await cards.count()>0,id+" genuine published video cards");
   const first=cards.first();
   const title=(await first.locator("h2").innerText()).trim();
   const search=page.locator("[data-mytube-search]");
