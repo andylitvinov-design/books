@@ -60,7 +60,8 @@ test('only signed exact-HEAD CI handoff can be audited',()=>{
 });
 test('Core association requires the current branch, current SHA and correct PR',()=>{
  assert.equal(runAssociation(coreRun(),task),'EXACT');
- assert.equal(runAssociation(coreRun({head_branch:'foreign'}),task),'OTHER');
+ assert.equal(runAssociation(coreRun({head_branch:'foreign'}),task),'UNKNOWN',
+  'a mismatched branch still linked to this PR must fail closed');
  assert.equal(runAssociation(coreRun({pull_requests:[{number:33,head:{sha:SHA}}]}),task),'OTHER');
  assert.equal(runAssociation(coreRun({pull_requests:[{number:2169,head:{sha:OTHER}}]}),task),'OTHER_HEAD');
  assert.equal(runAssociation(coreRun({head_sha:OTHER,pull_requests:[]}),task),'MERGE_PARENT_REQUIRED');
