@@ -126,7 +126,7 @@ test('superseded CI runs for this PR are canceled without canceling manual dispa
   assert.match(workflow,/concurrency:\n  group: growth-studio-/)
   assert.ok(workflow.includes("format('pr-{0}', github.event.pull_request.number)"), 'synchronize batches group by the same PR')
   assert.ok(workflow.includes("format('run-{0}', github.run_id)"), 'manual and other events never share the moving-PR cancellation group')
-  assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only a changed HEAD cancels a prior PR run')
+  assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'only a changed HEAD cancels a prior PR run')
   assert.match(workflow,/workflow_dispatch:/)
   assert.match(workflow,/tests\/growth-studio-benchmark-quick-compose\.test\.mjs/)
 })

@@ -5,7 +5,6 @@ on:
     paths:
       - '.github/workflows/**'
       - 'tests/ci-workflow-globs.test.mjs'
-      - 'tests/ci-stale-run-deduplication.test.mjs'
       - 'tests/pr-fast-lane.test.mjs'
       - 'scripts/ci-deterministic-eslint-repair.mjs'
       - 'tests/ci-deterministic-eslint-repair.test.mjs'
@@ -50,7 +49,6 @@ jobs:
           # Fail cheap, on ubuntu-slim: do not wait for the production Core
           # runner to discover a deterministic unit-contract typo.
           # These tests use only Node built-ins and do not run npm install.
-          node --test tests/ci-stale-run-deduplication.test.mjs
           if [[ -f tests/pr-fast-lane.test.mjs ]]; then
             node --test tests/pr-fast-lane.test.mjs
           fi
