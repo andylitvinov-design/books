@@ -67,3 +67,24 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
   assert.doesNotMatch(source,/git',\['push'[^;\n]*--force/);
   assert.doesNotMatch(source,/\b(?:npm run|npx |opencode|openrouter|codex)\b|API[_-]?KEY/i);
 });
+
+
+test('the repair lane is optional, BASE-owned and cannot satisfy the required merge aggregator',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+  const start=workflow.indexOf('  hh-eslint-repair:');
+  const end=workflow.indexOf('  # Both GitHub production protection sources',start);
+  assert.ok(start>=0&&end>start,'the optional repair job must exist');
+  const job=workflow.slice(start,end);
+  assert.match(job,/needs: \[scope\]/);
+  assert.match(job,/needs\.scope\.result == 'failure'/);
+  assert.match(job,/failure\(\)/);
+  assert.match(job,/contents: write/);
+  assert.match(job,/pull-requests: write/);
+  assert.match(job,/issues: write/);
+  assert.match(job,/git cat-file -e "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
+  assert.match(job,/git show "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
+  const mergeStart=workflow.indexOf('  hh-merge-check:');
+  const merge=workflow.slice(mergeStart);
+  assert.match(merge,/needs: \[scope, hh-specialist\]/);
+  assert.doesNotMatch(merge,/hh-eslint-repair/);
+});
