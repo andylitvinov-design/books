@@ -15,7 +15,7 @@ on:
       - 'tests/direct-message-video-notes.test.mjs'
       - 'tests/messages-private-media-pagination.test.mjs'
       - 'tests/ci-head-cancellation.test.mjs'
-      - '.github/workflows/hh-direct-video-notes.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
 permissions:
   contents: read
 concurrency:

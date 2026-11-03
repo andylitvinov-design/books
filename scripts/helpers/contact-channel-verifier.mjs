@@ -104,9 +104,11 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(nameDisclosure).toHaveCount(1);
   await expect(nameDisclosure).not.toHaveAttribute('open', '');
   await nameDisclosure.locator('summary').click();
-  // React owns the disclosure state: wait for its committed DOM
-  // instead of clicking twice before hydration and accidentally closing it.
-  await expect(nameDisclosure).toHaveAttribute('open', '', { timeout: 5000 });
+  // A concurrent React refresh can replace the native disclosure immediately
+  // after its first click. Reopen it once if that actually happened.
+  if (!await name.isVisible() && !await nameDisclosure.evaluate(node => node.open)) {
+    await nameDisclosure.locator('summary').click();
+  }
   await expect(name).toBeVisible();
   await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');

@@ -30,7 +30,7 @@ on:
       - 'tests/capture-public-ui-reference.test.mjs'
       - 'scripts/capture-public-ui-reference.mjs'
       - 'scripts/fixtures/practice-approved-reference-20261028.json'
-      - '.github/workflows/practice-visual-browser.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:

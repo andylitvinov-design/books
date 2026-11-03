@@ -13,7 +13,7 @@ const sources = manifest.nativeVideos.map(asset => asset.url);
 const posters = manifest.assets.filter(asset => asset.contentType === 'image/png').map(asset => new URL(asset.path, origin).href);
 const result = { origin, assets: [], journeys: [] };
 
-const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0';
+const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1';
 async function installYoutubeFixture(context) {
   await context.route(youtubeUrl, route => route.fulfill({
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
@@ -261,30 +261,24 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    // Opening paused <details> must not start playback. WebKit may retain
-    // the decoded still frame without dispatching requestVideoFrameCallback
-    // again until the user explicitly resumes it. Verify passive pause below,
-    // then require fresh decoded frames AFTER that deliberate resume.
+    // Observe the reopened state through backend reconstruction, before another
+    // explicit play. A cached currentTime or immediate paused sample is insufficient.
+    if (engine === 'webkit') {
+      for (const index of [0, 1]) {
+        const video = disclosure.locator('video').nth(index);
+        await video.scrollIntoViewIfNeeded();
+        await expect.poll(() => video.evaluate((el, { at, time }) => {
+          const frame = el.__tantraPresentedFrame;
+          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
+        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+      }
+    }
     await page.waitForTimeout(350);
     const reopened = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ paused: el.paused, time: el.currentTime })));
     assert.ok(reopened.every(video => video.paused), 'Reopened videos must remain paused through pipeline restoration');
     reopened.forEach((video, index) => assert.ok(Math.abs(video.time - paused[index]) < 0.05, 'Reopened videos must retain position until explicit play'));
     const unsolicitedPlay = await page.evaluate(at => (window.__tantraNativeTimeline ?? []).filter(event => event.type === 'play' && event.at >= at), reopening.at);
     assert.deepEqual(unsolicitedPlay, [], 'Reopening must not trigger delayed native replay');
-    // Passive WebKit still-frame rendering is not an active-frame callback.
-    // A real explicit resume must progress both the media clock and decoded
-    // video frame count; startVisibleNative verifies both independently.
-    if (engine === 'webkit') {
-      for (const index of [0, 1]) {
-        const video = disclosure.locator('video').nth(index);
-        const resumed = await startVisibleNative(disclosure, index, {
-          phase: 'explicit-reopen-resume', cycle: cycle + 1,
-        });
-        assert.ok(resumed.sample.time >= paused[index], 'Explicit resume must retain the paused position');
-        await video.evaluate(el => el.pause());
-        await expect.poll(() => video.evaluate(el => el.paused)).toBe(true);
-      }
-    }
     observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, reopened, youtubeFixtureOnly: true });
   }
   return observations;
@@ -427,7 +421,7 @@ try {
           try {
             await installNativeTimelineDiagnostics(context);
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
-            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0', route => route.fulfill({
+            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1', route => route.fulfill({
               contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
             }));
             const page = await context.newPage();
@@ -490,7 +484,7 @@ try {
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
-            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0');
+            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1');
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };

@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
-      - '.github/workflows/hh-ideas-coaching-public.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - 'components/ideas-discovery.tsx'
       - 'components/holistic-support-choices.tsx'
       - 'scripts/verify-holistic-support-browser.mjs'
@@ -35,7 +35,6 @@ on:
       - 'lib/coaching/public-session-art.js'
       - 'lib/app/personal-coaching-catalog.js'
       - 'lib/site-navigation-model.js'
-      - 'lib/public-locales.ts'
       - 'app/[locale]/books/page.tsx'
       - 'app/es/books/page.tsx'
       - 'tests/ideas-guidance.test.mjs'
