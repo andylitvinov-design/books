@@ -1,8 +1,22 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {repairTypeOnlyImports}=require('../scripts/ci-pr-repair-deterministic.cjs');
+const {repairTypeOnlyImports,trustedRepairScope}=require('../scripts/ci-pr-repair-deterministic.cjs');
 
+test('mixed signed JS/TS scope is accepted without permitting unsafe or duplicate paths',()=>{
+ const sha='a'.repeat(40),files=['components/page.jsx','lib/helper.mjs','components/types.tsx'];
+ const scope=trustedRepairScope({REPAIR_SHA:sha,REPAIR_FILES_JSON:JSON.stringify(files)});
+ assert.deepEqual(scope,{sha,files});
+ for(const invalid of [
+  ['tests/ci.spec.ts'],['.github/workflows/guard.ts'],['lib/../secret.ts'],
+  ['components/a.ts','components/a.ts'],Array.from({length:9},(_,i)=>'lib/f'+i+'.js'),
+  ['components/.env.ts']
+ ])assert.throws(()=>trustedRepairScope({REPAIR_SHA:sha,REPAIR_FILES_JSON:JSON.stringify(invalid)}),
+  /INVALID_TRUSTED_REPAIR_SCOPE/);
+ assert.throws(()=>trustedRepairScope({REPAIR_SHA:'stale',REPAIR_FILES_JSON:'["lib/a.js"]'}),
+  /INVALID_TRUSTED_REPAIR_SCOPE/);
+ assert.equal(repairTypeOnlyImports('export const x=1;','public.js').detail,'UNSUPPORTED_EXTENSION');
+});
 test('converts only named imports used exclusively as types and preserves runtime imports',()=>{
  const input=[
   "import { User, createUser, Result as ApiResult } from './api';",
