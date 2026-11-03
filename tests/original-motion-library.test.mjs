@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,statSync} from "node:fs";
+import {createHash} from "node:crypto";
 import {fileURLToPath} from "node:url";
 import {resolve,dirname} from "node:path";
 import {isApprovedMontageScene,validateMontageClips,montageReplacementOptions} from "../lib/mandala/video-montage-sources.mjs";
@@ -58,8 +59,13 @@ test("production abstract motion library contains 320 individually encoded H264 
     assert.equal(isApprovedMontageScene(scene),true);
     assert.equal(scene.visualOrigin,"original_procedural_non_photographic");
     assert.equal(scene.rightsReference.thirdPartyFootage,false);
-    assert.ok(statSync(resolve(root,"public"+scene.video)).size>10000);
-    assert.ok(statSync(resolve(root,"public"+scene.poster)).size>1000);
+    const movie=resolve(root,"public"+scene.video);
+    const poster=resolve(root,"public"+scene.poster);
+    assert.ok(statSync(movie).size>10000);
+    assert.ok(statSync(poster).size>1000);
+    assert.equal(statSync(movie).size,scene.bytes,"MP4 byte count must match published manifest");
+    assert.equal(createHash("sha256").update(readFileSync(movie)).digest("hex"),
+      scene.sha256,"Each published master must have a matching physical SHA-256");
  }
  for(const preset of source.presets){
    assert.equal(preset.clips.length,4);
