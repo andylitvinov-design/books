@@ -51,7 +51,9 @@ jobs:
     if: github.event_name == 'pull_request'
     concurrency:
       group: hh-control-contract-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
+      # A newer PR HEAD must not wait behind obsolete contract jobs.
+      # The observer retains its separate non-cancelling group below.
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
