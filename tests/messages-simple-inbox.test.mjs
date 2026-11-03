@@ -137,7 +137,7 @@ test('master link uses only a verified approved practitioner, never a name guess
   // with an actual supabase.co hostname (not an escaped-backslash regex).
   assert.match(middleware,/const privateSupportPhotoCabinet =/);
   assert.match(middleware,/if \(!privateSupportPhotoCabinet\) return ''/);
-  assert.ok(middleware.includes(String.raw\`/^[a-z0-9]{20}\.supabase\.co$/\`));
+  assert.ok(middleware.includes(String.raw`/^[a-z0-9]{20}\.supabase\.co$/`));
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
   assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
