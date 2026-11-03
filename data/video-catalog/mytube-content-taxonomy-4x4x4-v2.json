@@ -32,15 +32,16 @@
     "scenarioSourceStatus": "editorial_only_unbound",
     "exportRequiresVerifiedMediaBindings": true,
     "medicalContentIsSupportiveNotDiagnostic": true,
-    "distinguishEnergyFatigueFromStressBurnout": "Energy & Confidence / Stress & Fatigue is for everyday physical or mental tiredness and short-term overload; Stress & Anxiety / Stress & Burnout is for persistent psychological pressure, work stress and burnout."
+    "distinguishEnergyFatigueFromStressBurnout": "Energy & Confidence / Stress & Fatigue is for everyday physical or mental tiredness and short-term overload; Stress & Anxiety / Stress & Burnout is for persistent psychological pressure, work stress and burnout.",
+    "distinguishEverydayFatigueFromBurnout": "Everyday tiredness, end-of-day overload and recovery after exertion belong to Energy & Confidence / Stress & Fatigue. Prolonged psychological pressure, work stress and burnout belong to Stress & Anxiety / Stress & Burnout."
   },
   "categories": [
     {
       "id": "goals-money",
       "label": {
         "ru": "Деньги и развитие",
-        "en": "Goals & Development",
-        "es": "Dinero y desarrollo"
+        "en": "Goals & Money",
+        "es": "Metas y dinero"
       },
       "subcategories": [
         {
@@ -51,9 +52,9 @@
             "es": "Propósito y desarrollo"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «предназначение и развитие».",
-            "en": "Choose this topic when your main need is purpose & development.",
-            "es": "Elige este tema cuando tu necesidad principal sea propósito y desarrollo."
+            "ru": "Выбирайте, если ищете своё направление, призвание или хотите пройти период личных перемен.",
+            "en": "Choose this when you are looking for direction, purpose or personal development.",
+            "es": "Elige esta opción si buscas dirección, propósito o desarrollo personal."
           },
           "topics": [
             {
@@ -398,9 +399,9 @@
             "es": "Logro de objetivos"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «достижение целей».",
-            "en": "Choose this topic when your main need is goal achievement.",
-            "es": "Elige este tema cuando tu necesidad principal sea logro de objetivos."
+            "ru": "Выбирайте, если знаете, чего хотите, и вам нужно спланировать путь, начать действовать и доводить дела до результата.",
+            "en": "Choose this when you know what you want and need to plan, take action and follow through.",
+            "es": "Elige esta opción si sabes lo que quieres y necesitas planificar, actuar y completar tus objetivos."
           },
           "topics": [
             {
@@ -412,6 +413,7 @@
               },
               "searchIntent": {
                 "ru": [
+                  "достижение целей",
                   "как поставить цель",
                   "поставить цели",
                   "планирование целей"
@@ -745,9 +747,9 @@
             "es": "Dinero y abundancia"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «деньги и изобилие».",
-            "en": "Choose this topic when your main need is money & abundance.",
-            "es": "Elige este tema cuando tu necesidad principal sea dinero y abundancia."
+            "ru": "Выбирайте, если главный запрос связан с деньгами, финансовыми убеждениями, стабильностью или ростом дохода.",
+            "en": "Choose this when your main concern is money, financial beliefs, stability or income growth.",
+            "es": "Elige esta opción si tu preocupación principal es el dinero, las creencias financieras, la estabilidad o aumentar tus ingresos."
           },
           "topics": [
             {
@@ -1091,9 +1093,9 @@
             "es": "Negocios y carrera"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «бизнес и карьера».",
-            "en": "Choose this topic when your main need is business & career.",
-            "es": "Elige este tema cuando tu necesidad principal sea negocios y carrera."
+            "ru": "Выбирайте, если ваш запрос касается собственного дела, развития бизнеса, карьеры или лидерства.",
+            "en": "Choose this when your concern is entrepreneurship, business growth, career development or leadership.",
+            "es": "Elige esta opción si tu tema es emprender, hacer crecer un negocio, desarrollar tu carrera o liderar."
           },
           "topics": [
             {
@@ -1448,9 +1450,9 @@
             "es": "Soledad y rupturas"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «одиночество и расставание».",
-            "en": "Choose this topic when your main need is loneliness & breakups.",
-            "es": "Elige este tema cuando tu necesidad principal sea soledad y rupturas."
+            "ru": "Выбирайте, если переживаете одиночество, неразделённые чувства или завершение отношений.",
+            "en": "Choose this when you are dealing with loneliness, unrequited feelings or the end of a relationship.",
+            "es": "Elige esta opción si estás viviendo soledad, sentimientos no correspondidos o el final de una relación."
           },
           "topics": [
             {
@@ -1795,9 +1797,9 @@
             "es": "Encontrar el amor"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «поиск любви».",
-            "en": "Choose this topic when your main need is finding love.",
-            "es": "Elige este tema cuando tu necesidad principal sea encontrar el amor."
+            "ru": "Выбирайте, если хотите познакомиться с партнёром или подготовиться к новым отношениям.",
+            "en": "Choose this when you want to meet a partner or prepare for a new relationship.",
+            "es": "Elige esta opción si quieres conocer a una pareja o prepararte para una nueva relación."
           },
           "topics": [
             {
@@ -2142,9 +2144,9 @@
             "es": "Relaciones de pareja"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «отношения в паре».",
-            "en": "Choose this topic when your main need is couple relationships.",
-            "es": "Elige este tema cuando tu necesidad principal sea relaciones de pareja."
+            "ru": "Выбирайте, если вы уже состоите в паре и хотите улучшить общение, разрешить конфликты или восстановить доверие.",
+            "en": "Choose this when you are already in a relationship and want better communication, conflict resolution or rebuilt trust.",
+            "es": "Elige esta opción si ya tienes pareja y quieres mejorar la comunicación, resolver conflictos o recuperar la confianza."
           },
           "topics": [
             {
@@ -2489,9 +2491,9 @@
             "es": "Intimidad y familia"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «близость и семья».",
-            "en": "Choose this topic when your main need is intimacy & family.",
-            "es": "Elige este tema cuando tu necesidad principal sea intimidad y familia."
+            "ru": "Выбирайте, если главный запрос связан с эмоциональной близостью, привязанностью или отношениями внутри семьи.",
+            "en": "Choose this when your main concern is emotional intimacy, attachment or family relationships.",
+            "es": "Elige esta opción si tu preocupación principal es la intimidad emocional, el apego o las relaciones familiares."
           },
           "topics": [
             {
@@ -2846,9 +2848,9 @@
             "es": "Estrés y cansancio"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «стресс и усталость».",
-            "en": "Choose this topic when your main need is stress & fatigue.",
-            "es": "Elige este tema cuando tu necesidad principal sea estrés y cansancio."
+            "ru": "Выбирайте при повседневном напряжении, усталости к вечеру или необходимости восстановиться после нагрузки. Для длительного рабочего стресса и выгорания выберите «Стресс и выгорание».",
+            "en": "Choose this for everyday tension, end-of-day tiredness or recovery after exertion. For prolonged work stress and burnout, choose Stress & Burnout.",
+            "es": "Elige esta opción para tensión cotidiana, cansancio al final del día o recuperación tras un esfuerzo. Para estrés laboral prolongado y agotamiento, elige Estrés y agotamiento."
           },
           "topics": [
             {
@@ -3193,9 +3195,9 @@
             "es": "Cuerpo y salud"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «тело и здоровье».",
-            "en": "Choose this topic when your main need is body & health.",
-            "es": "Elige este tema cuando tu necesidad principal sea cuerpo y salud."
+            "ru": "Выбирайте, если хотите улучшить контакт с телом, дыханием, движением и повседневной заботой о здоровье.",
+            "en": "Choose this when you want better body awareness, breathing, movement or everyday health habits.",
+            "es": "Elige esta opción si quieres mejorar la conciencia corporal, la respiración, el movimiento o los hábitos de salud."
           },
           "topics": [
             {
@@ -3540,9 +3542,9 @@
             "es": "Energía vital"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «жизненная энергия».",
-            "en": "Choose this topic when your main need is vital energy.",
-            "es": "Elige este tema cuando tu necesidad principal sea energía vital."
+            "ru": "Выбирайте, если хотите больше жизненного тонуса, бодрости, ясности мышления и внутреннего импульса.",
+            "en": "Choose this when you want more vitality, morning energy, mental clarity and motivation.",
+            "es": "Elige esta opción si buscas más vitalidad, energía por la mañana, claridad mental y motivación."
           },
           "topics": [
             {
@@ -3887,9 +3889,9 @@
             "es": "Confianza y calma"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «уверенность и спокойствие».",
-            "en": "Choose this topic when your main need is confidence & calm.",
-            "es": "Elige este tema cuando tu necesidad principal sea confianza y calma."
+            "ru": "Выбирайте, если хотите укрепить веру в себя, самооценку, принятие себя и сохранять спокойствие в важных ситуациях.",
+            "en": "Choose this when you want stronger self-confidence, self-esteem, self-acceptance and composure in important situations.",
+            "es": "Elige esta opción si quieres fortalecer tu confianza, autoestima, aceptación personal y calma en situaciones importantes."
           },
           "topics": [
             {
@@ -4244,9 +4246,9 @@
             "es": "Estrés y agotamiento"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «стресс и выгорание».",
-            "en": "Choose this topic when your main need is stress & burnout.",
-            "es": "Elige este tema cuando tu necesidad principal sea estrés y agotamiento."
+            "ru": "Выбирайте при длительном психологическом перенапряжении, рабочем стрессе или выгорании. Обычная усталость после дня относится к «Стресс и усталость».",
+            "en": "Choose this for prolonged psychological pressure, work stress or burnout. Everyday tiredness belongs to Stress & Fatigue.",
+            "es": "Elige esta opción para presión psicológica prolongada, estrés laboral o agotamiento. El cansancio cotidiano pertenece a Estrés y cansancio."
           },
           "topics": [
             {
@@ -4591,9 +4593,9 @@
             "es": "Ansiedad y miedos"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «тревога и страхи».",
-            "en": "Choose this topic when your main need is anxiety & fears.",
-            "es": "Elige este tema cuando tu necesidad principal sea ansiedad y miedos."
+            "ru": "Выбирайте, если беспокоят постоянное беспокойство, тревога без ясной причины, паника или конкретные страхи.",
+            "en": "Choose this for ongoing worry, unexplained anxiety, panic or specific fears.",
+            "es": "Elige esta opción para preocupación constante, ansiedad sin causa clara, pánico o miedos concretos."
           },
           "topics": [
             {
@@ -4938,9 +4940,9 @@
             "es": "Trauma psicológico"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «психологические травмы».",
-            "en": "Choose this topic when your main need is psychological trauma.",
-            "es": "Elige este tema cuando tu necesidad principal sea trauma psicológico."
+            "ru": "Выбирайте для бережной работы с болезненным прошлым опытом, детскими переживаниями, отвержением или покинутостью.",
+            "en": "Choose this for gentle, choice-led work with painful past experiences, childhood wounds, rejection or abandonment.",
+            "es": "Elige esta opción para trabajar con cuidado y libertad de elección experiencias dolorosas del pasado, heridas de infancia, rechazo o abandono."
           },
           "topics": [
             {
@@ -5285,9 +5287,9 @@
             "es": "Depresión y apatía"
           },
           "chooseWhen": {
-            "ru": "Выбирайте эту тему, если ваш основной запрос связан с «депрессия и апатия».",
-            "en": "Choose this topic when your main need is depression & apathy.",
-            "es": "Elige este tema cuando tu necesidad principal sea depresión y apatía."
+            "ru": "Выбирайте при подавленном настроении, апатии, потере радости или ощущении эмоциональной пустоты. Материалы поддерживают, но не заменяют профессиональную помощь.",
+            "en": "Choose this for low mood, apathy, loss of joy or emotional emptiness. Content is supportive and does not replace professional care.",
+            "es": "Elige esta opción para ánimo bajo, apatía, pérdida de alegría o vacío emocional. El contenido ofrece apoyo, pero no sustituye la atención profesional."
           },
           "topics": [
             {
