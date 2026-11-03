@@ -39,7 +39,7 @@ function readSources(scope){
  return files;
 }
 function sanitizeDiagnostic(s){
- return String(s).replace(/\x1b\[[0-9;]*m/g,'').replace(/(?:bearer\s+|sk-[A-Za-z0-9_-]{10,}|gh[pousr]_[A-Za-z0-9_]+)/gi,'[REDACTED]')
+ return String(s).replace(/\x1b\[[0-9;]*m/g,'').replace(/(?:bearer\s+[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]{10,}|gh[pousr]_[A-Za-z0-9_]+)/gi,'[REDACTED]')
   .replace(/^.*(?:password|authorization|api[_-]?key|secret|credential).*$/gim,'[SENSITIVE_OMITTED]').slice(-9000);
 }
 function extractReply(output){
@@ -104,7 +104,8 @@ function main(){
   // The original failure must reproduce independently. Do not patch green code.
   const ts=command('./node_modules/.bin/tsc',['--noEmit','--incremental','false','--pretty','false'],{timeout:150000});
   const tests=command(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...scope.files],{timeout:120000});
-  if(ts.ok&&tests.ok)throw Error('FREE_AI_FAILURE_NOT_REPRODUCED');
+  if(ts.ok&&(tests.ok||/NO_VERIFIED_BOUNDED_RELATED_TESTS/.test(tests.out+tests.err)))
+   throw Error('FREE_AI_FAILURE_NOT_REPRODUCED');
   const diagnostics=sanitizeDiagnostic((ts.ok?'TypeScript passed.':'TypeScript failed:\n'+ts.out+'\n'+ts.err)+
    '\nRelated source tests '+(tests.ok?'passed':'failed:\n'+tests.out+'\n'+tests.err));
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hh-free-code-repair-'));
