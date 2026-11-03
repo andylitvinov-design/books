@@ -63,6 +63,9 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
   assert.match(source,/\[leaseTool,'claim'/);
   assert.match(source,/\[leaseTool,'heartbeat'/);
   assert.match(source,/\[leaseTool,'release'/);
+  assert.match(source,/HH_REPAIR_PUSH_TOKEN/);
+  assert.match(source,/PATCH_READY_MANUAL_PUSH_REQUIRED/);
+  assert.match(source,/hh-deterministic-eslint-autofix\\.patch/);
   assert.match(source,/git',\['push','origin','HEAD:refs\/heads\/'/);
   assert.doesNotMatch(source,/git',\['push'[^;\n]*--force/);
   assert.doesNotMatch(source,/\b(?:npm run|npx |opencode|openrouter)\b|API[_-]?KEY|\bcodex\s+(?:exec|run)\b/i);
