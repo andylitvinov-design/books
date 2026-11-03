@@ -48,12 +48,12 @@ test("free written review keeps personal scope, optional private questionnaire a
   const express = read("components/personal-express-enquiry.tsx");
   const css = read("components/free-entry-landing.module.css");
   assert.match(route, /kind="situation"/);
-  assert.match(landing, /t\\.steps\\.map/);
-  assert.match(landing, /t\\.outcomes\\.map/);
-  assert.match(landing, /<FreeSituationReviewForm locale=\\{locale\\}/);
-  assert.match(landing, /<details className=\\{styles\\.fullQuestionnaire\\} data-optional-written-review>/);
-  assert.match(landing, /<PersonalExpressEnquiry locale=\\{locale\\}/);
-  assert.match(landing, /<TelegramDiagnosticEntry locale=\\{locale\\}/);
+  assert.match(landing, /t\.steps\.map/);
+  assert.match(landing, /t\.outcomes\.map/);
+  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\{locale\}/);
   assert.match(landing, /"request-free-review"/);
   // The current Free Express introduction is an initial written review.
   // An optional paid consultation is separate, and clinical data stays private.
@@ -71,8 +71,8 @@ test("free written review keeps personal scope, optional private questionnaire a
   assert.match(express, /data-personal-express-enquiry/);
   assert.match(express, /data-express-inline-disclosure/);
   assert.doesNotMatch(landing, /guaranteed cure|medical diagnosis provided|€50|€100/i);
-  assert.match(css, /@media\\(max-width:600px\\)/);
-  assert.match(css, /min-height:calc\\(100svh - 150px\\)/);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /min-height:calc\(100svh - 150px\)/);
 });
 
 test("all personal services have source-backed educational language, approved prices and no medical claims", () => {
