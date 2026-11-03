@@ -85,7 +85,7 @@ jobs:
         run: |
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-visual-services-next.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 90); do
+          for _ in $(seq 1 90); do
             if curl --silent --fail http://127.0.0.1:3100/en/services/imagery-therapy >/dev/null; then break; fi
             sleep 2
           done
