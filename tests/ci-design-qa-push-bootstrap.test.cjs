@@ -1,0 +1,20 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {readFileSync}=require('node:fs');
+const workflow=readFileSync('.github/workflows/hh-nightly-public-crawl.yml','utf8');
+test('design audit retains its daily Toronto cron and a one-time default-workflow push recovery',()=>{
+  assert.match(workflow,/timezone: 'America\\/Toronto'/);
+  assert.match(workflow,/cron: '7 5 \\* \\* \\*'/);
+  assert.match(workflow,/  push:\\n    branches: \\['codex\\/bootstrap-books'\\]\\n    paths: \\['\\.github\\/workflows\\/hh-nightly-public-crawl\\.yml'\\]/);
+  const design=workflow.split('  design-bible-public:')[1]?.split('  contract:')[0]||'';
+  assert.match(design,/github\\.event_name == 'push'/);
+  assert.match(design,/github\\.event_name == 'workflow_dispatch'/);
+  assert.match(design,/github\\.event\\.schedule == '7 5 \\* \\* \\*'/);
+  assert.match(design,/issues: write/);
+  assert.match(design,/scripts\\/holistic-light-design-qa\\.mjs/);
+  assert.match(design,/scripts\\/holistic-light-qa-handoff\\.mjs/);
+  const seo=workflow.split('  audit:')[1]?.split('  design-bible-public:')[0]||'';
+  assert.doesNotMatch(seo,/github\\.event_name == 'push'/);
+  assert.match(seo,/github\\.event\\.schedule == '15 7 \\* \\* \\*'/);
+});
