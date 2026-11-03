@@ -268,7 +268,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
 }
 function validCandidate(candidate, sha) {
   return !!(candidate && candidate.head_sha === sha &&
-    (!candidate.repair_kind || ['lint','codex'].includes(candidate.repair_kind)) &&
+    (!candidate.repair_kind || ['lint','free_ai'].includes(candidate.repair_kind)) &&
     Array.isArray(candidate.files) &&
     candidate.files.length <= MAX_FILES && candidate.files.every(f=>
       f && typeof f.path === 'string' && PATH.test(f.path) &&
@@ -339,7 +339,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
-  const repairKind=candidate.repair_kind==='codex'?'codex':'lint';
+  const repairKind=candidate.repair_kind==='codex'?'free_ai':'lint';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
     'HH Repair Worker: committed verified '+(repairKind==='codex'?'Codex source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
@@ -465,20 +465,20 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
-    reason='CODEX_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeVerifyStatus==='ready'){
-    // A tested Codex candidate existed, but no source commit was proven.
-    reason='CODEX_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
+    // A verified free-model candidate existed, but no source commit was proven.
+    reason='FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeResult==='failure'){
-    reason='CODEX_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeStatus==='proposed'&&
       codeVerifyResult!=='success'){
-    reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if(publishStatus==='manual_required' || candidateStatus==='manual_required' || strategy==='code'){
     state='MANUAL';
     reason=!codeAvailable?'FREE_AI_EXECUTOR_NOT_CONFIGURED':
-      codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
-      'CODEX_NO_VERIFIED_SOURCE_CHANGE';
+      codeVerifyStatus==='manual_required'?'FREE_AI_CANDIDATE_REJECTED':
+      'FREE_AI_NO_VERIFIED_SOURCE_CHANGE';
   }else if(publishResult!=='success'){
     reason='PUBLISH_JOB_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else{
@@ -534,14 +534,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'ESLINT_SCOPE_NOT_CONFIGURED','ESLINT_REMAINING_ERRORS',
     'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
   const agentDetail=[codeVerifyDetail,codeDetail].find(x=>typeof x==='string' &&
-    x.startsWith('CODEX_') && /^[A-Z0-9_:.-]{5,120}$/.test(x));
+    x.startsWith('FREE_AI_') && /^[A-Z0-9_:.-]{5,120}$/.test(x));
   const detailCode=state==='MANUAL'||state==='FAILED'?
     agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,lane:'repair',state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
-    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'codex':
+    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
     code_agent_configured:codeAvailable,code_job_result:codeResult||'skipped',
     code_candidate_status:codeStatus||'skipped',
