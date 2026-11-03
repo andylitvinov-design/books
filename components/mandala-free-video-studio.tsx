@@ -1906,9 +1906,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     : otherVideoScenes[theme].find(item => item.id === otherScene)?.label[locale] || "";
   // One local script shared with the selected Style video scene / confirmed
   // four-clip montage; selection changes seed the editor, not a paid provider.
-  const selectedStyleScenario=cinematicPlan?.shots.length
-    ?cinematicPlan.shots.map((shot,index)=>`${index+1}. ${shot.overlayText||freeFilmClipLabel(shot.sceneId)}`).join("\n")
-    :[sceneName,wish.trim()].filter(Boolean).join(" — ");
+  const selectedStyleScenario=timelineTextClips?.length
+    ?timelineTextClips.map((clip,index)=>`${index+1}. ${clip.text}`).join("\n")
+    :cinematicPlan?.shots.length
+      ?cinematicPlan.shots.map((shot,index)=>`${index+1}. ${shot.overlayText||freeFilmClipLabel(shot.sceneId)}`).join("\n")
+      :[sceneName,wish.trim()].filter(Boolean).join(" — ");
   useEffect(()=>setMontageScriptText(selectedStyleScenario),[selectedStyleScenario]);
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
@@ -5113,15 +5115,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const lines=montageScriptText.split(/\r?\n/).map(line=>
                   line.replace(/^\s*\d+\.\s*/,"").trim()).filter(Boolean);
                 if(!lines.length)return;
-                setTimelineTextClips(null);
-                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&cinematicPlan.shots.length===4){
-                  setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION&&current.shots.length===4
-                    ? {...current,shots:current.shots.map((shot,index)=>({
-                        ...shot,overlayText:normalizeStageCaption(lines[index]||"")
-                      }))} as CinematicStoryboard:current);
+                if(timelineTextClips?.length){
+                  // Editing the script must never erase deliberately moved captions:
+                  // retain each clip ID, start and duration, updating its text only.
+                  setTimelineTextClips(current=>current?.map((clip,index)=>({
+                    ...clip,text:normalizeStageCaption(lines[index]||clip.text)
+                  }))??null);
                 }else{
-                  // A single chosen MP4 has one caption, not an invented 4-shot script.
-                  setCaptionMode("custom");setCustomCaption(lines.join(" ").slice(0,60));
+                  setTimelineTextClips(null);
+                  if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&cinematicPlan.shots.length===4){
+                    setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION&&current.shots.length===4
+                      ? {...current,shots:current.shots.map((shot,index)=>({
+                          ...shot,overlayText:normalizeStageCaption(lines[index]||"")
+                        }))} as CinematicStoryboard:current);
+                  }else{
+                    // A single chosen MP4 has one caption, not an invented 4-shot script.
+                    setCaptionMode("custom");setCustomCaption(lines.join(" ").slice(0,60));
+                  }
                 }
                 setNotice(locale==="ru"?"Текст сценария применён к выбранному видео.":
                   locale==="es"?"Guion aplicado al vídeo seleccionado.":"Script applied to the selected video.");

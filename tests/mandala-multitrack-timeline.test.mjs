@@ -69,3 +69,14 @@ test("iPhone scrub repaints decoded frames and delayed audio starts on the user 
   assert.match(component,/if\(kind==="ruler"\)onSeek\(position/);
   assert.match(safari,/const available=seconds-startSeconds/);
 });
+
+test("updating the written scenario preserves manual caption start and duration",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const scenario=studio.slice(studio.indexOf('data-video-montage-script-update'),
+    studio.indexOf('<MandalaMultiTrackTimeline',studio.indexOf('data-video-montage-script-update')));
+  assert.match(scenario,/if\(timelineTextClips\?\.length\)/);
+  assert.match(scenario,/setTimelineTextClips\(current=>current\?\.map/);
+  assert.match(scenario,/\.\.\.clip,text:normalizeStageCaption\(lines\[index\]\|\|clip\.text\)/);
+  assert.doesNotMatch(scenario,/durationSeconds\s*:/,"script edits may not rewrite authored timing");
+  assert.doesNotMatch(scenario,/startSeconds\s*:/,"script edits may not move authored text");
+});
