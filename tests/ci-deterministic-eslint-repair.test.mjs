@@ -66,6 +66,8 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
   assert.match(source,/HH_REPAIR_PUSH_TOKEN/);
   assert.match(source,/PATCH_READY_MANUAL_PUSH_REQUIRED/);
   assert.match(source,/hh-deterministic-eslint-autofix\\.patch/);
+  assert.match(source,/if\(!pushToken\)/);
+  assert.match(source,/writeFileSync\(join\(need\('RUNNER_TEMP'\),'hh-deterministic-eslint-autofix\.patch'\)/);
   assert.match(source,/git',\['push','origin','HEAD:refs\/heads\/'/);
   assert.doesNotMatch(source,/git',\['push'[^;\n]*--force/);
   assert.doesNotMatch(source,/\b(?:npm run|npx |opencode|openrouter)\b|API[_-]?KEY|\bcodex\s+(?:exec|run)\b/i);
@@ -84,6 +86,9 @@ test('the repair lane is optional, BASE-owned and cannot satisfy the required me
   assert.match(job,/contents: write/);
   assert.match(job,/pull-requests: write/);
   assert.match(job,/issues: write/);
+  assert.ok(job.includes('token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}'));
+  assert.ok(job.includes('HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}'));
+  assert.ok(job.includes('Upload verified ESLint autofix patch'));
   assert.match(job,/git cat-file -e "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
   assert.match(job,/git show "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
   const mergeStart=workflow.indexOf('  hh-merge-check:');
