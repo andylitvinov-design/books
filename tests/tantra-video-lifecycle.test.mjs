@@ -141,7 +141,7 @@ test('native explicit play observer never controls playback and media identity i
   assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);
  }
  assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|\.load\(|setTimeout\(|setInterval\(/);
- assert.equal((source.match(/currentTime\s*=/g)||[]).length,3,'Only paused reconstruction, decoded-frame resume and one user-play stalled-decoder recovery may seek');
+ assert.equal((source.match(/currentTime\s*=/g)||[]).length,2,'Only paused reconstruction and an actually decoded-frame resume may seek; stalled playback cannot be blindly rewound');
  assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);
  assert.match(source,/video\.currentTime = saved\.time/);
 });
@@ -320,20 +320,21 @@ test('closing during an unfinished frame observer rejects stale callbacks withou
 });
 
 
-test('WebKit stalled same-source play gets one bounded recovery only after explicit native play',()=>{
+test('WebKit stalled same-source play never seeks a decoder without decoded frame proof',()=>{
   const callbacks=[];
   const f=deferredWebKitFixture({ownerDocument:{defaultView:{requestAnimationFrame(callback){callbacks.push(callback);return callbacks.length;}}}});
   f.close();f.reopen();
-  assert.deepEqual(callbacks,[],'Disclosure reopening alone never schedules playback recovery');
+  assert.deepEqual(callbacks,[],'Disclosure reopening alone never schedules recovery');
   f.media.paused=false;f.handlers.onPlay(f.event);
-  assert.equal(callbacks.length,1,'Explicit play starts one bounded clock observation');
+  assert.equal(callbacks.length,1,'Only explicit native play starts observation');
   callbacks.shift()(0);
-  assert.deepEqual(f.writes,[],'A fresh playing decoder is never sought immediately');
+  assert.deepEqual(f.writes,[],'Preroll play may never seek');
   callbacks.shift()(1800);
-  assert.equal(f.writes.length,1,'A genuinely stalled decoded clock gets only one backward GOP seek');
-  assert.ok(f.writes[0]>=0&&f.writes[0]<5.391310898);
+  assert.deepEqual(f.writes,[],'A stalled WebKit decoder cannot be rewound into an endless seeking state');
+  assert.equal(f.media.paused,false,'Native user play must not be paused or auto-restarted');
   f.handlers.onPlaying(f.event);
-  assert.equal(f.writes.length,1,'Replayed playing event cannot start a retry loop');
+  assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
+  assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
 });
 test('WebKit healthy clock advance, native seeking and paused media cancel recovery',()=>{
   for(const cancel of [

@@ -111,12 +111,16 @@ export function TantraVideoTestimonials(props: Props) {
     };
     try { video.requestVideoFrameCallback(onFrame); }
     catch { retained.current.delete(video); }
-    // The WebKit backend can signal playing yet present NO next frame or
-    // advance its clock after the disclosure resumes. A frame callback alone
-    // cannot recover that deadlock because it never fires. After a real user
-    // play (never on disclosure open), use a bounded frame-clock observation.
-    // Only a genuinely stalled, same-source, still-playing decoder is nudged
-    // once towards the previous GOP; real frames, seeking and close cancel it.
+    // WebKit/GStreamer can report playing without advancing a decoded frame
+    // after hydration and disclosure reopen. A blind backward GOP seek is NOT a
+    // recovery: actual WebKit trace 13277168340 proves it enters seeking with
+    // no seeked event and freezes the native decoder permanently.
+    //
+    // Observe for one bounded window after a genuine user Play only. If no
+    // frame or clock advances, release our retained bookkeeping WITHOUT
+    // mutating the source, time, mute or native play/pause state. The browser's
+    // controls remain available, and strict real decoded-playback CI stays RED
+    // if the backend itself cannot resume. Never create a second player/load.
     const windowView=video.ownerDocument?.defaultView;
     if(windowView && typeof windowView.requestAnimationFrame==="function") {
       const startedTime=video.currentTime;
@@ -128,9 +132,7 @@ export function TantraVideoTestimonials(props: Props) {
         if(startAt===null)startAt=now;
         if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
         if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
-        retained.current.delete(video); // exactly one recovery, never a loop
-        try { video.currentTime=Math.max(0,saved.time-1.25); }
-        catch { /* Native controls remain available if seek is refused. */ }
+        retained.current.delete(video); // one observation; no harmful seek
       };
       windowView.requestAnimationFrame(observeClock);
     }
