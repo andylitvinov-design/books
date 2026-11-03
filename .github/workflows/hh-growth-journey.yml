@@ -26,7 +26,6 @@ on:
       - 'app/sitemap.ts'
       - 'tests/growth-journey-public.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - '.github/workflows/hh-growth-journey.yml'
 
 permissions:
   contents: read
