@@ -223,7 +223,8 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  const benchmark=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-studio-hydrated=\{studioHydrated\?"true":"false"\}/);
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
- assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-advanced-toggle"));
+ assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-first-video-advanced"),
+   "hydration must complete before the first direct free-video disclosure");
  assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
 });
 
