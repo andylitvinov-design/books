@@ -122,7 +122,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
     </div>
     <SupportPhotoCabinet locale={locale} />
-    {status==='disabled'&&<p role="status">{t.disabled}</p>
+    {status==='disabled'&&<p role="status">{t.disabled}</p>}
     {status==='error'&&<p role="alert">{t.error}</p>}
     {status==='ready'&&<>
       <section style={{padding:'14px',margin:'16px 0',border:'1px solid #cbded0',borderRadius:14}}>
