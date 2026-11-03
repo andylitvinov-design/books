@@ -1482,7 +1482,7 @@ test('required hh-merge-check uses ubuntu-slim and keeps fail-closed Core/Specia
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-24\.04$/m);
+  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
   assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
