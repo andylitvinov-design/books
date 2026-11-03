@@ -95,3 +95,32 @@ test('duplicate job IDs invalidate total runner-minute coverage',()=>{
  const result=summarizeWindow({events:[],jobs:[job,job],coverage:complete,now:NOW,windowMs:3600000});
  assert.equal(result.coverage.jobs,false);assert.equal(result.runner_minutes,null);
 });
+
+test('verified phase times are real paired events and never invented earlier stages',()=>{
+ const events=[event('reserved',50),event('dispatched',45),event('claimed',40),
+  event('source_committed',30,{newHead:NEW}),event('ci_green',10,{head:NEW}),
+  event('merged',5,{head:NEW,mergeSha:MERGE,production:true}),
+  event('live_verified',2,{head:NEW,mergeSha:MERGE,production:true,aliasVerified:true,smokeVerified:true})];
+ const jobs=[{id:101,name:'core-lint-types-build',status:'completed',
+  created_at:new Date(NOW-18*60000).toISOString(),
+  started_at:new Date(NOW-15*60000).toISOString(),
+  completed_at:new Date(NOW-12*60000).toISOString()}];
+ const s=summarizeWindow({events,jobs,coverage:complete,now:NOW,windowMs:3600000}).phase_minutes;
+ assert.equal(s.stages.reserved_to_dispatched.average_min,5);
+ assert.equal(s.stages.dispatched_to_claimed.median_min,5);
+ assert.equal(s.stages.claimed_to_source_published.average_min,10);
+ assert.equal(s.stages.core_job_queued_to_runner.average_min,3);
+ assert.equal(s.stages.ci_green_to_merge.average_min,5);
+ assert.equal(s.stages.merged_to_live_verified.average_min,3);
+ assert.equal(s.stages.created_to_ready.average_min,null);
+ assert.equal(s.cohort,'TRANSITION_ENDING_IN_WINDOW_NOT_PR_CREATED');
+ const u=summarizeWindow({events,jobs,coverage:{},now:NOW,windowMs:3600000});
+ assert.equal(u.phase_minutes.stages.core_job_queued_to_runner.coverage,'SAMPLE_NOT_TOTAL');
+});
+test('a previous source HEAD can never be paired with a newer merge',()=>{
+ const e=[event('ci_green',10,{head:SHA}),
+  event('merged',5,{head:NEW,mergeSha:MERGE,production:true})];
+ const s=summarizeWindow({events:e,jobs:[],coverage:complete,now:NOW,windowMs:3600000});
+ assert.equal(s.phase_minutes.stages.ci_green_to_merge.n,0);
+ assert.equal(s.phase_minutes.stages.merged_to_live_verified.average_min,null);
+});

@@ -1,6 +1,7 @@
 'use strict';
 // Evidence-only aggregation. Collection must explicitly mark each source as
 // complete; observations from incomplete sources are samples, never totals.
+const {summarizePhaseMinutes}=require('./ci-pr-phase-times.cjs');
 const SHA=/^[a-f0-9]{40}$/i,KEY=/^[a-f0-9]{32}$/i;
 const round=x=>Math.round(x*100)/100;
 function quantile(values,q){
@@ -94,7 +95,8 @@ function summarizeWindow({events,jobs,coverage={},now=Date.now(),windowMs}){
    ci_first_pass:ratio(paired.filter(x=>x.outcome.kind==='ci_first_pass').length,paired.length,tasksComplete&&ciComplete),
    green_to_merge:ratio(greenMerged.length,greenTerminal.length,ciComplete&&mergesComplete),
    merge_to_live:ratio(mergedLive.length,mergeTerminal.length,mergesComplete&&liveComplete)},
-  wait_minutes:{median:tasksComplete?quantile(wait,.5):null,p95:tasksComplete?quantile(wait,.95):null,n:tasksComplete?wait.length:null},
+  phase_minutes:summarizePhaseMinutes({events:eligible,jobs,now,windowMs,coverage}),
+   wait_minutes:{median:tasksComplete?quantile(wait,.5):null,p95:tasksComplete?quantile(wait,.95):null,n:tasksComplete?wait.length:null},
   job_sample:{label:'SAMPLE_NOT_TOTAL',jobs:durations.length,
    runner_minutes:round(durations.reduce((a,b)=>a+b,0)),
    expensive_checks:[...expense].map(([name,minutes])=>({name,runner_minutes:round(minutes)}))
