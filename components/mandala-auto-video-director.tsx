@@ -345,7 +345,7 @@ export function MandalaAutoVideoDirector({
      <p className={css.variantsTitle}>{locale==="ru"?"Четыре сюжетных подхода к выбранной теме":locale==="es"?"Cuatro enfoques narrativos para este tema":"Four story approaches for this topic"}</p>
      {taxonomyScenarios.map((scenario,index)=>{
        const coverage=recommendMyTubeTopicStoryClips({topicId:selectedTopicId,
-         scenarioId:scenario.id,scenes});
+         scenarioId:scenario.id,scenes,excludedMotifs:proposal?.excludedMotifs||[]});
        return <button key={scenario.id} type="button"
        data-mytube-scenario={scenario.id} aria-pressed={selectedScenarioId===scenario.id}
        disabled={disabled} onClick={()=>chooseTaxonomyScenario(scenario.id)}>
