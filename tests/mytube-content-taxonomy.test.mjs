@@ -11,6 +11,8 @@ test("agreed MyTube taxonomy is exactly 4 × 4 × 4 × 4", () => {
   assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.counts, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
   assert.equal(MYTUBE_TAXONOMY_COUNTS.totalScenarios, 256);
+  assert.deepEqual(audit.uniqueScenarioTitles, {ru: 256, en: 256, es: 256});
+  assert.deepEqual(audit.uniqueScenarioOutlines, {ru: 256, en: 256, es: 256});
 });
 
 test("all labels and choice hints are localized in RU, EN and ES", () => {
@@ -53,4 +55,47 @@ test("localized search seeds resolve to one canonical topic", () => {
   });
   assert.equal(resolveMyTubeTopic("ambiguous partial", "en"), null);
   assert.equal(getMyTubeTopic("missing"), null);
+});
+
+test("every localized topic has four different original four-beat storyboards", () => {
+  for (const locale of ["ru","en","es"]) {
+    const titles = new Set();
+    const outlines = new Set();
+    for (const category of listMyTubeCategories(locale)) {
+      for (const sub of listMyTubeSubcategories(category.id, locale)) {
+        for (const topic of listMyTubeTopics(category.id, sub.id, locale)) {
+          const stories = listMyTubeScenarios(topic.id, locale);
+          assert.equal(stories.length, 4);
+          assert.equal(new Set(stories.map(s => s.label)).size, 4, topic.id);
+          assert.equal(new Set(stories.map(s => s.sceneOutline[0])).size, 4, topic.id);
+          for (const story of stories) {
+            assert.equal(story.topicId, topic.id);
+            assert.equal(story.subcategoryId, sub.id);
+            assert.equal(story.categoryId, category.id);
+            assert.equal(story.conceptOnly, true);
+            assert.equal(story.canExport, false);
+            assert.equal(story.sceneOutline.length, 4);
+            assert.ok(story.sceneOutline.every(s => s.length >= 8));
+            assert.equal(story.creativeBrief, story.sceneOutline.join(" → "));
+            assert.ok(!/^(?:Новый маршрут|Точка опоры|Новый взгляд|Первый шаг|A New Path|A Place to Stand)$/i.test(story.label));
+            assert.ok(!titles.has(story.label.toLocaleLowerCase(locale)), story.id);
+            assert.ok(!outlines.has(story.creativeBrief.toLocaleLowerCase(locale)), story.id);
+            titles.add(story.label.toLocaleLowerCase(locale));
+            outlines.add(story.creativeBrief.toLocaleLowerCase(locale));
+          }
+        }
+      }
+    }
+    assert.equal(titles.size, 256);
+    assert.equal(outlines.size, 256);
+  }
+  assert.deepEqual(listMyTubeScenarios("life-purpose", "ru").map(s => s.label), [
+    "Чужой компас", "Три искры", "Мастерская смыслов", "Пробный маршрут",
+  ]);
+  assert.deepEqual(listMyTubeScenarios("business-decisions", "ru").map(s => s.label), [
+    "Три варианта на столе", "Цифры и ценности", "Совет клиента, решение команды", "Решение с запасным выходом",
+  ]);
+  assert.deepEqual(listMyTubeScenarios("anxiety-no-reason", "ru").map(s => s.label), [
+    "Облако без объяснения", "Сигнал без сообщения", "Ориентир без причины", "Можно попросить помощи",
+  ]);
 });
