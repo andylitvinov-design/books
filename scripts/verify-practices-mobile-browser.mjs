@@ -5,11 +5,14 @@
  */
 import assert from "node:assert/strict";
 import {mkdirSync} from "node:fs";
-import {chromium,webkit} from "@playwright/test";
+import {chromium,webkit,expect} from "@playwright/test";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 const ORIGIN=new URL(BASE).origin;
-const CASES=[["ru",320],["ru",390],["ru",430],["en",390],["es",390]];
+const CONSENT_ONLY=process.env.HH_PRACTICES_CONSENT_ONLY==="1";
+const ENGINE=process.env.HH_PRACTICES_BROWSER_ENGINE||"all";
+const CASES=CONSENT_ONLY?[["ru",320]]:[["ru",320],["ru",390],["ru",430],["en",390],["es",390]];
+if(!["all","chromium","webkit"].includes(ENGINE))throw Error("UNKNOWN_PRACTICES_BROWSER_ENGINE");
 const LABELS={
   ru:{vector:"Вектор развития",vectorGoal:"Энергия",difficulty:"Трудно расслабиться вечером"},
   en:{vector:"Development direction",vectorGoal:"Energy",difficulty:"Hard to unwind after work"},
@@ -17,7 +20,7 @@ const LABELS={
 };
 mkdirSync("artifacts/practices-mobile",{recursive:true});
 
-for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
+for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filter(([name])=>ENGINE==="all"||ENGINE===name)){
   const browser=await browserType.launch({headless:true});
   try{
     for(const [locale,width] of CASES){
@@ -115,10 +118,15 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         assert.equal(await send.isDisabled(),true);
         // A real mobile visitor taps the full accessible consent label, not
         // an 18px box under the fixed iPhone dock. No force/check JS bypass.
-        const consentLabel=form.locator("[data-meditation-course-consent]");
+        const consentLabel=form.locator("[data-meditation-course-consent] label");
         assert.equal(await consentLabel.count(),1,"one genuine opt-in label");
         await consentLabel.click();
-        const consentBox=form.locator('input[type="checkbox"]');
+        const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
+        // React can commit the native WebKit label click after Playwright's
+        // click promise resolves. Wait for the real checkbox AND submit state;
+        // never force, check() or synthesize user consent in test code.
+        await expect(consentBox).toBeChecked({timeout:12000});
+        await expect(send).toBeEnabled({timeout:12000});
         assert.equal(await consentBox.isChecked(),true,
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
@@ -127,6 +135,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
           path:"artifacts/practices-mobile/"+engine+"-"+locale+"-"+width+".png",
           animations:"disabled",timeout:30000
         });
+        if(CONSENT_ONLY){
+          console.log("PRACTICES_MOBILE_CONSENT_PASS "+engine+" "+locale+" "+width);
+          continue;
+        }
         const geometry=await course.evaluate(el=>({
           client:el.clientWidth,scroll:el.scrollWidth,
           buttons:[...el.querySelectorAll('[data-guided-generate-meditation],[data-guided-create-plan],[data-guided-add-meditation],[data-guided-skip-meditation]')]

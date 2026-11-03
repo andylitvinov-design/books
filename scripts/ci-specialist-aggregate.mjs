@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 // Read-only exact-HEAD and exact-BASE coverage of applicable specialist workflows.
 // Runs from the PR merge checkout; no third-party API and no write permissions.
-import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -89,6 +89,15 @@ export function githubReader(repo, token, transport = fetch) {
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    // PR event payloads may retain the base SHA from when the PR was opened.
+    // Read the actual protected target ref, not pulls/:number.base.sha.
+    target: async () => {
+      const refs = await get('/git/matching-refs/heads/' + TARGET);
+      const exact = Array.isArray(refs) ? refs.filter(ref =>
+        ref?.ref === 'refs/heads/' + TARGET && /^[0-9a-f]{40}$/.test(ref.object?.sha || '')) : [];
+      if (exact.length !== 1) throw Error('PRODUCTION_TARGET_REF_UNAVAILABLE');
+      return exact[0].object.sha;
+    },
     compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
 }
@@ -118,7 +127,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const source = files?.base?.get(name);
   const candidate = files?.current?.get(name);
   const baseJob = trustedMandalaMacosJob(source);
-  if (!baseJob || baseJob !== trustedMandalaMacosJob(candidate) ||
+  const candidateJob = trustedMandalaMacosJob(candidate);
+  // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
+  // A skipped WebKit job remains neutral only when the BASE branch predicate
+  // itself excludes this PR; the preflight cannot alter its guard or steps.
+  const withRequiredPreflight = baseJob?.replace(
+    /^(    if: .+)\n(    runs-on: macos-15)$/m,
+    '$1\n    needs: [webkit_preflight]\n$2');
+  const readyPreflight = typeof candidate === 'string' &&
+    /^  webkit_preflight:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m.test(candidate);
+  const trustedMacosJob = baseJob === candidateJob ||
+    (readyPreflight && withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob);
+  if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
@@ -126,11 +146,44 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 12) return false;
-  const prefixes = predicates.map(item =>
-    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
-  if (prefixes.some(x => !x)) return false;
-  return !prefixes.some(prefix => branch.startsWith(prefix));
+  if (!predicates.length || predicates.length > 24) return false;
+  // Trusted BASE guards may include literal startsWith prefixes and one
+  // literal exact branch. Reject every computed or unknown expression.
+  const rules = predicates.map(item => {
+    const prefix = item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1];
+    if (prefix) return {kind:'prefix', value:prefix};
+    const exact = item.match(/^github\.head_ref == '([a-z][a-z0-9/-]+)'$/)?.[1];
+    return exact ? {kind:'exact', value:exact} : null;
+  });
+  if (rules.some(rule => !rule)) return false;
+  return !rules.some(rule => rule.kind === 'prefix'
+    ? branch.startsWith(rule.value) : branch === rule.value);
+}
+
+
+/**
+ * Only the unmodified, BASE-owned Profile Axis workflow may skip its one
+ * writer-only job on unrelated source branches. Its main axis suite is still
+ * mandatory, and a changed workflow/guard or the writer's own branch fails
+ * closed. Generic branch predicates remain disallowed by trustedConditionalJobs.
+ */
+export function optionalProfileWriterSkip(files, branch) {
+  const name = '.github/workflows/hh-profile-axis-matching.yml';
+  const source = files?.base?.get(name);
+  if (typeof source !== 'string' || source !== files?.current?.get(name) ||
+      typeof branch !== 'string' || !branch ||
+      branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
+  const onlyWriter = [
+    '  writer-practical-focused:',
+    "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}",
+    '    runs-on: ubuntu-24.04',
+  ].join('\n');
+  const requiredAxis = [
+    '  axis-unit-types-build:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+  ].join('\n');
+  return source.split(onlyWriter).length === 2 &&
+    source.split(requiredAxis).length === 2;
 }
 
 // Loose BASE is permitted only for recognizable, non-sensitive source paths.
@@ -240,6 +293,8 @@ export async function verify(api,ctx,files,options={}) {
   // Only *registered* queued/requested/waiting runs receive this 15m grace;
   // absent workflows still fail after missingGrace and failed runs fail at once.
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // A completed workflow's jobs API may lag; read only missing/pending job data.
+  const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
   const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
   const now = options.now ?? Date.now;
@@ -261,18 +316,33 @@ export async function verify(api,ctx,files,options={}) {
   const approvedBaseChanges = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
-    if (!requireCurrentBase || live.base.sha === ctx.base) return;
+    if (!requireCurrentBase) return;
+    // GitHub's pull_request.base.sha is an event/PR snapshot and can lag the
+    // protected branch after a verified merge checkout has been created.
+    // Compare against the actual production ref while keeping HEAD exact.
+    const liveBaseSha = typeof api.target === 'function' ? await api.target() : live.base.sha;
+    if (!/^[0-9a-f]{40}$/.test(liveBaseSha)) {
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+    }
+    if (liveBaseSha === ctx.base) return;
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
-    if (!approvedBaseChanges.has(live.base.sha)) {
-      // Compare the exact tested base with the *current* PR base. Incomplete,
-      // unrelated, inaccessible or security-sensitive changes remain blocked.
-      const diff = await api.compare(ctx.base, live.base.sha);
-      if (!safeDocumentationAdvance(diff, ctx.base, live.base.sha, changed)) {
+    if (!approvedBaseChanges.has(liveBaseSha)) {
+      // Only a complete, ancestry-proven, documentation-only target advance
+      // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
+      const diff = await api.compare(ctx.base, liveBaseSha);
+      const documentationOnly = safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed);
+      // This option is set ONLY after loading the validator, dependencies and
+      // helper from this exact protected production commit (never the PR HEAD).
+      // The new BASE must contain CI-only policy/test changes: no workflows or
+      // application source may have advanced without new proposed-merge CI.
+      const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
+        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
-      approvedBaseChanges.add(live.base.sha);
+      approvedBaseChanges.add(liveBaseSha);
     }
   }
   await verifyCurrentBase(pr);
@@ -327,7 +397,7 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+    if (state.failed.length || state.orphanFailures.length ||
         unregistered.length || retiredProblems.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
         failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
@@ -364,28 +434,110 @@ export async function verify(api,ctx,files,options={}) {
   }
   const executed=[];
   for (const run of state.passed) {
-    const jobs=await api.jobs(run.id);
+    const requiredJobs = pinnedChangeRows ? trustedRequiredJobs(files.base.get(run.path)) : [];
+    const jobDeadline = Math.min(deadline, now() + jobGrace);
+    let jobs;
+    for (;;) {
+      jobs = await api.jobs(run.id);
+      const missing = requiredJobs.filter(name => !jobs.some(job => job.name === name));
+      const pending = jobs.filter(job => job.status !== 'completed');
+      if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
+      // No workflow dispatch or retry; keep independent green runs untouched.
+      await sleep(Math.max(1, Math.min(pollMs, 5_000, jobDeadline - now())));
+    }
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
-      .filter(job => job !== 'voice-webkit-macos');
+    const optionalSkipped = [...new Set([
+      ...trustedConditionalJobs(files.base.get(run.path), pr.head.ref),
+      ...trustedConditionallyInapplicableJobs(files.base.get(run.path), files.current.get(run.path), pr),
+    ])].filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
     }
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
+    if (run.path === '.github/workflows/hh-profile-axis-matching.yml' &&
+        optionalProfileWriterSkip(files, pr.head.ref)) {
+      // Fail closed on missing, failed, or skipped primary axis verification.
+      if (!jobs.some(job => job.name === 'axis-unit-types-build' &&
+          job.status === 'completed' && job.conclusion === 'success')) {
+        throw Error('NO_EXECUTED_REQUIRED_SPECIALIST_JOB:' + run.path);
+      }
+      optionalSkipped.push('writer-practical-focused');
+    }
+    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
-      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.pushAdvisory.map(item => 'unassociated-push:'+item),
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+}
+
+// Reuse the successful Core and domain jobs for CI-policy-only production
+// advances. A new trusted validator must re-check all required run evidence;
+// the OLD validator cannot certify that its own replacement is compatible.
+// This path never executes candidate PR code or changes a branch/status.
+const TRUSTED_VALIDATOR_FILES = Object.freeze([
+  'scripts/ci-specialist-aggregate.mjs',
+  'lib/ci/specialist-aggregate.mjs',
+  'lib/ci/fast-static-ui-text.mjs',
+  'lib/ci/production-base-impact.mjs',
+]);
+function loadProtectedValidator(liveSha) {
+  const dir = mkdtempSync(join(tmpdir(), 'hh-specialist-policy-recheck-'));
+  try {
+    execFileSync('git', ['fetch', '--quiet', '--no-tags', '--depth=1', 'origin', liveSha],
+      {timeout: 90_000, maxBuffer: 1_000_000, stdio: ['ignore','pipe','pipe']});
+    for (const path of TRUSTED_VALIDATOR_FILES) {
+      const content = execFileSync('git', ['show', liveSha + ':' + path],
+        {encoding:'utf8', maxBuffer: 2_000_000, stdio:['ignore','pipe','pipe']});
+      const destination = join(dir, path);
+      mkdirSync(join(destination, '..'), {recursive:true});
+      writeFileSync(destination, content, {mode:0o600});
+    }
+    return {
+      path: join(dir, 'scripts/ci-specialist-aggregate.mjs'),
+      cleanup: () => rmSync(dir, {recursive:true, force:true}),
+    };
+  } catch (error) {
+    rmSync(dir, {recursive:true, force:true});
+    throw error;
+  }
+}
+
+export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
+  const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  const target = await api.target();
+  const changed = files.changedRows?.flatMap(row => row.previous_filename
+    ? [row.filename, row.previous_filename] : [row.filename]);
+  if (!Array.isArray(changed) || !changed.length || changed.some(path => typeof path !== 'string')) throw blocked();
+  const diff = await api.compare(ctx.base, target);
+  if (!safeTrustedPolicyAdvance(diff, ctx.base, target, changed)) throw blocked();
+  // Avoid wasting a policy recheck while production is still moving.
+  if (await api.target() !== target) throw blocked();
+  const loader = options.loadPolicy ?? (async sha => {
+    const extracted = loadProtectedValidator(sha);
+    try {
+      const policyModule = await import(pathToFileURL(extracted.path).href);
+      return {verify:policyModule.verify,cleanup:extracted.cleanup};
+    } catch (error) { extracted.cleanup(); throw error; }
+  });
+  const policy = await loader(target);
+  try {
+    if (typeof policy?.verify !== 'function') throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
+    const result = await policy.verify(api, ctx, files, {trustedPolicyBaseSha:target});
+    // No second moving-base exception: fail closed and coalesce at next run.
+    if (await api.target() !== target) throw blocked();
+    return {...result, policyRevalidatedAgainst:target};
+  } finally {
+    if (typeof policy?.cleanup === 'function') policy.cleanup();
+  }
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.
@@ -403,6 +555,8 @@ export function diagnoseAggregateError(error) {
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
+    ['MISSING_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_MISSING','Check the immutable BASE job contract and exact-HEAD evidence, not independent green workflows.'],
+    ['NO_EXECUTED_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_NOT_EXECUTED','Inspect the required job dispatch, not unrelated green jobs.'],
     ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
     ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
     ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
@@ -432,7 +586,7 @@ export function diagnoseAggregateError(error) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }
-  if (category === 'WORKFLOW_JOBLESS' || category === 'SPECIALIST_JOB_FAILED') {
+  if (['WORKFLOW_JOBLESS','SPECIALIST_JOB_FAILED','REQUIRED_JOB_MISSING','REQUIRED_JOB_NOT_EXECUTED'].includes(category)) {
     add('job',message.split(':')[1] || '');
   }
   // Shared SYMPTOM keys are a triage aid, not proof that the code root is shared.
@@ -451,12 +605,24 @@ async function main() {
   // The verified merge parent is always the trusted tested BASE. Only
   // non-sensitive ordinary paths permit a newer live production BASE; security,
   // payment, privacy, auth, policy and unknown paths still require freshness.
-  const result=await verify(api,{...ctx,base:testedBase},files);
+  const checkedCtx={...ctx,base:testedBase};
+  let result;
+  try {
+    result=await verify(api,checkedCtx,files);
+  } catch (error) {
+    // A changed production CI *policy* cannot be ignored by the old policy.
+    // Re-execute the new trusted policy against the same exact-HEAD evidence,
+    // but ONLY when the production delta is confined to the approved CI files.
+    if (!String(error?.message || error).includes(
+      'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED')) throw error;
+    result=await revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files);
+  }
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
+    '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');

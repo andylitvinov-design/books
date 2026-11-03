@@ -14,7 +14,7 @@ permissions:
   pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   scope:
     name: core-lint-types-build
@@ -168,7 +168,9 @@ jobs:
                   tests/ci-heavy-impact.test.mjs|\
                   tests/ci-growth-course-core-reuse.test.mjs|\
                   tests/ci-head-cancellation.test.mjs|\
-                  tests/ci-stale-run-deduplication.test.mjs) ;;
+                  tests/ci-stale-run-deduplication.test.mjs|\
+                  scripts/ci-deterministic-eslint-repair.mjs|\
+                  tests/ci-deterministic-eslint-repair.test.mjs) ;;
                 *) ci_only=false ;;
               esac
             done < /tmp/hh-pr-changed-files.z
@@ -202,7 +204,7 @@ jobs:
             git show "$tested_base:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs"
             route="$(HH_TESTED_BASE_SHA="$tested_base" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs")"
           fi
-          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Verified CI route: $route (HEAD $HH_HEAD_SHA; BASE $tested_base)" >> "$GITHUB_STEP_SUMMARY"
 
@@ -246,6 +248,9 @@ jobs:
       - name: Assert fast-lane workflow contracts
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/pr-fast-lane.test.mjs
+      - name: Verify deterministic ESLint repair worker contract
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only == 'true') }}
         run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
@@ -284,22 +289,25 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
+      - name: Mobile Dock Core geometry and iPhone keyboard contracts
+        if: ${{ github.event_name == 'pull_request' && steps.fast.outputs.route == 'DOCK' }}
+        run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
       # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
       # A miss safely falls back to the existing full real build and validations.
       - name: Restore production-owned scenario MP3 cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Restore production-owned Next compiler cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         uses: actions/cache/restore@v4
         with:
           path: .next/cache
           key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
         run: npm run build
@@ -390,11 +398,11 @@ jobs:
             git show "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs"
             route="$(HH_TESTED_BASE_SHA="$HH_TRUSTED_BASE_SHA" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs")"
           fi
-          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && steps.specialist_route.outputs.route == 'FULL'
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -427,6 +435,65 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
+  # Optional, deterministic source repair. This is deliberately NOT a required
+  # status and is deliberately absent from hh-merge-check dependencies. It can
+  # write only after the exact Core ESLint step failed, under the existing PR lease.
+  hh-eslint-repair:
+    name: hh-eslint-repair
+    needs: [scope]
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    concurrency:
+      group: hh-eslint-repair-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run production-BASE deterministic ESLint repair only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # Fetch the immutable event BASE explicitly; the exact-HEAD checkout
+          # is intentionally shallow and may not contain that commit yet.
+          git fetch --quiet --no-tags --depth=1 origin "$HH_BASE_SHA"
+          # Bootstrap safety: this worker must already exist in the immutable
+          # event BASE. Never execute the copy introduced by the candidate PR.
+          if ! git cat-file -e "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" 2>/dev/null; then
+            echo 'Deterministic repair worker is not yet deployed in production BASE; bootstrap PR is not self-executed.'
+            exit 0
+          fi
+          git show "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" > "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
+          node "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
+      - name: Upload verified ESLint autofix patch when no trigger-capable push token is configured
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-deterministic-eslint-autofix-${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/hh-deterministic-eslint-autofix.patch
+          retention-days: 3
+          if-no-files-found: ignore
   # Both GitHub production protection sources were read back on 2 November:
   # exactly hh-merge-check is required. Preserve Core+Specialist fail-closed
   # evidence while removing only redundant legacy wrapper runners.

@@ -1,9 +1,8 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    # Core AutoMerge remains CI-completed only; synchronize wakes only the
-    # isolated, least-privileged stale-HEAD cleanup job.
-    types: [opened, reopened, ready_for_review, synchronize]
+    # Core AutoMerge stays CI-completed; synchronize and close only wake the trusted janitor.
+    types: [opened, reopened, ready_for_review, synchronize, closed]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
@@ -24,6 +23,7 @@ jobs:
     if: >-
       (github.event_name == 'pull_request_target' &&
        github.event.action != 'synchronize' &&
+       github.event.action != 'closed' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_run' &&
@@ -201,12 +201,17 @@ jobs:
                 number + ": " + notPassed.join(","));
               return;
             }
-            const blocked = observed.find(run => run.status !== "completed" ||
-              !["success","skipped","neutral"].includes(run.conclusion));
-            if (blocked) {
-              log("SKIP exact-head CI " + blocked.name + "=" + blocked.status + "/" +
-                blocked.conclusion + " for PR #" + number);
-              return;
+            // The exact-head Core workflow's hh-specialist job already aggregates
+            // every applicable specialist through its trusted BASE/HEAD policy.
+            // Do not apply a second all-workflow barrier here: optional diagnostics
+            // can still be queued after the protected gate passes, and their completion
+            // does not emit a callback to retry this merge review.
+            const pendingOptional = observed.filter(run => run.id !== coreRun.id &&
+              (run.status !== "completed" ||
+               !["success","skipped","neutral"].includes(run.conclusion)));
+            if (pendingOptional.length) {
+              log("IGNORE " + pendingOptional.length +
+                " non-required workflow runs after exact-head Core+Specialist and branch protection passed");
             }
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
@@ -308,7 +313,7 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && github.event.workflow_run.conclusion != 'success' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["cancelled","timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -405,7 +410,7 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.event_name == 'pull_request_target' &&
-      github.event.action == 'synchronize' &&
+      (github.event.action == 'synchronize' || github.event.action == 'closed') &&
       github.event.pull_request.base.ref == 'codex/public-book-library' &&
       github.event.pull_request.head.repo.full_name == github.repository
     concurrency:

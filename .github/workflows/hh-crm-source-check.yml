@@ -80,9 +80,7 @@ on:
       - 'lib/practitioners/direct-*.js'
       - 'lib/practitioners/direct-*.mjs'
       - 'components/app/direct-message-inbox.*'
-      - 'app/[locale]/app/messages/**'
       - 'components/app/messages-simple-inbox.jsx'
-      - 'components/app/messages-bottom-navigation.jsx'
       - 'tests/messages-approved-entry.test.mjs'
       - 'tests/messages-orders-clients.test.mjs'
       - 'tests/messages-simple-inbox.test.mjs'
@@ -111,8 +109,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read

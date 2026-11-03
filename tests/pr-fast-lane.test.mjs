@@ -129,6 +129,8 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'Mobile Dock still uses the immutable exact-head Specialist aggregator');
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'DOCK must still run the trusted specialist aggregator');
   assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
@@ -777,8 +779,12 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'ffprobe', 'ffmpeg'
   ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
   const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
-  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
-    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob/,
+    'only the exact prerequisite insertion may leave the BASE macOS job otherwise unchanged');
+  assert.match(aggregator,/readyPreflight &&/,
+    'the added prerequisite must execute for every ready PR');
+  assert.match(aggregator,/baseJob === candidateJob/,
+    'untouched BASE macOS job remains a trusted valid case');
   assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
@@ -815,7 +821,13 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   }
   assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 0);
   assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 2);
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3,
+    'Core, Specialist and isolated deterministic Repair each use shallow exact-source checkout');
+  const repairJob=source.split(/^  hh-eslint-repair:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
+  assert.match(repairJob,/^    needs: \[scope\]$/m,
+    'optional deterministic repair may depend on failed Core, but Specialist must remain parallel');
+  assert.match(repairJob,/fetch-depth:\s*2/,
+    'optional deterministic repair must use a bounded exact HEAD checkout');
   assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
   assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
   assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
@@ -875,7 +887,7 @@ test('core production build is the single TypeScript gate and cannot ignore erro
 test('Core cancels superseded first attempts, never manually rerun current HEAD', () => {
   const source = workflow('hh-pr-core-release.yml');
   const group = "group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   assert.ok(source.includes(group), 'first-attempt HEADs of one PR share concurrency');
   assert.ok(source.includes(cancel), 'only a newer synchronize attempt cancels older checks');
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'), 'no obsolete SHA groups');
@@ -885,7 +897,7 @@ test('central CI utilities isolate non-PR runs and cancel only newer first attem
   for (const [file, prefix] of [['hh-actionlint.yml', 'hh-workflow-lint'], ['hh-pr-sweep-guard.yml', 'hh-pr-sweep-guard']]) {
     const source = workflow(file);
     const groupCond = "github.event_name == 'pull_request' && github.run_attempt == 1";
-    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     assert.ok(source.includes("group: " + prefix + "-${{ " + groupCond + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
     assert.ok(source.includes("cancel-in-progress: ${{ " + cancelCond + " }}"), file);
   }
@@ -1260,7 +1272,18 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
     required: [], 
   }), false, 'unprotected status list cannot authorize native merge');
 
-  assert.equal(await decide([good, {...specialist, conclusion: 'failure'}]), false, 'red specialist blocks ARM');
+  const slowOptional = {...specialist, name: 'HH benchmark public browser',
+    path: '.github/workflows/hh-benchmark-public-browser.yml@refs/pull/42/merge',
+    status: 'in_progress', conclusion: null};
+  assert.equal(await decide([good, slowOptional], live, event, 2, {
+    required: ['hh-merge-check'],
+    jobs: [{name: 'hh-merge-check', status: 'completed', conclusion: 'success'}],
+  }), true, 'optional diagnostic queued after the protected gate must not delay merge');
+  const failedOptional = {...slowOptional, status: 'completed', conclusion: 'failure'};
+  assert.equal(await decide([good, failedOptional], live, event, 2, {
+    required: ['hh-merge-check'],
+    jobs: [{name: 'hh-merge-check', status: 'completed', conclusion: 'success'}],
+  }), true, 'non-required diagnostic failure cannot override the protected Core/Specialist gate');
   assert.equal(await decide([{...good, pull_requests: []}]), false, 'missing association fails closed');
   assert.equal(await decide([{...good, pull_requests: [{
     number: 42, head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base
@@ -1290,7 +1313,11 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize, closed\]/);
+  assert.ok(native.includes("github.event.action == 'closed'"),
+    'close wakes the trusted janitor for orphaned queued checks');
+  assert.ok(native.includes("github.event.action != 'closed'"),
+    'close must never wake auto-merge readiness');
   assert.ok(native.includes('  prune-head:'), 'synchronize must wake only a scoped janitor');
   assert.ok(native.includes("github.event.action == 'synchronize'"));
   assert.match(native, /^  workflow_run:\s*$/m);
@@ -1302,6 +1329,11 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
     'new PR HEAD must not trigger auto-merge before green required Core');
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
+  const recovery = native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0] ?? '';
+  assert.match(recovery,/contains\(fromJSON\('\["cancelled","timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/,
+    'recovery runner is reserved for infrastructure interruptions');
+  assert.doesNotMatch(recovery,/workflow_run\.conclusion != 'success'/,
+    'ordinary code failures must not allocate a retry runner');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
   assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
     'Core CI MUST still rerun for every source push');
@@ -1378,8 +1410,10 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
-  const failed=await decide([current,[makeRun(199,'Failed browser',199,'failure'),prior]],[102,102]);
-  assert.equal(failed.ok,false,'red specialist on second page blocks native merge');
+  const failedOptionalRun={...makeRun(199,'HH benchmark public browser',199,'failure'),
+    path:'.github/workflows/hh-benchmark-public-browser.yml@refs/pull/42/merge'};
+  const failed=await decide([current,[failedOptionalRun,prior]],[102,102]);
+  assert.equal(failed.ok,true,'non-required second-page diagnostic does not block the protected gate');
   const incomplete=await decide([current,[]],[102,102]);
   assert.equal(incomplete.ok,false,'missing second page is not success');
   const tooMany=await decide([current,current,current],[401,401,401]);
@@ -1437,11 +1471,11 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });
 
-test('short Core orchestration uses slim runners and never skips real Core or specialist checks', () => {
+test('short Core orchestration keeps lightweight aggregator and never skips real Core or specialist checks', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const core = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
-  const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
+  const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0] ?? '';
   const gate = source.split(/^  hh-merge-check:\s*$/m)[1] ?? '';
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);
@@ -1457,7 +1491,7 @@ test('short Core orchestration uses slim runners and never skips real Core or sp
   assert.match(gate, /Unified Core gate passed/);
 });
 
-test('required hh-merge-check uses lightweight runner and keeps fail-closed Core/Specialist gate', () => {
+test('required hh-merge-check uses ubuntu-slim and keeps fail-closed Core/Specialist gate', () => {
   const source = workflow('hh-pr-core-release.yml');
   const gate = source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate, 'protected check name must be retained');

@@ -9,6 +9,86 @@ const OLD = 'a'.repeat(40), NEW = 'b'.repeat(40), MERGE = 'c'.repeat(40), BASE =
 const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET, sha: BASE }, head: { ref: 'feat/one', sha: NEW, repo: { full_name: repo } }, ...x });
 const run = (x = {}) => ({ id: 100, path: '.github/workflows/hh-pr-core-release.yml', event: 'pull_request', status: 'queued', head_sha: OLD, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
 
+test('a closed PR exact-head event cancels unlinked Core after verified idle-job force check', async () => {
+  const terminal = pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:'2026-11-03T05:05:59Z'});
+  const pending = run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const actions = [];
+  let done = false;
+  const api = {list:async()=>({workflow_runs:[pending]}),pr:async()=>terminal,
+    run:async()=>done ? {...pending,status:'completed',conclusion:'cancelled'} : pending,
+    compare:async()=>{throw Error('closed PR exact SHA must not require ancestry');},
+    workflowBlob:async()=>({type:'file',sha:BASE}),
+    jobs:async()=>({total_count:2,jobs:[
+      {name:'core-lint-types-build',status:'completed'},
+      {name:'hh-eslint-repair',status:'queued'}]}),
+    cancel:async id=>{actions.push(['cancel',id]);},
+    forceCancel:async id=>{actions.push(['force',id]);done=true;}};
+  const s = await prune(api,{...ctx,closedHeadSha:NEW},{sleep:async()=>{},settleMs:0});
+  assert.deepEqual(actions,[['cancel',100],['force',100]]);
+  assert.deepEqual(s.confirmed,[100]);
+  assert.equal(s.closedCandidates,1);
+});
+
+test('production push sweeps orphan queued Core runs from recent closed PRs', async () => {
+  const terminal=pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:new Date().toISOString()});
+  const pending=run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const cancelled=[];let listing=0;
+  const api={list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{listing++;return [terminal];},
+    pr:async()=>terminal,run:async()=>pending,cancel:async id=>cancelled.push(id),
+    compare:async()=>{throw Error('closed PR needs exact SHA, not compare');}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(listing,1);
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.closedCandidates,1);
+});
+
+test('terminal evidence fails closed on reopened, wrong SHA, fork, wrong dates and association',()=>{
+  const terminal=pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:'2026-11-03T05:05:59Z'});
+  const pending=run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const lease={...ctx,closedHeadSha:NEW};
+  assert.equal(eligible(pending,terminal,lease),true);
+  for(const bad of [
+    {...terminal,state:'open'}, {...terminal,closed_at:null},
+    {...terminal,head:{...terminal.head,sha:OLD}},
+    {...terminal,head:{...terminal.head,repo:{full_name:'fork/repo'}}},
+    {...terminal,base:{ref:'main',sha:BASE}},
+    {...terminal,created_at:'2026-11-03T05:06:01Z'},
+  ]) assert.equal(eligible(pending,bad,lease),false);
+  for(const bad of [
+    {...pending,event:'push'}, {...pending,status:'waiting'},
+    {...pending,head_sha:OLD}, {...pending,head_branch:'other'},
+    {...pending,head_repository:{full_name:'fork/repo'}},
+    {...pending,pull_requests:[{number:6,head:{ref:'feat/one',sha:NEW},base:{ref:TARGET}}]},
+    {...pending,pull_requests:[{},{}]},
+    {...pending,created_at:'2026-11-03T05:06:01Z'}
+  ]) assert.equal(eligible(bad,terminal,lease),false);
+  assert.equal(eligible(pending,terminal,{...ctx,closedHeadSha:OLD}),false);
+  assert.equal(eligible(pending,terminal,{...ctx,headSha:NEW}),false);
+  assert.equal(eligible(pending,terminal,{repo,target:TARGET,number:5}),false);
+  assert.equal(eligible(pending,pr(),ctx),false);
+});
+
+test('trusted PR close event requires same repository, target and closed state',()=>{
+  const env={GITHUB_TOKEN:'fake',GITHUB_REPOSITORY:repo,
+    GITHUB_EVENT_NAME:'pull_request_target',GITHUB_REF:'refs/heads/codex/bootstrap-books'};
+  const event={action:'closed',repository:{full_name:repo},
+    pull_request:{number:5,state:'closed',base:{ref:TARGET},
+      head:{sha:NEW,repo:{full_name:repo}}}};
+  assert.deepEqual(context(env,event),{repo,target:TARGET,number:5,closedHeadSha:NEW});
+  for(const bad of [
+    {...event,action:'opened'}, {...event,action:'reopened'},
+    {...event,pull_request:{...event.pull_request,state:'open'}},
+    {...event,pull_request:{...event.pull_request,head:{sha:OLD,repo:{full_name:'fork/repo'}}}},
+    {...event,pull_request:{...event.pull_request,base:{ref:'main'}}},
+  ]) assert.throws(()=>context(env,bad));
+  assert.throws(()=>context({...env,GITHUB_REF:'refs/heads/untrusted'},event));
+  assert.throws(()=>context({...env,GITHUB_EVENT_NAME:'pull_request'},event));
+});
+
 test('force-cancel only after a normal cancellation remains queued and stale evidence is rechecked', async () => {
   const actions = [];
   let finished = false;
@@ -180,9 +260,10 @@ test('trusted PR-target janitor is separate from strict two-job read-only PR spe
   assert.ok(!original.includes('  pull_request_target:'));
   assert.ok(!original.includes('  prune-head:'));
   assert.ok(target.includes('  pull_request_target:'));
-  assert.ok(target.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
   assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
   assert.ok(target.includes('  prune-head:'));
+  assert.ok(target.includes("github.event.action == 'closed'"));
   assert.ok(target.includes('      actions: write'));
   assert.ok(target.includes('actions: write'));
   assert.ok(target.includes('pull-requests: read'));
@@ -336,7 +417,7 @@ test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs C
   const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
-  assert.ok(source.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
   assert.ok(source.includes('ref: codex/public-book-library'));
   assert.ok(source.includes("cancel-in-progress: true"));
   assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
@@ -348,5 +429,7 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
   assert.ok(source.includes('group: hh-pr-core-' +
     "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  assert.ok(!source.includes('github.event.before != github.event.after'),
+    'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
 });
