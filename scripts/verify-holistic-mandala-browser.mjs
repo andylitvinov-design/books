@@ -2173,6 +2173,22 @@ const runEngine = async ([engine, browserType]) => {
         await workspaceNav.locator('[data-video-quick-control="pro"]').click();
         await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+        if(width<=430){
+          const layout=await page.evaluate(()=>{
+            const rect=q=>{const r=document.querySelector(q)?.getBoundingClientRect();
+              return r?{top:r.top,bottom:r.bottom,height:r.height,width:r.width}:null;};
+            const nav=rect("[data-video-quick-controls]");
+            const tabs=[...document.querySelectorAll("[data-video-quick-control]")].map(n=>n.getBoundingClientRect());
+            return {nav,script:rect("[data-video-editor-scenario]"),hero:rect("[data-video-mandala-hero]"),
+              toolbar:rect("[data-video-montage-tools]"),export:rect("[data-video-montage-export]"),
+              tabsOneRow:tabs.length===6&&tabs.every(r=>Math.abs(r.top-tabs[0].top)<2),
+              viewport:document.documentElement.clientWidth};
+          });
+          assert.ok(layout.nav&&layout.script&&layout.hero&&layout.toolbar&&layout.export&&
+            layout.tabsOneRow&&layout.script.top>=layout.nav.bottom-2&&
+            layout.hero.top>=layout.script.bottom-2&&layout.nav.width<=layout.viewport,
+            engine+" "+locale+" "+width+" iPhone Montage composition: "+JSON.stringify(layout));
+        }
         const styleDetails=page.locator("[data-video-editor-style-settings]");
         if(!(await styleDetails.evaluate(node=>node.open)))
           await styleDetails.locator(":scope > summary").click();

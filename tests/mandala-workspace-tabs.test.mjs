@@ -263,3 +263,17 @@ test("owner 03 Nov: iPhone Montage appears as tabs > script > 16:9 film > editab
    assert.ok(tracks.includes('.trackRow[data-video-track="'+kind+'"]{order:'+order+';}'));
  }
 });
+
+test("iPhone Montage portals existing six tabs above the script and uses one real export",()=>{
+ const montage=studio.slice(studio.indexOf("const [effectsNavTarget"),studio.indexOf("  return (",studio.indexOf("const [effectsNavTarget")));
+ assert.match(montage,/setMontageNavTarget/);
+ assert.match(studio,/data-video-montage-nav-slot/);
+ assert.match(studio,/createPortal\(nav,montageNavTarget\)/);
+ const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ assert.match(editor,/data-video-montage-tools/);
+ assert.match(editor,/data-video-montage-export/);
+ assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(css,/\.montageNavSlot>\.quickVideoNav\{/);
+ assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
+});

@@ -3146,3 +3146,33 @@
     aspect-ratio:16/9!important;
   }
 }
+
+/* The ORIGINAL six-tab rail is portaled above the Montage scenario on iPhone. */
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"] .quickBuilder>.montageNavSlot{
+   display:block;order:1;width:100%;min-width:0;margin:0}
+ .studio[data-active-workspace="editor"] .montageNavSlot>.quickVideoNav{
+   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+   gap:4px;width:100%;min-width:0;margin:0}
+ .studio[data-active-workspace="editor"] .montageNavSlot .quickVideoNav button{
+   min-height:52px;padding:5px 1px;font-size:clamp(10px,2.8vw,12px);line-height:1.1}
+ .studio[data-active-workspace="editor"] .montageNavSlot .quickNavCompact{font-weight:800}
+ .studio[data-active-workspace="editor"] .montageQuickTools{
+   display:flex;align-items:center;flex-wrap:nowrap;gap:5px;
+   overflow-x:auto;min-width:0;padding:2px 0 5px;scrollbar-width:thin}
+ .studio[data-active-workspace="editor"] .montageQuickTools button{
+   display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;
+   gap:5px;min-height:44px;padding:8px 11px;background:#fffef9;
+   border:1px solid #dbe7db;border-radius:12px;color:#165c4a;
+   font:750 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+ .studio[data-active-workspace="editor"] .montageQuickTools button:disabled{opacity:.5}
+ .studio[data-active-workspace="editor"] .montageQuickTools button:focus-visible,
+ .studio[data-active-workspace="editor"] .montageExport:focus-visible{
+   outline:3px solid #176e6e;outline-offset:2px}
+ .studio[data-active-workspace="editor"] .montageExport{
+   display:flex;align-items:center;justify-content:center;gap:10px;
+   width:100%;min-height:50px;border:0;border-radius:14px;
+   background:linear-gradient(105deg,#079a76,#067a67);color:#fff;
+   font:800 15px/1.2 Arial,Helvetica,sans-serif}
+ .studio[data-active-workspace="editor"] .montageExport:disabled{opacity:.5;cursor:not-allowed}
+}

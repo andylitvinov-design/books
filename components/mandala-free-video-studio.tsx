@@ -3998,10 +3998,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Only the third workspace may portal the original tab rail ahead of Wave.
   // All other workspaces keep the source-order hero -> tabs hierarchy.
   const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
+  const [montageNavTarget,setMontageNavTarget]=useState<HTMLElement|null>(null);
   useLayoutEffect(()=>{
     const mobile=window.matchMedia("(max-width: 759px)");
-    const sync=()=>setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
-      ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
+    const sync=()=>{
+      setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
+        ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
+      setMontageNavTarget(activeWorkspace==="editor"&&mobile.matches
+        ?document.querySelector<HTMLElement>("[data-video-montage-nav-slot]"):null);
+    };
     sync();
     mobile.addEventListener("change",sync);
     return()=>mobile.removeEventListener("change",sync);
@@ -4034,6 +4039,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </Link>
         </nav>
         
+        {activeWorkspace==="editor"?<div className={videoStyles.montageNavSlot}
+          data-video-montage-nav-slot/>:null}
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -4252,7 +4259,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </nav>
         );
         return activeWorkspace==="effects"&&effectsNavTarget
-          ?createPortal(nav,effectsNavTarget):nav;
+          ?createPortal(nav,effectsNavTarget)
+          :activeWorkspace==="editor"&&montageNavTarget
+            ?createPortal(nav,montageNavTarget):nav;
       })()}
       {/* Show the introductory film separately; the Canvas stays usable. */}
       {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
@@ -5198,6 +5207,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setAudioStartSeconds(clampTrackSecond(seconds,Math.max(0,duration-.1)));
               stopMovieSound();setPreviewPlaying(false);
             }}/>
+
+          <nav className={videoStyles.montageQuickTools} data-video-montage-tools
+            aria-label={locale==="ru"?"Инструменты монтажа":locale==="es"?"Herramientas de montaje":"Montage tools"}>
+            <button type="button" disabled={recording||preparing} onClick={()=>{
+              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
+              if(details)details.open=true;
+              window.requestAnimationFrame(()=>details?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            }}><SlidersHorizontal size={17} aria-hidden="true"/>{locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"}</button>
+            <button type="button" disabled={recording||preparing} onClick={()=>{
+              setActiveWorkspace("effects");setStudioMode("pump");
+            }}><Sparkles size={17} aria-hidden="true"/>{locale==="ru"?"Эффекты":locale==="es"?"Efectos":"Effects"}</button>
+            <button type="button" disabled={recording||preparing} onClick={()=>{
+              document.querySelector<HTMLTextAreaElement>("[data-video-montage-script]")?.focus();
+            }}><Film size={17} aria-hidden="true"/>{locale==="ru"?"Текст":locale==="es"?"Texto":"Text"}</button>
+            <button type="button" disabled={recording||preparing} onClick={()=>{
+              setBasicPanelTab("music");
+              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
+              if(details)details.open=true;
+              window.requestAnimationFrame(()=>document.querySelector("[data-video-music-editor]")
+                ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            }}><Music2 size={17} aria-hidden="true"/>{locale==="ru"?"Аудио":locale==="es"?"Audio":"Audio"}</button>
+            <button type="button" disabled={recording||preparing} onClick={()=>{
+              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
+              if(details)details.open=true;
+              window.requestAnimationFrame(()=>document.querySelector("[data-video-basic-format]")
+                ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            }}><Film size={17} aria-hidden="true"/>{locale==="ru"?"Формат":locale==="es"?"Formato":"Format"}</button>
+          </nav>
+          <button type="button" className={videoStyles.montageExport} data-video-montage-export
+            disabled={!canGenerate||recording||preparing} onClick={()=>void createVideo()}>
+            <Download size={19} aria-hidden="true"/>
+            {locale==="ru"?"Экспортировать видео":locale==="es"?"Exportar vídeo":"Export video"}
+            <ArrowRight size={18} aria-hidden="true"/>
+          </button>
           <details className={videoStyles.montageSettingsDisclosure} data-video-montage-settings>
             <summary>{locale==="ru"?"Дополнительно: стиль, фото, голос и музыка"
               :locale==="es"?"Opciones: estilo, foto, voz y música"
