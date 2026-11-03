@@ -64,7 +64,6 @@ const videoCourseCopy={
 export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{locale:PublicLocale;focus:VideoTheme;courseKind?:"meditation"|"video-series"}){
   const t={...copy[locale],...(courseKind==="video-series"?videoCourseCopy[locale]:{})};
   const formId="meditation-course-contact-"+courseKind;
-  const consentId=formId+"-contact-consent";
   const [open,setOpen]=useState(false);
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
@@ -118,13 +117,8 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
         <label>{t.phone}<input value={phone} type="tel" maxLength={40} autoComplete="tel"
           placeholder="+1 416 000 0000"
           onChange={event=>{setPhone(event.target.value);operationRef.current=null;}}/></label>
-        <div className={css.consent} data-meditation-course-consent>
-          <input id={consentId} name="contactConsent" type="checkbox" checked={consent}
-            onChange={event=>setConsent(event.target.checked)}/>
-          <label htmlFor={consentId} onClick={event=>{event.preventDefault();setConsent(value=>!value);}}>
-            <span>{t.consent}</span>
-          </label>
-        </div>
+        <label className={css.consent} data-meditation-course-consent><input type="checkbox" checked={consent}
+          onChange={event=>setConsent(event.target.checked)}/><span>{t.consent}</span></label>
         <small>{t.note}</small>
         {error?<p className={css.error} role="alert">{error}</p>:null}
         <button type="submit" data-meditation-course-submit disabled={busy||!consent||(!email.trim()&&!phone.trim())}>
