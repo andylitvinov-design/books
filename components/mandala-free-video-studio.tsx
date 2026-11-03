@@ -4909,7 +4909,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 style={{width:"100%",height:"100%",objectFit:"cover"}}/> : null}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{preset.label[locale]}</span>
-              <span className={videoStyles.filmBadge}>4 MP4</span>
+              <span className={videoStyles.filmBadge}>{preset.id.startsWith("motion-film-")?(locale==="ru"?"АНИМАЦИЯ":locale==="es"?"ANIMACIÓN":"ANIMATION"):"4 MP4"}</span>
               {usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id?
                 <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
             </button>;
