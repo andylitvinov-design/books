@@ -48,7 +48,7 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
  const result={state:previous.status,coreRunId:null,receiptWritten:false,
    hintCleared:false,manualFlagged:false};
  if(!['AWAITING_CORE','CONFIRMED','ESCALATED'].includes(previous.status))return result;
- if(previous.status==='ESCALATED')return result;
+ if(previous.status==='ESCALATED')result.state='CI_WAKE_UNDELIVERED';
  let run=null,zeroHistory=false;
  if(previous.status!=='CONFIRMED'){
    try{
