@@ -78,7 +78,7 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  const ctx={repo,number:27,head:SHA,base:BASE};
  const failed=run({path:file,conclusion:'failure'});
  const syntaxRun=run({id:153,path:syntax});
- const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'syntax',status:'completed',conclusion:'success'}]};
  const result=await verify(api,ctx,files,{maxWaitMs:0});
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
@@ -890,7 +890,7 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const api = { pr: async () => currentPr(), target: async () => advanced,
     compare: async () => ({ status:'diverged' }),
     changed: async () => { throw Error('live diff must not replace tested checkout'); },
-    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+    runs: async () => [run()], jobs: async () => [{ name: 'test', status: 'completed', conclusion: 'success' }] };
   // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   // A stale pull_request.base.sha must not fail a tested checkout whose parent
@@ -1284,7 +1284,7 @@ test('actual specialist verification still blocks CI-policy changes without trus
     changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
   const api={pr:async()=>({...pr(),base:{...pr().base,sha:current}}),
     target:async()=>current,compare:async()=>updated,runs:async()=>[run()],
-    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}]};
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
   const ctx={repo,number:27,head:SHA,base:BASE};
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
   const success=await verify(api,ctx,sources,{maxWaitMs:0,trustedPolicyBaseSha:current});
