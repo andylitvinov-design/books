@@ -96,7 +96,28 @@ export async function verifyGuidedPractices({browser,base,engine}){
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
-      await programme.waitFor({state:"visible"});
+      try{
+        await programme.waitFor({state:"visible"});
+      }catch(error){
+        // Never mask a missing programme: diagnose the real WebKit UI state
+        // before failing, so a second click or weakened gate is unnecessary.
+        const snapshot=await page.evaluate(()=>{
+          const root=document.querySelector("[data-video-guided-course]");
+          const q=(selector)=>root?.querySelector(selector);
+          return {
+            courseMounted:Boolean(root),
+            courseVisible:Boolean(root?.getClientRects().length),
+            programmePresent:Boolean(q("[data-guided-eight-sessions]")),
+            createButtonDisabled:q("[data-guided-create-plan]")?.disabled??null,
+            selectedState:q('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state")??null,
+            selectedVector:q('[data-guided-focus-vector][aria-pressed="true"]')?.getAttribute("data-guided-focus-vector")??null,
+            journeyStep:q('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            meditationPresent:Boolean(q("[data-guided-meditation-result]")),
+            pagePath:location.pathname,
+          };
+        });
+        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify(snapshot),{cause:error});
+      }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
       const enquiry=programme.locator("[data-meditation-course-order]");
