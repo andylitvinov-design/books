@@ -229,7 +229,7 @@ export function MandalaAutoVideoDirector({
    setProposalContext({goal:nextGoal,theme:selectedTheme});
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
-     fallbackTheme:selectedTheme,presets,scenes}));
+     fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
    if(disabled)return;
