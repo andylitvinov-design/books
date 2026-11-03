@@ -134,10 +134,23 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // Verify React has committed the chosen vector; a click alone can resolve
+      // before WebKit flushes state, and Generate was enabled by the previous goal.
+      await page.waitForFunction(()=>
+        document.querySelector('[data-guided-focus-vector="goals"]')
+          ?.getAttribute("aria-pressed")==="true",
+        null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // The submit can already be enabled before this optional context is
+      // committed. Wait for the REAL rendered Personal Meditation preview to
+      // show the new context; checking the textarea value is insufficient.
+      await page.waitForFunction(()=>
+        document.querySelector("[data-guided-personal-meditation-step]")
+          ?.textContent?.includes("I feel rushed")===true &&
+        document.querySelector("[data-guided-generate-meditation]")?.disabled===false,
+        null,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
