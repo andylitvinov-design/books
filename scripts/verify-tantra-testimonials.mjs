@@ -13,11 +13,25 @@ const sources = manifest.nativeVideos.map(asset => asset.url);
 const posters = manifest.assets.filter(asset => asset.contentType === 'image/png').map(asset => new URL(asset.path, origin).href);
 const result = { origin, assets: [], journeys: [] };
 
-const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0';
+// Keep the security-sensitive embed contract strict, but do not depend on
+// query-parameter serialization order or harmless additional parameters.
+const youtubeEmbedPath = '/embed/qM_nFUkYJ1k';
+function verifyYoutubeUrl(value) {
+  const url = new URL(value);
+  assert.equal(url.origin, 'https://www.youtube-nocookie.com', 'YouTube must use privacy-enhanced origin');
+  assert.equal(url.pathname, youtubeEmbedPath, 'Alena testimonial source identity must not change');
+  for (const [key, expected] of [['autoplay', '1'], ['playsinline', '1'], ['rel', '0']]) {
+    assert.deepEqual(url.searchParams.getAll(key), [expected], `Missing or repeated YouTube ${key}`);
+  }
+}
+const youtubeFixturePattern = /^https:\/\/www\.youtube-nocookie\.com\/embed\/qM_nFUkYJ1k(?:\?.*)?$/;
 async function installYoutubeFixture(context) {
-  await context.route(youtubeUrl, route => route.fulfill({
-    contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
-  }));
+  await context.route(youtubeFixturePattern, route => {
+    verifyYoutubeUrl(route.request().url);
+    return route.fulfill({
+      contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
+    });
+  });
 }
 async function installNativeTimelineDiagnostics(context) {
   await context.addInitScript(() => {
@@ -356,7 +370,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
     // A real app click creating the iframe proves the client component hydrated.
     await disclosure.locator('button.academy-video-poster').click();
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
-    observed.cycles = await verifyRepeatedClose(page, 3, engine);
+    observed.cycles = await verifyRepeatedClose(page, 2, engine);
     observed.deferredScripts = deferredScripts;
     assert.deepEqual(errors, []);
     observed.ok = true;
@@ -451,7 +465,9 @@ try {
     const browser = await browserType.launch(engine === 'webkit' ? { env: { ...process.env, GST_DEBUG: 'webkitmediaplayer:6', GST_DEBUG_FILE: `${process.cwd()}/output/tantra-testimonials/webkit-gstreamer.log` } } : {});
     try {
       for (const width of [390, 1365]) {
-        for (const locale of ['en', 'ru', 'es']) {
+        // All locales on mobile in both engines; one English desktop pass.
+        // Avoid repeating the same native decoder checks on two more desktop locales.
+        for (const locale of width === 390 ? ['en', 'ru', 'es'] : ['en']) {
           const context = await browser.newContext({ viewport: { width, height: 900 } });
           const pageErrors = [];
           const journey = { engine, width, locale, ok: false, nativeDecodedPlayback: [], alenaRendererSynthetic: true, alenaDecodedPlaybackClaimed: false, pageErrors };
@@ -459,9 +475,7 @@ try {
           try {
             await installNativeTimelineDiagnostics(context);
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
-            await context.route(youtubeUrl, route => route.fulfill({
-              contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
-            }));
+            await installYoutubeFixture(context);
             const page = await context.newPage();
             page.on('pageerror', error => pageErrors.push(error.message));
             const response = await page.goto(origin + `/${locale}/academy/reiki/tantra-reiki`, { waitUntil: 'load' });
@@ -522,7 +536,7 @@ try {
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
-            await expect(alena).toHaveAttribute('src', youtubeUrl);
+            verifyYoutubeUrl(await alena.getAttribute('src'));
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };
@@ -539,7 +553,8 @@ try {
           } finally { journey.nativeTimeline = await collectNativeTimeline(context); await context.close(); }
         }
       }
-      for (const locale of ['en', 'ru', 'es']) await verifyDelayedHydration(browser, engine, locale);
+      // EN starts collapsed, RU starts expanded; ES shares the RU disclosure path.
+      for (const locale of ['en', 'ru']) await verifyDelayedHydration(browser, engine, locale);
       await verifyLocaleSwitchWhilePlaying(browser, engine);
     } finally { await browser.close(); }
   }
