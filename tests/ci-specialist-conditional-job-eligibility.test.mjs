@@ -13,7 +13,7 @@ const workflow=`on:
     branches: ['codex/public-book-library']
 jobs:
   writer-practical-focused:
-    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-v1-20261030' }}
+    if: \${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-v1-20261030' }}
     runs-on: ubuntu-24.04
   axis-unit-types-build:
     runs-on: ubuntu-24.04
@@ -44,7 +44,7 @@ test('unknown functions, contexts and non-single-line guards never waive a skipp
     "github.head_ref == 'feat/meditation-writer-device-v1-20261030'",
     "startsWith(github.head_ref, 'feat/meditation-writer-device-')");
   const unknownContext=workflow.replace('github.head_ref','github.actor');
-  const multiline=workflow.replace(/    if: (.+)/, () => '    if: >-\\n      $1');
+  const multiline=workflow.replace(/    if: (.+)/, () => '    if: >-\n      $1');
   assert.deepEqual(trustedConditionallyInapplicableJobs(unknownFunction,pr()),[]);
   assert.deepEqual(trustedConditionallyInapplicableJobs(unknownContext,pr()),[]);
   assert.deepEqual(trustedConditionallyInapplicableJobs(multiline,pr()),[]);
