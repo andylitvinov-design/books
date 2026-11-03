@@ -4444,7 +4444,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
+          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy||phrasePending||narrationInvalid}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={setHypnoLight}
             posters={{
