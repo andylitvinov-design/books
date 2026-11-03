@@ -424,10 +424,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     if(editorDetails instanceof HTMLDetailsElement){
       editorDetails.open=true;
       setPersonalOpened(true);
-      window.requestAnimationFrame(()=>{
-        const editor=document.getElementById("personal-meditation");
-        (editor||editorDetails).scrollIntoView({behavior:"auto",block:"start"});
-      });
+      // Scroll BEFORE the next user interaction. An animation-frame callback
+      // can move WebKit under a subsequent enabled Create Programme tap,
+      // swallowing the event without invoking its handler.
+      editorDetails.scrollIntoView({behavior:"instant",block:"start"});
     }
   }
   function createProgramme(){

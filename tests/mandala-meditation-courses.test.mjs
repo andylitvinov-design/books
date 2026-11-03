@@ -143,8 +143,11 @@ test("iPhone guided-course create-plan handler has a one-tap state receipt witho
  assert.match(guided,/data-guided-plan-click-count=\{planActionCount\}/);
  assert.match(guided,/data-guided-plan-signature-match=\{programmeSignature===journeySignature\?"true":"false"\}/);
  assert.match(guided,/setPlanActionCount\(count=>count\+1\);\s*setProgrammeSignature\(journeySignature\);/);
- assert.match(guided,/scrollIntoView\(\{behavior:"auto",block:"start"\}\)/,
+ assert.match(guided,/scrollIntoView\(\{behavior:"instant",block:"start"\}\)/,
    "personal editor focus must not leave a smooth-scroll animation over the next user click");
+ assert.doesNotMatch(guided.slice(guided.indexOf("function openPersonalMeditation()"),
+   guided.indexOf("function createProgramme()")),/requestAnimationFrame/,
+   "no deferred scrolling may race the real create-programme tap");
  assert.match(browser,/planClickCount:root\?\.getAttribute\("data-guided-plan-click-count"\)/);
  assert.match(browser,/planSignatureMatch:root\?\.getAttribute\("data-guided-plan-signature-match"\)/);
 });
