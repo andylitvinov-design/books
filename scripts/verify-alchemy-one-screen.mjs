@@ -120,20 +120,30 @@ try {
       // Open, but never submit, the current user-invoked contact chooser.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');
-        const chooser = hero.locator("[data-contact-channel-chooser]").first();
-        const trigger = chooser.locator("[data-contact-order]");
-        await trigger.waitFor({state:"visible",timeout:12000});
-        await trigger.click();
-        const form = chooser.locator("form");
-        await form.waitFor({state:"visible",timeout:12000});
-        if (await form.locator('input[type="checkbox"][required]').count() !== 1)
-          issues.push("personal-reply consent missing");
-        if (await form.locator('input[type="email"],input[type="tel"]').count() < 1)
-          issues.push("contact input missing");
-        if (await chooser.locator("[data-booking-payment-options], [data-cart-checkout]").count() !== 0)
-          issues.push("payment surfaced before confirmed booking");
-        await trigger.click();
-        if (await form.isVisible()) issues.push("contact chooser did not close");
+        const booking = hero.locator("[data-session-booking-flow]");
+        if (await booking.count() !== 1 ||
+            await booking.getAttribute("data-booking-sku") !== "personal-session-60") {
+          issues.push("canonical €100 personal booking flow missing");
+        } else {
+          const trigger = booking.locator("button[data-contact-order]");
+          await trigger.waitFor({state:"visible",timeout:12000});
+          if (await booking.locator("[data-booking-payment-options]").count() !== 0)
+            issues.push("payment surfaced before confirmed booking");
+          await trigger.click();
+          const form = booking.locator('[data-booking-step="contact"]');
+          await form.waitFor({state:"visible",timeout:12000});
+          if (await form.locator('input[type="checkbox"][required]').count() !== 1)
+            issues.push("personal-reply consent missing");
+          if (await form.locator('input[type="tel"]').count() < 1)
+            issues.push("booking contact input missing");
+          const submit = form.locator('button[type="submit"]');
+          if (!await submit.isDisabled())
+            issues.push("booking submit enabled before phone and consent");
+          if (await booking.locator("[data-booking-payment-options]").count() !== 0)
+            issues.push("payment surfaced without approved booking");
+          await trigger.click();
+          if (await form.isVisible()) issues.push("booking contact form did not close");
+        }
       }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
