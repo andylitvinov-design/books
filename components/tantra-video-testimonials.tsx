@@ -21,7 +21,11 @@ export function TantraVideoTestimonials(props: Props) {
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
-    video.pause();
+    // A native <details> close can notify us at both click-capture and toggle.
+    // Do not call pause() again on an already paused player: WebKit/GStreamer
+    // can demote its decoder after a redundant pause, leaving a later play()
+    // reporting "playing" with no advancing time or decoded frames.
+    if (!video.paused) video.pause();
     // Capture after pausing and before hiding. Repeated close notifications must
     // not replace the retained position with a backend's transient reset value.
     if (retained.current.has(video)) return;

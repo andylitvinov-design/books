@@ -57,17 +57,17 @@ for (const [locale, label] of Object.entries(labels)) {
     const model = mount({ ...label, videos, initiallyOpen: locale !== 'en' });
     const tree = model.render();
     let pauses = 0;
-    const media = { pause() { pauses++; } };
+    const media = { paused: false, pause() { pauses++; this.paused = true; } };
     const details = { open: true, querySelectorAll() { return [media]; } };
     tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 0);
     details.open = false; tree.props.onToggle({ currentTarget: details });
     tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 2);
-    assert.equal(pauses, 2);
+    assert.equal(pauses, 1, 'Repeat close must not pause a stopped decoder again');
     details.open = true; tree.props.onToggle({ currentTarget: details });
     assert.equal(model.updates(), 2);
-    assert.equal(pauses, 2);
+    assert.equal(pauses, 1);
   });
   test(`${locale}: missed pre-hydration open still cleans up the first observed closed toggle`, () => {
     const model = mount({ ...label, videos, initiallyOpen: locale !== 'en' });
@@ -104,6 +104,27 @@ for (const locale of Object.keys(labels)) test(`${locale}: summary activation pa
   assert.deepEqual(media.map(x => x.currentTime), [12.5, 47]);assert.deepEqual(media.map(x=>x.openWhenPaused),[true,true]);assert.equal(details.open, true);assert.equal(model.updates(), 0);
   details.open = false;tree.props.onToggle({currentTarget: details});assert.equal(model.updates(), 1);
 });
+test('closing a mixed native video section pauses only active media, once across both event handlers', () => {
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render(),summary=flatten(tree).find(node=>node.type==='summary');
+  const active={currentTime:30.5,currentSrc:videos[0].src,paused:false,calls:0,
+    pause(){this.calls++;this.paused=true}};
+  const stopped={currentTime:17.9,currentSrc:videos[1].src,paused:true,calls:0,
+    pause(){this.calls++;throw Error('Redundant pause poisons the idle WebKit decoder')}};
+  const details={open:true,querySelectorAll(selector){
+    assert.equal(selector,'video');return [active,stopped];
+  }};
+  summary.props.onClickCapture({currentTarget:{closest(){return details}}});
+  assert.equal(active.calls,1);assert.equal(stopped.calls,0);
+  details.open=false;
+  tree.props.onToggle({currentTarget:details});
+  tree.props.onToggle({currentTarget:details});
+  assert.equal(active.calls,1,'close toggle cannot pause the same decoder twice');
+  assert.equal(stopped.calls,0,'already-paused video must never receive pause()');
+  assert.deepEqual([active.currentTime,stopped.currentTime],[30.5,17.9]);
+  assert.equal(model.updates(),2,'YouTube poster cleanup still runs on close');
+});
+
 test('opening summary and absent ancestor never pause or reset any player', () => {
   const model=mount({...labels.en,videos,initiallyOpen:false});const summary=flatten(model.render()).find(x=>x.type==='summary');
   for(const details of [null,{open:false,querySelectorAll(){assert.fail('Opening must not access media')}}])summary.props.onClickCapture({currentTarget:{closest(){return details}}});
