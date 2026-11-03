@@ -14,6 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
+const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
@@ -268,7 +269,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
 }
 function validCandidate(candidate, sha) {
   return !!(candidate && candidate.head_sha === sha &&
-    (!candidate.repair_kind || ['lint','codex'].includes(candidate.repair_kind)) &&
+    (!candidate.repair_kind || ['lint','codex','free_ai'].includes(candidate.repair_kind)) &&
     Array.isArray(candidate.files) &&
     candidate.files.length <= MAX_FILES && candidate.files.every(f=>
       f && typeof f.path === 'string' && PATH.test(f.path) &&
@@ -293,7 +294,8 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
   const files = (await github.rest.pulls.listFiles({owner,repo,pull_number:prNumber,per_page:100,page:1})).data;
   const allowed = safeFiles(files);
-  if (!allowed || candidate.files.some(f => !allowed.includes(f.path)) ||
+  if (!allowed || candidate.files.some(f => !allowed.includes(f.path) ||
+       (candidate.repair_kind==='free_ai' && !safeFreeSourcePath(f.path))) ||
       new Set(candidate.files.map(f=>f.path)).size !== candidate.files.length)
     throw Error('HH_REPAIR_PUBLISH_UNSAFE_PATH');
   const verified = [];
@@ -339,9 +341,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
-  const repairKind=candidate.repair_kind==='codex'?'codex':'lint';
+  const repairKind=candidate.repair_kind==='free_ai'?'free_ai':
+     candidate.repair_kind==='codex'?'codex':'lint';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='codex'?'Codex source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free OpenCode/GLM source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
@@ -534,16 +537,17 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'ESLINT_SCOPE_NOT_CONFIGURED','ESLINT_REMAINING_ERRORS',
     'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
   const agentDetail=[codeVerifyDetail,codeDetail].find(x=>typeof x==='string' &&
-    x.startsWith('CODEX_') && /^[A-Z0-9_:.-]{5,120}$/.test(x));
+    /^(?:CODEX_|FREE_AI_)/.test(x) && /^[A-Z0-9_:.-]{5,120}$/.test(x));
   const detailCode=state==='MANUAL'||state==='FAILED'?
     agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,lane:'repair',state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
-    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'codex':
+    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable,code_job_result:codeResult||'skipped',
+    code_agent_configured:codeAvailable,code_provider:codeAvailable?'opencode/glm-5.3-flash-free':null,
+     code_job_result:codeResult||'skipped',
     code_candidate_status:codeStatus||'skipped',
     code_verify_result:codeVerifyResult||'skipped',
     code_verify_status:codeVerifyStatus||'skipped',

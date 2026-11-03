@@ -62,6 +62,8 @@ jobs:
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
+          node --check scripts/ci-pr-repair-free-agent.cjs
+          node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
@@ -94,7 +96,7 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available','false');
+            core.setOutput('code_available','true');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -145,6 +147,7 @@ jobs:
     env:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+      REPAIR_STRATEGY: ${{ needs.claim.outputs.strategy }}
     steps:
       - name: Checkout untrusted PR HEAD without any write credentials or secrets
         uses: actions/checkout@v4
@@ -171,6 +174,7 @@ jobs:
       - name: Verify deterministic Core repair with TypeScript
         if: needs.claim.outputs.strategy == 'code'
         timeout-minutes: 5
+        continue-on-error: true
         run: npx tsc --noEmit --incremental false
       - id: build_candidate
         name: Try targeted ESLint autofix and write bounded patch candidate
@@ -218,9 +222,17 @@ jobs:
               const gate=spawnSync(process.execPath,
                 ['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],
                 {stdio:'inherit',timeout:195000});
+              // A deterministic proposal is NOT publishable when the Core
+              // TypeScript failure remains. The initial check is diagnostic;
+              // this second exact-patch check is the actual proof.
+              const mustCompile=process.env.REPAIR_STRATEGY==='code'||
+                changed.some(p=>/\.(?:ts|tsx)$/.test(p));
+              const types=mustCompile?spawnSync('./node_modules/.bin/tsc',
+                ['--noEmit','--incremental','false','--pretty','false'],
+                {stdio:'inherit',timeout:210000}):{status:0};
               const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
                 .split('\0').filter(Boolean);
-              const verified=gate.status===0 && after.length===changed.length &&
+              const verified=gate.status===0 && types.status===0 && after.length===changed.length &&
                 after.every(p=>before.has(p)&&before.get(p)===digest(p));
               if(!verified) result.detail_code='SCOPED_TESTS_NOT_GREEN';
               for(const path of verified?changed:[]){
@@ -248,36 +260,127 @@ jobs:
           path: candidate.json
           retention-days: 1
           if-no-files-found: error
-  # Retired safety stub: paid Codex is not an automatic repair dependency.
-  # Keep stable job IDs for downstream finalization compatibility. Free AI is
-  # not enabled here until a zero-cost provider allowlist and quota checks land.
+  # Free-only code repair: proposed source patches are created in a no-token
+  # runner, independently checked in another runner, and published by the
+  # existing guarded trusted publisher only after exact-HEAD verification.
   code_fix:
     needs: [claim,fix]
-    if: false
+    if: >-
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.code_available == 'true' &&
+      needs.fix.result == 'success' &&
+      needs.fix.outputs.candidate_status == 'manual_required' &&
+      (needs.claim.outputs.strategy == 'lint' || needs.claim.outputs.strategy == 'code')
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 17
     permissions:
       contents: read
     outputs:
-      candidate_status: disabled
-      candidate_detail: PAID_AI_ROUTE_RETIRED
+      candidate_status: ${{ steps.capture.outputs.candidate_status }}
+      candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
-      - name: Paid AI route intentionally disabled
-        run: echo "No paid AI fallback is permitted."
+      - name: Checkout exact PR HEAD with no persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout immutable trusted repair scripts without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Fail early on unsupported or sensitive free-model source scope
+        run: node -e "require('./.hh-trusted/scripts/ci-pr-repair-free-agent.cjs').sourceScope()"
+      - name: Install PR test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install exact free OpenCode CLI version outside PR worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/hh-opencode"
+          npm install --prefix "$RUNNER_TEMP/hh-opencode" --no-audit --no-fund --no-save @opencode/cli@2.1.2
+          "$RUNNER_TEMP/hh-opencode/node_modules/.bin/opencode" --version
+      - name: Generate one bounded no-token free-model patch; never retry paid
+        shell: bash
+        env:
+          HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
+        run: |
+          set -euo pipefail
+          # Proposer runs OpenCode in an empty temporary cwd, with an empty
+          # HOME/XDG config, an effective deny-all ACL, and no GH/API secrets.
+          if ! node .hh-trusted/scripts/ci-pr-repair-free-agent.cjs; then
+            echo 'Free model unavailable, quota-limited, or patch rejected.'
+            echo 'No paid retry, commit, push, or relaxed safety gate.'
+            git restore --worktree -- .
+          fi
+      - id: capture
+        name: Capture exact-HEAD allowlisted source proposal only
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
+      - name: Store untrusted proposal for independent verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-code-repair-raw
+          path: candidate-raw.json
+          retention-days: 1
+          if-no-files-found: error
 
   code_verify:
     needs: [claim,fix,code_fix]
-    if: false
+    if: >-
+      needs.claim.result == 'success' &&
+      needs.fix.result == 'success' &&
+      needs.code_fix.result == 'success' &&
+      needs.code_fix.outputs.candidate_status == 'proposed'
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 16
     permissions:
       contents: read
     outputs:
-      candidate_status: disabled
-      candidate_detail: FREE_AI_EXECUTOR_NOT_CONFIGURED
+      candidate_status: ${{ steps.verify.outputs.candidate_status }}
+      candidate_detail: ${{ steps.verify.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
-      - name: Free AI verifier is not yet configured
-        run: echo "No AI patch can be accepted without a configured free executor."
+      - name: Fresh exact-HEAD checkout; no shared model worktree or token
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Read trusted verifier from exact dispatch commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-code-repair-raw
+          path: hh-code-candidate
+      - id: verify
+        name: Independently verify exact SHA, direct tests, lint, TS and diff
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
+      - name: Upload ONLY independently verified candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-code-repair-verified
+          path: candidate.json
+          retention-days: 1
+          if-no-files-found: error
 
   publish:
     needs: [claim,fix,code_fix,code_verify]
@@ -363,7 +466,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): '+(candidate.repair_kind==='codex'?'verified Codex source repair':'automated scoped ESLint repair')+' for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free GLM source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'automated scoped ESLint repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);
