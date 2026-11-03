@@ -1550,3 +1550,17 @@ test('Core restores immutable production-seeded media and compiler caches withou
   assert.match(producerJob, /github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library'/);
   assert.match(producerJob, /run: npm run build/, 'production seed must include real successful Next build');
 });
+
+
+// pull_request.synchronize has no push-style before/after. Keep genuine QA,
+// but cancel obsolete first-attempt runners after the PR HEAD advances.
+test('seven costly PR workflows cancel obsolete first-attempt HEAD without push-only fields', () => {
+  for (const file of ["hh-alchemy-mobile-acceptance.yml","hh-assessment-quality.yml","hh-billing-isolated.yml","hh-messenger-mobile-release.yml","hh-messenger-notification-build.yml","hh-private-audio-e2e.yml","practice-visual-browser.yml"]) {
+    const source = workflow(file);
+    const match = /^concurrency:\n  group: ([^\n]+)\n  cancel-in-progress: ([^\n]+)/m.exec(source);
+    assert.ok(match, file + ': root concurrency block is required');
+    assert.ok(match[1].includes("github.run_attempt == 1") && match[1].includes("format('pr-{0}'"), file + ': stable PR lease required');
+    assert.ok(match[2].includes("github.run_attempt == 1") && match[2].includes("github.event.action == 'synchronize'"), file + ': first-attempt synchronize only');
+    assert.doesNotMatch(match[2], /github\.event\.(?:before|after)/, file + ': push-only fields never cancel PR runs');
+  }
+});
