@@ -42,11 +42,14 @@ test('legacy Watchdog fallback is disabled for direct handoff',()=>{
 });
 
 
-test('public Watchdog KPI never calls HTTP dispatch a verified execution',()=>{
- const fs=require('node:fs');
+test('public Watchdog KPI never counts dispatch HTTP as runner execution',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- assert.match(watchdog,/dispatch_requests_accepted:number\(report\.dispatchAccepted\)/);
- assert.match(watchdog,/worker_dispatches:number\(report\.runnerStartedConfirmed\)/);
- assert.match(watchdog,/RUNNER_STARTED/);
- assert.doesNotMatch(watchdog,/worker_dispatches:number\(report\.dispatchAccepted\)/);
+ const monitor=fs.readFileSync('scripts/ci-pr-monitor-feed.cjs','utf8');
+ assert.match(watchdog,/publishMonitorSnapshot/);
+ assert.match(watchdog,/HH_DIRECT_HANDOFF_MONITOR_/);
+ assert.match(monitor,/dispatch_requests_accepted:validCount\(report\.dispatchAccepted/);
+ assert.match(monitor,/worker_dispatches:validCount\(report\.runnerStartedConfirmed/);
+ assert.match(monitor,/RUNNER_STARTED/);
+ assert.doesNotMatch(monitor,/worker_dispatches:validCount\(report\.dispatchAccepted/);
+ assert.match(monitor,/OLDER_OR_DUPLICATE_DROPPED/);
 });
