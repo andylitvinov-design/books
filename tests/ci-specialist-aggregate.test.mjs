@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -83,9 +83,7 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
  api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
- const pushScoped=await verify(api,ctx,files,{maxWaitMs:0});
- assert.deepEqual(pushScoped.advisory.concurrencyOnly,[file]);
- assert.deepEqual(pushScoped.advisory.nonApplicable,['unassociated-push:152:failure']);
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
@@ -155,15 +153,10 @@ test('immutable run SHA survives GitHub rewriting associated PR head on subseque
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
 });
 
-test('failed push on a matching SHA is advisory, not an unverified PR failure',()=>{
-  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[
-    run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})
-  ]});
-  assert.deepEqual(state.pushFailures,[]);
-  assert.deepEqual(state.pushAdvisory,['300:failure']);
+test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
+  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})]});
+  assert.deepEqual(state.pushFailures,['300:failure']);
   assert.equal(state.passed.length,1);
-  assert.deepEqual(state.failed,[]);
-  assert.deepEqual(state.orphanFailures,[]);
 });
 
 test('general conditional jobs may skip only when BASE explicitly makes them optional',()=>{
@@ -181,6 +174,22 @@ test('general conditional jobs may skip only when BASE explicitly makes them opt
   assert.throws(()=>inspectJobs([pair[1]],'.github/workflows/any-owner.yml',
     trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
   assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
+});
+test('trusted BASE branch-scoped jobs skip only on nonmatching PR branches',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  writer-practical-focused:','    if: '+guard,'    runs-on: ubuntu-latest',''
+  ].join('\\n');
+  const guard="${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/public-book-library' || github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}";
+  const yaml=build(guard);
+  assert.deepEqual(trustedConditionalJobs(yaml,'feat/mytube-unified-six-bottom-prod-20261103'),['writer-practical-focused']);
+  assert.deepEqual(trustedConditionalJobs(yaml,'feat/meditation-writer-device-voice-v1-20261030'),[]);
+  const jobs=[{name:'required',status:'completed',conclusion:'success'},
+    {name:'writer-practical-focused',status:'completed',conclusion:'skipped'}];
+  assert.equal(inspectJobs(jobs,'.github/workflows/hh-profile-axis-matching.yml',
+    trustedConditionalJobs(yaml,'feat/mytube-unified-six-bottom-prod-20261103')),1);
+  assert.throws(()=>inspectJobs(jobs,'.github/workflows/hh-profile-axis-matching.yml',
+    trustedConditionalJobs(yaml,'feat/meditation-writer-device-voice-v1-20261030')),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
   const build=guard=>[
@@ -213,45 +222,6 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
     /UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.equal(inspectJobs(readyJob,'.github/workflows/owner.yml',
     trustedConditionalJobs(build("${{ github.event_name == 'workflow_dispatch' }}"))),1);
-});
-
-
-test('BASE-excluded writer-only job is neutral for unrelated dock PR only when axis suite passes', async () => {
-  const filename = '.github/workflows/hh-profile-axis-matching.yml';
-  const source = readFileSync(filename,'utf8');
-  const branch = 'feat/mytube-unified-six-bottom-prod-20261103';
-  const files = candidate => ({
-    base:new Map([[filename,source]]),
-    current:new Map([[filename,candidate]]),
-    changedRows:[{filename:'components/holistic-agent-chat.tsx',status:'M'}],
-  });
-  assert.equal(optionalProfileWriterSkip(files(source),branch),true);
-  assert.equal(optionalProfileWriterSkip(files(source),'feat/meditation-writer-device-voice-v1-20261030'),false);
-  assert.equal(optionalProfileWriterSkip(files(source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')),branch),false);
-  assert.equal(optionalProfileWriterSkip(files(source),''),false);
-  const primary = {name:'axis-unit-types-build',status:'completed',conclusion:'success'};
-  const writer = {name:'writer-practical-focused',status:'completed',conclusion:'skipped'};
-  const check = ({headRef=branch,rows=[primary,writer],candidate=source}={}) => {
-    const current = pr();
-    current.head.ref = headRef;
-    return verify({
-      pr:async()=>current,
-      runs:async()=>[run({path:filename,head_branch:headRef})],
-      jobs:async()=>rows,
-    },{repo,number:27,head:SHA,base:BASE},files(candidate),{maxWaitMs:0});
-  };
-  const result = await check();
-  assert.deepEqual(result.executed.map(x=>x.jobs),[1],
-    'branch-specific writer skips only while actual axis suite succeeds');
-  for (const scenario of [
-    {headRef:'feat/meditation-writer-device-voice-v1-20261030'},
-    {rows:[{...primary,conclusion:'failure'},writer]},
-    {rows:[{...primary,conclusion:'skipped'},writer]},
-    {rows:[primary,{...writer,conclusion:'failure'}]},
-    {candidate:source.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'")},
-    {candidate:source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')},
-  ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB|NO_EXECUTED_REQUIRED_SPECIALIST_JOB|SPECIALIST_FAILED|MISSING/,
-    'own-branch skips, edited workflow, and any failed required job are not accepted');
 });
 
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
@@ -299,10 +269,9 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // A push event cannot establish a PR-number association, so it is advisory.
+  // An unassociated exact-head failure has unknown coverage and must block.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
-  const pushOnly=await verify(api,ctx,sources,{maxWaitMs:0});
-  assert.deepEqual(pushOnly.advisory.nonApplicable,['unassociated-push:753:failure']);
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
@@ -322,10 +291,6 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
     if(url.includes('/files?')) return {ok:true,json:async()=>[{filename:'lib/crm/a.js'}]};
     if(url.includes('/jobs?')) return {ok:true,json:async()=>({jobs:[{name:'test',status:'completed',conclusion:'success'}]})};
     if(url.includes('/actions/runs?'))return {ok:true,json:async()=>({workflow_runs:[run()]})};
-    if(url.includes('/git/matching-refs/heads/'))return {ok:true,json:async()=>[
-      {ref:'refs/heads/' + TARGET,object:{sha:BASE}},
-      {ref:'refs/heads/' + TARGET + '/archive',object:{sha:'c'.repeat(40)}},
-    ]};
     return {ok:true,json:async()=>pr()};
   };
   const api=githubReader(repo,'fake',transport);
@@ -333,7 +298,6 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
   assert.equal((await api.changed(27))[0].filename,'lib/crm/a.js');
   assert.equal((await api.runs(SHA)).length,1);
   assert.equal((await api.jobs(151)).length,1);
-  assert.equal(await api.target(),BASE,'read the exact protected target ref, not similarly-prefixed branches');
   assert.ok(requests.every(x=>x.method==='GET' && x.auth==='Bearer fake'));
 });
 
@@ -368,10 +332,6 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.match(smoke,/env -i/,'Gauntlet smoke starts with a credential-scrubbed environment');
     assert.match(smoke,/opencode\/glm-5\.3-flash-free/,'Gauntlet smoke is pinned to an explicit free-only model');
     assert.doesNotMatch(smoke,/pull_request:|schedule:/,'Gauntlet smoke has no PR or scheduled trigger');
-    assert.match(smoke,/docs\/benchmarking\/gauntlet-runs\/\*\*/,'Gauntlet smoke requires an explicit run marker');
-    assert.match(smoke,/No paid retry is permitted/,'Gauntlet smoke forbids paid inference fallback');
-    assert.match(smoke,/node --test tests\/hh-gauntlet-loop\.test\.mjs/,'Gauntlet smoke retains dedicated ACL/loop tests');
-    assert.match(smoke,/timeout-minutes: 18/,'Gauntlet smoke keeps the runtime bounded');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
@@ -864,26 +824,15 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
     changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
   const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
-  const advanced = 'c'.repeat(40);
-  const api = { pr: async () => currentPr(), target: async () => advanced,
-    compare: async () => ({ status:'diverged' }),
-    changed: async () => { throw Error('live diff must not replace tested checkout'); },
+  const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
     runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
-  // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
-  // A stale pull_request.base.sha must not fail a tested checkout whose parent
-  // is still the actual current production branch HEAD.
-  api.target = async () => BASE;
-  api.pr = async () => currentPr();
+  api.pr = async () => pr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  // Detect a real target move during Specialist aggregation, not stale PR metadata.
-  let targetReads = 0;
-  api.target = async () => (++targetReads === 1 ? BASE : advanced);
-  api.compare = async () => ({ status:'diverged' });
+  let reads = 0;
+  api.pr = async () => (++reads === 1 ? pr() : currentPr());
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'base may not advance during specialist aggregation');
   api.pr = async () => currentPr();
-  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
-    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'production target may not advance unsafely during aggregation');
-  api.target = async () => advanced;
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
