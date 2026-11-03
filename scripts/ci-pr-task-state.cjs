@@ -5,7 +5,7 @@ const PROD='codex/public-book-library';
 const DEFAULT='codex/bootstrap-books';
 const SHA=/^[0-9a-f]{40}$/i;
 const MARKER='<!-- HH_PR_TASK_V1 -->';
-const BLOCKED=new Set(['hh:hold','hh:repair-manual','hh:ci-wake-unverified','hh:blocked','hh:worker-claimed']);
+const BLOCKED=new Set(['hh:hold','hh:repair-manual','hh:blocked','hh:worker-claimed']);
 function labels(pr){return new Set((pr?.labels||[]).map(x=>x.name||x).filter(x=>typeof x==='string'));}
 function validPR(pr){
  const ls=labels(pr);
@@ -19,6 +19,9 @@ function validPR(pr){
 function laneOf(pr){
  if(!validPR(pr))return null;
  const l=labels(pr);
+ // Retain a recovery lane only while stale CI queue hint still exists.
+ // A confirmed undelivered wake can finish its two-label cleanup later.
+ if(l.has('hh:ci-wake-unverified'))return l.has('hh:ci-needed')?'ci':null;
  if(l.has('hh:repair-needed'))return 'repair';
  if(l.has('hh:ci-needed')&&!l.has('hh:ci-bootstrap-attempted'))return 'ci';
  if(l.has('hh:conflict-repair-needed'))return 'conflict';
