@@ -89,7 +89,7 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
 const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
@@ -107,8 +107,7 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
     const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
     assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
-    const cancelCondition = workflow === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation :
-      (attemptScoped ? firstAttemptCancellation : prOnlyCancellation);
+    const cancelCondition = attemptScoped ? syncOnlyFirstAttemptCancellation : prOnlyCancellation;
     assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -151,9 +150,7 @@ for (const name of draftStageWorkflows) {
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
-    // The deployed first-attempt lease does not inspect github.event.before
-    // on pull_request events. Keep the test aligned with the actual safe
-    // first-attempt synchronize gate; never change workflow behavior here.
+    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
     const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
     const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));

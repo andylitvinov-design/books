@@ -510,7 +510,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/data-video-quick-audio-track=\{id\}/);
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
-  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
