@@ -190,10 +190,15 @@ const workspaceCopy = {
 } as const;
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
- {id:"effects",Icon:Sparkles},{id:"practices",Icon:Leaf},
- {id:"editor",Icon:SlidersHorizontal},{id:"pro",Icon:Zap}
+ {id:"video",Icon:Film},{id:"editor",Icon:SlidersHorizontal},
+ {id:"phrases",Icon:Heart},{id:"effects",Icon:Sparkles},
+ {id:"practices",Icon:Leaf},{id:"pro",Icon:Zap}
 ] as const;
+const mobileWorkspaceCopy={
+ ru:{video:"Стиль",editor:"Монтаж",phrases:"Фразы",effects:"Гипно",practices:"Курс",pro:"PRO"},
+ en:{video:"Style",editor:"Edit",phrases:"Phrases",effects:"Hypno",practices:"Course",pro:"PRO"},
+ es:{video:"Estilo",editor:"Montaje",phrases:"Frases",effects:"Hipno",practices:"Curso",pro:"PRO"}
+} as const;
 
 const studioCopy = {
   en: {
@@ -1652,6 +1657,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
+  const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Real browser interactions are safe only after client event handlers hydrate.
   const [studioHydrated,setStudioHydrated] = useState(false);
   useEffect(()=>setStudioHydrated(true),[]);
@@ -1746,6 +1752,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [montageScriptText,setMontageScriptText]=useState("");
   const [cinematicPlan,setCinematicPlan] = useState<CinematicStoryboard|null>(null);
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
@@ -1843,6 +1850,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? moneyTemplateLabels[moneyScene || "golden-rain"]?.[locale] ||
       moneyScenes.find(item => item.id === moneyScene)?.label[locale] || ""
     : otherVideoScenes[theme].find(item => item.id === otherScene)?.label[locale] || "";
+  // One local script shared with the selected Style video scene / confirmed
+  // four-clip montage; selection changes seed the editor, not a paid provider.
+  const selectedStyleScenario=cinematicPlan?.shots.length
+    ?cinematicPlan.shots.map((shot,index)=>`${index+1}. ${shot.overlayText||freeFilmClipLabel(shot.sceneId)}`).join("\n")
+    :[sceneName,wish.trim()].filter(Boolean).join(" — ");
+  useEffect(()=>setMontageScriptText(selectedStyleScenario),[selectedStyleScenario]);
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
@@ -3167,11 +3180,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         "video-audio":"editor","voice-studio":"editor","video-templates":"video",
         "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",
         "guided-video-series":"practices","personal-meditation":"practices",
-        "cinematic-director":"pro","video-settings":"pro",
+        "cinematic-director":"pro","video-settings":"editor",
       };
       const tab=destination[hash];if(!tab)return;
       setActiveWorkspace(tab);
       if(hash==="video-audio")setBasicPanelTab("music");
+      if(hash==="video-settings")setMontageStyleSettingsOpen(true);
       if(hash==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
         setShowAdvancedVideo(true);
@@ -3197,9 +3211,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const tab:StudioWorkspace=anchor==="video-audio"||anchor==="voice-studio"?"editor":
       anchor==="video-hypnosis"?"phrases":
       anchor==="video-hypnocorrection-mobile"?"effects":
-      anchor==="video-settings"?"pro":anchor==="cinematic-director"?"pro":"video";
+      anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
     if(anchor==="video-audio")setBasicPanelTab("music");
+    if(anchor==="video-settings")setMontageStyleSettingsOpen(true);
     if(anchor==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
     // Make the *single* real audio editor visible before navigating to it.
@@ -4098,14 +4113,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls
         aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
+          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
           aria-controls="video-workspace-panel" disabled={recording||preparing}
           onClick={()=>{
             setActiveWorkspace(item.id);
             if(item.id!=="practices")setIntroPlaying(false);
             setStudioMode(item.id==="practices"?"therapy":"pump");
             setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
+          }}><item.Icon size={18} aria-hidden="true"/>
+          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
+          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
+        </button>)}
       </nav>
         );
         return activeWorkspace==="effects"&&effectsNavTarget
@@ -4685,14 +4704,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-      <button type="button" className={videoStyles.advancedVideoToggle}
-        data-video-advanced-toggle aria-expanded={showAdvancedVideo}
-        onClick={()=>setShowAdvancedVideo(value=>!value)}>
-        <SlidersHorizontal size={17} aria-hidden="true"/>
-        {locale==="ru"?"Все настройки стиля видео":locale==="es"?
-          "Todos los ajustes del vídeo":"All video style settings"}
-        <ChevronDown size={16} aria-hidden="true"/>
-      </button>
       {!result?<section className={videoStyles.resultEmpty} data-video-result-empty aria-labelledby="video-result-empty-title">
         <div className={videoStyles.resultEmptyHead}>
           <Film size={18} aria-hidden="true"/>
@@ -4962,6 +4973,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Fifth Montage: basic controls reuse existing video player, upload, voices and audio. */}
         <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
           data-workspace-section="editor" data-video-basic-editor aria-labelledby="video-basic-heading">
+          <div className={videoStyles.montageScenario} data-video-editor-scenario>
+            <label htmlFor="video-montage-scenario"><Film size={18} aria-hidden="true"/>
+              {locale==="ru"?"Сценарий":locale==="es"?"Guion":"Script"}</label>
+            <p>{locale==="ru"?"Сюжет выбран во вкладке «Стиль видео». Отредактируйте строки для надписей в видео.":
+              locale==="es"?"El guion viene del Estilo de vídeo. Puedes editar el texto de las escenas.":
+              "Script from Video style. Edit scene captions here."}</p>
+            <textarea id="video-montage-scenario" data-video-montage-script
+              rows={4} maxLength={480} value={montageScriptText}
+              disabled={recording||preparing} onChange={event=>setMontageScriptText(event.currentTarget.value)}/>
+            <button type="button" data-video-montage-script-update
+              disabled={recording||preparing||!montageScriptText.trim()}
+              onClick={()=>{
+                const lines=montageScriptText.split(/\r?\n/).map(line=>
+                  line.replace(/^\s*\d+\.\s*/,"").trim()).filter(Boolean);
+                if(!lines.length)return;
+                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&cinematicPlan.shots.length===4){
+                  setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION&&current.shots.length===4
+                    ? {...current,shots:current.shots.map((shot,index)=>({
+                        ...shot,overlayText:normalizeStageCaption(lines[index]||"")
+                      }))} as CinematicStoryboard:current);
+                }else{
+                  // A single chosen MP4 has one caption, not an invented 4-shot script.
+                  setCaptionMode("custom");setCustomCaption(lines.join(" ").slice(0,60));
+                }
+                setNotice(locale==="ru"?"Текст сценария применён к выбранному видео.":
+                  locale==="es"?"Guion aplicado al vídeo seleccionado.":"Script applied to the selected video.");
+                setPreviewPlaying(false);
+              }}><ArrowRight size={17} aria-hidden="true"/>
+              {locale==="ru"?"Обновить сценарий":locale==="es"?"Actualizar guion":"Update script"}</button>
+          </div>
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="video-basic-heading"><SlidersHorizontal size={21} aria-hidden="true"/>
               {locale==="ru"?"Основные настройки видео":locale==="es"?"Ajustes esenciales":"Essential video settings"}</h3>
@@ -5053,6 +5094,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {locale==="ru"?"Предпросмотр видео":locale==="es"?"Vista previa":"Video preview"}
             <ArrowRight size={17} aria-hidden="true"/>
           </button>
+          <details className={videoStyles.montageStyleSettings} data-video-editor-style-settings
+            open={montageStyleSettingsOpen}
+            onToggle={event=>setMontageStyleSettingsOpen(event.currentTarget.open)}>
+            <summary data-video-advanced-toggle aria-expanded={montageStyleSettingsOpen}>
+              <SlidersHorizontal size={17} aria-hidden="true"/>
+              {locale==="ru"?"Дополнительные настройки монтажа":locale==="es"?
+                "Más ajustes de montaje":"More montage settings"}
+              <ChevronDown size={16} aria-hidden="true"/>
+            </summary>
+            {deepVideoPane}
+          </details>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
@@ -5099,12 +5151,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <h3><SlidersHorizontal size={20} aria-hidden="true"/>
               {locale==="ru"?"Расширенный монтаж":locale==="es"?"Montaje avanzado":"Advanced montage"}</h3>
           </div>
-          {activeWorkspace==="pro" ? <details className={videoStyles.quickExtras} data-video-pro-advanced>
-            <summary><SlidersHorizontal size={18} aria-hidden="true"/>
-              {locale==="ru"?"Профессиональные настройки":locale==="es"?"Opciones avanzadas":"Advanced visual settings"}
-              <ChevronDown size={17} aria-hidden="true"/></summary>
-            {deepVideoPane}
-          </details> : null}
           <div className={videoStyles.editorTimeline} data-video-editor-timeline>
             <strong>{locale==="ru"?"Порядок и длительность сцен":locale==="es"?
               "Orden y duración de escenas":"Scene order and duration"}</strong>
