@@ -120,6 +120,7 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
+  assert.match(core, /^  hh-specialist:/m);
   // Unified protected gate replaces the obsolete release-ready wrapper.
   // The unified Scope job owns Core checks; the aggregate consumes Scope and Specialist results.
   assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);

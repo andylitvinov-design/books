@@ -389,9 +389,19 @@ try {
     await page.goto(origin + "/es/services/catalog", { waitUntil: "domcontentloaded" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
+    // After Next's route hydration attaches the real controlled checkbox and
+    // search handlers, selecting free-only must enable a text-free search.
+    // A DOMContentLoaded-only navigation can expose an inert SSR checkbox.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Catalog search hydration must complete before the free-only interaction" },
+    ).toBe(true);
     await expect(freeOnly).not.toBeChecked();
     await freeOnly.check();
-    await page.locator('#find-your-service form[role="search"] button[type="submit"]').click();
+    await expect(freeOnly).toBeChecked();
+    const freeOnlySubmit = page.locator('#find-your-service form[role="search"] button[type="submit"]');
+    await expect(freeOnlySubmit).toBeEnabled();
+    await freeOnlySubmit.click();
     await expect(page.locator("#hh-service-discovery-results-title")).toHaveText("Servicios gratuitos");
     await page.close();
   }

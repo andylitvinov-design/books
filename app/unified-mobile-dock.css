@@ -1,0 +1,24 @@
+/* The screenshot-1 design replaces the old bars only on the unified mobile
+   journeys. Both guest and signed-in pages keep a SINGLE accessible dock. */
+body:has([data-hh-unified-dock]) [data-support-mobile-bottom-nav],
+body:has([data-hh-unified-dock]) [data-mandala-support-bottom-nav],
+body:has([data-hh-unified-dock]) .hh-mobile-app-nav,
+body:has([data-hh-unified-dock]) .hh-practice-inner-dock,
+body:has([data-hh-unified-dock]) [data-legacy-practice-bottom-nav],
+body:has([data-hh-unified-dock]) .mobile-bottom-navigation{display:none!important}
+body:has([data-hh-unified-dock]) [data-mytube-page],
+body:has([data-hh-unified-dock]) [data-mandala-meditation-page],
+body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
+body:has([data-hh-unified-dock]) .hh-app.hh-messages-page,
+body:has([data-hh-unified-dock]) .hh-app,
+body:has([data-hh-unified-dock]) [data-practice-showcase]{
+ padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px + max(0px,var(--hh-unified-viewport-inset,0px),calc(100vh - 100dvh)) + env(safe-area-inset-bottom))!important;
+}
+body:has([data-hh-unified-dock]) [data-hh-unified-dock][data-keyboard-open="true"]{display:none}
+body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 20px)}
+
+/* The mandala editor has its own compact top context and a shared global dock.
+   The old end-of-page settings/header control must not appear as a second bar. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]) [data-mandala-legacy-header]{display:none!important}
+}
