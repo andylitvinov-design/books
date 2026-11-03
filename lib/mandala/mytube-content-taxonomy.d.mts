@@ -29,7 +29,10 @@ export interface MyTubeScenario {
   label: string;
   archetype: string;
   creativeBrief: string;
+  /** Four unique editorial story beats, in the selected language; not bound to clip IDs. */
+  sceneOutline: string[];
   sourceStatus: string;
+  conceptOnly: true;
   canExport: false;
 }
 
@@ -51,5 +54,6 @@ export function auditMyTubeTaxonomy(): {
   ok: boolean;
   counts: { categories: number; subcategories: number; topics: number; scenarios: number };
   uniqueScenarioTitles: Record<MyTubeLocale, number>;
+  uniqueScenarioOutlines: Record<MyTubeLocale, number>;
   errors: string[];
 };
