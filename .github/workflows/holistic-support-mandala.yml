@@ -272,7 +272,7 @@ jobs:
           node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
       # One owner-approved, synthetic-only live audit on PR OPEN, not on every
       # synchronize/retry: otherwise the guest 3/hour free quota is consumed.
-      # Its 2 public sample utterances contain no names, health data or secrets.
+      # Its 2 fixed synthetic phrase reads contain no names, health data or secrets.
       - name: Real selected Russian phrase, Maya and Mark, FREE ONLY
         if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' && startsWith(github.head_ref, 'fix/voice-picker-chosen-phrase-') && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
