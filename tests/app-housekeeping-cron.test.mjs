@@ -130,113 +130,166 @@ test('R1 database and browser workflows verify canonical-base pull requests', ()
 })
 
 
-test('backstop counts real dispatcher job and runner, not a green workflow_run wrapper', async () => {
-  const {decideWatchdogWake,verifyHandoffJob,scheduledCadence} =
+test('external backstop verifies an exact dispatch ID, real jobs and idle receipt',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z'),at='2026-11-03T19:58:00Z'
+  const log='HH_CONTROL_TOWER: '+JSON.stringify({
+    schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:0,
+    dispatchAccepted:0,workerRuns:[],reason:'NO_ACTIONABLE_PR'
+  })+'\nHH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+    candidates:0,dispatched:0,blocked:{}})
+  const calls=[]
+  const getResponse=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const fetcher=async(url,opt)=>{
+    calls.push({url,method:opt.method||'GET'})
+    if(url.endsWith('/dispatches'))return {status:200,json:async()=>({workflow_run_id:200})}
+    if(url.endsWith('/runs?per_page=10'))
+      return getResponse({total_count:0,workflow_runs:[]})
+    if(url.endsWith('/runs/200'))return getResponse({
+      id:200,workflow_id:403593743,event:'workflow_dispatch',
+      status:'completed',head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/200/jobs?per_page=50'))return getResponse({
+      total_count:2,jobs:[
+        {id:1,run_id:200,name:'reconcile',status:'completed',started_at:at},
+        {id:2,run_id:200,name:'direct-handoff',status:'completed',
+          conclusion:'success',started_at:at}]})
+    if(url.endsWith('/jobs/2/logs'))return {status:200,text:async()=>log}
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined,wait:async()=>{}})
+  assert.equal(value.status,200)
+  assert.equal(value.body.status,'idle_verified')
+  assert.equal(value.body.runnerStarted,true)
+  assert.equal(value.body.executionVerified,true)
+  assert.equal(value.body.ciStartedVerified,false)
+  assert.equal(value.body.taskDeliveryVerified,false)
+  assert.equal(value.body.dispatchRunId,200)
+  assert.deepEqual(calls.map(x=>x.method),['GET','POST','GET','GET','GET'])
+})
+test('a green Watchdog without actual handoff is not successful execution',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const at='2026-11-03T19:58:00Z',now=Date.parse('2026-11-03T20:00:00Z')
+  const fixture=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const blocked={schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:2,
+    dispatchAccepted:0,workerRuns:[],reason:'BLOCKED_TASKS',
+    blocked:{SOURCE_PROOF_MISSING:1,STACKED_PARENT:1}}
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')assert.fail('recent run must not be dispatched twice')
+    if(url.endsWith('/runs?per_page=10'))return fixture({total_count:1,
+      workflow_runs:[{id:300,event:'schedule',head_branch:'codex/bootstrap-books',
+        status:'completed',conclusion:'success',created_at:at}]})
+    if(url.endsWith('/runs/300'))return fixture({id:300,workflow_id:403593743,
+      event:'schedule',head_branch:'codex/bootstrap-books',
+      status:'completed',conclusion:'success',created_at:at})
+    if(url.endsWith('/runs/300/jobs?per_page=50'))return fixture({total_count:2,
+      jobs:[{id:3,run_id:300,name:'reconcile',status:'completed',started_at:at},
+        {id:4,run_id:300,name:'direct-handoff',status:'completed',
+          conclusion:'success',started_at:at}]})
+    if(url.endsWith('/jobs/4/logs'))return {status:200,text:async()=>(
+      'HH_CONTROL_TOWER: '+JSON.stringify(blocked)+'\n'+
+      'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+        candidates:2,dispatched:0,blocked:blocked.blocked}))}
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined})
+  assert.equal(value.status,503)
+  assert.equal(value.body.status,'task_delivery_blocked')
+  assert.equal(value.body.runnerStarted,true)
+  assert.equal(value.body.taskDeliveryVerified,false)
+  assert.equal(value.body.blocked.SOURCE_PROOF_MISSING,1)
+  assert.equal(value.body.executionVerified,false)
+})
+test('a worker handoff confirms CI only after matching PR SHA and started Core job',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z'),at='2026-11-03T19:55:00Z'
+  const sha='a'.repeat(40),f=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const task={pr_number:551,head_sha:sha,task_key:'ci:551:test',
+    lane:'ci',outcome:'DISPATCH_ACCEPTED'}
+  const summary={schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:1,
+    dispatchAccepted:1,workerRuns:[task],checkedAt:at}
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')assert.fail('recent real Watchdog should not dispatch')
+    if(url.endsWith('/runs?per_page=10'))return f({total_count:1,
+      workflow_runs:[{id:400,event:'workflow_dispatch',status:'completed',
+        head_branch:'codex/bootstrap-books',created_at:at}]})
+    if(url.endsWith('/runs/400'))return f({id:400,workflow_id:403593743,
+      event:'workflow_dispatch',status:'completed',
+      head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/400/jobs?per_page=50'))return f({total_count:2,jobs:[
+      {id:41,run_id:400,name:'reconcile',status:'completed',started_at:at},
+      {id:42,run_id:400,name:'direct-handoff',status:'completed',
+        conclusion:'success',started_at:at}]})
+    if(url.endsWith('/jobs/42/logs'))return {status:200,text:async()=>(
+      'HH_CONTROL_TOWER: '+JSON.stringify(summary)+'\n'+
+      'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+        candidates:1,dispatched:1,blocked:{}}))}
+    if(url.includes('/hh-pr-ci-worker.yml/runs?'))return f({total_count:1,
+      workflow_runs:[{id:501,event:'workflow_dispatch',status:'completed',
+        head_branch:'codex/bootstrap-books',
+        created_at:'2026-11-03T19:56:00Z'}]})
+    if(url.endsWith('/runs/501/jobs?per_page=50'))return f({total_count:1,jobs:[
+      {id:502,run_id:501,name:'bootstrap',status:'completed',
+        started_at:'2026-11-03T19:56:10Z'}]})
+    if(url.endsWith('/jobs/502/logs'))return {status:200,text:async()=>(
+      'HH_CI_METADATA_WAKE '+JSON.stringify({
+        schema:'HH_PR_CI_METADATA_WAKE_V1',pr_number:551,
+        status:'CI_WAKE_REQUESTED',metadataEditAccepted:true}))}
+    if(url.includes('/workflows/400848212/runs?'))return f({total_count:1,
+      workflow_runs:[{id:601,event:'pull_request',name:'HH PR core release gate',
+        created_at:'2026-11-03T19:57:00Z',
+        pull_requests:[{number:551,head:{sha}}]}]})
+    if(url.endsWith('/runs/601/jobs?per_page=50'))return f({total_count:1,
+      jobs:[{id:602,run_id:601,name:'core-lint-types-build',status:'in_progress',
+        started_at:'2026-11-03T19:58:00Z'}]})
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined})
+  assert.equal(value.status,200)
+  assert.equal(value.body.status,'worker_runner_verified')
+  assert.equal(value.body.taskDeliveryVerified,true)
+  assert.equal(value.body.ciStartedVerified,true)
+  assert.equal(value.body.workerEvidence[0].pr_number,551)
+  assert.equal(value.body.executionVerified,true)
+})
+test('dispatch accepted without run ID, pending runner and uncertain history fail closed',async()=>{
+  const {runWatchdogBackstop,decideWatchdogWake}=
     await import('../lib/automation/github-watchdog-backstop.mjs')
-  const now=Date.parse('2026-11-03T12:00:00Z')
-  const run=(id,event,at,status='completed')=>({
-    id,event,status,conclusion:status==='completed'?'success':null,
-    head_branch:'codex/bootstrap-books',created_at:at
-  })
-  const empty={total_count:0,workflow_runs:[]}
-  const latest=run(42,'workflow_run','2026-11-03T11:58:00Z')
-  const histories={schedule:empty,workflow_dispatch:empty,
-    workflow_run:{total_count:1,workflow_runs:[latest]}}
-  const skipped={total_count:2,jobs:[
-    {id:10,name:'core-ci-freed-slot-wakeup',status:'completed',conclusion:'success'},
-    {id:11,name:'direct-handoff',status:'completed',conclusion:'skipped'}
-  ]}
-  assert.equal(verifyHandoffJob(skipped),'HANDOFF_SKIPPED')
-  assert.equal(decideWatchdogWake(histories,now,new Map([[42,'HANDOFF_SKIPPED']])).wake,true)
-  const executed={total_count:1,jobs:[{
-    id:125,name:'direct-handoff',status:'completed',conclusion:'success',
-    runner_name:'GitHub Actions 125',started_at:'2026-11-03T11:59:00Z',
-    steps:[{name:'Start workers from Watchdog with signed HEAD reservations',
-      status:'completed',conclusion:'success'}]
-  }]}
-  assert.equal(verifyHandoffJob(executed),'DISPATCHER_EXECUTED')
-  const proof=decideWatchdogWake(histories,now,new Map([[42,'DISPATCHER_EXECUTED']]))
-  assert.equal(proof.wake,false)
-  assert.equal(proof.reason,'VERIFIED_DISPATCHER_RUNNER')
-  assert.equal(verifyHandoffJob({...executed,jobs:[{...executed.jobs[0],runner_name:null}]}),
-    'RUNNER_NOT_PROVEN')
-  assert.equal(verifyHandoffJob({...executed,jobs:[{...executed.jobs[0],steps:[]}]}),
-    'DISPATCH_STEP_NOT_EXECUTED')
-  assert.equal(scheduledCadence([],now),false)
-  assert.equal(decideWatchdogWake({...histories,schedule:{total_count:1,workflow_runs:[]}},
-    now).reason,'UNVERIFIED_HISTORY')
-})
-
-test('external watchdog cron backstop confirms a real runner or dispatches after stale evidence', async()=> {
-  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
-  const now=Date.parse('2026-11-03T12:00:00Z')
+  const now=Date.parse('2026-11-03T20:00:00Z')
   const token='synthetic-token-for-test-only-123456'
-  const run={id:25,event:'workflow_run',status:'completed',conclusion:'success',
-    head_branch:'codex/bootstrap-books',created_at:'2026-11-03T11:58:00Z'}
-  const histories={schedule:{total_count:0,workflow_runs:[]},
-    workflow_dispatch:{total_count:0,workflow_runs:[]},
-    workflow_run:{total_count:1,workflow_runs:[run]}}
-  let posts=0,reads=0
-  const fetcher=async(url,options)=>{
-    if(options.method==='POST'){posts++;return {status:204}}
-    reads++
-    const event=new URL(url).searchParams.get('event')
-    if(event)return {status:200,headers:{get:()=> '4800'},
-      json:async()=>histories[event]}
-    return {status:200,headers:{get:()=> '4800'},json:async()=>({
-      total_count:1,jobs:[{id:115,name:'direct-handoff',
-        status:'completed',conclusion:'skipped'}]})}
+  assert.equal(decideWatchdogWake({total_count:1,workflow_runs:[]},now).reason,
+    'INCOMPLETE_HISTORY')
+  const history=(total_count,workflow_runs)=>({
+    status:200,headers:{get:()=> '4800'},json:async()=>({total_count,workflow_runs})})
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')return {status:204}
+    return history(0,[])
   }
-  const pending=await runWatchdogBackstop({token,now,fetcher,timeout:()=>undefined})
-  assert.equal(pending.status,202)
-  assert.equal(pending.body.status,'dispatch_accepted')
-  assert.equal(pending.body.executionVerified,false)
-  assert.equal(pending.body.taskTransferVerified,false)
-  assert.equal(posts,1)
-  assert.equal(reads,4)
-  const missing=await runWatchdogBackstop({token:'',now,fetcher})
+  const missing=await runWatchdogBackstop({token,now,fetcher,
+    timeout:()=>undefined})
   assert.equal(missing.status,503)
-  assert.equal(posts,1)
-  // A confirmed Watchdog job must also prove that its actual dispatcher step ran.
-  const runnerFetcher=async(url,options)=>{
-    if(options.method==='POST')assert.fail('recent real dispatcher runner is enough')
-    const event=new URL(url).searchParams.get('event')
-    if(event)return {status:200,headers:{get:()=> '4800'},
-      json:async()=>histories[event]}
-    return {status:200,headers:{get:()=> '4800'},json:async()=>({
-      total_count:1,jobs:[{id:115,name:'direct-handoff',
-        status:'completed',conclusion:'success',runner_name:'GitHub Actions 115',
-        started_at:'2026-11-03T11:59:00Z',
-        steps:[{name:'Start workers from Watchdog with signed HEAD reservations',
-          status:'completed',conclusion:'success'}]}]})}
-  }
-  const healthy=await runWatchdogBackstop({token,now,
-    fetcher:runnerFetcher,timeout:()=>undefined})
-  assert.equal(healthy.status,200)
-  assert.equal(healthy.body.status,'watchdog_sweep_verified')
-  assert.equal(healthy.body.taskTransferVerified,false)
-})
-
-test('backstop never dispatches on unverified GH history or runner evidence',async()=>{
-  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
-  const now=Date.parse('2026-11-03T12:00:00Z'),token='synthetic-token-for-test-only-123456'
-  let posts=0
-  const histories={schedule:{total_count:1,workflow_runs:[]},
-    workflow_dispatch:{total_count:0,workflow_runs:[]},
-    workflow_run:{total_count:0,workflow_runs:[]}}
-  const result=await runWatchdogBackstop({token,now,timeout:()=>undefined,
-    fetcher:async(url,opt)=>{
-      if(opt.method==='POST'){posts++;return {status:204}}
-      const event=new URL(url).searchParams.get('event')
-      return {status:200,headers:{get:()=> '4800'},json:async()=>histories[event]}
+  assert.equal(missing.body.reason,'DISPATCH_ACCEPTED_BUT_RUN_ID_MISSING')
+  const queued=await runWatchdogBackstop({token,now,timeout:()=>undefined,
+    wait:async()=>{},fetcher:async(url,opt)=>{
+      if(opt.method==='POST')return {status:200,
+        json:async()=>({workflow_run_id:600})}
+      if(url.endsWith('/runs?per_page=10'))return history(0,[])
+      if(url.endsWith('/runs/600'))return {
+        status:200,headers:{get:()=> '4800'},json:async()=>({
+          id:600,workflow_id:403593743,event:'workflow_dispatch',
+          head_branch:'codex/bootstrap-books',status:'queued',
+          created_at:'2026-11-03T19:59:00Z'})}
+      if(url.endsWith('/runs/600/jobs?per_page=50'))return history(0,[])
+      throw Error('Unexpected '+url)
     }})
-  assert.equal(result.status,503)
-  assert.equal(posts,0)
-  const source=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
-  assert.match(source,/verifyHandoffJob/)
-  assert.doesNotMatch(source,/update-branch|merge_pull_request|sourceChanged:true/)
+  assert.equal(queued.status,202)
+  assert.equal(queued.body.status,'runner_pending')
+  assert.equal(queued.body.executionVerified,false)
   const route=readFileSync(root+'/app/api/internal/pr-watchdog-backstop/route.js','utf8')
   assert.match(route,/cronAuthorized/)
-  assert.match(route,/VERCEL_ENV!=='production'/)
   assert.match(route,/HH_PR_CRON_DISPATCH_TOKEN/)
+  const code=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
+  assert.doesNotMatch(code,/update-branch|merge_pull_request|sourceChanged:true/)
 })
