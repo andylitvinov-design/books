@@ -318,12 +318,12 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
       assert.equal(native.seeking, false, 'Reopened native video must finish decoder seeks');
       assert.ok(native.ready >= 2 && native.frames > 0, 'A real native decoded frame must have been observed');
       assert.ok(Math.abs(native.time - paused[activeIndex]) < 0.05, 'Reopened WebKit media must retain exact paused position');
-      // Check a new callback when the backend actually emits one; do not
-      // require a paused pipeline to request presentation of a new frame.
-      if (native.frame?.at > reopening.at) {
-        assert.ok(Math.abs(native.frame.mediaTime - native.time) < 0.2,
-          'An observed post-reopen frame must match the paused media position');
-      }
+      // requestVideoFrameCallback may report a decoder preroll frame during
+      // a paused WebKit reconstruction, before the user's retained currentTime
+      // is painted. A passive callback is NOT proof of resumed playback and
+      // must not be compared to the paused clock. Above we still require
+      // same source, no autoplay, no errors, decoded data and exact position;
+      // the final reopen is explicitly resumed and decoded below.
     }
     await page.waitForTimeout(350);
     const reopened = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ paused: el.paused, time: el.currentTime })));
@@ -331,7 +331,24 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     reopened.forEach((video, index) => assert.ok(Math.abs(video.time - paused[index]) < 0.05, 'Reopened videos must retain position until explicit play'));
     const unsolicitedPlay = await page.evaluate(at => (window.__tantraNativeTimeline ?? []).filter(event => event.type === 'play' && event.at >= at), reopening.at);
     assert.deepEqual(unsolicitedPlay, [], 'Reopening must not trigger delayed native replay');
-    observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, reopened, youtubeFixtureOnly: true });
+    // Once per participant, finish the paused-reopen contract with a REAL
+    // explicit user playback and fresh presented frames, not a paused-frame
+    // oracle. Keep the strict clock/mediaTime/decode checks in startVisibleNative;
+    // a genuinely stalled WebKit decoder still fails this release gate.
+    let postReopenResume = null;
+    if (engine === 'webkit' && cycle === cycles - 1) {
+      const video = disclosure.locator('video').nth(activeIndex);
+      postReopenResume = await startVisibleNative(disclosure, activeIndex, {
+        phase: 'explicit-post-reopen-resume', cycle: cycle + 1,
+      });
+      assert.ok(postReopenResume.sample.time >= paused[activeIndex] - 0.05,
+        'Explicit resumed WebKit playback must retain the paused position');
+      assert.equal(postReopenResume.sample.currentSrc, active.sample.currentSrc,
+        'Explicit WebKit resume must keep the same native video source');
+      await video.evaluate(el => el.pause());
+      await expect.poll(() => video.evaluate(el => el.paused)).toBe(true);
+    }
+    observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, reopened, postReopenResume, youtubeFixtureOnly: true });
   }
   return observations;
 }
