@@ -310,7 +310,7 @@ export function MandalaAutoVideoDirector({
          onInvalidate?.();onGoalChange(value);
          setProposalContext({goal:value,theme});
          setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);
+         setOverrideId(null);setSeconds(null);setSelectedTopicId(null);
          setTimelineEdits(null);setConfirmedTimelineKey(null);
        }}/>
    </label>

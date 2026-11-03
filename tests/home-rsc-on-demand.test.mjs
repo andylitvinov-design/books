@@ -23,7 +23,12 @@ test("home reuses seven offers and no longer repeats reviews, method promos or d
   assert.match(filters, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
   assert.match(filters, /dynamic\(\s*\(\) => import\("\.\/home-conversation-guide"\)/);
   assert.match(filters, /ssr: false/);
-  for (const topic of ["energy","love","business","services","courses"]) {
+  // The four canonical directions are rendered from data, not repeated as hardcoded chips.
+  assert.match(filters, /data-home-topic-filter=\{category\.id\}/);
+  for (const id of ["goals-money","love-relationships","energy-confidence","stress-recovery"]) {
+    assert.ok(filters.includes('"' + id + '": '), id);
+  }
+  for (const topic of ["temple","services","courses"]) {
     assert.ok(filters.includes('data-home-topic-filter="' + topic + '"'), topic);
   }
   assert.doesNotMatch(filters, /<HomepageTopicJourneys|<ServicesSolutions|<HomeFreeDiagnosisBanner|<TestSelectionCourseBanner|<HomeExploreSections/);
@@ -33,9 +38,15 @@ test("home reuses seven offers and no longer repeats reviews, method promos or d
 test("filter chips link existing localized routes with compact, accessible styling", () => {
   const jsx = read("components/home-more-disclosure.tsx");
   const css = read("components/home-more-disclosure.module.css");
-  for (const route of ["/explore/energy","/explore/love","/explore/business","/services","/academy"]) {
-    assert.ok(jsx.includes(route), route);
+  // Dynamic localized links resolve through the exact legacy SEO landing routes.
+  for (const [id,route] of Object.entries({
+    "goals-money":"business","love-relationships":"love",
+    "energy-confidence":"energy","stress-recovery":"stress",
+  })) {
+    assert.ok(jsx.includes('"' + id + '": "' + route + '"'), id + " => " + route);
   }
+  assert.match(jsx,/href=\{"\/" \+ locale \+ "\/explore\/" \+ categoryRoutes\[category\.id/);
+  for (const route of ["/services","/academy"]) assert.ok(jsx.includes(route),route);
   for (const label of ["ВЫБЕРИТЕ НАПРАВЛЕНИЕ","CHOOSE YOUR DIRECTION","ELIGE TU DIRECCIÓN"])
     assert.ok(jsx.includes(label));
   for (const style of ["min-height: 44px","@media (max-width: 640px)",":focus-visible","flex-wrap: wrap","prefers-reduced-motion"])
