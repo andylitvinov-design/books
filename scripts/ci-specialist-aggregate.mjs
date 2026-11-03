@@ -135,11 +135,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 12) return false;
-  const prefixes = predicates.map(item =>
-    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
-  if (prefixes.some(x => !x)) return false;
-  return !prefixes.some(prefix => branch.startsWith(prefix));
+  if (!predicates.length || predicates.length > 24) return false;
+  // Trusted BASE guards may include literal startsWith prefixes and one
+  // literal exact branch. Reject every computed or unknown expression.
+  const rules = predicates.map(item => {
+    const prefix = item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1];
+    if (prefix) return {kind:'prefix', value:prefix};
+    const exact = item.match(/^github\.head_ref == '([a-z][a-z0-9/-]+)'$/)?.[1];
+    return exact ? {kind:'exact', value:exact} : null;
+  });
+  if (rules.some(rule => !rule)) return false;
+  return !rules.some(rule => rule.kind === 'prefix'
+    ? branch.startsWith(rule.value) : branch === rule.value);
 }
 
 
