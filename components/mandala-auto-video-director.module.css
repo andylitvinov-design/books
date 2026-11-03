@@ -481,3 +481,55 @@
 .melodyChoices button:disabled{opacity:.56;cursor:not-allowed}
 .melodyHint{font:500 11px/1.4 system-ui,-apple-system,sans-serif;color:#61766a;margin:5px 0 0}
 @media(max-width:570px){.melodyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 03 Nov owner correction: four compact text-only goals, with an inline
+   two-selection subcategory disclosure; keep the source-backed story cards. */
+.goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.goalPanel .goalChoices button{
+  min-height:77px;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:5px;padding:8px 5px;border-radius:14px;text-align:center;
+}
+.goalPanel .goalChoices .categoryIcon{
+  position:static;display:grid;place-items:center;width:27px;height:27px;flex:none;
+  border-radius:50%;background:#fffdf7aa;box-shadow:none;
+}
+.goalPanel .goalChoices .categoryIcon svg{width:20px;height:20px}
+.goalPanel .goalChoices button strong{
+  font:750 clamp(10px,1.15vw,14px)/1.17 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;hyphens:auto;
+}
+.goalPanel .goalChoices .categorySelected{top:4px;right:4px;width:19px;height:19px}
+.goalPanel .goalChoices .categorySelected svg{width:12px;height:12px}
+.subcategories{
+  min-width:0;display:grid;gap:9px;margin-top:11px;padding-top:10px;
+  border-top:1px solid #e7e6da;
+}
+.subcategories .popularHeading{font-size:13px;color:#355b50}
+.subcategories .topicChoices{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.subcategories .topicChoices button:disabled:not([aria-pressed="true"]){opacity:.45;cursor:not-allowed}
+@media(max-width:759px){
+  .goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .goalPanel .goalChoices button{
+    min-height:83px;min-width:0;padding:7px 3px 6px;gap:5px;border-radius:13px;
+    box-shadow:0 2px 6px #274f3810;
+  }
+  .goalPanel .goalChoices .categoryIcon{width:27px;height:27px}
+  .goalPanel .goalChoices .categoryIcon svg{width:19px;height:19px}
+  .goalPanel .goalChoices button strong{
+    font:750 clamp(9.3px,2.55vw,12px)/1.14 Arial,Helvetica,sans-serif;
+    overflow-wrap:anywhere;hyphens:auto;
+  }
+  .subcategories .topicChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .subcategories .topicChoices button{
+    min-height:44px;gap:5px;padding:7px 8px;border-radius:12px;
+    font:650 clamp(11px,2.9vw,13px)/1.23 Arial,Helvetica,sans-serif;
+  }
+  .subcategories .topicChoices button svg{width:17px;height:17px}
+  .topicPanel{gap:11px}
+  .topicPanel .topicInput input{height:52px;min-height:52px}
+}
+@media(max-width:355px){
+  .goalPanel .goalChoices button{min-height:86px;padding:6px 2px 5px}
+  .goalPanel .goalChoices button strong{font-size:9.1px}
+  .goalPanel .goalChoices .categorySelected{width:16px;height:16px;top:2px;right:2px}
+}
