@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {repairTypeOnlyImports}=require('../scripts/ci-pr-repair-deterministic.cjs');
+const {repairTypeOnlyImports,validRepairScope}=require('../scripts/ci-pr-repair-deterministic.cjs');
 
 test('converts only named imports used exclusively as types and preserves runtime imports',()=>{
  const input=[
@@ -66,4 +66,22 @@ test('preserves class extends runtime dependency but permits implements type-onl
  assert.equal(out.edits,1);
  // The class base is runtime-required; only the implements contract is type-only.
  assert.match(out.code,/import \{ Base, type Contract \} from '\.\/types';/);
+});
+
+test('trusted repair lease accepts JS-only and mixed JS/TypeScript source without granting JS codemod edits',()=>{
+ const sha='a'.repeat(40);
+ assert.equal(validRepairScope(sha,['lib/billing.js']),true);
+ assert.equal(validRepairScope(sha,['lib/feature.ts','components/card.jsx','lib/worker.mjs','lib/tool.cjs']),true);
+ assert.equal(repairTypeOnlyImports('const x = 1;','lib/billing.js').detail,'UNSUPPORTED_EXTENSION');
+ assert.equal(repairTypeOnlyImports('const x = 1;','components/card.jsx').changed,false);
+});
+
+test('trusted repair lease rejects scope expansion, duplicate paths, tests, and unsafe files',()=>{
+ const sha='a'.repeat(40);
+ for(const files of [
+  [],['lib/a.js','lib/a.js'],['tests/a.ts'],['app/__tests__/a.tsx'],
+  ['.github/workflows/a.js'],['lib/../secrets.ts'],['/tmp/a.ts'],
+  ['lib/hidden/.private.ts'],['app/app.json'],Array(9).fill(0).map((_,i)=>'lib/m'+i+'.js')
+ ]) assert.equal(validRepairScope(sha,files),false,JSON.stringify(files));
+ assert.equal(validRepairScope('badsha',['lib/clean.ts']),false);
 });
