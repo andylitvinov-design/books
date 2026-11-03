@@ -116,7 +116,9 @@ test("monthly support and all three free-entry paths retain visual media on each
   assert.match(free, /<SiteVideoPlayer/);
   assert.match(free, /<PersonalExpressEnquiry/);
   assert.match(free, /<CompactLeadCapture/);
-  assert.ok(free.lastIndexOf("<PersonalExpressEnquiry") >
-    free.indexOf("data-featured-free-review-testimonials"));
+  const expressStart=free.indexOf("<PersonalExpressEnquiry"), expressEnd=free.indexOf("</PersonalExpressEnquiry>");
+  const videoReviews=free.indexOf("data-featured-free-review-testimonials");
+  assert.ok(expressStart>=0 && videoReviews>expressStart && expressEnd>videoReviews,
+    "The verified video reviews remain inside the current consented Express wrapper");
   assert.match(css, /@media\(max-width:350px\)/);
 });

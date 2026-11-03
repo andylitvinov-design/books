@@ -61,8 +61,10 @@ test("Free Express and Alchemy preserve their approved private and consented jou
     "data-featured-free-review-testimonials","<PersonalExpressEnquiry",
     "<CompactLeadCapture","<SiteVideoPlayer"])
     assert.ok(free.includes(token),"Free review missing "+token);
-  assert.ok(free.lastIndexOf("<PersonalExpressEnquiry")>
-    free.indexOf("data-featured-free-review-testimonials"));
+  const expressStart=free.indexOf("<PersonalExpressEnquiry"), expressEnd=free.indexOf("</PersonalExpressEnquiry>");
+  const videoReviews=free.indexOf("data-featured-free-review-testimonials");
+  assert.ok(expressStart>=0 && videoReviews>expressStart && expressEnd>videoReviews,
+    "The authentic review media belongs inside the current protected Express wrapper");
   for(const token of ['data-alchemy-panel="reviews"','data-alchemy-panel="request"',
     "<SiteVideoPlayer","<StaticPortrait","<AlchemySoulLeadForm",
     'bookingSku="personal-session-60"','<ContactChannelChooser'])
