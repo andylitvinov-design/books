@@ -1416,26 +1416,26 @@
               ]
             },
             {
-              "id": "fear-of-failure",
+              "id": "entrepreneurial-risk",
               "label": {
-                "ru": "Страх неудачи",
-                "en": "Fear of Failure",
-                "es": "Miedo al fracaso"
+                "ru": "Предпринимательский риск",
+                "en": "Entrepreneurial Risk",
+                "es": "Riesgo empresarial"
               },
               "searchIntent": {
                 "ru": [
-                  "страх неудачи",
-                  "боюсь ошибиться",
-                  "страх начать бизнес"
+                  "предпринимательский риск",
+                  "риск в бизнесе",
+                  "страх начинать своё дело"
                 ],
                 "en": [
-                  "fear of failure",
-                  "fear of making mistakes",
+                  "entrepreneurial risk",
+                  "business risk",
                   "fear of starting a business"
                 ],
                 "es": [
-                  "miedo al fracaso",
-                  "miedo a equivocarme",
+                  "riesgo empresarial",
+                  "riesgo en los negocios",
                   "miedo a emprender"
                 ]
               },
@@ -1445,56 +1445,56 @@
                   "id": "fear-of-failure-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Путь: Страх неудачи",
-                    "en": "Path: Fear of Failure",
-                    "es": "Camino: Miedo al fracaso"
+                    "ru": "Путь: Предпринимательский риск",
+                    "en": "Path: Entrepreneurial Risk",
+                    "es": "Camino: Riesgo empresarial"
                   },
                   "creativeBrief": {
-                    "ru": "Сценарий «Страх неудачи»: постепенное движение от запроса к ясному следующему шагу.",
-                    "en": "Move from the current difficulty toward a realistic next step. Topic: Fear of Failure.",
-                    "es": "Avanzar gradualmente hacia un próximo paso claro. Tema: Miedo al fracaso."
+                    "ru": "Сценарий «Предпринимательский риск»: постепенное движение от запроса к ясному следующему шагу.",
+                    "en": "Move from the current difficulty toward a realistic next step. Topic: Entrepreneurial Risk.",
+                    "es": "Avanzar gradualmente hacia un próximo paso claro. Tema: Riesgo empresarial."
                   }
                 },
                 {
                   "id": "fear-of-failure-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Опора: Страх неудачи",
-                    "en": "Anchor: Fear of Failure",
-                    "es": "Apoyo: Miedo al fracaso"
+                    "ru": "Опора: Предпринимательский риск",
+                    "en": "Anchor: Entrepreneurial Risk",
+                    "es": "Apoyo: Riesgo empresarial"
                   },
                   "creativeBrief": {
-                    "ru": "Сценарий «Страх неудачи»: бережное пространство опоры и выбора.",
-                    "en": "Create a calm, supportive setting and a sense of choice. Topic: Fear of Failure.",
-                    "es": "Crear un espacio amable de apoyo y elección. Tema: Miedo al fracaso."
+                    "ru": "Сценарий «Предпринимательский риск»: бережное пространство опоры и выбора.",
+                    "en": "Create a calm, supportive setting and a sense of choice. Topic: Entrepreneurial Risk.",
+                    "es": "Crear un espacio amable de apoyo y elección. Tema: Riesgo empresarial."
                   }
                 },
                 {
                   "id": "fear-of-failure-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд: Страх неудачи",
-                    "en": "New view: Fear of Failure",
-                    "es": "Nueva mirada: Miedo al fracaso"
+                    "ru": "Новый взгляд: Предпринимательский риск",
+                    "en": "New view: Entrepreneurial Risk",
+                    "es": "Nueva mirada: Riesgo empresarial"
                   },
                   "creativeBrief": {
-                    "ru": "Сценарий «Страх неудачи»: мягкая смена перспективы без давления.",
-                    "en": "Explore an alternative interpretation or a kinder inner response. Topic: Fear of Failure.",
-                    "es": "Explorar otra perspectiva sin presión. Tema: Miedo al fracaso."
+                    "ru": "Сценарий «Предпринимательский риск»: мягкая смена перспективы без давления.",
+                    "en": "Explore an alternative interpretation or a kinder inner response. Topic: Entrepreneurial Risk.",
+                    "es": "Explorar otra perspectiva sin presión. Tema: Riesgo empresarial."
                   }
                 },
                 {
                   "id": "fear-of-failure-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Интеграция: Страх неудачи",
-                    "en": "Integration: Fear of Failure",
-                    "es": "Integración: Miedo al fracaso"
+                    "ru": "Интеграция: Предпринимательский риск",
+                    "en": "Integration: Entrepreneurial Risk",
+                    "es": "Integración: Riesgo empresarial"
                   },
                   "creativeBrief": {
-                    "ru": "Сценарий «Страх неудачи»: интеграция идеи в небольшой повседневный шаг.",
-                    "en": "Translate the insight into one small, optional everyday action. Topic: Fear of Failure.",
-                    "es": "Integrar la idea en un pequeño paso cotidiano. Tema: Miedo al fracaso."
+                    "ru": "Сценарий «Предпринимательский риск»: интеграция идеи в небольшой повседневный шаг.",
+                    "en": "Translate the insight into one small, optional everyday action. Topic: Entrepreneurial Risk.",
+                    "es": "Integrar la idea en un pequeño paso cotidiano. Tema: Riesgo empresarial."
                   }
                 }
               ]
