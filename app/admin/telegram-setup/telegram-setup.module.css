@@ -120,3 +120,19 @@
   .providerForm{padding:12px 0;}
   .disableForm{max-width:100%;}
 }
+
+/* Owner-only daily report: visible mobile submission feedback at the tapped CTA. */
+.sendPanel{scroll-margin-top:28px;display:grid;gap:10px;margin:16px 0 0;}
+.sendForm{display:block;margin:0;}
+.sendHint{font-size:13px;line-height:1.5;color:#52675e;margin:9px 0 0;}
+.sentNotice{border:1px solid #b8d6c5;background:#eff7f1;color:#1e4c37;
+  border-radius:14px;padding:14px 16px;line-height:1.5;}
+.sentNotice strong{display:block;color:#23533d;font-size:15px;}
+.sentNotice p{color:#395a4b;font-size:13px;line-height:1.5;margin:9px 0;}
+.botLink{display:inline-flex;align-items:center;min-height:44px;font-size:14px;
+  font-weight:750;color:#205e48;text-decoration:underline;text-underline-offset:3px;}
+.botLink:focus-visible{outline:3px solid #67a789;outline-offset:2px;}
+.primary:active:not(:disabled){background:#174a37;transform:translateY(1px);}
+@media(prefers-reduced-motion:reduce){
+  .primary:active:not(:disabled){transform:none;}
+}

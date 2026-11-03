@@ -5,8 +5,12 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs58Day,oporaAs58Valid,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaExperienceDay,oporaExperienceGuidesValid,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaGentleCopy} from '../lib/inner-growth/opora-gentle-journey.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
+import {oporaAs58Valid,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
@@ -54,7 +58,7 @@ test('day one restores five opening screens and all days add untracked support a
       await click(h,choice)
       assert.match(textOf(h.tree),lang==='ru'?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
       await click(h,d.next)
-      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(textOf(h.tree).includes(oporaAs60VariedDay(day,lang).purpose))
       assert.ok(!findButton(h.tree,d.try),'No exercise reporting on support screen')
       await click(h,d.next)
       assert.match(textOf(h.tree),lang==='ru'?/Насколько вы сейчас чувствуете внутреннюю опору/:/How much inner support do you feel/)
@@ -70,16 +74,27 @@ test('day one restores five opening screens and all days add untracked support a
       await click(h,d.vote)
       await click(h,d.next)
     }
-    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
-      (day===1?/You can arrive just as you are/:/How are you feeling right now/))
-    await click(h,d.next)
+    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Упражнение № 1/:/Как вы сейчас себя чувствуете/):
+      (day===1?/Exercise 1/:/How are you feeling right now/))
+    if(day===1)await click(h,lang==='ru'?'Да, готов(а)':"Yes, I’m ready")
+    else await click(h,d.next)
     if(day!==1){
-      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(textOf(h.tree).includes(oporaAs60VariedDay(day,lang).purpose))
       assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
-      await advanceOporaTo(h,'practice',d.next)
+      await advanceOporaTo(h,'recapPractice',d.next)
     }
-    // Practical work always comes after the voluntary acceptance screen.
-    assert.ok(textOf(h.tree).includes(oporaAs58Day(day,lang).practice))
+    // The same practice overview appears before (not after) the activity,
+    // with a clear purpose in the learner's language, never an attempt claim.
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day))
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-overview-purpose']==='true'))
+    const goal=day===1?oporaAs60VariedDay(day,lang).purpose:oporaAs60VariedDay(day,lang).result
+    assert.ok(textOf(h.tree).includes(goal))
+    assert.ok(textOf(h.tree).includes(oporaAs60VariedDay(day,lang).practice))
+    assert.ok(!findButton(h.tree,d.try),'Overview is an invitation, not a practice report')
+    await advanceOporaTo(h,'practice',d.next)
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-current-screen']==='practice'))
+    // Practical work always comes after the voluntary acceptance and overview.
+    assert.ok(textOf(h.tree).includes(oporaAs60VariedDay(day,lang).practice))
     assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
       'Early meditation must not appear on an everyday practice card')
     assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-inline-practice-audio']==='true'),
@@ -91,18 +106,20 @@ test('day one restores five opening screens and all days add untracked support a
       await click(h,lang==='ru'?'Грусть':'Sadness')
     }
     await click(h,d.try)
-    await click(h,d.next)
+    await advanceOporaTo(h,'feel',d.next)
     await click(h,d.unchanged)
     await click(h,d.next)
     if(day!==1){
-      assert.ok(textOf(h.tree).includes(f.lesson.aphorism))
+      assert.ok(textOf(h.tree).includes(oporaAs60Day(day,lang).quote))
       await click(h,d.vote)
       await click(h,d.next)
     }
     // Only one aphorism/feedback appears. This distinct screen asks for
     // a concrete future action, never another inspirational statement.
     const options=oporaExperienceTransferChoices(day,lang)
-    const daily=oporaAs58Day(day,lang)
+    // Newly authored lessons use the variety-v1 overlay for days 2 and 9.
+    // Assert the effective learner-facing copy, not the historical base wording.
+    const daily=oporaAs60VariedDay(day,lang)
     const spokenFeeling=lang==='ru'?'Спокойствие':'Calm'
     const transferText=textOf(h.tree)
     assert.ok(transferText.includes(daily.transfer),
@@ -124,24 +141,19 @@ test('day one restores five opening screens and all days add untracked support a
     assert.ok(!textOf(h.tree).includes(oporaExperienceDay(day,lang).reminder))
     assert.ok(!textOf(h.tree).includes(f.lesson.aphorism))
     await click(h,d.next)
-    // Each takeaway now has its own screen; the personal self-report is last.
+    // Each takeaway now has its own screen; the practice preview was earlier.
     assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
     assert.ok(textOf(h.tree).includes(daily.result))
     assert.ok(!textOf(h.tree).includes(daily.practice))
     await click(h,d.next)
-    assert.ok(textOf(h.tree).includes(daily.practice))
-    assert.ok(!textOf(h.tree).includes(daily.result))
-    await click(h,d.next)
     assert.ok(textOf(h.tree).includes(daily.transfer))
+    assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day),
+      'Practice preview must not repeat after the actual exercise')
     if(day===4)assert.ok(textOf(h.tree).includes(spokenFeeling))
     await click(h,d.next)
     if(day===14){
-      const final=nodes(h.tree).find(n=>n.props?.['data-opora-final-meditation']==='day-14')
-      assert.ok(final,'Day 14 has a closing meditation before the final feedback')
-      assert.ok(nodes(final).some(n=>n.props?.['data-opora-guided-meditation']==='true'))
-      assert.equal(nodes(final).filter(n=>n.type==='details').length,0,
-        'Meditation is exposed without any accordion')
-      await click(h,d.next)
+      assert.equal(nodes(h.tree).some(n=>n.props?.['data-opora-final-meditation']==='day-14'),false,
+        'AS-6.0 already offers one imagery meditation; no duplicate closing track')
     }
     assert.ok(textOf(h.tree).includes(lang==='ru'?'Как вам было?':'How was this for you?'))
     await click(h,lang==='ru'?'Получилось немного':'I managed a little')
@@ -161,7 +173,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.opora54.answers.transferChoice,'two')
     assert.equal(f.payload.opora54.answers.transferFeeling,undefined)
     assert.equal(f.payload.opora54.answers.transferPlanVersion,'one-v1')
-    assert.equal(f.payload.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
+    assert.equal(f.payload.opora54.answers.experienceEdition,'as-6.0-experiments-v1')
     assert.deepEqual(f.payload.practiceEmotion,day===4?{customText:spokenFeeling}:
       day===11?{choice:'sadness'}:undefined)
     assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
@@ -175,7 +187,7 @@ test('day one restores five opening screens and all days add untracked support a
       // Skipping the optional mood choice is represented as null, never a fabricated feeling.
       assert.equal(f.payload.welcomeFeeling,null)
     }
-    assert.match(textOf(h.tree),new RegExp(d.saved))
+    assert.ok(textOf(h.tree).includes(oporaEndingCopy(lang).congratsLead),'Saved receipt uses current supportive wording')
     assert.ok(textOf(h.tree).includes(daily.transfer),'Confirmed receipt shows the one selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
@@ -190,8 +202,8 @@ test('day one restores five opening screens and all days add untracked support a
     for(let n=1;n<=14;n++){
       const card=cards.find(node=>node.props['data-opora-journey-day']===n)
       assert.ok(card,'Missing day '+n)
-      assert.ok(textOf(card).includes(oporaAs58Day(n,lang).title))
-      assert.ok(textOf(card).includes(oporaAs58Day(n,lang).practice))
+      assert.ok(textOf(card).includes(oporaAs60Day(n,lang).title))
+      assert.ok(textOf(card).includes(oporaAs60Day(n,lang).practice))
       assert.equal(card.props['data-day-status'],
         n<=day?'completed':n===day+1?'next':'locked')
     }
@@ -229,16 +241,16 @@ test('two unique optional action ideas per day, in EN/RU/ES, without rewriting l
 })
 
 test('Day 4 spoken feeling is optional, localized and cleared by Not today',async()=>{
-  for(const [lang,next,skip,instruction] of [
-    ['en','Continue','Not today','Before one routine task'],
-    ['ru','Продолжить','Не сегодня','Перед одним привычным делом'],
-    ['es','Continuar','Hoy no','Antes de una tarea cotidiana'],
+  for(const [lang,next,skip] of [
+    ['en','Continue','Not today'],
+    ['ru','Продолжить','Не сегодня'],
+    ['es','Continuar','Hoy no'],
   ]){
     const f=fixture(lang,4),h=f.h
     await advanceOporaTo(h,'save',next)
     const single=nodes(h.tree).find(n=>n.props?.['data-opora-everyday-choice']==='one-feeling-and-field')
     assert.ok(single,'one and only one learning task for '+lang)
-    assert.ok(textOf(h.tree).includes(instruction))
+    assert.ok(textOf(h.tree).includes(oporaAs60Day(4,lang).transfer))
     const field=nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
     assert.ok(field)
     field.props.onChange({target:{value:'calma'}})
@@ -275,7 +287,7 @@ test('one action gets a version marker while historic options remain meaningful'
   const f=fixture('en',3),h=f.h
   await advanceOporaTo(h,'save',t.en.next)
   const [first,second]=oporaExperienceTransferChoices(3,'en')
-  const focused=oporaAs58Day(3,'en').transfer
+  const focused=oporaAs60Day(3,'en').transfer
   assert.ok(textOf(h.tree).includes(focused))
   assert.ok(!textOf(h.tree).includes(first.label))
   assert.ok(!textOf(h.tree).includes(second.label))
@@ -392,7 +404,7 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
   assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
-  assert.match(today,/data\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
+  assert.match(today,/playerData\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)

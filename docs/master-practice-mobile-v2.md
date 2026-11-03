@@ -17,6 +17,15 @@ Approved: 2026-10-16. Design-of-record: https://docs.google.com/presentation/d/1
 
 A true general-purpose master CRM needs separately approved schema, per-owner encrypted storage, permission/RLS model, consent handling, production rollout and privacy testing. Paid marketplace orders/payouts similarly require a separate approved release.
 
+## Short public profile links — 2026-10-25
+
+- A practitioner with a saved profile can reserve a **3–24-character lower-case ASCII** URL handle using My Practice: `https://holistichouse.vercel.app/m/{alias}`. Case is normalized; only single hyphens, letters and numbers are accepted. System names are reserved.
+- Validation is enforced on the server; lookups are authenticated, rate-limited and check aliases plus existing practitioner slugs. A unique database primary key prevents races. Ownership uses the existing signed-in practitioner account and non-exposed `app` table with owner-scoped RLS.
+- Public short routes (EN default, `/ru/m/{alias}`, `/es/m/{alias}`) render the existing moderated practitioner profile by permanent slug. Pending profiles return 404. Services, courses, articles, lead flows, reporting and client privacy continue to use their existing permanent identifiers.
+- Changing the selected short link preserves previous alias redirects/pages indefinitely, up to five stored aliases per practitioner; never break a client's printed/forwarded link. Existing `/{locale}/masters/{slug}` and service URLs do not change.
+- The compact mobile card offers check, save, view and copy. Sharing requires a published profile, and draft aliases are clearly labeled non-public. No new paid provider or outreach.
+- Schema release: `supabase/migrations/20261025181000_hh_practitioner_public_aliases.sql`. Verify real database read/write, RLS and Vercel readiness after merging; code CI alone is not live E2E.
+
 ## Test and release
 
 Run \`node --test tests/practice-mobile-v2.test.mjs tests/practice-approved-dashboard.test.mjs tests/master-network-v3.test.mjs tests/crm-security-contract.test.mjs\`, Next build, deploy to the connected Vercel production branch, and verify a newly created non-owner master on a real phone.

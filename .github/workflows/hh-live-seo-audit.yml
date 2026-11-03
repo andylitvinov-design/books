@@ -12,6 +12,8 @@ on:
       - 'scripts/verify-public-assets.mjs'
       - 'data/academy/catalog.ts'
       - 'tests/seo-nightly-crawl.test.mjs'
+      - 'tests/seo-build-dedup-policy.test.mjs'
+      - 'tests/seo-browser-matrix-policy.test.mjs'
       - 'app/sitemap.ts'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
@@ -19,6 +21,7 @@ on:
       - 'app/not-found.tsx'
       - 'lib/seo-descriptions.ts'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
@@ -28,15 +31,22 @@ on:
       - 'scripts/verify-public-assets.mjs'
       - 'data/academy/catalog.ts'
       - 'tests/seo-nightly-crawl.test.mjs'
+      - 'tests/seo-build-dedup-policy.test.mjs'
+      - 'tests/seo-browser-matrix-policy.test.mjs'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
       - 'app/books/**'
       - 'app/not-found.tsx'
 permissions:
   contents: read
+concurrency:
+  # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
+  group: hh-live-seo-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
 jobs:
   source-build:
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     steps:
@@ -47,12 +57,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Verify SEO build ownership policy
+        run: node --test tests/seo-build-dedup-policy.test.mjs
+      - name: Install dependencies for nonproduction PRs
+        if: ${{ github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --no-audit --no-fund
       - name: Verify TypeScript after localized book migration
+        if: ${{ github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Verify Next.js production build
+        if: ${{ github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
   audit:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -66,7 +83,7 @@ jobs:
         if: github.event_name == 'push'
         run: sleep 150
       - name: Check localized book sitemap against real catalog
-        run: node --test tests/seo-localized-books.test.mjs tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs
+        run: node --test tests/seo-localized-books.test.mjs tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs tests/seo-browser-matrix-policy.test.mjs
       # A PR is not production: do not require newly introduced routes on the old live build.
       - name: Check public crawler syntax
         run: |
@@ -107,11 +124,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # Public routes only. The browser never signs in or opens private results.
-  # Run on release/dispatch, not PRs: public hostname still serves the old code
-  # until a PR is merged and deployed by Vercel.
+  # PR keeps its existing specialist job name and performs focused source/SEO checks.
+  # Real mobile browsers run only on production push/manual dispatch, using deployed public pages.
+  # Mandatory Core remains the exact-head build/type gate for production-targeted PRs.
+  # The specialist job itself must succeed for immutable-base release-ready verification.
   public-tests-mobile:
-    if: github.event_name != 'pull_request'
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -123,12 +141,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Install Chromium for real public-page QA
-        run: npx --no-install playwright install --with-deps chromium
+      - name: Install isolated pinned Chromium for real public-page QA
+        if: github.event_name != 'pull_request'
+        run: |
+          npm install --prefix /tmp/hh-seo-browser-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-seo-browser-tools/node_modules/.bin/playwright install --with-deps chromium
       - name: Allow the Git-triggered production deployment to settle
         if: github.event_name == 'push'
         run: sleep 160
-      - name: Validate EN/RU/ES public tests at 320/390/430px
+      - name: Validate source SEO and public-test mobile contracts before merge
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check scripts/verify-public-tests-mobile.mjs
+          node --test tests/public-tests-seo-landing.test.mjs tests/seo-browser-matrix-policy.test.mjs
+      - name: Validate nine EN/RU/ES public test browser cases at 320/390/430px after merge
+        if: github.event_name != 'pull_request'
+        env:
+          HH_SEO_PLAYWRIGHT_PACKAGE: /tmp/hh-seo-browser-tools/node_modules/playwright
         run: node scripts/verify-public-tests-mobile.mjs
       - name: Save production browser QA report and screenshots
         if: always()

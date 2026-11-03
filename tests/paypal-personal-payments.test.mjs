@@ -34,22 +34,20 @@ test('redirect always goes to owner-controlled PayPal.Me with no browser prices,
   assert.doesNotMatch(route, /request\.json|searchParams|markAsPaid|payment_verified|grantEntitlement|PAYPAL_CLIENT_SECRET/)
 })
 
-test('all EN/RU/ES service selectors show only fixed-price personal payment choices', () => {
+test('Alchemy booking hides personal PayPal links until the confirmed session enters the existing cart', () => {
   const capture = file('components/consultation-choice-capture.tsx')
   const alchemy = file('components/alchemy-soul-lead-form.tsx')
-  const main = file('app/[locale]/services/page.tsx')
-  const spanish = file('app/es/services/page.tsx')
   const landing = file('components/alchemy-soul-landing.tsx')
-  const cta = file('components/public-consultation-cta.tsx')
+  const chooser = file('components/contact-channel-chooser.tsx')
+  const cart = file('app/[locale]/cart/page.tsx')
   assert.match(capture, /isPaidRequest && paypalPersonalEnabled/)
   assert.match(capture, /\/api\/payments\/paypal\//)
-  assert.match(alchemy, /selected !== "month" && \(wiseEnabled \|\| paypalPersonalEnabled \|\| Boolean\(zenInquiryUrl\)\)/)
-  assert.match(alchemy, /\{paypalPersonalEnabled \? \(/)
-  assert.match(alchemy, /"express-consultation-30" : "personal-session-60"/)
-  assert.match(landing, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(cta, /paypalPersonalEnabled=\{paypalPersonalEnabled\}/)
-  assert.match(main, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(spanish, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
+  assert.match(alchemy, /bookingSku=\{selected === "30"/)
+  assert.doesNotMatch(alchemy, /data-alchemy-payment-disclosure|\/api\/payments\/paypal/)
+  assert.match(landing, /bookingSku="personal-session-60"/)
+  assert.match(chooser, /paidReady && paymentExpanded/)
+  assert.match(chooser, /data-booking-cart-link/)
+  assert.match(cart, /<PersonalCart/)
 })
 
 test('payment page transparently requires Goods & Services and manual verification', () => {

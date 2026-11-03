@@ -28,3 +28,11 @@
 @media(max-width:420px){.root{padding:12px;border-radius:15px}.card{padding:13px}.actions button{flex:1 1 130px}}
 
 .verified{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 8px;border-radius:10px;background:#eaf7ed;color:#28674c;font-weight:700}
+
+/* Accessible one-step Telegram linking, including 320px screens. */
+.root{scroll-margin-top:84px}
+.quickConsent{font-size:12px;line-height:1.55;color:#385d53;margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#edf6ef;border:1px solid #d3e7d9}
+.advanced{margin:0 0 10px;border:1px solid #dfebe4;border-radius:10px;padding:10px 12px}
+.advanced summary{cursor:pointer;color:#246c5b;font-size:13px;font-weight:700}
+.advanced .topics{margin:12px 0 0}
+.actions button.connect{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:min(100%,215px);font-size:14px;min-height:46px}

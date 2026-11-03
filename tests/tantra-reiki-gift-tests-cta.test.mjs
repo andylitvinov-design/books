@@ -7,18 +7,21 @@ import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Tantra Reiki has two clearly labeled, localized CTAs to real destinations', () => {
+test('Tantra Reiki has three distinct, localized first-screen pathways and separate tests', () => {
   const page = read('components/academy-record-page.tsx')
   const journey = read('components/tantra-reiki-journey.tsx')
   const css = read('app/academy.css')
 
   for (const label of [
-    'Получить Тантра Рейки 1-ю ступень в подарок',
-    'Пройти бесплатные тантрические тесты',
-    'Get Tantra Reiki Level 1 as a gift',
-    'Take free Tantra self-reflection tests',
-    'Recibir Tantra Reiki Nivel 1 de regalo',
-    'Hacer los tests tántricos gratuitos',
+    'Начать БЕСПЛАТНУЮ онлайн-программу',
+    'Запросить сеанс Tantra Reiki Healing',
+    'Записаться на личную инициацию Тантра Рейки',
+    'Start FREE Online Program Tantra Reiki Practitioner',
+    'Request Tantra Reiki Healing',
+    'Sign up for Live Personal Tantra Reiki Initiation',
+    'Empezar el programa online GRATIS',
+    'Solicitar una sesión de Tantra Reiki Healing',
+    'Inscribirme en una iniciación personal en vivo',
   ]) assert.ok(page.includes(label), 'Missing main CTA: ' + label)
 
   for (const label of [
@@ -29,16 +32,26 @@ test('Tantra Reiki has two clearly labeled, localized CTAs to real destinations'
   ]) assert.ok(journey.includes(label), 'Missing lower CTA: ' + label)
 
   for (const source of [page, journey]) {
-    assert.match(source, /"\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/)
+    assert.match(source, /href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/)
     assert.match(source, /"\/" \+ locale \+ "\/client\/tests\?focus=tantra"/)
   }
   const hero = page.indexOf('className="tantra-course-hero__actions"')
   const gift = page.indexOf('className="tantra-course-hero__cta"', hero)
-  const tests = page.indexOf('className="tantra-course-hero__tests-cta"', hero)
-  const secondary = page.indexOf('className="tantra-course-hero__secondary-links"', hero)
-  assert.ok(hero >= 0 && gift > hero && tests > gift && secondary > tests)
+  const healing = page.indexOf('className="tantra-course-hero__healing-cta"', hero)
+  const initiation = page.indexOf('className="tantra-course-hero__initiation-cta"', hero)
+  const heroEnd = page.indexOf('</section>', initiation)
+  assert.ok(hero >= 0 && gift > hero && healing > gift && initiation > healing && heroEnd > initiation)
+  assert.doesNotMatch(page.slice(hero, heroEnd), /tantra-course-hero__more|tantra-course-hero__tests-cta|tantra-course-hero__secondary-links/)
+  assert.match(page, /data-tantra-healing-request="true"/)
+  assert.match(page, /<ContactChannelChooser[\s\S]*?compactPhone[\s\S]*?stayAfterSave[\s\S]*?whatsappUrl=\{whatsappEnquiryUrl\(\{/)
+  assert.match(page, /service: "Tantra Reiki Healing"/)
+  assert.match(page, /href="#tantra-master-course"/)
+  const capture = read('components/reiki-choice-capture.tsx')
+  assert.match(capture, /id="tantra-master-course"/)
+  assert.match(capture, /window\.location\.hash === "#tantra-master-course"\) setSelected\("personal"\)/)
+  assert.match(css, /\.academy-reading-shell--tantra \.tantra-course-hero__healing-request > summary:focus-visible/)
 
-  assert.match(css, /\.tantra-course-hero__actions > a\.tantra-course-hero__tests-cta/)
+  assert.match(css, /\.tantra-course-hero__actions > a\.tantra-course-hero__initiation-cta:focus-visible/)
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(css, /@media \(max-width: 700px\)/)
   assert.match(css, /\.tantra-journey__first-cta a\.tantra-journey__tests-cta/)

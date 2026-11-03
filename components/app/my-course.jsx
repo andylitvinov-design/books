@@ -16,6 +16,7 @@ import CourseToday from './course-today'
 import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
 import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
+import OporaFirstWeekInvite from './opora-first-week-invite'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
 import './my-course-theme.css'
@@ -530,24 +531,18 @@ export function MyCourse({ data, locale = 'en' }) {
     await act('start',{consent:true,programId:intent.programId})
   }
 
-  // One explicit consent action, then the existing private intake. No catalogue,
-  // six-step presentation, duplicate assessment or bypass of server validation.
+  // The first visible slide describes all seven first-week topics, then asks
+  // for an explicit enrolment decision. The existing server-authorized start
+  // and 8-question baseline are still reached only after this affirmative click.
   if (stage === 0 && fastAntistressEntry) return <div className={styles.root} data-my-course>
-    <section className={styles.fastEntry} data-opora-fast-start>
-      <span className={styles.fastKicker}>{ru ? 'ОПОРА · АНТИСТРЕСС' : 'OPORA · STRESS RELIEF'}</span>
-      <h1>{ru ? 'Начните с короткого теста' : 'Start with one short check-in'}</h1>
-      <p>{ru ? '8 вопросов Weekly Pulse помогут подобрать один из 5 уровней программы. Дополнительные тесты — только по желанию.' :
-        'Eight Weekly Pulse questions help suggest one of five learning levels. Extra questionnaires are optional.'}</p>
-      <p className={styles.fastConsent}><LockKeyhole size={18} aria-hidden="true" />{t.consent}</p>
-      {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={()=>refresh()}>{t.retry}</button></p>}
-      <button type="button" className={'hh-primary ' + styles.fastStartButton}
-        disabled={busy||atLimit||(courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled)} onClick={() => void confirmFastStart()} data-opora-fast-consent>
-        {busy ? (ru ? 'Подготавливаем тест…' : 'Preparing your test…')
-          : (ru ? 'Перейти к стартовому тесту' : 'Continue to the first check-in')}
-        <ArrowRight size={19} aria-hidden="true" />
-      </button>
-      <small>{t.note}</small>
-    </section>
+    <div data-opora-fast-start>
+      <OporaFirstWeekInvite locale={locale} busy={busy}
+        disabled={atLimit || (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled)}
+        onAccept={() => void confirmFastStart()}
+        errorMessage={error ? `${t.issue} (${error})` : atLimit ? t.limitReached :
+          (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled) ? t.multiUnavailable : undefined}
+        onRetry={refresh} />
+    </div>
   </div>
 
   const compactBaselineNav = !showDashboard && !stressWelcome && !isHistory && stage === 2 &&

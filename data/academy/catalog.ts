@@ -224,7 +224,7 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
   "mysteries/archetypes-of-love": {
     en: [
       { type: "h2", text: "Mysteries of Love — course map" },
-      { type: "p", text: "The PsiTrends archive presents this as an archetypal constellation journey through relationships, desire, intimacy, identity and the symbolic “light and shadow” parts of the psyche." },
+      { type: "p", text: "This course is a series of personal constellation-mysteries, each devoted to a particular theme for inner transformation. The PsiTrends archive describes an archetypal journey through relationships, desire, intimacy, identity and the symbolic “light and shadow” parts of the psyche." },
       { type: "h3", text: "1. Eros and libido" },
       { type: "p", text: "Exploring desire, vitality, hidden wishes and tensions around the life impulse." },
       { type: "h3", text: "2. Love and sexuality" },
@@ -245,7 +245,7 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
     ],
     ru: [
       { type: "h2", text: "Малые мистерии: Архетипы любви" },
-      { type: "p", text: "Курс в архиве PsiTrends построен как архетипическое исследование отношений, желания, близости, свободы и внутренних мужских/женских образов через расстановочную форму." },
+      { type: "p", text: "Этот курс — серия личных расстановок-мистерий по отдельным темам для внутренней трансформации. В архиве PsiTrends программа представлена как исследование отношений, желания, близости, свободы и внутренних мужских и женских образов через расстановочную форму." },
       { type: "h3", text: "1. Эрос и либидо" },
       { type: "p", text: "Исследование желания, жизненного импульса и скрытых напряжений." },
       { type: "h3", text: "2. Любовь и сексуальность" },
@@ -658,7 +658,7 @@ function compareAcademyRecords(a: AcademySourceRecord, b: AcademySourceRecord, l
 }
 export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: AcademySourceRecord) => boolean) {
   const byId = new Map<string, AcademySourceRecord[]>();
-  for (const record of sourceRecords) { if (filter && !filter(record)) continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
+  for (const record of sourceRecords) { if (filter && !filter(record)) continue; if (locale !== "ru" && record.sourceLocale === "ru") continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
   return [...byId.values()].map((list) => [...list].sort((a, b) => compareAcademyRecords(a, b, locale))[0]).sort((a, b) => a.routeKey.localeCompare(b.routeKey));
 }
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }

@@ -45,6 +45,8 @@ function navigationHarness() {
   const listeners = new Map();
   const context = {
     Node,
+    pathname: "/en", activeLocale: "en",
+    previousNavigation: { current: { pathname: "/en", locale: "en" } },
     languageRef: { current: menus[0] }, siteMenuRef: { current: menus[1] },
     document: {
       addEventListener: (type, listener) => {
@@ -111,6 +113,11 @@ test('Escape closes both open disclosures and unmount removes every registered l
 });
 test('route or active-locale changes close both disclosures without stealing focus', () => {
   const { menus, context, cleanup } = navigationHarness();
+  context.pathname = '/en/services';
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => !menu.open));
+  menus.forEach(menu => { menu.open = true; });
+  context.activeLocale = 'ru';
   navigationEffect(['pathname', 'activeLocale'], context);
   assert.ok(menus.every(menu => !menu.open));
   assert.ok(menus.every(menu => menu.focusCount === 0));
@@ -122,7 +129,8 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 6, 'All six menu link groups close their disclosure, including Shop and Cart');
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 7, 'All seven menu link groups close their disclosure, including Shop, Cart and Free App');
+  assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');
@@ -234,4 +242,30 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(verifier, /decodedPlaybackClaimed: false/);
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
+});
+
+test('release audit scopes service choices and forbids messenger links in the free flow', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
+  assert.ok(verifier.includes('const serviceChoices = capture.locator(\'[data-choice-layout="service"] > button\')'));
+  assert.ok(verifier.includes('assert.equal(await capture.locator(\'[data-contact-channel="telegram"]\').count(), 0)'));
+  assert.match(verifier, /await expect\(capture\.locator\('form'\)\)\.toBeHidden\(\)/);
+  assert.ok(verifier.includes('capture.locator(\'[data-contact-channel-chooser] a[data-contact-channel]\')'));
+  assert.match(verifier, /openRegisteredContactChannelChooser\(capture, expect, paidPage\)/);
+  assert.match(verifier, /if \(!local\) \{[\s\S]*?liveConsentSubmitted:false/);
+  assert.match(verifier, /check\('paid-imagery-synthetic-receipt'/);
+  assert.match(verifier, /assertSyntheticLoopback\(receiptPage\.url\(\)\)/);
+  assert.match(verifier, /contactConsent, true/);
+  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
+  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
+});
+
+test('initial navigation effect and identical replay preserve preopened native menus', () => {
+  const { menus, context, cleanup } = navigationHarness();
+  navigationEffect(['pathname', 'activeLocale'], context);
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => menu.open));
+  assert.ok(menus.every(menu => menu.focusCount === 0));
+  cleanup();
 });

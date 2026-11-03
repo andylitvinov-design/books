@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, BookOpen, Film, Play, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play, Search, ThumbsDown, X } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./library-feed.module.css";
@@ -18,6 +18,26 @@ export type LibraryFeedItem = {
   youtubeId?: string;
   publishedAt?: string;
   author?: string;
+  seriesId?: string;
+  seriesTitle?: string;
+  seriesHref?: string;
+  seriesOrder?: number;
+  topicTags?: string[];
+  audioLanguage?: "ru" | "en" | "es";
+  curation?: "verified" | "published";
+  sourceGroup?: string;
+  sourceLabel?: string;
+  sourceApproved?: boolean;
+  source_kind?: string;
+  editorial_status?: string;
+  embed_status?: string;
+  rights_status?: string;
+  content_checked_at?: string;
+  lifeAreas?: string[];
+  contentType?: string | null;
+  directions?: string[];
+  traditions?: string[];
+  provenance?: string[];
 };
 
 const words = {
@@ -29,6 +49,7 @@ const words = {
     watch: "Watch", close: "Close video", original: "Watch on YouTube",
     read: "Read", open: "Open", more: "Show more",
     empty: "No materials match your search.",
+    seriesTitle: "Video blogs by channel", allSeries: "All videos", seriesDetails: "Open complete series", episode: "Episode",
   },
   ru: {
     latest: "Новые публикации", videos: "Видео", guides: "Книги и методички",
@@ -38,6 +59,7 @@ const words = {
     watch: "Смотреть", close: "Закрыть видео", original: "Открыть на YouTube",
     read: "Читать", open: "Открыть", more: "Показать ещё",
     empty: "По вашему запросу материалов нет.",
+    seriesTitle: "Видеоблоги по каналам", allSeries: "Все видео", seriesDetails: "Открыть весь цикл", episode: "Выпуск",
   },
   es: {
     latest: "Nuevas publicaciones", videos: "Vídeos", guides: "Libros y guías",
@@ -47,6 +69,7 @@ const words = {
     watch: "Ver", close: "Cerrar vídeo", original: "Ver en YouTube",
     read: "Leer", open: "Abrir", more: "Mostrar más",
     empty: "No se encontraron materiales.",
+    seriesTitle: "Videoblogs por canal", allSeries: "Todos los vídeos", seriesDetails: "Abrir serie completa", episode: "Episodio",
   },
 } as const;
 
@@ -57,28 +80,62 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(parsed);
 }
 
-export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false }: {
+export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false,
+  preserveOrder = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
+  saveText = "Save", unsaveText = "Unsave", dismissText = "Not for me",
+}: {
   locale: PublicLocale;
   items: LibraryFeedItem[];
   videosOnly?: boolean;
   guidesOnly?: boolean;
   timeline?: boolean;
+  preserveOrder?: boolean;
+  savedVideoIds?: string[];
+  onToggleSaved?: (id: string) => void;
+  onDismissVideo?: (id: string) => void;
+  saveText?: string;
+  unsaveText?: string;
+  dismissText?: string;
 }) {
   const copy = words[locale];
   const [kind, setKind] = useState<"all" | LibraryFeedItem["kind"]>("all");
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(8);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [selectedSeries, setSelectedSeries] = useState("all");
+  const seriesChoices = useMemo(() => {
+    if (!videosOnly) return [];
+    const seen = new Set<string>();
+    return items.flatMap(item => {
+      if (!item.seriesId || seen.has(item.seriesId)) return [];
+      seen.add(item.seriesId);
+      return [{ id: item.seriesId, title: item.seriesTitle || item.seriesId }];
+    });
+  }, [items, videosOnly]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase(locale);
-    return items.filter(item => (
+    const matches = items.filter(item => (
       videosOnly ? item.kind === "video" :
       guidesOnly ? item.kind === "guide" :
       kind === "all" || item.kind === kind
-    ) && (!needle || [item.title, item.description, item.author || ""].join(" ")
-      .toLocaleLowerCase(locale).includes(needle)));
-  }, [items, kind, query, locale, videosOnly, guidesOnly]);
-  const visible = filtered.slice(0, limit);
+    ) && (!videosOnly || selectedSeries === "all" || item.seriesId === selectedSeries)
+      && (!needle || [item.title, item.description, item.author || "", item.seriesTitle || ""].join(" ")
+        .toLocaleLowerCase(locale).includes(needle)));
+    if (!videosOnly || preserveOrder) return matches;
+    // Never let newest-first blog posts scatter numbered archival episodes.
+    const position = new Map(seriesChoices.map((series, index) => [series.id, index]));
+    return matches.sort((a, b) => {
+      const rankA = a.seriesId ? position.get(a.seriesId) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      const rankB = b.seriesId ? position.get(b.seriesId) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      return rankA - rankB || (a.seriesId && b.seriesId
+        ? (a.seriesOrder ?? Number.MAX_SAFE_INTEGER) - (b.seriesOrder ?? Number.MAX_SAFE_INTEGER)
+        : 0);
+    });
+  }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
+  // A whole series is visible even when it has more than the normal eight cards.
+  const visibleLimit = videosOnly && !preserveOrder && selectedSeries === "all"
+    ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
+  const visible = filtered.slice(0, visibleLimit);
   const filters = [
     { id: "all", label: copy.all },
     { id: "video", label: copy.filterVideos },
@@ -103,15 +160,37 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
       </label>
     </div>
 
+    {videosOnly && seriesChoices.length > 0 ? (
+      <div className={styles.seriesFilters} role="group" aria-label={copy.seriesTitle}>
+        <strong>{copy.seriesTitle}</strong>
+        <button type="button" aria-pressed={selectedSeries === "all"} onClick={() => {
+          setSelectedSeries("all"); setLimit(8); setPlayingId(null);
+        }}>{copy.allSeries}</button>
+        {seriesChoices.map(series => (
+          <button type="button" key={series.id} aria-pressed={selectedSeries === series.id}
+            data-library-series-filter={series.id} onClick={() => {
+              setSelectedSeries(series.id); setLimit(8); setPlayingId(null);
+            }}>{series.title}</button>
+        ))}
+      </div>
+    ) : null}
+
     <div className={styles.list}>
-      {visible.map(item => {
+      {visible.map((item, index) => {
         const canPlay = item.kind === "video" && Boolean(item.youtubeId);
         const playing = canPlay && playingId === item.id;
         const poster = item.image || (item.youtubeId ?
           "https://i.ytimg.com/vi/" + encodeURIComponent(item.youtubeId) + "/hqdefault.jpg" : "");
         const date = dateLabel(item.publishedAt, locale);
         const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : copy.watch;
-        return <article key={item.id} className={[styles.card, playing && styles.playing].filter(Boolean).join(" ")}>
+        return <Fragment key={item.id}>
+          {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
+            <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
+              <div><span>{copy.seriesTitle}</span><h3>{item.seriesTitle}</h3></div>
+              {item.seriesHref ? <Link href={item.seriesHref}>{copy.seriesDetails}<ArrowUpRight size={14} aria-hidden="true" /></Link> : null}
+            </div>
+          ) : null}
+          <article className={[styles.card, playing && styles.playing].filter(Boolean).join(" ")}>
           <div className={styles.visual}>
             {playing ? (
               <iframe className={styles.iframe} title={item.title} loading="lazy"
@@ -139,8 +218,10 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
           <div className={styles.details}>
             <p className={styles.meta}>
               <span className={styles.kind}>{copy[item.kind]}</span>
+              {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
               {date && <span>{date}</span>}
               {item.author && <span className={styles.author}>{item.author}</span>}
+              {item.sourceLabel && <span className={styles.author}>{item.sourceLabel}</span>}
             </p>
             <h2>{canPlay ? (
               <button type="button" className={styles.titleButton} onClick={() => setPlayingId(playing ? null : item.id)}>
@@ -166,13 +247,27 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
                   {action}<ArrowRight size={15} aria-hidden="true" />
                 </Link>
               ) : null}
+              {videosOnly && onToggleSaved && <button type="button" className={styles.preferenceAction}
+                aria-pressed={savedVideoIds.includes(item.youtubeId || item.id)}
+                aria-label={(savedVideoIds.includes(item.youtubeId || item.id) ? unsaveText : saveText) + ": " + item.title}
+                title={savedVideoIds.includes(item.youtubeId || item.id) ? unsaveText : saveText}
+                onClick={() => onToggleSaved(item.youtubeId || item.id)}>
+                {savedVideoIds.includes(item.youtubeId || item.id)
+                  ? <BookmarkCheck size={18} aria-hidden="true" /> : <Bookmark size={18} aria-hidden="true" />}
+              </button>}
+              {videosOnly && onDismissVideo && <button type="button" className={styles.preferenceAction}
+                aria-label={dismissText + ": " + item.title} title={dismissText}
+                onClick={() => onDismissVideo(item.youtubeId || item.id)}>
+                <ThumbsDown size={18} aria-hidden="true" />
+              </button>}
             </div>
           </div>
-        </article>;
+          </article>
+        </Fragment>;
       })}
       {!visible.length && <p className={styles.empty} role="status">{copy.empty}</p>}
     </div>
-    {filtered.length > limit && <button type="button" className={styles.more}
+    {filtered.length > visibleLimit && <button type="button" className={styles.more}
       onClick={() => setLimit(current => current + 8)}>
       {copy.more}<ArrowRight size={15} aria-hidden="true" />
     </button>}

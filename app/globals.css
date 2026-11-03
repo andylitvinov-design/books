@@ -5965,3 +5965,10 @@
  .hh-admin-material-v4-tabs a svg{width:18px;height:18px}
 }
 @media(max-width:350px){.hh-admin-material-v4-tabs a{font-size:9px}}
+
+/* Privacy-first mobile intake: keep first-party statistics DISABLED by default.
+   Defer its optional opt-in prompt only while the contact form is expanded,
+   so it cannot cover the submit button; it reappears after the form closes. */
+@media(max-width:720px){
+ body:has([data-personal-express-enquiry][data-expanded="true"]) [data-first-party-consent]{display:none}
+}

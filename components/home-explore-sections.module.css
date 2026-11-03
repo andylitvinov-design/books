@@ -51,3 +51,6 @@
  .quicklinks a{flex-basis:100%}
 }
 @media(prefers-reduced-motion:reduce){.card,.action svg{transition:none}.card:hover,.card:hover .action svg{transform:none}}
+
+/* Seventh direction receives a full-width photo-left card on desktop. */
+@media(min-width:901px){.card[data-home-explore-id="temple"]{grid-column:1 / -1;grid-template-columns:clamp(122px,13.5vw,170px) minmax(0,1fr);background:#fbf6ed}}

@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         || academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li").length >= 2
         || mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl))))
       .map((record) => "/" + record.routeKey);
-    return [...new Set([...academyDirectoryPaths, ...academyRecordPaths])]
+    return [...new Set([...academyDirectoryPaths.filter((suffix) => locale === "ru" || suffix !== "/egyptian-priesthood"), ...academyRecordPaths])]
       .filter(suffix => suffix !== "/reiki/master-shamanic-healing") // permanently redirected to Yggdrasil Basic
       .map((suffix) => "/" + locale + "/academy" + suffix);
   });
@@ -54,13 +54,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const coreServiceUrls = (["en", "ru", "es"] as const).flatMap(locale =>
     [...coreServicePaths.map(slug => "/" + locale + "/services/" + slug), "/" + locale + "/shop"]);
   const topicJourneys = (['en','ru','es'] as const).flatMap(locale => TOPIC_JOURNEYS.map(journey => `/${locale}/explore/${journey.id}`));
+  const personalityProfileUrls = (['en','ru','es'] as const).map(locale => `/${locale}/personality-profiles`);
+  const addedVisitorJourneys = (['en','ru','es'] as const).flatMap(locale => [`/${locale}/temple-insights`, `/${locale}/tests`]);
   const verifiedEventPages = (['en', 'ru', 'es'] as const).flatMap(locale =>
     PUBLIC_EVENTS.filter(event => event.status === 'published'
       && Number.isFinite(Date.parse(event.startsAt))
       && Date.parse(event.startsAt) >= Date.now()
       && (event.registrationHref.startsWith('https://') || event.registrationHref.startsWith('/')))
       .map(event => '/' + locale + '/events/' + encodeURIComponent(event.id)));
-  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...spanishRemedyPaths,  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
+  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, ...personalityProfileUrls, ...addedVisitorJourneys, ...(['en','ru','es'] as const).map(locale => '/' + locale + '/holistic-support'), '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...spanishRemedyPaths,  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
   const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({
     url: base + path, changeFrequency: path.includes('/explore/') ? 'weekly' : 'monthly',
     priority: path === '/es' ? 0.8 : 0.6,

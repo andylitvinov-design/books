@@ -29,14 +29,15 @@ test("Kundalini Reiki remains the user's unmodified original, not a generated PD
   assert.throws(() => buildReikiCourseGuidePdf({ course: "kundalini", locale: "en", source: "" }), /original Paul Crick PDF/);
 });
 
-test("Tantra Reiki keeps a single bottom capture and the green hero PDF link", () => {
+test("Tantra Reiki keeps a single bottom capture and the dedicated mobile PDF download", () => {
   const page = readFileSync("components/academy-record-page.tsx", "utf8");
   const lower = readFileSync("components/tantra-reiki-lead-forms.tsx", "utf8");
   const chooser = readFileSync("components/reiki-choice-capture.tsx", "utf8");
   const style = readFileSync("components/reiki-choice-capture.module.css", "utf8");
   const endpoint = readFileSync("app/api/academy/reiki-guide/route.js", "utf8");
-  // The green hero has the direct PDF CTA. Never insert a second blue capture beneath it.
-  assert.match(page, /className="tantra-course-hero__guide"/);
+  // The guide stays visible in the dedicated PDF card, without another hero dropdown.
+  assert.match(page, /className="tantra-mobile-guide__download"/);
+  assert.doesNotMatch(page, /tantra-course-hero__more|tantra-course-hero__guide/);
   assert.match(page, /"\/api\/academy\/reiki-guide\?course=tantra&locale=" \+ locale/);
   assert.doesNotMatch(page, /<ReikiChoiceCapture\s/);
   assert.equal((page.match(/<TantraReikiLeadForms locale=\{locale\}/g) ?? []).length, 1);

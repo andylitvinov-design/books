@@ -99,7 +99,9 @@ test("mobile and privacy contract: question stays local, source labels and Show 
   assert.match(style, /\.aphorismAttribution \{/);
   assert.match(component, /visibleAphorisms/);
   assert.match(style, /\.moreAphorisms:focus-visible/);
-  assert.match(style, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(style, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(component, /data-ideas-explore-coaching/);
+  assert.match(component, /data-ideas-explore-temple/);
   for (const forbidden of ["fetch(", "XMLHttpRequest", "sendBeacon", "localStorage", "sessionStorage"]) {
     assert.ok(!component.includes(forbidden), "component must not " + forbidden);
     assert.ok(!lib.includes(forbidden), "matching library must not " + forbidden);

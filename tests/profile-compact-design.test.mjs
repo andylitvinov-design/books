@@ -16,15 +16,15 @@ test('Profile leads with authorized personal reports; category details are secon
   const support = profile.indexOf('<details className="hh-domain-support">')
   const discover = profile.indexOf('<Link className="hh-domain-services-link"')
   assert.ok(hero >= 0 && archive > hero && browse > archive && overview > browse)
-  const earlyActions = profile.indexOf('{!external && footerActions}')
+  const earlyActions = profile.indexOf('data-report-archive-always-open')
   const legacyActions = profile.indexOf('{external && footerActions}')
   assert.ok(tabs > overview && panel > tabs && support > panel)
   assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
-  assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
-  assert.match(workspace, /embedded \/>\} \/>/)
+  assert.match(workspace, /reportsContent=\{<><PersonalAnalysisPanel key=\{data.account.id\}/)
+  assert.match(workspace, /embedded \/><ClientExpressReports locale=\{locale\}/)
   assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
   assert.match(workspace, /data-insights-detailed-scales/)
   assert.doesNotMatch(profile, /Math\.random\(|mockProfileScore|syntheticScores/)
@@ -74,51 +74,42 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('five private Cabinet tabs share menus while mobile adds a sixth public Home shortcut', () => {
+test('Cabinet and mobile navigation preserve current ordered destinations and localized Home', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const navStart = workspace.indexOf('const nav = [')
-  const navEnd = workspace.indexOf('  const navIsActive =', navStart)
-  assert.ok(navStart >= 0 && navEnd > navStart, 'one shared account nav model')
-  const navModel = workspace.slice(navStart, navEnd)
-  for (const [id, title, route] of [
-    ['portrait', 'Profile', '/portrait'],
-    ['tests', 'Tests', '/tests'],
-    ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
-    ['practice', 'Practice', '/practice'],
-  ]) {
-    assert.match(navModel, new RegExp("id: '" + id + "'"))
-    assert.ok(navModel.includes("label: locale === 'ru'"), 'EN and RU navigation labels')
-    assert.ok(navModel.includes("'" + title + "'"), title)
-    assert.ok(navModel.includes("href: root + '" + route + "'"), route)
+  const mobileStart = workspace.indexOf('const mobileNav = [', navStart)
+  const navEnd = workspace.indexOf('  const navIsActive =', mobileStart)
+  assert.ok(navStart >= 0 && mobileStart > navStart && navEnd > mobileStart)
+  const account = workspace.slice(navStart, mobileStart)
+  const mobileModel = workspace.slice(mobileStart, navEnd)
+  const ids = source => [...source.matchAll(/\{ id: '([^']+)'/g)].map(match => match[1])
+  assert.deepEqual(ids(account), ['portrait','tests','portfolio','progress','course','practice','messages'])
+  assert.deepEqual(ids(mobileModel), ['practice','messages','progress','settings'])
+  for (const [id, ru, en] of [['portrait','Профиль','Profile'],['tests','Тесты','Tests'],['portfolio','Отчёты','Reports'],['progress','Мой прогресс','My Progress'],['course','Курсы','Courses'],['practice','Практика','Practice'],['messages','Сообщения','Messages']]) {
+    const entry = account.split('\n').find(line => line.includes("id: '" + id + "'"))
+    assert.ok(entry && entry.includes("'" + ru + "'") && entry.includes("'" + en + "'"), id + ' retains RU and EN labels')
   }
-  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice)'/g)||[]).length,5)
-  assert.doesNotMatch(navModel, /\{ id: 'analysis'/)
-  const mobileStart=workspace.indexOf('<nav className="hh-mobile-app-nav"')
-  const mobile=workspace.slice(mobileStart,workspace.indexOf('</nav>}',mobileStart))
-  assert.ok(mobileStart>0 && mobile.length>100)
-  assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
-  assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
-  assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
-  assert.match(mobile,/className="hh-mobile-app-nav-home"/)
-  assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
-  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important;/)
-  // Preserve the verifier branch's stricter exact bilingual ordering and Home contract.
-  const entries=[...navModel.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
-  assert.deepEqual(entries,[
-    {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
-    {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
-    {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
-    {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
-  ])
-  assert.doesNotMatch(mobile, />Analysis</)
+  for (const [id, route] of [['portrait','/portrait'],['tests','/tests'],['portfolio','/portfolio'],['progress','/progress'],['course','/course?view=courses'],['messages','/messages']]) {
+    const entry = account.split('\n').find(line => line.includes("id: '" + id + "'"))
+    assert.ok(entry && entry.includes("href: root + '" + route + "'"), id + ' retains its account route')
+  }
+  assert.match(account, /id: 'practice'.*href: '\/' \+ locale \+ '\/practice'/)
+  assert.match(mobileModel, /id: 'practice'.*href: '\/' \+ locale \+ '\/practice'/)
+  for (const [id, route] of [['messages','/messages'],['progress','/progress'],['settings','/settings']]) {
+    const entry = mobileModel.split('\n').find(line => line.includes("id: '" + id + "'"))
+    assert.ok(entry && entry.includes("href: root + '" + route + "'"), id + ' retains its mobile route')
+    assert.ok(entry.includes("locale === 'ru'") && entry.includes("locale === 'es'"), id + ' has RU and ES labels')
+  }
+  const start = workspace.indexOf('<nav className="hh-mobile-app-nav"')
+  const mobile = workspace.slice(start, workspace.indexOf('</nav>}', start))
+  assert.ok(start > 0 && mobile.length > 100)
+  assert.match(mobile, /mobileNav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
+  assert.match(mobile, /href=\{href\} prefetch=\{false\}/)
+  assert.match(mobile, /aria-current=\{navIsActive\(id\) \? 'page'/)
   assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
-  assert.ok(mobile.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
-  assert.ok(mobile.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
-  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') > mobile.indexOf('nav.map'))
-
+  assert.ok(mobile.includes("href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'}"))
+  assert.ok(mobile.includes("locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'"))
+  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') < mobile.indexOf('mobileNav.map'))
+  assert.match(css, /\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
 })
-
-

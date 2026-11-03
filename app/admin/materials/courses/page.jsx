@@ -49,6 +49,12 @@ export default async function MasterMaterialCoursesPage() {
           <span className={styles.folderName}><strong>{t.course}</strong><small>{t.lesson}</small></span>
           <ChevronRight className={styles.arrow} aria-hidden="true"/>
         </Link>
+        <Link className={styles.folderLink} href="/admin/materials/coaching" data-master-course-coaching>
+          <span className={styles.folderIcon}><Headphones aria-hidden="true"/></span>
+          <span className={styles.folderName}><strong>{ru?'Коучинг':es?'Coaching':'Coaching'}</strong>
+            <small>{ru?'Египетский и греческий · аудио RU / EN / ES':es?'Egipcio y griego · audio RU / EN / ES':'Egyptian and Greek · RU / EN / ES audio'}</small></span>
+          <ChevronRight className={styles.arrow} aria-hidden="true"/>
+        </Link>
       </div>
     </section>
   </main>

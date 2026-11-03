@@ -21,3 +21,23 @@
 /* Full poster can navigate to the original public YouTube source. */
 .poster{text-decoration:none}
 .poster:hover{text-decoration:none}
+
+/* Master profile: short video reel of only approved public links, played on demand. */
+.compact{max-width:none;margin:5px 0 18px;padding:0}
+.compact .header{margin:0 0 12px}
+.compact .header h2{font:500 clamp(23px,2.5vw,30px)/1.2 Georgia,serif;color:#48342a}
+.compact .header>p:last-child{display:none}
+.compact .grid{display:flex;align-items:stretch;gap:12px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 2px 12px}
+.compact .grid::-webkit-scrollbar{display:none}
+.compact .card{flex:0 0 clamp(205px,24vw,270px);display:flex;flex-direction:column;border-radius:17px;border-color:#e2ddcd;background:#fffdf7;scroll-snap-align:start;box-shadow:0 6px 19px #21372813}
+.compact .screen{aspect-ratio:16/9;background:#145947}
+.compact .poster{background-position:center;color:#fff;font-size:0;gap:4px}
+.compact .play{width:43px;height:43px;font-size:17px;background:#17423ddf;border-color:#fcf8e4}
+.compact .copy{padding:11px 12px 13px}
+.compact .copy h3{margin:6px 0 4px;font:600 16px/1.22 Georgia,serif;color:#48352b}
+.compact .copy p{display:none}
+.compact .copy a{font-size:11px;color:#0e7553}
+.compact .language{padding:3px 7px;background:#e6f3eb;color:#11704f}
+@media(max-width:650px){.compact .grid{gap:10px}.compact .card{flex-basis:min(69vw,250px)}}
+@media(max-width:360px){.compact .card{flex-basis:225px}}
+@media(prefers-reduced-motion:reduce){.compact .grid{scroll-behavior:auto}.compact .play{transition:none}}

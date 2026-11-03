@@ -14,37 +14,43 @@ const HomeConversationGuide = dynamic(
 );
 const copy = {
   "en": {
-    "eyebrow": "EXPLORE BY TOPIC",
-    "title": "Find your focus",
-    "intro": "Choose a subject instead of seeing the same services again.",
+    "eyebrow": "CHOOSE YOUR DIRECTION",
+    "title": "Explore by topic",
+    "intro": "What would you like to focus on today?",
     "energy": "Energy",
     "love": "Love & relationships",
     "business": "Business & career",
+    "temple": "Temple Support",
     "services": "All services",
     "courses": "All courses",
-    "help": "Need help choosing? Ask a question"
+    "testGuide": "How free self-checks work",
+    "help": "Not sure? Ask a question"
   },
   "ru": {
-    "eyebrow": "ФИЛЬТРЫ ПО ТЕМЕ",
-    "title": "Подобрать по направлению",
-    "intro": "Выберите интересующую тему без повторения предложений.",
+    "eyebrow": "ВЫБЕРИТЕ НАПРАВЛЕНИЕ",
+    "title": "Выберите тему",
+    "intro": "Что для вас сейчас важнее всего?",
     "energy": "Энергия",
     "love": "Любовь и отношения",
     "business": "Бизнес и карьера",
+    "temple": "Temple Support",
     "services": "Все услуги",
     "courses": "Все курсы",
-    "help": "Нужна помощь с выбором? Задать вопрос"
+    "testGuide": "Как работают бесплатные тесты",
+    "help": "Не знаете, что выбрать? Спросите"
   },
   "es": {
-    "eyebrow": "FILTRAR POR TEMA",
-    "title": "Encontrar mi tema",
-    "intro": "Elige un tema sin repetir las mismas ofertas.",
+    "eyebrow": "ELIGE TU DIRECCIÓN",
+    "title": "Explora por tema",
+    "intro": "¿Qué te gustaría explorar hoy?",
     "energy": "Energía",
     "love": "Amor y relaciones",
     "business": "Negocios y carrera",
+    "temple": "Temple Support",
     "services": "Todos los servicios",
     "courses": "Todos los cursos",
-    "help": "¿Necesitas ayuda para elegir? Haz una pregunta"
+    "testGuide": "Cómo funcionan las pruebas",
+    "help": "¿Dudas? Haz una pregunta"
   }
 } as const;
 
@@ -62,14 +68,20 @@ export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {
         <Link href={"/" + locale + "/explore/energy"} prefetch={false} className={styles.chip} data-home-topic-filter="energy">{t.energy}</Link>
         <Link href={"/" + locale + "/explore/love"} prefetch={false} className={styles.chip} data-home-topic-filter="love">{t.love}</Link>
         <Link href={"/" + locale + "/explore/business"} prefetch={false} className={styles.chip} data-home-topic-filter="business">{t.business}</Link>
-        <Link href={"/" + locale + "/services"} prefetch={false} className={styles.chip} data-home-topic-filter="services">{t.services}</Link>
-        <Link href={"/" + locale + "/academy"} prefetch={false} className={styles.chip} data-home-topic-filter="courses">{t.courses}</Link>
+        <Link href={"/" + locale + "/temple-support"} prefetch={false} className={styles.chip} data-home-topic-filter="temple">{t.temple}</Link>
       </nav>
-      <details className={styles.ask} data-home-more-deferred="true"
-        onToggle={event => setExpanded(event.currentTarget.open)}>
-        <summary>{t.help}<span aria-hidden="true">↓</span></summary>
-        {expanded ? <HomeConversationGuide locale={locale} /> : null}
-      </details>
+      <div className={styles.footer}>
+        <nav className={styles.catalog} aria-label={locale === "ru" ? "Каталоги" : locale === "es" ? "Catálogos" : "Browse catalogues"}>
+          <Link href={"/" + locale + "/services"} prefetch={false} className={styles.catalogLink} data-home-topic-filter="services">{t.services}<span aria-hidden="true">↗</span></Link>
+          <Link href={"/" + locale + "/academy"} prefetch={false} className={styles.catalogLink} data-home-topic-filter="courses">{t.courses}<span aria-hidden="true">↗</span></Link>
+          <Link href={"/" + locale + "/tests"} prefetch={false} className={styles.catalogLink} data-home-test-guide>{t.testGuide}<span aria-hidden="true">↗</span></Link>
+        </nav>
+        <details className={styles.ask} data-home-more-deferred="true"
+          onToggle={event => setExpanded(event.currentTarget.open)}>
+          <summary>{t.help}<span aria-hidden="true">↓</span></summary>
+          {expanded ? <HomeConversationGuide locale={locale} /> : null}
+        </details>
+      </div>
     </section>
   );
 }

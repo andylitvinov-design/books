@@ -28,3 +28,19 @@ test('public enquiry never accepts tracking URLs, private paths or extra fields'
 test('public reference is a non-secret correlation label', () => {
   assert.equal(publicEnquiryReference(valid.operationId), 'HH-13B822F68D70')
 })
+
+test('contact-only home free-review request is accepted for EN/RU/ES and remains a reply-only lead', () => {
+  for (const [sourcePath, locale] of [['/', 'en'], ['/ru', 'ru'], ['/es', 'es']]) {
+    const normalized = normalizePublicServiceEnquiry({
+      ...valid, sourcePath, locale, serviceTitle: 'Free personal situation review',
+      description: '', contactConsent: true,
+      contact: { displayName: '', email: '', phone: '+14165550123' },
+    })
+    assert.equal(normalized.sourcePath, sourcePath)
+    assert.equal(normalized.locale, locale)
+    assert.equal(normalized.contactConsent, true)
+    assert.equal(normalized.contact.phone, '+14165550123')
+    assert.equal(normalized.contact.source, 'website')
+    assert.match(normalized.description, /Free personal situation review/)
+  }
+})

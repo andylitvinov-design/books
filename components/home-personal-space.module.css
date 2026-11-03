@@ -97,8 +97,27 @@
 .pathLinks > a > svg { flex-shrink: 0; }
 .pathLinks > a > svg:last-child { margin-left: auto; }
 .pathLinks > a:hover { background: rgba(255,255,255,.75); }
-.masterPreview { display: grid; gap: 9px; margin: 5px 0 0; padding: 0 0 0 16px; font-size: 12px; font-weight: 700; line-height: 1.35; }
-.masterPreview li::marker { color: #bc9270; }
+.explorePanel {
+  display: grid; gap: 7px; padding: 10px; min-width: 0;
+  border: 1px solid #e0e5d9; border-radius: 15px; background: #fffefb;
+}
+.exploreHeading { margin: 0; color: #6e695a; font: 750 10px/1.3 Arial,sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.exploreTopics, .exploreGuides { display: grid; min-width: 0; gap: 6px; }
+.exploreTopics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.exploreGuides { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.exploreTopics a, .exploreGuides a {
+  box-sizing: border-box; display: flex; align-items: center; gap: 6px;
+  min-height: 44px; min-width: 0; padding: 7px 8px; border: 1px solid #d9e7df;
+  border-radius: 11px; color: #235e59; background: #f2f8f4;
+  text-decoration: none; font-size: 11px; font-weight: 700; line-height: 1.25;
+}
+.exploreTopics a:nth-child(2) { border-color: #ecd8d6; color: #8b4d60; background: #fff5f5; }
+.exploreTopics a:nth-child(3) { border-color: #e7d9c7; color: #805d3b; background: #fcf5ec; }
+.exploreGuides a { border-color: #e2dfd4; color: #695b49; background: #f9f6ef; }
+.exploreTopics a svg, .exploreGuides a svg { flex-shrink: 0; }
+.exploreTopics a span, .exploreGuides a span { min-width: 0; overflow-wrap: anywhere; }
+.exploreGuides a span { flex: 1; }
+.exploreTopics a:hover, .exploreGuides a:hover { filter: brightness(.97); }
 .masterNote { margin: 3px 0 0; color: #8d7667; font-size: 11px; line-height: 1.35; }
 .masterAction {
   box-sizing: border-box; display: flex; justify-content: space-between; align-items: center;
@@ -159,6 +178,9 @@
   .pathHeading { gap: 5px; }
   .pathHeading h3 { font-size: 14px; }
   .pathLinks > a { gap: 4px; padding-inline: 2px; font-size: 11px; }
+  .explorePanel { padding: 8px; }
+  .exploreTopics, .exploreGuides { gap: 4px; }
+  .exploreTopics a, .exploreGuides a { padding-inline: 5px; font-size: 10px; gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card *, .dialog * { scroll-behavior: auto; transition: none !important; animation: none !important; }

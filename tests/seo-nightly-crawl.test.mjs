@@ -69,7 +69,7 @@ test('public test landing stays indexable and the live auditor no longer expects
   assert.match(crawler, /Public test CTA missing/);
   assert.match(workflow, /verify-public-tests-mobile\.mjs/);
   assert.match(workflow, /app\/\[locale\]\/tests/);
-  assert.match(mobile, /widths = \[320, 390, 430\]/);
+  assert.match(mobile, /widths = fastPr \? \[390\] : \[320, 390, 430\]/);
   assert.match(mobile, /"x-default"/);
   assert.match(mobile, /Horizontal overflow/);
   assert.match(mobile, /primaryHeight >= 44/);

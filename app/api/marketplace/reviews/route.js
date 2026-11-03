@@ -28,11 +28,17 @@ export async function GET(request){
   let auth
   try{
     const config=getAppConfig()
-    const serviceId=serviceIdFrom(request)
+    const params=new URL(request.url).searchParams
+    const practitionerSlug=params.get('practitionerSlug')
+    if(practitionerSlug && params.has('serviceId'))return send({error:'INVALID_TARGET'},400)
+    const serviceId=practitionerSlug?null:serviceIdFrom(request)
     const requestedPage=new URL(request.url).searchParams.get('page')||'1'
     if(!/^[1-9]\d?$/.test(requestedPage))return send({error:'INVALID_PAGE'},400)
     const page=Number(requestedPage)
     const repo=createServiceReviewRepository(config)
+    if(practitionerSlug){
+      return send(await repo.listPublicForPractitioner(practitionerSlug,page))
+    }
     const {ownerId,...publicReviews}=await repo.listPublic(serviceId,page)
     let viewer={signedIn:false,canReview:false,mine:null,suggestedName:''}
     if(request.cookies.getAll().some(cookie=>cookie.name.startsWith('hh-app-auth'))){

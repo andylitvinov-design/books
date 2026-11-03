@@ -76,13 +76,15 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
     "components/energywork-reiki-capture.tsx",
     "components/reiki-landing-forms.tsx",
     "components/yggdrasil-initiation-form.tsx",
-    "components/tantra-initiation-form.tsx",
+    "components/tantra-initiation-choice.tsx",
     "components/principles-of-energywork.tsx",
   ]) {
     const source = await read(file);
     assert.match(source, /<ContactChannelChooser/);
     assert.match(source, /stayAfterSave/);
   }
+  assert.match(await read("components/tantra-initiation-form.tsx"), /<TantraInitiationChoice/);
+  assert.match(await read("components/tantra-initiation-form.tsx"), /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
   assert.match(chooser, /stayAfterSave\?: boolean/);
   assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
@@ -93,6 +95,6 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
   assert.match(chooser, /data-contact-channel": "whatsapp"/);
   assert.match(chooser, /data-contact-channel": "telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
-  assert.match(chooser, /if \(busy \|\| saved\) return/);
+  assert.match(chooser, /if \(!interactive \|\| busy \|\| saved\) return/);
   assert.match(chooser, /setError\(c\.error\)/);
 });

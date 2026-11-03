@@ -1,13 +1,34 @@
 name: Holistic House Mobile Install
 
 on:
+  workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'data/native-public-releases.json'
+      - 'lib/native/public-downloads.mjs'
+      - 'app/api/native-download/**'
+      - 'tests/holistic-house-native-public-downloads.test.mjs'
+      - 'app/layout.tsx'
+      - 'app/manifest.ts'
+      - 'public/manifest.webmanifest'
+      - 'app/\[locale\]/layout.tsx'
+      - 'app/\[locale\]/homeopathy/**'
+      - 'app/es/homeopathy/**'
+      - 'scripts/verify-hh-mobile-head.mjs'
+      - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
-      - 'app/[locale]/app/layout.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
+      - 'app/es/page.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/free-mobile-app-banner.*'
+      - 'components/site-navigation.tsx'
+      - 'lib/public-locales.ts'
+      - 'tests/holistic-house-free-install.test.mjs'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
+      - 'app/\[locale\]/app/layout.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'components/app/post-signup-install-offer.*'
       - 'components/app/app-workspace.jsx'
@@ -15,6 +36,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/workflow-next-route-filters.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
   push:
@@ -22,9 +44,28 @@ on:
       - codex/public-book-library
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'data/native-public-releases.json'
+      - 'lib/native/public-downloads.mjs'
+      - 'app/api/native-download/**'
+      - 'tests/holistic-house-native-public-downloads.test.mjs'
+      - 'app/layout.tsx'
+      - 'app/manifest.ts'
+      - 'public/manifest.webmanifest'
+      - 'app/\[locale\]/layout.tsx'
+      - 'app/\[locale\]/homeopathy/**'
+      - 'app/es/homeopathy/**'
+      - 'scripts/verify-hh-mobile-head.mjs'
+      - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
+      - 'app/es/page.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/free-mobile-app-banner.*'
+      - 'components/site-navigation.tsx'
+      - 'lib/public-locales.ts'
+      - 'tests/holistic-house-free-install.test.mjs'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'components/app/post-signup-install-offer.*'
       - 'components/app/app-workspace.jsx'
@@ -32,14 +73,16 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/workflow-next-route-filters.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
 permissions:
   contents: read
 concurrency:
-  group: hh-mobile-install-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-mobile-install-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   install-smoke:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -50,26 +93,58 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs tests/holistic-house-native-public-downloads.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
-        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
+        if: github.event_name != 'pull_request'
         run: npm run build
+      - name: Install Chromium and WebKit for real public iPhone installation QA
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p /tmp/hh-install-browser-tools
+          npm install --prefix /tmp/hh-install-browser-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-install-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Check EN/RU install pages and real PNG icons
+        if: github.event_name != 'pull_request'
         run: |
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
           trap 'kill "$child" 2>/dev/null || true' EXIT
-          for n in $(seq 1 55); do
-            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+          for attempt in $(seq 1 55); do
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then echo "Install page ready on attempt $attempt"; break; fi
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
           grep -q 'Holistic House' /tmp/hh-install-ru.html
+          grep -q 'Установить Holistic House бесплатно' /tmp/hh-install-ru.html
+          curl --fail --silent --show-error http://127.0.0.1:3098/en/install -o /tmp/hh-install-en.html
+          grep -q 'Install Holistic House for free' /tmp/hh-install-en.html
+          curl --fail --silent --show-error http://127.0.0.1:3098/es/install -o /tmp/hh-install-es.html
+          grep -q 'Instala Holistic House gratis' /tmp/hh-install-es.html
+          # No release-signed APK or App Store app has been approved yet.
+          # The server must 404, never send an unsigned/test package or redirect.
+          for platform in android ios; do
+            code="$(curl --silent --show-error --output /tmp/hh-native-"${platform}".json --write-out '%{http_code}' http://127.0.0.1:3098/api/native-download/"${platform}")"
+            test "$code" = 404
+            grep -q 'native_.*_release_not_published' /tmp/hh-native-"${platform}".json
+          done
           for size in 180 192 512; do
             curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
             grep -qi '^content-type: image/png' /tmp/hh-icon-headers
             file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
-          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/portrait'||!f.shortcuts.some(x=>x.url==='/ru/app/consultations'))process.exit(1)"
+          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/ru/app/messages'))process.exit(1)"
+          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
+          node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
+          node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
+          HH_PLAYWRIGHT_PACKAGE=/tmp/hh-install-browser-tools/node_modules/playwright node scripts/verify-hh-install-browser.mjs http://127.0.0.1:3098
+      - name: Archive guest-only iPhone/Android install screenshots
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-house-install-browser
+          path: artifacts/holistic-house-install/
+          retention-days: 3
+          if-no-files-found: warn

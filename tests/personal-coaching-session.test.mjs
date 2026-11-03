@@ -98,7 +98,10 @@ test('promotions link to short personal session without advertising 90 days',()=
   const development=source('components/app/development-program.jsx')
   const offers=source('components/direction-offers.tsx')
   const academy=source('components/academy-hub.tsx')
-  for(const file of [courses,development,offers,academy])assert.match(file,/app\/coaching/)
+  // Public promotions must enter the no-login coaching lounge.
+  // Only resumed private lessons continue using /app/coaching/:id.
+  for(const file of [courses,development,offers,academy])assert.match(file,/['"]\/coaching['"]/)
+  for(const file of [development,offers,academy])assert.doesNotMatch(file,/\/app\/coaching/)
   assert.match(courses,/data-personal-coaching-course-link/)
   assert.match(development,/data-development-personal-coaching-course/)
   assert.match(academy,/academy-free-personal-coaching/)

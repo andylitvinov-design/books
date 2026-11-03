@@ -136,6 +136,13 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
           <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
             {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
           </Link>
+          {savedIndex >= ENERGYWORK_SEQUENCE.indexOf('init-photo-01') ? (
+            <Link className={styles.savedReviewLink} href={courseHref + '?slide=init-photo-01'}
+              prefetch={false} data-reiki-cabinet-personal-photo>
+              {language === 'ru' ? 'Моё фото для инициации' : 'My initiation photo'}
+              <LockKeyhole size={14} aria-hidden="true" /><ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          ) : null}
           {academyProgress.answers?.['flight-04'] ? (
             <Link className={styles.savedReviewLink} href={courseHref + '?slide=flight-04'}
               prefetch={false} data-energywork-edit-flight-review>

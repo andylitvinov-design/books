@@ -36,7 +36,11 @@ test('all public guide routes reuse current live test-selector and SEO data',()=
   const guide=read('components/topic-growth-guide.tsx')
   assert.match(route,/TopicJourneySelector/)
   assert.match(route,/TopicGrowthGuide theme=\{theme\}/)
-  assert.match(route,/const guide = growthGuideFor\(theme,language\)/)
+  assert.ok(route.includes("const isDirection = ['energy','love','business'].includes(theme)"));
+  assert.match(route,/<DirectionOffers locale=/);
+  assert.match(route,/<GoalSupportOffers locale=/);
+  assert.match(route,/<DirectionExtras locale=/);
+  assert.ok(route.includes("growthGuideFor(theme === 'love' ? 'relationships' : theme,language)"));
   assert.match(sitemap,/TOPIC_JOURNEYS\.map\(journey =>/)
   assert.match(sitemap,/\['en','ru','es'\] as const/)
   assert.match(library,/growthFeed/)

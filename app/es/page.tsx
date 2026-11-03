@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
+import { FreeMobileAppBanner } from '@/components/free-mobile-app-banner';
 import Link from 'next/link';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { HomeMoreDisclosure } from '@/components/home-more-disclosure';
@@ -13,8 +14,9 @@ export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
-    <HomeFeaturedWorkspace locale="es" />
     <HomeMoreDisclosure locale="es" />
+    <HomeFeaturedWorkspace locale="es" />
+    <FreeMobileAppBanner locale="es" />
     <PersonalTestimonials locale="es" variant="home" />
     <section className="service-home-about" aria-labelledby="service-home-about-title">
       <div className="service-home-about__copy">

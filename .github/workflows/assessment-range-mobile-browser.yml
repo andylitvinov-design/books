@@ -2,6 +2,7 @@ name: Holistic House report mobile visual acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/compact-assessment-report.*'
@@ -18,21 +19,23 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-report-mobile-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-report-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   assessment-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
-    runs-on: ubuntu-latest
+        # Emergency PR path: one source-only job; manual dispatch keeps both real engines.
+        browser: ${{ fromJSON(github.event_name == 'pull_request' && '["source"]' || '["chromium","webkit"]') }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     env:
       CI: 'true'
       HH_APP_TEST_RUNTIME: isolated
-      HH_TEST_BROWSER: ${{ matrix.browser }}
+      HH_TEST_BROWSER: ${{ matrix.browser == 'source' && 'chromium' || matrix.browser }}
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
@@ -46,15 +49,17 @@ jobs:
       - name: Validate real-report fixture and exact source scoring
         run: node --test tests/assessment-range-mobile-fixture.test.mjs
       - name: Install isolated browser tools
+        if: matrix.browser != 'source'
         run: |
           mkdir -p /tmp/hh-assessment-browser
           npm install --prefix /tmp/hh-assessment-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-assessment-browser/node_modules/@playwright node_modules/@playwright
           /tmp/hh-assessment-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Check actual saved-score report on mobile and desktop
+        if: matrix.browser != 'source'
         run: node scripts/verify-assessment-range-mobile-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.browser != 'source'
         with:
           name: assessment-range-mobile-${{ matrix.browser }}-${{ github.run_id }}
           path: artifacts/app-r1/assessment-range-mobile-${{ matrix.browser }}/

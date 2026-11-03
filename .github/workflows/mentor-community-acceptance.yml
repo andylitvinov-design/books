@@ -4,6 +4,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/mentor-community-switch.*'
+      - 'components/community-service-highlights.*'
+      - 'components/master-network-explorer.tsx'
+      - 'components/master-network-explorer.module.css'
+      - 'tests/mentor-master-filters.test.mjs'
       - 'components/practitioner-article-directory.tsx'
       - 'components/practitioner-articles-public.module.css'
       - 'app/[locale]/masters/page.tsx'
@@ -17,8 +21,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mentor-community-acceptance-${{ github.ref }}
-  cancel-in-progress: true
+  group: mentor-community-acceptance-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   publication-and-browser:
     runs-on: ubuntu-24.04
@@ -62,7 +66,7 @@ jobs:
         run: node --test tests/mentor-community-v1.test.mjs tests/practitioner-articles-v4.test.mjs tests/master-network-v3.test.mjs
       - name: Focused linter and TypeScript check
         run: |
-          npx --no-install eslint components/mentor-community-switch.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
+          npx --no-install eslint components/master-network-explorer.tsx components/mentor-community-switch.tsx components/community-service-highlights.tsx app/'[locale]'/articles/page.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
           npx --no-install tsc --noEmit
       - name: Chromium and WebKit for actual hydrated page verification
         run: |
@@ -75,7 +79,7 @@ jobs:
           node --conditions=react-server tests/helpers/app-db-setup.mjs
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-mentor-next.log 2>&1 & APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 90); do
+          for ((i=0; i<90; i++)); do
             if curl --silent --fail http://127.0.0.1:3100/en/masters > /dev/null; then break; fi
             sleep 2
           done

@@ -44,14 +44,17 @@ test("the requested psychotherapy YouTube video is limited to RU service media",
 
 test("the Services video gallery is expanded by default after booking and testimonials", () => {
   const page = read("app/[locale]/services/page.tsx");
-  const begin = page.indexOf('id="method-videos" open');
+  const extras = read("components/services-studio-extras.tsx");
+  const begin = page.indexOf('<ServicesMethodVideos locale={locale as Locale}');
+  assert.match(extras, /<details\b[^>]*id="method-videos"[^>]*\bopen(?:\s|>)/);
   const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
   assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
-  assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
-  assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);
-  assert.match(page, /id="service-video-hypnotherapy"/);
-  assert.match(page, /id="service-video-alchemy"/);
+  assert.match(page, /<ServicesIntroMedia locale=\{locale as Locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-hypnotherapy" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-constellations" locale=\{locale\} \/>/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="hypnotherapy" id="es-service-video-hypnotherapy"/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations"/);
   assert.match(page, /<PublicConsultationCta/);
   const browser = read("scripts/verify-site-video-browser.mjs");
   assert.match(browser, /getAttribute\('open'\) === null/);
@@ -78,12 +81,14 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
   const personal = read("components/personal-service-landing.tsx");
-  const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  const free = read("components/free-entry-landing.tsx");
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
   assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
-  assert.match(free, /<ServiceVideoShowcase topic="overview" locale=\{locale\}/);
+  assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /const situationVideo = kind !== "situation" \? null/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);

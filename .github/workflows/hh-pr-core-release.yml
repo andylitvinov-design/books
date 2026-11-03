@@ -1,0 +1,539 @@
+name: HH PR core release gate
+on:
+  pull_request:
+    # Metadata-only backfill: a PAT-authored PR body edit runs REAL exact-HEAD
+    # Core and Specialist jobs without a no-op source commit. Ordinary PR
+    # edits also receive the full fail-closed release gate; no skipped required jobs.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+    branches: ['codex/public-book-library']
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+jobs:
+  scope:
+    name: core-lint-types-build
+    # One runner handles exact-HEAD classification and all applicable Core checks.
+    # This removes the serial classify -> Core runner handoff without reducing coverage.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+      ci_only: ${{ steps.diff.outputs.ci_only }}
+      route: ${{ steps.fast.outputs.route }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Scope needs only the synthetic merge and its two parents.
+          # Fetch older ancestry only when the tested production parent moved.
+          fetch-depth: 2
+      - name: Verify bounded shallow scope ancestry before PR routing
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'Missing exact PR event source/base SHA' >&2
+            exit 1
+          }
+          # Fail closed if GitHub did not check out its actual two-parent
+          # PR test merge. HEAD^1 is the tested production base, HEAD^2
+          # the unchanged PR head; no trust in arbitrary PR-supplied scripts.
+          tested_base="$(git rev-parse HEAD^1)"
+          tested_head="$(git rev-parse HEAD^2)"
+          [[ "$tested_head" == "$PR_HEAD_SHA" ]] || {
+            echo 'Shallow scope checkout has the wrong PR HEAD' >&2
+            exit 1
+          }
+          # Shallow depth 2 may truncate an old event base ancestor. Fetch
+          # at most 40 additional generations of only the exact tested base.
+          # Never accept disjoint or unverifiable ancestry.
+          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+            for extra in 8 32; do
+              git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
+              if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+                break
+              fi
+            done
+          fi
+          # A busy production branch may advance hundreds of commits beyond
+          # this PR event base. Shallow 40-generation fetches cannot prove it,
+          # so use GitHub's authenticated full-history compare as a fallback.
+          # "diverged", "behind", malformed and unavailable results stay red.
+          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+            relation="$(gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base" --jq '.status' 2>/dev/null || true)"
+            case "$relation" in
+              ahead) ;;
+              identical) [[ "$EVENT_BASE_SHA" == "$tested_base" ]] || exit 1 ;;
+              *) echo 'Event base ancestry unverified by local Git or GitHub compare' >&2; exit 1 ;;
+            esac
+            echo 'Core ancestry verified by GitHub compare on shallow PR history' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # Reuse the checked pair within this job; do not need the old base
+          # object locally for a diff against the verified tested first parent.
+          echo "HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA" >> "$GITHUB_ENV"
+          echo "HH_TESTED_BASE_VERIFIED=$tested_base" >> "$GITHUB_ENV"
+          echo "Bounded shallow scope verified HEAD $tested_head and tested base $tested_base" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
+      - name: Classify strictly documentation-only PRs
+        id: diff
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          docs_only=false
+          ci_only=false
+          if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+            # pull_request checkout uses a synthetic merge commit. Production
+            # may advance after the PR event base SHA was recorded. Compare
+            # ONLY against the verified merge checkout's first parent.
+            diff_base="$BASE_SHA"
+            if [[ -n "${PR_HEAD_SHA:-}" ]]; then
+              checkout_sha="$(git rev-parse HEAD)"
+              first_parent="$(git rev-parse HEAD^1 2>/dev/null || true)"
+              second_parent="$(git rev-parse HEAD^2 2>/dev/null || true)"
+              if [[ "$second_parent" == "$PR_HEAD_SHA" && -n "$first_parent" ]]; then
+                [[ "${HH_EVENT_BASE_VERIFIED:-}" == "$BASE_SHA" &&
+                   "${HH_TESTED_BASE_VERIFIED:-}" == "$first_parent" ]] || {
+                  echo 'Ancestry proof does not match the tested merge checkout' >&2
+                  exit 1
+                }
+                diff_base="$first_parent"
+              elif [[ "$checkout_sha" != "$PR_HEAD_SHA" ]]; then
+                echo 'Checkout does not match exact PR HEAD or its merge ref' >&2
+                exit 1
+              fi
+            fi
+            git diff --no-renames --name-only -z "$diff_base" HEAD > /tmp/hh-pr-changed-files.z
+            docs_only=true
+            ci_only=true
+            count=0
+            while IFS= read -r -d '' f; do
+              [[ -z "$f" ]] && continue
+              count=$((count + 1))
+              case "$f" in
+                docs/*.md|README.md) ;;
+                *) docs_only=false ;;
+              esac
+              # CI-only allowlist is exact, never includes application, SQL,
+              # dependency manifests, auth, billing, RLS or provider code.
+              case "$f" in
+                  .github/workflows/*.yml|\
+                  .github/workflows/*.yaml|\
+                  docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/production-base-impact.mjs|\
+                  lib/ci/specialist-aggregate.mjs|\
+                  lib/ci/fast-static-ui-text.mjs|\
+                  lib/ci/fast-ui-parser/package.json|\
+                  lib/ci/fast-ui-parser/parser-lock.json|\
+                  tests/ci-fast-static-ui-text.test.mjs|\
+                  docs/operations/CI_RELEASE_POLICY.md|\
+                  lib/ci/pr-sweep-guard.mjs|\
+                  scripts/ci-quick-route.mjs|\
+                  scripts/ci-prune-stale-runs.mjs|\
+                  tests/ci-prune-stale-runs.test.mjs|\
+                  tests/ci-quick-route.test.mjs|\
+                  scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-pr-readiness.mjs|\
+                  scripts/ci-source-preflight.mjs|\
+                  tests/ci-source-preflight.test.mjs|\
+                  scripts/pr-sweep-guard.mjs|\
+                  tests/pr-fast-lane.test.mjs|\
+                  tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-specialist-wait.test.mjs|\
+                  tests/ci-workflow-globs.test.mjs|\
+                  tests/workflow-next-route-filters.test.mjs|\
+                  tests/pr-sweep-guard.test.mjs|\
+                  tests/ci-heavy-draft-policy.test.mjs|\
+                  tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-growth-course-core-reuse.test.mjs|\
+                  tests/ci-head-cancellation.test.mjs|\
+                  tests/ci-stale-run-deduplication.test.mjs|\
+                  scripts/ci-deterministic-eslint-repair.mjs|\
+                  tests/ci-deterministic-eslint-repair.test.mjs) ;;
+                *) ci_only=false ;;
+              esac
+            done < /tmp/hh-pr-changed-files.z
+            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+      - name: Route exact image and proven public JSX changes without Next build
+        id: fast
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          route=CORE
+          tested_base="$(git rev-parse HEAD^1)"
+          tested_head="$(git rev-parse HEAD^2)"
+          [[ "$tested_head" == "$HH_HEAD_SHA" ]] || { echo 'Fast router refuses stale PR head' >&2; exit 1; }
+          [[ "${HH_EVENT_BASE_VERIFIED:-}" == "$HH_EVENT_BASE_SHA" &&
+             "${HH_TESTED_BASE_VERIFIED:-}" == "$tested_base" ]] || {
+            echo 'Fast router refuses unverified production base' >&2
+            exit 1
+          }
+          # A new or modified router in this PR is NOT trusted. Until its
+          # production BASE version exists, Core always runs in full.
+          if git cat-file -e "$tested_base:scripts/ci-quick-route.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-quick-route"
+            git show "$tested_base:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs"
+            route="$(HH_TESTED_BASE_SHA="$tested_base" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs")"
+          fi
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Verified CI route: $route (HEAD $HH_HEAD_SHA; BASE $tested_base)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Core is deliberately co-located with trusted scope classification.
+      # GitHub has no job-priority API: create the mandatory Core runner at
+      # event arrival rather than waiting for a separate scope runner.
+      - uses: actions/setup-node@v4
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+      - name: Verify Source Preflight unit contracts
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        run: node --test tests/ci-source-preflight.test.mjs
+      - name: Source Preflight — syntax and TypeScript before costly Next build
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        id: source_preflight
+        shell: bash
+        env:
+          HH_PREFLIGHT_REPORT: ${{ runner.temp }}/hh-source-preflight.json
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            checked_base="$(git rev-parse HEAD^1)"
+          else
+            checked_base="$(git rev-parse HEAD)"
+          fi
+          args=(--base "$checked_base")
+          if [[ "${{ steps.diff.outputs.ci_only }}" != true ]]; then args+=(--full-types); fi
+          node scripts/ci-source-preflight.mjs "${args[@]}"
+      - name: Upload Source Preflight root diagnostics on failure
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (failure() && steps.source_preflight.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-source-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hh-source-preflight.json
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Assert fast-lane workflow contracts
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        run: node --test tests/pr-fast-lane.test.mjs
+      - name: Verify deterministic ESLint repair worker contract
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        run: node --test tests/ci-deterministic-eslint-repair.test.mjs
+      - name: Verify specialist ownership and Messenger isolation on CI-policy changes
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only == 'true') }}
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
+      - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" != pull_request || -z "$BASE_SHA" ]]; then
+            npm run lint
+            exit 0
+          fi
+          if [[ -n "${PR_HEAD_SHA:-}" ]]; then
+            checkout_sha="$(git rev-parse HEAD)"
+            first_parent="$(git rev-parse HEAD^1 2>/dev/null || true)"
+            second_parent="$(git rev-parse HEAD^2 2>/dev/null || true)"
+            if [[ "$second_parent" == "$PR_HEAD_SHA" && -n "$first_parent" ]]; then
+              [[ "${HH_EVENT_BASE_VERIFIED:-}" == "$BASE_SHA" &&
+                 "${HH_TESTED_BASE_VERIFIED:-}" == "$first_parent" ]] || exit 1
+              BASE_SHA="$first_parent"
+            elif [[ "$checkout_sha" != "$PR_HEAD_SHA" ]]; then
+              echo 'Changed-file lint refusing unexpected PR checkout' >&2
+              exit 1
+            fi
+          fi
+          files=()
+          while IFS= read -r -d '' f; do
+            if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
+          done < <(git diff --name-only -z "$BASE_SHA" HEAD)
+          if (( ${#files[@]} > 0 )); then
+            npx --no-install eslint "${files[@]}"
+          else
+            echo 'No changed JS/TS files to lint'
+          fi
+      - name: Mobile Dock Core geometry and iPhone keyboard contracts
+        if: ${{ github.event_name == 'pull_request' && steps.fast.outputs.route == 'DOCK' }}
+        run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
+      # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
+      # A miss safely falls back to the existing full real build and validations.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore production-owned Next compiler cache (read-only)
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+      - name: Exact proposed release production build and TypeScript check
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        # CI-only changes still run Core lint and guard-unit; a full app build
+        # adds no coverage for workflow/router/test changes.
+        run: npm run build
+  hh-specialist:
+    name: hh-specialist
+    # Queue specialist alongside scope, not after a delayed scope runner.
+    # Independently verify exact HEAD and use ONLY immutable tested-BASE routing.
+    # hh-merge-check still requires successful real scope, Core and Specialist.
+    # A cancelled stale HEAD must not acquire another specialist runner.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Verify ready exact PR HEAD before independently scheduled specialist
+        shell: bash
+        env:
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: specialists remain deferred.' >&2
+            exit 1
+          fi
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request events run a release specialist.' >&2
+            exit 1
+          }
+          [[ "$HH_EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$HH_PR_NUMBER" =~ ^[0-9]+$ ]] || exit 1
+          # Avoid occupying a specialist runner on a superseded HEAD.
+          live_head="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$HH_PR_NUMBER" --jq '.head.sha')"
+          [[ "$live_head" == "$HH_EVENT_HEAD_SHA" ]] || {
+            echo 'Superseded PR HEAD: specialist refuses stale evidence.' >&2
+            exit 1
+          }
+          echo 'Independent exact-HEAD specialist started; hh-merge-check still checks trusted scope and Core.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      # Keep the exact PR production-base commit available without cloning every branch.
+      - name: Pin exact production base for shallow checkout
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          git cat-file -e "$BASE_SHA^{commit}"
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || { echo 'Unexpected checkout commit' >&2; exit 1; }
+          first_parent="$(git rev-parse HEAD^1)"
+          second_parent="$(git rev-parse HEAD^2)"
+          [[ "$second_parent" == "$PR_HEAD_SHA" ]] || { echo 'Merge checkout has the wrong PR head' >&2; exit 1; }
+          if [[ "$first_parent" != "$BASE_SHA" ]]; then
+            relation="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_SHA...$first_parent" --jq '.status')"
+            [[ "$relation" == ahead ]] || { echo 'Merge checkout base is not a descendant of the event base' >&2; exit 1; }
+          fi
+          echo "HH_TRUSTED_BASE_SHA=$first_parent" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Classify specialist with immutable tested-BASE policy
+        id: specialist_route
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "${HH_TRUSTED_BASE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          route=FULL
+          # Never use candidate-PR routing logic to decide whether to skip a specialist.
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-specialist-route"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs"
+            route="$(HH_TESTED_BASE_SHA="$HH_TRUSTED_BASE_SHA" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs")"
+          fi
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate exact-head risk and required specialist workflows
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # A fork may not execute candidate scripts with even a read-scoped GitHub token.
+          [[ "$HH_HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'Refusing a fork-head specialist gate; manual owner review required.' >&2
+            exit 1
+          }
+          # On the bootstrap PR only, the baseline has no aggregator yet.
+          # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_TRUSTED_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
+            fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
+            fi
+            node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+          else
+            # First rollout is safe only with native auto-merge disabled and
+            # a reviewed same-repository source PR.
+            node scripts/ci-specialist-aggregate.mjs
+          fi
+  # Optional, deterministic source repair. This is deliberately NOT a required
+  # status and is deliberately absent from hh-merge-check dependencies. It can
+  # write only after the exact Core ESLint step failed, under the existing PR lease.
+  hh-eslint-repair:
+    name: hh-eslint-repair
+    needs: [scope]
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    concurrency:
+      group: hh-eslint-repair-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run production-BASE deterministic ESLint repair only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # Fetch the immutable event BASE explicitly; the exact-HEAD checkout
+          # is intentionally shallow and may not contain that commit yet.
+          git fetch --quiet --no-tags --depth=1 origin "$HH_BASE_SHA"
+          # Bootstrap safety: this worker must already exist in the immutable
+          # event BASE. Never execute the copy introduced by the candidate PR.
+          if ! git cat-file -e "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" 2>/dev/null; then
+            echo 'Deterministic repair worker is not yet deployed in production BASE; bootstrap PR is not self-executed.'
+            exit 0
+          fi
+          git show "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" > "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
+          node "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
+      - name: Upload verified ESLint autofix patch when no trigger-capable push token is configured
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-deterministic-eslint-autofix-${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/hh-deterministic-eslint-autofix.patch
+          retention-days: 3
+          if-no-files-found: ignore
+  # Both GitHub production protection sources were read back on 2 November:
+  # exactly hh-merge-check is required. Preserve Core+Specialist fail-closed
+  # evidence while removing only redundant legacy wrapper runners.
+  hh-merge-check:
+    name: hh-merge-check
+    needs: [scope, hh-specialist]
+    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
+    if: ${{ !cancelled() }}
+    # Read-only required aggregator: no Next build, npm or privileged tools.
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Require real Core and specialist results from this workflow
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request checks can authorize a merge; manual or merge_group jobs do not verify PR specialists.' >&2
+            exit 1
+          }
+          if [[ "$PR_DRAFT" == true ]]; then
+            echo 'Draft PR cannot pass the unified merge check' >&2
+            exit 1
+          fi
+          [[ "$SCOPE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Scope or applicable specialist validation did not pass' >&2
+            exit 1
+          }
+          # Scope classification and all applicable Core source checks/build
+          # now run in one job, so success here is the unified Core result.
+          echo "Unified Core gate passed for route=$ROUTE; docs_only=$DOCS_ONLY" >> "$GITHUB_STEP_SUMMARY"
+          echo 'hh-merge-check PASS: current workflow Core and specialist results verified.' >> "$GITHUB_STEP_SUMMARY"
+
+

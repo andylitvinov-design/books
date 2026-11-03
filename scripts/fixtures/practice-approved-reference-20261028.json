@@ -1,0 +1,46 @@
+{
+  "name": "approved Practice main dashboard — owner iPhone October 28 2026",
+  "referenceRoute": "/ru/practice",
+  "screenshotDimensionsInChat": {
+    "width": 706,
+    "height": 1536
+  },
+  "browserChromeExcluded": true,
+  "referenceImageNotCommitted": true,
+  "browserContentStartYApproxImagePx": 205,
+  "estimatedCssViewportWidth": 390,
+  "note": "Landmarks are approximate; screenshot image was resized by chat and includes iPhone browser chrome. CSS positions are derived from content after browser chrome only. Use same-view screenshots and manual overlay before claiming pixel-perfect fidelity.",
+  "landmarksCssPx": {
+    "headerY": {
+      "value": 16,
+      "tolerance": 20
+    },
+    "identityY": {
+      "value": 66,
+      "tolerance": 24
+    },
+    "gridY": {
+      "value": 162,
+      "tolerance": 26
+    },
+    "heroY": {
+      "value": 302,
+      "tolerance": 28
+    },
+    "offersY": {
+      "value": 525,
+      "tolerance": 32
+    }
+  },
+  "requiredRegions": [
+    "header",
+    "identity",
+    "grid",
+    "hero",
+    "offers",
+    "nav"
+  ],
+  "requiredTileCount": 6,
+  "requiredOfferCoverCount": 6,
+  "requiredNavCount": 5
+}

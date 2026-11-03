@@ -8,13 +8,14 @@ import { createAppRepository } from "../../lib/app/repository.js";
 import { createPractitionerRepository } from "../../lib/practitioners/repository.js";
 import { createArticleRepository } from "../../lib/practitioners/article-repository.js";
 import { closeDatabase } from "../../lib/app/database.js";
-import { assertIsolated, actor, B } from "./app-db-setup.mjs";
+import { assertIsolated, actor, B, SB } from "./app-db-setup.mjs";
 
 assertIsolated();
 const config = getAppConfig();
 assert.equal(config.test, true, "Test data must never be written to production");
 const masterActor = actor();
-const otherActor = actor(B);
+// Account B needs its own session; A’s token must never authenticate as B.
+const otherActor = actor(B, SB);
 const accountRepo = createAppRepository(config);
 const practice = createPractitionerRepository(config);
 const articles = createArticleRepository(config);
@@ -69,14 +70,34 @@ try {
       },
       areaKey: "personal_development", offeringType: "session",
       deliveryFormat: "online", locationLabel: "",
-      languages: ["en", "ru", "es"], pricingMode: "free",
-      confirmedPrice: null, currency: "", durationMinutes: 30,
+      languages: ["en", "ru", "es"], pricingMode: "fixed",
+      confirmedPrice: 0, currency: "CAD", durationMinutes: 30,
       imagePath: "", displayLocales: ["en", "ru", "es"],
     },
   });
   service = await practice.submitService(masterActor, service.id, { expectedRevision: service.revision });
   service = await practice.moderateService(service.id, { action: "approve" });
   assert.equal(service.status, "published");
+
+  // A second approved public *course offering*, distinct from private course slides,
+  // verifies that the mentor directory offers meaningful course/type filters.
+  let training = await practice.saveService(masterActor, null, {
+    draft: {
+      copy: {
+        en: { title: "Synthetic reflection course", shortDescription: "Educational exercises", description: "Test-only reflection course" },
+        ru: { title: "Тестовый курс рефлексии", shortDescription: "Учебные упражнения", description: "Синтетический курс рефлексии" },
+        es: { title: "Curso de reflexión sintético", shortDescription: "Ejercicios educativos", description: "Curso de prueba" },
+      },
+      areaKey: "personal_development", offeringType: "course",
+      deliveryFormat: "online", locationLabel: "",
+      languages: ["en", "ru", "es"], pricingMode: "contact",
+      confirmedPrice: null, currency: "", durationMinutes: null,
+      imagePath: "", displayLocales: ["en", "ru", "es"],
+    },
+  });
+  training = await practice.submitService(masterActor, training.id, { expectedRevision: training.revision });
+  training = await practice.moderateService(training.id, { action: "approve" });
+  assert.equal(training.status, "published");
 
   for (const item of articleData) {
     const draft = {

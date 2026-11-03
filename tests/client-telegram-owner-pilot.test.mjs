@@ -12,7 +12,8 @@ test('owner pilot cannot name an arbitrary recipient, message or channel',()=>{
  assert.match(route,/auth\.verified\(\)/)
  assert.match(route,/practitionerEmailAllowed\(actor\)/)
  assert.match(route,/x-hh-account-id/)
- assert.match(route,/request\.body!==null/)
+ assert.match(route,/reader\.read\(\)/)
+ assert.match(route,/if\(!chunk\.done\)/)
  assert.doesNotMatch(route,/arrayBuffer\(\)/)
  assert.match(route,/PRIVATE_HEADERS/)
  assert.match(route,/sendOwnerTelegramPilot\(config,actor\)/)
@@ -60,4 +61,57 @@ test('CRM status and pilot action disclose neither chat ID nor bot secret',()=>{
  assert.match(ui,/t\.testAccepted/)
  assert.match(ui,/t\.testRate/)
  assert.doesNotMatch(ui,/HH_CLIENT_TG_BOT_TOKEN=[A-Za-z0-9]/)
+})
+
+import {runInNewContext} from 'node:vm'
+import {Readable} from 'node:stream'
+import {AppError} from '../lib/assessments/contracts.js'
+
+const source=readFileSync('app/api/app/notification-channels/telegram/test/route.js','utf8')
+ .replace(/^import .*$/gm,'').replace(/export /g,'')+'; POST'
+function fixture(){
+ let sent=0
+ const post=runInNewContext(source,{
+  NextResponse:{json:(body,{status=200}={})=>({body,status})},AppError,
+  PRIVATE_HEADERS:{},getAppConfig:()=>({}),requestOrigin:()=>{},requireSameOrigin:()=>{},
+  createRequestAuth:()=>({verified:async()=>({id:'owner'}),apply:r=>r}),
+  practitionerEmailAllowed:()=>true,safeError:e=>({code:e.code||'SERVICE_UNAVAILABLE',status:e.status||503}),
+  sendOwnerTelegramPilot:async()=>{sent++;return {providerAccepted:true,status:'accepted'}},
+  setTimeout,clearTimeout,
+ })
+ return {post,get sent(){return sent}}
+}
+function request(body,headers={}){
+ return new Request('https://holistichouse.vercel.app/api/app/notification-channels/telegram/test',{
+  method:'POST',headers:{'x-hh-account-id':'owner',...headers},body,duplex:'half'})
+}
+test('empty Node POST stream permits exactly one owner pilot',async()=>{
+ const f=fixture(),r=request(Readable.from([]),{'content-length':'0'})
+ assert.notEqual(r.body,null,'same non-null empty-stream shape produced by NextRequestAdapter')
+ assert.equal((await f.post(r)).status,200)
+ assert.equal(f.sent,1)
+})
+test('bodyless and empty chunked requests are accepted without a recipient parameter',async()=>{
+ for(const body of [null,Readable.from([])]){
+  const f=fixture();assert.equal((await f.post(request(body))).status,200);assert.equal(f.sent,1)
+ }
+})
+test('nonempty declared or chunked bodies fail before any provider send',async()=>{
+ for(const headers of [{'content-length':'1'},{}]){
+  const f=fixture();const r=await f.post(request(Readable.from(['x']),headers))
+  assert.equal(r.status,400);assert.equal(r.body.error,'INVALID_BODY');assert.equal(f.sent,0)
+ }
+})
+test('forged account context fails before body validation or sending',async()=>{
+ const f=fixture(),r=await f.post(request(Readable.from([]),{'x-hh-account-id':'other'}))
+ assert.equal(r.status,409);assert.equal(f.sent,0)
+})
+
+test('stalled chunked body is cancelled within a bounded interval without sending',async()=>{
+ const f=fixture();let cancelled=false
+ const body=new ReadableStream({cancel(){cancelled=true}})
+ const r=new Request('https://holistichouse.vercel.app/api/app/notification-channels/telegram/test',{
+  method:'POST',headers:{'x-hh-account-id':'owner'},body,duplex:'half'})
+ assert.equal((await f.post(r)).status,400)
+ assert.equal(f.sent,0);assert.equal(cancelled,true)
 })

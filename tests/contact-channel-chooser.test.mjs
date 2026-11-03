@@ -37,7 +37,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!interactive || (!open && !quick)}',
     'Оставьте контакт, чтобы записаться или узнать подробности',
     'Leave your contact to enquire or join',
     'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
@@ -46,7 +46,12 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<details className=\{styles\.optionalName\} open=\{nameOpen\}>/);
+  assert.match(src, /setNameOpen\(value => !value\)/);
+  assert.match(src, /setNameOpen\(false\)/);
+  assert.match(src, /<details className=\{styles\.optionalNote\} open=\{noteOpen\}>/);
+  assert.match(src, /setNoteOpen\(value => !value\)/);
+  assert.match(src, /setNoteOpen\(false\)/);
   assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
   assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
   assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
@@ -66,6 +71,15 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(src, /scrollIntoView/);
 });
 
+test("contact controls wait for the reset associated with the currently selected offer", () => {
+  const src = read("components/contact-channel-chooser.tsx");
+  assert.match(src, /settledResetSignature === resetSignature/);
+  assert.match(src, /JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
+  assert.equal((src.match(/setSettledResetSignature\(resetSignature\)/g)||[]).length, 2);
+  assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return/);
+  assert.match(src, /if \(!interactive \|\| googleBusy \|\| busy\) return/);
+});
+
 test("primary capture components render channel chooser after service selection while downloads remain immediate", () => {
   for (const path of [
     "components/reiki-choice-capture.tsx",
@@ -74,15 +88,19 @@ test("primary capture components render channel chooser after service selection 
     "components/consultation-choice-capture.tsx",
     "components/core-service-detail.tsx",
     "components/yggdrasil-initiation-form.tsx",
-    "components/tantra-initiation-form.tsx",
+    "components/tantra-initiation-choice.tsx",
     "components/principles-of-energywork.tsx",
     "components/temple-initiation-chooser.tsx",
-    "components/free-drawing-intake.tsx",
   ]) {
     const src = read(path);
     assert.match(src, /<ContactChannelChooser/, path);
     assert.match(src, /whatsappUrl=\{/, path);
   }
+  assert.match(read("components/tantra-initiation-form.tsx"), /<TantraInitiationChoice/);
+  assert.match(read("components/tantra-initiation-form.tsx"), /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
+  const privateEntry = read("components/free-drawing-intake.tsx");
+  assert.doesNotMatch(privateEntry, /ContactChannelChooser|navigator\.clipboard/);
+  assert.match(privateEntry, /\/coaching\/intake/);
   assert.match(read("components/yggdrasil-initiation-form.tsx"), /href=\{pdfUrl\} download/);
   assert.match(read("components/reiki-choice-capture.tsx"), /href=\{guideUrl\}/);
   assert.match(read("components/consultation-choice-capture.tsx"), /isPaidRequest \? \(/);
@@ -91,4 +109,16 @@ test("primary capture components render channel chooser after service selection 
   assert.match(footer, /<CompactLeadCapture/);
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
+});
+
+test("cart form is inert until real hydration, with phone and explicit consent still required", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
+  assert.match(ui, /cartContact && !cartFormHydrated/);
+  assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(ui, /\!consent/);
+  assert.match(qa, /form\[data-contact-hydrated="true"\]/);
+  assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
+  assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
 });

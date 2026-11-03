@@ -78,9 +78,6 @@ const copy = {
 export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  // A manual change resets the seven-second clock; it must not disable autoplay.
-  const [interactionVersion, setInteractionVersion] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const navScroller = useRef<HTMLDivElement | null>(null);
   const slide = slides[index];
@@ -90,16 +87,7 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
   const href = slide.key === "services" ? `/${locale}/services#consultation`
     : slide.key === "cabinet" && locale === "es" ? "/en/app" : "/" + locale + slide.href;
 
-  useEffect(() => {
-    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        setIndex(current => (current + 1) % slides.length);
-      }
-    }, 7000);
-    return () => window.clearInterval(timer);
-  }, [paused, interactionVersion]);
-
+  // Keep the first offer stable. Other sections change only by deliberate navigation.
   // The sixth, "Cabinet", label may be outside the 320px navigation viewport.
   // Scroll only the horizontal label strip, never the document itself.
   useEffect(() => {
@@ -113,10 +101,9 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
       left: Math.max(0, left),
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
-  }, [index, locale]);
+  }, [slide.key, locale]);
 
   function navigate(direction: number) {
-    setInteractionVersion(version => version + 1);
     setIndex(current => (current + direction + slides.length) % slides.length);
   }
 
@@ -137,16 +124,6 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
         role="region"
         aria-roledescription="carousel"
         aria-label={t.region}
-        onMouseEnter={() => {
-          // Mobile Safari may synthesize mouse events after tapping.
-          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) setPaused(true);
-        }}
-        onMouseLeave={() => setPaused(false)}
-        onFocusCapture={event => {
-          // Pause for keyboard focus, not for a touch-focused dot or arrow.
-          if (event.target instanceof HTMLElement && event.target.matches(":focus-visible")) setPaused(true);
-        }}
-        onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}
         onTouchStart={event => {
           touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
         }}
@@ -205,7 +182,7 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
                 aria-label={t.slides[item.key].title}
                 aria-current={position === index ? "true" : undefined}
                 data-home-slide-dot={item.key}
-                onClick={() => { setInteractionVersion(version => version + 1); setIndex(position); }} />
+                onClick={() => setIndex(position)} />
             ))}
           </div>
           <div className={styles.arrows}>
