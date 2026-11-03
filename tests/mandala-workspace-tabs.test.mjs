@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","effects","practices","editor","pro"]);
+ assert.deepEqual(ids,["video","editor","phrases","effects","practices","pro"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -44,9 +44,9 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
-   "fifth Montage reuses one original photo editor");
- assert.match(studio,/\{activeWorkspace==="pro" \? <details className=\{videoStyles.quickExtras\} data-video-pro-advanced>/,
-   "advanced visual settings are in the sixth PRO workspace");
+   "second Montage reuses one original photo editor");
+ assert.match(studio,/<details className=\{videoStyles\.montageStyleSettings\} data-video-editor-style-settings/,
+   "the one advanced style settings panel now belongs to the second Montage workspace");
  assert.match(studio,/\{deepVideoPane\}/);
 });
 test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
@@ -225,4 +225,25 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
  assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-advanced-toggle"));
  assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
+});
+
+test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
+ const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second");
+ const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
+ assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
+ assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
+ const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
+ assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
+ const editor=studio.slice(studio.indexOf('data-video-basic-editor'),studio.indexOf('data-video-quick-personal'));
+ const scenario=editor.indexOf('data-video-editor-scenario');
+ assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.match(editor,/data-video-montage-script-update/);
+ assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
+   "editing a four-shot montage changes the local actual caption track");
+ assert.match(editor,/setCaptionMode\("custom"\)/,
+   "single-scene style applies the script as a real caption");
+ assert.match(editor,/data-video-editor-style-settings/);
+ assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
+ assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
