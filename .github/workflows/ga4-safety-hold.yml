@@ -8,7 +8,6 @@ on:
       - 'lib/public-analytics.ts'
       - 'tests/ga4-safety-hold.test.mjs'
       - 'scripts/verify-ga4-safety-hold.mjs'
-      - '.github/workflows/ga4-safety-hold.yml'
 permissions:
   contents: read
 concurrency:
