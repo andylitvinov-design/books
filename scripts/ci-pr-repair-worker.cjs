@@ -156,9 +156,17 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     if(!task || (taskKey&&task.task_key!==taskKey)){
       log('REFUSE_STALE_OR_FOREIGN_TASK #'+pr.number);continue;
     }
-    // If the branch is a parent of another open PR, never modify its history.
-    const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1}))).data;
-    if (!Array.isArray(children) || children.length) continue;
+    // An open child does not forbid source-preserving parent repair. What is
+    // unsafe is an active SQUASH/REBASE auto-merge: the child then loses its
+    // ancestry. Require a verified child and Merge Commit or no auto-merge.
+    const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:2}))).data;
+    if (!Array.isArray(children)) continue;
+    const stacked=children.some(child=>child?.number!==pr.number &&
+      child?.state==='open'&&child?.base?.ref===pr.head.ref);
+    if(stacked && pr.auto_merge && pr.auto_merge.merge_method!=='merge'){
+      log('SKIP_STACKED_PARENT_UNSAFE_AUTO_MERGE #'+pr.number);
+      continue;
+    }
     // Incomplete history cannot prove ownership. Bounded pagination avoids
     // indefinitely blocking mature PRs as they pass 100 issue comments.
     const comments = await readCompleteIssueComments(github,owner,repo,pr.number,limited);
