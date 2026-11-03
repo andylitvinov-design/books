@@ -45,9 +45,50 @@ concurrency:
   group: ia-v2-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
+  browser_preflight:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 7
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify live PR readiness and exact tested HEAD/base before browser budget
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ci-pr-readiness.mjs
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^2)" = "$HH_EVENT_HEAD_SHA"
+          tested_base="$(git rev-parse HEAD^1)"
+          [[ "$tested_base" =~ ^[0-9a-f]{40}$ && "$HH_EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$tested_base" != "$HH_EVENT_BASE_SHA" ]]; then
+            echo "Tested merge base $tested_base differs from event base $HH_EVENT_BASE_SHA; final trusted gate evaluates production-base freshness." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Node syntax and focused IA source-contract tests
+        run: |
+          set -euo pipefail
+          node --check scripts/verify-ia-v2.mjs
+          node --check scripts/ia-v2-loopback-proxy.mjs
+          node --check scripts/ia-public-navigation-diagnostics.mjs
+          node --check scripts/ci-pr-readiness.mjs
+          node --test tests/ia-v2-loopback-proxy.test.mjs tests/ia-public-navigation-diagnostics.test.mjs
   verify:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    needs: [browser_preflight]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -305,6 +346,13 @@ jobs:
       - name: Full TypeScript outside production PR (core release-ready owns production typing)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: steps.dock-scope.outputs.dock_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Isolated browser tools and Redis CLI
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: |

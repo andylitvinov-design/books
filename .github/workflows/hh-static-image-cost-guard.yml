@@ -3,7 +3,7 @@ name: Holistic House static image cost guard
 on:
   pull_request:
     paths:
-      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - "data/public-card-artwork*.json"
       - "lib/public-card-artwork.ts"
       - "scripts/build-public-card-artwork.mjs"

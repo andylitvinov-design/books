@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
+import { inspectJobs, trustedRequiredJobs } from '../lib/ci/specialist-aggregate.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -55,6 +56,55 @@ test('a registered specialist can remain queued beyond three minutes and must su
   assert.ok(polls > 5);
   assert.equal(jobsRead, 1);
   assert.equal(result.executed.length, 1);
+});
+
+test('registered queue beyond the previous 15-minute cap passes only after real execution', async () => {
+  let elapsed = 0, polls = 0, readJobs = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{filename: 'lib/crm/a.js'}],
+    runs: async () => {
+      polls++;
+      if (elapsed < 19 * 60_000) return [run('queued', null)];
+      if (elapsed < 20 * 60_000) return [run('in_progress', null)];
+      return [run('completed', 'success')];
+    },
+    jobs: async () => {
+      readJobs++;
+      return [{name:'mobile',status:'completed',conclusion:'success'}];
+    },
+  };
+  const result = await verify(api, ctx, sources, {
+    now: () => elapsed,
+    sleep: async ms => {
+      assert.ok(ms > 0 && ms <= 30_000);
+      elapsed += ms;
+    },
+  });
+  assert.ok(elapsed >= 20 * 60_000, 'queue alone is never passing CI');
+  assert.ok(elapsed < 35 * 60_000, 'completion stays within global budget');
+  assert.ok(polls > 30);
+  assert.equal(readJobs, 1);
+  assert.equal(result.executed.length, 1);
+});
+
+test('unresolved queued dependency fails closed only at the overall bounded deadline', async () => {
+  let elapsed = 0, reads = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{filename: 'lib/crm/a.js'}],
+    runs: async () => { reads++; return [run('queued', null)]; },
+    jobs: async () => { throw Error('queued workflow must never be accepted as success'); },
+  };
+  await assert.rejects(() => verify(api, ctx, sources, {
+    now: () => elapsed,
+    sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
+  }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
+  assert.equal(elapsed, 35 * 60_000, 'global budget is hard capped');
+  assert.ok(reads > 10, 'checks are polled, never silently waived');
+  assert.equal(diagnoseAggregateError(
+    new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+JSON.stringify({queued:[path+':queued']}))
+  ).category, 'RUNNER_QUEUE');
 });
 
 test('registered queue still fails closed after a bounded startup budget', async () => {
@@ -187,4 +237,52 @@ test('CI groups observable dispatch/check symptoms but never treats matching sym
   assert.equal(diagnoseAggregateError(new Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED')).category,'BASE_ADVANCED');
   assert.equal(diagnoseAggregateError(new Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED')).category,'HEAD_ADVANCED');
   assert.equal(diagnoseAggregateError(new Error('UNVERIFIED_MERGE_CHECKOUT')).category,'CHECKOUT_UNVERIFIED');
+});
+
+
+test('trusted static BASE jobs cannot be replaced by an unrelated green job', () => {
+  const workflow = [
+    'jobs:', '  guard-unit:',
+    '    if: $' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    '    runs-on: ubuntu-slim',
+    '  renamed:', '    name: exact-contract-verifier', '    runs-on: ubuntu-latest',
+    '  optional:', '    if: $' + "{{ github.event_name == 'workflow_dispatch' }}",
+    '    runs-on: ubuntu-latest',
+    '  matrix:', '    strategy:', '      matrix:', '        browser: [webkit, chromium]',
+    '    runs-on: ubuntu-latest',
+  ].join('\n');
+  const required = trustedRequiredJobs(workflow);
+  assert.deepEqual(required,['guard-unit','exact-contract-verifier']);
+  const done = name => ({name,status:'completed',conclusion:'success'});
+  assert.throws(()=>inspectJobs([done('unrelated')],path,[],required),/MISSING_REQUIRED_SPECIALIST_JOB/);
+  assert.equal(inspectJobs([done('guard-unit'),done('exact-contract-verifier')],path,[],required),2);
+});
+
+test('wait only for missing jobs while independent completed Specialist jobs remain green',async()=>{
+  const another='.github/workflows/mobile-extra.yml';
+  const files={base:new Map([[path,yaml],[another,yaml]]),
+    current:new Map([[path,yaml],[another,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
+  const a=run('completed','success'),b={...a,id:152,path:another};
+  let elapsed=0,first=0,second=0,allRunReads=0;
+  const done=[{name:'test',status:'completed',conclusion:'success'}];
+  const api={pr:async()=>pr,target:async()=>base,
+    runs:async()=>{allRunReads++;return [a,b];},
+    jobs:async id=>id===151?(first++,done):((second++ === 0)?[]:done)};
+  const result=await verify(api,ctx,files,{maxWaitMs:20_000,jobGraceMs:15_000,
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=5_000);elapsed+=ms;},pollMs:1_000});
+  assert.deepEqual(result.expected,[another,path].sort());
+  assert.equal(first,1);assert.equal(second,2);assert.equal(allRunReads,1);
+  assert.equal(result.executed.length,2);
+});
+
+test('missing required job fails closed after a bounded jobs-API grace',async()=>{
+  let elapsed=0,reads=0;
+  const files={...sources,changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
+  const api={pr:async()=>pr,target:async()=>base,runs:async()=>[run('completed','success')],
+    jobs:async()=>{reads++;return [{name:'unrelated',status:'completed',conclusion:'success'}];}};
+  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:5_000,jobGraceMs:1_200,
+    now:()=>elapsed,sleep:async ms=>{elapsed+=ms;},pollMs:1_000}),/MISSING_REQUIRED_SPECIALIST_JOB/);
+  assert.equal(elapsed,1_200);assert.equal(reads,3);
+  assert.equal(diagnoseAggregateError(new Error('MISSING_REQUIRED_SPECIALIST_JOB:'+path+':test')).category,'REQUIRED_JOB_MISSING');
 });

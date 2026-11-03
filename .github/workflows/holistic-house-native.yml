@@ -11,7 +11,7 @@ on:
       - 'tests/holistic-house-play-release.test.mjs'
       - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
-      - '.github/workflows/holistic-house-native.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - 'tests/holistic-house-native-build.test.mjs'
       - 'lib/native/**'
       - 'components/native-link-handler.tsx'

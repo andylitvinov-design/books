@@ -61,14 +61,14 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: app-r1-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: app-r1-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   impact:
     name: route-expensive-app-suites
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 8
     outputs:
       full_app: ${{ steps.choose.outputs.full_app }}
       database: ${{ steps.choose.outputs.database }}

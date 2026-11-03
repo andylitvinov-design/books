@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -39,6 +39,119 @@ test('only verified concurrency-only edits can avoid unrelated specialists',()=>
  const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
  assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
   changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
+});
+
+test('V2 first-attempt lease advisory requires unchanged workflow bodies and non-applicable source',()=>{
+ const file='.github/workflows/ci-heavy.yml';
+ const first="github.event_name == 'pull_request' && github.run_attempt == 1";
+ const sync=first+" && github.event.action == 'synchronize'";
+ const old="on:\n  pull_request:\n    paths:\n      - '.github/workflows/ci-heavy.yml'\n      - 'app/**'\nconcurrency:\n  group: ci-heavy-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  validate:\n    runs-on: ubuntu-24.04\n";
+ const next=old.replace("  group: ci-heavy-${{ github.ref }}\n  cancel-in-progress: true",
+   "  group: ci-heavy-${{ "+first+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"+
+   "\n  cancel-in-progress: ${{ "+sync+" }}");
+ const base=new Map([[file,old]]);
+ const current=new Map([[file,next]]);
+ const only=[{filename:file,status:'M'}];
+ const check=(candidate=current,changedRows=only)=>[...concurrencyOnlyAdvisory({base,current:candidate,changedRows,expected:[file]})];
+ assert.deepEqual(check(),[file],'correct v2 lease with no changed job or trigger is advisory');
+ for(const broken of [
+   next.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+   next.replace('  cancel-in-progress: ${{ '+sync+' }}','  cancel-in-progress: true'),
+   next.replace('  group: ci-heavy-${{ '+first,'  group: ci-heavy-${{ '+"github.event_name == 'pull_request'"),
+   next.replace("      - 'app/**'","      - 'lib/**'"),
+ ]) assert.deepEqual(check(new Map([[file,broken]])),[],'changed jobs/triggers/lease must stay strict');
+ assert.deepEqual(check(current,[...only,{filename:'app/video/route.ts',status:'M'}]),[],
+   'real product change still requires its real browser specialist');
+ assert.deepEqual(check(current,[...only,{filename:'lib/security/auth.ts',status:'M'}]),[],
+   'unknown changed sources cannot make a heavy workflow advisory');
+});
+
+test('approved first-attempt concurrency only is advisory, not changed browser or security work', () => {
+  const file='.github/workflows/example.yml';
+  const trigger="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml', 'scripts/verify-tantra-testimonials.mjs']\n";
+  const before=trigger+"concurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+  const after=before.replace("  group: example-${{ github.ref }}\n  cancel-in-progress: true",
+    "  group: example-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}");
+  const rows=(...other)=>[{filename:file,status:'M'},...other.map(filename=>({filename,status:'M'}))];
+  const inspect=(changedRows,workflow=file)=>concurrencyOnlyAdvisory({
+    base:new Map([[workflow,before]]),current:new Map([[workflow,after]]),
+    changedRows:changedRows.map(row=>({...row,filename:row.filename===file?workflow:row.filename})),
+    expected:[workflow],
+  });
+  assert.deepEqual([...inspect(rows('tests/ci-head-cancellation.test.mjs','tests/free-express-mobile-consent-layout.test.mjs'))],[file]);
+  assert.deepEqual([...inspect(rows('scripts/verify-tantra-testimonials.mjs'))],[]);
+  assert.deepEqual([...inspect(rows('app/api/payments/route.js'))],[]);
+  assert.deepEqual([...inspect(rows('scripts/unreviewed-browser-helper.mjs'))],[]);
+  assert.deepEqual([...inspect(rows('scripts/helpers/contact-channel-verifier.mjs'),'.github/workflows/release-reaudit.yml')],[]);
+  assert.deepEqual([...inspect(rows('scripts/helpers/contact-channel-verifier.mjs'),'.github/workflows/assessment-range-mobile-browser.yml')],['.github/workflows/assessment-range-mobile-browser.yml']);
+  assert.deepEqual([...concurrencyOnlyAdvisory({
+    base:new Map([[file,before]]),
+    current:new Map([[file,after.replace('runs-on: ubuntu-latest','runs-on: self-hosted')]]),
+    changedRows:rows(),expected:[file],
+  })],[]);
+});
+
+test('actionlint can add exact regression coverage but cannot weaken original validation', () => {
+  const base="on:\n  pull_request:\n    paths:\n      - '.github/workflows/**'\njobs:\n  validate-workflows:\n    steps:\n      - run: |\n          node --test tests/pr-fast-lane.test.mjs\n";
+  const next=base.replace("      - '.github/workflows/**'\n", "      - '.github/workflows/**'\n      - 'tests/ci-stale-run-deduplication.test.mjs'\n")
+    .replace('          node --test tests/pr-fast-lane.test.mjs\n',
+      '          node --test tests/ci-stale-run-deduplication.test.mjs\n          node --test tests/pr-fast-lane.test.mjs\n');
+  assert.equal(trustedAdditiveActionlint(base,base),true);
+  assert.equal(trustedAdditiveActionlint(base,next),true);
+  assert.equal(trustedAdditiveActionlint(base,next.replace('tests/pr-fast-lane.test.mjs','tests/weakened.test.mjs')),false);
+  assert.equal(trustedAdditiveActionlint(base,next.replace('node --test tests/ci-stale-run-deduplication.test.mjs\n','')),false);
+});
+
+test('trusted exact removal of a domain workflow self-path reduces unnecessary PR jobs',()=>{
+ const file='.github/workflows/isolated-browser.yml';
+ const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/isolated-browser.yml'\n      - 'components/site-video-*'\n  workflow_dispatch:\npermissions:\n  contents: read\njobs:\n  browser:\n    runs-on: ubuntu-24.04\n";
+ const next=yaml.replace("      - '"+file+"'\n",'');
+ const base=new Map([[file,yaml]]);
+ const current=new Map([[file,next]]);
+ const input=[{filename:file,status:'M'}];
+ const advisory=(candidate=current,changedRows=input,expected=[file])=>
+   [...selfTriggerRemovalAdvisory({base,current:candidate,changedRows,expected})];
+ assert.deepEqual(advisory(),[file]);
+ assert.deepEqual(advisory(current,[...input,{filename:'.github/workflows/unrelated.yml',status:'M'}]),[file]);
+ assert.deepEqual(advisory(current,[...input,{filename:'components/site-video-player.tsx',status:'M'}]),[],
+   'real source changes must always retain browser acceptance');
+ for(const invalid of [
+   next.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+   next.replace('contents: read','contents: write'),
+   next.replace("  workflow_dispatch:","  schedule:"),
+   next.replace("components/site-video-*","lib/**"),
+   yaml,
+ ]) assert.deepEqual(advisory(new Map([[file,invalid]])),[],
+   'changing jobs, permissions, triggers or omitting removal is not safe');
+ for(const status of ['A','D','renamed']) assert.deepEqual(advisory(current,[{filename:file,status}]),[]);
+ assert.deepEqual(advisory(current,input,[]),[]);
+ for(const excluded of ['hh-actionlint.yml','hh-pr-sweep-guard.yml','hh-ci-stale-run-prune.yml']) {
+   const protectedFile='.github/workflows/'+excluded;
+   const protectedYaml=yaml.replaceAll(file,protectedFile);
+   const protectedNext=protectedYaml.replace("      - '"+protectedFile+"'\n",'');
+   assert.deepEqual([...selfTriggerRemovalAdvisory({
+     base:new Map([[protectedFile,protectedYaml]]),
+     current:new Map([[protectedFile,protectedNext]]),
+     changedRows:[{filename:protectedFile,status:'M'}],expected:[protectedFile],
+   })],[]);
+ }
+});
+
+test('self-trigger elimination never hides failed workflows if trusted actionlint was modified',async()=>{
+ const file='.github/workflows/isolated-browser.yml',syntax='.github/workflows/hh-actionlint.yml';
+ const old="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/isolated-browser.yml'\n      - 'components/site-video-*'\njobs:\n  browser:\n    runs-on: ubuntu-24.04\n";
+ const newContent=old.replace("      - '"+file+"'\n",'');
+ const syntaxSource="on:\n  pull_request:\n    paths:\n      - '.github/workflows/**'\njobs:\n  validate:\n    runs-on: ubuntu-24.04\n";
+ const files={base:new Map([[file,old],[syntax,syntaxSource]]),current:new Map([[file,newContent],[syntax,syntaxSource]]),changedRows:[{filename:file,status:'M'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const failing=run({path:file,conclusion:'failure'});
+ const passingLint=run({id:154,path:syntax});
+ const api={pr:async()=>pr(),runs:async()=>[failing,passingLint],jobs:async()=>[{name:'validate',status:'completed',conclusion:'success'}]};
+ const clean=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(clean.expected,[syntax]);
+ assert.deepEqual(clean.advisory.selfTriggerOnly,[file]);
+ const alteredSyntax={...files,current:new Map([[file,newContent],[syntax,syntaxSource+'# changed']])};
+ await assert.rejects(()=>verify(api,ctx,alteredSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
 });
 
 test('a failed run explicitly associated with a sibling PR on the same branch cannot block this PR',()=>{
@@ -78,7 +191,7 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  const ctx={repo,number:27,head:SHA,base:BASE};
  const failed=run({path:file,conclusion:'failure'});
  const syntaxRun=run({id:153,path:syntax});
- const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'syntax',status:'completed',conclusion:'success'}]};
  const result=await verify(api,ctx,files,{maxWaitMs:0});
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
@@ -276,6 +389,37 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
     'own-branch skips, edited workflow, and any failed required job are not accepted');
 });
 
+test('profile-axis writer skip stays branch-conditional after exact one-line selective workflow migration',()=>{
+  const file='.github/workflows/hh-profile-axis-matching.yml';
+  const base=readFileSync(file,'utf8');
+  const oldPath="      - '.github/workflows/hh-profile-axis-matching.yml'";
+  const contract="      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  assert.equal(base.split(oldPath).length,2);
+  assert.equal(base.includes(contract),false);
+  const migrated=base.replace(oldPath,contract);
+  const current=(value)=>({base:new Map([[file,base]]),current:new Map([[file,value]])});
+  const branch='perf/ci-selective-workflow-self-path-v1';
+  assert.equal(optionalProfileWriterSkip(current(migrated),branch),true,
+    'unchanged immutable writer condition permits skipped job only on unrelated branch');
+  assert.equal(optionalProfileWriterSkip(current(migrated),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  const actual=[
+    {name:'axis-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
+  ];
+  assert.equal(inspectJobs(actual,file,['writer-practical-focused']),1,
+    'only the completed main axis suite counts as executed');
+  assert.throws(()=>inspectJobs([{...actual[0],conclusion:'failure'},actual[1]],file,['writer-practical-focused']),/UNSUCCESSFUL/);
+  for(const unsafe of [
+    base.replace(oldPath,''),
+    migrated.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+    migrated.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'"),
+    migrated.replace('permissions:\n  contents: read','permissions:\n  contents: write'),
+    migrated.replace("branches: ['codex/public-book-library', 'codex/holistic-intelligence-core-20261029']", "branches: ['main']"),
+    migrated.replace(contract,"      - 'tests/unapproved.test.mjs'"),
+  ]) assert.equal(optionalProfileWriterSkip(current(unsafe),branch),false,
+    'unknown trigger/job/permissions changes stay fail-closed');
+});
+
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
   assert.throws(()=>inspectJobs([],path),/ZERO_JOB/);
   for(const conclusion of ['skipped','cancelled','failure',null]) {
@@ -357,6 +501,55 @@ test('read-only GitHub API adapter paginates files and runs without writing',asy
   assert.equal((await api.jobs(151)).length,1);
   assert.equal(await api.target(),BASE,'read the exact protected target ref, not similarly-prefixed branches');
   assert.ok(requests.every(x=>x.method==='GET' && x.auth==='Bearer fake'));
+});
+
+test('Specialist read adapter retries transient GitHub HTTP 500 without a new HEAD or writer action',async()=>{
+  let calls=0;
+  const waits=[];
+  const seen=[];
+  const transport=async (url,options)=>{
+    calls++;
+    seen.push({url,method:options.method||'GET',auth:options.headers.Authorization});
+    if(calls<=2)return {ok:false,status:500};
+    return {ok:true,status:200,json:async()=>pr()};
+  };
+  const api=githubReader(repo,'test-token',transport,{sleep:async ms=>waits.push(ms)});
+  assert.equal((await api.pr(27)).head.sha,SHA);
+  assert.equal(calls,3);
+  assert.deepEqual(waits,[400,1200]);
+  assert.ok(seen.every(x=>x.url===seen[0].url&&x.method==='GET'&&x.auth==='Bearer test-token'));
+});
+
+test('Specialist API read fails closed after bounded retries and never retries a real 401/404',async()=>{
+  for(const status of [401,404]){
+    let calls=0;
+    const api=githubReader(repo,'test',async()=>{
+      calls++;
+      return {ok:false,status};
+    },{sleep:async()=>{}});
+    await assert.rejects(()=>api.runs(SHA),new RegExp('GitHub read /actions/runs HTTP '+status));
+    assert.equal(calls,1);
+  }
+  let exhausted=0;
+  const api=githubReader(repo,'test',async()=>{
+    exhausted++;
+    return {ok:false,status:503};
+  },{sleep:async()=>{}});
+  await assert.rejects(()=>api.jobs(151),/GitHub read \/actions\/runs\/151\/jobs HTTP 503/);
+  assert.equal(exhausted,4,'three retries, then a hard failure; never reinterpret missing evidence as green');
+});
+
+test('Specialist read adapter retries network timeouts but not malformed successful responses',async()=>{
+  let calls=0;
+  const timed=githubReader(repo,'test',async()=>{
+    calls++;
+    if(calls===1)throw Object.assign(new Error('timeout'),{name:'TimeoutError'});
+    return {ok:true,status:200,json:async()=>pr()};
+  },{sleep:async()=>{}});
+  assert.equal((await timed.pr(27)).number,27);
+  assert.equal(calls,2);
+  const invalid=githubReader(repo,'test',async()=>({ok:true,status:200,json:async()=>{throw Error('bad-json')}}),{sleep:async()=>{}});
+  await assert.rejects(()=>invalid.pr(27),/bad-json/,'success with broken JSON must not be accepted');
 });
 
 test('untrusted/malformed input context is rejected',()=>{
@@ -890,7 +1083,7 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const api = { pr: async () => currentPr(), target: async () => advanced,
     compare: async () => ({ status:'diverged' }),
     changed: async () => { throw Error('live diff must not replace tested checkout'); },
-    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+    runs: async () => [run()], jobs: async () => [{ name: 'test', status: 'completed', conclusion: 'success' }] };
   // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   // A stale pull_request.base.sha must not fail a tested checkout whose parent
@@ -1284,7 +1477,7 @@ test('actual specialist verification still blocks CI-policy changes without trus
     changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
   const api={pr:async()=>({...pr(),base:{...pr().base,sha:current}}),
     target:async()=>current,compare:async()=>updated,runs:async()=>[run()],
-    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}]};
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
   const ctx={repo,number:27,head:SHA,base:BASE};
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
   const success=await verify(api,ctx,sources,{maxWaitMs:0,trustedPolicyBaseSha:current});
@@ -1492,4 +1685,94 @@ test('Mandala macOS branch-gated skip is wired into exact-head specialist verify
     {jobRows:[focused,{...mac,conclusion:'failure'}]},
   ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB/,
     'all untrusted or failed jobs remain release-blocking');
+});
+
+test('Mandala accepts only an exact required-preflight dependency before optional macOS', () => {
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const base=[
+    'on:',
+    '  pull_request:',
+    "    paths: ['components/mandala-*']",
+    'jobs:',
+    '  focused-unit-types-build:',
+    '    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:',
+    "    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'fix/video-')) }}",
+    '    runs-on: macos-15',
+    '    steps:',
+    '      - run: node scripts/verify-affirmation-voice-browser.mjs',
+    '',
+  ].join('\n');
+  const extra=[
+    '  webkit_preflight:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    '    runs-on: ubuntu-slim',
+  ].join('\n')+'\n';
+  const candidate=base.replace('  voice-webkit-macos:',extra+'  voice-webkit-macos:')
+    .replace('    runs-on: macos-15', '    needs: [webkit_preflight]\n    runs-on: macos-15');
+  const run=(next,branch='codex/ci-cheap-browser-preflight-20261103',changed=[path])=>
+    optionalMandalaMacosSkip({
+      base:new Map([[path,base]]),current:new Map([[path,next]]),
+    },branch,changed);
+  assert.equal(run(candidate),true,
+    'unmodified BASE branch condition allows CI-only skip with one required preflight');
+  assert.equal(run(candidate,'fix/video-release-20261103'),false,
+    'original BASE-required WebKit must execute on matching video branch');
+  assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
+    ['scripts/verify-affirmation-voice-browser.mjs']),false,
+    'a relevant voice or encoded media change must still require WebKit');
+  const invalid=[
+    candidate.replace('needs: [webkit_preflight]', 'needs: [other_job]'),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight, other_job]\n'),
+    candidate.replace('    runs-on: macos-15','    runs-on: ubuntu-latest'),
+    candidate.replace('    steps:','    timeout-minutes: 1\n    steps:'),
+    candidate.replace("startsWith(github.head_ref, 'fix/video-')","startsWith(github.head_ref, 'codex/ci-')"),
+    candidate.replace("    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}","    if: ${{ false }}"),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight]\n    continue-on-error: true\n'),
+  ];
+  for (const changedJob of invalid)
+    assert.equal(run(changedJob),false,'unsafe macOS policy change must never self-waive');
+});
+
+test('Mandala is advisory only behind immutable Core media contracts; other specialists remain fail-closed', async () => {
+  const mandala='.github/workflows/holistic-support-mandala.yml';
+  const core='.github/workflows/hh-pr-core-release.yml';
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const coreSource=readFileSync(core,'utf8');
+  assert.match(coreSource,/HH_MANDALA_FAST_RELEASE_V1/);
+  const media='on:\n  pull_request:\n    branches: [\'codex/public-book-library\']\n    paths: [\'lib/mandala/**\']\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-latest\n';
+  const money='on:\n  pull_request:\n    branches: [\'codex/public-book-library\']\n    paths: [\'app/api/payments/**\']\njobs:\n  payment-contract:\n    runs-on: ubuntu-latest\n';
+  const base=new Map([[mandala,media],[billing,money],[core,coreSource]]);
+  const sources={base,current:new Map(base),
+    changedRows:[{filename:'lib/mandala/affirmation-voice.mjs',status:'M'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const mediaFailure=run({id:190,path:mandala,conclusion:'failure'});
+  const api={pr:async()=>pr(),runs:async()=>[mediaFailure],jobs:async()=>[]};
+  const opts={maxWaitMs:0,readSource:()=>''};
+  const result=await verify(api,ctx,sources,opts);
+  assert.deepEqual(result.expected,[]);
+  assert.ok(result.advisory.nonApplicable.includes(mandala+':failure'),
+    'failed Mandala media diagnostics remain visible, never misreported as PASS');
+
+  // Rewriting the Core media gate in the PR, or lack of trusted BASE proof,
+  // restores the old fail-closed Mandala requirement.
+  const edited={...sources,current:new Map([[mandala,media],[billing,money],[core,coreSource+'# changed\n']])};
+  await assert.rejects(()=>verify(api,ctx,edited,opts),/SPECIALIST_FAILED/);
+  const unsupportedBase=coreSource.replace('HH_MANDALA_FAST_RELEASE_V1','UNTRUSTED_GATE');
+  await assert.rejects(()=>verify(api,ctx,{
+    ...sources,base:new Map([[mandala,media],[billing,money],[core,unsupportedBase]]),
+  },opts),/SPECIALIST_FAILED/);
+
+  // An edited candidate Mandala workflow is always required, even if the
+  // protected Core gate is present and otherwise unchanged.
+  const tamperedMandala={...sources,current:new Map([
+    [mandala,media+'# tampered\\n'],[billing,money],[core,coreSource],
+  ]),changedRows:[...sources.changedRows,{filename:mandala,status:'M'}]};
+  await assert.rejects(()=>verify(api,ctx,tamperedMandala,opts),/SPECIALIST_FAILED/);
+
+  // Payment/security specialists can never become advisory due to Mandala.
+  const mixed={...sources,changedRows:[
+    ...sources.changedRows,{filename:'app/api/payments/charge.js',status:'M'}]};
+  api.runs=async()=>[mediaFailure,run({id:191,path:billing,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,mixed,opts),/SPECIALIST_FAILED/);
 });
