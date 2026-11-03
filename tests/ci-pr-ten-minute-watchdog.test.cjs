@@ -272,7 +272,7 @@ test('Core with empty PR links is still the genuine exact-source CI run',()=>{
     head_repository:{full_name:'andylitvinov-design/books'},
     head_branch:current.head.ref,head_sha:current.head.sha,pull_requests:[]};
   assert.equal(coreRunForCurrentPR(run,current),true);
-  assert.equal(coreRunForCurrentPR({...run,head_sha:'b'.repeat(40)},current),false);
+  assert.equal(coreRunForCurrentPR({...run,head_sha:'a'.repeat(40)},current),false);
   assert.equal(coreRunForCurrentPR({...run,head_repository:{full_name:'other/repo'}},current),false);
   assert.equal(coreRunForCurrentPR({...run,path:'.github/workflows/other.yml'},current),false);
 });
