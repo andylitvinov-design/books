@@ -43,6 +43,25 @@ test('accepts literal repository-root source reads but not dynamic or spoofed he
  }finally{f.cleanup()}
 });
 
+test('safe Next locale and route-group source paths receive literal test coverage',()=>{
+ const f=fixture();try{
+  for(const p of ['app/[locale]/about/page.tsx','app/(public)/about/page.tsx'])
+   f.put(p,'export const page=true;\n');
+  f.put('tests/locale.test.mjs',
+   "import '../app/[locale]/about/page.tsx';\nimport test from 'node:test';\ntest('locale',()=>{});\n");
+  f.put('tests/group.test.mjs',
+   "import '../app/(public)/about/page.tsx';\nimport test from 'node:test';\ntest('group',()=>{});\n");
+  assert.deepEqual(selectTests(f.root,
+   ['app/[locale]/about/page.tsx','app/(public)/about/page.tsx'],
+   ['tests/locale.test.mjs','tests/group.test.mjs']),
+   ['tests/group.test.mjs','tests/locale.test.mjs']);
+  assert.equal(selectTests(f.root,['app/[locale]/../secret/page.tsx'],
+   ['tests/locale.test.mjs']),null);
+  assert.equal(selectTests(f.root,['app//about/page.tsx'],
+   ['tests/locale.test.mjs']),null);
+ }finally{f.cleanup()}
+});
+
 test('missing coverage, malformed paths, symlinks and excessive test scope fail closed',()=>{
  const f=fixture();try{
   f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('a',()=>{});\n");
