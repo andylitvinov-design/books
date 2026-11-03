@@ -1,7 +1,8 @@
 'use strict';
 const {summarizeWindow}=require('./ci-pr-kpi.cjs');
+const {summarizeCancellationWindow}=require('./ci-pr-kpi-cancellations.cjs');
 const WINDOWS={'1h':3600000,'24h':86400000,'7d':604800000};
-function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistoryVerified=false}){
+function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellations={},taskHistoryVerified=false}){
  if(!Number.isFinite(now)||![backlog,receipts,merges,actions,dispatch,ci].every(x=>x&&typeof x==='object'))
   throw Error('INVALID_REPORT_INPUT');
  const events=[...(receipts.events||[]),...(merges.events||[]),...(dispatch.events||[]),...(ci.events||[])];
@@ -27,8 +28,11 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
  for(const [name,width] of Object.entries(WINDOWS)){
   const current=summarizeWindow({events,jobs,coverage:coverageAt(now-width),now,windowMs:width});
   const previous=summarizeWindow({events,jobs,coverage:coverageAt(now-2*width),now:now-width,windowMs:width});
+  const cancellationCurrent=summarizeCancellationWindow({source:cancellations,now,windowMs:width});
+  const cancellationPrevious=summarizeCancellationWindow({source:cancellations,now:now-width,windowMs:width});
   const delta=(a,b,verified)=>verified?a-b:null;
   windows[name]={current,previous,
+   cancellation_reasons:{current:cancellationCurrent,previous:cancellationPrevious},
    trend:{production_merges:delta(current.observed.merged,previous.observed.merged,current.coverage.merges&&previous.coverage.merges),
     source_committed:delta(current.observed.source_committed,previous.observed.source_committed,current.coverage.tasks&&previous.coverage.tasks),
     dispatches:delta(current.observed.dispatched,previous.observed.dispatched,covers(dispatch,now-2*width)),
@@ -41,11 +45,12 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
   segments:Array.isArray(x.segments)?x.segments.map(y=>({complete:valid(y),since:Number.isFinite(y.since)?new Date(y.since).toISOString():null,reason:y.reason||'UNVERIFIED'})):[]});
  return {schema:'HH_CONTROL_KPI_V1',checked_at:new Date(now).toISOString(),
   backlog:{complete:valid(backlog),counts:valid(backlog)?backlog.counts:null,reason:backlog.reason||'UNVERIFIED'},
-  sources:{receipts:source(receipts),merges:source(merges),actions:source(actions),dispatch:source(dispatch),ci:source(ci)},
+  sources:{receipts:source(receipts),merges:source(merges),actions:source(actions),dispatch:source(dispatch),ci:source(ci),cancellations:source(cancellations)},
   limitations:['GitHub reads are non-atomic; stable inventories are checked twice.',
    'Actionable backlog requires separate current-head ownership and evidence checks.',
    'Receipt coverage describes available authenticated records, not proof every worker emitted a receipt.',
    'Missing historical receipt or job coverage remains partial; samples are not totals.',
+   'Cancelled and failed workflow reasons and discarded runner minutes are bounded observed samples; never billing amounts or complete totals.',
    'LIVE conversion requires feature-specific smoke evidence for each comparable production merge.'],windows};
 }
 module.exports={buildReport,WINDOWS};

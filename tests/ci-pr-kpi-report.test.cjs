@@ -53,3 +53,21 @@ test('complete receipt records are distinct from complete task history',()=>{
  assert.equal(r.windows['1h'].current.coverage.tasks,false);
  assert.equal(r.windows['24h'].current.coverage.receipt_records,false);
 });
+
+test('six cancellation reasons and runner-cost sample are visible without claiming a verified total',()=>{
+ const input=data(),job={id:21,run_id:7,status:'completed',conclusion:'cancelled',run_attempt:1,
+  started_at:new Date(NOW-15*60000).toISOString(),completed_at:new Date(NOW-10*60000).toISOString()};
+ const canceled={id:7,status:'completed',conclusion:'cancelled',run_attempt:1,event:'pull_request',
+  path:'.github/workflows/core.yml',created_at:new Date(NOW-20*60000).toISOString(),
+  updated_at:new Date(NOW-5*60000).toISOString(),
+  pull_requests:[]};
+ input.cancellations={complete:false,reason:'BOUNDED_SAMPLE',reads:4,workflowRuns:[canceled],
+  candidateRunIds:[7],verifiedJobRunIds:[7],jobs:[job]};
+ const report=buildReport(input);
+ const current=report.windows['1h'].cancellation_reasons.current;
+ assert.equal(report.sources.cancellations.complete,false);
+ assert.equal(current.counts.SUSPICIOUS_CANCEL,1);
+ assert.equal(current.cancelled_runner_minutes_observed,5);
+ assert.equal(current.runner_minutes_observed.REAL_FAILURE,0);
+ assert.equal(current.label,'SAMPLE_NOT_TOTAL');
+});
