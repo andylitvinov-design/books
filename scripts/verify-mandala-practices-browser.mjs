@@ -123,8 +123,28 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const enquiry=programme.locator("[data-meditation-course-order]");
       assert.equal(await enquiry.count(),1,"one consented course enquiry");
       await enquiry.click();
+      // Headed WebKit can resolve a click before React commits the disclosure.
+      // Verify both the control state and the mounted form; a missing form still
+      // fails the release gate rather than being treated as a successful click.
+      await page.waitForFunction(()=>{
+        const button=document.querySelector("[data-meditation-course-order]");
+        return button?.getAttribute("aria-expanded")==="true" &&
+          Boolean(document.querySelector("[data-meditation-course-contact]"));
+      },null,{timeout:15000});
       const form=programme.locator("[data-meditation-course-contact]");
-      await form.waitFor({state:"visible"});
+      try{
+        await form.waitFor({state:"visible",timeout:15000});
+      }catch(error){
+        const state=await programme.evaluate(root=>({
+          orderButtons:[...root.querySelectorAll("[data-meditation-course-order]")]
+            .map(button=>({expanded:button.getAttribute("aria-expanded"),text:button.textContent?.trim()})),
+          contactForms:root.querySelectorAll("[data-meditation-course-contact]").length,
+          formDisplay:[...root.querySelectorAll("[data-meditation-course-contact]")]
+            .map(node=>getComputedStyle(node).display),
+          programmeVisible:Boolean(root.getClientRects().length),
+        }));
+        throw new Error(engine+" "+locale+" "+width+"px course enquiry did not open: "+JSON.stringify(state),{cause:error});
+      }
       assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
         "one-off reply consent gates the real course enquiry");
       const geometry=await course.evaluate((el)=>{
