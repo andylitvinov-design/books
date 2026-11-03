@@ -10,6 +10,8 @@ test("MyTube taxonomy is exactly 4 × 4 × 4 with four scenarios per topic", () 
   const audit = auditMyTubeTaxonomy();
   assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.counts, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
+  assert.deepEqual(audit.uniqueScenarioTitles, {ru: 256, en: 256, es: 256});
+  assert.deepEqual(audit.uniqueScenarioOutlines, {ru: 256, en: 256, es: 256});
   assert.deepEqual(MYTUBE_TAXONOMY_COUNTS, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
 });
 
@@ -49,7 +51,13 @@ test("all category, subcategory, topic and scenario labels exist in RU/EN/ES", (
           const scenarios = listMyTubeScenarios(topic.id, locale);
           assert.equal(scenarios.length, 4);
           assert.equal(new Set(scenarios.map((s) => s.label)).size, 4);
-          assert.ok(scenarios.every((s) => s.canExport === false && s.sourceStatus === "editorial_only_unbound"));
+          assert.equal(new Set(scenarios.map((s) => s.creativeBrief)).size, 4);
+          assert.equal(new Set(scenarios.map((s) => s.sceneOutline[0])).size, 4);
+          assert.ok(scenarios.every((s) => s.sceneOutline.length === 4
+            && s.sceneOutline.every((beat) => beat.length >= 8)
+            && s.creativeBrief === s.sceneOutline.join(" → ")));
+          assert.ok(scenarios.every((s) => s.conceptOnly === true
+            && s.canExport === false && s.sourceStatus === "editorial_only_unbound"));
         }
       }
     }
@@ -68,6 +76,35 @@ test("search matching resolves an exact localized label or seed phrase without f
   });
   assert.equal(resolveMyTubeTopic("ambiguous partial"), null);
   assert.equal(resolveMyTubeTopic(""), null);
+});
+
+test("scenarios are topic-specific stories rather than four reusable archetype labels", () => {
+  assert.deepEqual(listMyTubeScenarios("life-purpose", "ru").map((s) => s.label), [
+    "Чужой компас", "Три искры", "Мастерская смыслов", "Пробный маршрут",
+  ]);
+  assert.deepEqual(listMyTubeScenarios("panic-attacks", "ru").map((s) => s.label), [
+    "Волна и берег", "Комната настоящего", "План поддержки под рукой", "После эпизода",
+  ]);
+  assert.deepEqual(listMyTubeScenarios("self-acceptance", "es").map((s) => s.label), [
+    "El jardín imperfecto", "El espejo amable", "Lugar para emociones diversas", "Crecer a mi ritmo",
+  ]);
+  assert.notDeepEqual(
+    listMyTubeScenarios("life-purpose", "ru").map((s) => s.creativeBrief),
+    listMyTubeScenarios("finding-self", "ru").map((s) => s.creativeBrief),
+  );
+  for (const locale of ["ru","en","es"]) {
+    for (const category of listMyTubeCategories(locale)) {
+      for (const sub of listMyTubeSubcategories(category.id,locale)) {
+        for (const topic of listMyTubeTopics(category.id,sub.id,locale)) {
+          const stories = listMyTubeScenarios(topic.id,locale);
+          for (const story of stories) {
+            assert.ok(!/^(?:Путь|Опора|Новый взгляд|Новый шаг|Path|Support|New Perspective|Integration)$/i.test(story.label));
+            assert.ok(story.sceneOutline[3].length > 8);
+          }
+        }
+      }
+    }
+  }
 });
 
 test("unknown IDs do not silently route to another category", () => {
