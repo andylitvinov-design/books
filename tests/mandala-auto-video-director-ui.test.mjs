@@ -159,8 +159,9 @@ test("the selected real soundtrack is synchronized with the original central Can
 // Regression from #2900: four real preview cards must appear before the first click.
 test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/recommendAutoVideo\(\{goal,locale,fallbackTheme:theme,presets,scenes\}\)/);
- assert.match(director,/const videoGoalCategories=\[/);
- assert.match(director,/const popularTopicOrder=\{/);
+ assert.match(director,/listMyTubeCategories\(locale\)/);
+ assert.match(director,/listMyTubeSubcategories\(selectedCategoryId,locale\)/);
+ assert.match(director,/listMyTubeTopics\(selectedCategoryId,selectedSubcategoryId,locale\)/);
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-preview-example/);
