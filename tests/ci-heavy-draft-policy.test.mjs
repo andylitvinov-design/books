@@ -410,12 +410,14 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(browserGate, 'real browser Build guard missing');
   for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
     "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
-    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
     assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
+  assert.ok(source.includes('tests/video-scenario-bindings.test.mjs'), 'scenario candidate contracts remain in the focused suite');
+  assert.ok(source.includes('      - name: Audit 120 scenario physical candidates without auto-publication\n        ' + browserGate), '120 scenario audit must share the protected real-media gate');
   assert.ok(source.includes('group: >-') && source.includes("holistic-support-mandala-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), 'PR runs share a PR-scoped group and manual attempts stay run-scoped');
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only superseded first-attempt PR runs are cancelled');
   assert.ok(source.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
