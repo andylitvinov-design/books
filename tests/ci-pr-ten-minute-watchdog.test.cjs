@@ -110,7 +110,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
     pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{
       listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?32:18}}),
-      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'Build',conclusion:'failure',
+      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
@@ -917,6 +917,35 @@ test('classify-change ancestry failure with skipped source build never dispatche
   ]),'SOURCE_OR_PREFLIGHT');
 });
 
+test('modern Core #3235 BASE_ADVANCED cannot consume Code Repair capacity',()=>{
+  const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const green=name=>({name,conclusion:'success',status:'completed'});
+  const failed=name=>({name,conclusion:'failure',status:'completed'});
+  // Actual #3235 completed Core job layout (no legacy classify-change).
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),failed('hh-specialist'),failed('hh-merge-check')
+  ]),'SPECIALIST_FAILED');
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),green('hh-specialist'),failed('hh-merge-check')
+  ]),'RELEASE_GATE_ONLY');
+  // A genuine failing source job must still be routed to source triage.
+  assert.equal(classifyCoreFailureJobs([
+    {...failed('core-lint-types-build'),steps:[{name:'TypeScript check',conclusion:'failure'}]},
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'SOURCE_OR_PREFLIGHT');
+  // No completed source job is not evidence of a source defect.
+  assert.equal(classifyCoreFailureJobs([
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'UNVERIFIED');
+  assert.equal(classifyCoreFailureJobs([
+    {name:'core-lint-types-build',conclusion:'skipped'},
+    failed('hh-specialist'),failed('hh-merge-check')
+  ]),'UNVERIFIED');
+  assert.equal(classifyCoreFailureJobs([
+    green('core-lint-types-build'),failed('hh-specialist')
+  ]),'UNVERIFIED');
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
@@ -931,8 +960,8 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-specialist'),
     fail('hh-merge-check')]),'SPECIALIST_FAILED',
     'specialist failure must not reserve ESLint-only Repair Worker');
-  // Real #3235 run 41574864666 had no classify-change job: green Core,
-  // failed hh-specialist (PRODUCTION_BASE_CHANGED), red dependent merge gate.
+  // Real #3235 Core run: green source build, no classify-change, red
+  // Specialist (PRODUCTION_BASE_CHANGED) and dependent merge gate.
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
     fail('hh-specialist'),fail('hh-merge-check')]),'SPECIALIST_FAILED');
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
@@ -1100,16 +1129,17 @@ test('saturated Actions capacity defers new conflict Repair dispatch',async()=>{
   assert.equal(dispatched,0);
 });
 
-test('PR #3235 base-changed Specialist cannot mint source Repair authorization',async()=>{
+test('PR #3235 production-base Specialist failure cannot mint a source Repair receipt',async()=>{
  const {classifyCoreFailureJobs,recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
  const jobs=[
   {name:'core-lint-types-build',conclusion:'success'},
-  {name:'hh-specialist',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-specialist',conclusion:'failure',steps:[
+    {name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
   {name:'hh-merge-check',conclusion:'failure'}
  ];
  assert.equal(classifyCoreFailureJobs(jobs),'SPECIALIST_FAILED');
  let writes=0;
- const gh={rest:{issues:{listComments:async()=>{throw Error('not needed');},
+ const gh={rest:{issues:{listComments:async()=>{throw Error('should not read');},
   createComment:async()=>{writes++}}}};
  const result=await recordRepairHandoff(gh,'andylitvinov-design','books',
   {number:3235,head:{sha:'a'.repeat(40)},labels:[]},
@@ -1265,11 +1295,28 @@ test('interrupted Core recovery allocates a runner only to eligible first-attemp
  const source=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  const job=source.split('  recover-interrupted-core:')[1].split('    runs-on:')[0];
  assert.match(job,/github\.event\.workflow_run\.run_attempt == 1/);
- for(const result of ['cancelled','timed_out','startup_failure','failure']) assert.ok(job.includes(result));
+ // Only explicit infrastructure interruptions reserve the recovery runner.
+ // Generic Core failure may be a source/contract regression and must not
+ // spawn another Actions runner before the trusted failure classifier proves it.
+ for(const result of ['timed_out','startup_failure']) assert.ok(job.includes(result));
+ assert.doesNotMatch(job,/['"](?:cancelled|failure)['"]/,'new-HEAD cancellation and generic failed Core jobs do not reserve recovery runners');
  assert.match(job,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
  assert.match(job,/github\.event\.workflow_run\.status == 'completed'/);
 });
 
+test('Core with empty PR links is still the genuine exact-source CI run',()=>{
+  const {coreRunForCurrentPR}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const current=pr(77);
+  const run={name:'HH PR core release gate',event:'pull_request',
+    path:'.github/workflows/hh-pr-core-release.yml@refs/pull/77/merge',
+    repository:{full_name:'andylitvinov-design/books'},
+    head_repository:{full_name:'andylitvinov-design/books'},
+    head_branch:current.head.ref,head_sha:current.head.sha,pull_requests:[]};
+  assert.equal(coreRunForCurrentPR(run,current),true);
+  assert.equal(coreRunForCurrentPR({...run,head_sha:'a'.repeat(40)},current),false);
+  assert.equal(coreRunForCurrentPR({...run,head_repository:{full_name:'other/repo'}},current),false);
+  assert.equal(coreRunForCurrentPR({...run,path:'.github/workflows/other.yml'},current),false);
+});
 test('fresh environment failures are not source-repair diagnoses',()=>{
  const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
  const gate={name:'hh-core-verified',conclusion:'failure'};

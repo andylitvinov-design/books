@@ -202,13 +202,13 @@ function classifyCoreFailureJobs(jobs) {
   // policy-green. A red present legacy Core must still fail closed.
   const coreVerified=core?.conclusion==='success' ||
     (core===undefined&&byName.has('hh-merge-check'));
-  // Modern unified Core omits classify-change. A green real build plus the
-  // unified merge gate proves that source checks passed, even if Specialist
-  // rejects a production-base advancement. Never send it to source Repair.
-  const modernUnified=scope===undefined && byName.has('hh-merge-check');
-  const sourceGreen=(scope?.conclusion==='success' || modernUnified) &&
-    (build?.conclusion==='success' ||
-      (scope?.conclusion==='success' && build?.conclusion==='skipped')) &&
+  // Modern Core no longer emits classify-change / hh-core-verified.
+  // A successful real source build plus both modern gates proves source success.
+  const modernCore=scope===undefined && core===undefined &&
+    byName.has('hh-merge-check') && byName.has('hh-specialist') &&
+    build?.conclusion==='success';
+  const sourceGreen=(scope?.conclusion==='success'||modernCore) &&
+    (build?.conclusion==='success' || build?.conclusion==='skipped') &&
     coreVerified;
   // Do not consume a deterministic ESLint source-writing slot for a verified
   // specialist/policy failure. Independent Specialist checks still determine
@@ -234,6 +234,10 @@ function classifyCoreFailureJobs(jobs) {
     const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
     return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
   })) return 'CI_INFRA_OR_ENVIRONMENT';
+  // A red Specialist/aggregate without a completed source job is insufficient
+  // evidence for privileged source repair.
+  if(failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
+    return 'UNVERIFIED';
   if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
   return 'UNVERIFIED';
 }
@@ -332,8 +336,9 @@ async function ensureQueueLabel(github, owner, repo, pr, name, description, colo
 }
 
 async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
-  // Refuse aggregate-only or moved-base failures even on a direct invocation.
-  // Do not recover stale signed receipts without a failed source Core job.
+  // Exact-HEAD infrastructure/policy failures must not mint or recover a
+  // source-writing receipt. In particular, PRODUCTION_BASE_CHANGED is not
+  // evidence that a code repair is possible.
   if(classifyCoreFailureJobs(jobs)!=='SOURCE_OR_PREFLIGHT' ||
      !Array.isArray(jobs) || !jobs.some(j=>
        ['core-lint-types-build','hh-core-verified'].includes(j.name) &&
@@ -384,11 +389,20 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 }
 
 function coreRunForCurrentPR(r,pr) {
-  // The run's head_sha can be GitHub's synthetic merge commit, not PR HEAD.
-  return r?.name===CORE_NAME && r.head_branch===pr.head.ref &&
-    r.event==='pull_request' && (r.pull_requests||[]).some(p=>
-      p.number===pr.number && p.head?.sha===pr.head.sha &&
-      p.head?.ref===pr.head.ref);
+  // GitHub can report a genuine PR Core run with pull_requests:[] even on
+  // its exact source SHA. Do not misclassify it as missing CI: require the
+  // trusted workflow, source repo/ref and exact HEAD, never just the branch.
+  if(r?.name!==CORE_NAME||r.head_branch!==pr.head.ref||
+     r.event!=='pull_request'||!Array.isArray(r.pull_requests))return false;
+  if(r.pull_requests.length===0)
+    return r.head_sha===pr.head.sha &&
+      r.repository?.full_name==='andylitvinov-design/books' &&
+      r.head_repository?.full_name==='andylitvinov-design/books' &&
+      r.path?.split('@')[0]==='.github/workflows/hh-pr-core-release.yml';
+  // Synthetic PR merge SHA must be independently proven to have this
+  // source SHA as its second parent by verifyCoreRunOnExactHead().
+  return r.pull_requests.some(p=>p.number===pr.number &&
+    p.head?.sha===pr.head.sha&&p.head?.ref===pr.head.ref);
 }
 
 function hasActiveLease(comments, headSha, now) {

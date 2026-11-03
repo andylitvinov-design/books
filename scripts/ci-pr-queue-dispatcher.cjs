@@ -140,7 +140,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
   workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},
-  ciCoreConfirmed:0,ciWakeEscalated:0,ciWakePending:0,
+  ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,
+  ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
@@ -311,6 +312,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     const key=observed.state||'CI_WAKE_RECONCILE_UNVERIFIED';
     summary.ciWakeOutcomes[key]=(summary.ciWakeOutcomes[key]||0)+1;
     if(key==='CI_CORE_CONFIRMED')summary.ciCoreConfirmed++;
+    else if(key==='CI_CORE_QUEUED')summary.ciCoreQueued++;
+    else if(key==='CI_CORE_RUNNING')summary.ciCoreRunning++;
+    else if(key==='CI_CORE_WAITING_RUNNER')summary.ciCoreWaitingRunner++;
     else if(key==='CI_WAKE_UNDELIVERED')summary.ciWakeEscalated++;
     else summary.ciWakePending++;
     blocked(key);
