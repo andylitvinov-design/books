@@ -89,6 +89,15 @@ export function githubReader(repo, token, transport = fetch) {
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    // PR event payloads may retain the base SHA from when the PR was opened.
+    // Read the actual protected target ref, not pulls/:number.base.sha.
+    target: async () => {
+      const refs = await get('/git/matching-refs/heads/' + TARGET);
+      const exact = Array.isArray(refs) ? refs.filter(ref =>
+        ref?.ref === 'refs/heads/' + TARGET && /^[0-9a-f]{40}$/.test(ref.object?.sha || '')) : [];
+      if (exact.length !== 1) throw Error('PRODUCTION_TARGET_REF_UNAVAILABLE');
+      return exact[0].object.sha;
+    },
     compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
 }
@@ -261,18 +270,26 @@ export async function verify(api,ctx,files,options={}) {
   const approvedBaseChanges = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
-    if (!requireCurrentBase || live.base.sha === ctx.base) return;
+    if (!requireCurrentBase) return;
+    // GitHub's pull_request.base.sha is an event/PR snapshot and can lag the
+    // protected branch after a verified merge checkout has been created.
+    // Compare against the actual production ref while keeping HEAD exact.
+    const liveBaseSha = typeof api.target === 'function' ? await api.target() : live.base.sha;
+    if (!/^[0-9a-f]{40}$/.test(liveBaseSha)) {
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+    }
+    if (liveBaseSha === ctx.base) return;
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
-    if (!approvedBaseChanges.has(live.base.sha)) {
-      // Compare the exact tested base with the *current* PR base. Incomplete,
-      // unrelated, inaccessible or security-sensitive changes remain blocked.
-      const diff = await api.compare(ctx.base, live.base.sha);
-      if (!safeDocumentationAdvance(diff, ctx.base, live.base.sha, changed)) {
+    if (!approvedBaseChanges.has(liveBaseSha)) {
+      // Only a complete, ancestry-proven, documentation-only target advance
+      // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
+      const diff = await api.compare(ctx.base, liveBaseSha);
+      if (!safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed)) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
-      approvedBaseChanges.add(live.base.sha);
+      approvedBaseChanges.add(liveBaseSha);
     }
   }
   await verifyCurrentBase(pr);
