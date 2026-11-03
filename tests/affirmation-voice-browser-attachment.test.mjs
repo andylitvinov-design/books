@@ -79,12 +79,15 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   for(const requirement of ['tracks.includes("video")','tracks.includes("audio")','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
 });
 
-test("post-edit consent reset is checked on the mounted inline Voice Studio",()=>{
+test("post-edit consent reset is checked after entering custom narration text",()=>{
   const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
   const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
-  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',studio);
-  assert.ok(panel>=0&&studio>panel&&consent>studio,
-    "mount the real voice studio before checking its current consent control");
-  assert.ok(source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent)>consent,
-    "a changed phrase must require fresh, explicit consent in the currently mounted studio");
+  const custom=source.indexOf('await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',studio);
+  const fill=source.indexOf('await studio.locator("textarea").fill(customText)',custom);
+  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',fill);
+  const unchecked=source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent);
+  const disabled=source.indexOf('await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
+  const grant=source.indexOf('await studioConsent.check()',disabled);
+  assert.ok(panel>=0&&studio>panel&&custom>studio&&fill>custom&&consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
+    "enter custom text, prove consent starts unchecked and generation is disabled, then explicitly grant consent");
 });
