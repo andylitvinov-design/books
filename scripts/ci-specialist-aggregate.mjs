@@ -411,7 +411,7 @@ export async function verify(api,ctx,files,options={}) {
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
+    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path), pr.head.ref)
       .filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
