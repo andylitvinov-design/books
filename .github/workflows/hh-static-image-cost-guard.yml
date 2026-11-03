@@ -15,6 +15,9 @@ on:
       - "components/yggdrasil-program-landing.tsx"
       - "components/temple-studies.tsx"
       - "components/core-service-detail.tsx"
+      # Public MyTube media cards use the same pinned image pipeline.
+      - "components/video-discovery.tsx"
+      - "app/[locale]/mytube/page.tsx"
       - "next.config.ts"
       - "package.json"
   push:
@@ -32,6 +35,9 @@ on:
       - "components/yggdrasil-program-landing.tsx"
       - "components/temple-studies.tsx"
       - "components/core-service-detail.tsx"
+      # Public MyTube media cards use the same pinned image pipeline.
+      - "components/video-discovery.tsx"
+      - "app/[locale]/mytube/page.tsx"
       - "next.config.ts"
       - "package.json"
       # Keep shared caches fresh on the exact production input changes.
