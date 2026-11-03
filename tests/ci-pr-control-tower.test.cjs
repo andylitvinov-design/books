@@ -274,14 +274,16 @@ test('source repair is allowed during ordinary CI overload but CI bootstrap is n
  assert.equal(r.dispatchAccepted,1);assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
  assert.equal(r.blocked.CI_QUEUE_BUSY,1);
 });
-test('separate Repair PRs do not deduplicate each other and stacked parents remain blocked',async()=>{
+test('separate Repair PRs do not deduplicate each other and stacked parents proceed safely',async()=>{
  const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,2);
  const child=pr(3,'repair',{base:{ref:'branch-1'}});
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
- assert.equal(y.dispatchAccepted,0);
+ assert.equal(y.dispatchAccepted,1);
+  assert.equal(x.calls.dispatched[0].inputs.pr_number,'1');
+  assert.ok(x.calls.reserved.every(item=>item.issue_number===1));
 });
 test('resolved conflict label is cleared after two consistent SHA/base reads',async()=>{
  const baseSha='b'.repeat(40),clean=pr(92,'conflict',{
@@ -693,8 +695,8 @@ test('exact-HEAD conflict receipt is idempotent and does not block a source work
  assert.equal(f.calls.dispatched.length,1);
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'89');
  const same=fixture([dirty],{comments:{88:[{
-  body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
- }]}});
+   ...proof(),body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
+  }]}});
  const second=await run({github:same.github,core:core(),context,now:NOW,
   capacityFn:same.capacityFn});
  assert.equal(second.manualConflictHandoffs,0);
@@ -939,7 +941,7 @@ test('unknown capacity continues to reject normal source writes',async()=>{
 test('duplicate exact-HEAD conflict handoff remains idempotent with no runners',async()=>{
  const dirty=pr(88,'conflict',{mergeable:false,mergeable_state:'dirty'});
  const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
- const f=fixture([dirty],{comments:{88:[{body:marker}]}});
+ const f=fixture([dirty],{comments:{88:[{...proof(),body:marker}]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,
   capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
  assert.equal(r.manualConflictHandoffs,0);
@@ -1326,5 +1328,56 @@ test('red trusted Specialist CI contract is routed to release policy, never prod
  assert.equal(result.policyReclassified,1);
  assert.equal(result.dispatchAccepted,0);
  assert.deepEqual(changes,[['add','hh:release-gate-review'],['remove','hh:repair-needed']]);
+ assert.equal(f.calls.dispatched.length,0);
+});
+
+// Regression of the verified 2026-11-03 Watchdog #3082/#3257 blockers.
+test('DIRTY source-only hint without source proof is handed to Conflict Repair during runner outage',async()=>{
+ const dirty=pr(3257,'repair',{mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([dirty]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:async()=>({known:false,reason:'RUNNERS_UNVERIFIED'})});
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(r.blocked.SOURCE_PROOF_MISSING,undefined);
+ assert.equal(r.blocked.CAPACITY_UNVERIFIED,undefined);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.match(f.calls.reserved[0].body,/HH_CONTROL_CONFLICT_HANDOFF_V1/);
+ assert.ok(f.calls.labels.some(x=>x.issue_number===3257&&x.labels.includes('hh:repair-manual')));
+ assert.ok(f.calls.removed.some(x=>x.issue_number===3257&&x.name==='hh:repair-needed'));
+});
+test('stacked DIRTY parent links dependent child, and never mutates child branch',async()=>{
+ const parent=pr(3082,'repair',{mergeable:false,mergeable_state:'dirty',
+   head:{ref:'feat/parent',sha:SHA,repo:{full_name:'andylitvinov-design/books'}}});
+ const child=pr(3103,'repair',{base:{ref:'feat/parent',sha:SHA},labels:[]});
+ const f=fixture([child,parent]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(r.dependentPrsLinked,1);
+ assert.equal(r.blocked.STACKED_PARENT,undefined);
+ assert.match(f.calls.reserved[0].body,/Dependent open PRs: #3103 HEAD /);
+ assert.ok(f.calls.reserved.every(x=>x.issue_number===3082));
+ assert.ok(f.calls.labels.every(x=>x.issue_number===3082));
+ assert.ok(f.calls.removed.every(x=>x.issue_number===3082));
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('stacked parent with signed exact-HEAD source proof starts only parent Repair Worker',async()=>{
+ const parent=pr(3082,'repair',{
+   head:{ref:'feat/parent',sha:SHA,repo:{full_name:'andylitvinov-design/books'}}});
+ const child=pr(3103,'repair',{base:{ref:'feat/parent',sha:SHA},labels:[]});
+ const f=fixture([child,parent],{comments:{3082:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1);
+ assert.equal(r.blocked.STACKED_PARENT,undefined);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'3082');
+ assert.ok(f.calls.reserved.every(x=>x.issue_number===3082));
+});
+test('forged source-free conflict marker cannot suppress signed manual handoff',async()=>{
+ const dirty=pr(44,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
+ const f=fixture([dirty],{comments:{44:[{body:marker,user:{login:'untrusted'}}]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(f.calls.reserved.length,1);
  assert.equal(f.calls.dispatched.length,0);
 });

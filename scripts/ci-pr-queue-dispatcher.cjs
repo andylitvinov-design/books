@@ -137,7 +137,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
-  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,conflictQueueReleased:0,unconfirmedHandoffs:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,dependentPrsLinked:0,
+  conflictQueueReleased:0,unconfirmedHandoffs:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
   policyReclassified:0,wouldPolicyReclassify:0,
@@ -274,18 +275,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
   const worker=WORKFLOWS[task.lane];
-  const listed=production.find(pr=>pr.number===task.pr_number);
-  const potentialConflict=task.lane==='conflict'||
-    listed?.labels?.some(l=>l.name==='hh:conflict-repair-needed');
-  if(!potentialConflict){
-   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
-   const permission=admission(task.lane,capacity);
-   if(permission!=='ADMIT'){blocked(permission);continue;}
-  }
-  // Distinct PRs may share a source ref, so a PR lease alone is insufficient.
-  if(prs.some(pr=>pr.number!==task.pr_number&&pr.base?.ref===task.head_ref)){
-   blocked('STACKED_PARENT');continue;
-  }
+  // A child based on this branch must not strand its parent. The trusted
+  // executor receives this link, but never mutates or retargets the child.
+  const dependentPrs=prs.filter(pr=>pr.number!==task.pr_number&&
+    pr.state==='open'&&pr.base?.ref===task.head_ref&&
+    pr.head?.repo?.full_name===REPO&&Number.isSafeInteger(pr.number)&&
+    SHA.test(pr.head?.sha||'')).map(pr=>({
+      number:pr.number,head_sha:pr.head.sha
+    }));
+  // A shared *source* ref would permit two PRs to race the same branch.
   if(prs.some(pr=>pr.number!==task.pr_number&&pr.state==='open'&&
      pr.head?.repo?.full_name===REPO&&pr.head?.ref===task.head_ref)){
    blocked('SHARED_HEAD_BRANCH');continue;
@@ -430,8 +428,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
    continue;
   }
-  const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty'&&
-    (task.lane==='conflict'||fresh.labels?.some(l=>l.name==='hh:conflict-repair-needed'));
+  // A live, GitHub-verified DIRTY conflict takes precedence over a historical
+  // source label: it is safe to hand off, never to grant a source write.
+  const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty';
   if(isVerifiedDirty){
    // Conflicts cannot be repaired by the ESLint worker. Hand off once per
    // exact HEAD, then retire the queue labels under a manual owner blocker.
@@ -474,7 +473,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      return false;
     }
    };
-   if(comments.some(c=>String(c.body||'').includes(marker))){
+   if(comments.some(c=>trustedControlComment(c)&&String(c.body||'').includes(marker))){
     blocked('CONFLICT_ALREADY_HANDED_OFF');
     await releaseManualQueue();
     continue;
@@ -489,22 +488,29 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      body:marker+'\nConflict repair task for the existing Chat/Codex Conflict Repair lane. '+
       'Verified DIRTY against '+PROD+' at exact HEAD '+task.head_sha+'. '+
       'Resolve source conflicts in the same PR branch and rerun required CI. '+
+      (dependentPrs.length?'Dependent open PRs: '+
+       dependentPrs.map(child=>'#'+child.number+' HEAD '+child.head_sha.slice(0,12)).join('; ')+
+       '. Preserve branches and ancestry; reconcile every child only after parent repair/merge and new CI. ':'')+
       'Handoff is NOT a source commit, a completed repair or approval to merge.'
     }));
-    summary.manualConflictHandoffs++;
-    log('CONFLICT_TO_CODEX_QUEUE #'+task.pr_number+' '+task.head_sha.slice(0,12));
-    await releaseManualQueue();
+    const released=await releaseManualQueue();
+    if(released){
+     summary.manualConflictHandoffs++;
+     summary.dependentPrsLinked+=dependentPrs.length;
+     log('CONFLICT_TO_CODEX_QUEUE #'+task.pr_number+' '+task.head_sha.slice(0,12)+
+       ' dependents='+dependentPrs.map(child=>'#'+child.number).join(','));
+    }else blocked('CONFLICT_HANDOFF_RECEIPT_ONLY');
    }catch(error){
     blocked('CONFLICT_HANDOFF_UNAVAILABLE');
     log('Conflict handoff #'+task.pr_number+': '+error.message);
    }
    continue;
   }
-  if(potentialConflict){
-   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
-   const permission=admission(task.lane,capacity);
-   if(permission!=='ADMIT'){blocked(permission);continue;}
-  }
+  // Capacity is a source-writing gate, not a metadata-only conflict handoff
+  // gate. The manual owner queue must progress during runner saturation.
+  if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
+  const permission=admission(task.lane,capacity);
+  if(permission!=='ADMIT'){blocked(permission);continue;}
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&(!hasVerifiedSourceHandoff(comments,task.head_sha)||
