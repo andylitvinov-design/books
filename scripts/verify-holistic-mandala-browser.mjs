@@ -705,7 +705,7 @@ const runEngine = async ([engine, browserType]) => {
           {timeout:15000});
         const themeDisclosure=quick.locator("[data-video-theme-advanced]");
         assert.equal(await themeDisclosure.getAttribute("open"),null,
-          "the detailed six visual topics are accessible but collapsed under the four easy goals");
+          "the detailed six visual topics are accessible but collapsed under the five compact goals");
         await themeDisclosure.locator("summary").click();
         await expect(themeDisclosure).toHaveAttribute("open","");
         await quick.locator('[data-video-quick-theme="money"]').click();
@@ -2214,8 +2214,8 @@ const runEngine = async ([engine, browserType]) => {
           const topicPanel=page.locator("[data-video-director-topic-controls]");
           await auto.waitFor({state:"visible",timeout:12000});
           await topicPanel.locator("[data-auto-video-input]").waitFor({state:"visible",timeout:12000});
-          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),4,
-            "four high-level goals are individually selectable");
+          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),5,
+            "five high-level goal pills are individually selectable");
           await goalPanel.locator('[data-auto-video-category="strength"]').click();
           assert.equal(await goalPanel.locator("[data-auto-video-goal]").count(),6,
             "six inline contextual subtopics, no obligatory 49-question intake");
