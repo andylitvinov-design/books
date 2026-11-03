@@ -2,7 +2,6 @@ name: Release re-audit
 on:
   pull_request:
     paths:
-      - '.github/workflows/release-reaudit.yml'
       - 'scripts/verify-release-reaudit.mjs'
       - 'scripts/about-player-hydration-probe.mjs'
       - 'components/psychic-alchemy-intro-video.tsx'
