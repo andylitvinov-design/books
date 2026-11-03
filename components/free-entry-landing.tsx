@@ -4,9 +4,13 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "luci
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
+import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
+import { SiteVideoPlayer } from "@/components/site-video-player";
+import { getServiceVideoMedia } from "@/data/service-video-library";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
-import { PersonalTestimonials } from "@/components/personal-testimonials";
+import { PersonalTestimonials, locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
 
@@ -342,6 +346,48 @@ const copy = {
   },
 } as const;
 
+const situationVideoStory = {
+  en: {
+    eyebrow: "VIDEO · MEET ANDREY",
+    title: "How a personal express review works",
+    lead: "I look at one question you bring — a life situation, work, relationships or everyday wellbeing. Together with your short description, I consider what seems difficult, which resources may help and what you might explore next.",
+    takeaway: "You receive personal written observations, not an automated test, appointment or medical diagnosis.",
+    recording: "The existing recording introduces how I choose an approach. It is a general introduction, not yet a video made specifically about this free review.",
+    audio: "Andrey's introduction · English audio",
+    storiesEyebrow: "REAL CLIENT VIDEOS",
+    storiesTitle: "Three real experiences with my work",
+    storiesLead: "Original videos about other personal sessions and approaches. They are not reviews of this exact free service.",
+    enAudio: "English audio", ruAudio: "Russian audio",
+    storiesNote: "These are individual experiences, not guaranteed or typical results, and not medical evidence.",
+  },
+  ru: {
+    eyebrow: "ВИДЕО · ЗНАКОМСТВО С АНДРЕЕМ",
+    title: "Что такое личная экспресс-диагностика",
+    lead: "Я лично рассматриваю один ваш вопрос — ситуацию, работу, отношения, энергию или повседневное самочувствие. С помощью короткого описания мы уточняем основную сложность, возможные ресурсы и направление следующего шага.",
+    takeaway: "Вы получаете личный письменный взгляд, а не автоматический тест, запись на приём или медицинский диагноз.",
+    recording: "В доступном видео я рассказываю, как выбираю подход к работе. Это общее знакомство, отдельное видео именно об этой диагностике ещё не записано.",
+    audio: "Видео Андрея · русский язык",
+    storiesEyebrow: "НАСТОЯЩИЕ ВИДЕООТЗЫВЫ",
+    storiesTitle: "Три истории о работе со мной",
+    storiesLead: "Реальные отзывы о разных личных сессиях и подходах, не обещания результата этой бесплатной услуги.",
+    enAudio: "Аудио на английском", ruAudio: "Аудио на русском",
+    storiesNote: "Опыт каждого индивидуален; результаты не гарантированы, отзывы не доказывают лечебного эффекта.",
+  },
+  es: {
+    eyebrow: "VÍDEO · CONOCE A ANDREY",
+    title: "¿En qué consiste la revisión personal exprés?",
+    lead: "Analizo personalmente una pregunta que quieras compartir: una situación, el trabajo, las relaciones o tu bienestar cotidiano. A partir de una breve descripción, exploramos el reto central, los recursos y un posible siguiente paso.",
+    takeaway: "Recibirás observaciones personales por escrito, no una prueba automática, una cita ni un diagnóstico médico.",
+    recording: "Este vídeo existente presenta mi enfoque de alquimia psíquica. Es una introducción general, no un vídeo específico sobre la revisión exprés gratuita.",
+    audio: "Presentación de Andrey · audio en español",
+    storiesEyebrow: "TESTIMONIOS REALES EN VÍDEO",
+    storiesTitle: "Tres experiencias reales de clientes",
+    storiesLead: "Vídeos sobre otros formatos de trabajo personal, no sobre este servicio gratuito. El audio original es en inglés; los títulos están traducidos.",
+    enAudio: "Audio original en inglés", ruAudio: "Audio original en ruso",
+    storiesNote: "Son experiencias personales, no resultados típicos o garantizados ni evidencia de eficacia médica.",
+  },
+} as const;
+
 const finalCopy = {
   en: {
     tests: { title: "Not sure which test to take?", lead: "Leave a contact. We’ll suggest a simple starting point." },
@@ -374,6 +420,23 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
   const final = finalCopy[locale][kind];
+  // Existing approved, already-published introductions only. Dedicated express-review
+  // scripts remain drafts; no HeyGen render, upload or publication is implied.
+  const situationVideo = kind !== "situation" ? null : locale === "es" ? {
+    video: {
+      youtubeId: "",
+      heygenId: "2c251709aba74fd96ae8be43257a080b",
+      language: "es" as const,
+      title: "Mi enfoque de la alquimia psíquica",
+      durationSeconds: 31,
+    },
+    poster: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
+  } : getServiceVideoMedia("overview", locale);
+  const featuredReviewVideos = kind !== "situation" ? [] : locale === "ru"
+    ? [testimonialVideos.ru[4], testimonialVideos.ru[1], testimonialVideos.ru[3]]
+    : testimonialVideos[locale].slice(0, 3);
+
+
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind} data-public-visual-landing="free">
@@ -384,7 +447,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           <span aria-hidden="true">/</span><span>{common.free}</span>
         </nav>
 
-        <section className={[styles.hero, kind === "dao" ? styles.daoHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
+        <section className={[styles.hero, kind === "dao" ? styles.daoHero : "", kind === "situation" ? styles.situationHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
             <span className={styles.badge}>{common.free}</span>
@@ -402,7 +465,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={"#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
               <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
@@ -412,6 +475,23 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
           </figure>
         </section>
+
+        {kind === "situation" && situationVideo ? (
+          <section className={styles.reviewIntro} data-free-review-intro-video data-intro-audio-language={locale}
+            aria-labelledby="free-review-video-title">
+            <div className={styles.reviewIntroCopy}>
+              <p className={styles.sectionLabel}>{situationVideoStory[locale].eyebrow}</p>
+              <h2 id="free-review-video-title">{situationVideoStory[locale].title}</h2>
+              <p className={styles.reviewIntroLead}>{situationVideoStory[locale].lead}</p>
+              <p className={styles.reviewIntroTakeaway}>{situationVideoStory[locale].takeaway}</p>
+            </div>
+            <div className={styles.reviewIntroMedia}>
+              <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal fallbackPoster={situationVideo.poster} />
+              <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].audio}</p>
+              <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].recording}</p>
+            </div>
+          </section>
+        ) : null}
 
         <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
@@ -430,6 +510,32 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             </div>
           </div>
         </section>
+
+        {kind === "situation" ? (
+              <section className={styles.reviewSocialProof} aria-labelledby="free-review-stories-title"
+                id="free-review-stories" data-featured-free-review-testimonials>
+                <header className={styles.reviewSocialProofHeader}>
+                  <p className={styles.sectionLabel}>{situationVideoStory[locale].storiesEyebrow}</p>
+                  <h2 id="free-review-stories-title">{situationVideoStory[locale].storiesTitle}</h2>
+                  <p>{situationVideoStory[locale].storiesLead}</p>
+                </header>
+                <div className={styles.reviewPreviewGrid}>
+                  {featuredReviewVideos.map((item) => (
+                    <article className={styles.reviewPreviewCard} key={item.id} data-testimonial-video-id={item.id}>
+                      <p className={styles.reviewAudioLabel}>
+                        {item.language === "ru" ? situationVideoStory[locale].ruAudio : situationVideoStory[locale].enAudio}
+                      </p>
+                      <SiteVideoPlayer video={{ youtubeId: item.id, title: item.title, language: item.language }}
+                        locale={locale} compact
+                        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id)
+                          ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+                          : undefined} />
+                    </article>
+                  ))}
+                </div>
+                <p className={styles.reviewStoryDisclaimer}>{situationVideoStory[locale].storiesNote}</p>
+              </section>
+        ) : null}
 
         {kind !== "dao" ? <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
@@ -460,27 +566,31 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </div>
         ) : null}
 
-        {kind === "situation" ? (
-          <details className={styles.fullQuestionnaire} data-optional-written-review>
-            <summary>{common.fullForm}</summary>
-            <FreeSituationReviewForm locale={locale} />
-          </details>
-        ) : null}
-
-        {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
-        {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
+        {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
+        {kind === "situation" ? <PersonalTestimonials locale={locale} variant="all" /> : null}
 
         <div className={styles.finalCaptureScene} data-free-visual-screen="final-capture">
           <div className={styles.miniScenePhoto}><Image src={images.hero} alt="" fill
             sizes="(max-width: 600px) 100vw, 36vw" /></div>
-        <CompactLeadCapture
-          locale={locale}
-          id={captureId}
-          serviceTitle={serviceTitles[kind]}
-          title={final.title}
-          lead={final.lead}
-          disclaimer={common.limitations}
-        />
+        {kind === "situation" ? (
+          <PersonalExpressEnquiry locale={locale} intro={
+            <p className={styles.captureHint}>{t.startLead}</p>
+          } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
+            <details className={styles.fullQuestionnaire} data-optional-written-review>
+              <summary>{common.fullForm}</summary>
+              <FreeSituationReviewForm locale={locale} />
+            </details>
+          </PersonalExpressEnquiry>
+        ) : (
+          <CompactLeadCapture
+            locale={locale}
+            id={captureId}
+            serviceTitle={serviceTitles[kind]}
+            title={final.title}
+            lead={final.lead}
+            disclaimer={common.limitations}
+          />
+        )}
         </div>
       </div>
     </main>
