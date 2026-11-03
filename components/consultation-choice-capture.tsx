@@ -43,9 +43,9 @@ const copy = {
       questions: "30-minute express consultation · €50",
     },
     serviceActions: {
-      session: "Book 60 min · €100",
+      session: "Request 60-min session · €100",
       free: "Start free drawing assessment",
-      questions: "Book 30 min · €50",
+      questions: "Request 30-min consultation · €50",
     },
     serviceMessages: {
       session: "I would like to book a paid personal session of 60 minutes for €100. Please confirm availability.",
@@ -95,9 +95,9 @@ const copy = {
       questions: "Экспресс-консультация 30 минут · €50",
     },
     serviceActions: {
-      session: "Записаться на 60 минут · €100",
+      session: "Заявка на сессию · 60 мин · €100",
       free: "Начать бесплатную диагностику",
-      questions: "Записаться на 30 минут · €50",
+      questions: "Заявка на консультацию · 30 мин · €50",
     },
     serviceMessages: {
       session: "хочу записаться на платную личную сессию 60 минут за €100. Подскажите доступное время.",
@@ -147,9 +147,9 @@ const copy = {
       questions: "Consulta exprés de 30 minutos · €50",
     },
     serviceActions: {
-      session: "Reservar 60 minutos · €100",
+      session: "Solicitar sesión · 60 min · €100",
       free: "Iniciar evaluación gratuita",
-      questions: "Reservar 30 minutos · €50",
+      questions: "Solicitar consulta · 30 min · €50",
     },
     serviceMessages: {
       session: "quisiera reservar una sesión personal de pago de 60 minutos por €100. Confirma la disponibilidad.",
@@ -275,8 +275,12 @@ export function ConsultationChoiceCapture({
       </div>
       {isPaidRequest ? (
         <ContactChannelChooser
+          // Remount on tariff switch: never reuse a consent, draft or saved receipt
+          // from the previous paid offer, including while a response is pending.
+          key={serviceChoice}
           locale={locale}
           whatsappUrl={whatsappUrl}
+          label={cta}
           publicServiceTitle={t.serviceOptions[serviceChoice]}
           className={styles.action}
           event="service_request_start"
