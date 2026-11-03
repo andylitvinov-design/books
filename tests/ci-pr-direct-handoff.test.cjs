@@ -40,3 +40,13 @@ test('legacy Watchdog fallback is disabled for direct handoff',()=>{
  assert.match(wake,/process\.env\.HH_DIRECT_HANDOFF_ENABLED==='true'/);
  assert.match(wake,/return 'DIRECT_HANDOFF_ACTIVE'/);
 });
+
+
+test('public Watchdog KPI never calls HTTP dispatch a verified execution',()=>{
+ const fs=require('node:fs');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(watchdog,/dispatch_requests_accepted:number\(report\.dispatchAccepted\)/);
+ assert.match(watchdog,/worker_dispatches:0/);
+ assert.match(watchdog,/HH_EXECUTION_RUNNER_V1/);
+ assert.doesNotMatch(watchdog,/worker_dispatches:number\(report\.dispatchAccepted\)/);
+});
