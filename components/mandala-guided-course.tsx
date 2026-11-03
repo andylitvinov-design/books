@@ -487,7 +487,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         <span>{f.contextLabel}</span>
         <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
           data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
-          disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);resetGeneratedMeditation();}}/>
+          disabled={disabled} onChange={event=>{
+            const next=event.currentTarget.value;
+            // WebKit may send a duplicate change/blur after the Generate click.
+            // A no-op must not revoke a newly approved exact-signature script.
+            if(next===keyDifficulty)return;
+            setKeyDifficulty(next);resetGeneratedMeditation();
+          }}/>
       </label></div>
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
       {safetyBlocked?<p role="alert" className={css.profileNotice}>{safetyMessage}</p>:
