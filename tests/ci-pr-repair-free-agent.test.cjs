@@ -2,7 +2,8 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
+ noSecretEnv,findFailureTarget,boundedSource
 }=require('../scripts/ci-pr-repair-free-agent.cjs');
 const SHA='a'.repeat(40);
 test('free model fixed and no paid model routing',()=>{
@@ -108,6 +109,47 @@ test('live catalog lookup fails closed before inference when unavailable',async(
   /FREE_AI_MODEL_CATALOG_UNAVAILABLE/);
  await assert.rejects(verifyFreeModelPrice({fetchImpl:async()=>({ok:true,json:async()=>({})})}),
   /FREE_AI_MODEL_PRICE_UNKNOWN/);
+});
+
+
+test('failed source assertion selects its literal read target, not the full PR',()=>{
+ const testFile='tests/public-coaching-discovery.test.mjs';
+ const source=[
+  "import test from 'node:test'",
+  "const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')",
+  "test('route',()=>{",
+  " const freeEntry=read('components/free-entry-landing.tsx')",
+  " assert.match(freeEntry,/\\/coaching\\/intake/)",
+  "})"
+ ].join('\n');
+ const log="TestContext.<anonymous> (file:///work/books/tests/public-coaching-discovery.test.mjs:5:9)";
+ const allowed=['components/other.tsx','components/free-entry-landing.tsx'];
+ assert.deepEqual(findFailureTarget(testFile,source,log,allowed),{
+  file:'components/free-entry-landing.tsx',test:testFile,line:5,
+  assertion:'assert.match(freeEntry,/\\/coaching\\/intake/)'
+ });
+ assert.equal(findFailureTarget(testFile,source,log,['components/other.tsx']),null);
+ assert.equal(findFailureTarget(testFile,source,'unrelated error',allowed),null);
+});
+test('oversized UI files are excerpted below free-model source budget',()=>{
+ const original='FILE START\n'+'middle'.repeat(8500)+'\nLINK TARGET END';
+ const result=boundedSource(original);
+ assert.equal(result.bounded,true);
+ assert.ok(Buffer.byteLength(result.content,'utf8')<=18000);
+ assert.match(result.content,/FILE START/);
+ assert.match(result.content,/LINK TARGET END/);
+ assert.ok(result.content.length<original.length);
+ assert.deepEqual(boundedSource('small'),{content:'small',bounded:false});
+});
+test('untrusted scoped test probes never receive free/paid or GitHub credentials',()=>{
+ const env=noSecretEnv({
+  PATH:'/usr/bin',CI:'true',REPAIR_SHA:SHA,
+  HH_OPENCODE_FREE_API_KEY:'free-key',
+  GITHUB_TOKEN:'ghp_123',OPENAI_API_KEY:'paid-key',
+  HH_AUTOMERGE_TOKEN:'owner-key',DATABASE_PASSWORD:'db',
+  OTHER_SECRET:'hidden',NORMAL:'keep'
+ });
+ assert.deepEqual(env,{PATH:'/usr/bin',CI:'true',REPAIR_SHA:SHA,NORMAL:'keep'});
 });
 
 test('CLI entrypoint awaits the async price-checked proposer',()=>{
