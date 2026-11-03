@@ -42,8 +42,20 @@ export function decideRoute(rows, classifier, sources) {
   if (!Array.isArray(rows) || !rows.length ||
       rows.some(r=>!r || typeof r.filename!=='string' || typeof r.status!=='string')) return 'FULL';
   const filenames = rows.map(r=>r.filename);
+  // Four exact Mobile Dock production files have trusted geometry/keyboard
+  // tests, full TypeScript source preflight and changed-file ESLint. The tests
+  // themselves are intentionally excluded from the diff allowlist.
+  const mobileDock = new Map([
+    ['app/[locale]/app/[[...path]]/workspace.css','M'],
+    ['app/[locale]/app/messages/messages-page.css','M'],
+    ['components/app/messages-bottom-navigation.jsx','M'],
+    ['lib/mobile-visual-bottom.mjs','M'],
+  ]);
   // Deletions/type-changes can alter release protection and never use the advisory lane.
   if (rows.some(r=>!ALLOWED_STATUS.has(r.status))) return 'FULL';
+  if (rows.length===mobileDock.size &&
+      rows.every(r=>r.status==='M' && mobileDock.get(r.filename)==='M') &&
+      [...mobileDock.keys()].every(path=>rows.some(r=>r.filename===path))) return 'DOCK';
   if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&

@@ -200,8 +200,12 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
     '["app/[locale]/app/messages/messages-page.css","M"]',
     '["components/app/messages-bottom-navigation.jsx","M"]',
     '["lib/mobile-visual-bottom.mjs","M"]',
-    '["tests/mobile-visual-dock.test.mjs","M"]',
   ]) assert.ok(s.includes(line), 'repeatable mobile dock change must use exact modified-file manifest: ' + line);
+  assert.ok(!s.includes('["tests/mobile-visual-dock.test.mjs","M"]'),
+    'the fast lane must never allow the PR to rewrite its own geometry test');
+  assert.ok(!s.includes('["tests/messages-iphone-keyboard-layout.test.mjs","M"]'),
+    'the fast lane must never allow the PR to rewrite its iPhone keyboard test');
+  assert.match(s, /run: node --test tests\/mobile-visual-dock\.test\.mjs tests\/messages-iphone-keyboard-layout\.test\.mjs/);
   const detect = s.indexOf('Detect exact Mobile Dock-only batch before costly IA work');
   const install = s.indexOf('      - run: npm ci --no-audit --no-fund');
   assert.ok(detect >= 0 && install > detect, 'dock scope must be proven before npm install or heavy IA checks');
