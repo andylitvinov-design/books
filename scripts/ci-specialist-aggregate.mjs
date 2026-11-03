@@ -427,7 +427,7 @@ export async function verify(api,ctx,files,options={}) {
     // scope prove this exact non-voice branch cannot execute it.
     const optionalSkipped = [...new Set([
       ...trustedConditionalJobs(files.base.get(run.path), pr.head.ref),
-      ...trustedConditionallyInapplicableJobs(files.base.get(run.path), pr),
+      ...trustedConditionallyInapplicableJobs(files.base.get(run.path), files.current.get(run.path), pr),
     ])].filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
