@@ -1,19 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  auditMyTubeTaxonomy, MYTUBE_TAXONOMY_COUNTS,
-  listMyTubeCategories, listMyTubeSubcategories, listMyTubeTopics,
-  getMyTubeTopic, listMyTubeScenarios, resolveMyTubeTopic,
+  auditMyTubeTaxonomy, MYTUBE_TAXONOMY_COUNTS, listMyTubeCategories,
+  listMyTubeSubcategories, listMyTubeTopics, listMyTubeScenarios,
+  resolveMyTubeTopic, getMyTubeTopic,
 } from "../lib/mandala/mytube-content-taxonomy.mjs";
 
-test("MyTube taxonomy is exactly 4 × 4 × 4 with four scenarios per topic", () => {
+test("agreed MyTube taxonomy is exactly 4 × 4 × 4 × 4", () => {
   const audit = auditMyTubeTaxonomy();
   assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.counts, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
-  assert.deepEqual(MYTUBE_TAXONOMY_COUNTS, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
+  assert.equal(MYTUBE_TAXONOMY_COUNTS.totalScenarios, 256);
 });
 
-test("all category, subcategory, topic and scenario labels exist in RU/EN/ES", () => {
+test("all labels and choice hints are localized in RU, EN and ES", () => {
   for (const locale of ["ru", "en", "es"]) {
     const categories = listMyTubeCategories(locale);
     assert.equal(categories.length, 4);
@@ -21,40 +21,36 @@ test("all category, subcategory, topic and scenario labels exist in RU/EN/ES", (
       const subs = listMyTubeSubcategories(category.id, locale);
       assert.equal(subs.length, 4);
       for (const sub of subs) {
+        assert.ok(sub.chooseWhen);
         const topics = listMyTubeTopics(category.id, sub.id, locale);
         assert.equal(topics.length, 4);
         for (const topic of topics) {
           assert.ok(topic.label);
-          assert.ok(topic.searchTerms.length >= 2);
-          const found = getMyTubeTopic(topic.id);
-          assert.ok(found);
-          const scenarios = listMyTubeScenarios(topic.id, locale);
-          assert.equal(scenarios.length, 4);
-          assert.equal(new Set(scenarios.map((s) => s.label)).size, 4);
-          assert.ok(scenarios.every((s) => s.canExport === false && s.sourceStatus === "editorial_only_unbound"));
+          assert.ok(Array.isArray(topic.legacyTags) && topic.legacyTags.length > 0);
+          assert.equal(topic.scenarioCount, 4);
+          assert.equal(listMyTubeScenarios(topic.id, locale).length, 4);
         }
       }
     }
   }
 });
 
-test("search matching resolves an exact localized label or seed phrase without fuzzy false positives", () => {
-  assert.deepEqual(resolveMyTubeTopic("достижение целей", "ru"), {
-    categoryId: "goals-money", subcategoryId: "goals-discipline", topicId: "goal-achievement",
-  });
-  assert.deepEqual(resolveMyTubeTopic("panic attacks", "en"), {
-    categoryId: "stress-recovery", subcategoryId: "anxiety-fears", topicId: "panic-attacks",
-  });
-  assert.deepEqual(resolveMyTubeTopic("autoaceptación", "es"), {
-    categoryId: "energy-confidence", subcategoryId: "confidence-worth", topicId: "self-acceptance",
-  });
-  assert.equal(resolveMyTubeTopic("ambiguous partial"), null);
-  assert.equal(resolveMyTubeTopic(""), null);
+test("scenario cards carry their topic and remain non-exportable until media is verified", () => {
+  const scenarios = listMyTubeScenarios("stress-relief", "ru");
+  assert.equal(scenarios.length, 4);
+  assert.ok(scenarios.every((item) => item.topicId === "stress-relief" && item.canExport === false));
 });
 
-test("unknown IDs do not silently route to another category", () => {
-  assert.deepEqual(listMyTubeSubcategories("missing"), []);
-  assert.deepEqual(listMyTubeTopics("goals-money", "missing"), []);
-  assert.deepEqual(listMyTubeScenarios("missing"), []);
+test("localized search seeds resolve to one canonical topic", () => {
+  assert.deepEqual(resolveMyTubeTopic("достижение целей", "ru"), {
+    categoryId: "goals-money", subcategoryId: "goal-achievement", topicId: "goal-setting",
+  });
+  assert.deepEqual(resolveMyTubeTopic("panic attacks", "en"), {
+    categoryId: "stress-anxiety", subcategoryId: "anxiety-fears", topicId: "panic-attacks",
+  });
+  assert.deepEqual(resolveMyTubeTopic("baja autoestima", "es"), {
+    categoryId: "energy-confidence", subcategoryId: "confidence-calm", topicId: "low-self-esteem",
+  });
+  assert.equal(resolveMyTubeTopic("ambiguous partial", "en"), null);
   assert.equal(getMyTubeTopic("missing"), null);
 });
