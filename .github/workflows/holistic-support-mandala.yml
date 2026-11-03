@@ -161,8 +161,11 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  # One first-attempt group per PR lets synchronize cancel only its obsolete HEAD.
+  # Manual reruns remain run-scoped; unrelated PRs never share a cancellation group.
+  group: >-
+    holistic-support-mandala-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
   focused-unit-types-build:
@@ -374,7 +377,7 @@ jobs:
   # the closest supported CI platform to iPhone Safari. Never mock a download.
   # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'codex/professional-growth-templates-20261031' || github.head_ref == 'fix/mandala-compact-goals-montage-20261103') }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'codex/professional-growth-templates-20261031' || github.head_ref == 'fix/mandala-compact-goals-montage-20261103') }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:
@@ -385,6 +388,9 @@ jobs:
       HH_VOICE_E2E_ENGINE: webkit
       # Test real WebKit native compositor rather than frozen headless media.
       HH_VOICE_E2E_HEADED: '1'
+      HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      # This CI-only PR keeps the consent-only WebKit check and encoded media gate.
+      HH_VOICE_SKIP_GUIDED_PRACTICES: ${{ startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -393,10 +399,24 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Reuse Next compiler output across exact-HEAD retries; every run still builds.
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - name: Install and build exact voice release candidate
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.
+      - name: Restore pinned Playwright WebKit browser
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/ms-playwright
+          key: hh-holistic-mandala-webkit-${{ runner.os }}-playwright-1.63.0
       - name: Install WebKit and real media decoders
         run: |
           mkdir -p "$RUNNER_TEMP/voice-playwright"
@@ -418,6 +438,9 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
           node scripts/verify-affirmation-voice-browser.mjs
+          # Exercise the actual mobile consent label with WebKit only.
+          HH_PRACTICES_BROWSER_ENGINE=webkit HH_PRACTICES_CONSENT_ONLY=1 \
+            node scripts/verify-practices-mobile-browser.mjs
           # Gate on the *actual* WebKit four-scene H264/AAC movie, not mock TTS.
           # Validate approved source IDs, scene order, motion, black gaps and audio.
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 \
