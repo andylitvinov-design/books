@@ -299,6 +299,9 @@ jobs:
                   queue_states:{
                     awaiting_core:number(report.ciWakePending??0),
                     core_confirmed:number(report.ciCoreConfirmed??0),
+                    core_workflow_queued:number(report.ciCoreQueued??0),
+                    core_runner_running:number(report.ciCoreRunning??0),
+                    core_waiting_runner:number(report.ciCoreWaitingRunner??0),
                     wake_undelivered:number(report.ciWakeEscalated??0),
                     parent_blocked:number(report.blocked?.STACKED_PARENT??0),
                     conflict_unverified:number(report.blocked?.CONFLICT_NOT_VERIFIED??0),
