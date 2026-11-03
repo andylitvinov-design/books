@@ -454,6 +454,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
@@ -463,6 +464,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
           HH_PR_NUMBER: ${{ github.event.pull_request.number }}
           HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -481,6 +483,14 @@ jobs:
           fi
           git show "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" > "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
           node "$RUNNER_TEMP/hh-ci-deterministic-eslint-repair.mjs"
+      - name: Upload verified ESLint autofix patch when no trigger-capable push token is configured
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-deterministic-eslint-autofix-${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/hh-deterministic-eslint-autofix.patch
+          retention-days: 3
+          if-no-files-found: ignore
   # Both GitHub production protection sources were read back on 2 November:
   # exactly hh-merge-check is required. Preserve Core+Specialist fail-closed
   # evidence while removing only redundant legacy wrapper runners.
