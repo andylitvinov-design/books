@@ -20,12 +20,12 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-input"));
  assert.ok(director.includes("data-auto-video-confirm"));
  assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
- assert.ok(director.includes("data-auto-video-goal={item.id}"));
+ assert.ok(director.includes("data-auto-video-topic={item.id}"));
  assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
  assert.ok(director.includes('scene.description[locale]'));
  assert.ok(director.includes('scene.tags.slice(0,3)'));
- assert.ok(director.includes("onClick={()=>chooseReadyGoal(item.id)}"));
- assert.ok(director.includes("goalId:selectedGoalId"));
+ assert.ok(director.includes("onClick={()=>chooseTaxonomyTopic(item.id)}"));
+ assert.ok(director.includes("taxonomyScenarios[index]?.label||option.label[locale]"));
  assert.ok(director.includes("onGoalChange(nextGoal)"));
  assert.ok(!studio.includes("<input data-video-quick-wish"));
  assert.ok(director.includes("onApply(chosen.id,length"),"confirmation applies real edited clips and stage durations");
@@ -67,10 +67,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/,
    "the same interactive goal controls move to the theme card; no second goal state");
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
- assert.match(director,/const videoGoalCategories=\[/);
+ assert.match(director,/listMyTubeCategories\(locale\)/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
- assert.match(director,/popularTopicOrder\[selectedCategoryId\]\.map/);
+ assert.match(director,/listMyTubeSubcategories\(selectedCategoryId,locale\)/);\n assert.match(director,/listMyTubeTopics\(selectedCategoryId,selectedSubcategoryId,locale\)/);\n assert.match(director,/data-auto-video-subcategory=\{item.id\}/);\n assert.match(director,/data-auto-video-topic=\{item.id\}/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
