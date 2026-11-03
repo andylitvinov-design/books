@@ -407,10 +407,11 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     if(editorDetails instanceof HTMLDetailsElement){
       editorDetails.open=true;
       setPersonalOpened(true);
-      window.requestAnimationFrame(()=>{
-        const editor=document.getElementById("personal-meditation");
-        (editor||editorDetails).scrollIntoView({behavior:"smooth",block:"start"});
-      });
+      // Scroll synchronously: a deferred smooth scroll can move Safari's page
+      // AFTER a visitor taps the next 'Create programme' control, swallowing
+      // that real tap while the on-screen button appears enabled.
+      // The editor details is already present and open at this point.
+      editorDetails.scrollIntoView({behavior:"instant",block:"start"});
     }
   }
   function createProgramme(){
