@@ -4,6 +4,7 @@ import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
@@ -167,9 +168,16 @@ export function MandalaAutoVideoDirector({
    allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
  const stageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
  const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,stageCaptions]);
+ const topicMediaCoverage=selectedTopicId?recommendMyTubeTopicStoryClips({
+   topicId:selectedTopicId,scenarioId:selectedScenarioId||null,scenes,
+   excludedMotifs:proposal?.excludedMotifs||[],
+ }):null;
+ const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
  const availableReplacements=stageClipIds.map(currentId=>
    montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
-     excludedMotifs:proposal?.excludedMotifs||[],limit:6}));
+     excludedMotifs:proposal?.excludedMotifs||[],limit:12})
+     .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0))
+     .slice(0,6));
  const editTimeline=(clipIds:readonly string[],durations:readonly number[],
    captions:readonly string[]=stageCaptions)=>{
    if(!chosen)return;
@@ -194,6 +202,18 @@ export function MandalaAutoVideoDirector({
    if(!availableReplacements[index]?.some(scene=>scene.id===nextId))return;
    const next=[...stageClipIds];next[index]=nextId;
    editTimeline(next,stageDurations);
+ };
+ // A prompt changed in the other shared editor must not leave a stale confirmation.
+ const timelineForTopic=(topicId:string,scenarioId:string|null,
+   recommended:ReturnType<typeof recommendAutoVideo>)=>{
+   const selection=recommendMyTubeTopicStoryClips({
+     topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,
+   });
+   if(!selection.dedicatedFourSceneReady||!recommended.presetId)return null;
+   const clipIds=selection.clipIds;
+   return {presetId:recommended.presetId,totalSeconds:recommended.durationSeconds,
+     clipIds,durations:allocateAdaptiveFilmTimeline(recommended.durationSeconds,clipIds)
+       .map(shot=>shot.durationSeconds),captions:["","","",""]};
  };
  // A prompt changed in the other shared editor must not leave a stale confirmation.
  const showProposal=Boolean(proposal&&proposalContext?.goal===goal&&
@@ -234,10 +254,13 @@ export function MandalaAutoVideoDirector({
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
+   const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes});
    setSelectedTopicId(topicId);setSelectedScenarioId("");
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
    setProposalContext({goal:label,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   setProposal(recommended);
+   setTimelineEdits(timelineForTopic(topicId,null,recommended));
  };
  const chooseTaxonomyScenario=(scenarioId:string)=>{
    const scenario=taxonomyScenarios.find(item=>item.id===scenarioId);if(!scenario)return;
@@ -246,9 +269,12 @@ export function MandalaAutoVideoDirector({
    const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
    onInvalidate?.();onGoalChange(nextGoal);
    const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic?.subcategory.id||""]||theme;
+   const recommended=recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes});
    setProposalContext({goal:nextGoal,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposal(recommended);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+   setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,scenarioId,recommended):null);
  };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <div className={css.goalChoices} role="group" aria-label={
@@ -317,14 +343,23 @@ export function MandalaAutoVideoDirector({
    </>:null}
    {selectedTopicId&&taxonomyScenarios.length===4?<div className={css.storyChoices} data-mytube-scenario-concepts>
      <p className={css.variantsTitle}>{locale==="ru"?"Четыре сюжетных подхода к выбранной теме":locale==="es"?"Cuatro enfoques narrativos para este tema":"Four story approaches for this topic"}</p>
-     {taxonomyScenarios.map((scenario,index)=><button key={scenario.id} type="button"
+     {taxonomyScenarios.map((scenario,index)=>{
+       const coverage=recommendMyTubeTopicStoryClips({topicId:selectedTopicId,
+         scenarioId:scenario.id,scenes,excludedMotifs:proposal?.excludedMotifs||[]});
+       return <button key={scenario.id} type="button"
        data-mytube-scenario={scenario.id} aria-pressed={selectedScenarioId===scenario.id}
        disabled={disabled} onClick={()=>chooseTaxonomyScenario(scenario.id)}>
        <span className={css.storyNumber}>{index+1}. {selectedScenarioId===scenario.id?<Check size={15} aria-hidden="true"/>:null}</span>
        <strong>{scenarioCardHeading[locale][index]} · {selectedTaxonomyTopic?.topic.label[locale]}</strong>
        <small>{scenario.creativeBrief}</small>
+       <small data-scenario-source-coverage={coverage.candidateCount}>
+         {locale==="ru"?`Подходящих видеофрагментов: ${coverage.candidateCount}; для монтажа нужно минимум 4`:
+          locale==="es"?`Clips relacionados: ${coverage.candidateCount}; se necesitan al menos 4`:
+          `Matching clips: ${coverage.candidateCount}; at least 4 required`}
+       </small>
        <small>{locale==="ru"?"Концепция сюжета; готовый видеоряд проверяется отдельно.":locale==="es"?"Concepto narrativo; el material de vídeo se verifica por separado.":"Story concept; matching footage is verified separately."}</small>
-     </button>)}
+     </button>;
+     })}
    </div>:null}
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
      <label htmlFor="auto-video-refine">{t.refine}</label>
@@ -360,6 +395,16 @@ export function MandalaAutoVideoDirector({
        <h4>{t.reason}: {chosen.label[locale]}</h4>
        <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
        <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
+       {topicMediaCoverage?<p className={css.notice} data-auto-video-topic-coverage
+         data-coverage-ready={topicMediaCoverage.dedicatedFourSceneReady?"true":"false"}>
+         {topicMediaCoverage.dedicatedFourSceneReady?
+           (locale==="ru"?"Подобраны 4 лицензированных видеофрагмента по выбранной теме. Сюжет и монтаж ещё требуют проверки.":
+             locale==="es"?"4 clips con licencia seleccionados por tema. Falta revisar la narrativa y el montaje.":
+               "4 licensed clips selected for this topic. Story and edit still need review."):
+           (locale==="ru"?`По теме найдено ${topicMediaCoverage.candidateCount} из 4 нужных видеофрагментов. Показан общий символический монтаж, а не готовый тематический сюжет.`:
+             locale==="es"?`Encontrados ${topicMediaCoverage.candidateCount} de 4 clips. Vista previa de montaje simbólico general, no un guion temático terminado.`:
+               `${topicMediaCoverage.candidateCount} of 4 topic-matched clips. Showing general symbolic montage, not a finished topic-specific video.`)}
+       </p>:null}
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
        <div className={css.storyChoices} role="group" aria-label={t.variants} data-auto-video-story-options>
