@@ -470,6 +470,9 @@ jobs:
           HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           set -euo pipefail
+          # Fetch the immutable event BASE explicitly; the exact-HEAD checkout
+          # is intentionally shallow and may not contain that commit yet.
+          git fetch --quiet --no-tags --depth=1 origin "$HH_BASE_SHA"
           # Bootstrap safety: this worker must already exist in the immutable
           # event BASE. Never execute the copy introduced by the candidate PR.
           if ! git cat-file -e "$HH_BASE_SHA:scripts/ci-deterministic-eslint-repair.mjs" 2>/dev/null; then
