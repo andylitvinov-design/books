@@ -413,8 +413,8 @@ test('profile-axis writer skip stays branch-conditional after exact one-line sel
     base.replace(oldPath,''),
     migrated.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
     migrated.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'"),
-    migrated.replace('permissions:\\n  contents: read','permissions:\\n  contents: write'),
-    migrated.replace('  workflow_dispatch:', '  schedule:'),
+    migrated.replace('permissions:\n  contents: read','permissions:\n  contents: write'),
+    migrated.replace("branches: ['codex/public-book-library', 'codex/holistic-intelligence-core-20261029']", "branches: ['main']"),
     migrated.replace(contract,"      - 'tests/unapproved.test.mjs'"),
   ]) assert.equal(optionalProfileWriterSkip(current(unsafe),branch),false,
     'unknown trigger/job/permissions changes stay fail-closed');
