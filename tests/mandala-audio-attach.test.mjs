@@ -153,7 +153,8 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
   assert.match(studio,/onClick=\{\(\)=>playQuickTrack\(id\)\}/);
-  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,"the recorder, not decoder preflight, begins scheduled audio");
   assert.match(studio,/startMovieSound\(attachedAudio,soundVolume\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1,"keep exactly one visible HTML audio player");
