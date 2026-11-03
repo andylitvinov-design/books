@@ -194,6 +194,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
           hasScript:el.getAttribute('data-guided-has-script'),
           meditationOpen:el.getAttribute('data-guided-meditation-open'),
           meditationClickCount:el.getAttribute('data-guided-meditation-click-count'),
+          focusResetCount:el.getAttribute('data-guided-focus-reset-count'),
           signatureMatch:el.getAttribute('data-guided-signature-match'),
           meditationReady:el.getAttribute('data-guided-meditation-ready'),
           committedLength:el.querySelector('[data-guided-generate-meditation]')?.getAttribute('data-guided-context-committed-length'),

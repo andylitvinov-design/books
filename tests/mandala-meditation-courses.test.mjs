@@ -110,6 +110,19 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
     "the exact signature remains observable for real WebKit failure diagnostics");
 });
 
+test("reselecting the same guided focus is idempotent, but new input invalidates the old approval",()=>{
+  const source=read("components/mandala-guided-course.tsx");
+  const state=source.slice(source.indexOf("const selectState="),source.indexOf("const selectVector="));
+  const vector=source.slice(source.indexOf("const selectVector="),source.indexOf("useEffect(()=>()=>{profileRequestRef"));
+  assert.match(state,/if\(focusMode==="state"&&selectedState===id&&goals\.length===1&&goals\[0\]===goalTheme/);
+  assert.match(vector,/if\(focusMode==="vector"&&selectedState==="vector-"\+id&&goals\.length===1&&goals\[0\]===goalTheme/);
+  assert.match(state,/setSelectedState\(id\);setGoals\(\[goalTheme\]\);setKeyGoal/);
+  assert.match(vector,/setSelectedState\("vector-"\+id\);setGoals\(\[goalTheme\]\);setKeyGoal/);
+  assert.match(state,/resetGeneratedMeditation\(\)/);
+  assert.match(vector,/resetGeneratedMeditation\(\)/);
+  assert.match(source,/data-guided-focus-reset-count=\{focusResetCountRef\.current\}/);
+});
+
 test("WebKit guided-course diagnostics never read Node closures inside browser evaluate",()=>{
  const browser=read("scripts/verify-mandala-practices-browser.mjs");
  const begin=browser.indexOf("const state=await course.evaluate(el=>({");

@@ -321,7 +321,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   // Track the exact user-approved narration independently of React render timing.
   // A delayed effect from an edited focus must never erase a fresh Generate click.
   const includedSignatureRef=useRef<string|null>(null);
+  // Count explicit state-changing focus actions without recording private text.
+  const focusResetCountRef=useRef(0);
   const resetGeneratedMeditation=()=>{
+    focusResetCountRef.current+=1;
     if(includedSignatureRef.current){
       includedSignatureRef.current=null;
       onOmitMeditation?.();
@@ -344,10 +347,16 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     // textarea events after the user's Generate click.
   },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
+    // A duplicate tap on the already selected choice must not revoke a
+    // separately approved meditation or course. An actual focus change still does.
+    if(focusMode==="state"&&selectedState===id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===f.stateOptions[id as keyof typeof f.stateOptions])return;
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
     resetGeneratedMeditation();
   };
   const selectVector=(id:(typeof vectorOptions)[number]["id"],goalTheme:VideoTheme)=>{
+    if(focusMode==="vector"&&selectedState==="vector-"+id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===t.themes[goalTheme])return;
     setSelectedState("vector-"+id);setGoals([goalTheme]);setKeyGoal(t.themes[goalTheme]);
     resetGeneratedMeditation();
   };
@@ -452,6 +461,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-has-script={firstScript.trim().length>0?"true":"false"}
     data-guided-meditation-open={meditationOpen?"true":"false"}
     data-guided-meditation-click-count={meditationActionCount}
+    data-guided-focus-reset-count={focusResetCountRef.current}
     data-guided-plan-open={planOpen?"true":"false"}
     data-guided-plan-click-count={planActionCount}
     data-guided-plan-signature-match={programmeSignature===journeySignature?"true":"false"}
