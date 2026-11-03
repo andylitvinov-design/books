@@ -308,10 +308,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/hh-opencode"
           npm install --prefix "$RUNNER_TEMP/hh-opencode" --no-audit --no-fund --no-save @opencode/cli@2.1.2
           "$RUNNER_TEMP/hh-opencode/node_modules/.bin/opencode" --version
-      - name: Generate one bounded no-token free-model patch; never retry paid
+      - name: Generate one bounded free-tier model patch; never retry paid
         shell: bash
         env:
           HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
+          # Optional owner-provisioned free-tier Console key. It is isolated to
+          # the proposer process; no publisher, GitHub or production token is passed.
+          HH_OPENCODE_FREE_TIER_API_KEY: ${{ secrets.HH_OPENCODE_FREE_TIER_API_KEY }}
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
