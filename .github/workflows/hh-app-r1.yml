@@ -56,7 +56,6 @@ on:
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
       - 'tests/ci-heavy-impact.test.mjs'
-      - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
   pull-requests: read
