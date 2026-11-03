@@ -13,12 +13,12 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) {
 const dir = "artifacts/visual-service-mobile";
 await mkdir(dir, { recursive: true });
 const cases = [
-  ["/en/services/alchemy-of-soul","[data-alchemy-visual-screen]","[data-alchemy-visual-screen=\"final-capture\"]",390],
-  ["/ru/services/alchemy-of-soul","[data-alchemy-visual-screen]","[data-alchemy-visual-screen=\"final-capture\"]",320],
+  ["/en/services/alchemy-of-soul","[data-alchemy-panel]","[data-alchemy-panel=\"request\"]",390],
+  ["/ru/services/alchemy-of-soul","[data-alchemy-panel]","[data-alchemy-panel=\"request\"]",320],
   ["/en/services/business-consulting","[data-business-visual-screen]","[data-business-visual-screen=\"final-capture\"]",390],
   ["/es/services/business-consulting","[data-business-visual-screen]","[data-business-visual-screen=\"final-capture\"]",430],
   ["/en/services/personal-support","[data-support-visual-screen]","[data-support-visual-screen=\"final-capture\"]",390],
-  ["/en/services/free-situation-review","[data-free-visual-screen]","[data-free-visual-screen=\"final-capture\"]",390],
+  ["/en/services/free-situation-review","[data-free-review-intro-video], [data-featured-free-review-testimonials], [data-personal-express-enquiry]","[data-personal-express-enquiry]",390],
   ["/es/services/dao-health-profile","[data-free-visual-screen]","[data-free-visual-screen=\"final-capture\"]",390],
   ["/en/academy/coaching/egyptian","[data-tradition-visual-screen]","[data-tradition-visual-screen=\"final-capture\"]",390],
   ["/ru/academy/coaching/greek","[data-tradition-visual-screen]","[data-tradition-visual-screen=\"final-capture\"]",390],
@@ -44,6 +44,17 @@ for (const engine of [chromium,webkit]) {
         const final=page.locator(finalSelector);
         assert.equal(await final.count(),1,label+" one final capture screen");
         assert.ok(await final.locator("img").count()>0,label+" capture has approved photo");
+        if (path.endsWith("/free-situation-review")) {
+          // Free Express intentionally keeps private phone / drawing intake
+          // closed until a real visitor reveals it. Exercise its actual CTA.
+          const reveal=final.locator("[data-express-reveal]");
+          await reveal.waitFor({state:"visible",timeout:15000});
+          await reveal.click();
+          await page.waitForFunction(() =>
+            document.querySelector("[data-personal-express-enquiry]")?.getAttribute("data-expanded")==="true",
+            null,{timeout:15000});
+          await final.locator("[data-express-inline-disclosure]").waitFor({state:"visible",timeout:15000});
+        }
         // Reply consent is required; the separate analytics-attribution opt-in
         // is optional and must not be mistaken for a duplicate reply consent.
         const replyConsent=final.locator('input[type="checkbox"][required]');
@@ -55,8 +66,8 @@ for (const engine of [chromium,webkit]) {
           assert.equal(await attribution.first().getAttribute("required"),null,
             label+" attribution consent remains optional");
         }
-        assert.ok(await final.locator('input:not([type="checkbox"])').count()>0,
-          label+" contact input");
+        assert.ok(await final.locator('input:not([type="checkbox"]):not([type="radio"])').count()>0,
+          label+" a real non-choice contact input");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(),0,
           label+" no duplicate global form");
         const docWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
