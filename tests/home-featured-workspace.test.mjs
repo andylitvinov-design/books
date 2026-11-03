@@ -50,10 +50,10 @@ test("all seven stages have honest photographed offers with actionable labels", 
   const sizes = [3, 3, 3, 2, 1, 1, 3];
   for (const locale of ["en", "ru", "es"]) {
     expected.forEach((step, index) => {
-      const module = copy[locale].modules[step];
-      assert.equal(module.offers.length, sizes[index], locale + "/" + step);
-      assert.ok(module.title && module.lead, locale + "/" + step + " has a heading");
-      for (const offer of module.offers) {
+      const stepContent = copy[locale].modules[step];
+      assert.equal(stepContent.offers.length, sizes[index], locale + "/" + step);
+      assert.ok(stepContent.title && stepContent.lead, locale + "/" + step + " has a heading");
+      for (const offer of stepContent.offers) {
         assert.ok(offer.title && offer.body && offer.cta, locale + "/" + step + " has complete copy");
         assert.ok(photos[offer.id], "missing image for " + offer.id);
       }
