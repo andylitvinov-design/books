@@ -13,6 +13,7 @@ import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } f
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
+import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -299,17 +300,26 @@ export function buildLibraryFeedItems(
     }];
   });
   const topicPictures: Record<string,string> = {
-    stress: '/images/holistic-house/hero-olive-incense.webp',
-    relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-    business: '/images/holistic-house/course-focus-mountain-boy.webp',
-    energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
-    effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+    "goals-money": '/images/holistic-house/course-focus-mountain-boy.webp',
+    "love-relationships": '/images/holistic-house/video-posters/constellations-en-v1.webp',
+    "energy-confidence": '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+    "stress-anxiety": '/images/holistic-house/hero-olive-incense.webp',
   };
-  const growthFeed: LibraryFeedItem[] = ['stress','relationships','business','energy','effectiveness'].flatMap(theme => {
-    const guide = growthGuideFor(theme,locale);
+  // Canonical four directions, while preserving each existing public SEO route.
+  const categoryRoute: Record<string,string> = {
+    "goals-money":"business",
+    "love-relationships":"love",
+    "energy-confidence":"energy",
+    "stress-anxiety":"stress",
+  };
+  const growthFeed: LibraryFeedItem[] = listMyTubeCategories(locale).flatMap(category => {
+    const route=categoryRoute[category.id];
+    const guideKey=route==="love"?"relationships":route;
+    const guide=growthGuideFor(guideKey,locale);
     return guide ? [{
-      id:'public-growth-'+theme,kind:'guide' as const,title:guide.title,
-      description:guide.lead,image:topicPictures[theme],href:'/'+locale+'/explore/'+theme,
+      id:'public-growth-'+category.id,kind:'guide' as const,title:category.label,
+      description:guide.lead,image:topicPictures[category.id],
+      href:'/'+locale+'/explore/'+route,
     }] : [];
   });
   const guideFeed: LibraryFeedItem[] = guides.map(guide => ({

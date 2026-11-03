@@ -2,8 +2,8 @@ import test from "node:test";
 import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {recommendPromptShotPlan} from "../lib/mandala/prompt-shot-director.mjs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
+import {recommendPromptShotPlan} from "../lib/mandala/prompt-shot-director.mjs";
 
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
@@ -291,6 +291,14 @@ test("owner-approved second Montage and sixth PRO reuse one operational video/au
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
+test("MyTube cards display the original scenario, not the four generic archetype headings",()=>{
+ assert.match(director,/data-mytube-scenario-concepts/);
+ assert.match(director,/<strong>\{scenario\.label\}<\/strong>/);
+ assert.match(director,/data-mytube-concept-storyboard/);
+ assert.match(director,/sceneOutline\.map\(\(beat,index\)=>/);
+ assert.ok(!director.includes("scenarioCardHeading"),"generic shared titles must never override unique story concepts");
+ assert.match(director,/Scenario concept; matching footage is verified separately/);
+});
 
 test("local prompt director selects four different APPROVED scenes for individual storyboard beats",()=>{
  const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
