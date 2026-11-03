@@ -13,19 +13,14 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(page, /<AlchemySoulLanding locale=/);
   assert.match(page, /<DistanceHomeopathyGuide locale=\{locale as PublicLocale\} embedded \/>/);
   assert.match(page, /data-alchemy-extended-guide/);
-  for (const term of ["С ЧЕМ МОЖНО ОБРАТИТЬСЯ", "Расстановка — карта ситуации", "Гипнотерапия — глубинный уровень", "Психогомеопатия — подбор ресурса", "WHAT YOU CAN BRING", "Constellation — map the situation", "Hypnotherapy — explore deeper", "Psycho-homeopathy — optional support"]) assert.ok(landing.includes(term), term);
-  // The approved one-screen design has nine real chapters: the old standalone
-  // report chapter is now a free-review CTA, not a duplicate report panel.
-  for (const section of ["featured-video", "hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
-  assert.doesNotMatch(landing, /data-alchemy-panel="report"/);
+  for (const term of ["Диагностика ситуации", "Системная расстановка", "Образная гипнотерапия", "Психогомеопатия — по желанию", "Situation diagnosis", "Systemic constellation", "Guided-imagery hypnotherapy", "Optional psycho-homeopathy"]) assert.ok(landing.includes(term), term);
+  for (const section of ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
   assert.equal((landing.match(/<AlchemySoulLeadForm locale=\{locale\}/g) || []).length, 1, "One enquiry form only");
   assert.match(form, /ContactChannelChooser/);
   assert.match(form, /whatsappEnquiryUrl/);
   assert.doesNotMatch(form, /window\.location\.assign/);
   assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
-  // JSX permits a quoted data-* key; require the real hero booking marker.
-  assert.match(landing, /["']?data-alchemy-booking["']?\s*:\s*"hero"/);
-  assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
+  assert.match(landing, /compactPhone compactTrigger stayAfterSave/);
   assert.doesNotMatch(form, /fetch\(|localStorage|sendBeacon/);
   assert.match(form, /hh-alchemy-selected-format/);
   assert.match(form, /no automatic charge/);
@@ -33,19 +28,16 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   const catalog = read("components/personal-testimonials.tsx");
   assert.match(catalog, /MIVLm1GUTtM/);
   assert.match(catalog, /Dk0LBmOivQo/);
-  assert.match(landing, /const testimonials =/);
+  assert.match(landing, /import \{ testimonialVideos, locallyArchivedVideoPosterIds \}/);
   assert.match(landing, /reviews\.map\(\(review\)/);
-  assert.match(landing, /data-alchemy-review-stack/);
-  assert.match(landing, /locale === "es" \? "en" : locale/);
-  assert.match(landing, /data-testimonial-original-audio=\{locale === "es" \? "en" : locale\}/);
-  assert.match(landing, /sampleReport: "View a sample report"/);
-  assert.match(landing, /example-report/);
+  assert.match(landing, /data-vertical-review-list/);
+  assert.match(landing, /data-testimonial-original-audio=\{review\.language\}/);
   assert.doesNotMatch(landing, /reviews\.slice\(/);
   assert.match(css, /\.reviewSection\{display:block;min-height:0;height:auto/);
   assert.match(css, /\.reviewSection \.reviewVideo :global\(\.site-video-frame\)\{[^}]*aspect-ratio:16\/9/);
   assert.match(css, /100svh/);
-  assert.match(landing, /className=\{styles\.methodSteps\}/);
-  assert.match(landing, /t\.steps\.map/);
+  assert.match(landing, /data-alchemy-method-sequence/);
+  assert.match(landing, /data-alchemy-report-example/);
   assert.match(landing, /data-alchemy-review-stack/);
   assert.match(landing, /className=\{styles\.reviewStack\}/);
   assert.match(css, /\.reviewStack\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
