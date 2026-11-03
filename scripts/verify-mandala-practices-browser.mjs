@@ -155,10 +155,24 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // Wait for React to commit the selected vector; a click can resolve
+      // before WebKit flushes state, while the button may still reflect the prior goal.
+      await page.waitForFunction(()=>
+        document.querySelector('[data-guided-focus-vector="goals"]')
+          ?.getAttribute("aria-pressed")==="true",
+        null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
-      await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      const difficulty=course.locator("[data-video-key-difficulty]");
+      await difficulty.fill("I feel rushed");
+      // The context is optional, but the browser check waits for its real
+      // rendered Personal Meditation step before starting generation.
+      await page.waitForFunction(()=>{
+        const root=document.querySelector("[data-video-guided-course]");
+        return root?.querySelector("[data-guided-personal-meditation-step]")
+          ?.textContent?.includes("I feel rushed")===true &&
+          root?.querySelector("[data-guided-generate-meditation]")?.disabled===false;
+      },null,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
