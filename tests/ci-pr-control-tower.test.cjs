@@ -852,7 +852,13 @@ test('source dispatch requires a complete nonempty worker-safe changed-file scop
   const f=fixture([pr(77)],{comments:{77:[proof()]}});
   f.github.rest.pulls.listFiles=async()=>({data:files});
   const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
-  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+  assert.equal(result.dispatchAccepted,0);
+  // The only allowed write is a terminal owner handoff, NOT a source writer
+  // reservation or a workflow dispatch for these prohibited file scopes.
+  assert.equal(result.manualSourceEscalations,1);
+  assert.ok(f.calls.reserved.some(c=>c.body.includes('"state":"MANUAL"')));
+  assert.ok(!f.calls.reserved.some(c=>c.body.includes('"state":"RESERVED"')));
+  assert.equal(f.calls.dispatched.length,0);
  }
 });
 
@@ -1243,4 +1249,35 @@ test('shared source branch cannot receive two different PR writer leases',async(
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,0);
  assert.equal(r.blocked.SHARED_HEAD_BRANCH,2);
+});
+
+test('verified out-of-sandbox source failure is handed to PR owner once, never dispatched',async()=>{
+ const {github,calls,capacityFn}=fixture([pr(1)],{comments:{1:[proof()]}});
+ github.rest.pulls.listFiles=async()=>({data:[{filename:'.github/workflows/ci.yml',status:'modified'}]});
+ const assigned=[];
+ github.rest.issues.addAssignees=async arg=>{assigned.push(arg);return {data:{}};};
+ const result=await run({github,core:core(),context,capacityFn,now:NOW});
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(calls.dispatched.length,0);
+ assert.ok(calls.reserved.some(x=>x.body.includes('HH_CONTROL_SCOPE_OWNER_V1')));
+ assert.ok(calls.reserved.some(x=>x.body.includes('"state":"MANUAL"')));
+ assert.ok(calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.ok(calls.removed.some(x=>x.name==='hh:repair-needed'));
+ assert.equal(assigned[0].assignees[0],'andylitvinov-design');
+});
+test('manual owner safety handoff cannot label a newly advanced PR head',async()=>{
+ const current=pr(1);
+ const {github,calls,capacityFn}=fixture([current],{comments:{1:[proof()]}});
+ github.rest.pulls.listFiles=async()=>({data:[{filename:'.github/workflows/ci.yml',status:'modified'}]});
+ let read=0;
+ github.rest.pulls.get=async()=>({data:++read===1?current:{
+  ...current,head:{...current.head,sha:'b'.repeat(40)}
+ }});
+ const result=await run({github,core:core(),context,capacityFn,now:NOW});
+ assert.equal(result.manualSourceEscalations,0);
+ assert.equal(result.blocked.SCOPE_OWNER_HEAD_CHANGED,1);
+ assert.equal(calls.reserved.length,0);
+ assert.equal(calls.labels.length,0);
+ assert.equal(calls.dispatched.length,0);
 });

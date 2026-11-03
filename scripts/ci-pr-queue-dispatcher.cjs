@@ -1,6 +1,6 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
-const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
@@ -108,6 +108,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,conflictQueueReleased:0,unconfirmedHandoffs:0,
+  manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
@@ -500,7 +501,68 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     owner,repo,pull_number:task.pr_number,per_page:100,page:1}))).data;}
    catch(e){blocked('SOURCE_FILES_UNAVAILABLE');continue;}
    const safe=safeFiles(files);
-   if(!safe||!safe.length){blocked('SOURCE_SCOPE_NOT_ACTIONABLE');continue;}
+   if(!safe||!safe.length){
+    blocked('SOURCE_SCOPE_NOT_ACTIONABLE');
+    // Verified source CI can affect files outside the source-writing sandbox.
+    // Escalate once to the PR owner instead of repeatedly re-enqueueing an
+    // unauthorized code-write attempt. NEVER auto-publish these files.
+    if(dryRun){summary.wouldManualSourceEscalations++;continue;}
+    const marker='<!-- HH_CONTROL_SCOPE_OWNER_V1 '+task.head_sha+' -->';
+    try{
+     const ownerPr=(await limited('scope-owner-exact-head',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(!validPR(ownerPr)||ownerPr.head?.sha!==task.head_sha||
+        laneOf(ownerPr)!=='repair'){blocked('SCOPE_OWNER_HEAD_CHANGED');continue;}
+     const history=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
+     if(!history||reservationStatus(task,history,now)!=='FREE'||
+        !hasVerifiedSourceHandoff(history,task.head_sha)){
+      blocked('SCOPE_OWNER_LEASE_UNVERIFIED');continue;
+     }
+     if(history.some(c=>trustedControlComment(c)&&String(c.body||'').includes(marker))){
+      blocked('SCOPE_OWNER_ALREADY_HANDED_OFF');continue;
+     }
+     // The signed MANUAL receipt is terminal for this task key, even when
+     // subsequent label updates are denied. No automatic retry can race it.
+     await limited('scope-owner-terminal-receipt',()=>github.rest.issues.createComment({
+      owner,repo,issue_number:task.pr_number,
+      body:marker+'\n@'+ownerPr.user.login+
+       ' — Core failed at this exact HEAD, but no file is within the permitted '+
+       'automatic source-repair scope. Authorized human/Code Repair review needed. '+
+       'No source write or required CI bypass occurred.\n'+commentBody({
+        ...task,state:'MANUAL',reason_code:'SOURCE_SCOPE_NOT_ACTIONABLE',
+        source_published:false,owner_run_id:String(context.runId||'unknown'),
+        created_at:new Date(now).toISOString()
+       })
+     }));
+     const live=(await limited('scope-owner-post-receipt-head',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(live?.head?.sha!==task.head_sha||live?.state!=='open'||
+        live.base?.ref!==PROD||live.head?.repo?.full_name!==REPO){
+      blocked('SCOPE_OWNER_HEAD_MOVED');continue;
+     }
+     await limited('scope-owner-manual-label',()=>github.rest.issues.addLabels({
+      owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+     }));
+     const confirmed=(await limited('scope-owner-label-head',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(confirmed?.head?.sha!==task.head_sha||confirmed?.state!=='open'||
+        confirmed.base?.ref!==PROD||confirmed.head?.repo?.full_name!==REPO){
+      blocked('SCOPE_OWNER_LABEL_HEAD_MOVED');continue;
+     }
+     try{await limited('scope-owner-retire-source',()=>github.rest.issues.removeLabel({
+      owner,repo,issue_number:task.pr_number,name:'hh:repair-needed'
+     }));}catch(e){if(e?.status!==404)throw e;}
+     try{await limited('scope-owner-assignee',()=>github.rest.issues.addAssignees({
+      owner,repo,issue_number:task.pr_number,assignees:[ownerPr.user.login]
+     }));}catch(e){log('SCOPE_OWNER_ASSIGNMENT_UNAVAILABLE #'+task.pr_number+' '+e.message);}
+     summary.manualSourceEscalations++;
+     log('SOURCE_SCOPE_MANUAL_OWNER #'+task.pr_number+' '+task.head_sha.slice(0,12));
+    }catch(e){
+     blocked('SCOPE_OWNER_ESCALATION_UNAVAILABLE');
+     log('Scope owner handoff #'+task.pr_number+': '+e.message);
+    }
+    continue;
+   }
   }
   // Global busy/cooldown history belongs to OTHER PRs. Only signed exact-HEAD
   // reservation history and per-PR workflow concurrency authorize execution.
