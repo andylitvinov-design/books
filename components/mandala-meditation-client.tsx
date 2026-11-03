@@ -408,7 +408,7 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
                   {imageUrl ? t.change : t.upload}
                 </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
-                  onClick={() => { photoChoiceEpoch.current++; setPhotoPending(false); setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
+                  onClick={() => { photoChoiceEpoch.current++; setPhotoPending(false); setImageUrl(null); setPreparedPng(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
                 </button> : null}
               </div>
