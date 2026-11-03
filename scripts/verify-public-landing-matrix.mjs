@@ -44,8 +44,17 @@ for (const engine of [chromium,webkit]) {
         const final=page.locator(finalSelector);
         assert.equal(await final.count(),1,label+" one final capture screen");
         assert.ok(await final.locator("img").count()>0,label+" capture has approved photo");
-        assert.ok(await final.locator('input[type="checkbox"]').count()===1,
-          label+" explicit reply consent");
+        // Reply consent is required; the separate analytics-attribution opt-in
+        // is optional and must not be mistaken for a duplicate reply consent.
+        const replyConsent=final.locator('input[type="checkbox"][required]');
+        assert.equal(await replyConsent.count(),1,label+" one required reply consent");
+        assert.equal(await replyConsent.isChecked(),false,label+" reply consent unchecked by default");
+        const attribution=final.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+        assert.ok(await attribution.count()<=1,label+" at most one optional attribution choice");
+        if(await attribution.count()) {
+          assert.equal(await attribution.first().getAttribute("required"),null,
+            label+" attribution consent remains optional");
+        }
         assert.ok(await final.locator('input:not([type="checkbox"])').count()>0,
           label+" contact input");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(),0,

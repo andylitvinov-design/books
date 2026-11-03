@@ -23,7 +23,8 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(form, /whatsappEnquiryUrl/);
   assert.doesNotMatch(form, /window\.location\.assign/);
   assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
-  assert.match(landing, /data-alchemy-booking: "hero"/);
+  // JSX permits a quoted data-* key; require the real hero booking marker.
+  assert.match(landing, /["']?data-alchemy-booking["']?\s*:\s*"hero"/);
   assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
   assert.doesNotMatch(form, /fetch\(|localStorage|sendBeacon/);
   assert.match(form, /hh-alchemy-selected-format/);
