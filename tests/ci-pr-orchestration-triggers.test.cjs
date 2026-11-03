@@ -293,3 +293,13 @@ test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arm
   assert.ok(!prune.includes('ref: ' + '$' + '{{ github.event.pull_request.head.sha'));
   assert.ok(!prune.includes('--force') && !prune.includes('gh pr merge'));
 });
+
+test('interrupted Core recovery never resubmits intentional cancellation or a stale HEAD',()=>{
+  const native=read('hh-native-auto-merge');
+  const recover=native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0];
+  assert.ok(recover, 'trusted infra-only recovery must remain');
+  assert.ok(recover.includes('new Set(["timed_out","startup_failure"])'));
+  assert.ok(!recover.includes('new Set(["cancelled"'), 'superseded HEAD cancellations cannot be retried');
+  assert.ok(recover.includes('parents[1]?.sha !== live.head.sha'));
+  assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));
+});
