@@ -16,6 +16,7 @@ const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
+const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -249,11 +250,15 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
+    const claimStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
+      stageLine({stage:'claimed',pr_number:pr.number,head_sha:pr.head.sha,
+        run_id:context.runId,task_key:receipt.task_key,
+        at:new Date().toISOString(),source:'repair_worker_claim'}):'';
     await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body:
       marker + '\n**HH Repair Worker claimed this HEAD.**\n' +
       'Owner: @' + pr.user.login + '; strategy: ' + (conflict?'conflict/manual':strategy==='code'?'verified Core/TypeScript code repair':'targeted ESLint autofix') +
       '. The worker does not bypass checks or overwrite another source branch.' +
-      (claimedReceipt?'\n'+claimedReceipt:'')});
+      (claimedReceipt?'\n'+claimedReceipt:'')+(claimStage?'\n'+claimStage:'')});
     try { await github.rest.issues.addAssignees({owner,repo,issue_number:pr.number,assignees:[pr.user.login]}); }
     catch (error) { log('Could not assign owner to #' + pr.number + ': ' + error.message); }
     if (conflict) {
@@ -379,6 +384,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     throw Error('HH_REPAIR_PUBLISH_PARENT_UNVERIFIED');
   const repairKind=candidate.repair_kind==='free_ai'?'free_ai':
      candidate.repair_kind==='codex'?'codex':'lint';
+  const publishedStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
+    stageLine({stage:'source_published',pr_number:prNumber,head_sha:expectedSha,
+      run_id:context.runId,task_key:receipt.task_key,source:'verified_git_ref',
+      new_sha:created.sha,at:new Date().toISOString()}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
     'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free OpenCode/GLM source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
@@ -386,7 +395,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
       outcome:'VERIFIED_SOURCE_COMMIT',repair_kind:repairKind,new_sha:created.sha,
       commit_url:'https://github.com/'+fullRepo+'/commit/'+created.sha,
-      owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl}):'')});
+      owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl}):'')+(publishedStage?'\n'+publishedStage:'')});
   try { await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE}); }
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
@@ -557,14 +566,28 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     }else core.warning('HH_REPAIR_RETRY_PROOF_MISSING '+
       (claimed?'SOURCE_CLAIM_PRESENT':'RESERVATION_NOT_VERIFIED'));
   }
-  let failedStep=null;
-  if(['FAILED','REJECTED'].includes(state)){
+  let failedStep=null,repairStartedAt=null;
+  // Proof is the actual fix-step start time from this trusted workflow run,
+  // not dispatcher reservation, task claim, or later finalizer execution.
+  if(Number.isSafeInteger(context.runId)&&
+     (['FAILED','REJECTED'].includes(state)||claimStatus==='claimed')){
     try{
       const jobs=(await github.rest.actions.listJobsForWorkflowRun({
         owner,repo,run_id:Number(context.runId),per_page:100})).data?.jobs||[];
-      const failed=jobs.find(j=>j.conclusion==='failure');
-      failedStep=failed?.steps?.find(s=>s.conclusion==='failure')?.name||
-        failed?.name||null;
+      if(['FAILED','REJECTED'].includes(state)){
+        const failed=jobs.find(j=>j.conclusion==='failure');
+        failedStep=failed?.steps?.find(x=>x.conclusion==='failure')?.name||
+          failed?.name||null;
+      }
+      if(claimStatus==='claimed'){
+        const fix=jobs.find(j=>j.name==='fix'&&Array.isArray(j.steps));
+        const step=fix?.steps.find(x=>
+          (x.name==='Apply trusted TypeScript type-only import codemods'||
+           x.name==='Try targeted ESLint autofix and write bounded patch candidate')&&
+          typeof x.started_at==='string'&&Number.isFinite(Date.parse(x.started_at)));
+        if(step&&Date.parse(step.started_at)<=Date.now()+60000)
+          repairStartedAt=new Date(step.started_at).toISOString();
+      }
     }catch(error){core.info('HH_REPAIR_OUTCOME_JOB_DIAGNOSTICS_UNAVAILABLE '+error.message);}
   }
   // This diagnostic never implies a source write; the existing reason_code
@@ -592,8 +615,12 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  const repairStage=repairStartedAt&&claimStatus==='claimed'?
+    stageLine({stage:'repair_started',pr_number:number,head_sha:expectedSha,
+      run_id:context.runId,task_key:taskKey,at:repairStartedAt,
+      source:'github_actions_fix_step'}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:number,
-    body:marker+'\n'+commentBody(result)});
+    body:marker+'\n'+commentBody(result)+(repairStage?'\n'+repairStage:'')});
   // No destructive operation, source overwrite, force push or CI bypass.
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.

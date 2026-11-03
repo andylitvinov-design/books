@@ -5,6 +5,7 @@
  */
 const {taskFor,parseRecords,readCompleteIssueComments,externalOwnerLeaseStatus,
   trustedControlComment,commentBody}=require('./ci-pr-task-state.cjs');
+const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const REPO='andylitvinov-design/books',DEFAULT='refs/heads/codex/bootstrap-books';
 const PROD='codex/public-book-library',CORE='hh-pr-core-release.yml';
 const SHA=/^[a-f0-9]{40}$/i,KEY=/^[a-f0-9]{32}$/i;
@@ -124,7 +125,9 @@ async function run({github,context,token,number,expectedSha,taskKey,
     return stop('WORKER_RUN_ID_MISSING');
   try{
     await github.rest.issues.createComment({owner,repo,issue_number:number,
-      body:commentBody(payload)});
+      body:commentBody(payload)+'\n'+stageLine({stage:'claimed',pr_number:number,
+        head_sha:expectedSha,run_id:context.runId,task_key:taskKey,
+        at:new Date().toISOString(),source:'ci_worker_claim'})});
   }catch{return stop('AUTHENTICATED_CLAIM_WRITE_FAILED');}
   result.claimed=true;
   // A PAT-authored PR body edit can return HTTP 200 without delivering
@@ -174,7 +177,10 @@ async function run({github,context,token,number,expectedSha,taskKey,
     await github.rest.issues.createComment({owner,repo,issue_number:number,
       body:marker+'\n'+commentBody({...payload,state:'CI_WAKE_REQUESTED',
         event:'pull_request.ready_for_review',
-        observed_at:new Date().toISOString(),source_published:false})});
+        observed_at:new Date().toISOString(),source_published:false})+'\n'+
+        stageLine({stage:'ready',pr_number:number,head_sha:expectedSha,
+          run_id:context.runId,task_key:taskKey,at:new Date().toISOString(),
+          source:'ready_for_review_readback'})});
   }catch{return stop('WAKE_RECEIPT_WRITE_FAILED');}
   result.status='CI_WAKE_REQUESTED';result.reason='AWAITING_REAL_CORE_RUN';
   result.metadataEditAccepted=true;return result;

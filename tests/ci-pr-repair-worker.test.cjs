@@ -3,6 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
+const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -872,4 +873,42 @@ test('stacked parent does not auto-repair with a destructive squash/rebase metho
   assert.equal(r.status,'skipped');
   assert.equal(f.log.comments,0);
  }
+});
+
+test('stage receipts bind trusted bot, PR, old/new HEAD and real UTC time',()=>{
+ const time='2026-11-03T21:00:00Z',key='b'.repeat(32),fresh='f'.repeat(40);
+ const body=stageLine({stage:'source_published',pr_number:11,head_sha:sha,
+  run_id:41700000001,task_key:key,new_sha:fresh,at:time,source:'verified_git_ref'});
+ const comment={body,created_at:'2026-11-03T21:00:05Z',
+  user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ assert.match(body,/HH_PR_STAGE_V1/);
+ assert.equal(parseComment(comment,{number:11,head:sha}).length,1);
+ assert.equal(parseComment(comment,{number:12}).length,0);
+ assert.equal(parseComment(comment,{head:'9'.repeat(40)}).length,0);
+ assert.equal(parseComment({...comment,user:{login:owner}}).length,0);
+ assert.equal(parseComment({...comment,created_at:'2026-11-03T20:00:00Z'}).length,0);
+ assert.throws(()=>stageLine({stage:'source_published',pr_number:11,head_sha:sha,
+  run_id:41700000001,task_key:key,at:time,source:'verified_git_ref'}),/INVALID_STAGE_RECEIPT/);
+});
+test('native Ready and Triage timestamps are GitHub events; armed is not Triage',()=>{
+ const stamps=timelineStages([
+  {event:'ready_for_review',created_at:'2026-11-03T21:00:00Z'},
+  {event:'labeled',label:{name:'hh:merge-stage:inspect'},created_at:'2026-11-03T21:00:07Z'},
+  {event:'labeled',label:{name:'hh:merge-stage:armed'},created_at:'2026-11-03T21:02:00Z'}
+ ]);
+ assert.deepEqual(stamps.map(x=>x.stage),['ready','triage']);
+ assert.deepEqual(stamps.map(x=>x.at),['2026-11-03T21:00:00Z','2026-11-03T21:00:07Z']);
+});
+test('repair_started requires an actual trusted Actions fix-step timestamp',()=>{
+ const key='b'.repeat(32),at='2026-11-03T21:02:13Z';
+ assert.throws(()=>stageLine({stage:'repair_started',pr_number:11,head_sha:sha,
+   run_id:41700000001,task_key:key,at,source:'repair_worker_claim'}),/INVALID_STAGE_RECEIPT/);
+ const body=stageLine({stage:'repair_started',pr_number:11,head_sha:sha,
+   run_id:41700000001,task_key:key,at,source:'github_actions_fix_step'});
+ const comment={body,created_at:'2026-11-03T21:10:00Z',
+  user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ assert.deepEqual(parseComment(comment).map(x=>x.stage),['repair_started']);
+ assert.equal(parseComment({...comment,performed_via_github_app:{slug:'other',id:1}}).length,0);
 });
