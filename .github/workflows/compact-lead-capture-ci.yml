@@ -19,7 +19,6 @@ on:
       - "tests/free-review-conversion.test.mjs"
       - "tests/sitewide-lead-capture.test.mjs"
       - "tests/contact-channel-chooser.test.mjs"
-      - ".github/workflows/compact-lead-capture-ci.yml"
 permissions:
   contents: read
 
