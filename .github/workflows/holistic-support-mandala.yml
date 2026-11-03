@@ -436,6 +436,9 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
           node scripts/verify-affirmation-voice-browser.mjs
+          # Verify the real mobile consent tap separately, without the full media matrix.
+          HH_PRACTICES_BROWSER_ENGINE=webkit HH_PRACTICES_CONSENT_ONLY=1 \
+            node scripts/verify-practices-mobile-browser.mjs
           # Gate on the *actual* WebKit four-scene H264/AAC movie, not mock TTS.
           # Validate approved source IDs, scene order, motion, black gaps and audio.
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 \
