@@ -566,7 +566,7 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  assert.ok(cut.inline_keyboard.flat().every(b=>!b.callback_data||b.callback_data.length<=64))
  assert.equal(parsed(callback(cut.inline_keyboard[0][0].callback_data))?.action,'cut_help')
  assert.deepEqual(
-   (({action,jobId,trimStartSeconds})=>({action,jobId,trimStartSeconds}))(
+   (({action,target,jobId,trimStartSeconds})=>({action,target,jobId,trimStartSeconds}))(
      parsed(callback(cut.inline_keyboard[1][0].callback_data))),
    {action:'publish',target:'ru',jobId:fixed,trimStartSeconds:75})
  assert.equal(parsed(callback(original.inline_keyboard[1][0].callback_data))?.trimStartSeconds,0)
