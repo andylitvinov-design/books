@@ -83,7 +83,9 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
  api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
- await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ const pushScoped=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(pushScoped.advisory.concurrencyOnly,[file]);
+ assert.deepEqual(pushScoped.advisory.nonApplicable,['unassociated-push:152:failure']);
  api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
@@ -258,9 +260,10 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // An unassociated exact-head failure has unknown coverage and must block.
+  // A push event cannot establish a PR-number association, so it is advisory.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  const pushOnly=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.deepEqual(pushOnly.advisory.nonApplicable,['unassociated-push:753:failure']);
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
