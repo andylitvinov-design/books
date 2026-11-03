@@ -17,7 +17,7 @@ type Props = {
 export function TantraVideoTestimonials(props: Props) {
   const [youtubeSession, setYoutubeSession] = useState(0);
 
-  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number }>());
+  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; restoreMutedOnOpen?: boolean }>());
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
@@ -34,10 +34,26 @@ export function TantraVideoTestimonials(props: Props) {
       existing.generation = (existing.generation ?? 0) + 1;
       existing.confirmedFrames = 0;
     }
-    if (existing) return;
+    // WebKitGTK/GStreamer may suspend muted <video> when its <details>
+    // becomes invisible. Preserve the user-visible mute choice while hiding:
+    // pause FIRST, then unmute only the paused, same-source hidden player.
+    // Restore the original mute setting after the disclosure is visible.
+    const preserveDecoder = (saved: { source: string; restoreMutedOnOpen?: boolean }) => {
+      if (video.paused && video.muted === true && video.currentSrc === saved.source) {
+        saved.restoreMutedOnOpen = true;
+        video.muted = false;
+      }
+    };
+    if (existing) {
+      preserveDecoder(existing);
+      return;
+    }
     if (video.currentSrc && Number.isFinite(video.currentTime) && video.currentTime > 0
       && !video.ended && !video.seeking) {
-      retained.current.set(video, { source: video.currentSrc, time: video.currentTime, reconstructing: false });
+      const saved = { source: video.currentSrc, time: video.currentTime, reconstructing: false,
+        restoreMutedOnOpen: false };
+      retained.current.set(video, saved);
+      preserveDecoder(saved);
     }
   }
   function onNativePlay(event: SyntheticEvent<HTMLVideoElement>) {
@@ -158,7 +174,18 @@ export function TantraVideoTestimonials(props: Props) {
 
   function onToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const details = event.currentTarget;
-    if (details.open) return;
+    if (details.open) {
+      // The user sees the same mute selection on reopening; never autoplay,
+      // seek, load, or replace an existing native media element.
+      details.querySelectorAll("video").forEach(video => {
+        const saved = retained.current.get(video);
+        if (saved?.restoreMutedOnOpen && video.currentSrc === saved.source && video.paused) {
+          video.muted = true;
+          saved.restoreMutedOnOpen = false;
+        }
+      });
+      return;
+    }
     // Native controls can open/play before hydration. The observed DOM state,
     // not initiallyOpen or a missed earlier toggle, decides whether to stop.
     // Keep native playback positions. Reset only the YouTube component, removing

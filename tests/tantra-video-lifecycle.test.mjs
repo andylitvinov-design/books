@@ -334,3 +334,46 @@ test('WebKit healthy clock advance, native seeking and paused media cancel recov
     assert.deepEqual(f.writes,[],'Healthy clock or real user/media state must veto recovery');
   }
 });
+
+
+test('muted same-source native video avoids hidden WebKit suspend and restores mute when visible',()=>{
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render(),summary=flatten(tree).find(node=>node.type==='summary');
+  const original={currentSrc:videos[0].src,currentTime:30.5,muted:true,
+    paused:false,seeking:false,ended:false,pauses:0,
+    pause(){this.paused=true;this.pauses++},
+    play(){assert.fail('Never start playback when a disclosure opens')}};
+  const alreadyAudible={currentSrc:videos[1].src,currentTime:15.3,muted:false,
+    paused:false,seeking:false,ended:false,pauses:0,
+    pause(){this.paused=true;this.pauses++},
+    play(){assert.fail('Never start playback while a disclosure is closed')}};
+  const details={open:true,querySelectorAll(selector){
+    assert.equal(selector,'video');return [original,alreadyAudible];}};
+  summary.props.onClickCapture({currentTarget:{closest(){return details}}});
+  assert.deepEqual([original.paused,alreadyAudible.paused],[true,true]);
+  assert.equal(original.muted,false,'paused hidden WebKit decoder is not suspended as muted');
+  assert.equal(alreadyAudible.muted,false,'an unmuted user choice stays unmuted');
+  details.open=false;tree.props.onToggle({currentTarget:details});
+  assert.equal(original.muted,false,'duplicate close does not restore mute while hidden');
+  details.open=true;tree.props.onToggle({currentTarget:details});
+  assert.equal(original.muted,true,'original mute choice is restored after visibility');
+  assert.equal(alreadyAudible.muted,false);
+  assert.equal(original.currentTime,30.5,'close/reopen never seeks or resets position');
+  assert.equal(original.paused,true,'reopening never auto-plays');
+  assert.equal(original.pauses,1,'no redundant pause to poison WebKit decoder');
+});
+
+test('hidden muted recovery never applies saved preferences to a new source',()=>{
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const tree=model.render();
+  const video={currentSrc:videos[0].src,currentTime:24,muted:true,
+    paused:false,seeking:false,ended:false,
+    pause(){this.paused=true},play(){assert.fail('No automatic media play')}};
+  const details={open:false,querySelectorAll(){return [video]}};
+  tree.props.onToggle({currentTarget:details});
+  assert.equal(video.muted,false);
+  video.currentSrc=videos[1].src;video.muted=false;
+  details.open=true;tree.props.onToggle({currentTarget:details});
+  assert.equal(video.muted,false,'changed source must not inherit old mute choice');
+  assert.equal(video.currentTime,24);
+});
