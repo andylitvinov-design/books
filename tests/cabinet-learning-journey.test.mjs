@@ -193,7 +193,11 @@ test('new mobile fold-down actions fit viewport intent, preserve reduced-motion 
 test('Cabinet journey delegates only redundant global TS; privacy and journey tests remain mandatory', () => {
   const workflow = source('.github/workflows/hh-cabinet-journey.yml')
   const core = source('.github/workflows/hh-pr-core-release.yml')
-  assert.match(core, /^  release-ready:/m)
+  assert.match(core, /^  scope:/m)
+  assert.match(core, /name: core-lint-types-build/)
+  assert.match(core, /^  hh-specialist:/m)
+  assert.match(core, /^  hh-merge-check:/m)
+  assert.match(core, /name: Require real Core and specialist results from this workflow/)
   assert.match(core, /run: npm run build/)
   assert.equal(JSON.parse(source('package.json')).scripts.build, 'next build')
   assert.doesNotMatch(source('next.config.ts'), /ignoreBuildErrors/)
