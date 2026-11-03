@@ -5,6 +5,7 @@ const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
+const {reconcileCiWake}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
@@ -113,7 +114,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
-  workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
+  workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},
+  ciCoreConfirmed:0,ciWakeEscalated:0,ciWakePending:0,
+  apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
@@ -268,6 +271,25 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
   if(status!=='FREE'){
+   if(task.lane==='ci'&&status==='CI_WAKE_AWAITING_CORE'){
+    // A historical metadata wake cannot claim a successful Core check.
+    // Verify a genuine PR-associated exact-HEAD run before retiring a label;
+    // otherwise record a bounded, visible manual hold without re-waking.
+    let observed;
+    try{observed=await reconcileCiWake({task,comments,now,dryRun,
+      github,owner,repo,limited});}
+    catch(error){observed={state:'CI_WAKE_RECONCILE_UNAVAILABLE'};}
+    const key=observed.state||'CI_WAKE_RECONCILE_UNVERIFIED';
+    summary.ciWakeOutcomes[key]=(summary.ciWakeOutcomes[key]||0)+1;
+    if(key==='CI_CORE_CONFIRMED')summary.ciCoreConfirmed++;
+    else if(key==='CI_WAKE_UNDELIVERED')summary.ciWakeEscalated++;
+    else summary.ciWakePending++;
+    blocked(key);
+    log('CI_WAKE_OUTCOME #'+task.pr_number+' '+key+
+      ' coreRun='+String(observed.coreRunId||'none')+
+      ' hintCleared='+Boolean(observed.hintCleared));
+    continue;
+   }
    blocked(status);
    // A reserved/claimed HEAD with no terminal result must not be reported
    // as repaired. After a bounded grace, verify the worker is no longer
