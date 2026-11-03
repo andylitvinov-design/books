@@ -89,12 +89,13 @@ const copy = {
         { title: "A symbolic situation map", text: "Use your drawing as a starting point to notice relationships and perceived obstacles." },
         { title: "A written perspective", text: "Receive reflections and practical questions for your next step." },
       ],
+      privateHandoff: "After consent, the Telegram dialogue may ask for an optional non-clinical photo or drawing. Never share private questionnaire answers through messengers. Keep medical records, test results and sensitive details in the protected website form.",
       processTitle: "Three simple steps",
       processLead: "No payment, long registration or video appointment is required for the free written format.",
       steps: [
         { title: "Tell me your situation", text: "Complete a short questionnaire about your question and goal." },
         { title: "Draw three elements", text: "Sketch ME, GOAL and PROBLEM on paper and photograph it." },
-        { title: "Send both to Andrey", text: "Use WhatsApp or Telegram to share your answers and drawing for a written review." },
+        { title: "Arrange a private handoff", text: "Keep questionnaire answers in the protected form. Arrange a secure handoff for your drawing after you explicitly consent." },
       ],
       startTitle: "Tell me what you would like to explore",
       startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
@@ -192,12 +193,13 @@ const copy = {
         { title: "Символическая карта", text: "Рисунок поможет исследовать связи и субъективно ощущаемые препятствия." },
         { title: "Письменные ориентиры", text: "Получите вопросы и наблюдения для дальнейшего шага." },
       ],
+      privateHandoff: "После согласия Telegram-бот может попросить необязательное фото или рисунок без медицинских сведений. Не отправляйте личные ответы через мессенджеры. Медицинские документы, результаты тестов и чувствительные сведения передавайте только через защищённую форму сайта.",
       processTitle: "Всего три шага",
       processLead: "Бесплатный письменный формат не требует оплаты, долгой регистрации и видеовстречи.",
       steps: [
         { title: "Опишите ситуацию", text: "Ответьте на несколько вопросов о проблеме и цели." },
         { title: "Нарисуйте три элемента", text: "Изобразите на бумаге «Я», «ЦЕЛЬ» и «ПРОБЛЕМА»." },
-        { title: "Отправьте Андрею", text: "Пришлите анкету и фото рисунка в WhatsApp или Telegram." },
+        { title: "Согласуйте защищённую передачу", text: "Оставьте ответы в защищённой анкете, а передачу рисунка согласуйте отдельно после вашего согласия." },
       ],
       startTitle: "С чего хотите начать?",
       startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
@@ -295,12 +297,13 @@ const copy = {
         { title: "Un mapa simbólico", text: "Usa el dibujo para reflexionar sobre relaciones y obstáculos." },
         { title: "Una perspectiva escrita", text: "Recibe preguntas y reflexiones útiles para el siguiente paso." },
       ],
+      privateHandoff: "Tras dar tu consentimiento, Telegram puede pedir una foto o un dibujo no clínico opcional. No compartas respuestas privadas por mensajería. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido.",
       processTitle: "Tres pasos sencillos",
       processLead: "El formato escrito gratuito no necesita pago ni videollamada.",
       steps: [
         { title: "Describe tu situación", text: "Responde sobre el problema y tu objetivo." },
         { title: "Dibuja tres elementos", text: "Representa YO, META y PROBLEMA en papel." },
-        { title: "Envía ambos materiales", text: "Comparte las respuestas y la foto por WhatsApp o Telegram." },
+        { title: "Acuerda una entrega protegida", text: "Conserva las respuestas en el formulario protegido y acuerda el envío seguro del dibujo solo con tu consentimiento." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
       startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
@@ -551,6 +554,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 </div>
               </li>)}
             </ol>
+            {kind === "situation" ? <p role="note" className={styles.sectionLead}>{t.privateHandoff}</p> : null}
           </div>
           <div className={styles.sceneImage}>
             <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
