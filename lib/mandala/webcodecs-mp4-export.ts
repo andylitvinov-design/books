@@ -14,7 +14,7 @@ const MAX_DURATION=60;
 const MAX_BYTES=80*1024*1024;
 
 export type BrowserMovieAudio={
-  files: readonly ({file:File|Blob;loop:boolean}|{preset:string;loop:true})[];
+  files: readonly ({file:File|Blob;loop:boolean;startSeconds?:number;endSeconds?:number}|{preset:string;loop:true;startSeconds?:number;endSeconds?:number})[];
   volume:number;
 };
 export type BrowserMovieOptions={
@@ -74,6 +74,10 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
       throw new Error("audio_decode_invalid");
     if(!entry.loop && "file" in entry && decoded.duration > seconds + .10)
       throw new Error("narration_longer_than_video");
+    const startSeconds=Number.isFinite(entry.startSeconds)
+      ?Math.max(0,Math.min(seconds-.5,entry.startSeconds!)):0;
+    const endSeconds=Number.isFinite(entry.endSeconds)
+      ?Math.max(startSeconds+.5,Math.min(seconds,entry.endSeconds!)):seconds;
     const source=offline.createBufferSource();
     source.buffer=decoded;
     source.loop=entry.loop;
@@ -81,11 +85,22 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     // Smooth music edges; narration's short fade-in preserves first syllables.
     const fadeIn=entry.loop ? 0.25 : 0.035, fadeOut=entry.loop ? 0.7 : 0.10;
     gain.gain.setValueAtTime(0,0);
-    gain.gain.linearRampToValueAtTime(gainValue,fadeIn);
-    gain.gain.setValueAtTime(gainValue,Math.max(fadeIn,seconds-fadeOut));
-    gain.gain.linearRampToValueAtTime(0,seconds);
+    if(startSeconds===0&&endSeconds===seconds){
+      // Preserve the validated original whole-film mixing envelope.
+      gain.gain.linearRampToValueAtTime(gainValue,fadeIn);
+      gain.gain.setValueAtTime(gainValue,Math.max(fadeIn,seconds-fadeOut));
+      gain.gain.linearRampToValueAtTime(0,seconds);
+    }else{
+      const span=endSeconds-startSeconds;
+      const head=Math.min(fadeIn,span/4),tail=Math.min(fadeOut,span/4);
+      gain.gain.setValueAtTime(0,startSeconds);
+      gain.gain.linearRampToValueAtTime(gainValue,startSeconds+head);
+      gain.gain.setValueAtTime(gainValue,endSeconds-tail);
+      gain.gain.linearRampToValueAtTime(0,endSeconds);
+    }
     source.connect(gain).connect(offline.destination);
-    source.start(0);
+    if(startSeconds===0&&endSeconds===seconds)source.start(0);
+    else source.start(startSeconds,0,endSeconds-startSeconds);
   }
   const rendered=await offline.startRendering();
   if(!rendered.length||rendered.duration<seconds-.01)

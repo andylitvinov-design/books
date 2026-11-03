@@ -403,12 +403,13 @@ export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">
  */
 export function startPresetAudio(
   preset: Exclude<AmbientMusic, "none">, volume = 75,
+  timing: {startSeconds?:number;endSeconds?:number} = {},
 ): Promise<AmbientSession | null> {
-  // For authored melodies, record the same static WAV heard in the browser.
-  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume);
+  // The original local WAV source also accepts a timeline interval.
+  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume,{windows:[timing]});
   const wave = createAmbientPreviewWav(preset);
   const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
-  return startUploadedAudio(file, volume);
+  return startUploadedAudio(file, volume, timing);
 }
 
 /** Export one user-supplied audio recording alongside the canvas stream.
@@ -416,7 +417,7 @@ export function startPresetAudio(
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
 export async function startUploadedAudio(
-  file: File, volume = 80, options: { loop?: boolean } = {},
+  file: File, volume = 80, options: { loop?: boolean; startSeconds?:number;endSeconds?:number } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -448,7 +449,23 @@ export async function startUploadedAudio(
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No decoded audio output track");
-    source.start();
+    const startSeconds=Number.isFinite(options.startSeconds)
+      ?Math.max(0,Math.min(59.5,options.startSeconds!)):0;
+    const endSeconds=Number.isFinite(options.endSeconds)
+      ?Math.max(startSeconds+.5,Math.min(60,options.endSeconds!)):null;
+    if(startSeconds||endSeconds!==null){
+      const now=context.currentTime, beginning=now+startSeconds;
+      const finish=endSeconds===null?null:now+endSeconds;
+      const level=Math.max(0,Math.min(100,volume))/100;
+      master.gain.setValueAtTime(0,now);
+      master.gain.setValueAtTime(0,beginning);
+      master.gain.linearRampToValueAtTime(level,beginning+.08);
+      if(finish!==null){
+        master.gain.setValueAtTime(level,Math.max(beginning+.08,finish-.20));
+        master.gain.linearRampToValueAtTime(0,finish);
+        source.start(beginning,0,endSeconds!-startSeconds);
+      }else source.start(beginning);
+    }else source.start();
     let closed = false, faded = false;
     return {
       track,
@@ -518,6 +535,7 @@ export function isMelodyPreset(preset: AmbientMusic): boolean {
 }
 export async function startPresetMixAudio(
   ids: readonly Exclude<AmbientMusic,"none">[], volume=75,
+  options:{windows?:readonly {startSeconds?:number;endSeconds?:number}[]}={},
 ): Promise<AmbientSession | null> {
   if(typeof window==="undefined"||ids.length<1||ids.length>3||new Set(ids).size!==ids.length)return null;
   const AudioCtor=window.AudioContext ||
@@ -546,11 +564,19 @@ export async function startPresetMixAudio(
     master.connect(destination);
     const track=destination.stream.getAudioTracks()[0];
     if(!track)throw new Error("No mixed audio track");
-    for(const buffer of decoded){
+    for(const [index,buffer] of decoded.entries()){
       const player=context.createBufferSource();
       player.buffer=buffer;player.loop=true;player.connect(master);sources.push(player);
+      const timing=options.windows?.[index];
+      const start=Number.isFinite(timing?.startSeconds)
+        ?Math.max(0,Math.min(59.5,timing!.startSeconds!)):0;
+      const end=Number.isFinite(timing?.endSeconds)
+        ?Math.max(start+.5,Math.min(60,timing!.endSeconds!)):null;
+      if(start||end!==null){
+        if(end!==null)player.start(context.currentTime+start,0,end-start);
+        else player.start(context.currentTime+start);
+      }else player.start();
     }
-    sources.forEach(player=>player.start());
     let closed=false,faded=false;
     return {
       track,

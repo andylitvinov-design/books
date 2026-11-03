@@ -3055,3 +3055,27 @@
     max-width:100%;text-align:center;overflow-wrap:anywhere}
   .montageScenario{padding:11px}
 }
+
+/* Mobile timeline: one portrait-size editing viewport, expandable legacy tools.
+   Existing source-backed Canvas and all export gates remain unchanged. */
+.montageEssentials{min-width:0;margin:0;border:1px solid #d8e5dc;border-radius:14px;background:#f9fcf8;padding:0 10px}
+.montageEssentials>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;cursor:pointer;color:#175844;font:750 13px/1.25 Arial,Helvetica,sans-serif}
+.montageEssentials>summary::-webkit-details-marker{display:none}
+.montageEssentials>summary:focus-visible{outline:3px solid #178568;outline-offset:2px}
+.montageEssentials[open]{padding-bottom:10px}
+.studio[data-active-workspace="editor"] .basicStudio{gap:9px}
+.studio[data-active-workspace="editor"] .montageScenario{gap:5px;padding:9px 10px}
+.studio[data-active-workspace="editor"] .montageScenario label{font-size:14px}
+.studio[data-active-workspace="editor"] .montageScenario p{font-size:11px;line-height:1.27}
+.studio[data-active-workspace="editor"] .montageScenario textarea{min-height:56px;padding:8px 10px;line-height:1.3}
+.studio[data-active-workspace="editor"] .montageScenario button{min-height:35px;padding:6px;font-size:12px}
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"] .previewStage .hero{
+    max-height:220px;aspect-ratio:16/9!important}
+  .studio[data-active-workspace="editor"] .previewStageHeading{display:none!important}
+  .studio[data-active-workspace="editor"] .workspaceHeading{display:none!important}
+  .studio[data-active-workspace="editor"] .previewMiniSource{display:none!important}
+  .studio[data-active-workspace="editor"] .basicStudio{padding:8px!important;margin:0!important}
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor]{order:4}
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-order-bar]{order:5}
+}
