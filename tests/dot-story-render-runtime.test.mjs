@@ -7,6 +7,8 @@ import {createHash} from 'node:crypto';
 import {storySceneCandidates,verifyStoryShotSources} from '../lib/mandala/dot-story-asset-runtime.mjs';
 import {compileDotStoryFfmpegArgs} from '../lib/mandala/dot-story-ffmpeg-args.mjs';
 import {parseOwnerVideoUpdate} from '../lib/practitioners/owner-telegram-video-model.mjs';
+import {inspectStoryPlotCoverage} from '../lib/practitioners/owner-telegram-story-render.mjs';
+import {listTelegramStoryCategories,listTelegramStorySubcategories,listTelegramStoryTopics,listTelegramStoryScenarios,listTelegramStoryPlots} from '../lib/mandala/telegram-story-plots.mjs';
 
 const rights={kind:'existing_approved_first_party_master'};
 const scenes=Array.from({length:4},(_,i)=>({
@@ -99,4 +101,23 @@ test('owner-only compact storyboard callback and back are independently parsed',
  assert.equal(callback('hh-story:abcdef123456:0:0:2').storyChoice.index,2);
  assert.equal(callback('hh-story-back:abcdef123456:0').action,'story_back');
  assert.equal(callback('hh-story:abcdef123456:0:9:2'),null);
+});
+
+test('storyboard choice preview is honest about editorial coverage and physical verification',()=>{
+ const category=listTelegramStoryCategories()[0];
+ const sub=listTelegramStorySubcategories(category.id)[0];
+ const topic=listTelegramStoryTopics(category.id,sub.id)[0];
+ const scenario=listTelegramStoryScenarios(topic.id)[0];
+ const plots=listTelegramStoryPlots(scenario.id);
+ assert.equal(plots.length,4);
+ for(const plot of plots){
+  const proof=inspectStoryPlotCoverage(plot.id);
+  assert.equal(proof.minimumSources,4);
+  assert.equal(proof.physicalMediaVerified,false);
+  assert.equal(proof.readyForPlanning,proof.candidateCount>=4);
+  assert.equal(proof.plotId,plot.id);
+ }
+ const invalid=inspectStoryPlotCoverage('invalid--plot');
+ assert.equal(invalid.readyForPlanning,false);
+ assert.equal(invalid.candidateCount,0);
 });
