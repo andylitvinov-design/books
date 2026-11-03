@@ -779,8 +779,12 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'ffprobe', 'ffmpeg'
   ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
   const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
-  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
-    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob/,
+    'only the exact prerequisite insertion may leave the BASE macOS job otherwise unchanged');
+  assert.match(aggregator,/readyPreflight &&/,
+    'the added prerequisite must execute for every ready PR');
+  assert.match(aggregator,/baseJob === candidateJob/,
+    'untouched BASE macOS job remains a trusted valid case');
   assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
