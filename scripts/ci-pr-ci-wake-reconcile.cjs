@@ -50,7 +50,7 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
  if(!['AWAITING_CORE','CONFIRMED','ESCALATED'].includes(previous.status))return result;
  if(previous.status==='ESCALATED')result.state='CI_WAKE_UNDELIVERED';
  let run=null,zeroHistory=false;
- if(previous.status!=='CONFIRMED'){
+ if(previous.status==='AWAITING_CORE'){
    try{
      const response=await limited('ci-wake-core-history',()=>github.request(
        'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
