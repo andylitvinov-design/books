@@ -4,15 +4,15 @@ import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
-  ArrowRight, AudioLines, ChevronDown, Clock3, Eye, FileText, Headphones, Image as Picture,
-  MapPin, Mic, Play, Quote, Repeat2, SlidersHorizontal, Sparkles, Sun, UserRound, Waves,
+  ArrowRight, AudioLines, ChevronDown, Eye, Headphones, Image as Picture,
+  MapPin, Mic, Play, Quote, Sparkles, Sun, Waves,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
 export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number };
-type GroupId = "phrases" | "audio" | "visual" | "meditation";
+type GroupId = "phrases" | "visual" | "audio";
 type Props = {
   locale: PublicLocale;
   disabled: boolean;
@@ -21,9 +21,20 @@ type Props = {
   light: HypnoLightSettings;
   onLightChange: (next: HypnoLightSettings) => void;
   onOpenPhraseEditor: () => void;
-  onOpenAudioEditor: () => void;
+  voiceEditor?: ReactNode;
+  onToggleVoice: () => void;
+  whisperEnabled: boolean;
+  binauralEnabled: boolean;
+  beatHz: number;
+  repeatEverySeconds: number;
+  whisperGain: number;
+  audioEffectBusy: boolean;
+  onToggleWhisper: () => void;
+  onToggleBinaural: () => void;
+  onBeatHzChange: (value: number) => void;
+  onRepeatEveryChange: (value: number) => void;
+  onWhisperGainChange: (value: number) => void;
   onOpenScenes: () => void;
-  onOpenMeditation: () => void;
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
   onPreview: () => void;
@@ -31,6 +42,7 @@ type Props = {
   onWavePreset: () => void;
   hasPhoto: boolean;
   hasVoiceFile: boolean;
+  voiceActive: boolean;
   posters: Record<GroupId,string>;
 };
 
@@ -46,7 +58,7 @@ const copy = {
     audio:"Аудио",audioHelp:"Голос, гипнозвук и ритмы",
     speech:"Озвучка фраз",speechHelp:"Ваш голос или разрешённая запись",
     whisper:"Гипнозвук",whisperHelp:"Тихие повторы речи",
-    binaural:"Бинауральные ритмы",binauralHelp:"Стереоритмы · скоро",
+    binaural:"Бинауральные ритмы",binauralHelp:"Тихий стереоритм для наушников",
     visual:"Визуальные эффекты",visualHelp:"Образы, свет и движение",
     light:"Импульс света",lightHelp:"Волны, лучи и мандала",
     places:"Места силы",placesHelp:"Сцены из каталога",
@@ -55,8 +67,10 @@ const copy = {
     generateMeditation:"Создать личную медитацию",meditationDetail:"Текст по вашей цели и утверждённым фразам.",
     settings:"Настроить",selected:"Включено",disabled:"Выключено",
     rhythm:"Темп плавных волн",intensity:"Интенсивность",cycles:"циклов/мин",
-    voiceHint:"Озвучка возможна собственным голосом, с согласия близкого или из лицензированных оригинальных записей вдохновляющих людей. Загрузка и права — в настройках «Звук».",
-    pending:"Пока недоступно в итоговом видео: нужна проверенная речевая дорожка и реальный аудиомикс. Настройки музыки остаются во вкладке «Звук».",
+    voiceHint:"Сначала создайте голосовую дорожку выбранных фраз. Она будет добавлена прямо в это видео.",
+    pending:"Для тихих повторов сначала создайте и прослушайте озвучку фраз выше.",
+    beatHint:"Нужны стереонаушники. Эффект добавляется в звуковую дорожку; это не медицинская процедура и не гарантирует изменения состояния.",
+    effectBusy:"Подготавливаем аудиодорожку…",
     science:"Короткие кадры — экспериментальный эффект; нет доказательств коррекции убеждений. Без мигания и медицинских обещаний.",
     meditationDuration:"Длительность",meditationTime:"3 / 5 / 8 / 12 мин",meditationStyle:"Стиль",meditationStyles:"Расслабление · Энергия",meditationVoice:"Голос",meditationVoices:"Голос устройства или свой",
     create:"Сформировать видео",credits:"0 кредитов · локальное создание",
@@ -73,7 +87,7 @@ const copy = {
     audio:"Audio",audioHelp:"Voice and sound layers",
     speech:"Spoken phrases",speechHelp:"Your voice or permitted audio",
     whisper:"Quiet speech",whisperHelp:"Low-volume audible repetitions",
-    binaural:"Binaural beats",binauralHelp:"Headphone audio · coming soon",
+    binaural:"Binaural beats",binauralHelp:"Quiet stereo beat for headphones",
     visual:"Visual effects",visualHelp:"Light, images and motion",
     light:"Light and energy pulse",lightHelp:"Waves, rays and mandala without flashes",
     places:"Meaningful places",placesHelp:"Choose from existing video scenes",
@@ -82,8 +96,10 @@ const copy = {
     generateMeditation:"Create meditation",meditationDetail:"Opens the existing script editor with local voice preview.",
     settings:"Configure",selected:"On",disabled:"Off",
     rhythm:"Smooth wave tempo",intensity:"Intensity",cycles:"cycles/min",
-    voiceHint:"Record or upload authorized speech in existing Sound settings. No third-party voice cloning without verified consent.",
-    pending:"Not yet available in exported video: requires a real recorded speech track and verified audio mixer. Music remains in Sound.",
+    voiceHint:"Create a voice track from your selected phrases first. It will be attached directly to this video.",
+    pending:"Create and listen to the spoken phrases above before enabling quiet repetitions.",
+    beatHint:"Stereo headphones are required. This is an optional audio effect, not a medical treatment or a guaranteed way to change your state.",
+    effectBusy:"Preparing the audio track…",
     science:"Brief frames are experimental; no proven subconscious effects. No strobe flashes or clinical claims.",
     meditationDuration:"Duration",meditationTime:"3 / 5 / 8 / 12 min",meditationStyle:"Style",meditationStyles:"Calm · Energy",meditationVoice:"Voice",meditationVoices:"Device or your recording",
     create:"Create video",credits:"0 credits · created on your device",
@@ -100,7 +116,7 @@ const copy = {
     audio:"Audio",audioHelp:"Voz y efectos de sonido",
     speech:"Frases narradas",speechHelp:"Tu voz o voz autorizada de alguien cercano",
     whisper:"Voz tenue",whisperHelp:"Repeticiones audibles a bajo volumen",
-    binaural:"Ritmos binaurales",binauralHelp:"Audio estéreo · próximamente",
+    binaural:"Ritmos binaurales",binauralHelp:"Ritmo estéreo suave para auriculares",
     visual:"Efectos visuales",visualHelp:"Luz, imágenes y movimiento",
     light:"Pulso de luz y energía",lightHelp:"Ondas, rayos y mandala sin destellos",
     places:"Lugares especiales",placesHelp:"Elige una escena del catálogo existente",
@@ -109,8 +125,10 @@ const copy = {
     generateMeditation:"Crear meditación",meditationDetail:"Abre el editor de guiones y la vista previa de voz local.",
     settings:"Configurar",selected:"Sí",disabled:"No",
     rhythm:"Ritmo de ondas suaves",intensity:"Intensidad",cycles:"ciclos/min",
-    voiceHint:"Graba o sube una voz autorizada en Sonido. Sin clonación de voz de terceros sin consentimiento verificado.",
-    pending:"Aún no disponible en el vídeo exportado: requiere voz grabada y mezcla verificada. La música se configura en Sonido.",
+    voiceHint:"Primero crea la pista de voz con tus frases elegidas. Se añadirá directamente a este vídeo.",
+    pending:"Primero crea y escucha la voz de tus frases para poder repetirlas suavemente.",
+    beatHint:"Se necesitan auriculares estéreo. Es un efecto de audio opcional, no un tratamiento médico ni garantiza cambios de estado.",
+    effectBusy:"Preparando la pista de audio…",
     science:"Los fotogramas breves son experimentales y no tienen un efecto subliminal probado. Sin destellos.",
     meditationDuration:"Duración",meditationTime:"3 / 5 / 8 / 12 min",meditationStyle:"Estilo",meditationStyles:"Calma · Energía",meditationVoice:"Voz",meditationVoices:"Dispositivo o tu grabación",
     create:"Crear vídeo",credits:"0 créditos · creación local",
@@ -143,12 +161,17 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
 
 export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
-  onOpenPhraseEditor,onOpenAudioEditor,onOpenScenes,onOpenMeditation,
-  onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,posters,
+  onOpenPhraseEditor,onOpenScenes,
+  onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
+  voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
+  onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
   const t=copy[locale];
-  const [open,setOpen]=useState<GroupId[]>(["audio","visual","meditation","phrases"]);
+  const [open,setOpen]=useState<GroupId[]>(["phrases","visual","audio"]);
   const [showLightSettings,setShowLightSettings]=useState(false);
+  const [showSpeechSettings,setShowSpeechSettings]=useState(false);
+  const [showWhisperSettings,setShowWhisperSettings]=useState(false);
+  const [showBinauralSettings,setShowBinauralSettings]=useState(false);
   const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
   const [introTarget,setIntroTarget]=useState<HTMLElement|null>(null);
   useLayoutEffect(()=>{
@@ -164,10 +187,9 @@ export function MandalaHypnocorrectionMobile({
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
   const groups: {id:GroupId;title:string;help:string}[]=[
-    {id:"audio",title:t.audio,help:t.audioHelp},
-    {id:"visual",title:t.visual,help:t.visualHelp},
-    {id:"meditation",title:t.meditation,help:t.meditationHelp},
     {id:"phrases",title:t.phrases,help:t.phrasesHelp},
+    {id:"visual",title:t.visual,help:t.visualHelp},
+    {id:"audio",title:t.audio,help:t.audioHelp},
   ];
   const intro=<div className={styles.intro} data-hypno-intro>
     <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
@@ -203,23 +225,47 @@ export function MandalaHypnocorrectionMobile({
           <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
             active={briefFrame} onToggle={()=>{toggleVisibility("frame");showNote("frame");}}
             onConfigure={()=>showNote("frame")} disabled={disabled} settings={t.settings}/>
-          <Feature icon={<Repeat2/>} title={t.repeat} help={t.repeatHelp}
-            active={false} unavailable onToggle={()=>showNote("audio")}
-            onConfigure={()=>showNote("audio")} disabled={disabled} settings={t.settings}/>
           {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
-          {note==="audio"?<p role="status" className={styles.note}>{t.pending}</p>:null}
         </>:null}
         {group.id==="audio"?<>
           <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
-            active={hasVoiceFile} onToggle={onOpenAudioEditor}
-            onConfigure={onOpenAudioEditor} disabled={disabled} settings={t.settings}/>
+            active={voiceActive} onToggle={()=>{
+              if(!hasVoiceFile){setShowSpeechSettings(true);return;}
+              onToggleVoice();
+            }}
+            onConfigure={()=>setShowSpeechSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showSpeechSettings?<div className={styles.settings} data-hypno-speech-settings style={{gridColumn:"1 / -1"}}>
+            {voiceEditor||<p className={styles.note}>{t.voiceHint}</p>}
+          </div>:null}
           <Feature icon={<AudioLines/>} title={t.whisper} help={t.whisperHelp}
-            active={false} unavailable onToggle={()=>showNote("audio")}
-            onConfigure={()=>showNote("audio")} disabled={disabled} settings={t.settings}/>
+            active={whisperEnabled} onToggle={()=>{
+              if(!hasVoiceFile){setShowSpeechSettings(true);setNote("voice");return;}
+              onToggleWhisper();
+            }} onConfigure={()=>setShowWhisperSettings(value=>!value)}
+            disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showWhisperSettings?<div className={styles.settings} data-hypno-whisper-settings style={{gridColumn:"1 / -1"}}>
+            <label>{locale==="ru"?"Пауза между повторами":locale==="es"?"Pausa entre repeticiones":"Pause between repetitions"} · {repeatEverySeconds} {locale==="ru"?"сек":"sec"}
+              <input type="range" min="4" max="20" step="1" value={repeatEverySeconds}
+                disabled={disabled||audioEffectBusy} onChange={event=>onRepeatEveryChange(Number(event.currentTarget.value))}/>
+            </label>
+            <label>{locale==="ru"?"Громкость повторов":locale==="es"?"Volumen de repeticiones":"Repetition volume"} · {whisperGain}%
+              <input type="range" min="5" max="30" step="1" value={whisperGain}
+                disabled={disabled||audioEffectBusy} onChange={event=>onWhisperGainChange(Number(event.currentTarget.value))}/>
+            </label>
+            <p className={styles.note}>{hasVoiceFile?locale==="ru"?"Фразы повторяются тихо, с паузой после каждой полной фразы.":locale==="es"?"Las frases se repiten suavemente, con una pausa después de cada frase completa.":"Phrases repeat quietly, with a pause after each complete phrase.":t.voiceHint}</p>
+          </div>:null}
           <Feature icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
-            active={false} unavailable onToggle={()=>showNote("audio")}
-            onConfigure={()=>showNote("audio")} disabled={disabled} settings={t.settings}/>
-          {note==="audio"||note==="voice" ? <p className={styles.note}>{note==="audio"?t.pending:t.voiceHint}</p> : null}
+            active={binauralEnabled} onToggle={onToggleBinaural}
+            onConfigure={()=>setShowBinauralSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showBinauralSettings?<div className={styles.settings} data-hypno-binaural-settings style={{gridColumn:"1 / -1"}}>
+            <label>{locale==="ru"?"Частота биения":locale==="es"?"Frecuencia del pulso":"Beat frequency"} · {beatHz} Hz
+              <input type="range" min="1" max="12" step="1" value={beatHz}
+                disabled={disabled||audioEffectBusy} onChange={event=>onBeatHzChange(Number(event.currentTarget.value))}/>
+            </label>
+            <p className={styles.note}>{t.beatHint}</p>
+          </div>:null}
+          {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite">{t.effectBusy}</p>:null}
+          {note==="voice"?<p className={styles.note}>{t.voiceHint}</p>:null}
         </>:null}
         {group.id==="visual"?<>
           <Feature icon={<Sun/>} title={t.light} help={t.lightHelp} poster={posters.visual}
@@ -236,38 +282,16 @@ export function MandalaHypnocorrectionMobile({
                 disabled={disabled} onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
             </label>
           </div>:null}
-          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.meditation}
+          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.visual}
             active={false} onConfigure={onOpenScenes} disabled={disabled} settings={t.settings}/>
           <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp} poster={posters.audio}
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
             onConfigure={onPickPhoto} disabled={disabled} settings={t.settings}/>
         </>:null}
-        {group.id==="meditation"?<div className={styles.meditation}>
-          <button type="button" className={styles.meditationStart} onClick={onOpenMeditation} disabled={disabled}>
-            <FileText size={27} aria-hidden="true"/>
-            <span><strong>{t.generateMeditation}</strong><small>{t.meditationDetail}</small></span>
-            <ArrowRight size={21} aria-hidden="true"/>
-          </button>
-          <div className={styles.meditationOptions}>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <Clock3 size={19} aria-hidden="true"/><strong>{t.meditationDuration}</strong><small>{t.meditationTime}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <SlidersHorizontal size={19} aria-hidden="true"/><strong>{t.meditationStyle}</strong><small>{t.meditationStyles}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <UserRound size={19} aria-hidden="true"/><strong>{t.meditationVoice}</strong><small>{t.meditationVoices}</small>
-            </button>
-          </div>
-        </div>:null}
+
       </div>
     </section>)}
     <div className={styles.actions} data-hypno-actions>
-      <button type="button" data-hypno-meditation-action className={styles.meditationAction}
-        disabled={disabled} onClick={onOpenMeditation}>
-        <Sparkles size={23} aria-hidden="true"/>
-        <strong>{locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create meditation"}</strong>
-      </button>
       <button type="button" data-hypno-create className={styles.create} disabled={disabled}
       onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
       <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
