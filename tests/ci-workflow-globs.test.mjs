@@ -48,8 +48,8 @@ test('Portrait PR runs focused current contracts while the old synthetic DB/brow
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
-  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
     'PR routing must not allocate two private DB/browser runners');
@@ -74,8 +74,8 @@ test('Portrait PR runs focused current contracts while the old synthetic DB/brow
 });
 
 test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
-  const suffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const suffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   for (const [file, prefix, job] of [
     ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
@@ -239,6 +239,17 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.match(s, /path: \.next\/cache/);
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
+});
+
+test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
+  const source=workflow('hh-native-auto-merge.yml');
+  const job=source.split('  recover-interrupted-core:')[1].split('  prune-head:')[0];
+  assert.match(job,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/);
+  assert.match(job,/new Set\(\["timed_out","startup_failure"\]\)/);
+  assert.match(job,/event\.head_sha !== live\.head\.sha/);
+  assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/);
+  assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/);
+  assert.doesNotMatch(job,/cancelled.*timed_out|startup_failure.*failure/);
 });
 
 test('IA and Mandala browsers allocate expensive runners only after cheap exact-HEAD preflight', () => {
