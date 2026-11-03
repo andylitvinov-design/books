@@ -176,7 +176,7 @@ test('repeated close notifications retain the first position and subsequent user
  assert.deepEqual(f.writes,[5.391310898,12.25]);
 });
 
-for(const action of ['onPlay','onSeeking','onPointerDown','onKeyDown'])test(`${action} after reopening cancels obsolete recovery without changing user controls`,()=>{
+for(const action of ['onPlay','onSeeking'])test(`${action} after reopening cancels obsolete recovery without changing user controls`,()=>{
  const f=recoveryFixture();f.close();f.reopen();f.handlers.onLoadStart(f.event);
  const before=f.media.paused;f.handlers[action](f.event);assert.equal(f.media.paused,before);
  f.handlers.onLoadedMetadata(f.event);assert.deepEqual(f.writes,[]);
@@ -209,7 +209,7 @@ test('already-ended media at close is not rewound by later reconstruction',()=>{
  const f=recoveryFixture({ended:true});f.close();f.reopen();f.media.ended=false;f.reconstruct();assert.deepEqual(f.writes,[]);
 });
 
-for(const action of ['onPlay','onSeeking','onPointerDown','onKeyDown'])test(`${action} before loadstart cancels obsolete recovery`,()=>{
+for(const action of ['onPlay','onSeeking'])test(`${action} before loadstart cancels obsolete recovery`,()=>{
  const f=recoveryFixture();f.close();f.reopen();f.handlers[action](f.event);f.reconstruct();assert.deepEqual(f.writes,[]);
 });
 
@@ -238,38 +238,67 @@ test('native seek rejection is contained once without retry or control side effe
  assert.doesNotThrow(()=>f.reconstruct());f.reopen();assert.equal(attempts,1);assert.deepEqual(f.writes,[]);
 });
 
-test('reopened native WebKit source only nudges when explicit user play reaches decoded readiness',()=>{
-  const f=recoveryFixture({readyState:1});
-  f.close();f.reopen();
-  assert.deepEqual(f.writes,[],'Opening alone must not seek');
-  f.media.paused=false;
-  f.handlers.onPlay(f.event);
-  assert.deepEqual(f.writes,[],'No seek before real decoder readiness');
-  f.media.readyState=4;
+
+function deferredWebKitFixture(overrides={}) {
+  const callbacks=[];
+  const f=recoveryFixture({
+    requestVideoFrameCallback(fn){callbacks.push(fn);return callbacks.length;},
+    ...overrides
+  });
+  function frame(mediaTime) {
+    assert.ok(callbacks.length>0,'Expected a genuinely new decoded frame callback');
+    callbacks.shift()(0,{mediaTime});
+  }
+  return {...f,callbacks,frame};
+}
+test('WebKit defers saved-position seek until an actual new decoded frame after explicit play',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  assert.deepEqual(f.writes,[],'Reopening a paused disclosure must never seek');
+  f.media.paused=false;f.handlers.onPlay(f.event);
   f.handlers.onPlaying(f.event);
-  assert.equal(f.writes.length,1);
-  assert.ok(Math.abs(f.writes[0]-(5.391310898+0.04))<0.000001);
+  assert.deepEqual(f.writes,[],'Preroll play/playing must not seek');
+  assert.equal(f.callbacks.length,1,'Only one resumed-frame observation may run');
+  f.frame(0.066666);
+  assert.deepEqual(f.writes,[5.391310898],'Frame zero on a playing pipeline authorizes one exact recovery');
   f.handlers.onPlaying(f.event);
-  assert.equal(f.writes.length,1,'No second resync from repeated playing event');
+  assert.equal(f.writes.length,1,'Never repeat a resolved native seek');
 });
-test('native play resumes a stale backend only for verified same-video source and never overrides user controls',()=>{
-  for(const edit of [
+test('healthy same-source native replay advances two real frames without mutating time',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(5.42);assert.deepEqual(f.writes,[]);assert.equal(f.callbacks.length,1);
+  f.frame(5.46);assert.deepEqual(f.writes,[]);
+  assert.equal(f.callbacks.length,0,'Two correctly decoded frames finish recovery monitoring');
+});
+test('real user seek, source replacement or paused media cancels a pending frame callback',()=>{
+  for(const cancel of [
+    f=>f.handlers.onSeeking(f.event),
+    f=>f.handlers.onKeyDown({...f.event,key:'ArrowRight'}),
     f=>{f.media.currentSrc=videos[1].src},
+    f=>{f.media.paused=true},
     f=>{f.media.seeking=true},
-    f=>{f.media.ended=true},
-    f=>{f.media.duration=3},
-    f=>{f.setPosition(11)},
-    f=>{f.handlers.onPointerDown(f.event)},
-    f=>{f.handlers.onKeyDown(f.event)}
+    f=>{f.media.ended=true}
   ]){
-    const f=recoveryFixture({readyState:4});f.close();f.reopen();
-    edit(f);f.media.paused=false;f.handlers.onPlay(f.event);
-    assert.deepEqual(f.writes,[],'No playback mutation for new source, user seek/input or invalid duration');
+    const f=deferredWebKitFixture();f.close();f.reopen();
+    f.media.paused=false;f.handlers.onPlay(f.event);
+    cancel(f);f.frame(0.066666);
+    assert.deepEqual(f.writes,[],'A new user/media state must veto the recovery seek');
   }
 });
-test('native play may restore same-source position after WebKit silently rewinds its backend',()=>{
-  const f=recoveryFixture({readyState:4});f.close();f.reopen();
-  f.setPosition(1.5);f.media.paused=false;f.handlers.onPlay(f.event);
-  assert.equal(f.writes.length,1);
-  assert.ok(Math.abs(f.writes[0]-(5.391310898+0.04))<0.000001);
+test('Space and pointer activation preserve a true play while native seeking remains authoritative',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  assert.equal(f.handlers.onPointerDown,undefined,'Do not intercept native play controls');
+  f.handlers.onKeyDown({...f.event,key:' '});
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,1);
+  f.frame(0.066666);assert.equal(f.writes.length,1);
+});
+test('closing during an unfinished frame observer rejects stale callbacks without losing the paused position',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,1);
+  f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.callbacks.length,2);
+  f.frame(0.066666);assert.deepEqual(f.writes,[],'Old frame generation cannot override new state');
+  f.frame(0.066666);assert.deepEqual(f.writes,[5.391310898]);
 });

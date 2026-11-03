@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
 export function TantraVideoTestimonials(props: Props) {
   const [youtubeSession, setYoutubeSession] = useState(0);
 
-  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean }>());
+  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number }>());
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
@@ -28,7 +28,13 @@ export function TantraVideoTestimonials(props: Props) {
     if (!video.paused) video.pause();
     // Capture after pausing and before hiding. Repeated close notifications must
     // not replace the retained position with a backend's transient reset value.
-    if (retained.current.has(video)) return;
+    const existing = retained.current.get(video);
+    if (existing?.awaitingFrame) {
+      existing.awaitingFrame = false;
+      existing.generation = (existing.generation ?? 0) + 1;
+      existing.confirmedFrames = 0;
+    }
+    if (existing) return;
     if (video.currentSrc && Number.isFinite(video.currentTime) && video.currentTime > 0
       && !video.ended && !video.seeking) {
       retained.current.set(video, { source: video.currentSrc, time: video.currentTime, reconstructing: false });
@@ -37,33 +43,58 @@ export function TantraVideoTestimonials(props: Props) {
   function onNativePlay(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
     const saved = retained.current.get(video);
-    if (!saved) return;
-    // After a user-requested resume, WebKit/GStreamer may report playing while
-    // its decoder has fallen behind the exact position saved at disclosure close.
-    // Do nothing while paused: opening the disclosure must never seek or play.
-    // A new user seek/input (below) always deletes the saved state first.
+    if (!saved || saved.awaitingFrame) return;
+    // Native disclosure opening never seeks or plays. User play/playing is
+    // the sole trigger for checking a retained, same-source decoder position.
     if (video.paused || video.seeking || video.ended ||
-        video.currentSrc !== saved.source || !Number.isFinite(saved.time) ||
-        saved.time <= 0 || !Number.isFinite(video.duration) ||
-        saved.time + 0.06 >= video.duration) {
+        video.currentSrc !== saved.source ||
+        !Number.isFinite(saved.time) || saved.time <= 0 ||
+        !Number.isFinite(video.duration) || saved.time >= video.duration ||
+        typeof video.requestVideoFrameCallback !== 'function') {
       retained.current.delete(video);
       return;
     }
-    if (!(video.readyState >= 2)) return; // onPlaying gets a later chance
-    retained.current.delete(video); // at most one bounded nudge per close
-    if (!Number.isFinite(video.currentTime) ||
-        video.currentTime > saved.time + 0.08) return;
-    try {
-      // Resync only the real same-source native decoder; never issue play(),
-      // reload, a network request, or a cross-video position transfer.
-      video.currentTime = saved.time + 0.04;
-    } catch {
-      // A refused native seek does not override user controls or retry.
-    }
+    saved.awaitingFrame = true;
+    saved.confirmedFrames = 0;
+    const generation = saved.generation ?? 0;
+    const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
+      if (retained.current.get(video) !== saved ||
+          (saved.generation ?? 0) !== generation) return;
+      if (video.paused || video.seeking || video.ended ||
+          video.isConnected === false || video.currentSrc !== saved.source ||
+          !Number.isFinite(metadata.mediaTime)) {
+        retained.current.delete(video);
+        return;
+      }
+      if (metadata.mediaTime < saved.time - 0.25) {
+        // WebKit/GStreamer sometimes restarts its decoder at frame zero
+        // after a closed disclosure. A seek in play-event preroll hangs.
+        // Only a newly presented active frame authorizes ONE exact seek.
+        retained.current.delete(video);
+        try { video.currentTime = saved.time; } catch {
+          // Refused native seek must not cause autoplay or a retry loop.
+        }
+        return;
+      }
+      saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+      if (saved.confirmedFrames >= 2) {
+        retained.current.delete(video); // native resume is genuinely healthy
+      } else {
+        try { video.requestVideoFrameCallback(onFrame); }
+        catch { retained.current.delete(video); }
+      }
+    };
+    try { video.requestVideoFrameCallback(onFrame); }
+    catch { retained.current.delete(video); }
   }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
-    // Native user seeking, pointer and keyboard controls always win.
+    // Real user native seeking always overrides a pending frame recovery.
     retained.current.delete(event.currentTarget);
+  }
+  function onNativeKeyDown(event: KeyboardEvent<HTMLVideoElement>) {
+    // Keyboard seek overrides saved state; Space/Enter play keeps it.
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+      discardRecovery(event);
   }
   function onNativeLoadStart(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
@@ -123,7 +154,7 @@ export function TantraVideoTestimonials(props: Props) {
             <video controls playsInline preload="none" poster={video.poster ?? undefined}
               onLoadStart={onNativeLoadStart} onLoadedMetadata={onNativeMetadata}
               onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
-              onPointerDown={discardRecovery} onKeyDown={discardRecovery}>
+              onKeyDown={onNativeKeyDown}>
               <source src={video.src} type={video.type} />
             </video>
             <figcaption>{props.nativeLabel} {i + 1}{props.nativeSuffix}</figcaption>
