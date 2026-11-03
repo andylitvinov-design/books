@@ -239,7 +239,7 @@ jobs:
         github.event.workflow_run.head_branch == 'codex/bootstrap-books' &&
         (github.event.workflow_run.event == 'workflow_dispatch' ||
          (github.event.workflow_run.name == 'HH zero-cost PR CI worker' &&
-          github.event.workflow_run.event == 'schedule')))
+          github.event.workflow_run.event == 'schedule'))))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     concurrency:
