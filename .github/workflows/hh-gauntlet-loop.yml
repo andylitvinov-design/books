@@ -4,7 +4,6 @@ on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-gauntlet-loop.yml'
       - '.opencode/agents/hh-gauntlet-*.md'
       - 'docs/benchmarking/HH_GAUNTLET_LOOP_20261027.md'
       - 'lib/benchmarking/hh-gauntlet-loop.mjs'
