@@ -7,6 +7,12 @@ on:
     # 05:07 Toronto daily, DST-aware; off the busy top of the hour.
     - cron: '7 5 * * *'
       timezone: 'America/Toronto'
+  # One-time recovery: merging this workflow into the default branch must run
+  # the missed Design QA without waiting for GitHub's best-effort scheduler.
+  # Scoped to this workflow path; ordinary product merges never trigger it.
+  push:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-nightly-public-crawl.yml']
   workflow_dispatch:
   pull_request:
     branches: ['codex/bootstrap-books']
@@ -64,7 +70,8 @@ jobs:
           retention-days: 14
 
   design-bible-public:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '7 5 * * *' }}
+    # Push bootstrap happens only on a review-approved workflow change.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '7 5 * * *' || github.event_name == 'push' }}
     permissions:
       contents: read
       issues: write
