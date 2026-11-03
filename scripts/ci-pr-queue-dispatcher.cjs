@@ -5,6 +5,7 @@ const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
+const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
@@ -150,6 +151,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,reason:null};
+ // An accepted dispatch is NOT execution: only a signed real-runner
+ // receipt contributes to the separate confirmation count.
+ summary.runnerStartedConfirmed=0;
+ summary.runnerEvidence=[];
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
  const blocked=reason=>{
@@ -298,6 +303,13 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
+  const realRunner=verifiedRunnerReceipt(comments,task);
+  if(realRunner){
+   summary.runnerStartedConfirmed++;
+   summary.runnerEvidence.push({pr_number:task.pr_number,task_key:task.task_key,
+    run_id:realRunner.runner.run_id,job_id:realRunner.runner.job_id,
+    runner_id:realRunner.runner.runner_id});
+  }
   const status=reservationStatus(task,comments,now);
   if(task.lane==='ci'&&status==='FREE'&&
      fresh.labels?.some(l=>l.name==='hh:ci-wake-unverified')){

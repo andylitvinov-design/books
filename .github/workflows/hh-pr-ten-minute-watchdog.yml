@@ -295,7 +295,8 @@ jobs:
                   source_schema:report.schema,
                   counts:{candidates:number(report.candidates),
                     unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
-                    worker_dispatches:number(report.dispatchAccepted)},
+                    dispatch_requests_accepted:number(report.dispatchAccepted),
+                    worker_dispatches:number(report.runnerStartedConfirmed)},
                   queue_states:{
                     awaiting_core:number(report.ciWakePending??0),
                     core_confirmed:number(report.ciCoreConfirmed??0),
@@ -310,7 +311,7 @@ jobs:
                 if(Object.values(snapshot.counts).some(v=>v===null)||
                    !Number.isFinite(Date.parse(snapshot.checked_at)))throw Error('BAD_MONITOR_COUNTS');
                 const body=[marker,'## Watchdog direct handoff — public snapshot',
-                  'Worker dispatch receipts, not source repair or LIVE proof.',
+                  'Dispatch API acceptance is NOT execution. Worker starts count only trusted exact-task RUNNER_STARTED receipts from a real GitHub Actions runner observed in this inspected queue. Verified source commits and LIVE are separate.',
                   '', '```json',JSON.stringify(snapshot,null,2),'```','',
                   'Источник: https://github.com/andylitvinov-design/books/actions/runs/'+context.runId,''].join('\n');
                 if(issue.body!==body)await github.rest.issues.update({
