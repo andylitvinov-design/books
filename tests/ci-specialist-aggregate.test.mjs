@@ -297,6 +297,10 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.match(smoke,/env -i/,'Gauntlet smoke starts with a credential-scrubbed environment');
     assert.match(smoke,/opencode\/glm-5\.3-flash-free/,'Gauntlet smoke is pinned to an explicit free-only model');
     assert.doesNotMatch(smoke,/pull_request:|schedule:/,'Gauntlet smoke has no PR or scheduled trigger');
+    assert.match(smoke,/docs\/benchmarking\/gauntlet-runs\/\*\*/,'Gauntlet smoke requires an explicit run marker');
+    assert.match(smoke,/No paid retry is permitted/,'Gauntlet smoke forbids paid inference fallback');
+    assert.match(smoke,/node --test tests\/hh-gauntlet-loop\.test\.mjs/,'Gauntlet smoke retains dedicated ACL/loop tests');
+    assert.match(smoke,/timeout-minutes: 18/,'Gauntlet smoke keeps the runtime bounded');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
