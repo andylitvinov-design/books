@@ -249,7 +249,16 @@ test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
   assert.match(job,/event\.head_sha !== live\.head\.sha/);
   assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/);
   assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/);
-  assert.doesNotMatch(job,/cancelled.*timed_out|startup_failure.*failure/);
+  // A cancelled *job* may be evidence of a genuinely interrupted run; a
+  // cancelled or failed *Core workflow* must not trigger an automatic rerun.
+  // Inspect only event-level predicates, never broad text across comments.
+  const eventAllowed=[...job.matchAll(/contains\(fromJSON\('([^']+)'\),\s*github\.event\.workflow_run\.conclusion\)/g)];
+  assert.ok(eventAllowed.length>=1,'interrupted Core trigger must have an event-level allowlist');
+  for(const match of eventAllowed){
+    assert.deepEqual(JSON.parse(match[1]),['timed_out','startup_failure']);
+  }
+  assert.doesNotMatch(job, /event\.conclusion\s*!?={1,3}\s*['"](?:cancelled|failure)['"]/);
+  assert.match(job,/\["cancelled","skipped","timed_out"\]\.includes\(job\.conclusion\)/);
 });
 
 test('IA and Mandala browsers allocate expensive runners only after cheap exact-HEAD preflight', () => {
