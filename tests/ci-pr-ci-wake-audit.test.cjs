@@ -64,6 +64,7 @@ test('Core association requires the current branch, current SHA and correct PR',
  assert.equal(runAssociation(coreRun({pull_requests:[{number:33,head:{sha:SHA}}]}),task),'OTHER');
  assert.equal(runAssociation(coreRun({pull_requests:[{number:2169,head:{sha:OTHER}}]}),task),'OTHER_HEAD');
  assert.equal(runAssociation(coreRun({head_sha:OTHER,pull_requests:[]}),task),'MERGE_PARENT_REQUIRED');
+ assert.equal(runAssociation(coreRun({head_sha:OTHER}),task),'MERGE_PARENT_REQUIRED');
 });
 test('no registered Core run stays pending during 25-minute grace',async()=>{
  const f=fixture(),receipt=wake(10);
@@ -106,11 +107,11 @@ test('ambiguous or incomplete run inventory cannot trigger a manual hold',async(
  assert.equal(r.state,'UNKNOWN');
  assert.equal(r.reason,'CORE_HISTORY_INCOMPLETE');
 });
-test('a cancelled Core is not proof of completed CI',async()=>{
+test('a cancelled Core is a visible stalled CI wake after grace',async()=>{
  const f=fixture({runs:[coreRun({conclusion:'cancelled'})]});
  const r=await inspectCore({github:f.github,limited:f.limited,
   owner:'andylitvinov-design',repo:'books',task,wake:wake(),now:NOW});
- assert.equal(r.state,'WAITING');
+ assert.equal(r.state,'STALLED');
 });
 test('dry-run audit creates no labels, comments, PR edits or source writes',async()=>{
  const f=fixture({runs:[]});
