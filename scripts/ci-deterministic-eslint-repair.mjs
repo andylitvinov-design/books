@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, lstatSync } from 'node:fs';
+import { appendFileSync, lstatSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -115,6 +115,16 @@ async function main(){
     }
     if(!isEligiblePullRequest(await gh(repo,token,'/pulls/'+n),expected)){
       run('git',['restore','--worktree','--staged','.'],cwd);note('NO_REPAIR: PR moved before commit; diff discarded.');return;
+    }
+    // GITHUB_TOKEN pushes suppress follow-on workflow runs. Only a separately
+    // configured trigger-capable PAT/GitHub App token may publish an autofix.
+    const pushToken=process.env.HH_REPAIR_PUSH_TOKEN;
+    if(!pushToken){
+      const patch=run('git',['diff','--no-ext-diff','--no-color','HEAD'],cwd);
+      writeFileSync(join(need('RUNNER_TEMP'),'hh-deterministic-eslint-autofix.patch'),patch,{mode:0o600});
+      await markManual(repo,token,n,head,'A complete deterministic autofix was verified, but HH_REPAIR_PUSH_TOKEN is not configured. A GITHUB_TOKEN push would not trigger the next required CI wave; the patch was saved as a short-lived artifact instead.');
+      note('PATCH_READY_MANUAL_PUSH_REQUIRED: verified autofix saved as an artifact. No commit or GITHUB_TOKEN push was made.');
+      return;
     }
     run('node',[leaseTool,'heartbeat',repo,String(n),owner],trusted,{GH_TOKEN:token,GITHUB_TOKEN:token});
     run('git',['config','user.name','github-actions[bot]'],cwd);
