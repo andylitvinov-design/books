@@ -7,7 +7,6 @@ on:
       - 'scripts/benchmarking/first-video-live-export.mjs'
       - 'scripts/benchmarking/video-director-chat-live-acceptance.mjs'
       - 'tests/video-director-chat-live-acceptance.test.mjs'
-      - '.github/workflows/hh-first-video-live-export.yml'
   workflow_dispatch:
     inputs:
       probe_free_ai:
