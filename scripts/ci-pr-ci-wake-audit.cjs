@@ -10,7 +10,7 @@ const {PROD,REPO,SHA,validPR,commentBody,parseRecords,
 const CORE='hh-pr-core-release.yml';
 const GRACE_MS=25*60*1000;
 const LABEL='hh:ci-wake-unconfirmed';
-const ACCEPTED_ENDINGS=new Set(['success','failure','timed_out','startup_failure','action_required']);
+const ACCEPTED_ENDINGS=new Set(['success','failure','timed_out']);
 function signedWake(task,comments){
  if(!Array.isArray(comments))return null;
  const records=parseRecords(comments.filter(trustedControlComment));
@@ -89,7 +89,7 @@ async function inspectCore({github,limited,owner,repo,task,wake,now}){
     conclusion:run.conclusion};
   if(['queued','waiting','pending','requested'].includes(run.status))
    return {state:'QUEUED',reason:'CORE_RUN_QUEUED',runId:run.id};
-  if(run.status==='completed'&&['cancelled','skipped'].includes(run.conclusion))
+  if(run.status==='completed'&&['cancelled','skipped','startup_failure','action_required'].includes(run.conclusion))
    return {state:now-when>=GRACE_MS?'STALLED':'WAITING',
     reason:'CORE_RUN_CANCELLED_OR_SKIPPED',runId:run.id};
   uncertain=true;
