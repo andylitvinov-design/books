@@ -27,7 +27,7 @@ function verifyYoutubeUrl(value) {
 const youtubeFixturePattern = /^https:\/\/www\.youtube-nocookie\.com\/embed\/qM_nFUkYJ1k(?:\?.*)?$/;
 async function installYoutubeFixture(context) {
   await context.route(youtubeFixturePattern, route => {
-    verifyYoutubeUrl(route.request().url);
+    verifyYoutubeUrl(route.request().url());
     return route.fulfill({
       contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
     });
