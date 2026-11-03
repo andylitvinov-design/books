@@ -3020,7 +3020,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
-      if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      if(preset.theme==="money")setMoneyScene(preset.id.startsWith("motion-film-")?null:preset.clips[0] as MoneySceneId);
       else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
       setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
       setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
