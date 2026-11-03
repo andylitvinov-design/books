@@ -95,6 +95,12 @@ function capture(){
  try{result=buildRawCandidate(process.cwd(),scope);}
  catch(error){result={head_sha:scope.sha,repair_kind:'free_ai',files:[],
    detail_code:String(error.message||'FREE_AI_CAPTURE_FAILED').slice(0,120)};}
+ // Preserve the explicit fail-closed cause (quota, ACL, unsafe scope) for
+ // the monitor and owner; an empty proposal must never be a silent success.
+ if(!result.files.length && fs.existsSync('.hh-free-agent-status')){
+   const reason=fs.readFileSync('.hh-free-agent-status','utf8').trim();
+   if(/^FREE_AI_[A-Z0-9_]{5,90}$/.test(reason))result.detail_code=reason;
+ }
  fs.writeFileSync('candidate-raw.json',JSON.stringify(result));
  const status=result.files.length?'proposed':'no_change';
  if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,
