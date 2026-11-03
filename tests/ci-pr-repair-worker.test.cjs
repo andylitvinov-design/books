@@ -654,7 +654,8 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
 test('free model is activated only after deterministic failure and never sees write token',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('code_available: ${{ steps.select.outputs.code_available }}'));
- assert.match(wf,/core\.setOutput\('code_available','true'\)/);
+ assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_OPENCODE_FREE_TIER_TOKEN==='true'?'true':'false')"));
+ assert.ok(wf.includes("HH_HAS_OPENCODE_FREE_TIER_TOKEN: ${{ secrets.HH_OPENCODE_FREE_TIER_API_KEY != '' }}"));
  const codeFix=wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0];
  const codeVerify=wf.split('\n  code_verify:\n')[1].split('\n  publish:\n')[0];
  assert.match(codeFix,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
