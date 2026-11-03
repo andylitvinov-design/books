@@ -197,6 +197,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="effects"]').click();
       const audioGroup=page.locator('[data-hypno-group="audio"]');
       await audioGroup.waitFor({state:"visible",timeout:10000});
+      const speechCard=audioGroup.locator("[data-hypno-card]").first();
+      await speechCard.locator("button").first().click();
+      await expect(audioGroup.locator("[data-hypno-speech-settings] [data-hypno-voice]"))
+        .toBeVisible({timeout:10000});
       const whisperName=locale==="ru"?"Гипнозвук":locale==="es"?"Voz tenue":"Quiet speech";
       const binauralName=locale==="ru"?"Бинауральные ритмы":locale==="es"?"Ritmos binaurales":"Binaural beats";
       const whisperSwitch=audioGroup.getByRole("switch",{name:whisperName,exact:true});
