@@ -1,0 +1,26 @@
+.root{margin:15px 0;padding:13px;background:#fffdfa;border:1px solid #d6e5d8;border-radius:16px;color:#244435;font:inherit}
+.head{display:flex;align-items:start;gap:9px;margin-bottom:10px}
+.head svg{flex:0 0 auto;color:#28805d;margin-top:3px}
+.head h3{margin:0 0 4px;font:750 17px/1.3 system-ui,-apple-system,sans-serif}
+.head p{margin:0;color:#62736b;font-size:13px;line-height:1.45}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.choices button{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:143px;padding:12px;border:1px solid #d2dfd4;border-radius:12px;background:#fff;color:inherit;text-align:start;font:inherit;cursor:pointer;overflow-wrap:anywhere}
+.choices button:hover{border-color:#6dad83}
+.choices button[aria-pressed="true"]{background:#eef8ef;border:2px solid #257453;padding:11px}
+.choices button:focus-visible{outline:3px solid #ac873e;outline-offset:2px}
+.number{display:flex;align-items:center;justify-content:center;gap:3px;position:absolute;right:9px;top:9px;min-width:22px;height:22px;border-radius:12px;background:#e8efe9;color:#185a40;font-size:12px;font-weight:800}
+.kind{color:#6e806f;font-size:11px;font-weight:750;line-height:1.25;max-width:calc(100% - 32px)}
+.choices strong{font-size:15px;line-height:1.3}
+.choices small{font-size:12px;line-height:1.4;color:#64766b}
+.action{font-size:12px;font-weight:750;color:#236849;margin-top:auto}
+.preview{margin-top:12px;padding:12px;background:#f2f8f3;border-radius:12px}
+.preview h4{font-size:14px;margin:0 0 9px}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;list-style:none;margin:0;padding:0}
+.shots li{display:flex;gap:8px;min-width:0;background:#fff;border:1px solid #e1eadf;border-radius:10px;padding:10px}
+.shotNumber{flex:0 0 auto;width:23px;height:23px;border-radius:50%;background:#dcefe1;display:grid;place-items:center;color:#206c49;font-size:12px;font-weight:800}
+.shots strong{font-size:12px}
+.shots p{margin:4px 0;color:#354d3e;font-size:12px;line-height:1.4}
+.shots small{color:#6b7a71;font-size:11px;line-height:1.4}
+.note{margin:10px 0 0;color:#64726b;font-size:12px;line-height:1.5}
+@media(max-width:560px){.root{padding:10px;margin:12px 0}.choices button{min-height:150px;padding:9px}.choices button[aria-pressed="true"]{padding:8px}.choices strong{font-size:13px}.shots{grid-template-columns:1fr}.shots li{padding:9px}}
+@media(max-width:350px){.choices{grid-template-columns:1fr}.choices button{min-height:112px}}
