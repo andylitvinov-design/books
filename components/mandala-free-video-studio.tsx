@@ -1695,6 +1695,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [audioDurationInvalid,setAudioDurationInvalid] = useState(false);
   const [attachedAudio,setAttachedAudio] = useState<AttachedAudio|null>(null);
   const [hypnoSpeechSource,setHypnoSpeechSource] = useState<File|null>(null);
+  const [hypnoSpeechText,setHypnoSpeechText] = useState("");
+  const [hypnoSpeechDuration,setHypnoSpeechDuration] = useState(0);
   const [hypnoWhisperEnabled,setHypnoWhisperEnabled] = useState(false);
   const [hypnoBinauralEnabled,setHypnoBinauralEnabled] = useState(false);
   const [hypnoBeatHz,setHypnoBeatHz] = useState(4);
