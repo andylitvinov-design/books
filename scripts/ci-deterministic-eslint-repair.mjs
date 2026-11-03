@@ -15,6 +15,7 @@ export function isSafeEslintFixPath(file) {
     file.split('/').some(part=>!part||part==='.'||part==='..')) return false;
   if(!/^(?:app|components|lib|scripts|tests)\/.+\.(?:cjs|mjs|js|jsx|ts|tsx)$/.test(file)) return false;
   if(file.startsWith('app/api/')||file.startsWith('components/app/')||file.startsWith('lib/practitioners/')) return false;
+  if(file.startsWith('lib/ci/')||file.startsWith('scripts/ci-')||file.startsWith('scripts/pr-sweep-guard')||file.startsWith('tests/ci-')) return false;
   return !/(^|[\/_.-])(?:auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration)(?=$|[\/_.-])/i.test(file);
 }
 export function hasExactLintFailure(jobs) {
