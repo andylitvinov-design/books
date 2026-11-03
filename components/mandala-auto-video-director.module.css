@@ -481,3 +481,7 @@
 .melodyChoices button:disabled{opacity:.56;cursor:not-allowed}
 .melodyHint{font:500 11px/1.4 system-ui,-apple-system,sans-serif;color:#61766a;margin:5px 0 0}
 @media(max-width:570px){.melodyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Fourth hierarchy level: plot title must span the 4-card grid, and the logline stays legible. */
+[data-mytube-plot-choices] > .variantsTitle{grid-column:1/-1;margin:5px 0 3px}
+[data-mytube-plot-choices] button small:last-child{-webkit-line-clamp:4;line-clamp:4}
