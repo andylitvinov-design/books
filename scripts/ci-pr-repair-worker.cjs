@@ -87,6 +87,13 @@ function safeFiles(items) {
       !f.filename.startsWith('.github/') &&
       !f.filename.includes('/__tests__/')).slice(0, MAX_FILES).map(f => f.filename);
 }
+// A claimed repair cannot complete green without independently proven source.
+// An outdated HEAD is an intentional safe abort, not a failed publication.
+function claimedRepairMissingSourceProof(result) {
+  return !!result && result.claim_status === 'claimed' &&
+    result.source_published !== true && result.state !== 'SUPERSEDED';
+}
+
 function writeOutputs(core, values) {
   for (const [k, v] of Object.entries(values)) core.setOutput(k, String(v));
 }
@@ -605,4 +612,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,PROD,SOURCE,CONFLICT,MARKER};

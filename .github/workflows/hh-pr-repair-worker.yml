@@ -576,6 +576,10 @@ jobs:
               candidateDetail:process.env.HH_CANDIDATE_DETAIL,
               dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
+            // The authenticated final outcome is recorded before the job can fail.
+            // Never report a claimed repair GREEN without a published source SHA.
+            if(worker.claimedRepairMissingSourceProof(result))
+              core.setFailed('HH_REPAIR_SOURCE_NOT_PUBLISHED: claimed task has no verified remote SHA; state='+result.state);
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
