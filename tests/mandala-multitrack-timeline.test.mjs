@@ -42,3 +42,25 @@ test("real Montage uses one Canvas and preserves protected source/audio gates",(
   assert.match(studio,/!audioNeedsAttachment &&/);
   assert.match(studio,/!uploadedAudio \|\| audioRights/);
 });
+
+test("iPhone recording unlocks audio at Create but begins it on actual recorder start",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const audio=read("lib/mandala/local-video-music.ts");
+  assert.match(studio,/nativeAudioPromise/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/);
+  assert.match(studio,/deferStart:true/);
+  assert.match(audio,/begin\?: \(\) => void/);
+  assert.match(audio,/if\(!options\.deferStart\)begin\(\)/);
+  assert.match(studio,/onSeeked=\{\(\)=>/);
+  assert.match(studio,/enteringShot\|\|!advancePlayback/);
+});
+test("one mobile panel shows multiple separate audio files and only one clip inspector",()=>{
+  const ui=read("components/mandala-multitrack-timeline.tsx");
+  const css=read("components/mandala-multitrack-timeline.module.css");
+  assert.match(ui,/audios\.map\(\(clip,index\)=>/);
+  assert.match(ui,/top:4\+index\*36/);
+  assert.match(ui,/selectedKind==="text"/);
+  assert.match(ui,/selectedKind==="audio"/);
+  assert.match(css,/\.root\{display:grid/);
+  assert.match(css,/\.audioClip\{/);
+});

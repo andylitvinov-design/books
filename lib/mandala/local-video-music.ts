@@ -403,10 +403,10 @@ export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">
  */
 export function startPresetAudio(
   preset: Exclude<AmbientMusic, "none">, volume = 75,
-  timing: {startSeconds?:number;endSeconds?:number} = {},
+  timing: {startSeconds?:number;endSeconds?:number;deferStart?:boolean} = {},
 ): Promise<AmbientSession | null> {
   // The original local WAV source also accepts a timeline interval.
-  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume,{windows:[timing]});
+  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume,{windows:[timing],deferStart:timing.deferStart});
   const wave = createAmbientPreviewWav(preset);
   const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
   return startUploadedAudio(file, volume, timing);
@@ -417,7 +417,7 @@ export function startPresetAudio(
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
 export async function startUploadedAudio(
-  file: File, volume = 80, options: { loop?: boolean; startSeconds?:number;endSeconds?:number } = {},
+  file: File, volume = 80, options: { loop?: boolean; startSeconds?:number;endSeconds?:number;deferStart?:boolean } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -453,22 +453,30 @@ export async function startUploadedAudio(
       ?Math.max(0,Math.min(59.5,options.startSeconds!)):0;
     const endSeconds=Number.isFinite(options.endSeconds)
       ?Math.max(startSeconds+.5,Math.min(60,options.endSeconds!)):null;
-    if(startSeconds||endSeconds!==null){
-      const now=context.currentTime, beginning=now+startSeconds;
-      const finish=endSeconds===null?null:now+endSeconds;
-      const level=Math.max(0,Math.min(100,volume))/100;
-      master.gain.setValueAtTime(0,now);
-      master.gain.setValueAtTime(0,beginning);
-      master.gain.linearRampToValueAtTime(level,beginning+.08);
-      if(finish!==null){
-        master.gain.setValueAtTime(level,Math.max(beginning+.08,finish-.20));
-        master.gain.linearRampToValueAtTime(0,finish);
-        source.start(beginning,0,endSeconds!-startSeconds);
-      }else source.start(beginning);
-    }else source.start();
-    let closed = false, faded = false;
+    let closed=false,faded=false,began=false;
+    // AudioContext is unlocked inside the trusted Create gesture. Decoding
+    // may complete before the video does; begin() aligns sources with the
+    // actual MediaRecorder start, rather than playing through preflight.
+    const begin=()=>{
+      if(began||closed)return;
+      began=true;
+      if(startSeconds||endSeconds!==null){
+        const now=context.currentTime, beginning=now+startSeconds;
+        const finish=endSeconds===null?null:now+endSeconds;
+        const level=Math.max(0,Math.min(100,volume))/100;
+        master.gain.setValueAtTime(0,now);
+        master.gain.setValueAtTime(0,beginning);
+        master.gain.linearRampToValueAtTime(level,beginning+.08);
+        if(finish!==null){
+          master.gain.setValueAtTime(level,Math.max(beginning+.08,finish-.20));
+          master.gain.linearRampToValueAtTime(0,finish);
+          source!.start(beginning,0,endSeconds!-startSeconds);
+        }else source!.start(beginning);
+      }else source!.start();
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume: (value: number) => {
         if (closed || faded) return;
         const now = context.currentTime;
@@ -535,7 +543,7 @@ export function isMelodyPreset(preset: AmbientMusic): boolean {
 }
 export async function startPresetMixAudio(
   ids: readonly Exclude<AmbientMusic,"none">[], volume=75,
-  options:{windows?:readonly {startSeconds?:number;endSeconds?:number}[]}={},
+  options:{windows?:readonly {startSeconds?:number;endSeconds?:number}[];deferStart?:boolean}={},
 ): Promise<AmbientSession | null> {
   if(typeof window==="undefined"||ids.length<1||ids.length>3||new Set(ids).size!==ids.length)return null;
   const AudioCtor=window.AudioContext ||
@@ -564,22 +572,30 @@ export async function startPresetMixAudio(
     master.connect(destination);
     const track=destination.stream.getAudioTracks()[0];
     if(!track)throw new Error("No mixed audio track");
-    for(const [index,buffer] of decoded.entries()){
+    for(const buffer of decoded){
       const player=context.createBufferSource();
       player.buffer=buffer;player.loop=true;player.connect(master);sources.push(player);
-      const timing=options.windows?.[index];
-      const start=Number.isFinite(timing?.startSeconds)
-        ?Math.max(0,Math.min(59.5,timing!.startSeconds!)):0;
-      const end=Number.isFinite(timing?.endSeconds)
-        ?Math.max(start+.5,Math.min(60,timing!.endSeconds!)):null;
-      if(start||end!==null){
-        if(end!==null)player.start(context.currentTime+start,0,end-start);
-        else player.start(context.currentTime+start);
-      }else player.start();
     }
-    let closed=false,faded=false;
+    let closed=false,faded=false,began=false;
+    const begin=()=>{
+      if(closed||began)return;
+      began=true;
+      const base=context.currentTime;
+      sources.forEach((player,index)=>{
+        const timing=options.windows?.[index];
+        const start=Number.isFinite(timing?.startSeconds)
+          ?Math.max(0,Math.min(59.5,timing!.startSeconds!)):0;
+        const end=Number.isFinite(timing?.endSeconds)
+          ?Math.max(start+.5,Math.min(60,timing!.endSeconds!)):null;
+        if(start||end!==null){
+          if(end!==null)player.start(base+start,0,end-start);
+          else player.start(base+start);
+        }else player.start();
+      });
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume(value:number){
         if(closed||faded)return;
         const now=context.currentTime;

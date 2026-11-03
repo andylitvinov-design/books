@@ -32,11 +32,18 @@ export function MandalaMultitrackTimeline(p:Props){
  const t=copy[locale];
  const [selectedText,setSelectedText]=useState<string|null>(null);
  const [selectedAudio,setSelectedAudio]=useState<string|null>(null);
+ const [selectedKind,setSelectedKind]=useState<"none"|"text"|"audio">("none");
  const dragRef=useRef<Drag|null>(null);
- useEffect(()=>{if(texts.length&&!texts.some(x=>x.id===selectedText))setSelectedText(texts[texts.length-1].id);
-  if(!texts.length&&selectedText)setSelectedText(null);},[texts,selectedText]);
- useEffect(()=>{if(audios.length&&!audios.some(x=>x.id===selectedAudio))setSelectedAudio(audios[0].id);
-  if(!audios.length&&selectedAudio)setSelectedAudio(null);},[audios,selectedAudio]);
+ useEffect(()=>{if(texts.length&&!texts.some(x=>x.id===selectedText)){
+   setSelectedText(texts[texts.length-1].id);setSelectedKind("text");
+  }
+  if(!texts.length&&selectedText)setSelectedText(null);
+ },[texts,selectedText]);
+ useEffect(()=>{if(audios.length&&!audios.some(x=>x.id===selectedAudio)){
+   setSelectedAudio(audios[0].id);setSelectedKind(kind=>kind==="none"?"audio":kind);
+  }
+  if(!audios.length&&selectedAudio)setSelectedAudio(null);
+ },[audios,selectedAudio]);
  const chosenText=texts.find(x=>x.id===selectedText);
  const chosenAudio=audios.find(x=>x.id===selectedAudio);
  function dragBegin(e:ReactPointerEvent<HTMLButtonElement>,kind:Drag["kind"],id:string,index:number,start:number,end:number){
@@ -49,13 +56,17 @@ export function MandalaMultitrackTimeline(p:Props){
   const d=dragRef.current;if(!d||e.pointerId!==d.pointerId)return;
   dragRef.current=null;if(Math.abs(e.clientX-d.x)<7)return;
   if(d.kind==="video"){
-   const target=Math.max(0,Math.min(shots.length-1,Math.floor((e.clientX-d.left)/d.width*shots.length)));
+   const second=Math.max(0,Math.min(duration-.001,(e.clientX-d.left)/d.width*duration));
+   let cumulative=0;
+   const target=Math.max(0,shots.findIndex(shot=>{
+     cumulative+=shot.durationSeconds;return second<cumulative;
+   }));
    for(let i=d.index;i<target;i++)onReorderShot(i,1);
    for(let i=d.index;i>target;i--)onReorderShot(i,-1);
   }else{
    const value=moveTrackWindow({startSeconds:d.start,endSeconds:d.end},d.start+(e.clientX-d.x)/d.width*duration,duration);
-   if(d.kind==="text"){onChangeText(d.id,value);setSelectedText(d.id);}
-   else {onChangeAudio(d.id,value.startSeconds,value.endSeconds);setSelectedAudio(d.id);}
+   if(d.kind==="text"){onChangeText(d.id,value);setSelectedText(d.id);setSelectedKind("text");}
+   else {onChangeAudio(d.id,value.startSeconds,value.endSeconds);setSelectedAudio(d.id);setSelectedKind("audio");}
   }
  }
  const left=(n:number)=>100*Math.max(0,Math.min(duration,n))/Math.max(.5,duration)+"%";
@@ -92,7 +103,10 @@ export function MandalaMultitrackTimeline(p:Props){
       aria-label={shot.label+" "+(i+1)} data-montage-video-clip={shot.id}
       onPointerDown={e=>dragBegin(e,"video",shot.id,i,0,duration)}
       onPointerUp={dragEnd} onPointerCancel={()=>{dragRef.current=null;}}>
-      {shot.poster?<img src={shot.poster} alt="" loading="lazy"/>:null}
+      {shot.poster?<>
+       {/* eslint-disable-next-line @next/next/no-img-element */}
+       <img src={shot.poster} alt="" loading="lazy"/>
+      </>:null}
       <span>{i+1}</span><small>{shot.durationSeconds}s</small>
      </button>):<button type="button" className={css.emptyLane} onClick={onAddFootage} disabled={disabled}>{t.choose}</button>}
     </div>
@@ -105,7 +119,7 @@ export function MandalaMultitrackTimeline(p:Props){
       className={css.textClip} style={{left:left(clip.startSeconds),width:width(clip.startSeconds,clip.endSeconds),
        top:4+index*36,height:32,bottom:"auto"}}
       aria-pressed={selectedText===clip.id} disabled={disabled} title={clip.text||t.caption}
-      onClick={()=>setSelectedText(clip.id)}
+      onClick={()=>{setSelectedText(clip.id);setSelectedKind("text");}}
       onPointerDown={e=>dragBegin(e,"text",clip.id,0,clip.startSeconds,clip.endSeconds)}
       onPointerUp={dragEnd} onPointerCancel={()=>{dragRef.current=null;}}>
       <span>{clip.text||t.caption}</span>
@@ -120,7 +134,7 @@ export function MandalaMultitrackTimeline(p:Props){
       className={css.audioClip} style={{left:left(clip.startSeconds),width:width(clip.startSeconds,clip.endSeconds),
        top:4+index*36,height:32,bottom:"auto"}}
       disabled={disabled} aria-pressed={selectedAudio===clip.id} title={clip.label}
-      onClick={()=>setSelectedAudio(clip.id)}
+      onClick={()=>{setSelectedAudio(clip.id);setSelectedKind("audio");}}
       onPointerDown={e=>dragBegin(e,"audio",clip.id,0,clip.startSeconds,clip.endSeconds)}
       onPointerUp={dragEnd} onPointerCancel={()=>{dragRef.current=null;}}>
       <Music2 size={12}/><span>{clip.label}</span>
@@ -129,7 +143,7 @@ export function MandalaMultitrackTimeline(p:Props){
    </div>
    <div className={css.cursor} style={{left:"calc(62px + (100% - 62px) * "+(Math.max(0,Math.min(duration,playhead))/Math.max(.5,duration))+")"}} aria-hidden="true"/>
   </div>
-  {chosenText?<div className={css.inspector} data-montage-text-inspector>
+  {chosenText&&selectedKind==="text"?<div className={css.inspector} data-montage-text-inspector>
    <label className={css.textInput}>{t.caption}<input type="text" maxLength={96}
     value={chosenText.text} disabled={disabled} onChange={e=>onChangeText(chosenText.id,{text:e.currentTarget.value})}/></label>
    <div className={css.windowControls}>
@@ -142,7 +156,7 @@ export function MandalaMultitrackTimeline(p:Props){
     <button type="button" onClick={()=>onDeleteText(chosenText.id)} disabled={disabled} data-montage-remove-text>{t.remove}</button>
    </div>
   </div>:null}
-  {chosenAudio?<div className={css.inspector} data-montage-audio-inspector>
+  {chosenAudio&&selectedKind==="audio"?<div className={css.inspector} data-montage-audio-inspector>
    <strong><Music2 size={14}/>{chosenAudio.label}</strong>
    <div className={css.windowControls}>
     <label>{t.start} · {time(chosenAudio.startSeconds)}<input type="range" min={0} max={Math.max(0,duration-.5)} step={.5}

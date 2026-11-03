@@ -3079,3 +3079,9 @@
   .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor]{order:4}
   .studio[data-active-workspace="editor"] .quickBuilder>[data-video-order-bar]{order:5}
 }
+
+/* Montage preview is always the editable Canvas, never the homepage hero promo. */
+.studio[data-active-workspace="editor"] .heroEditorial{display:none!important}
+.studio[data-active-workspace="editor"] .heroPromo{opacity:0!important}
+.studio[data-active-workspace="editor"] .heroCanvas{opacity:1!important}
+.studio[data-active-workspace="editor"] .heroShade{pointer-events:none;background:linear-gradient(180deg,transparent 76%,rgba(10,45,35,.22))!important}

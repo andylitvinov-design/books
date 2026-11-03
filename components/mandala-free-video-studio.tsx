@@ -1940,12 +1940,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:attachedAudio.kind==="presets"
       ?"presets:"+attachedAudio.ids.join(","):"file:"+attachedAudio.id;
+  const timelinePresetName=(id:PresetId)=>
+    ([...mandalaAudioTracks,...classicalAudioTracks]
+      .find(track=>track.id===id)?.name[locale])||id.replaceAll("-"," ");
   const audioTrackIdentities=attachedAudio?.kind==="file"
     ?[{id:"file:"+attachedAudio.id,label:attachedAudio.file.name}]
     :attachedAudio?.kind==="presets"
-      ?attachedAudio.ids.map(id=>({id:"preset:"+id,label:availableAudioTracks.find(track=>track.id===id)?.name[locale]||id}))
+      ?attachedAudio.ids.map(id=>({id:"preset:"+id,label:timelinePresetName(id)}))
       :attachedAudio?.kind==="preset"
-        ?[{id:"preset:"+attachedAudio.id,label:availableAudioTracks.find(track=>track.id===attachedAudio.id)?.name[locale]||attachedAudio.id}]
+        ?[{id:"preset:"+attachedAudio.id,label:timelinePresetName(attachedAudio.id)}]
         :[];
   const audioTimelineClips=audioTrackIdentities.map(track=>({
     ...track,...normalizeTrackWindow(
@@ -2271,7 +2274,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       frame=framePosition;
     }catch{return null;} // Missing media duration or invalid shot: no fabricated frame.
     const assessment=assessLicensedSourceFrame(video,frame);
-    if(enteringShot&&assessment.status==="drift"&&!video.seeking){
+    // A paused timeline scrub must seek inside the *same* source as well.
+    // Never seek on every encoded/exported frame; only user scrubs and cut entries.
+    if((enteringShot||!advancePlayback)&&assessment.status==="drift"&&!video.seeking){
       // Stage entry is a *bounded* seek, not a seek on every encoded frame.
       // Rendering waits for the native decoder to finish, else the existing
       // 500ms media gap watchdog cancels the exported film.
@@ -2388,6 +2393,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
+    let nativeAudioPromise:Promise<AmbientSession|null>|null=null;
+    let nativeAudioClaimed=false;
     try {
       // Both first-party decoders start from the SAME user Create gesture.
       // Never wait for hidden autoplay to unlock the button.
@@ -2406,6 +2413,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               :`Preparing video scenes: ${ready} of ${total}…`),
           }).then(()=>true,()=>false)
         : Promise.resolve(true);
+      // WebAudio is unlocked during the user's Create gesture and decoded
+      // while the licensed MP4 source decoders are preparing. Its begin()
+      // method aligns the audible mix with the actual MediaRecorder start.
+      if(!useWebCodecsMp4&&attachedAudio){
+        if(hasEditedAudioTiming){
+          nativeAudioPromise=attachedAudio.kind==="file"
+            ?startUploadedAudio(attachedAudio.file,soundVolume,{
+              loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,
+              ...audioWindow("file:"+attachedAudio.id),deferStart:true})
+            :attachedAudio.kind==="preset"
+              ?startPresetAudio(attachedAudio.id,soundVolume,{
+                ...audioWindow("preset:"+attachedAudio.id),deferStart:true})
+              :startPresetMixAudio(attachedAudio.ids,soundVolume,{
+                windows:attachedAudio.ids.map(id=>audioWindow("preset:"+id)),deferStart:true});
+        }else if(!activeFilm&&!usingFreeFilmCompilation){
+          // The original Canvas-only fast path has no four-source preflight;
+          // keep its verified immediate audio startup and audio rights gates.
+          musicSession = attachedAudio?.kind==="file"
+            ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true})
+            : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
+            : attachedAudio?.kind==="presets" ? await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
+        }else{
+          nativeAudioPromise=attachedAudio.kind==="file"
+            ?startUploadedAudio(attachedAudio.file,soundVolume,{
+              loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,deferStart:true})
+            :attachedAudio.kind==="preset"
+              ?startPresetAudio(attachedAudio.id,soundVolume,{deferStart:true})
+              :startPresetMixAudio(attachedAudio.ids,soundVolume,{deferStart:true});
+        }
+      }
       if(!(await filmPreparation)){
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
         setNotice(locale==="ru"
@@ -2599,23 +2636,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }
         return;
       }
-      if(hasEditedAudioTiming){
-        musicSession = attachedAudio?.kind==="file"
-          ?await startUploadedAudio(attachedAudio.file,soundVolume,{
-            loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,
-            ...audioWindow("file:"+attachedAudio.id)})
-          :attachedAudio?.kind==="preset"
-            ?await startPresetAudio(attachedAudio.id,soundVolume,audioWindow("preset:"+attachedAudio.id))
-            :attachedAudio?.kind==="presets"
-              ?await startPresetMixAudio(attachedAudio.ids,soundVolume,{
-                windows:attachedAudio.ids.map(id=>audioWindow("preset:"+id))}):null;
-      }else{
-        // Keep proven unedited audio path; never re-encode an unattached preview.
-        musicSession = attachedAudio?.kind==="file"
-          ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true})
-          : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
-          : attachedAudio?.kind==="presets" ? await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
-      }
+      musicSession=nativeAudioPromise?await nativeAudioPromise:musicSession;
+      nativeAudioClaimed=true;
       if(attachedAudio && !musicSession){
         setMusicWarning(ui.soundUnavailable);setNotice(ui.soundUnavailable);
         setExportUnavailable(true);return;
@@ -2710,6 +2732,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Safari/WebKit may emit unusable fragmented MP4 samples with short
       // timeslices. Obtain one finalized recording when stop() fires instead.
       recorder.start();
+      job.musicSession?.begin?.();
       const start = performance.now();
       let lastFrame = -1000;
       let lastProgress = 0;
@@ -2759,6 +2782,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       preparingRef.current=false;
       if(aliveRef.current)setPreparing(false);
       musicSession?.close();
+      // Failed/cancelled MP4 preflight must not leak the unlocked WebAudio
+      // context or leave an iPhone's audio routing permanently in playback.
+      if(!nativeAudioClaimed&&nativeAudioPromise)
+        void nativeAudioPromise.then(session=>session?.close()).catch(()=>{});
     }
   }
 
