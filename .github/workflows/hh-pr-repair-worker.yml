@@ -62,6 +62,8 @@ jobs:
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
+          node --check scripts/ci-pr-free-ai-code-candidate.cjs
+          node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
@@ -94,7 +96,7 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available','false');
+            core.setOutput('code_available',result.strategy==='code'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -251,34 +253,116 @@ jobs:
   # Retired safety stub: paid Codex is not an automatic repair dependency.
   # Keep stable job IDs for downstream finalization compatibility. Free AI is
   # not enabled here until a zero-cost provider allowlist and quota checks land.
+# Free only, text only; neither model nor verifier receives a publisher token.
   code_fix:
-    needs: [claim,fix]
-    if: false
+    needs: [claim, fix]
+    if: >-
+      always() &&
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.claim_status == 'claimed' &&
+      needs.claim.outputs.strategy == 'code' &&
+      needs.claim.outputs.code_available == 'true' &&
+      needs.fix.outputs.candidate_status != 'ready' &&
+      (needs.fix.result == 'success' || needs.fix.result == 'failure')
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 16
     permissions:
       contents: read
+      actions: read
     outputs:
-      candidate_status: disabled
-      candidate_detail: PAID_AI_ROUTE_RETIRED
+      candidate_status: ${{ steps.generate.outputs.candidate_status }}
+      candidate_detail: ${{ steps.generate.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
-      - name: Paid AI route intentionally disabled
-        run: echo "No paid AI fallback is permitted."
+      - name: Checkout exact untrusted PR HEAD, no credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout immutable trusted Repair tools
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies with lifecycle scripts disabled
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install pinned public OpenCode binary outside source tree
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/hh-opencode-cli"
+          npm install --prefix "$RUNNER_TEMP/hh-opencode-cli" --no-audit --no-fund --no-save @opencode/cli@2.1.2
+      - id: generate
+        name: Single bounded free-model source repair proposal
+        timeout-minutes: 7
+        env:
+          HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode-cli/node_modules/.bin/opencode
+        run: node .hh-trusted/scripts/ci-pr-free-ai-code-candidate.cjs
+      - name: Upload untrusted model proposal for verification only
+        if: steps.generate.outputs.candidate_status == 'proposed'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-free-code-candidate
+          path: candidate-raw.json
+          retention-days: 1
+          if-no-files-found: error
 
+  # Fresh exact-HEAD checkout independently verifies untrusted model output.
   code_verify:
-    needs: [claim,fix,code_fix]
-    if: false
+    needs: [claim, fix, code_fix]
+    if: >-
+      always() &&
+      needs.claim.outputs.strategy == 'code' &&
+      needs.code_fix.result == 'success' &&
+      needs.code_fix.outputs.candidate_status == 'proposed'
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 13
     permissions:
       contents: read
+      actions: read
     outputs:
-      candidate_status: disabled
-      candidate_detail: FREE_AI_EXECUTOR_NOT_CONFIGURED
+      candidate_status: ${{ steps.verify.outputs.candidate_status }}
+      candidate_detail: ${{ steps.verify.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
-      - name: Free AI verifier is not yet configured
-        run: echo "No AI patch can be accepted without a configured free executor."
-
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-free-code-candidate
+          path: hh-code-candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - id: verify
+        name: Independently verify scoped tests, lint, TypeScript and diff
+        timeout-minutes: 8
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
+      - name: Upload only the independently verified candidate
+        if: steps.verify.outputs.candidate_status == 'ready'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-code-repair-verified
+          path: candidate.json
+          retention-days: 1
+          if-no-files-found: error
   publish:
     needs: [claim,fix,code_fix,code_verify]
     # Do not schedule a separate terminal job for a claimed lint task.
@@ -363,7 +447,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): '+(candidate.repair_kind==='codex'?'verified Codex source repair':'automated scoped ESLint repair')+' for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':'automated scoped ESLint repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);
