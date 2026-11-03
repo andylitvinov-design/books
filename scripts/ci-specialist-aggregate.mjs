@@ -12,7 +12,7 @@ import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -411,8 +411,10 @@ export async function verify(api,ctx,files,options={}) {
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
-      .filter(job => job !== 'voice-webkit-macos');
+    const optionalSkipped = [...new Set([
+      ...trustedConditionalJobs(files.base.get(run.path)),
+      ...trustedConditionallyInapplicableJobs(files.base.get(run.path),pr),
+    ])].filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
