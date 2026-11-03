@@ -41,3 +41,22 @@
 .hint{font-size:10px;color:#758078;line-height:1.35}
 @media(max-width:359px){.editor{padding:9px 6px}.rulerRow,.trackRow{grid-template-columns:43px minmax(0,1fr);gap:4px}.block{font-size:9px}.addBar button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.block,.scrubHead,.playhead{transition:none!important}}
+
+/* HH iPhone track order: film, sound, captions on one readable clock. */
+@media (max-width: 759px) {
+  .editor{gap:5px; margin:0; padding:8px 8px; border-radius:14px;}
+  .transport{order:0; min-height:36px;}
+  .transport strong{font-size:13px;}
+  .transportActions button{height:38px; width:38px;}
+  .rulerRow{order:1;}
+  .trackRow[data-video-track="video"]{order:2;}
+  .trackRow[data-video-track="audio"]{order:3;}
+  .trackRow[data-video-track="text"]{order:4;}
+  .lane{min-height:46px;}
+  .addBar{order:5; grid-template-columns:repeat(3,minmax(0,1fr));}
+  .addBar button{min-height:44px; font-size:12px;}
+  .inspector{order:6;}
+  .shotActions{order:7;}
+  .audioOffset{order:8;}
+  .hint{order:9;}
+}

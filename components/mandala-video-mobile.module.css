@@ -3091,3 +3091,57 @@
     min-height:39px;padding:7px 10px}
   .studio[data-active-workspace="editor"] .quickVideoNav{margin:3px 0 0}
 }
+
+/* HH editor one-screen iPhone composition — six tabs, script, 16:9 film, tracks. */
+@media (max-width: 759px) {
+  /* Keep the existing source-backed editor; flatten only its visual wrapper so
+     scenario and original timeline can sit on either side of the same Canvas. */
+  .studio[data-active-workspace="editor"] .quickBuilder {
+    gap:6px;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.quickVideoNav {
+    order:1; margin:0; grid-template-columns:repeat(6,minmax(0,1fr));
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor] {
+    display:contents!important;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-editor-scenario] {
+    order:2; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+    display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:center;
+    gap:4px 6px; margin:0; padding:7px 8px; border-radius:13px;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] label {
+    grid-column:1/-1; font-size:14px; line-height:1.2;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] p {display:none;}
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] textarea {
+    grid-column:1; grid-row:2; width:100%; height:44px!important;
+    min-height:44px!important; max-height:44px; resize:none;
+    overflow-y:auto; padding:7px 9px; font-size:14px; line-height:1.3;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] textarea:focus {
+    height:94px!important; max-height:94px;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] button {
+    grid-column:2; grid-row:2; width:44px; min-width:44px; height:44px;
+    min-height:44px; padding:0; font-size:0; gap:0;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] button svg {
+    width:20px; height:20px;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage {
+    order:3; margin:0!important; width:100%;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-multitrack-timeline] {
+    order:4; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+    margin:0;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-montage-settings] {
+    order:5; width:100%; max-width:100%; box-sizing:border-box; margin:0;
+  }
+  .studio[data-active-workspace="editor"] .previewStage .hero,
+  .studio[data-active-workspace="editor"][data-video-studio-mode="therapy"] .previewStage .hero {
+    width:100%; min-height:0!important; max-height:none!important;
+    aspect-ratio:16/9!important;
+  }
+}

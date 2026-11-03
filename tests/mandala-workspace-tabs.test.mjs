@@ -248,3 +248,18 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
+
+test("owner 03 Nov: iPhone Montage appears as tabs > script > 16:9 film > editable tracks",()=>{
+ const layout=css.slice(css.lastIndexOf("/* HH editor one-screen iPhone composition"));
+ assert.match(layout,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1/);
+ assert.match(layout,/quickBuilder \[data-video-editor-scenario\]\s*\{[^}]*order:2/);
+ assert.match(layout,/quickBuilder>\.previewStage\s*\{[^}]*order:3/);
+ assert.match(layout,/\[data-video-multitrack-timeline\]\s*\{[^}]*order:4/);
+ assert.match(layout,/aspect-ratio:16\/9!important/);
+ assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ const timelineCss=readFileSync(new URL("../components/mandala-multitrack-timeline.module.css",import.meta.url),"utf8");
+ const tracks=timelineCss.slice(timelineCss.lastIndexOf("/* HH iPhone track order"));
+ for(const [kind,order] of [["video",2],["audio",3],["text",4]]){
+   assert.ok(tracks.includes('.trackRow[data-video-track="'+kind+'"]{order:'+order+';}'));
+ }
+});
