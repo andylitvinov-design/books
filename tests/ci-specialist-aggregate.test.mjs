@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -39,6 +39,41 @@ test('only verified concurrency-only edits can avoid unrelated specialists',()=>
  const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
  assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
   changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
+});
+
+test('approved first-attempt concurrency only is advisory, not changed browser or security work', () => {
+  const file='.github/workflows/example.yml';
+  const trigger="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml', 'scripts/verify-tantra-testimonials.mjs']\n";
+  const before=trigger+"concurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+  const after=before.replace("  group: example-${{ github.ref }}\n  cancel-in-progress: true",
+    "  group: example-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}");
+  const rows=(...other)=>[{filename:file,status:'M'},...other.map(filename=>({filename,status:'M'}))];
+  const inspect=(changedRows,workflow=file)=>concurrencyOnlyAdvisory({
+    base:new Map([[workflow,before]]),current:new Map([[workflow,after]]),
+    changedRows:changedRows.map(row=>({...row,filename:row.filename===file?workflow:row.filename})),
+    expected:[workflow],
+  });
+  assert.deepEqual([...inspect(rows('tests/ci-head-cancellation.test.mjs','tests/free-express-mobile-consent-layout.test.mjs'))],[file]);
+  assert.deepEqual([...inspect(rows('scripts/verify-tantra-testimonials.mjs'))],[]);
+  assert.deepEqual([...inspect(rows('app/api/payments/route.js'))],[]);
+  assert.deepEqual([...inspect(rows('scripts/unreviewed-browser-helper.mjs'))],[]);
+  assert.deepEqual([...inspect(rows('scripts/helpers/contact-channel-verifier.mjs'),'.github/workflows/release-reaudit.yml')],[]);
+  assert.deepEqual([...concurrencyOnlyAdvisory({
+    base:new Map([[file,before]]),
+    current:new Map([[file,after.replace('runs-on: ubuntu-latest','runs-on: self-hosted')]]),
+    changedRows:rows(),expected:[file],
+  })],[]);
+});
+
+test('actionlint can add exact regression coverage but cannot weaken original validation', () => {
+  const base="on:\n  pull_request:\n    paths:\n      - '.github/workflows/**'\njobs:\n  validate-workflows:\n    steps:\n      - run: |\n          node --test tests/pr-fast-lane.test.mjs\n";
+  const next=base.replace("      - '.github/workflows/**'\n", "      - '.github/workflows/**'\n      - 'tests/ci-stale-run-deduplication.test.mjs'\n")
+    .replace('          node --test tests/pr-fast-lane.test.mjs\n',
+      '          node --test tests/ci-stale-run-deduplication.test.mjs\n          node --test tests/pr-fast-lane.test.mjs\n');
+  assert.equal(trustedAdditiveActionlint(base,base),true);
+  assert.equal(trustedAdditiveActionlint(base,next),true);
+  assert.equal(trustedAdditiveActionlint(base,next.replace('tests/pr-fast-lane.test.mjs','tests/weakened.test.mjs')),false);
+  assert.equal(trustedAdditiveActionlint(base,next.replace('node --test tests/ci-stale-run-deduplication.test.mjs\n','')),false);
 });
 
 test('a failed run explicitly associated with a sibling PR on the same branch cannot block this PR',()=>{
