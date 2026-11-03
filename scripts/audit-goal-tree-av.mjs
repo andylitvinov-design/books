@@ -7,7 +7,7 @@
  * --strict is an opt-in final acceptance gate, not a way to block unrelated CI
  * while the 120-story production catalogue is still being populated.
  */
-import {readFileSync,existsSync,statSync} from "node:fs";
+import {readFileSync,existsSync,statSync,realpathSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {resolve,dirname,sep} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -33,10 +33,14 @@ export function probeMediaFile(kind,url,{root=ROOT}={}){
   const full=resolve(publicRoot,path.slice(1));
   if(!full.startsWith(publicRoot+sep)||!existsSync(full))return {ok:false,reason:"file_missing"};
   try{
-    const stat=statSync(full);
-    if(!stat.isFile()||stat.size<(kind==="audio"?25000:10000))
+    const actual=realpathSync(full);
+    if(!actual.startsWith(realpathSync(publicRoot)+sep))
+      return {ok:false,reason:"symlink_outside_public"};
+    const stat=statSync(actual);
+    if(!stat.isFile()||stat.size<(kind==="audio"?25000:10000)||
+      stat.size>(kind==="audio"?40:150)*1024*1024)
       return {ok:false,reason:"invalid_file_size"};
-    const bytes=readFileSync(full);
+    const bytes=readFileSync(actual);
     const signature=kind==="audio"?
       bytes.subarray(0,3).toString("ascii")==="ID3"||
         (bytes[0]===255&&(bytes[1]&224)===224):
