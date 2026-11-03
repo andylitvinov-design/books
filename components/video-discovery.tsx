@@ -11,6 +11,23 @@ import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
 const STORAGE_KEY="hh-public-video-favorites-v1";
+const MYTUBE_CATEGORY_LEGACY_TAGS={
+  "goals-money":["work","meaning"],
+  "love-relationships":["relationships"],
+  "energy-confidence":["energy","meaning"],
+  "stress-recovery":["stress"],
+} as const;
+const MYTUBE_SUBCATEGORY_LEGACY_TAGS={
+  "goals-discipline":["meaning","work"],"purpose-choice":["meaning"],
+  "money-mindset":["work"],"business-career":["work"],
+  "finding-love":["relationships"],"couple-relationships":["relationships"],
+  "loneliness-breakups":["relationships"],"intimacy-family":["relationships"],
+  "body-wellbeing":["energy"],"energy-fatigue":["energy"],"life-energy":["energy"],
+  "confidence-worth":["meaning"],"sleep-rest":["stress"],
+  "stress-burnout":["stress"],"anxiety-fears":["stress"],
+  "trauma-childhood":["stress"],"depression-apathy":["stress"],
+} as const;
+
 const labels={
   ru:{
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
@@ -130,6 +147,13 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     if(myTubeSubcategory!=="all")return myTubeTopics;
     return myTubeSubcategories.flatMap(sub=>listMyTubeTopics(myTubeCategory,sub.id,locale));
   },[variant,myTubeCategory,myTubeSubcategory,myTubeTopic,myTubeTopics,myTubeSubcategories,locale]);
+  const myTubeLegacyTags=myTubeTopic!=="all"
+    ?(MYTUBE_SUBCATEGORY_LEGACY_TAGS[myTubeSubcategory as keyof typeof MYTUBE_SUBCATEGORY_LEGACY_TAGS]||[])
+    :myTubeSubcategory!=="all"
+      ?(MYTUBE_SUBCATEGORY_LEGACY_TAGS[myTubeSubcategory as keyof typeof MYTUBE_SUBCATEGORY_LEGACY_TAGS]||[])
+      :myTubeCategory!=="all"
+        ?(MYTUBE_CATEGORY_LEGACY_TAGS[myTubeCategory as keyof typeof MYTUBE_CATEGORY_LEGACY_TAGS]||[]):[];
+  const selectedTopic=myTubeTopics.find(item=>item.id===myTubeTopic);
   const sources=useMemo(()=>[...new Set(videos
     .map(item=>item.sourceLabel||item.author||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b,locale)),
     [videos,locale]);
@@ -143,7 +167,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       const searchable=[item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||"",...(item.topicTags||[])].join(" ").toLocaleLowerCase(locale);
       if(needle && !searchable.includes(needle))return false;
       if(variant==="mytube"&&myTubeScope.length){
-        const matches=myTubeScope.some(topic=>topic.searchTerms.some(term=>searchable.includes(term.toLocaleLowerCase(locale)))||searchable.includes(topic.id.toLocaleLowerCase(locale)));
+        const tags=Array.isArray(item.topicTags)?item.topicTags:[];
+        const matches=myTubeScope.some(topic=>topic.searchTerms.some(term=>searchable.includes(term.toLocaleLowerCase(locale)))||searchable.includes(topic.id.toLocaleLowerCase(locale)))||
+          myTubeLegacyTags.some(tag=>tags.includes(tag));
         if(!matches)return false;
       }
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
@@ -166,7 +192,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale,variant,myTubeScope]);
+  },[videos,search,source,period,durationRange,locale,variant,myTubeScope,myTubeLegacyTags]);
   const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
     goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
   }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
