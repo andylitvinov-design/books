@@ -293,7 +293,7 @@ function Slider({ label, value, min, max, step = 1, onChange }: {label: string;v
 }
 function PreviewPhoto({ data, transform, zoom = 1 }: {data?: string;transform: MentalicaPhotoTransform;zoom?:number}) {
   return data ? <img draggable={false} src={data} alt="" className={styles.image}
-    style={{objectPosition:String(transform.x)+"% "+String(transform.y)+"%",transform:"rotate("+transform.rotate+"deg) scale("+(transform.zoom*zoom)+")"}}/> : null;
+    style={{objectPosition:"center",transform:"translate("+((50-transform.x)*Math.max(0,transform.zoom*zoom-1))+"%,"+((50-transform.y)*Math.max(0,transform.zoom*zoom-1))+"%) rotate("+transform.rotate+"deg) scale("+(transform.zoom*zoom)+")"}}/> : null;
 }
 
 export function MentalicaPhotoMandala({locale}: Props) {
