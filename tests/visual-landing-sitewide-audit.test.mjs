@@ -6,12 +6,6 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 
 const templates = [
   {
-    id:"free-guidance", route:"/en/services/free-situation-review",
-    path:"components/free-entry-landing.tsx",
-    prefix:"data-free-visual-screen", capture:"<CompactLeadCapture",
-    image:"<Image src={scenePhotos", final:"final-capture",
-  },
-  {
     id:"personal-sessions", route:"/en/services/imagery-therapy",
     path:"components/personal-service-landing.tsx",
     prefix:"data-service-visual-screen", capture:"<CompactLeadCapture",
@@ -21,12 +15,6 @@ const templates = [
     id:"hypnotherapy-course", route:"/en/services/hypnotherapy-course",
     path:"components/core-service-detail.tsx",
     prefix:"data-core-visual-screen", capture:"<CompactLeadCapture",
-    image:"<Image src={visualPhotos", final:"final-capture",
-  },
-  {
-    id:"alchemy", route:"/en/services/alchemy-of-soul",
-    path:"components/alchemy-soul-landing.tsx",
-    prefix:"data-alchemy-visual-screen", capture:"<CompactLeadCapture",
     image:"<Image src={visualPhotos", final:"final-capture",
   },
   {
@@ -61,6 +49,30 @@ const templates = [
   },
 ];
 
+// The original Free Express and Alchemy already have newer production
+// screens and explicit booking/privacy tests. Keep these real contracts.
+const canonicalPages = [
+  "components/free-entry-landing.tsx",
+  "components/alchemy-soul-landing.tsx",
+];
+test("Free Express and Alchemy preserve their approved private and consented journeys",()=>{
+  const free=read(canonicalPages[0]),alchemy=read(canonicalPages[1]);
+  for(const token of ["data-free-entry-landing","data-free-review-intro-video",
+    "data-featured-free-review-testimonials","<PersonalExpressEnquiry",
+    "<CompactLeadCapture","<SiteVideoPlayer"])
+    assert.ok(free.includes(token),"Free review missing "+token);
+  assert.ok(free.lastIndexOf("<PersonalExpressEnquiry")>
+    free.indexOf("data-featured-free-review-testimonials"));
+  for(const token of ['data-alchemy-panel="reviews"','data-alchemy-panel="request"',
+    "<SiteVideoPlayer","<StaticPortrait","<AlchemySoulLeadForm",
+    'bookingSku="personal-session-60"','<ContactChannelChooser'])
+    assert.ok(alchemy.includes(token),"Alchemy missing "+token);
+  assert.ok(alchemy.indexOf('data-alchemy-panel="request"')>
+    alchemy.indexOf('data-alchemy-panel="reviews"'));
+  assert.ok(alchemy.lastIndexOf("<AlchemySoulLeadForm")>
+    alchemy.indexOf('data-alchemy-panel="request"'));
+});
+
 test("every migrated template explicitly declares visual stages, real images and final form",()=>{
   for(const item of templates){
     const src=read(item.path);
@@ -73,7 +85,7 @@ test("every migrated template explicitly declares visual stages, real images and
   }
 });
 test("no default browser autoplay, private results, or fabricated bookings in visual stories",()=>{
-  const concatenated=templates.map(x=>read(x.path)).join("\n");
+  const concatenated=[...templates.map(x=>x.path),...canonicalPages].map(read).join("\n");
   assert.doesNotMatch(concatenated,/autoplay|autoPlay|document\.cookie|localStorage\.|gtag\(|fbq\(/i);
   assert.match(read("components/compact-lead-capture.tsx"),/result\?\.saved !== true/);
   assert.match(read("components/business-website-enquiry.tsx"),/body\?\.received===true/);

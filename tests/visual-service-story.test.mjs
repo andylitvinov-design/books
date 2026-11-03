@@ -77,12 +77,17 @@ test("Alchemy and business method pages show their own photo-led sections before
   const business = read("components/business-consulting-landing.tsx");
   const businessForm = read("components/business-website-enquiry.tsx");
   const css = read("app/sitewide-capture.css");
-  assert.match(alchemy, /data-public-visual-landing="alchemy"/);
-  assert.match(alchemy, /data-alchemy-visual-screen=\{index\+1\}/);
-  assert.match(alchemy, /<Image src=\{visualPhotos/);
-  assert.match(alchemy, /data-alchemy-visual-screen="final-capture"/);
-  assert.match(alchemy, /<CompactLeadCapture/);
-  assert.ok(alchemy.lastIndexOf("<CompactLeadCapture") > alchemy.lastIndexOf("t.faq.map"));
+
+  // Alchemy's current production design uses consented booking, not the old generic footer.
+  assert.match(alchemy, /data-alchemy-panel="reviews"/);
+  assert.match(alchemy, /data-alchemy-panel="request"/);
+  assert.match(alchemy, /data-alchemy-visual="video"/);
+  assert.match(alchemy, /<SiteVideoPlayer/);
+  assert.match(alchemy, /<StaticPortrait/);
+  assert.match(alchemy, /bookingSku="personal-session-60"/);
+  assert.match(alchemy, /<ContactChannelChooser/);
+  assert.match(alchemy, /<AlchemySoulLeadForm locale=\{locale\}/);
+  assert.ok(alchemy.lastIndexOf("<AlchemySoulLeadForm") > alchemy.lastIndexOf('data-alchemy-panel="reviews"'));
   assert.match(business, /data-public-visual-landing="business"/);
   assert.match(business, /data-business-visual-screen="final-capture"/);
   assert.match(business, /<BusinessWebsiteEnquiry locale=\{locale\}/);
@@ -102,9 +107,16 @@ test("monthly support and all three free-entry paths retain visual media on each
   assert.match(support, /data-public-visual-landing="personal-support"/);
   assert.match(support, /<CompactLeadCapture/);
   assert.match(support, /<Image src=\{photos/);
-  assert.match(free, /data-free-visual-screen="final-capture"/);
-  assert.match(free, /data-public-visual-landing="free"/);
+
+  // The current situation review has its own protected Express intake; other
+  // free service types retain the consented compact capture.
+  assert.match(free, /data-free-entry-landing=\{kind\}/);
+  assert.match(free, /data-free-review-intro-video/);
+  assert.match(free, /data-featured-free-review-testimonials/);
+  assert.match(free, /<SiteVideoPlayer/);
+  assert.match(free, /<PersonalExpressEnquiry/);
   assert.match(free, /<CompactLeadCapture/);
-  assert.match(free, /className=\{styles.miniScenePhoto\}/);
+  assert.ok(free.lastIndexOf("<PersonalExpressEnquiry") >
+    free.indexOf("data-featured-free-review-testimonials"));
   assert.match(css, /@media\(max-width:350px\)/);
 });
