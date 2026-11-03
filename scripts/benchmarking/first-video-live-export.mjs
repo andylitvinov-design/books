@@ -132,8 +132,15 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // The old Video-level style disclosure moved to Montage. The existing
-  // first-video drafting disclosure stays accessible directly in Style video.
+  // Compact Video hides its extended source editor until the visitor chooses
+  // "All stories". Exercise that REAL visible button, not a hidden DOM node
+  // or direct React state manipulation, before testing the actual export.
+  const allStories = page.locator('[data-auto-video-all-scenes]');
+  await allStories.waitFor({state:'visible',timeout:40000});
+  await allStories.click();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
+    undefined,{timeout:15000});
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
   if(await advanced.getAttribute('open')===null)
