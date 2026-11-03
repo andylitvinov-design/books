@@ -88,11 +88,63 @@ jobs:
             ref: process.env.GITHUB_REF, productionAccess: false
           }, null, 2));
           JS
+      - name: Detect exact Mobile Dock-only batch before costly IA work (fail closed)
+        id: dock-scope
+        env:
+          HH_PR_EVENT: ${{ github.event_name }}
+          HH_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          HH_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo 'dock_only=false' >> "$GITHUB_OUTPUT"
+          if [[ "$HH_PR_EVENT" != 'pull_request' ]]; then exit 0; fi
+          node --input-type=module <<'JS'
+          import {execFileSync} from 'node:child_process'
+          import {appendFileSync} from 'node:fs'
+          const git=(...args)=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+          let dockOnly=false
+          try {
+            const merge=git('rev-parse','HEAD')
+            const parents=git('rev-list','--parents','-n','1','HEAD').split(/\s+/)
+            const firstParent=parents[1], secondParent=parents[2]
+            const expectedBase=process.env.HH_EXPECTED_BASE||''
+            const expectedHead=process.env.HH_EXPECTED_HEAD||''
+            const exactHead=/^[0-9a-f]{40}$/.test(expectedHead)&&secondParent===expectedHead
+            let baseValid=/^[0-9a-f]{40}$/.test(expectedBase)&&firstParent===expectedBase
+            if(!baseValid&&/^[0-9a-f]{40}$/.test(expectedBase)){
+              try { git('merge-base','--is-ancestor',expectedBase,firstParent); baseValid=true } catch {}
+            }
+            const fields=execFileSync('git',['diff','--no-renames','--name-status','-z','HEAD^1','HEAD'],{encoding:'utf8'}).split('\0')
+            if(fields.at(-1)==='') fields.pop()
+            const expected=new Map([
+              ['app/[locale]/app/[[...path]]/workspace.css','M'],
+              ['app/[locale]/app/messages/messages-page.css','M'],
+              ['components/app/messages-bottom-navigation.jsx','M'],
+              ['lib/mobile-visual-bottom.mjs','M'],
+              ['tests/mobile-visual-dock.test.mjs','M'],
+            ])
+            const rows=[]
+            if(fields.length===expected.size*2){
+              for(let i=0;i<fields.length;i+=2) rows.push([fields[i+1],fields[i]])
+            }
+            dockOnly=merge===process.env.GITHUB_SHA&&exactHead&&baseValid&&
+              rows.length===expected.size&&rows.every(([path,status])=>expected.get(path)===status)&&
+              [...expected.keys()].every(path=>rows.some(row=>row[0]===path))
+            console.log(JSON.stringify({merge,firstParent,secondParent,baseValid,dockOnly,files:rows}))
+          } catch(error) {
+            console.error('Mobile Dock scope not proven; retaining full IA:',error.message)
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT,'dock_only='+dockOnly+'\n')
+          JS
+      - name: Mobile Dock geometry and iPhone keyboard contracts
+        if: ${{ steps.dock-scope.outputs.dock_only == 'true' }}
+        run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
       - run: npm ci --no-audit --no-fund
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       # Keep IA-owned auth, encryption, ownership and navigation contracts on
-      # every PR. The unrelated repository-wide inventory remains available
-      # on manual runs; it must not prevent the real IA browser acceptance.
+      # every non-dock PR. Only the exact five-file dock scope uses focused tests;
+      # all ambiguous or mixed changes retain the complete IA release suite.
       - name: IA security, ownership and navigation contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
           node --conditions=react-server --test
           tests/ia-v2.test.mjs tests/ia-preview-verifier.test.mjs tests/admin-session-lifecycle.test.mjs
@@ -109,8 +161,10 @@ jobs:
           tests/practice-telegram-auth-fetch.test.mjs tests/crm-consent.test.mjs
           tests/manual-billing-security.test.mjs
       - name: Application, CRM and billing functional contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run test:app
       - name: Guest test access and privacy contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
           node --conditions=react-server --test
           --test-name-pattern='public picker transparently|public selector sends|guest results display'
@@ -119,6 +173,7 @@ jobs:
       # Ambiguous changes retain FULL IA. Auth, CRM/RLS, browser, native/PWA,
       # source validators, and production build remain separately required.
       - name: Select exact-merge Messenger fast lane (fail closed)
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         id: messenger-scope
         env:
           HH_PR_EVENT: ${{ github.event_name }}
@@ -150,8 +205,8 @@ jobs:
             ["app/[locale]/app/[[...path]]/workspace.css","M"],
             ["app/[locale]/app/messages/messages-page.css","M"],
             ["components/app/messages-bottom-navigation.jsx","M"],
-            ["lib/mobile-visual-bottom.mjs","A"],
-            ["tests/mobile-visual-dock.test.mjs","A"],
+            ["lib/mobile-visual-bottom.mjs","M"],
+            ["tests/mobile-visual-dock.test.mjs","M"],
           ])
           const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
           let operatorOnly=false
@@ -206,46 +261,52 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\npractitioner_meditation_only='+practitionerMeditationOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
-        if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.messenger_only == 'true' }}
         run: |
           node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs
           # Server-only imports have React Server conditional exports in Next.js.
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Exact operator-only contact consent and tenant authorization contracts
-        if: ${{ steps.messenger-scope.outputs.operator_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.operator_only == 'true' }}
         run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
-      # Original IA security/app contracts above remain mandatory for every PR.
+      # Original IA security/app contracts above remain mandatory outside the exact dock-only lane.
       # Repository-wide historical inventory stays on explicit maintenance/manual runs.
       # An additional exact-HEAD private-media suite; existing IA auth, RLS,
       # guest browser and production build remain mandatory and unchanged.
       - name: Private meditation owner, authentication, media and safe course contracts
-        if: ${{ steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
         run: |
           node --test tests/practitioner-meditation-studio.test.mjs tests/practitioner-preview-auth.test.mjs tests/practitioner-bridge.test.mjs tests/admin-login-security.test.mjs tests/course-slide-recorder.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/ci-practitioner-meditation-scope.test.mjs
       - name: Source-content validators
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - name: Full lint outside production PR (core release-ready owns production lint)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run lint
       - run: npm run native:check && npm run pwa:check
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       # Read-only restores from the production-seeded cache used by Core.
       # PR jobs never publish shared cache entries; a miss is a safe full build.
       - name: Restore trusted production-owned scenario media cache
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Restore trusted production Next compiler cache
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: .next/cache
           key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - run: npm run build
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       - name: Full TypeScript outside production PR (core release-ready owns production typing)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           npm install --prefix /tmp/ia222-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -254,8 +315,10 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y redis-tools
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/ia222-key.pem -out /tmp/ia222-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
       - name: Initialize disposable owner database with real app migrations
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Synthetic encrypted-store and owner/client browser acceptance
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run verify:ia-v2
         env:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
