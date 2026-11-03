@@ -2880,8 +2880,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       clearUploadedAudio();setAttachedAudio(null);
       setNotice(locale==="ru"?"Озвучка выключена. Исходная запись сохранена в редакторе фраз.":"Voice track disabled; its source remains available in the phrase editor.");
     }else{
+      const speechSeconds=wavDurationFromHeader(await hypnoSpeechSource.slice(0,256).arrayBuffer())||0;
+      if(speechSeconds>duration-0.35){
+        setNotice(locale==="ru"?"Озвучка длиннее ролика. Увеличьте длительность или создайте голос заново.":"The voice track is longer than this video. Increase its duration or regenerate the narration.");
+        return;
+      }
       const entry=chooseAudioFile(hypnoSpeechSource);
-      if(entry){setAudioRights(true);setSoundVolume(100);setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true});}
+      if(entry){setAudioRights(true);setSoundVolume(100);setAttachedAudio({kind:"file",file:entry.file,id:entry.url,
+        narration:true,spokenText:currentAffirmationSpeech,speechSeconds,mixSeconds:duration,
+        voiceId:voicePreferences.voiceId,language:voicePreferences.language,bed:voicePreferences.bed});}
     }
   }
   async function attachMeditationNarration(file:File):Promise<boolean>{
