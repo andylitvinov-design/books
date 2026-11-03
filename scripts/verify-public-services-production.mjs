@@ -665,9 +665,7 @@ try {
             await expect(form.locator('[data-compact-channel]')).toHaveCount(2);
             // The optional messenger alternative starts collapsed and may
             // create prepared links only after a synthetic consented local save.
-            const more = capture.locator('details').filter({
-              has: capture.locator('[data-contact-channel-chooser]'),
-            });
+            const more = capture.locator('details:has([data-contact-channel-chooser])');
             await expect(more).toHaveCount(1);
             await expect(more).not.toHaveAttribute('open', '');
             await more.locator('summary').click();

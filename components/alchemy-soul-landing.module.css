@@ -619,7 +619,7 @@
 .reviewSection .reviewInfo h3{margin:5px 0 8px;font-size:clamp(18px,2vw,22px);line-height:1.25}
 .reviewSection .reviewNote{width:100%;max-width:760px;margin:14px auto 0;line-height:1.5}
 @media(max-width:680px){
-  .reviewSection{display:block;min-height:0;height:auto;width:calc(100% + 28px);margin-inline:-14px;padding:15px 10px 18px;border-radius:18px;justify-content:flex-start}
+  .reviewSection{display:block;min-height:0;height:auto;width:calc(100% + 20px);margin-inline:-10px;padding:15px 10px 18px;border-radius:18px;justify-content:flex-start}
   .reviewSection .sectionHeading{margin:0 auto 13px;padding-inline:3px}
   .reviewSection .reviewStack{width:100%;max-width:none;gap:12px}
   .reviewSection .reviewCard{display:block;width:100%;padding:0;border-radius:15px}
