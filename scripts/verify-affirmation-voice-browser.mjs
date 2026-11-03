@@ -155,7 +155,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // empty even when the real selected speechText is already present.
       const transcriptPanel=page.locator("[data-video-affirmation-voice] details")
         .filter({has:page.locator("[data-video-affirmation-spoken-text]")});
-      await transcriptPanel.locator("summary").click();
+      if(await transcriptPanel.getAttribute("open")===null)
+        await transcriptPanel.locator("summary").click();
       const visibleTranscript=page.locator("[data-video-affirmation-spoken-text]");
       await expect(visibleTranscript).toBeVisible();
       const transcript=(await visibleTranscript.innerText()).trim();
@@ -166,6 +167,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="female"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      // Voice/music balance belongs to a second native <details> that is
+      // closed by default. Open real advanced options before clicking the
+      // original select; hidden controls must never be force-operated.
+      const voiceOptions=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-bed]")});
+      if(await voiceOptions.getAttribute("open")===null)
+        await voiceOptions.locator("summary").click();
+      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();

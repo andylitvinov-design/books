@@ -164,3 +164,15 @@ test("real WebKit voice acceptance expands the approved transcript before compar
   assert.match(e2e,/await expect\(visibleTranscript\)\.toBeVisible\(\)/);
   assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
 });
+
+test("real WebKit voice acceptance expands advanced sound options before selecting a verified music bed",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.voiceAdvanced\}>/);
+  assert.match(voice,/data-video-affirmation-bed/);
+  assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(browser,/await voiceOptions\.locator\("summary"\)\.click\(\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
+  assert.match(browser,/assert\.ok\(tracks\.includes\("audio"\)/);
+});
