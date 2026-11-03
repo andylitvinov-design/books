@@ -6,7 +6,7 @@ const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
-const {reconcileCiWake}=require('./ci-pr-ci-wake-reconcile.cjs');
+const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
@@ -147,7 +147,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
   workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},
-  ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,
+  ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,ciHoldRecovered:0,
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,reason:null};
@@ -311,9 +311,28 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     runner_id:realRunner.runner.runner_id});
   }
   const status=reservationStatus(task,comments,now);
-  if(task.lane==='ci'&&status==='FREE'&&
-     fresh.labels?.some(l=>l.name==='hh:ci-wake-unverified')){
-   blocked('CI_WAKE_MANUAL_HOLD_UNVERIFIED');continue;
+  if(task.lane==='ci'&&fresh.labels?.some(l=>l.name==='hh:ci-wake-unverified')){
+   // Signed "wake undelivered" describes the former attempt, not necessarily
+   // the current PR HEAD. Only a genuine, completed exact-HEAD Core runner
+   // may retire the two stale queue labels. Never use this to mark a failed
+   // Specialist/merge gate green or to emit another CI bootstrap.
+   if(['FREE','CI_WAKE_OUTCOME_RECORDED'].includes(status)){
+    const outcome=await recoverVerifiedCiManualHold({
+     task,comments,now,dryRun,github,owner,repo,limited
+    });
+    const key=outcome.state||'CI_HOLD_RECOVERY_UNAVAILABLE';
+    summary.ciWakeOutcomes[key]=(summary.ciWakeOutcomes[key]||0)+1;
+    if(outcome.cleared){
+     summary.ciHoldRecovered++;
+     log('CI_HOLD_RECOVERED #'+task.pr_number+
+       ' coreRun='+String(outcome.coreRunId||'none')+
+       ' exactHEAD='+task.head_sha.slice(0,12));
+     continue;
+    }
+    if(status==='FREE'){
+     blocked('CI_WAKE_MANUAL_HOLD_UNVERIFIED');continue;
+    }
+   }
   }
   if(status!=='FREE'){
    if(task.lane==='ci'&&['CI_WAKE_AWAITING_CORE','CI_WAKE_OUTCOME_RECORDED'].includes(status)){
@@ -699,6 +718,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  }
  summary.reason||=quota.state.paused?'API_PAUSED':summary.dispatchAccepted?'DISPATCH_ACCEPTED':
    summary.manualConflictHandoffs?'CONFLICT_HANDOFF_ACCEPTED':
+   summary.ciHoldRecovered?'CI_HOLD_RECOVERED_VERIFIED_CORE':
    summary.wouldDispatch?'DRY_RUN_CANDIDATES':
    summary.wouldManualConflictHandoffs?'DRY_RUN_CONFLICT_HANDOFF':
    capacityReason||(summary.actionableByLane.repair===0&&summary.actionableByLane.ci===0
