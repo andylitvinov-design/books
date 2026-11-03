@@ -318,7 +318,8 @@ jobs:
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
-          # HOME/XDG config, an effective deny-all ACL, and no GH/API secrets.
+          # HOME/XDG config and effective deny-all ACL. Only the optional
+          # dedicated free-tier provider key is passed; no GitHub write or production secrets.
           if ! node .hh-trusted/scripts/ci-pr-repair-free-agent.cjs; then
             echo 'Free model unavailable, quota-limited, or patch rejected.'
             echo 'No paid retry, commit, push, or relaxed safety gate.'
