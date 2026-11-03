@@ -21,10 +21,10 @@ export type AffirmationVoiceResult={
 const durationChoices=[10,20,30,60] as const;
 const copy={
   ru:{
-    title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
+    title:"Озвучить аффирмации",lead:"Выберите утверждённую фразу и голос. Получите настоящую бесплатную озвучку и добавьте её в видео.",
     voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     phrase:"Фраза для озвучки",allPhrases:"Все утверждённые фразы",sample:"Прослушать",sampleBusy:"Загрузка…",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
-    preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
+    preview:"Выбранная фраза",enable:"Сначала включите аффирмации и выберите фразы выше.",
     consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
     generate:"Бесплатно озвучить фразу",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
     unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит запросов исчерпан. Платёж с посетителя не взимается.",
@@ -34,10 +34,10 @@ const copy={
     finished:"Голос в видео",status:"Длительность речи",seconds:"сек.",backupUsed:" · OpenRouter/xAI",freeUsed:" · бесплатный OpenRouter/Deepgram"
   },
   en:{
-    title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
+    title:"Narrate affirmations",lead:"Choose an approved phrase and voice. Generate a free real voice track and attach it to your video.",
     voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     phrase:"Phrase to narrate",allPhrases:"All approved phrases",sample:"Listen",sampleBusy:"Loading…",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
-    preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
+    preview:"Selected spoken phrase",enable:"First enable affirmations and select your phrases above.",
     consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
     generate:"Narrate phrase for free",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
     unavailable:"Free voice generation has not been enabled yet.",quota:"Audio request limit reached. No visitor charges.",
@@ -47,10 +47,10 @@ const copy={
     finished:"Voice in video",status:"Speech duration",seconds:"sec",backupUsed:" · OpenRouter/xAI",freeUsed:" · free OpenRouter/Deepgram"
   },
   es:{
-    title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
+    title:"Poner voz a las afirmaciones",lead:"Elige una frase aprobada y una voz. Genera gratis una pista de voz real para tu vídeo.",
     voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     phrase:"Frase que se leerá",allPhrases:"Todas las frases aprobadas",sample:"Escuchar",sampleBusy:"Cargando…",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
-    preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
+    preview:"Frase elegida",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
     consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
     generate:"Narrar frase gratis",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
     unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota agotada; no hay cobros al visitante.",
