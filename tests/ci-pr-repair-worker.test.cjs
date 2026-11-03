@@ -22,7 +22,8 @@ function fixture(options={}){
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
     repos:{getContent:async()=>{log.read++;return {data:{type:'file',sha:newSha}}}},
-    git:{getCommit:async()=>({data:{tree:{sha:'c'.repeat(40)}}})}
+    git:{getCommit:async()=>({data:{tree:{sha:'c'.repeat(40)},parents:[{sha}]}}),
+      getRef:async()=>({data:{ref:'refs/heads/fix/pr-11',object:{sha:'d'.repeat(40)}}})}
   }};
   const writer={commit:async()=>{log.commit++;return {sha:'d'.repeat(40)}}};
   return {github,writer,log};
@@ -117,6 +118,25 @@ test('publisher verifies owner, SHA, changed file blob and commits exactly once'
   assert.equal(r.status,'committed');
   assert.equal(f.log.commit,1);
   assert.equal(f.log.read,1);
+});
+test('publisher refuses to claim SHA publication without remote ref and parent proof',async()=>{
+ const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+   base64:Buffer.from('const a=1;\n').toString('base64')}]};
+ const wrongRef=fixture();
+ wrongRef.github.rest.git.getRef=async()=>({data:{
+   ref:'refs/heads/fix/pr-11',object:{sha:'e'.repeat(40)}}});
+ await assert.rejects(publish({github:wrongRef.github,core,context,prNumber:11,
+   expectedSha:sha,candidate,writer:wrongRef.writer}),
+   /HH_REPAIR_PUBLISH_REMOTE_REF_UNVERIFIED/);
+ assert.equal(wrongRef.log.commit,1);
+ assert.equal(wrongRef.log.comments,0,'no false PUBLISHED receipt');
+ const wrongParent=fixture();
+ wrongParent.github.rest.git.getCommit=async()=>({data:{parents:[{sha:'f'.repeat(40)}]}});
+ await assert.rejects(publish({github:wrongParent.github,core,context,prNumber:11,
+   expectedSha:sha,candidate,writer:wrongParent.writer}),
+   /HH_REPAIR_PUBLISH_PARENT_UNVERIFIED/);
+ assert.equal(wrongParent.log.commit,1);
+ assert.equal(wrongParent.log.comments,0,'no false PUBLISHED receipt');
 });
 test('publisher refuses changed SHA, unauthorized owner and forged patch path',async()=>{
   const c={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,base64:'YQ=='}]};
