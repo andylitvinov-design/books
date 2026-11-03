@@ -366,8 +366,8 @@ jobs:
               return;
             }
             // Never treat a code failure as recoverable infrastructure failure.
-            // Zero-job infrastructure startup failures have no code results;
-            // only explicit timeout/startup-failure events may be retried.
+            // Zero-job runs have no code results; interrupted jobs may only be
+            // retried when every job ended as cancelled/skipped/timed_out.
             const jobData = (await github.rest.actions.listJobsForWorkflowRun({
               owner,repo,run_id:event.id,per_page:100,filter:"latest"
             })).data;

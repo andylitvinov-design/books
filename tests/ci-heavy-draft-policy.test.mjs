@@ -35,7 +35,10 @@ for (const name of workflows) {
     }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
-    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+    const expectedCancel = name === 'site-video-browser.yml'
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+      : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+    assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -104,8 +107,7 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
     const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
     assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
-    const cancelCondition = workflow === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation :
-      (attemptScoped ? firstAttemptCancellation : prOnlyCancellation);
+    const cancelCondition = attemptScoped ? syncOnlyFirstAttemptCancellation : prOnlyCancellation;
     assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -150,8 +152,7 @@ for (const name of draftStageWorkflows) {
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const prOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
-    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyCondition :
-      (attemptScoped ? firstAttemptCondition : prOnlyCondition);
+    const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -268,7 +269,10 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
       name+' must target production explicitly');
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
-    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+    const expectedCancel = ['hh-app-r1.yml','hh-app-browser.yml'].includes(name)
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+      : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+    assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
     const jobs=source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobs,name+' has no jobs');
