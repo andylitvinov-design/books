@@ -94,9 +94,38 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await voice.locator("[data-meditation-script]").count(),0,
         "skipped narration stays absent after the Personal Meditation CTA reopens editor");
 
-      await course.locator("[data-guided-create-plan]").click();
+      const planButton=course.locator("[data-guided-create-plan]");
+      await planButton.click();
       const programme=course.locator("[data-guided-eight-sessions]");
-      await programme.waitFor({state:"visible"});
+      try {
+        await programme.waitFor({state:"visible",timeout:20000});
+      } catch(error) {
+        // Explain an actual missing programme, never silently skip a failed
+        // iPhone/WebKit control or treat a successful click as generated output.
+        const diagnostic=await course.evaluate(el=>{
+          const plan=el.querySelector("[data-guided-create-plan]");
+          const state=[...el.querySelectorAll("[data-guided-focus-state]")].find(
+            n=>n.getAttribute("aria-pressed")==="true");
+          const vector=[...el.querySelectorAll("[data-guided-focus-vector]")].find(
+            n=>n.getAttribute("aria-pressed")==="true");
+          return {
+            page:document.location.pathname,
+            planDisabled:plan instanceof HTMLButtonElement?plan.disabled:null,
+            planConnected:plan?.isConnected??false,
+            selectedState:state?.getAttribute("data-guided-focus-state")??null,
+            selectedVector:vector?.getAttribute("data-guided-focus-vector")??null,
+            focusMode:[...el.querySelectorAll('[data-video-therapy-focus] [role="group"] button')]
+              .filter(n=>n.getAttribute("aria-pressed")==="true")
+              .map(n=>n.textContent?.trim().slice(0,70)),
+            note:el.querySelector("[data-video-key-difficulty]")?.value??null,
+            createdNodes:el.querySelectorAll("[data-guided-eight-sessions]").length,
+            error:el.querySelector('[role="alert"]')?.textContent?.trim().slice(0,150)??null,
+            progress:el.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            activeWorkspace:document.querySelector('[data-video-quick-control="practices"]')?.getAttribute("aria-pressed"),
+          };
+        });
+        throw new Error("GUIDED_PROGRAMME_NOT_VISIBLE "+engine+" "+locale+" "+width+" "+JSON.stringify({diagnostic,pageErrors,writes}),{cause:error});
+      }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
       const enquiry=programme.locator("[data-meditation-course-order]");
