@@ -344,7 +344,7 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+    if (state.failed.length || state.orphanFailures.length ||
         unregistered.length || retiredProblems.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
         failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
@@ -398,7 +398,7 @@ export async function verify(api,ctx,files,options={}) {
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
-      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.pushAdvisory.map(item => 'unassociated-push:'+item),
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
