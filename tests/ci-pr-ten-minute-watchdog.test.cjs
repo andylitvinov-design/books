@@ -263,6 +263,19 @@ test('synthetic pull_request merge SHA is associated with real exact PR HEAD',()
   assert.equal(coreRunForCurrentPR(workflowRun,current),true);
   assert.equal(workflowRun.head_sha===current.head.sha,false);
 });
+test('Core with empty PR links is still the genuine exact-source CI run',()=>{
+  const {coreRunForCurrentPR}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const current=pr(77);
+  const run={name:'HH PR core release gate',event:'pull_request',
+    path:'.github/workflows/hh-pr-core-release.yml@refs/pull/77/merge',
+    repository:{full_name:'andylitvinov-design/books'},
+    head_repository:{full_name:'andylitvinov-design/books'},
+    head_branch:current.head.ref,head_sha:current.head.sha,pull_requests:[]};
+  assert.equal(coreRunForCurrentPR(run,current),true);
+  assert.equal(coreRunForCurrentPR({...run,head_sha:'b'.repeat(40)},current),false);
+  assert.equal(coreRunForCurrentPR({...run,head_repository:{full_name:'other/repo'}},current),false);
+  assert.equal(coreRunForCurrentPR({...run,path:'.github/workflows/other.yml'},current),false);
+});
 test('stale or mismatched PR association cannot authorize CI repair',()=>{
   const {coreRunForCurrentPR}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const current=pr(77);
