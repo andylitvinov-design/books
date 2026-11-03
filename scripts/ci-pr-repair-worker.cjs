@@ -537,7 +537,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'ESLINT_SCOPE_NOT_CONFIGURED','ESLINT_REMAINING_ERRORS',
     'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
   const agentDetail=[codeVerifyDetail,codeDetail].find(x=>typeof x==='string' &&
-    x.startsWith('CODEX_') && /^[A-Z0-9_:.-]{5,120}$/.test(x));
+    /^(?:CODEX_|FREE_AI_)/.test(x) && /^[A-Z0-9_:.-]{5,120}$/.test(x));
   const detailCode=state==='MANUAL'||state==='FAILED'?
     agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
