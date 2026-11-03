@@ -86,8 +86,9 @@ test("owner's third workspace exposes three image-led groups in approved order a
   assert.match(ui,/data-hypno-card/);
   assert.match(ui,/note==="voice"/,
     "opening the speech control reveals the inline voice editor");
-  assert.match(ui,/note==="audio"/,
-    "audio guidance remains available only when required; the optional safety note stays compact");
+  assert.match(ui,/voiceEditor\|\|<p className=\{styles\.note\}>\{t\.voiceHint\}<\/p>/,
+    "audio guidance offers the inline phrase-voice editor or a clear prerequisite");
+  assert.match(ui,/audioEffectBusy/,"audio controls expose their real render-busy state");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
   assert.match(ui,/createPortal\(intro,introTarget\)/);
