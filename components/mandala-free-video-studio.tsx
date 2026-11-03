@@ -4029,9 +4029,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Leaf size={29} aria-hidden="true"/>
           </Link>
           <span className={videoStyles.quickBrandIdentity}><strong>Holistic House</strong>
-            <small>{locale==="ru"?"Видеотерапия для гармоничной жизни":
-              locale==="es"?"Videoterapia para una vida en armonía":
-              "Video practices for a balanced life"}</small>
+            <small>{locale==="ru"?"Видеостудия · Создание видео":
+              locale==="es"?"Estudio de vídeo · Crear":
+              "Video Studio · Create video"}</small>
           </span>
           <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"} prefetch={false} className={videoStyles.quickBrandProfile}
             aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio (English)":"My House"}>
@@ -4216,12 +4216,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
             {locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
-          <h2>{locale==="ru"?"Создавайте видео для поддержки, баланса и развития":
-            locale==="es"?"Crea vídeos para tu bienestar y crecimiento":
-            "Create videos for balance, support and growth"}</h2>
-          <p>{locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
-            locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
-            "Personal videos, meditations and practices for your goals."}</p>
+          <h2>{activeWorkspace==="video"
+              ?(locale==="ru"?"Создайте своё видео":locale==="es"?"Crea tu propio vídeo":"Create your own video")
+              :(locale==="ru"?"Создавайте видео для поддержки, баланса и развития":
+                locale==="es"?"Crea vídeos para tu bienestar y crecimiento":
+                "Create videos for balance, support and growth")}</h2>
+          <p>{activeWorkspace==="video"
+              ?(locale==="ru"?"Практика, медитация или вдохновляющий ролик с вашим смыслом":
+                locale==="es"?"Una práctica, meditación o vídeo inspirador con sentido":
+                "Practice, meditation or an inspiring film with your meaning")
+              :(locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
+                locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
+                "Personal videos, meditations and practices for your goals.")}</p>
         </div>
         <span className={videoStyles.heroDuration} aria-label={locale==="ru"?"Планируемая длительность":locale==="es"?"Duración prevista":"Planned duration"}>
           00:{String(duration).padStart(2,"0")}

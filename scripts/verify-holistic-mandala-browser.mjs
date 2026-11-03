@@ -169,21 +169,22 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
-        // Owner 03 Nov: one compact row of four photo-free categories. Subtopics
-        // open directly underneath and allow at most two selected choices.
+        // Owner 03 Nov: one compact row of five photo-free category pills. Subtopics
+        // appear directly underneath and allow at most two selected choices.
         const goalCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-category]');
         const topicCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-subcategories] [data-auto-video-goal]');
         await expect(goalCards.first()).toBeVisible({timeout:15000});
-        assert.equal(await goalCards.count(),4,"four text-only categories in one row");
+        assert.equal(await goalCards.count(),5,"five text-only goal pills in one row");
         assert.equal(await goalCards.locator("img").count(),0,"no photo thumbnails in goals");
         const goalRects=await goalCards.evaluateAll(nodes=>nodes.map(node=>({
           x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y,
           width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height
         })));
         assert.ok(goalRects.every(rect=>Math.abs(rect.y-goalRects[0].y)<=2),
-          engine+" "+locale+" "+width+" four categories must share one row: "+JSON.stringify(goalRects));
-        assert.equal(await topicCards.count(),0,"subcategories start collapsed");
-        await goalCards.first().click();
+          engine+" "+locale+" "+width+" five categories must share one row: "+JSON.stringify(goalRects));
+        await expect(topicCards.first()).toBeVisible({timeout:10000});
+        assert.equal(await topicCards.count(),6,"subcategories are visible under the initial goal");
+        await goalCards.nth(1).click();
         await expect(topicCards.first()).toBeVisible({timeout:10000});
         assert.equal(await topicCards.count(),6,"subcategories appear beneath selected category");
         await topicCards.nth(0).click();await topicCards.nth(1).click();
@@ -200,6 +201,20 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await initialAdvanced.count(),1,"advanced style settings stay reusable in Montage");
         assert.equal(await initialAdvanced.isVisible(),false,
           "old Video-level advanced button is not displayed");
+        const topicPanel=quick.locator("[data-auto-video-topic-panel]");
+        const recommendations=topicPanel.locator("[data-auto-video-popular-topics]");
+        const customInput=topicPanel.locator("[data-auto-video-input]");
+        await expect(recommendations).toBeVisible();
+        await expect(customInput).toBeVisible();
+        assert.equal(await recommendations.locator("[data-auto-video-popular-topic]").count(),6,
+          "six popular themes reuse the existing live goal state");
+        const topicOrder=await topicPanel.evaluate(node=>{
+          const rec=node.querySelector("[data-auto-video-popular-topics]");
+          const input=node.querySelector("[data-auto-video-input]");
+          return {recBottom:rec?.getBoundingClientRect().bottom,inputTop:input?.getBoundingClientRect().top};
+        });
+        assert.ok(topicOrder.inputTop>=topicOrder.recBottom,
+          "manual text is beneath recommendations: "+JSON.stringify(topicOrder));
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
         // Free Help is a real launcher for #2913's existing AI Director; it
@@ -690,7 +705,7 @@ const runEngine = async ([engine, browserType]) => {
           {timeout:15000});
         const themeDisclosure=quick.locator("[data-video-theme-advanced]");
         assert.equal(await themeDisclosure.getAttribute("open"),null,
-          "the detailed six visual topics are accessible but collapsed under the four easy goals");
+          "the detailed six visual topics are accessible but collapsed under the five compact goals");
         await themeDisclosure.locator("summary").click();
         await expect(themeDisclosure).toHaveAttribute("open","");
         await quick.locator('[data-video-quick-theme="money"]').click();
@@ -768,12 +783,12 @@ const runEngine = async ([engine, browserType]) => {
               getComputedStyle(diagnostic).display!=="none":false,
             diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
         });
-        assert.ok(layout.hero<=205 && layout.hero>=90,
+        assert.ok(layout.hero<=260 && layout.hero>=155,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
         assert.ok(layout.brand>=40 && layout.brand<=75,
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
-        assert.ok(layout.goals.length===4 && layout.goals.every(n=>n>=44),
-          engine+" "+locale+" "+width+"px four scannable goal cards "+JSON.stringify(layout));
+        assert.ok(layout.goals.length===5 && layout.goals.every(n=>n>=44),
+          engine+" "+locale+" "+width+"px five scannable goal pills "+JSON.stringify(layout));
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
@@ -952,7 +967,7 @@ const runEngine = async ([engine, browserType]) => {
         ).evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length>0).map(node=>({
           height:node.getBoundingClientRect().height,width:node.getBoundingClientRect().width,
         })));
-        assert.equal(previewTouchTargets.length,10,"six real workspaces and four first-line goals");
+        assert.equal(previewTouchTargets.length,11,"six real workspaces and five first-line goals");
         assert.ok(previewTouchTargets.every(rect=>rect.height>=44&&rect.width>=44),
           engine+" "+locale+" "+width+"px visible tab and goal touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
@@ -1008,11 +1023,11 @@ const runEngine = async ([engine, browserType]) => {
         const hierarchy=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
           return {
-            // Approved sequence: hero → six real workspaces → 4 goals →
-            // free text + 6 topics → 4 story choices → continuation CTA.
+            // Approved sequence: six tabs → 16:9 actual video → five goals and subtopics →
+            // popular themes → custom input → 4 story choices → continuation CTA.
             preview:[
-              "[data-video-mandala-hero]",
               "[data-video-quick-controls]",
+              "[data-video-mandala-hero]",
               '[data-video-quick-section="1"]',
               "[data-video-topic-section]",
               "[data-auto-video-director]"
@@ -2221,8 +2236,8 @@ const runEngine = async ([engine, browserType]) => {
           const topicPanel=page.locator("[data-video-director-topic-controls]");
           await auto.waitFor({state:"visible",timeout:12000});
           await topicPanel.locator("[data-auto-video-input]").waitFor({state:"visible",timeout:12000});
-          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),4,
-            "four high-level goals are individually selectable");
+          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),5,
+            "five high-level goal pills are individually selectable");
           await goalPanel.locator('[data-auto-video-category="strength"]').click();
           assert.equal(await goalPanel.locator("[data-auto-video-goal]").count(),6,
             "six inline contextual subtopics, no obligatory 49-question intake");
