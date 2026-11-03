@@ -93,11 +93,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"navigate");
       await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
+      // Next renders the workspace tabs before client event handlers hydrate.
+      // On Safari an early click can be swallowed and leave Montage hidden.
+      await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       phase(engine,"editor-ready");
       // A real visitor sets duration using Montage → Music, then moves to
       // Phrases. The retired Video quick-audio disclosure is intentionally
       // hidden by the canonical six-workspace layout: do not bypass its CSS.
-      await page.locator('[data-video-quick-control="editor"]').click();
+      const editorTab=page.locator('[data-video-quick-control="editor"]');
+      await editorTab.click();
+      await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
