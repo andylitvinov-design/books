@@ -112,9 +112,23 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
    // Explain the permanent problem; never trigger a second Ready/Draft
    // transition or a no-op source commit from a missing Core response.
    try{
-     await limited('ci-wake-manual-hold',()=>github.rest.issues.addLabels({
-       owner,repo,issue_number:task.pr_number,labels:['hh:ci-wake-unverified']
+     const label='hh:ci-wake-unverified';
+     const add=()=>limited('ci-wake-manual-hold',()=>github.rest.issues.addLabels({
+       owner,repo,issue_number:task.pr_number,labels:[label]
      }));
+     try{await add();}
+     catch(error){
+       if(Number(error?.status)!==422)throw error;
+       // First use on a repository where the new diagnostic label does not
+       // yet exist. A concurrent creator returning 422 is also harmless.
+       try{
+         await limited('create-ci-wake-label',()=>github.rest.issues.createLabel({
+           owner,repo,name:label,color:'fbca04',
+           description:'CI wake requested but real exact-head PR Core run unverified'
+         }));
+       }catch(createError){if(Number(createError?.status)!==422)throw createError;}
+       await add();
+     }
      result.manualFlagged=true;
    }catch{result.state='CI_WAKE_MANUAL_LABEL_UNAVAILABLE';return result;}
  }
