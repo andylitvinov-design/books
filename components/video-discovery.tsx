@@ -118,8 +118,6 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const dismiss=(id:string)=>{
     if(safeId(id))setHiddenIds(current=>[...current.filter(x=>x!==id),id].slice(-200));
   };
-  const allowedGoals=VIDEO_GOALS.filter(id=>id==="all"||id==="practices"||
-    area==="all"||lifeAreasForIntent(id).includes(area));
   const sources=useMemo(()=>[...new Set(videos
     .map(item=>item.sourceLabel||item.author||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b,locale)),
     [videos,locale]);
@@ -200,7 +198,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale]);
+  },[videos,search,source,period,durationRange,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId]);
   const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
     goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
   }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
