@@ -12,7 +12,7 @@ import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/pr
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -302,8 +302,6 @@ export function loadTrustedTypescript(base) {
   finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
 }
 
-// Allow only exact additive actionlint regression coverage during the HEAD-storm
-// migration. Existing syntax-validation removal or modification fails closed.
 export function trustedAdditiveActionlint(base, current) {
   if (typeof base !== 'string' || typeof current !== 'string') return false;
   if (base === current) return true;
@@ -407,15 +405,21 @@ export async function verify(api,ctx,files,options={}) {
   const delegated=routed.delegated;
   const replacements=new Set(delegated.map(item=>item.replacement));
   const syntaxWorkflow=WORKFLOW_PREFIX+'hh-actionlint.yml';
-  // The unchanged BASE-owned actionlint workflow must independently validate
+  // The protected BASE-owned actionlint workflow must independently validate
   // every modified YAML; never let a PR replace or omit that enforcement.
   const trustedSyntax=pinnedChangeRows && baselineExpected.includes(syntaxWorkflow) &&
     files.base.has(syntaxWorkflow) &&
-    trustedAdditiveActionlint(files.base.get(syntaxWorkflow), files.current.get(syntaxWorkflow));
+    trustedAdditiveActionlint(files.base.get(syntaxWorkflow),files.current.get(syntaxWorkflow));
   const concurrencyAdvisory=trustedSyntax ? concurrencyOnlyAdvisory({
     ...files,changedRows,expected:routed.expected,
   }) : new Set();
   for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
+  // Only exact one-line PR self-path deletions with a successful independent
+  // actionlint proof may stop registering domain jobs on future YAML-only PRs.
+  const selfTriggerAdvisory=trustedSyntax ? selfTriggerRemovalAdvisory({
+    ...files,changedRows,expected:routed.expected,
+  }) : new Set();
+  for (const replacement of replacements) selfTriggerAdvisory.delete(replacement);
   const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
     files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
   // Explicit owner budget policy: Mandala's large browser/macOS workflow is
@@ -436,7 +440,7 @@ export async function verify(api,ctx,files,options={}) {
       !changed.includes(mandala)) {
     advisoryPaths.add(mandala);
   }
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -454,7 +458,7 @@ export async function verify(api,ctx,files,options={}) {
     const allRuns=await api.runs(ctx.head);
     fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
-    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
+    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) && !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.orphanFailures.length ||
@@ -535,6 +539,7 @@ export async function verify(api,ctx,files,options={}) {
       ...state.pushAdvisory.map(item => 'unassociated-push:'+item),
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
+    selfTriggerOnly:[...selfTriggerAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
