@@ -2800,6 +2800,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number;repeatEverySeconds?:number;whisperGain?:number}){
     if(recording||preparing||hypnoAudioBusy)return;
+    if(phrasePending){
+      setNotice(locale==="ru"?"Сначала утвердите новые фразы — черновик нельзя смешивать с видео.":"Approve the edited phrases before preparing audio effects.");
+      return;
+    }
+    if(narrationInvalid){
+      setNotice(locale==="ru"?"Сначала обновите устаревшую озвучку выбранных фраз.":"Regenerate the outdated spoken-phrase track before applying audio effects.");
+      setActiveWorkspace("phrases");
+      return;
+    }
     if(next.whisper&&!hypnoSpeechSource){
       setNotice(locale==="ru"?"Сначала создайте озвучку фраз в блоке «Озвучка фраз».":
         locale==="es"?"Primero crea la voz de tus frases.":"Create a spoken-phrases track first.");
