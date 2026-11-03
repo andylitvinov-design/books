@@ -264,7 +264,7 @@ export function MandalaHypnocorrectionMobile({
             </label>
             <p className={styles.note}>{t.beatHint}</p>
           </div>:null}
-          {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite">{t.effectBusy}</p>:null}
+          {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite" data-hypno-audio-effect-busy>{t.effectBusy}</p>:null}
           {note==="voice"?<p className={styles.note}>{t.voiceHint}</p>:null}
         </>:null}
         {group.id==="visual"?<>
