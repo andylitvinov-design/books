@@ -76,6 +76,8 @@ test('Portrait PR runs focused current contracts while the old synthetic DB/brow
 test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
   const suffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
   const cancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const stableSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const stableCancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   for (const [file, prefix, job] of [
     ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
@@ -84,8 +86,8 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
     const source = workflow(file);
     assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'), file + ' must test Ready transitions');
     assert.ok(source.includes('  ' + job + ':\n' + ready + '\n'), file + ' must run full QA for Ready');
-    assert.ok(source.includes('group: ' + prefix + '-' + suffix), file + ' must group by PR number and independent manual run');
-    assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ' must not cancel production or manual runs');
+    assert.ok(source.includes('group: ' + prefix + '-' + (file === 'hh-free-review-live-mobile.yml' ? stableSuffix : suffix)), file + ' must group by PR number and independent manual run');
+    assert.ok(source.includes('cancel-in-progress: ' + (file === 'hh-free-review-live-mobile.yml' ? stableCancel : cancel)), file + ' must not cancel production or manual runs');
     assert.match(source, /^  workflow_dispatch:/m, file + ' must preserve manual verification');
     assert.match(source, /playwright install --with-deps chromium webkit/, file + ' must retain actual browser QA');
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -239,4 +241,23 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.match(s, /path: \.next\/cache/);
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
+});
+
+test('rapid source commits supersede one PR-scoped first-attempt specialist lane', () => {
+  const group = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+  const cases = [["hh-benchmark-program.yml","hh-benchmark-contract"],["hh-first-video-live-export.yml","hh-live-video"],["hh-public-journey-wave1.yml","hh-public-wave1"],["release-reaudit.yml","release-reaudit"],["hh-free-review-live-mobile.yml","hh-free-review-mobile"],["hh-public-performance-audit.yml","hh-public-performance"],["hh-public-services-production.yml","public-services-production"],["site-video-browser.yml","site-video-browser"],["hh-alchemy-mobile-acceptance.yml","hh-alchemy-mobile"]];
+  for (const [file, prefix] of cases) {
+    const source = workflow(file);
+    assert.ok(source.includes('group: ' + prefix + '-' + group), file + ': opened and synchronize must share the same lane');
+    assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ': cancel only superseding first-attempt PR events');
+    assert.ok(!source.includes('github.event.before != github.event.after'), file + ': no optional webhook SHA fields');
+  }
+  const native = workflow('hh-native-auto-merge.yml');
+  const recover = native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0];
+  assert.ok(recover, 'trusted infrastructure recovery must remain');
+  assert.ok(recover.includes('new Set(["timed_out","startup_failure"])'));
+  assert.ok(!recover.includes('new Set(["cancelled"'), 'intentional HEAD cancellation must not retry');
+  assert.ok(recover.includes('parents[1]?.sha !== live.head.sha'));
+  assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));
 });
