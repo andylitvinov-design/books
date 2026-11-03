@@ -313,7 +313,7 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["cancelled","timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -332,7 +332,7 @@ jobs:
             const {owner,repo} = context.repo;
             const event = context.payload.workflow_run;
             const fullRepo = owner + "/" + repo;
-            const retryConclusions = new Set(["cancelled","timed_out","startup_failure","failure"]);
+            const retryConclusions = new Set(["timed_out","startup_failure"]);
             const log = message => core.info("CORE_CI_RECOVERY: " + message);
             if (!event || event.name !== "HH PR core release gate" ||
                 event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
@@ -366,8 +366,8 @@ jobs:
               return;
             }
             // Never treat a code failure as recoverable infrastructure failure.
-            // Zero-job runs have no code results; interrupted jobs may only be
-            // retried when every job ended as cancelled/skipped/timed_out.
+            // Zero-job infrastructure startup failures have no code results;
+            // only explicit timeout/startup-failure events may be retried.
             const jobData = (await github.rest.actions.listJobsForWorkflowRun({
               owner,repo,run_id:event.id,per_page:100,filter:"latest"
             })).data;
