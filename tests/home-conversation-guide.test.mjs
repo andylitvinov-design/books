@@ -105,20 +105,20 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES let the visitor ask a question on demand after seven clear stages", () => {
-  const en = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
+test("the optional free assessment and question guide are lazily available after the seven-step journey", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const spanish = read("app/es/page.tsx");
+  const russian = read("app/[locale]/page.tsx");
   const more = read("components/home-more-disclosure.tsx");
-  for (const page of [en,es]) {
+  for (const page of [home, spanish]) {
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    // The approved first-visit flow places topic/disclosure navigation before
-    // the seven-stage workspace, preserving the on-demand conversation guide.
-    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.doesNotMatch(page, /<HomeConversationGuide locale=/);
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomeConversationGuide/);
+    assert.ok(page.includes("paid-sessions"));
   }
-  assert.match(more, /<HomeConversationGuide locale=\{locale\} \/>/);
-  assert.match(more, /ssr: false/);
-  assert.ok(read("app/[locale]/page.tsx").includes("<HolisticHouseHome"));
+  assert.ok(more.indexOf("<HomeFreeDiagnosisBanner") < more.indexOf("<HomeConversationGuide"));
+  assert.match(more, /\{expanded && \(/);
+  assert.ok(russian.includes("<HolisticHouseHome"));
 });
 
 test("browser-only conversation supports multiple turns, voice consent, accessibility and compact mobile", () => {
@@ -360,21 +360,21 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
   }
 });
 
-test("home advisor stays optional and is not repeated as a second conversion funnel", () => {
-  const en = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  for (const source of [en,es]) {
-    assert.match(source, /<HomeMoreDisclosure locale=/);
-    assert.doesNotMatch(source, /<HomeConversationGuide locale=/);
-  }
-  assert.match(more, /data-home-more-deferred="true"/);
-  assert.match(more, /dynamic\(/);
-  const guide = read("components/home-conversation-guide.tsx");
-  for (const token of ["data-home-guide-needs","data-home-guide-need={item.id}",
-    "data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
-    assert.ok(guide.includes(token));
+test("home advisor stays available on demand without interrupting the primary seven steps", () => {
+ const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
+ const more=read("components/home-more-disclosure.tsx");
+ for(const page of [home,es]){
+   assert.match(page,/<HomeMoreDisclosure locale=/);
+   assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+   assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomeConversationGuide/);
+ }
+ assert.ok(more.indexOf("<HomeFreeDiagnosisBanner") < more.indexOf("<HomeConversationGuide"));
+ const guide=read("components/home-conversation-guide.tsx");
+ for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
+   assert.ok(guide.includes(token));
 });
+
+
 
 test("a wish for love gets two genuine context questions before any sales suggestion", () => {
   const love = resolveHomeGuideQuestion("Хочу любви", "en");
