@@ -219,8 +219,9 @@ function reservationStatus(task,comments,now){
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
  if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_WAKE_REQUESTED','FAILED',
-  'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED','CI_CORE_CONFIRMED',
-  'CI_WAKE_UNDELIVERED'].includes(x.state)))return 'ALREADY_HANDLED';
+  'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
+ if(matches.some(x=>['CI_CORE_CONFIRMED','CI_WAKE_UNDELIVERED'].includes(x.state)))
+  return 'CI_WAKE_OUTCOME_RECORDED';
  // An accepted metadata wake is not an observed Core run. Reconcile it
  // separately instead of hiding a stalled PR behind ALREADY_HANDLED.
  if(matches.some(x=>x.state==='CI_WAKE_REQUESTED'))return 'CI_WAKE_AWAITING_CORE';
