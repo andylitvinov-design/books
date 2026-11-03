@@ -274,6 +274,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
   // One committed programme signature, not two independently batched state values.
   const [planActionCount,setPlanActionCount] = useState(0);
+  const [meditationActionCount,setMeditationActionCount] = useState(0);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
   const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
@@ -301,7 +302,8 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   // Compare delayed WebKit change/blur events with the latest committed value,
   // not an older onChange closure that can revoke a freshly approved script.
   const committedDifficultyRef=useRef(keyDifficulty);
-  committedDifficultyRef.current=keyDifficulty;
+  // Do not rewind this ref during an unrelated React render. A delayed WebKit
+  // change/blur event must compare against the last *handled* input value.
   const planOpen=programmeSignature.length>0;
   const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;
   const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;
@@ -400,6 +402,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   function generateMeditation(){
     if(disabled||!focusReady||!firstScript)return;
+    setMeditationActionCount(count=>count+1);
     if(includedSignatureRef.current){
       includedSignatureRef.current=null;
       onOmitMeditation?.();
@@ -449,6 +452,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-focus-ready={focusReady?"true":"false"}
     data-guided-has-script={firstScript.trim().length>0?"true":"false"}
     data-guided-meditation-open={meditationOpen?"true":"false"}
+    data-guided-meditation-click-count={meditationActionCount}
     data-guided-plan-open={planOpen?"true":"false"}
     data-guided-plan-click-count={planActionCount}
     data-guided-plan-signature-match={programmeSignature===journeySignature?"true":"false"}
@@ -472,9 +476,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       <div className={css.flowTitle}><span>01</span><Target size={23} aria-hidden="true"/><h4>{f.focus}</h4></div>
       <div className={css.focusSwitch} role="group" aria-label={f.focus}>
         <button type="button" aria-pressed={focusMode==="state"} disabled={disabled}
-          onClick={()=>{setFocusMode("state");setSelectedState(null);setGoals([]);setKeyGoal("");setKeyDifficulty("");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
+          onClick={()=>{setFocusMode("state");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
         <button type="button" aria-pressed={focusMode==="vector"} disabled={disabled}
-          onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
+          onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
       </div>
       <p className={css.focusChoiceHeading}>{focusMode==="state"?f.stateQuestion:f.vectorQuestion}</p>
       {focusMode==="state"?<div className={css.stateGrid} role="group" aria-label={f.state}>

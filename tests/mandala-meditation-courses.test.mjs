@@ -88,7 +88,12 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
   // React may deliver stale blur callbacks after the approved script is saved.
   // Compare against the most recent ref, not a captured render closure.
   assert.match(studio,/const committedDifficultyRef=useRef\(keyDifficulty\);/);
-  assert.match(studio,/committedDifficultyRef\.current=keyDifficulty;/);
+  assert.doesNotMatch(studio,/committedDifficultyRef\.current=keyDifficulty;/,
+    "unrelated React renders cannot rewind the last handled WebKit input");
+  assert.match(studio,/committedDifficultyRef\.current="";setKeyDifficulty\("");resetGeneratedMeditation\(\);/,
+    "explicit mode reset must keep its ref and controlled input in sync");
+  assert.match(studio,/data-guided-meditation-click-count=\{meditationActionCount\}/,
+    "real Safari Generate taps are observable without collecting private text");
   assert.match(context,/if\(next===committedDifficultyRef\.current\)return;/,
     "duplicate WebKit input events cannot revoke a just-generated script");
   assert.match(context,/committedDifficultyRef\.current=next;/,
@@ -106,6 +111,8 @@ test("WebKit guided-course diagnostics never read Node closures inside browser e
  assert.ok(begin>=0&&end>begin,"real guided-course WebKit state inspection remains");
  assert.doesNotMatch(browser.slice(begin,end),/\bpageErrors\b/,
    "Playwright page.evaluate must not reference Node-only pageErrors");
+ assert.match(browser,/data-guided-meditation-click-count/,
+   "Safari failure logs distinguish missing taps from post-tap invalidation");
  assert.match(browser,/JSON\.stringify\(\{\.\.\.state,pageErrors:pageErrors\.slice\(-5\)\}\)/,
    "diagnostics include guest console errors outside the browser context");
 });
