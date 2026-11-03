@@ -274,17 +274,28 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  // 2 Nov 2026 reviewed CI architecture: one scoped language-agent suite was
-  // added to the previous 94-workflow production catalog. Preserve the exact
-  // ceiling (95), require its dedicated domain tests, and reject future growth.
-  assert.ok(names.length <= 95, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // 2 Nov 2026 reviewed CI architecture: the 95th slot is the scoped Language
+  // Agent suite. A later reviewed Builder/Critic change added exactly one
+  // push-only, zero-credential free-smoke workflow (not a PR specialist).
+  // Keep the ceiling at 96 and require its explicit narrow-trigger/security contract.
+  assert.ok(names.length <= 96, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   if(names.length > 94){
-    assert.ok(names.includes('hh-language-agent.yml'),'Only the reviewed Language Agent may use the 95th workflow slot');
+    assert.ok(names.includes('hh-language-agent.yml'),'The reviewed Language Agent must retain the 95th workflow slot');
     const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
     assert.match(language,/language-contract:/,'Language Agent must retain focused privacy contracts');
     assert.match(language,/typed-ui:/,'Language Agent must retain independent TypeScript check');
     assert.match(language,/holistic-language-agent\.test\.mjs/,'Language Agent must retain privacy tests');
     assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
+  }
+  if(names.length > 95){
+    assert.ok(names.includes('hh-gauntlet-free-smoke.yml'),'Only the reviewed zero-credential Gauntlet free-smoke may use the 96th workflow slot');
+    const gauntlet=readFileSync('.github/workflows/hh-gauntlet-free-smoke.yml','utf8');
+    assert.match(gauntlet,/branches: \['codex\/hh-gauntlet-run-\*'\]/,'Gauntlet free-smoke must remain restricted to its disposable run branch');
+    assert.doesNotMatch(gauntlet,/^  pull_request:/m,'Gauntlet provider smoke must never run on production PRs');
+    assert.match(gauntlet,/permissions:\n  contents: read/,'Gauntlet provider smoke must stay read-only');
+    assert.match(gauntlet,/opencode\/glm-5\.3-flash-free/,'Gauntlet smoke must remain on the approved free model');
+    assert.match(gauntlet,/node --test tests\/hh-gauntlet-loop\.test\.mjs/,'Gauntlet smoke must run its dedicated scope/ACL contract suite');
+    assert.match(gauntlet,/HH_GAUNTLET_CI_SYNTHETIC: isolated-20261027/,'Gauntlet run must remain synthetic-only');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
