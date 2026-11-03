@@ -2,6 +2,8 @@
 // Trusted, read-only admission + single workflow_dispatch; never executes PR code.
 // Fall back to at most one real reconcile every ten minutes when cron is delayed.
 const MAX_ACTIVE=12,MAX_QUEUED=6,COOLDOWN_MS=10*60_000;
+// Global CI saturation must not suppress the only working watchdog backstop.
+const STALE_RESCUE_MS=30*60_000;
 const CORE='HH PR core release gate';
 const PATH='.github/workflows/hh-pr-core-release.yml';
 const REPO='andylitvinov-design/books';
@@ -17,16 +19,25 @@ function trustedEvent(context) {
 function admission(active,queued,runs,now=Date.now()) {
   if(!Number.isSafeInteger(active)||!Number.isSafeInteger(queued)||
      active<0||queued<0)return 'CAPACITY_UNKNOWN';
-  if(active>=MAX_ACTIVE||queued>=MAX_QUEUED)return 'CI_BUSY';
   if(!Array.isArray(runs)||runs.length>10)return 'WATCHDOG_HISTORY_UNVERIFIED';
+  let latestReconcileAt=null;
   for(const r of runs){
     // Successful Core callbacks create many no-op workflow_run wrappers.
     // Only a real scheduled/manual Watchdog reconcile occupies this slot.
     if(r?.event && !['schedule','workflow_dispatch'].includes(r.event))continue;
     if(['queued','in_progress','pending','requested','waiting'].includes(r.status))return 'WATCHDOG_ALREADY_ACTIVE';
     const t=Date.parse(r.created_at||'');
-    if(!Number.isFinite(t))return 'WATCHDOG_HISTORY_UNVERIFIED';
+    if(!Number.isFinite(t)||t>now+60_000)return 'WATCHDOG_HISTORY_UNVERIFIED';
+    latestReconcileAt=latestReconcileAt===null?t:Math.max(latestReconcileAt,t);
     if(now-t>=-60_000&&now-t<COOLDOWN_MS)return 'WATCHDOG_RECENT';
+  }
+  if(active>=MAX_ACTIVE||queued>=MAX_QUEUED){
+    // Do not wake into ordinary CI congestion. If every real scheduled/manual
+    // reconciliation is at least 30 minutes old (or none ever arrived), allow
+    // one rescue dispatch. Queued/running Watchdog and the cooldown above
+    // still block duplicates. Actual Worker/exact-HEAD admission is unchanged.
+    return latestReconcileAt===null||now-latestReconcileAt>=STALE_RESCUE_MS
+      ?'DISPATCH_STALE_CI':'CI_BUSY';
   }
   return 'DISPATCH';
 }
@@ -56,7 +67,7 @@ async function run({github,core,context,now=Date.now()}){
   const sched=scheduled?.data?.workflow_runs, manual=dispatched?.data?.workflow_runs;
   const realHistory=Array.isArray(sched)&&Array.isArray(manual)?[...sched,...manual]:null;
   report.decision=admission(report.active,report.queued,realHistory,now);
-  if(report.decision==='DISPATCH'){
+  if(report.decision==='DISPATCH'||report.decision==='DISPATCH_STALE_CI'){
     // Workflow dispatch is the GITHUB_TOKEN recursion exception.
     await github.rest.actions.createWorkflowDispatch({
       owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',

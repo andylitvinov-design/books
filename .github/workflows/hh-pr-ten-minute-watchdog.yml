@@ -294,6 +294,10 @@ jobs:
                   checked_at:report.checkedAt,run_id:context.runId,source_dry_run:false,
                   source_schema:report.schema,
                   counts:{candidates:number(report.candidates),
+                    // Zero handoff candidates does not imply zero open PRs.
+                    discovered_open_prs:number(report.discovered),
+                    production_open_prs:number(report.production),
+                    actionable_prs:number(report.actionable),
                     unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
                     dispatch_requests_accepted:number(report.dispatchAccepted),
                     worker_dispatches:number(report.runnerStartedConfirmed)},
@@ -305,13 +309,15 @@ jobs:
                     core_waiting_runner:number(report.ciCoreWaitingRunner??0),
                     wake_undelivered:number(report.ciWakeEscalated??0),
                     parent_blocked:number(report.blocked?.STACKED_PARENT??0),
+                    source_proof_missing:number(report.blocked?.SOURCE_PROOF_MISSING??0),
                     conflict_unverified:number(report.blocked?.CONFLICT_NOT_VERIFIED??0),
                     already_handled:number(report.blocked?.ALREADY_HANDLED??0)},
                   reason:typeof report.reason==='string'?report.reason:null};
                 if(Object.values(snapshot.counts).some(v=>v===null)||
+                   Object.values(snapshot.queue_states).some(v=>v===null)||
                    !Number.isFinite(Date.parse(snapshot.checked_at)))throw Error('BAD_MONITOR_COUNTS');
                 const body=[marker,'## Watchdog direct handoff — public snapshot',
-                  'Dispatch API acceptance is NOT execution. Worker starts count only trusted exact-task RUNNER_STARTED receipts from a real GitHub Actions runner observed in this inspected queue. Verified source commits and LIVE are separate.',
+                  'Dispatch API acceptance is NOT execution. Worker starts count only trusted exact-task RUNNER_STARTED receipts from a real GitHub Actions runner observed in this inspected queue. Zero candidates means zero currently queued actionable tasks, NOT zero open PRs. Verified source commits and LIVE are separate.',
                   '', '```json',JSON.stringify(snapshot,null,2),'```','',
                   'Источник: https://github.com/andylitvinov-design/books/actions/runs/'+context.runId,''].join('\n');
                 if(issue.body!==body)await github.rest.issues.update({
