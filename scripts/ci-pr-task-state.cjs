@@ -5,7 +5,7 @@ const PROD='codex/public-book-library';
 const DEFAULT='codex/bootstrap-books';
 const SHA=/^[0-9a-f]{40}$/i;
 const MARKER='<!-- HH_PR_TASK_V1 -->';
-const BLOCKED=new Set(['hh:hold','hh:repair-manual','hh:blocked','hh:worker-claimed']);
+const BLOCKED=new Set(['hh:hold','hh:repair-manual','hh:ci-wake-unverified','hh:blocked','hh:worker-claimed']);
 function labels(pr){return new Set((pr?.labels||[]).map(x=>x.name||x).filter(x=>typeof x==='string'));}
 function validPR(pr){
  const ls=labels(pr);
@@ -219,7 +219,11 @@ function reservationStatus(task,comments,now){
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
  if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_WAKE_REQUESTED','FAILED',
-  'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
+  'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED','CI_CORE_CONFIRMED',
+  'CI_WAKE_UNDELIVERED'].includes(x.state)))return 'ALREADY_HANDLED';
+ // An accepted metadata wake is not an observed Core run. Reconcile it
+ // separately instead of hiding a stalled PR behind ALREADY_HANDLED.
+ if(matches.some(x=>x.state==='CI_WAKE_REQUESTED'))return 'CI_WAKE_AWAITING_CORE';
  if(matches.some(x=>x.state==='CLAIMED'))return 'CLAIMED_AWAITING_OUTCOME';
  const trusted=parseRecords(comments.filter(trustedControlComment));
  if(!trusted)return 'UNVERIFIED_HISTORY';
