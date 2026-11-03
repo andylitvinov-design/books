@@ -746,7 +746,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
   const requiredPrefixes = [
     'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
-    'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
+    'feat/video-120-scenario-media-bindings-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
     'feat/video-chat-context-understanding-'
   ];
   for (const prefix of requiredPrefixes)
@@ -756,6 +756,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'Install isolated Chromium and WebKit (no external account)',
     'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
     'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
+    'Audit 120 scenario physical candidates without auto-publication',
     'Public mandala photo, PNG and video browser flow · 320/390/430px'
   ]) assert.equal(mediaIfFor(name), mediaCondition,
     'real media step must share the protected build guard: '+name);
