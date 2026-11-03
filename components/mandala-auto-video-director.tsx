@@ -11,7 +11,7 @@ import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
-import {montageReplacementOptions} from "@/lib/mandala/video-montage-sources.mjs";
+import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
 import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
 import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
@@ -144,6 +144,7 @@ export function MandalaAutoVideoDirector({
  const [selectedTopicId,setSelectedTopicId]=useState<string>("");
  const [selectedScenarioId,setSelectedScenarioId]=useState<string>("");
  const [selectedPlotId,setSelectedPlotId]=useState<string>("");
+ const [symbolicPlotFallback,setSymbolicPlotFallback]=useState(false);
  const [plotData,setPlotData]=useState<{scenarioId:string;locale:PublicLocale;plots:MyTubePlot[]}|null>(null);
  const [plotsLoading,setPlotsLoading]=useState(false);
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
@@ -177,8 +178,11 @@ export function MandalaAutoVideoDirector({
  const selectedPlotMedia=useMemo(()=>selectedTaxonomyPlot?recommendMyTubePlotMontage({
    plot:selectedTaxonomyPlot,scenes,excludedMotifs:proposal?.excludedMotifs||[],
  }):null,[selectedTaxonomyPlot,scenes,proposal?.excludedMotifs]);
- const plotLacksApprovedClips=Boolean(selectedPlotId&&!selectedPlotMedia?.hasFourApprovedSources);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
+ const fallbackSourcesValid=Boolean(selectedTaxonomyPlot&&!selectedPlotMedia?.hasFourApprovedSources&&
+   chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[]));
+ const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
+ const plotLacksApprovedClips=Boolean(selectedPlotId&&!selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled);
  const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
  const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
@@ -269,7 +273,7 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();
    onCategoryChange?.(nextTheme);
    setSelectedCategoryId(categoryId);
-   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
    setOverrideId(null);setSeconds(null);
    setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal,theme:nextTheme});
@@ -281,7 +285,7 @@ export function MandalaAutoVideoDirector({
    if(!item)return;
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
    onInvalidate?.();onCategoryChange?.(nextTheme);
-   setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    onGoalChange(item.label);
    setProposalContext({goal:item.label,theme:nextTheme});
@@ -294,7 +298,7 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
-   setSelectedTopicId(topicId);setSelectedScenarioId("");setSelectedPlotId("");
+   setSelectedTopicId(topicId);setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
    setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
    setProposalContext({goal:label,theme:nextTheme});
    setProposal(recommended);
@@ -302,7 +306,7 @@ export function MandalaAutoVideoDirector({
  };
  const chooseTaxonomyScenario=(scenarioId:string)=>{
    const scenario=taxonomyScenarios.find(item=>item.id===scenarioId);if(!scenario)return;
-   setSelectedScenarioId(scenarioId);setSelectedPlotId("");
+   setSelectedScenarioId(scenarioId);setSelectedPlotId("");setSymbolicPlotFallback(false);
    const topicLabel=selectedTaxonomyTopic?.topic.label[locale]||goal;
    const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
    onInvalidate?.();onGoalChange(nextGoal);
@@ -317,7 +321,7 @@ export function MandalaAutoVideoDirector({
  const chooseTaxonomyPlot=(plotId:string)=>{
    const plot=taxonomyPlots.find(item=>item.id===plotId);
    if(!plot||plot.scenarioId!==selectedScenarioId||!selectedTaxonomyTopic)return;
-   setSelectedPlotId(plotId);
+   setSelectedPlotId(plotId);setSymbolicPlotFallback(false);
    const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic.subcategory.id]||theme;
    const nextGoal=(selectedTaxonomyTopic.topic.label[locale]+" · "+plot.label).slice(0,160);
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
@@ -327,6 +331,17 @@ export function MandalaAutoVideoDirector({
    setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
    // Scene matcher is scenario-level only; plot-level footage is NOT certified.
    setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,selectedScenarioId,recommended,plot):null);
+ };
+ const enableSymbolicPlotFallback=()=>{
+   if(!selectedTaxonomyPlot||!chosen||!fallbackSourcesValid)return;
+   const clipIds=[...chosen.clips];
+   if(!validateMontageClips(clipIds,scenes,proposal?.excludedMotifs||[]))return;
+   const captions=selectedTaxonomyPlot.beats.map(text=>
+     Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""));
+   onInvalidate?.();setConfirmedTimelineKey(null);setSymbolicPlotFallback(true);
+   setTimelineEdits({presetId:chosen.id,totalSeconds:length,clipIds,
+     durations:allocateAdaptiveFilmTimeline(length,clipIds).map(shot=>shot.durationSeconds),
+     captions});
  };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <div className={css.goalChoices} role="group" aria-label={
@@ -370,7 +385,7 @@ export function MandalaAutoVideoDirector({
          onInvalidate?.();onGoalChange(value);
          setProposalContext({goal:value,theme});
          setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-         setOverrideId(null);setSeconds(null);setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");
+         setOverrideId(null);setSeconds(null);setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
          setTimelineEdits(null);setConfirmedTimelineKey(null);
        }}/>
    </label>
@@ -449,14 +464,27 @@ export function MandalaAutoVideoDirector({
      </p>:null}
    {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
      role="status" data-mytube-plot-media-status
-     data-ready={selectedPlotMedia?.hasFourApprovedSources?"true":"false"}>
+     data-ready={selectedPlotMedia?.hasFourApprovedSources||fallbackEnabled?"true":"false"}
+     data-plot-media-mode={selectedPlotMedia?.hasFourApprovedSources?"topic-symbolic":
+       fallbackEnabled?"caption-symbolic":"insufficient"}>
      {selectedPlotMedia?.hasFourApprovedSources
        ?(locale==="ru"?`Для символического предпросмотра подобраны 4 проверенных MP4 из ${selectedPlotMedia.candidateCount} тематических кандидатов. События истории в кадрах не подтверждены.`:
          locale==="es"?`Seleccionados 4 MP4 aprobados entre ${selectedPlotMedia.candidateCount} candidatos temáticos. Interpretación simbólica, no escenas exactas verificadas.`:
          `4 approved MP4s selected from ${selectedPlotMedia.candidateCount} topic candidates. Symbolic preview, not verified plot actions.`)
+       :fallbackEnabled?(locale==="ru"?
+          "Вы выбрали символический видеоряд с четырьмя сюжетными титрами. Фоновое видео лицензировано, но не изображает действия сюжета буквально.":
+          locale==="es"?"Elegiste un vídeo simbólico con cuatro subtítulos narrativos. Los clips están aprobados, pero no representan literalmente la trama.":
+          "You chose a symbolic licensed montage with four plot captions. Clips do not literally depict the story events.")
        :(locale==="ru"?`Недостаточно лицензированных тематических кадров: ${selectedPlotMedia?.candidateCount??0} из 4. Экспорт выбранного сюжета недоступен; можно снять его выбор и сделать общий символический ролик.`:
          locale==="es"?`Solo hay ${selectedPlotMedia?.candidateCount??0} de 4 clips aprobados. Esta trama no se puede exportar; quita su selección para un vídeo simbólico general.`:
          `Only ${selectedPlotMedia?.candidateCount??0} of 4 approved topic clips. Plot export is unavailable; deselect it for a general symbolic film.`)}
+     {!selectedPlotMedia?.hasFourApprovedSources?<button type="button"
+       data-mytube-symbolic-caption-fallback disabled={disabled||!fallbackSourcesValid}
+       aria-pressed={fallbackEnabled} onClick={enableSymbolicPlotFallback}>
+       {locale==="ru"?"Использовать символические кадры и титры сюжета":
+        locale==="es"?"Usar clips simbólicos con subtítulos de la trama":
+        "Use symbolic clips and plot captions"}
+     </button>:null}
      <button type="button" data-mytube-clear-plot disabled={disabled}
        onClick={()=>chooseTaxonomyScenario(selectedScenarioId)}>
        {locale==="ru"?"Снять выбор сюжета":locale==="es"?"Quitar selección de trama":"Deselect plot"}
@@ -482,7 +510,7 @@ export function MandalaAutoVideoDirector({
        onInvalidate?.();onGoalChange(next);
        setProposal(recommendAutoVideo({goal:next,locale,fallbackTheme:theme,presets,scenes}));
        setProposalContext({goal:next,theme});
-       setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setOverrideId(null);setRefineOpen(false);setRefineText("");
+       setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setOverrideId(null);setRefineOpen(false);setRefineText("");
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
@@ -529,7 +557,14 @@ export function MandalaAutoVideoDirector({
              aria-pressed={chosen.id===id} disabled={disabled}
              onClick={()=>{if(chosen?.id!==id)onInvalidate?.();
                setOverrideId(id===proposal.presetId?null:id);
-               setTimelineEdits(selectedTaxonomyPlot&&selectedTopicId?
+               const nextPreset=presets.find(item=>item.id===id);
+               const fallbackClips=fallbackEnabled&&selectedTaxonomyPlot&&nextPreset&&
+                 validateMontageClips([...nextPreset.clips],scenes,proposal.excludedMotifs);
+               setTimelineEdits(fallbackClips&&nextPreset&&selectedTaxonomyPlot?
+                 {presetId:id,totalSeconds:length,clipIds:[...nextPreset.clips],
+                  durations:allocateAdaptiveFilmTimeline(length,nextPreset.clips).map(shot=>shot.durationSeconds),
+                  captions:selectedTaxonomyPlot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""))}:
+                 selectedTaxonomyPlot&&selectedTopicId&&!fallbackEnabled?
                  timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,
                    length as 10|15|20|30|60,id):null);
                setConfirmedTimelineKey(null);}}>
@@ -664,7 +699,11 @@ export function MandalaAutoVideoDirector({
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
              aria-pressed={length===n} onClick={()=>{if(length!==n)onInvalidate?.();
                setSeconds(n);
-               setTimelineEdits(selectedTaxonomyPlot&&selectedTopicId&&proposal?
+               setTimelineEdits(fallbackEnabled&&selectedTaxonomyPlot&&chosen?
+                 {presetId:chosen.id,totalSeconds:n,clipIds:[...chosen.clips],
+                  durations:allocateAdaptiveFilmTimeline(n,chosen.clips).map(shot=>shot.durationSeconds),
+                  captions:selectedTaxonomyPlot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""))}:
+                 selectedTaxonomyPlot&&selectedTopicId&&proposal?
                  timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,n,
                    chosen?.id):null);
                setConfirmedTimelineKey(null);}}>{n} s</button>)}

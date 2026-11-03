@@ -83,3 +83,18 @@ test("the UI uses plot ranking, exact preset timing, authored captions and expli
   assert.match(director,/STAGE_CAPTION_LIMIT/);
   assert.match(director,/data-mytube-plot-media-disclaimer/);
 });
+
+test("insufficient plot media offers only explicitly opted-in, rights-validated text-led symbolic fallback",()=>{
+  const ui=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  assert.match(ui,/data-mytube-symbolic-caption-fallback/);
+  assert.match(ui,/onClick=\{enableSymbolicPlotFallback\}/);
+  assert.match(ui,/setSymbolicPlotFallback\(true\)/);
+  assert.match(ui,/setSelectedPlotId\(plotId\);setSymbolicPlotFallback\(false\)/);
+  assert.match(ui,/setSelectedScenarioId\("");setSelectedPlotId\("");setSymbolicPlotFallback\(false\)/);
+  assert.match(ui,/validateMontageClips\(\[\.\.\.chosen\.clips\],scenes,proposal\?\.excludedMotifs\|\|\[\]\)/);
+  assert.match(ui,/data-plot-media-mode/);
+  assert.match(ui,/fallbackEnabled&&selectedTaxonomyPlot&&chosen/);
+  assert.match(ui,/plotLacksApprovedClips/);
+  assert.match(ui,/captions:selectedTaxonomyPlot\.beats\.map/);
+  assert.match(ui,/role="status" data-mytube-plot-media-status/);
+});
