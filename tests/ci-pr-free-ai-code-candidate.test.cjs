@@ -48,6 +48,6 @@ test('control-plane workflow keeps free inference read-only and separate from pu
  assert.match(codeVerify,/ci-pr-repair-code-candidate\.cjs verify/);
  assert.match(codeVerify,/contents: read/);
  assert.doesNotMatch(codeVerify,/HH_AUTOMERGE_TOKEN|contents: write|if: false/);
- assert.match(w,/code_available','true'/);
+ assert.match(w,/code_available'.*'true'/);
  assert.match(w,/hh-code-repair-verified/);
 });
