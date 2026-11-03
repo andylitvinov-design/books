@@ -103,6 +103,13 @@ test('specialist concurrency isolates unrelated events and only cancels an older
       cancelBase.replace("github.event.action", "github.run_attempt == 1 && github.event.action") : cancelBase;
     assert.ok(source.includes(`group: ${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
     assert.ok(source.includes('cancel-in-progress: ${{ ' + cancelCondition + ' }}'), file);
+    if (stablePRConcurrency.has(file)) {
+      const concurrencyBlock = source.match(/^concurrency:\n([\s\S]*?)(?=^jobs:)/m)?.[0] ?? '';
+      const groupLine = concurrencyBlock.split('\n').find(line => line.startsWith('  group: ')) ?? '';
+      assert.ok(groupLine.length > 0, file + ': missing concurrency group');
+      assert.ok(!groupLine.includes('github.event.pull_request.head.sha') &&
+        !groupLine.includes('github.sha'), file + ': stable PR group must not change for each HEAD');
+    }
   }
 });
 
