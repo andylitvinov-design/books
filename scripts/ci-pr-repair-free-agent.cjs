@@ -158,6 +158,87 @@ function isolatedEnvironment(dir){
    OPENCODE_DISABLE_CLAUDE_CODE:'1',OPENCODE_ENABLE_EXA:'0',
    OPENCODE_ENABLE_PARALLEL:'0'};
 }
+
+function zeroPrice(value) {
+ if (typeof value === 'number') return Number.isFinite(value) && value === 0;
+ if (typeof value === 'string') return /^(?:0+(?:\.0+)?|free)$/i.test(value.trim().replace(/^\$/, ''));
+ return false;
+}
+function findModelRecord(value, model) {
+ const found=[],seen=new Set();
+ function walk(node,depth=0) {
+  if(!node||typeof node!=='object'||depth>12||seen.has(node))return;
+  seen.add(node);
+  if(Array.isArray(node)){for(const item of node)walk(item,depth+1);return;}
+  const id=node.id||node.model_id||node.modelID||node.model;
+  const provider=node.providerID||node.provider||node.provider_id;
+  if(id===model||(typeof id==='string'&&provider&&provider+'/'+id===model))found.push(node);
+  for(const [key,item] of Object.entries(node)){
+   if(item&&typeof item==='object')walk(item,depth+1);
+   if(key===model&&item&&typeof item==='object')found.push(item);
+  }
+ }
+ walk(value);
+ return found[0]||null;
+}
+function zeroCostRecord(record) {
+ if(!record||typeof record!=='object')return false;
+ const cost=record.cost||record.pricing||record.prices;
+ if(!cost||typeof cost!=='object')return false;
+ const input=cost.input??cost.prompt,output=cost.output??cost.completion;
+ if(!zeroPrice(input)||!zeroPrice(output))return false;
+ const cache=cost.cache&&typeof cost.cache==='object'?cost.cache:{};
+ const read=cost.cache_read??cost.cacheRead??cache.read;
+ const write=cost.cache_write??cost.cacheWrite??cache.write;
+ if(read!==undefined&&!zeroPrice(read))return false;
+ if(write!==undefined&&!zeroPrice(write))return false;
+ if(record.status!==undefined&&record.status!=='active')return false;
+ if(record.disabled===true)return false;
+ return true;
+}
+function parseVerboseModelCatalog(output,model=MODEL) {
+ const text=String(output||'').trim();
+ if(!text)return {ok:false,reason:'FREE_AI_MODEL_CATALOG_EMPTY'};
+ try{
+  const json=JSON.parse(text),record=findModelRecord(json,model);
+  return record&&zeroCostRecord(record)?{ok:true,model,source:'json'}:
+   {ok:false,reason:record?'FREE_AI_MODEL_PRICE_NOT_ZERO':'FREE_AI_MODEL_NOT_IN_CATALOG'};
+ }catch{}
+ const lines=text.split(/\r?\n/);
+ const index=lines.findIndex(line=>line.trim().startsWith(model));
+ if(index<0)return {ok:false,reason:'FREE_AI_MODEL_NOT_IN_CATALOG'};
+ const block=[];
+ for(let i=index;i<lines.length;i++){
+  if(i>index&&/^\s*[a-z0-9_.-]+\/[a-z0-9_.-]+\s*$/i.test(lines[i]))break;
+  block.push(lines[i]);
+  if(block.length>24)break;
+ }
+ const body=block.join('\n');
+ const read=(name)=>{
+  const match=body.match(new RegExp(name+'\\s*[:=]\\s*\\$?([0-9]+(?:\\.[0-9]+)?|free)','i'));
+  return match?match[1]:undefined;
+ };
+ const input=read('input')??read('prompt');
+ const outputPrice=read('output')??read('completion');
+ const cacheRead=read('cache_read')??read('cacheRead')??read('cached_read');
+ const cacheWrite=read('cache_write')??read('cacheWrite')??read('cached_write');
+ if(!zeroPrice(input)||!zeroPrice(outputPrice))
+  return {ok:false,reason:'FREE_AI_MODEL_PRICE_UNKNOWN'};
+ if(cacheRead!==undefined&&!zeroPrice(cacheRead))
+  return {ok:false,reason:'FREE_AI_MODEL_CACHE_PRICE_NOT_ZERO'};
+ if(cacheWrite!==undefined&&!zeroPrice(cacheWrite))
+  return {ok:false,reason:'FREE_AI_MODEL_CACHE_PRICE_NOT_ZERO'};
+ return {ok:true,model,source:'verbose'};
+}
+function verifyFreeModelCatalog(cli,{env,cwd=process.cwd()}={}) {
+ const response=run(cli,['models','opencode','--verbose','--refresh'],
+  {cwd,env,timeout:60000});
+ if(!response.ok)throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
+ const result=parseVerboseModelCatalog(response.stdout,MODEL);
+ if(!result.ok)throw Error(result.reason);
+ return result;
+}
+
 function propose(){
  const scope=sourceScope(),root=process.cwd();
  const sources=checkScopeFiles(root,scope);
@@ -173,6 +254,8 @@ function propose(){
    const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
    if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
    validateAgentAcl(acl.stdout);
+   const price=verifyFreeModelCatalog(cli,{env,cwd:isolated});
+   console.log('HH_FREE_AI_MODEL_COST_PREFLIGHT '+JSON.stringify(price));
    const response=run(cli,['run','--standalone','--model',MODEL,'--agent',
      'hh-ci-free-repair','--format','json',prompt],
      {cwd:isolated,env,timeout:170000});
@@ -210,4 +293,5 @@ if(require.main===module){
  }
 }
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment};
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,
+ zeroPrice,findModelRecord,zeroCostRecord,parseVerboseModelCatalog,verifyFreeModelCatalog};
