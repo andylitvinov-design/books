@@ -118,3 +118,21 @@ test('previous signed confirmation cleans stale queue hint without duplicate rec
  assert.equal(f.calls.comment.length,0);
  assert.equal(f.calls.history.length,0);
 });
+
+test('manual hold remains a cleanup-only CI lane, not a renewed dispatch permit',()=>{
+ const held={...pr,labels:[{name:'hh:ci-needed'},{name:'hh:ci-wake-unverified'}]};
+ const lease=taskFor(held,{tier:'P3'});
+ assert.equal(lease?.lane,'ci');
+ assert.equal(reservationStatus(lease,[signed('CI_WAKE_UNDELIVERED')],NOW),'CI_WAKE_OUTCOME_RECORDED');
+ assert.equal(taskFor({...held,labels:[{name:'hh:ci-wake-unverified'}]},{tier:'P3'}),null);
+});
+test('previous undelivered signed receipt retries only label cleanup',async()=>{
+ const f=fixture({comments:[signed(),signed('CI_WAKE_UNDELIVERED')]});
+ const r=await f.run();
+ assert.equal(r.state,'CI_WAKE_UNDELIVERED');
+ assert.equal(r.receiptWritten,false);
+ assert.equal(r.manualFlagged,true);
+ assert.equal(r.hintCleared,true);
+ assert.equal(f.calls.comment.length,0);
+ assert.equal(f.calls.history.length,0);
+});
