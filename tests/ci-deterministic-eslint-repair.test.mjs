@@ -67,7 +67,7 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
   assert.match(source,/\[leaseTool,'release'/);
   assert.match(source,/HH_REPAIR_PUSH_TOKEN/);
   assert.match(source,/PATCH_READY_MANUAL_PUSH_REQUIRED/);
-  assert.match(source,/hh-deterministic-eslint-autofix\\.patch/);
+  assert.match(source,/hh-deterministic-eslint-autofix\.patch/);
   assert.match(source,/if\(!pushToken\)/);
   assert.match(source,/writeFileSync\(join\(need\('RUNNER_TEMP'\),'hh-deterministic-eslint-autofix\.patch'\)/);
   assert.match(source,/git',\['push','origin','HEAD:refs\/heads\/'/);
@@ -97,4 +97,15 @@ test('the repair lane is optional, BASE-owned and cannot satisfy the required me
   const merge=workflow.slice(mergeStart);
   assert.match(merge,/needs: \[scope, hh-specialist\]/);
   assert.doesNotMatch(merge,/hh-eslint-repair/);
+});
+
+test('fast ubuntu-slim preflight checks deterministic repair contract before slow Core queue',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-actionlint.yml',import.meta.url),'utf8');
+  assert.match(workflow,/runs-on: ubuntu-slim/);
+  assert.ok(workflow.includes("      - 'scripts/ci-deterministic-eslint-repair.mjs'"));
+  assert.ok(workflow.includes("      - 'tests/ci-deterministic-eslint-repair.test.mjs'"));
+  const fast=workflow.indexOf('      - name: Fast zero-install CI policy contracts');
+  const install=workflow.indexOf('      - name: Install checksum-verified actionlint');
+  assert.ok(fast>=0&&fast<install,'the cheap contract test must run on the faster runner before actionlint install and Core scheduling');
+  assert.match(workflow,/node --test tests\/ci-deterministic-eslint-repair\.test\.mjs/);
 });

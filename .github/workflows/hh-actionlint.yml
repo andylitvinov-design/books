@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/workflows/**'
       - 'tests/ci-workflow-globs.test.mjs'
+      - 'tests/pr-fast-lane.test.mjs'
+      - 'scripts/ci-deterministic-eslint-repair.mjs'
+      - 'tests/ci-deterministic-eslint-repair.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,6 +42,23 @@ jobs:
           fi
           git cat-file -e "$BASE_SHA^{commit}"
           echo 'Event base pinned for exact workflow diff (no full-history clone).' >> "$GITHUB_STEP_SUMMARY"
+      - name: Fast zero-install CI policy contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Fail cheap, on ubuntu-slim: do not wait for the production Core
+          # runner to discover a deterministic unit-contract typo.
+          # These tests use only Node built-ins and do not run npm install.
+          if [[ -f tests/pr-fast-lane.test.mjs ]]; then
+            node --test tests/pr-fast-lane.test.mjs
+          fi
+          if [[ -f tests/ci-deterministic-eslint-repair.test.mjs ]]; then
+            [[ -f scripts/ci-deterministic-eslint-repair.mjs ]] || {
+              echo 'Repair contract exists but its worker source is missing' >&2
+              exit 1
+            }
+            node --test tests/ci-deterministic-eslint-repair.test.mjs
+          fi
       - name: Install checksum-verified actionlint v1.7.12
         shell: bash
         run: |
@@ -102,6 +122,23 @@ jobs:
             if [[ "$deleted_only" == true ]]; then
               echo 'Deletion-only YAML changes: all current definitions passed actionlint; BASE-trusted exact-head replacement validation remains mandatory.' >> "$GITHUB_STEP_SUMMARY"
               exit 0
+            fi
+            # Script/test-only edits also trigger this lightweight CI contract
+            # workflow. All baseline YAML was validated above; the exact
+            # contract test already ran before downloading actionlint.
+            if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+              contract_changed=false
+              while IFS= read -r -d '' contract; do
+                [[ -n "$contract" ]] && contract_changed=true
+              done < <(git diff --name-only -z "$BASE_SHA" HEAD -- \
+                'tests/ci-workflow-globs.test.mjs' \
+                'tests/pr-fast-lane.test.mjs' \
+                'scripts/ci-deterministic-eslint-repair.mjs' \
+                'tests/ci-deterministic-eslint-repair.test.mjs')
+              if [[ "$contract_changed" == true ]]; then
+                echo 'CI contract-only trigger: baseline actionlint and fast unit contracts passed; no changed workflow YAML.' >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
             fi
             echo 'Workflow filter triggered but no changed YAML is available; refusing unverified changes.' >&2
             exit 1
