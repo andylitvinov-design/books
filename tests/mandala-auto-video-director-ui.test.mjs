@@ -20,12 +20,12 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-input"));
  assert.ok(director.includes("data-auto-video-confirm"));
  assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
- assert.ok(director.includes("data-auto-video-goal={item.id}"));
+ assert.ok(director.includes("data-auto-video-category={item.id}"));
  assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
  assert.ok(director.includes('scene.description[locale]'));
  assert.ok(director.includes('scene.tags.slice(0,3)'));
- assert.ok(director.includes("onClick={()=>chooseReadyGoal(item.id)}"));
- assert.ok(director.includes("goalId:selectedGoalId"));
+ assert.ok(director.includes("onClick={()=>chooseCategory(item.theme,item.id)}"));
+ assert.ok(director.includes("setSelectedTopicId(topicId)"));
  assert.ok(director.includes("onGoalChange(nextGoal)"));
  assert.ok(!studio.includes("<input data-video-quick-wish"));
  assert.ok(director.includes("onApply(chosen.id,length"),"confirmation applies real edited clips and stage durations");
@@ -70,7 +70,12 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/const videoGoalCategories=\[/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
- assert.match(director,/popularTopicOrder\[selectedCategoryId\]\.map/);
+ assert.match(director,/taxonomySubcategories\.map\(item=>/);
+ assert.match(director,/taxonomyTopics\.map\(item=>/);
+ assert.match(director,/taxonomyScenarios\.length===4/);
+ assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
+
+ assert.match(director,/taxonomySubcategories\.map\(item=>/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
@@ -157,7 +162,7 @@ test("the selected real soundtrack is synchronized with the original central Can
 test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/recommendAutoVideo\(\{goal,locale,fallbackTheme:theme,presets,scenes\}\)/);
  assert.match(director,/const videoGoalCategories=\[/);
- assert.match(director,/const popularTopicOrder=\{/);
+ assert.match(director,/const taxonomySubcategories=listMyTubeSubcategories\(selectedCategoryId,locale\)/);
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-preview-example/);
@@ -172,12 +177,12 @@ test("mock actions are connected: four goal images, 3×2 text themes, four scena
  assert.match(css,/\.goalPanel \.goalChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(director,/scenePoster\(item.poster\)/,"goals show real licensed catalog artwork");
- for(const id of ["confidence","connection","fresh-start","stability","calm","vitality"])
+ for(const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety"])
    assert.match(director,new RegExp('(?:\\b|")'+id+'(?:\\b|")'));
  assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
- const topicHandler=director.slice(director.indexOf("const chooseReadyGoal="),
-   director.indexOf("const chooseCategory="));
- assert.ok(topicHandler.includes("const nextTheme=item.theme as VideoTheme"));
+ const topicHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
+   director.indexOf("const chooseTaxonomyScenario="));
+ assert.ok(topicHandler.includes("const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme"));
  assert.doesNotMatch(topicHandler,/setSelectedCategoryId\(/,
    "choosing a topic must not silently replace the selected high-level goal");
  assert.match(director,/onGoalChange\(nextGoal\)/);
