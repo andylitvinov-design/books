@@ -3051,8 +3051,10 @@
   outline:3px solid #d6a653;outline-offset:2px}
 @media(max-width:759px){
   /* Six buttons in exactly ONE row ABOVE the wide 16:9 working stage. */
-  .studio[data-active-workspace="phrases"] .quickBuilder>.quickVideoNav{
-    order:1!important;display:grid!important;
+  /* The single real tab rail is a CHILD of previewStage in the current JSX.
+     The former quickBuilder > nav selector never matched at iPhone width. */
+  .studio[data-active-workspace="phrases"] .previewStage .quickVideoNav{
+    order:-1!important;display:grid!important;
     grid-template-columns:repeat(6,minmax(0,1fr))!important;
     width:100%;min-width:0;gap:clamp(3px,.8vw,6px);margin:0;padding:0}
   .studio[data-active-workspace="phrases"] .quickVideoNav button{
