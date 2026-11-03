@@ -1619,6 +1619,13 @@ test('Mandala is advisory only behind immutable Core media contracts; other spec
     ...sources,base:new Map([[mandala,media],[billing,money],[core,unsupportedBase]]),
   },opts),/SPECIALIST_FAILED/);
 
+  // An edited candidate Mandala workflow is always required, even if the
+  // protected Core gate is present and otherwise unchanged.
+  const tamperedMandala={...sources,current:new Map([
+    [mandala,media+'# tampered\\n'],[billing,money],[core,coreSource],
+  ]),changedRows:[...sources.changedRows,{filename:mandala,status:'M'}]};
+  await assert.rejects(()=>verify(api,ctx,tamperedMandala,opts),/SPECIALIST_FAILED/);
+
   // Payment/security specialists can never become advisory due to Mandala.
   const mixed={...sources,changedRows:[
     ...sources.changedRows,{filename:'app/api/payments/charge.js',status:'M'}]};
