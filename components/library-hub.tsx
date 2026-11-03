@@ -12,6 +12,7 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
+import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -345,11 +346,13 @@ export function buildPublicVideoDiscoveryItems(
       sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
       topicTags: discoveryTags[series.logicalId] || ["practices"],
     })));
+  // Every currently eligible public video gets deterministic topic/category rankings
+  // on read, including DB-backed additions. No writes, publishing or new copies.
   return buildPublishedVideoIndex([...seriesItems,
     ...approvedAcademyDiscoveryVideos(locale),
     ...approvedMeditations,
     ...feedItems.filter(item => item.kind === "video"),
-  ]);
+  ]).map(video => ({...video, ...rankPublicMyTubeVideo(video, {locale})}));
 }
 
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
