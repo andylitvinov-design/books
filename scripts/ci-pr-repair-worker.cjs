@@ -204,8 +204,9 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // A source label from an older HEAD is not permission to edit new code.
     // The trusted Watchdog must have diagnosed this exact HEAD as source-red.
-    if(!conflict && !hasVerifiedSourceHandoff(comments,pr.head.sha)){
-      log('SKIP_SOURCE_WITHOUT_EXACT_HEAD_REPAIR_RECEIPT #' + pr.number);
+    if(!conflict && (!hasVerifiedSourceHandoff(comments,pr.head.sha)||
+        !verifiedCoreCodeFailure(comments,pr.head.sha))){
+      log('SKIP_SOURCE_WITHOUT_VERIFIED_FAILED_CORE_BUILD #' + pr.number);
       continue;
     }
     let files = [];

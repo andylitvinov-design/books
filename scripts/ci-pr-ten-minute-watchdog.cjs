@@ -202,8 +202,13 @@ function classifyCoreFailureJobs(jobs) {
   // policy-green. A red present legacy Core must still fail closed.
   const coreVerified=core?.conclusion==='success' ||
     (core===undefined&&byName.has('hh-merge-check'));
-  const sourceGreen=scope?.conclusion==='success' &&
-    (build?.conclusion==='success' || build?.conclusion==='skipped') &&
+  // Modern unified Core omits classify-change. A green real build plus the
+  // unified merge gate proves that source checks passed, even if Specialist
+  // rejects a production-base advancement. Never send it to source Repair.
+  const modernUnified=scope===undefined && byName.has('hh-merge-check');
+  const sourceGreen=(scope?.conclusion==='success' || modernUnified) &&
+    (build?.conclusion==='success' ||
+      (scope?.conclusion==='success' && build?.conclusion==='skipped')) &&
     coreVerified;
   // Do not consume a deterministic ESLint source-writing slot for a verified
   // specialist/policy failure. Independent Specialist checks still determine
@@ -327,6 +332,15 @@ async function ensureQueueLabel(github, owner, repo, pr, name, description, colo
 }
 
 async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
+  // Refuse aggregate-only or moved-base failures even on a direct invocation.
+  // Do not recover stale signed receipts without a failed source Core job.
+  if(classifyCoreFailureJobs(jobs)!=='SOURCE_OR_PREFLIGHT' ||
+     !Array.isArray(jobs) || !jobs.some(j=>
+       ['core-lint-types-build','hh-core-verified'].includes(j.name) &&
+       j.conclusion==='failure')){
+    log('SKIP source handoff: no proven failed source Core job');
+    return false;
+  }
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
   // Complete history is required to avoid duplicating an older receipt.
   // The watchdog's existing API budget and rate reserve bound pagination.
