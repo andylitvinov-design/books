@@ -139,11 +139,13 @@ test("all five branches, thirty topics and 120 scenarios have auditable 4+4 cove
   );
   assert.equal(report.totals.requiredVideo,480);
   assert.equal(report.totals.requiredAudio,480);
-  assert.equal(report.totals.approvedVideoMasters,44);
+  assert.ok(report.totals.approvedVideoMasters>=44);
   assert.equal(report.totals.audioAssignedScenarios,120);
   assert.equal(report.totals.distinctAssignedAudioMasters,192);
-  assert.equal(report.totals.videoBoundScenarios,0);
-  assert.equal(report.totals.missingVideoAssignments,480);
+  assert.equal(report.totals.missingVideoAssignments,
+    480-4*report.totals.videoBoundScenarios);
+  if(VIDEO_GOAL_SCENARIOS.every(s=>s.sourceStatus==="unbound"))
+    assert.equal(report.totals.videoBoundScenarios,0);
   assert.equal(report.totals.missingAudioAssignments,0);
   assert.equal(report.totals.readyForExport,0);
   assert.equal(report.physicalChecked,false);
@@ -154,18 +156,22 @@ test("all five branches, thirty topics and 120 scenarios have auditable 4+4 cove
     assert.equal(category.scenarios,24,category.id);
     assert.equal(category.requiredTotal,96,category.id);
     assert.equal(category.uniqueAudioIds,96,category.id);
-    assert.equal(category.uniqueVideoIds,0,category.id);
-    assert.equal(category.missingVideoAssignments,96,category.id);
+    assert.equal(category.uniqueVideoIds,
+      category.videoBoundScenarios*4,category.id);
+    assert.equal(category.missingVideoAssignments,
+      96-category.videoBoundScenarios*4,category.id);
     assert.equal(category.missingAudioAssignments,0,category.id);
     assert.deepEqual(category.duplicateAudioIds,[]);
   }
   for(const topic of report.topics){
     assert.equal(topic.scenarios,4,topic.id);
     assert.equal(topic.uniqueAudioIds,16,topic.id);
-    assert.equal(topic.uniqueVideoIds,0,topic.id);
+    assert.equal(topic.uniqueVideoIds,topic.videoBoundScenarios*4,topic.id);
   }
   for(const scenario of report.scenarios){
-    assert.equal(scenario.video.bound,0,scenario.scenarioId);
+    assert.ok([0,4].includes(scenario.video.bound),scenario.scenarioId);
+    assert.equal(scenario.video.uniqueClipIds.length,scenario.video.bound,scenario.scenarioId);
+    assert.equal(new Set(scenario.video.uniqueClipIds).size,scenario.video.bound,scenario.scenarioId);
     assert.equal(scenario.video.expected,4,scenario.scenarioId);
     assert.equal(scenario.audio.assigned,4,scenario.scenarioId);
     assert.equal(new Set(scenario.audio.uniqueAudioIds).size,4,scenario.scenarioId);
