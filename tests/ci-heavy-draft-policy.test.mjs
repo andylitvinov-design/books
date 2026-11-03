@@ -417,7 +417,7 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
   assert.ok(source.includes('tests/video-scenario-bindings.test.mjs'), 'scenario candidate contracts remain in the focused suite');
-  assert.ok(source.includes('      - name: Audit 120 scenario physical candidates without auto-publication\\n        ' + browserGate), '120 scenario audit must share the protected real-media gate');
+  assert.ok(source.includes('      - name: Audit 120 scenario physical candidates without auto-publication\n        ' + browserGate), '120 scenario audit must share the protected real-media gate');
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual runs cannot be cancelled by unrelated PRs');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
