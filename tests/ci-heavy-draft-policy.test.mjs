@@ -147,8 +147,11 @@ for (const name of draftStageWorkflows) {
     }
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
-    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation.slice(3,-3) :
-      (attemptScoped ? firstAttemptCancellation.slice(3,-3) : prOnlyCancellation.slice(3,-3));
+    const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
+    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyCondition :
+      (attemptScoped ? firstAttemptCondition : prOnlyCondition);
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
