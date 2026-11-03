@@ -82,3 +82,18 @@ test('webhook persists only validated encrypted client text and protects provide
  assert.match(dispatch,/item.target_chat_hash/)
  assert.doesNotMatch(route,/request\.json\(\).*contact|sendMessage\([^)]*text:body/i)
 })
+
+test('reply relay migration contains one complete SQL definition and restrictive grants',()=>{
+ const sql=read('supabase/migrations/20261023181500_hh_customer_telegram_reply_relay.sql')
+ for(const name of ['notification_tg_dispatch_finish_bound','notification_tg_reply_target','notification_tg_reply_commit'])
+  assert.equal(sql.split('CREATE OR REPLACE FUNCTION app_private.'+name+'(').length-1,1,
+   'privileged SQL function must be defined exactly once: '+name)
+ assert.equal(sql.split('$fn$').length-1,6,'three complete SQL bodies must be properly closed')
+ assert.equal(sql.split('REVOKE ALL ON FUNCTION').length-1,1,'revoke permissions exactly once')
+ assert.ok(sql.includes("p_provider_message_id !~ '^[1-9][0-9]{0,15}$'"),
+  'accepted provider receipt must have a complete anchored numeric-ID guard')
+ assert.ok(sql.includes("p_chat_hash !~ '^[0-9a-f]{64}$'"),
+  'recipient chat hash must have a complete anchored 64-hex guard')
+ assert.match(sql,/TO hh_app_backend/)
+ assert.match(sql,/TO hh_app_inbox/)
+})
