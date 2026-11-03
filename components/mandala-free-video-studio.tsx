@@ -2852,7 +2852,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const entry=chooseAudioFile(file);
       if(!entry)throw new Error("AUDIO_FILE_REJECTED");
       setAudioRights(true);setSoundVolume(100);
-      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true,
+        ...(includesNarration?{narration:true,spokenText:currentAffirmationSpeech,speechSeconds,
+          mixSeconds:duration,voiceId:voicePreferences.voiceId,language:voicePreferences.language,bed:voicePreferences.bed}:{} )});
       setHypnoWhisperEnabled(next.whisper);setHypnoBinauralEnabled(next.binaural);setHypnoBeatHz(next.beatHz);
       setNotice(locale==="ru"?"Аудиоэффекты добавлены в звуковую дорожку видео.":
         locale==="es"?"Los efectos se añadieron a la pista de audio.":"Audio effects were added to the video's audio track.");
