@@ -36,7 +36,7 @@ test('queued, running or just-completed watchdog prevents duplicate dispatch',()
 });
 test('trusted empty slot dispatches exactly once with real dry_run=false',async()=>{
   let calls=0;
-  const github={rest:{actions:{
+  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
     listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:1}}),
     createWorkflowDispatch:async p=>{calls++;assert.equal(p.inputs.dry_run,'false');}
   }},request:async()=>({data:{workflow_runs:[]}})};
@@ -61,7 +61,7 @@ test('busy CI does not dispatch even on trusted Core completion',async()=>{
 // A Core success wrapper is not a real watchdog reconciliation run.
 test('slot wakeup inspects only real schedule and workflow_dispatch runs',async()=>{
   const events=[];let calls=0;
-  const github={rest:{actions:{
+  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
     listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
     createWorkflowDispatch:async arg=>{calls++;assert.equal(arg.inputs.dry_run,'false')}
   }},request:async(_route,args)=>{events.push(args.event);return {data:{workflow_runs:[]}}}};
@@ -93,4 +93,35 @@ test('stale Watchdog executes one real rescue dispatch despite a saturated CI qu
   assert.equal(result.decision,'DISPATCH_STALE_CI');
   assert.equal(result.dispatched,1);
   assert.equal(calls,1);
+});
+
+test('green Core without an actionable queue does not allocate a second Watchdog',async()=>{
+ const {hasDurableBacklog}=require('../scripts/ci-pr-slot-wakeup.cjs');
+ const none={ci:{nodes:[]},repair:{nodes:[]},conflict:{nodes:[]}};
+ let searches=0,dispatches=0;
+ const github={graphql:async q=>{
+  searches++;assert.match(q,/hh:ci-needed/);assert.match(q,/hh:repair-needed/);
+  return none;
+ },rest:{actions:{
+  listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+  createWorkflowDispatch:async()=>{dispatches++;}
+ }},request:async()=>({data:{workflow_runs:[]}})};
+ assert.equal(await hasDurableBacklog(github,'andylitvinov-design','books'),false);
+ const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+ const result=await run({github,core,context:event,now:NOW});
+ assert.equal(result.decision,'NO_ACTIONABLE_BACKLOG');
+ assert.equal(result.backlog,false);
+ assert.equal(dispatches,0);assert.equal(searches,2);
+});
+test('incomplete queue evidence does not create a speculative success-triggered Watchdog',async()=>{
+ let dispatches=0;
+ const github={graphql:async()=>({ci:{nodes:[]}}),
+  rest:{actions:{
+   listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+   createWorkflowDispatch:async()=>{dispatches++;}
+  }},request:async()=>({data:{workflow_runs:[]}})};
+ const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+ const result=await run({github,core,context:event,now:NOW});
+ assert.equal(result.decision,'BACKLOG_UNVERIFIED');
+ assert.equal(dispatches,0);
 });
