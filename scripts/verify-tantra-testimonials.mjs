@@ -321,12 +321,27 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
       for (const index of [0, 1]) {
         const video = disclosure.locator('video').nth(index);
         await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, retainedTime) =>
-          el.paused && !el.ended && !el.seeking && !el.error &&
-          el.videoWidth > 0 && el.videoHeight > 0 &&
-          el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-          Math.abs(el.currentTime - retainedTime) < 0.05, paused[index]),
-        { timeout: 20000 }).toBe(true);
+        // WebKit may discard the paused pixel buffer after a disclosure
+        // closes. HAVE_METADATA is sufficient here: actual decoded-frame
+        // progression was already required by startVisibleNative BEFORE close.
+        // Preserve the exact source, metadata, dimensions, no errors, paused
+        // state and position. A broken resume still fails the next Play test.
+        try {
+          await expect.poll(() => video.evaluate((el, { retainedTime, expectedSrc }) =>
+            el.paused && !el.ended && !el.seeking && !el.error &&
+            el.videoWidth > 0 && el.videoHeight > 0 &&
+            el.readyState >= HTMLMediaElement.HAVE_METADATA &&
+            el.querySelector('source')?.src === expectedSrc &&
+            (!el.currentSrc || el.currentSrc === expectedSrc) &&
+            Math.abs(el.currentTime - retainedTime) < 0.05,
+            { retainedTime: paused[index], expectedSrc: sources[index] }),
+          { timeout: 20000 }).toBe(true);
+        } catch (error) {
+          const snapshot = await video.evaluate(nativePlaybackSnapshot).catch(() => null);
+          throw new Error('WEBKIT_PAUSED_REOPEN_INVALID: ' +
+            JSON.stringify({ participant: index + 1, retainedTime: paused[index], snapshot }),
+            { cause: error });
+        }
       }
     }
     await page.waitForTimeout(350);
