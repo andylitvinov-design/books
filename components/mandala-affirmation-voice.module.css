@@ -106,3 +106,9 @@
   .panel .voiceCard{scroll-snap-align:start}
   .panel .genderTabs button{font-size:11px}
 }
+
+/* One approved phrase first: compact, readable and single-column on phones.
+   All-phrases remains opt-in and is never silently submitted. */
+.phrasePick{display:grid;gap:6px;min-width:0;margin:12px 0 7px;color:#285e4a;font:800 clamp(13px,3.6vw,15px)/1.35 system-ui,-apple-system,sans-serif}
+.phrasePick select{box-sizing:border-box;width:100%;min-height:49px;min-width:0;padding:10px 12px;border:1px solid #98ceb7;border-radius:12px;background:#fff;color:#205740;font:650 clamp(14px,3.7vw,16px)/1.4 system-ui,-apple-system,sans-serif;overflow:hidden;text-overflow:ellipsis}
+.phrasePick select:disabled{opacity:.55}
