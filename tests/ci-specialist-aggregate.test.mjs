@@ -1299,6 +1299,23 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 
+test('trusted Mandala WebKit allowlist accepts exact branch entries and the full prefix list',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const actual=readFileSync(path,'utf8');
+  const files={base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/support-confidence-harmony-goal-filter-20261102',
+    ['components/holistic-support-goal-filter.tsx']),true);
+  assert.equal(optionalMandalaMacosSkip(files,
+    'codex/professional-growth-templates-20261031',
+    ['components/holistic-support-goal-filter.tsx']),false,
+    'the exact BASE branch remains required to execute WebKit');
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/video-studio-project-renderplan-v2-20261102',
+    ['lib/mandala/video-project-v2.mjs']),false,
+    'encoded video work is never excused from WebKit');
+});
+
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
