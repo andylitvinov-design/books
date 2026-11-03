@@ -4,7 +4,13 @@ on:
     # GitHub schedules run only from the DEFAULT branch, so this lives there.
     # 07:15 UTC is 03:15 EDT / 02:15 EST in Toronto.
     - cron: '15 7 * * *'
+    # 05:07 Toronto daily, DST-aware; off the busy top of the hour.
+    - cron: '7 5 * * *'
+      timezone: 'America/Toronto'
   workflow_dispatch:
+  pull_request:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-nightly-public-crawl.yml']
 permissions:
   contents: read
 concurrency:
@@ -12,6 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '15 7 * * *' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -55,3 +62,124 @@ jobs:
             artifacts/seo-nightly-links.json
           if-no-files-found: warn
           retention-days: 14
+
+  design-bible-public:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '7 5 * * *' }}
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-design-tools/node_modules/playwright
+    steps:
+      - name: Checkout canonical production sources (default is NOT the website)
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - name: Record exact production checkout for the evidence receipt
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Chromium/WebKit for PUBLIC design audit
+        run: |
+          mkdir -p /tmp/hh-design-tools
+          npm install --prefix /tmp/hh-design-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-design-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Read-only QA of approved Holistic Light mobile pages
+        id: design_capture
+        run: |
+          node scripts/holistic-light-design-qa.mjs --origin=https://holistichouse.vercel.app --out=artifacts/holistic-light-design-qa
+      - name: Create or update one actionable Design QA issue
+        id: handoff
+        if: ${{ always() && steps.source.outcome == 'success' }}
+        uses: actions/github-script@v7
+        env:
+          HH_AUDIT_SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs=require('node:fs');
+            const path='artifacts/holistic-light-design-qa/summary.json';
+            const summary=fs.existsSync(path)
+              ?JSON.parse(fs.readFileSync(path,'utf8'))
+              :{schema:'hh.design-bible-qa-batch.v1',publicGuestOnly:true,criticalCases:1,
+                reports:[{route:'/ru/holistic-support/mandala',width:390,
+                  critical:[{code:'CAPTURE_FAILED',reason:'Audit summary missing: inspect runner, browser installation and logs; not a proven page failure'}],
+                  warnings:[]}]};
+            const bridge=await import('file://'+process.env.GITHUB_WORKSPACE+'/scripts/holistic-light-qa-handoff.mjs');
+            const outcome=await bridge.publishActionIssue({
+              github,owner:context.repo.owner,repo:context.repo.repo,summary,
+              runUrl:'https://github.com/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              sourceHead:process.env.HH_AUDIT_SOURCE_SHA
+            });
+            core.setOutput('issue_url',outcome.url||'');
+            core.setOutput('handoff_status',outcome.status);
+            core.setOutput('next_action',outcome.action);
+            core.info('HH_DESIGN_ACTION_HANDOFF '+JSON.stringify(outcome));
+            await core.summary.addHeading('Holistic Light: audit to actual repair').addRaw(
+              'Audited cases: '+summary.reports.length+'; issue: '+(outcome.url||'none (no measurable defect)')+
+              '; handoff: '+outcome.status+'; next action: '+outcome.action+
+              '. Issue is not a source commit/PR; the separate code-writing owner must verify the repair.'
+            ).write();
+            if(outcome.criticalCases>0)core.setFailed('Unresolved critical Design QA finding: '+(outcome.url||'see audit artifacts'));
+      - name: Summarize design defects without claiming full visual approval
+        if: always()
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, existsSync, appendFileSync } from "node:fs";
+            const path="artifacts/holistic-light-design-qa/summary.json";
+            const out=["## Holistic Light — public mobile design QA", "Audience: guest-only; visual score and private E2E require review."];
+            if (!existsSync(path)) out.push("Capture/summary missing: job failed, not a pass");
+            else {
+              const x=JSON.parse(readFileSync(path,"utf8"));
+              out.push("Routes checked: "+x.examined+", critical: "+x.criticalCases+", advisory: "+x.warningCases);
+              for (const p of x.reports) out.push(p.status+" "+p.route+" "+p.width+"px (critical "+p.critical.length+", advisory "+p.warnings.length+")");
+            }
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,out.join("\n")+"\n");
+          '
+      - name: Public-only screenshots and findings (3-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-design-bible-daily-${{ github.run_id }}
+          path: artifacts/holistic-light-design-qa/
+          if-no-files-found: warn
+          retention-days: 3
+
+  validate-design-schedule:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install checksum-verified actionlint v1.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 \
+            'https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz' \
+            --output "$archive"
+          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/hh-nightly-public-crawl.yml
+      - name: Verify original nightly crawl plus daily Toronto issue handoff
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const w=fs.readFileSync(".github/workflows/hh-nightly-public-crawl.yml","utf8");
+            for(const text of ["15 7 * * *","7 5 * * *","America/Toronto",
+              "scripts/holistic-light-design-qa.mjs","scripts/holistic-light-qa-handoff.mjs",
+              "issues: write","persist-credentials: false","hh-design-bible-daily"])
+              assert.ok(w.includes(text),text);
+            assert.match(w,/github\.event_name == .workflow_dispatch. \|\| github\.event\.schedule == .15 7/);
+          '
