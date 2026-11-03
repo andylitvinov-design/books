@@ -50,7 +50,7 @@ async function markManual(repo,token,n,head,reason){
   const marker='<!-- HH_DETERMINISTIC_ESLINT_REPAIR_V1 '+head+' -->';
   if(!comments.some(c=>String(c.body||'').includes(marker))){
     await gh(repo,token,'/issues/'+n+'/comments','POST',{body:marker+
-      '\nNo complete safe deterministic ESLint autofix was available for this exact HEAD. No source commit was created and required checks remain mandatory.\nReason: '+reason.replace(/[<>\r\n]/g,' ').slice(0,220)});
+      '\nThe deterministic ESLint repair worker stopped safely for this exact HEAD. No source commit was created and required checks remain mandatory.\nReason: '+reason.replace(/[<>\r\n]/g,' ').slice(0,220)});
   }
   await gh(repo,token,'/issues/'+n+'/labels','POST',['hh:repair-manual']);
 }
