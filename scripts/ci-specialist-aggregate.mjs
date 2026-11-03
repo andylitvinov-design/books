@@ -403,6 +403,22 @@ export async function verify(api,ctx,files,options={}) {
   for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
   const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
     files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
+  // Explicit owner budget policy: Mandala's large browser/macOS workflow is
+  // a non-blocking diagnostic ONLY when immutable production Core contains
+  // mandatory fast consent/narration/MP4 regression tests, and the PR has
+  // not modified that trusted Core gate. Other specialist workflows retain
+  // their strict exact-HEAD success requirements and all failures remain
+  // visible as diagnostics; this is never a generic waive-on-failure switch.
+  const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
+  const core = WORKFLOW_PREFIX + 'hh-pr-core-release.yml';
+  const trustedCoreSource = files.base.get(core);
+  const coreMandalaGate = typeof trustedCoreSource === 'string' &&
+    trustedCoreSource.includes('Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)') &&
+    trustedCoreSource.includes('node --test tests/affirmation-voice.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/mandala-audio-attach.test.mjs') &&
+    files.current.get(core) === trustedCoreSource && !changed.includes(core);
+  if (coreMandalaGate && files.base.has(mandala) && files.current.has(mandala)) {
+    advisoryPaths.add(mandala);
+  }
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
