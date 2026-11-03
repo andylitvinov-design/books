@@ -439,7 +439,14 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     window.setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
   const exploredSteps=currentProgramme?5:ritualReady?4:personalOpened?3:currentMeditation?2:focusReady?1:0;
-  return <section className={css.panel} data-video-guided-course aria-labelledby="guided-course-heading">
+  return <section className={css.panel} data-video-guided-course
+    data-guided-focus-ready={focusReady?"true":"false"}
+    data-guided-has-script={firstScript.trim().length>0?"true":"false"}
+    data-guided-meditation-open={meditationOpen?"true":"false"}
+    data-guided-signature-match={approvedSignature===journeySignature?"true":"false"}
+    data-guided-meditation-ready={currentMeditation?"true":"false"}
+    data-guided-programme-ready={currentProgramme?"true":"false"}
+    aria-labelledby="guided-course-heading">
     <div className={css.header}>
       <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
       <div className={css.heading}>
@@ -480,7 +487,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         <span>{f.contextLabel}</span>
         <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
           data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
-          disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);resetGeneratedMeditation();}}/>
+          disabled={disabled} onChange={event=>{
+            const next=event.currentTarget.value;
+            // WebKit may send a duplicate change/blur after the Generate click.
+            // A no-op must not revoke a newly approved exact-signature script.
+            if(next===keyDifficulty)return;
+            setKeyDifficulty(next);resetGeneratedMeditation();
+          }}/>
       </label></div>
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
       {safetyBlocked?<p role="alert" className={css.profileNotice}>{safetyMessage}</p>:
@@ -556,7 +569,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     <section className={css.flowBlock} data-guided-meditation-step>
       <div className={css.flowTitle}><span>02</span><Headphones size={23} aria-hidden="true"/><h4>{f.meditation}</h4></div>
       <button type="button" className={css.flowPrimary} data-guided-generate-meditation
-        disabled={disabled||!firstScript||!focusReady} onClick={generateMeditation}>
+        disabled={disabled||!firstScript||!focusReady}
+        data-guided-context-committed-length={keyDifficulty.length}
+        onClick={generateMeditation}>
         <Sparkles size={22} aria-hidden="true"/>{f.generateMeditation}<ArrowRight size={20} aria-hidden="true"/>
       </button>
       {currentMeditation?<div className={css.flowResult} data-guided-meditation-result>

@@ -78,3 +78,17 @@ test("crisis text returns support only and must never expose the course offer",(
   assert.match(ui,/if\(coursePreview&&!safetyResponse&&plan\)/);
   assert.match(ui,/else if\(coursePreview\)\{\s*setCourseDays\(\[\]\)/);
 });
+
+test("WebKit duplicate blur must not erase an already approved local meditation",()=>{
+  const studio=read("components/mandala-guided-course.tsx");
+  const contextStart=studio.indexOf('data-video-key-difficulty value={keyDifficulty}');
+  assert.ok(contextStart>0,"original controlled guided-course focus is retained");
+  const context=studio.slice(contextStart,contextStart+550);
+  assert.match(context,/const next=event\.currentTarget\.value;/);
+  assert.match(context,/if\(next===keyDifficulty\)return;/,
+    "duplicate WebKit input events cannot revoke a just-generated script");
+  assert.match(context,/setKeyDifficulty\(next\);resetGeneratedMeditation\(\);/,
+    "real changes must still invalidate old guided narration");
+  assert.match(studio,/data-guided-signature-match=\{approvedSignature===journeySignature\?"true":"false"\}/,
+    "the exact signature remains observable for real WebKit failure diagnostics");
+});
