@@ -249,7 +249,10 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
   const mandala = workflow('holistic-support-mandala.yml');
   const preflightGuard = mandala.match(/^  webkit_preflight:\n    if: (.+)$/m)?.[1];
   const macosGuard = mandala.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1];
-  assert.equal(preflightGuard, macosGuard, 'same branch scope prevents new unnecessary runner jobs');
+  assert.equal(preflightGuard, "${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
+    'macOS WebKit must retain original video release guard');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
