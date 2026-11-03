@@ -9,6 +9,7 @@ import { ArrowLeft, Download, Expand, Headphones, ImagePlus, Minimize2, Play, Sp
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
 import { renderMandalaPng } from "@/lib/mandala/export-png";
+import { prepareBrowserPhoto, SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -210,6 +211,7 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
   const [preparedPng, setPreparedPng] = useState<{signature: string; url: string} | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const photoChoiceEpoch = useRef(0);
   const closeButton = useRef<HTMLButtonElement | null>(null);
   // Let the native button click represent one activation for mouse, touch,
   // keyboard and assistive technology. Toggling on pointerup can re-layout the
@@ -217,6 +219,7 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
   function toggleFocusMode() { setFocusMode(value => !value); }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
+  useEffect(() => () => { photoChoiceEpoch.current += 1; }, []);
 
   useEffect(() => {
     if (!focusMode) return;
@@ -285,20 +288,26 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
     }
   }
 
-  function handleImage(event: ChangeEvent<HTMLInputElement>) {
+  async function handleImage(event: ChangeEvent<HTMLInputElement>) {
     const image = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!image) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(image.type) || image.size > 10 * 1024 * 1024 || !image.size) {
-      setImageError(t.invalid);
-      return;
-    }
+    const choiceEpoch = ++photoChoiceEpoch.current;
+    // Clear the old portrait/export before decoding the replacement. A bad or
+    // slow iPhone HEIC choice must never leave an earlier photo eligible to Save.
+    setImageUrl(null);
+    setPreparedPng(null);
     setImageError("");
-    setImageUrl(URL.createObjectURL(image));
-    setZoom(1);
-    setOffsetX(50);
-    setOffsetY(50);
+    try {
+      const prepared = await prepareBrowserPhoto(image);
+      if (choiceEpoch !== photoChoiceEpoch.current) return;
+      setImageUrl(URL.createObjectURL(prepared));
+      setZoom(1);
+      setOffsetX(50);
+      setOffsetY(50);
+    } catch {
+      if (choiceEpoch === photoChoiceEpoch.current) setImageError(t.invalid);
+    }
   }
 
   function selectTopic(topic: Topic) {
@@ -311,8 +320,8 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
       data-mandala-meditation data-mandala-focus={focusMode ? "true" : "false"}
       role={focusMode ? "dialog" : undefined} aria-modal={focusMode ? true : undefined}
       aria-label={focusMode ? t.focus : undefined}>
-      <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
-        className={styles.hiddenPhotoInput} onChange={handleImage}/>
+      <input ref={fileInput} id="mandala-photo" type="file" accept={SUPPORT_PHOTO_ACCEPT}
+        className={styles.hiddenPhotoInput} onChange={event => { void handleImage(event); }}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
         onPickPhoto={() => fileInput.current?.click()} photoError={imageError}
         professionalSource={professionalSource} professionalMode={professionalMode} />
@@ -385,7 +394,7 @@ export function MandalaMeditationClient({ locale, videos, professionalSource = n
                   {imageUrl ? t.change : t.upload}
                 </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
-                  onClick={() => { setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
+                  onClick={() => { photoChoiceEpoch.current += 1; setImageUrl(null); setPreparedPng(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
                 </button> : null}
               </div>
