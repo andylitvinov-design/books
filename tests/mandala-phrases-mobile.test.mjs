@@ -59,7 +59,7 @@ test("single approved phrases workspace with voice/music before the final Create
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
@@ -67,7 +67,10 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),studio.indexOf('data-workspace-section="effects"'));
  assert.match(section,/\{deepHypnoPane\}/,"single visible workspace mounts canonical editor");
  const definition=studio.slice(studio.indexOf("const deepHypnoPane = ("),studio.indexOf("const deepVideoPane",studio.indexOf("const deepHypnoPane = (")));
- assert.match(definition,/data-hypno-voice[\s\S]*data-hypno-music/,"voice and music are inside shared editor in the right order");
+ const voiceEditor=studio.slice(studio.indexOf("const hypnoVoiceEditor = ("),studio.indexOf("const deepHypnoPane = ("));
+ assert.match(voiceEditor,/data-hypno-voice/,"voice editor exposes the real voice control");
+ assert.match(definition,/\{activeWorkspace==="phrases" \? hypnoVoiceEditor : null\}/,"approved phrase workspace mounts the voice editor");
+ assert.ok(definition.indexOf("hypnoVoiceEditor")<definition.indexOf("data-hypno-music"),"voice precedes soundtrack in the shared editor");
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
