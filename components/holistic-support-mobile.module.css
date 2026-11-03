@@ -1097,11 +1097,10 @@
 .meditationCategoryCard > span { display: block; max-width: 100%; overflow: hidden;
   white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; }
 .meditationCategoryCard:hover { filter: brightness(.97); }
-.meditationCategoryCard[data-category="energy"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
-.meditationCategoryCard[data-category="money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
-.meditationCategoryCard[data-category="relationships"] { background: #fff3f5; color: #d94d73; border-color: #f3c0cc; }
-.meditationCategoryCard[data-category="meaning"] { background: #f7f0ff; color: #9857d4; border-color: #e6d1f8; }
-.meditationCategoryCard[data-category="health"] { background: #f1faf3; color: #198466; border-color: #cfe6d4; }
+.meditationCategoryCard[data-category="energy-confidence"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
+.meditationCategoryCard[data-category="goals-money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
+.meditationCategoryCard[data-category="love-relationships"] { background: #fff3f5; color: #d94d73; border-color: #f3c0cc; }
+.meditationCategoryCard[data-category="stress-anxiety"] { background: #f1faf3; color: #198466; border-color: #cfe6d4; }
 .meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #3b8199; border-color: #cde2e7; }
 .meditationCategoryCard[aria-pressed="true"] { border: 2px solid #8950d1;
   box-shadow: 0 0 0 2px #dac7f3, 0 4px 12px #6c42b22c; }
