@@ -136,13 +136,13 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         const taxonomyItem=item as LibraryFeedItem & {mytubeCategoryIds?:string[];mytubeSubcategoryIds?:string[];mytubeTopicIds?:string[]};
         const tags=Array.isArray(item.topicTags)?item.topicTags:[];
         const text=[item.title,item.description||"",item.seriesTitle||""].join(" ").toLocaleLowerCase(locale);
-        const categoryTags={
+        const categoryTags:Record<string,string[]> = {
           "goals-money":["business","money","goals","meaning","work","personal_growth"],
           "love-relationships":["relationships","love","connection","family"],
           "energy-confidence":["energy","health","body","meaning","recovery","confidence"],
           "stress-anxiety":["stress","health","emotions","recovery","anxiety","trauma"],
         };
-        const subcategoryTags={
+        const subcategoryTags:Record<string,string[]> = {
           "purpose-development":["meaning","goals","life","personal_growth"],
           "goal-achievement":["goals","work","meaning"],
           "money-abundance":["money","business"],
