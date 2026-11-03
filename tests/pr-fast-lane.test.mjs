@@ -1455,7 +1455,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });
 
-test('short Core orchestration uses slim runners and never skips real Core or specialist checks', () => {
+test('short Core orchestration uses standard runners and never skips real Core or specialist checks', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const core = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
@@ -1467,7 +1467,7 @@ test('short Core orchestration uses slim runners and never skips real Core or sp
   assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
   assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
+  assert.match(gate, /^    runs-on: ubuntu-24\\.04$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
@@ -1475,14 +1475,14 @@ test('short Core orchestration uses slim runners and never skips real Core or sp
   assert.match(gate, /Unified Core gate passed/);
 });
 
-test('required hh-merge-check uses lightweight runner and keeps fail-closed Core/Specialist gate', () => {
+test('required hh-merge-check uses standard runner and keeps fail-closed Core/Specialist gate', () => {
   const source = workflow('hh-pr-core-release.yml');
   const gate = source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
+  assert.match(gate, /^    runs-on: ubuntu-24\\.04$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
   assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
