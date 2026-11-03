@@ -648,17 +648,37 @@ try {
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
-            const capture = main.locator('section:has(> details)');
-            assert.equal(await capture.count(), 1, "Exactly one core-service footer");
+            // Current visual core services use a dedicated final enquiry screen
+            // with one first-party compact capture. The former footer/details
+            // selector was removed; never mark a missing legacy footer as UX failure.
+            const capture = main.locator('[data-core-visual-screen="final-capture"]');
+            await expect(capture).toHaveCount(1);
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
+            const inline = capture.locator('[data-inline-offer-form]');
+            await expect(inline).toHaveCount(1);
+            const form = inline.locator('form[data-compact-lead-form]');
+            await expect(form).toHaveCount(1);
+            await expect(form.locator('input[name="contact"][required]')).toHaveCount(1);
+            const replyConsent = form.locator('input[type="checkbox"][required]');
+            await expect(replyConsent).toHaveCount(1);
+            await expect(replyConsent).not.toBeChecked();
+            await expect(form.locator('[data-compact-channel]')).toHaveCount(2);
+            // The optional messenger alternative starts collapsed and may
+            // create prepared links only after a synthetic consented local save.
+            const more = capture.locator('details').filter({
+              has: capture.locator('[data-contact-channel-chooser]'),
+            });
+            await expect(more).toHaveCount(1);
+            await expect(more).not.toHaveAttribute('open', '');
+            await more.locator('summary').click();
+            await expect(more).toHaveAttribute('open', '');
+            const chooser = await openRegisteredContactChannelChooser(more, expect, page);
             const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
             assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
-            const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
-            assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
-            await alternative.locator("summary").click();
-            await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
-            await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+            const freeAlternative = capture.locator('a[href="/' + locale + '/services/free-situation-review"]');
+            await expect(freeAlternative).toHaveCount(1);
+            await visible(freeAlternative);
+            await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-final-capture-390.png", fullPage: false});
           }
         }
         await page.close();
