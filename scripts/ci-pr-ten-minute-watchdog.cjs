@@ -36,6 +36,7 @@ const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./
 const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
 const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task-state.cjs');
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
+const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -443,7 +444,13 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     `**not** a claim that source code has already been fixed.
 `;
   if (!dryRun) {
-    await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,body}));
+    // The verified failed-Core classification is the real Triage point.
+    // Reuse the existing handoff comment, never add another API mutation.
+    const triageStage=Number.isSafeInteger(run?.id)&&Number.isSafeInteger(pr.number)?
+      stageLine({stage:'triage',pr_number:pr.number,head_sha:pr.head.sha,
+        run_id:run.id,at:new Date().toISOString(),source:'trusted_core_failure'}):'';
+    await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,
+      body:body+(triageStage?'\n'+triageStage:'')}));
     const labeled=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
       'Current PR HEAD needs source-code repair after CI failure',
       'd93f0b',false,limited,log);
