@@ -1589,3 +1589,46 @@ test('Mandala accepts only an exact required-preflight dependency before optiona
   for (const changedJob of invalid)
     assert.equal(run(changedJob),false,'unsafe macOS policy change must never self-waive');
 });
+
+test('Mandala is advisory only behind immutable Core media contracts; other specialists remain fail-closed', async () => {
+  const mandala='.github/workflows/holistic-support-mandala.yml';
+  const core='.github/workflows/hh-pr-core-release.yml';
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const coreSource=readFileSync(core,'utf8');
+  assert.match(coreSource,/HH_MANDALA_FAST_RELEASE_V1/);
+  const media='on:\n  pull_request:\n    branches: [\'codex/public-book-library\']\n    paths: [\'lib/mandala/**\']\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-latest\n';
+  const money='on:\n  pull_request:\n    branches: [\'codex/public-book-library\']\n    paths: [\'app/api/payments/**\']\njobs:\n  payment-contract:\n    runs-on: ubuntu-latest\n';
+  const base=new Map([[mandala,media],[billing,money],[core,coreSource]]);
+  const sources={base,current:new Map(base),
+    changedRows:[{filename:'lib/mandala/affirmation-voice.mjs',status:'M'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const mediaFailure=run({id:190,path:mandala,conclusion:'failure'});
+  const api={pr:async()=>pr(),runs:async()=>[mediaFailure],jobs:async()=>[]};
+  const opts={maxWaitMs:0,readSource:()=>''};
+  const result=await verify(api,ctx,sources,opts);
+  assert.deepEqual(result.expected,[]);
+  assert.ok(result.advisory.nonApplicable.includes(mandala+':failure'),
+    'failed Mandala media diagnostics remain visible, never misreported as PASS');
+
+  // Rewriting the Core media gate in the PR, or lack of trusted BASE proof,
+  // restores the old fail-closed Mandala requirement.
+  const edited={...sources,current:new Map([[mandala,media],[billing,money],[core,coreSource+'# changed\n']])};
+  await assert.rejects(()=>verify(api,ctx,edited,opts),/SPECIALIST_FAILED/);
+  const unsupportedBase=coreSource.replace('HH_MANDALA_FAST_RELEASE_V1','UNTRUSTED_GATE');
+  await assert.rejects(()=>verify(api,ctx,{
+    ...sources,base:new Map([[mandala,media],[billing,money],[core,unsupportedBase]]),
+  },opts),/SPECIALIST_FAILED/);
+
+  // An edited candidate Mandala workflow is always required, even if the
+  // protected Core gate is present and otherwise unchanged.
+  const tamperedMandala={...sources,current:new Map([
+    [mandala,media+'# tampered\\n'],[billing,money],[core,coreSource],
+  ]),changedRows:[...sources.changedRows,{filename:mandala,status:'M'}]};
+  await assert.rejects(()=>verify(api,ctx,tamperedMandala,opts),/SPECIALIST_FAILED/);
+
+  // Payment/security specialists can never become advisory due to Mandala.
+  const mixed={...sources,changedRows:[
+    ...sources.changedRows,{filename:'app/api/payments/charge.js',status:'M'}]};
+  api.runs=async()=>[mediaFailure,run({id:191,path:billing,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,mixed,opts),/SPECIALIST_FAILED/);
+});

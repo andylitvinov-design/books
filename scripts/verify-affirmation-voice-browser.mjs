@@ -152,11 +152,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-sample-ready]")).toHaveCount(0);
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
-      // Only the explicit phrase approval unlocks private narration.
+      // WebKit can return from a click before React commits the visitor's
+      // approved phrases. Wait for actual approved, selected transcript state,
+      // not just the already-mounted voice panel. Keep consent and WAV proof.
       await page.locator("[data-hypno-approve]").click();
+      await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
+      await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
+      const speech=page.locator("[data-video-affirmation-spoken-text]");
+      await expect.poll(async()=> (await speech.textContent())?.trim().length||0,
+        {timeout:15000,message:"approved selected affirmations must reach voice text"})
+        .toBeGreaterThan(5);
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
-      const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
+      const transcript=(await speech.innerText()).trim();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
