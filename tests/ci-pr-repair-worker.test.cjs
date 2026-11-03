@@ -611,7 +611,7 @@ test('empty ESLint candidate skips privileged publisher and finalizer routes to 
    claimResult:'success',fixResult:'success',publishResult:'skipped',
    candidateStatus:'manual_required',candidateDetail:'ESLINT_SCOPE_NOT_CONFIGURED'});
  assert.equal(outcome.state,'MANUAL');
- assert.equal(outcome.reason_code,'CODEX_API_KEY_NOT_CONFIGURED');
+ assert.equal(outcome.reason_code,'FREE_AI_EXECUTOR_NOT_CONFIGURED');
  assert.equal(outcome.detail_code,'ESLINT_SCOPE_NOT_CONFIGURED');
  assert.equal(outcome.source_published,false);
  assert.equal(outcome.new_sha,null);
@@ -651,24 +651,17 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
  assert.match(prompt,/components\/a.tsx/);
  assert.match(prompt,/Do not run git commit, git push/);
 });
-test('Codex source repair is isolated and independently verified before privileged publishing',()=>{
+test('automatic repair has no paid Codex executor or API credential dependency',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- assert.match(wf,/  code_fix:\n/);
- assert.match(wf,/  code_verify:\n/);
- assert.match(wf,/uses: openai\/codex-action@v1/);
- assert.match(wf,/permission-profile: ':workspace'/);
- assert.match(wf,/safety-strategy: drop-sudo/);
- assert.match(wf,/allow-bots: true/);
  assert.match(wf,/code_available: \$\{\{ steps\.select\.outputs\.code_available \}\}/);
- assert.match(wf,/HH_HAS_CODEX_TOKEN: \$\{\{ secrets\.OPENAI_API_KEY != '' \}\}/);
- assert.match(wf,/needs\.code_verify\.outputs\.candidate_status == 'ready'/);
- assert.match(wf,/name: hh-code-repair-verified/);
- assert.match(wf,/HH_CODE_VERIFY_RESULT/);
- assert.match(wf,/candidate-raw\.json/);
+ assert.match(wf,/core\.setOutput\('code_available','false'\)/);
+ assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
+ assert.match(wf,/  code_verify:\n[\s\S]*?if: false/);
+ assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  const publisher=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
- assert.doesNotMatch(wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0],
-   /HH_AUTOMERGE_TOKEN/);
  assert.match(publisher,/HH_AUTOMERGE_TOKEN/);
+ assert.doesNotMatch(wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0],
+  /HH_AUTOMERGE_TOKEN/);
 });
 test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
@@ -752,7 +745,7 @@ test('direct Code Repair with missing API key never claims a published source SH
   codeAvailable:false,codeResult:'skipped',publishResult:'skipped'});
  assert.equal(r.state,'MANUAL');
  assert.equal(r.strategy,'code');
- assert.equal(r.reason_code,'CODEX_API_KEY_NOT_CONFIGURED');
+ assert.equal(r.reason_code,'FREE_AI_EXECUTOR_NOT_CONFIGURED');
  assert.equal(r.source_published,false);
  assert.equal(f.log.commit,0);
 });
@@ -771,16 +764,13 @@ test('direct code publisher requires verified parent commit on current PR HEAD',
  assert.equal(r.new_sha,newSha);
 });
 
-test('direct Core workflow routes to isolated code verifier and protected publish',()=>{
+test('direct Core failures fail closed until a zero-cost AI executor is approved',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
- assert.match(wf,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
- assert.match(wf,/!cancelled\(\) &&\s+needs\.code_fix\.result == 'success'/);
- assert.match(wf,/strategy:process\.env\.HH_REPAIR_STRATEGY\|\|'lint'/);
- assert.match(wf,/HH_REPAIR_STRATEGY: /);
+ assert.match(wf,/core\.setOutput\('code_available','false'\)/);
+ assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
  assert.match(wf,/needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
  assert.match(wf,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
- assert.match(wf,/uses: openai\/codex-action@v1/);
- assert.match(wf,/uses: actions\/download-artifact@v4/);
+ assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  assert.doesNotMatch(wf,/force: true/);
 });
