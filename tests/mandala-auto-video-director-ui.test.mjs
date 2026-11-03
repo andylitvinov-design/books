@@ -20,7 +20,7 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-input"));
  assert.ok(director.includes("data-auto-video-confirm"));
  assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
- assert.ok(director.includes("data-auto-video-goal={item.id}"));
+ assert.ok(director.includes('data-auto-video-goal={variant==="subcategory"?item.id:undefined}'));
  assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
  assert.ok(director.includes('scene.description[locale]'));
  assert.ok(director.includes('scene.tags.slice(0,3)'));
@@ -132,7 +132,7 @@ test("mobile six workspaces use short locale labels without changing full panel 
    "Video tab is selected on the initial one-screen mock");
 });
 
-test("desktop retains original six explicit theme choices while iPhone starts with four goals",()=>{
+test("desktop retains six explicit theme choices while iPhone offers five compact goal pills",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/quickThemeAdvancedRef=useRef<HTMLDetailsElement>\(null\)/);
  assert.match(studio,/window\.matchMedia\("\(min-width: 760px\)"\)/);
@@ -167,9 +167,9 @@ test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/data-auto-video-create/);
 });
 
-test("four photo-free goals, two selectable inline subcategories, and real scenario/audio continuation",()=>{
+test("five photo-free goal pills, two selectable inline subcategories, and real scenario/audio continuation",()=>{
  const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
- assert.match(css,/\.goalPanel \.goalChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,"five scrollable mobile goal pills override the former four columns");
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(director,/scenePoster\(item.poster\)/,"goal categories are text-only; film choices keep original artwork");
  assert.match(director,/data-auto-video-subcategories/);
@@ -233,19 +233,23 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
  const finalNavCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(finalNavCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
    "the latest mobile cascade restores six tabs in one row");
- const finalGoalCss=autoCss.slice(autoCss.lastIndexOf("/* 03 Nov owner correction:"));
- assert.match(finalGoalCss,/\.goalPanel \.goalChoices\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
-   "four photo-free goal categories fit in a single row");
- assert.match(finalGoalCss,/\.subcategories \.topicChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
-   "two-column expandable subtopics are independently selectable");
- assert.match(autoCss,/\.storyChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
-   "four real licensed film stories form 2×2");
- assert.match(autoCss,/\.topicInput input\{\s*height:60px;min-height:60px/,
-   "real editable local topic input is tall enough for iPhone");
- assert.match(autoCss,/\.storyChoices button\{\s*gap:7px;min-height:194px/,
-   "film posters and labels remain readable");
- assert.match(autoCss,/\.confirm\{\s*width:100%;min-height:70px/,
-   "original support-and-audio CTA is prominent and touch-safe");
+ const finalGoalCss=autoCss.slice(autoCss.lastIndexOf("/* Owner-approved 03 Nov Video Studio first screen:"));
+ assert.match(finalGoalCss,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,
+   "five photo-free goal buttons scroll horizontally instead of using tall cards");
+ assert.match(finalGoalCss,/\.subcategories \.topicChoices\{\s*display:flex;flex-wrap:nowrap/,
+   "subtopics use one horizontal swipe rail with two real selections");
+ assert.match(finalGoalCss,/\.popularTopics\{\s*display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+   "popular recommendations are visible before typing");
+ assert.match(finalGoalCss,/\.storyChoices\{\s*display:grid;grid-template-columns:none;grid-auto-flow:column/,
+   "four licensed story previews appear in one horizontal row");
+ assert.match(finalGoalCss,/\.topicPanel \.topicInput input\{\s*min-height:56px;height:56px/,
+   "iPhone text entry stays at readable 16px below recommendations");
+ assert.match(finalGoalCss,/\.confirm\{\s*min-height:65px/,
+   "support-and-audio CTA stays prominent");
+ assert.match(css,/\.studio\[data-active-workspace="video"\] \.quickBuilder>\.quickVideoNav,\s*\.studio\[data-active-workspace="editor"\] \.quickBuilder>\.quickVideoNav\{\s*order:1/,
+   "six workspaces precede the actual player in the first screen");
+ assert.match(css,/\.studio\[data-active-workspace="video"\] \.previewStage \.hero,\s*\.studio\[data-active-workspace="video"\]\[data-video-studio-mode="therapy"\] \.previewStage \.hero\{\s*width:100%;aspect-ratio:16\/9!important/,
+   "the original playable hero is a mobile 16:9 video frame");
  assert.match(studio,/className=\{videoStyles\.heroEyebrow\}/);
  assert.match(studio,/Создавайте видео для поддержки, баланса и развития/);
  assert.equal((studio.match(/data-video-practice-shortcuts/g)||[]).length,1);
@@ -299,7 +303,7 @@ test("owner correction: two independent subtopics selected, input last and style
    "subtopics must refine, never silently replace, the selected parent video category");
  assert.match(director,/selectedGoalIds\.includes\(item\.id\)/);
  assert.match(director,/selectedGoalIds\.length>=2/);
- assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-clarify"),
+ assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-popular-topics"),
    "manual input is the final action of Describe your topic");
  assert.match(studio,/const selectedStyleScenario=cinematicPlan\?\.shots\.length/);
  assert.match(studio,/data-video-montage-script/);
