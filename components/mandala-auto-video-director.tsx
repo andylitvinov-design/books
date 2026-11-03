@@ -383,13 +383,13 @@ export function MandalaAutoVideoDirector({
           locale==="es"?`Clips relacionados: ${coverage.candidateCount}; se necesitan al menos 4`:
           `Matching clips: ${coverage.candidateCount}; at least 4 required`}
        </small>
-       <small>{locale==="ru"?"Концепция сюжета; готовый видеоряд проверяется отдельно.":locale==="es"?"Concepto narrativo; el material de vídeo se verifica por separado.":"Story concept; matching footage is verified separately."}</small>
+       <small>{locale==="ru"?"Концепция сценария; готовый видеоряд проверяется отдельно.":locale==="es"?"Concepto del escenario; el material de vídeo se verifica por separado.":"Scenario concept; matching footage is verified separately."}</small>
      </button>;
      })}
    </div>:null}
    {selectedScenarioId&&taxonomyScenarios.some(item=>item.id===selectedScenarioId)?
      <div className={css.notice} data-mytube-concept-storyboard>
-       <strong>{locale==="ru"?"Четыре смысловых этапа сценария":locale==="es"?"Cuatro escenas de la historia":"Four narrative beats of the scenario"}</strong>
+       <strong>{locale==="ru"?"Четыре смысловых этапа сценария":locale==="es"?"Cuatro etapas narrativas del escenario":"Four narrative beats of the scenario"}</strong>
        <ol>{taxonomyScenarios.find(item=>item.id===selectedScenarioId)?.sceneOutline.map((beat,index)=>
          <li key={index}>{index+1}. {beat}</li>)}</ol>
        <small>{locale==="ru"?"Это творческая концепция; перед экспортом проверьте реальные кадры ниже.":
