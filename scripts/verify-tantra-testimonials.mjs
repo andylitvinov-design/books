@@ -261,24 +261,30 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    // Observe the reopened state through backend reconstruction, before another
-    // explicit play. A cached currentTime or immediate paused sample is insufficient.
-    if (engine === 'webkit') {
-      for (const index of [0, 1]) {
-        const video = disclosure.locator('video').nth(index);
-        await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, { at, time }) => {
-          const frame = el.__tantraPresentedFrame;
-          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
-        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
-      }
-    }
+    // Opening paused <details> must not start playback. WebKit may retain
+    // the decoded still frame without dispatching requestVideoFrameCallback
+    // again until the user explicitly resumes it. Verify passive pause below,
+    // then require fresh decoded frames AFTER that deliberate resume.
     await page.waitForTimeout(350);
     const reopened = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ paused: el.paused, time: el.currentTime })));
     assert.ok(reopened.every(video => video.paused), 'Reopened videos must remain paused through pipeline restoration');
     reopened.forEach((video, index) => assert.ok(Math.abs(video.time - paused[index]) < 0.05, 'Reopened videos must retain position until explicit play'));
     const unsolicitedPlay = await page.evaluate(at => (window.__tantraNativeTimeline ?? []).filter(event => event.type === 'play' && event.at >= at), reopening.at);
     assert.deepEqual(unsolicitedPlay, [], 'Reopening must not trigger delayed native replay');
+    // Passive WebKit still-frame rendering is not an active-frame callback.
+    // A real explicit resume must progress both the media clock and decoded
+    // video frame count; startVisibleNative verifies both independently.
+    if (engine === 'webkit') {
+      for (const index of [0, 1]) {
+        const video = disclosure.locator('video').nth(index);
+        const resumed = await startVisibleNative(disclosure, index, {
+          phase: 'explicit-reopen-resume', cycle: cycle + 1,
+        });
+        assert.ok(resumed.sample.time >= paused[index], 'Explicit resume must retain the paused position');
+        await video.evaluate(el => el.pause());
+        await expect.poll(() => video.evaluate(el => el.paused)).toBe(true);
+      }
+    }
     observations.push({ participant: activeIndex + 1, cycle: cycle + 1, active, before, paused, after, reopened, youtubeFixtureOnly: true });
   }
   return observations;
