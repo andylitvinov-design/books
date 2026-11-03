@@ -250,6 +250,9 @@ test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
   assert.ok(job.includes('fresh.head_sha !== event.head_sha'), 'no stale workflow evidence may be retried');
   assert.ok(job.includes('(reference.base?.sha && reference.base?.sha !== live.base.sha)'), 'live protected base must remain unchanged');
   assert.ok(job.includes('event.head_repository?.full_name !== fullRepo'), 'cross-repository workflows cannot receive trusted retry');
+  assert.match(job,/event\.head_sha !== live\.head\.sha/,'immutable Core run must match live PR HEAD or exact synthetic merge');
+  assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/,'synthetic merge must have this PR source as second parent');
+  assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/,'synthetic merge must have current protected base as first parent');
   // A cancelled *job* may be evidence of a genuinely interrupted run; a
   // cancelled or failed *Core workflow* must not trigger an automatic rerun.
   // Inspect only event-level predicates, never broad text across comments.
