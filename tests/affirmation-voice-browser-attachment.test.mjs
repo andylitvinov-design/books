@@ -78,3 +78,21 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
   for(const requirement of ['tracks.includes("video")','tracks.includes("audio")','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
 });
+
+test("approved Phrases geometry and own voice require real mobile/browser export evidence",()=>{
+  for(const width of ["320","390","430"])assert.ok(
+    source.includes("for(const width of [320,390,430])")&&source.includes("phrases-geometry-"),
+    "real same-row/16:9/overflow checks must run for "+width);
+  assert.match(source,/data-video-affirmation-gender="own"/);
+  assert.match(source,/data-video-own-voice-record/);
+  assert.match(source,/data-video-own-voice-track/);
+  assert.match(source,/data-video-own-voice-attach/);
+  assert.match(source,/new AudioContext\(\)/);
+  assert.match(source,/real MediaRecorder wrote a playable local file/);
+  assert.match(source,/own-voice-encoded-video-passed/);
+  assert.match(source,/recorded voice is audible, not silent/);
+  assert.match(source,/local voice cannot leak to a TTS provider/);
+  assert.match(source,/data-video-affirmation-voice-advanced/);
+  assert.match(source,/data-video-affirmation-transcript-review/);
+  assert.match(source,/phrases-geometry/);
+});

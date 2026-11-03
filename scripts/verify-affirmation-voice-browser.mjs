@@ -4,6 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
+import {mkdirSync} from "node:fs";
 import {chromium,webkit,expect} from "@playwright/test";
 import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 
@@ -113,6 +114,45 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
+      // Owner-approved Phrases: measure the actual DOM in three iPhone widths.
+      // These checks fail on double-row tabs, a tall portrait player or overflow.
+      for(const width of [320,390,430]){
+        phase(engine,"phrases-geometry-"+width);
+        await page.setViewportSize({width,height:840});
+        const measured=await page.evaluate(()=>{
+          const nav=document.querySelector("[data-video-quick-controls]");
+          const stage=document.querySelector("[data-video-mandala-hero]");
+          const tabs=[...nav.querySelectorAll("button")].map(node=>{
+            const rect=node.getBoundingClientRect();
+            return {top:rect.top,bottom:rect.bottom};
+          });
+          const rect=stage.getBoundingClientRect();
+          return {tabs,navBottom:nav.getBoundingClientRect().bottom,
+            stageTop:rect.top,ratio:rect.width/rect.height,
+            documentWidth:document.documentElement.scrollWidth,
+            viewportWidth:document.documentElement.clientWidth};
+        });
+        assert.equal(measured.tabs.length,6,"six workspace tabs: "+width);
+        assert.ok(measured.tabs.every(t=>Math.abs(t.top-measured.tabs[0].top)<3),
+          "single row of six tabs: "+width+" "+JSON.stringify(measured));
+        assert.ok(measured.navBottom<=measured.stageTop+2,
+          "tabs above video: "+width+" "+JSON.stringify(measured));
+        assert.ok(Math.abs(measured.ratio-16/9)<.18,
+          "video is 16:9: "+width+" "+JSON.stringify(measured));
+        assert.ok(measured.documentWidth<=measured.viewportWidth+2,
+          "no horizontal overflow: "+width+" "+JSON.stringify(measured));
+        if(engine==="chromium"){
+          mkdirSync("artifacts/hypno-compact",{recursive:true});
+          await page.screenshot({path:"artifacts/hypno-compact/phrases-"+locale+"-"+width+".png",fullPage:true});
+        }
+      }
+      await page.setViewportSize({width:390,height:840});
+      for(const name of ["tone","focus","length"])
+        await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
+      await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
+      await phrases.locator("[data-hypno-select-focus]").selectOption("confidence");
+      await phrases.locator("[data-hypno-select-length]").selectOption("short");
+
       // The current Phrases workspace uses the canonical Hypno phrase cards,
       // not the retired data-video-quick-affirmation buttons.
       const readyPhrases=phrases.locator('[data-hypno-ready]');
@@ -149,8 +189,104 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Only the explicit phrase approval unlocks private narration.
       await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
+      // Record two independent browser-local tracks using the real
+      // MediaRecorder and a deterministic WebAudio microphone fixture.
+      const ownMode=page.locator('[data-video-affirmation-gender="own"]');
+      await expect(ownMode).toBeEnabled();
+      await ownMode.click();
+      const ownPanel=page.locator("[data-video-own-voice]");
+      await expect(ownPanel).toBeVisible();
+      await expect(page.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
+      const beforeOwnRequests=payloads.length;
+      if(engine==="chromium"){
+        const available=await page.evaluate(()=>{
+          if(!navigator.mediaDevices||typeof MediaRecorder==="undefined"||
+            !["audio/mp4","audio/webm;codecs=opus","audio/webm"].some(
+              type=>MediaRecorder.isTypeSupported(type)))return false;
+          const ctx=new AudioContext(),tone=ctx.createOscillator(),
+            gain=ctx.createGain(),destination=ctx.createMediaStreamDestination();
+          gain.gain.value=.2;tone.frequency.value=330;
+          tone.connect(gain);gain.connect(destination);tone.start();
+          Object.defineProperty(navigator.mediaDevices,"getUserMedia",{
+            configurable:true,value:async()=>destination.stream.clone()});
+          window.__hhSyntheticMic={ctx,tone};
+          return true;
+        });
+        assert.ok(available,"real Chromium audio MediaRecorder is available");
+        const record=ownPanel.locator("[data-video-own-voice-record]");
+        for(let count=1;count<=2;count++){
+          await record.click();
+          await expect(record).toHaveAttribute("aria-pressed","true");
+          await page.evaluate(()=>window.__hhSyntheticMic.ctx.resume());
+          await page.waitForTimeout(900);
+          await record.click();
+          await expect(ownPanel.locator("[data-video-own-voice-track]")).toHaveCount(count,{timeout:15000});
+        }
+        const tracks=ownPanel.locator("[data-video-own-voice-track]");
+        const file=await tracks.nth(1).locator("audio").evaluate(async audio=>{
+          const blob=await fetch(audio.src).then(res=>res.blob());
+          return {size:blob.size,type:blob.type};
+        });
+        assert.ok(file.size>128&&file.type.startsWith("audio/"),
+          "real MediaRecorder wrote a playable local file "+JSON.stringify(file));
+        await tracks.nth(1).locator("[data-video-own-voice-attach]").click();
+        await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-voice-2");
+        // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
+        // export. Reading a selection badge or blob URL is not E2E evidence.
+        await page.locator('[data-video-quick-control="editor"]').click();
+        const ownCreate=page.locator("[data-video-quick-generate]");
+        await expect(ownCreate).toBeEnabled({timeout:30000});
+        await ownCreate.click();
+        const ownDownload=page.locator("[data-mandala-video-download]");
+        await ownDownload.waitFor({state:"visible",timeout:45000});
+        const [ownFile]=await Promise.all([
+          page.waitForEvent("download",{timeout:20000}),ownDownload.click(),
+        ]);
+        const ownBytes=[];
+        for await(const chunk of await ownFile.createReadStream())
+          ownBytes.push(Buffer.from(chunk));
+        const ownedVideo=Buffer.concat(ownBytes);
+        assert.ok(ownedVideo.length>10000,"recorded personal voice produced a real movie");
+        const ownProbe=spawnSync("ffprobe",["-v","error",
+          "-show_entries","stream=codec_type","-of","json","-"],
+          {input:ownedVideo,encoding:"utf8",timeout:15000});
+        assert.equal(ownProbe.status,0,"own-voice movie decodes: "+ownProbe.stderr);
+        const ownStreams=JSON.parse(ownProbe.stdout).streams.map(x=>x.codec_type);
+        assert.ok(ownStreams.includes("video")&&ownStreams.includes("audio"),
+          "personal track exported as a real movie with audio");
+        const ownPcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0",
+          "-map","0:a:0","-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
+          {input:ownedVideo,maxBuffer:1024*1024,timeout:20000});
+        assert.equal(ownPcm.status,0,"own-voice audio decodes: "+ownPcm.stderr);
+        assert.ok(ownPcm.stdout.some(byte=>byte!==0),"recorded voice is audible, not silent");
+        phase(engine,"own-voice-encoded-video-passed");
+        await page.locator('[data-video-quick-control="phrases"]').click();
+        await expect(ownPanel).toBeVisible();
+
+        await tracks.nth(1).locator("button").last().click();
+        await expect(tracks).toHaveCount(1);
+        await expect(page.locator("[data-video-live-audio]")).toHaveCount(0);
+        await tracks.nth(0).locator("[data-video-own-voice-attach]").click();
+        await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-voice-1");
+        await tracks.nth(0).locator("button").last().click();
+        await expect(tracks).toHaveCount(0);
+        await expect(page.locator("[data-video-live-audio]")).toHaveCount(0);
+        await page.evaluate(async()=>{
+          const mic=window.__hhSyntheticMic;
+          if(mic){mic.tone.stop();await mic.ctx.close();}
+        });
+      }
+      assert.equal(payloads.length,beforeOwnRequests,"local voice cannot leak to a TTS provider");
+      await page.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(ownPanel).toBeHidden();
+      // Original TTS review and balance controls are intentionally collapsed
+      // by the owner-approved Phrases UI, rather than appearing as video presets.
+      await page.locator("[data-video-affirmation-transcript-review] > summary").click();
+      await page.locator("[data-video-affirmation-voice-advanced] > summary").click();
+
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
+      assert.ok(await page.locator("[data-video-affirmation-spoken-text]").isVisible(),"review wording is readable on request");
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
