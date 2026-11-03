@@ -24,5 +24,8 @@ test('trusted publisher records exact-HEAD outcome before failing unverified cla
  assert.match(section,/core\.setFailed\('HH_REPAIR_SOURCE_NOT_PUBLISHED:/);
  assert.ok(section.indexOf('worker.finalize({')>=0);
  assert.ok(section.indexOf('worker.finalize({')<section.indexOf('core.setFailed('));
- assert.ok(section.indexOf("core.info('HH_REPAIR_FINAL_OUTCOME ")<section.indexOf('core.setFailed('));
+ const receipt=section.indexOf("core.info('HH_REPAIR_FINAL_OUTCOME '");
+ assert.ok(receipt>=0, 'signed final outcome must be logged');
+ assert.ok(receipt<section.indexOf('core.setFailed('),
+   'the verified outcome is recorded before the claimed task is failed');
 });
