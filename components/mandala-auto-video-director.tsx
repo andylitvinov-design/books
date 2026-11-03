@@ -211,6 +211,7 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();
    onCategoryChange?.(nextTheme);
    setSelectedCategoryId(categoryId);
+   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");
    setOverrideId(null);setSeconds(null);
    setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal,theme:nextTheme});
@@ -233,7 +234,7 @@ export function MandalaAutoVideoDirector({
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
-   setSelectedTopicId(topicId);setSelectedScenarioId("");setSelectedGoalId(null);
+   setSelectedTopicId(topicId);setSelectedScenarioId("");
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal:label,theme:nextTheme});
    setProposal(recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
@@ -291,7 +292,7 @@ export function MandalaAutoVideoDirector({
          onInvalidate?.();onGoalChange(value);
          setProposalContext({goal:value,theme});
          setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);
+         setOverrideId(null);setSeconds(null);setSelectedTopicId("");setSelectedScenarioId("");
          setTimelineEdits(null);setConfirmedTimelineKey(null);
        }}/>
    </label>
@@ -334,7 +335,7 @@ export function MandalaAutoVideoDirector({
        onInvalidate?.();onGoalChange(next);
        setProposal(recommendAutoVideo({goal:next,locale,fallbackTheme:theme,presets,scenes}));
        setProposalContext({goal:next,theme});
-       setSelectedGoalId(null);setOverrideId(null);setRefineOpen(false);setRefineText("");
+       setSelectedTopicId("");setSelectedScenarioId("");setOverrideId(null);setRefineOpen(false);setRefineText("");
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
