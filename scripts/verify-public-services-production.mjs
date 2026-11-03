@@ -429,18 +429,71 @@ try {
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-hero-390.png", fullPage: false, animations: "disabled" });
       await primary.click();
       await page.waitForURL(/#request-session$/);
-      const target = main.locator('aside#request-session [data-consultation-capture="service"]');
+      // The current one-idea landing has one real inline CRM capture, not the
+      // retired ConsultationChoiceCapture/WhatsApp-first paid selector.
+      const target = main.locator('section#request-session[data-service-visual-screen="final-capture"]');
       await visible(target);
-      assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
-        "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] > button');
-      assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
-      await choices.nth(1).click();
-      await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
-      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-        "Express rate preserved in approved draft: " + label);
+      const capture = target.locator('[data-service-lead-capture][data-inline-offer-form]');
+      await visible(capture);
+      const form = capture.locator('form[data-compact-lead-form]');
+      await form.locator('input[name="contact"]').waitFor({state:"visible"});
+      // The form is client-side: reject an SSR click that happened before hydration.
+      await form.locator('input[name="contact"][required]').waitFor({state:"visible"});
+      await page.waitForFunction(() => document.querySelector(
+        'section#request-session [data-compact-lead-form]')?.getAttribute("data-compact-hydrated")==="true",
+        null,{timeout:15000});
+      const choices = capture.locator("select");
+      assert.equal(await choices.count(),1,"One real service-format selector: "+label);
+      assert.equal(await choices.locator("option").count(),2,"30/60-minute paid choices: "+label);
+      assert.ok((await choices.locator('option[value="30-min"]').innerText()).includes("€50"),
+        "The express session must transparently cost €50: "+label);
+      assert.ok((await choices.locator('option[value="60-min"]').innerText()).includes("€100"),
+        "The full session must transparently cost €100: "+label);
+      await choices.selectOption("30-min");
+      await expect(choices).toHaveValue("30-min");
+      const replyConsent=form.locator('input[type="checkbox"][required]');
+      await expect(replyConsent).toHaveCount(1);
+      await expect(replyConsent).not.toBeChecked();
+      const submit=capture.locator('button[data-compact-channel="whatsapp"]');
+      await expect(submit).toBeVisible();
+      let submissions=0,payload=null;
+      await page.route("**/api/service-enquiries",async route=>{
+        if(route.request().method()!=="POST")return route.continue();
+        submissions++;payload=route.request().postDataJSON();
+        await route.fulfill({status:201,contentType:"application/json",
+          body:JSON.stringify({saved:true,referenceCode:"HH-ABCD1234EF56"})});
+      });
+      // Intercept external popups in the isolated local browser; no provider
+      // request, real client details or live database write can escape this test.
+      await page.evaluate(()=>{
+        window.__testNoExternalHandoff=[];
+        window.open=()=>({opener:null,closed:false,
+          location:{replace:url=>window.__testNoExternalHandoff.push(String(url))},
+          close:()=>{}});
+      });
+      await form.locator('input[name="contact"]').fill("landing-qa@example.test");
+      await submit.click();
+      await expect(form.locator('[role="alert"]')).toBeVisible();
+      assert.equal(submissions,0,"Consent cannot be bypassed: "+label);
+      await replyConsent.check();
+      await submit.click();
+      await expect(capture.locator("[data-lead-saved]")).toBeVisible({timeout:15000});
+      assert.equal(submissions,1,"One consented CRM request: "+label);
+      assert.equal(payload?.contactConsent,true,"Reply consent is recorded: "+label);
+      assert.equal(payload?.contact?.email,"landing-qa@example.test");
+      assert.equal(payload?.sourcePath,"/"+locale+"/services/"+service);
+      assert.ok(payload?.description?.includes("30-min"),"Selected session preserved in CRM: "+label);
+      const whatsapp=capture.locator('a[data-compact-channel="whatsapp"]');
+      const draft=new URL(await whatsapp.getAttribute("href"));
+      assert.equal(draft.origin,"https://wa.me");
+      assert.ok(draft.searchParams.get("text")?.includes("HH-ABCD1234EF56"));
+      assert.ok(draft.searchParams.get("text")?.includes("30-min"),
+        "The same 30-minute offer is included in the draft: "+label);
+      assert.ok(!draft.href.includes("landing-qa%40example.test"),
+        "Visitor contact must never leak to a messenger URL: "+label);
+      const external=await page.evaluate(()=>window.__testNoExternalHandoff);
+      assert.equal(external.length,1,"One intercepted handoff; no external navigation");
+      assert.equal(new URL(external[0]).origin,"https://wa.me");
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
