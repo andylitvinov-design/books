@@ -15,7 +15,6 @@ on:
       - 'lib/dao-divination.*'
       - 'lib/public-locales.ts'
       - 'tests/dao-*.test.mjs'
-      - '.github/workflows/dao-iching-library.yml'
   workflow_dispatch:
 permissions:
   contents: read
