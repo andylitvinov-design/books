@@ -250,10 +250,9 @@ jobs:
           path: candidate.json
           retention-days: 1
           if-no-files-found: error
-  # Retired safety stub: paid Codex is not an automatic repair dependency.
-  # Keep stable job IDs for downstream finalization compatibility. Free AI is
-  # not enabled here until a zero-cost provider allowlist and quota checks land.
-# Free only, text only; neither model nor verifier receives a publisher token.
+  # Keep stable job IDs for downstream finalization compatibility. Only the
+  # single allowlisted anonymous free model is tried; no paid fallback exists.
+  # Neither the model nor verifier receives the publisher token.
   code_fix:
     needs: [claim, fix]
     if: >-
