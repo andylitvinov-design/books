@@ -917,6 +917,76 @@ test('classify-change ancestry failure with skipped source build never dispatche
   ]),'SOURCE_OR_PREFLIGHT');
 });
 
+test('PR #3245 CI source-contract failure routes to policy, not product Source Repair',()=>{
+  const {classifyCoreFailureJobs,classifyIndependentSpecialistChecks}=
+    require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const failure=(name,steps=[])=>({name,conclusion:'failure',status:'completed',steps});
+  const contract={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
+    conclusion:'failure'};
+  const jobs=[
+    failure('core-lint-types-build',[contract]),failure('hh-specialist'),
+    {name:'hh-eslint-repair',conclusion:'success',status:'completed'},
+    failure('hh-merge-check'),
+  ];
+  assert.equal(classifyCoreFailureJobs(jobs),'CI_CONTRACT_OR_POLICY');
+  assert.equal(classifyCoreFailureJobs([
+    {...jobs[0],steps:[contract,{name:'Lint changed JS/TS sources on PR',conclusion:'failure'}]},
+    ...jobs.slice(1),
+  ]),'SOURCE_OR_PREFLIGHT','a genuine mixed contract + product source failure remains repairable');
+  assert.equal(classifyCoreFailureJobs([
+    {...jobs[0],steps:[{name:'TypeScript check',conclusion:'failure'}]},
+    ...jobs.slice(1),
+  ]),'SOURCE_OR_PREFLIGHT','a true product build failure is not hidden');
+  const check=(name,conclusion,id)=>({name,conclusion,id,status:'completed',app:{id:15368}});
+  assert.equal(classifyIndependentSpecialistChecks({
+    total_count:2,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2)],
+  }),'POLICY_OR_SKIPPED','Sweep Guard unit tests are CI policy, not product QA');
+  assert.equal(classifyIndependentSpecialistChecks({
+    total_count:3,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2),
+      check('real-browser-acceptance','failure',3)],
+  }),'PRODUCT_FAILURE','a real failed product browser suite is still routed to Product Repair');
+});
+
+test('CI contract-only failed Core labels release gate and does not hand off source',async()=>{
+  const current={...pr(3245),state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
+  let repairComments=0;const labels=[];
+  const contractStep={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
+    conclusion:'failure'};
+  const github={rest:{
+    pulls:{list:async()=>({data:[current]}),get:async()=>({data:current})},
+    actions:{
+      listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+      listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
+        {name:'core-lint-types-build',conclusion:'failure',steps:[contractStep]},
+        {name:'hh-specialist',conclusion:'failure'},
+        {name:'hh-merge-check',conclusion:'failure'},
+      ]}}),
+    },
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
+    issues:{addLabels:async({labels:added})=>{labels.push(...added);},
+      createComment:async()=>{repairComments++;}},
+  },request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{
+      total_count:1,workflow_runs:[{
+        id:41581262858,name:'HH PR core release gate',event:'pull_request',
+        head_sha:'c'.repeat(40),head_branch:current.head.ref,
+        pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}],
+        status:'completed',conclusion:'failure',run_attempt:1,
+        created_at:new Date(NOW-60*60000).toISOString(),
+        updated_at:new Date(NOW-40*60000).toISOString(),
+      }],
+    }};
+    return {data:{workflow_runs:[]}};
+  }};
+  const report=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  assert.equal(report.ciContractFailures,1);
+  assert.equal(report.sourceRepairQueued,0);
+  assert.equal(report.verifiedSourceFailures,0);
+  assert.equal(repairComments,0);
+  assert.deepEqual(labels,['hh:release-gate-review']);
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
