@@ -48,7 +48,6 @@ on:
       - 'tests/course-free-slot-restart.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
       - 'package.json'
-      - '.github/workflows/hh-course-presets.yml'
   workflow_dispatch:
 
 permissions:
