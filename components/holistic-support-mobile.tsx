@@ -56,8 +56,8 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-// Meaning is a separate fifth check-in; the published video topic engine
-// continues to use the original four-focus ranking.
+// Confidence keeps the established "meaning" data key; the published video topic
+// engine continues to use the existing four-focus ranking.
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
@@ -123,7 +123,7 @@ const copy = {
         "energy": "Energy & wellbeing tests",
         "money": "Work & money reflection tests",
         "relationships": "Relationship tests",
-        "goals": "Meaning, focus & motivation tests"
+        "goals": "Confidence, focus & motivation tests"
       },
       "testHint": "Browse actual free questionnaires",
       "videoHint": "Published original recording",
@@ -160,15 +160,15 @@ const copy = {
     },
     goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
     goalExternalOnly: "Use the selected links above to explore these published formats.",
-    goalSector: { energy: "Energy", money: "Money", love: "Love", meaning: "Meaning" },
-    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore meaning and direction" },
+    goalSector: { energy: "Body & energy", money: "Money", love: "Love", meaning: "Confidence & harmony" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore confidence and inner harmony" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
     goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Meaning" },
+    foci: { energy: "Body & energy", money: "Money", relationships: "Relationships", goals: "Confidence" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
@@ -237,7 +237,7 @@ const copy = {
         "energy": "Тесты: энергия и самочувствие",
         "money": "Тесты: работа и деньги",
         "relationships": "Тесты: отношения",
-        "goals": "Тесты: смыслы, фокус и мотивация"
+        "goals": "Тесты: уверенность, цели и мотивация"
       },
       "testHint": "Реальные бесплатные опросники",
       "videoHint": "Опубликованная авторская запись",
@@ -274,15 +274,15 @@ const copy = {
     },
     goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
     goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
-    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", meaning: "Смыслы" },
-    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Найди смыслы и направление" },
+    goalSector: { energy: "Тело и энергия", money: "Деньги", love: "Любовь", meaning: "Уверенность и гармония" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Исследуй уверенность и гармонию" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
     goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Смыслы" },
+    foci: { energy: "Тело и энергия", money: "Деньги", relationships: "Отношения", goals: "Уверенность" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
@@ -351,7 +351,7 @@ const copy = {
         "energy": "Pruebas de energía y bienestar",
         "money": "Pruebas de trabajo y dinero",
         "relationships": "Pruebas de relaciones",
-        "goals": "Pruebas de sentido, atención y motivación"
+        "goals": "Pruebas de confianza, objetivos y motivación"
       },
       "testHint": "Cuestionarios gratuitos disponibles",
       "videoHint": "Grabación original publicada",
@@ -388,15 +388,15 @@ const copy = {
     },
     goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
     goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
-    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", meaning: "Sentido" },
-    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Encuentra sentido y dirección" },
+    goalSector: { energy: "Cuerpo y energía", money: "Dinero", love: "Amor", meaning: "Confianza y armonía" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Explora tu confianza y armonía" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
     goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Sentido" },
+    foci: { energy: "Cuerpo y energía", money: "Dinero", relationships: "Relaciones", goals: "Confianza" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
@@ -812,7 +812,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <div className={styles.scaleList}>
               {checkinOrder.map(id => {
                 const Icon = scoreIcons[id];
-                const label = id === "meaning" ? t.goalSector.meaning : t.foci[id];
+                const label = id === "meaning" ? t.foci.goals : t.foci[id];
                 return <label className={styles.scaleRow} key={id} data-support-scale={id}>
                   <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
                   <span className={styles.scaleDetail}>
