@@ -55,7 +55,7 @@ export function AboutTestimonialGallery({
   const alternativeLocale = locale === "ru" ? "en" : "ru";
 
   const cards = (videos: ReadonlyArray<AboutTestimonialVideo>) => videos.map((video) => (
-    <div key={video.id} data-about-testimonial-audio={video.language}>
+    <div key={video.id} data-about-testimonial-audio={video.language} data-testimonial-video-id={video.id}>
       <SiteVideoPlayer
         video={{ youtubeId: video.id, title: video.title, language: video.language }}
         locale={locale}

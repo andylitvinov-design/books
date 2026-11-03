@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -78,7 +78,7 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  const ctx={repo,number:27,head:SHA,base:BASE};
  const failed=run({path:file,conclusion:'failure'});
  const syntaxRun=run({id:153,path:syntax});
- const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'syntax',status:'completed',conclusion:'success'}]};
  const result=await verify(api,ctx,files,{maxWaitMs:0});
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
@@ -181,6 +181,28 @@ test('general conditional jobs may skip only when BASE explicitly makes them opt
   assert.throws(()=>inspectJobs([pair[1]],'.github/workflows/any-owner.yml',
     trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
   assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
+});
+test('trusted BASE branch-scoped browser jobs skip only outside their exact head-ref allow-list',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:','    if: '+guard,'    runs-on: macos-15',''
+  ].join('\n');
+  const guard="${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'fix/video-')) }}";
+  const yaml=build(guard);
+  const optional=trustedConditionalJobs(yaml,'feat/support-confidence-harmony-goal-filter-20261102');
+  assert.deepEqual(optional,['voice-webkit-macos']);
+  const jobs=[
+    {name:'required',status:'completed',conclusion:'success'},
+    {name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'},
+  ];
+  assert.equal(inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',optional),2);
+  assert.deepEqual(trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225'),[]);
+  assert.throws(()=>inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',
+    trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225')),
+    /UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.deepEqual(trustedConditionalJobs(build("${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-') || success()) }}"),
+    'feat/support-confidence-harmony-goal-filter-20261102'),[]);
 });
 test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
   const build=guard=>[
@@ -868,7 +890,7 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   const api = { pr: async () => currentPr(), target: async () => advanced,
     compare: async () => ({ status:'diverged' }),
     changed: async () => { throw Error('live diff must not replace tested checkout'); },
-    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+    runs: async () => [run()], jobs: async () => [{ name: 'test', status: 'completed', conclusion: 'success' }] };
   // The target ref really advanced with an unsafe/non-documentation diff: block it.
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   // A stale pull_request.base.sha must not fail a tested checkout whose parent
@@ -1204,6 +1226,74 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
 });
 
 
+test('a trusted CI-validator-only target advance reuses Core evidence only through the NEW production policy', async () => {
+  const current='c'.repeat(40);
+  const valid=filenames=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},commits:[{sha:current}],
+    files:filenames.map(filename=>({filename,status:'modified'})),
+  });
+  const policyFiles=['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-aggregate.test.mjs'];
+  assert.equal(safeTrustedPolicyAdvance(valid(policyFiles),BASE,current,['app/[locale]/about/page.tsx']),true);
+  for (const forbidden of [
+    '.github/workflows/hh-pr-core-release.yml','app/page.tsx','lib/ci/required-gate-policy.mjs',
+    'scripts/ci-source-preflight.mjs','package.json','tests/about-page.test.mjs','docs/operations/runbook.md',
+  ]) {
+    assert.equal(safeTrustedPolicyAdvance(valid([forbidden]),BASE,current,[]),false,forbidden);
+  }
+  assert.equal(safeTrustedPolicyAdvance(valid(policyFiles),BASE,current,['scripts/ci-specialist-aggregate.mjs']),false,
+    'the candidate must not itself touch the changed production policy');
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),status:'diverged'},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),files:[{filename:policyFiles[0],status:'removed'}]},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),commits:[]},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),behind_by:1},BASE,current,[]),false);
+  assert.equal(safeTrustedPolicyAdvance({...valid(policyFiles),files:Array(100).fill({filename:policyFiles[0],status:'modified'})},BASE,current,[]),false);
+  const changedRows=[{filename:'app/[locale]/about/page.tsx',status:'modified'}];
+  let validated=false, cleanup=false, reads=0;
+  const api={target:async()=>{reads++;return current;},compare:async()=>valid(policyFiles)};
+  const result=await revalidateAfterTrustedPolicyAdvance(api,
+    {repo,number:27,head:SHA,base:BASE},{changedRows},{
+      loadPolicy:async sha=>({
+        verify:async (_api,context,sources,config)=>{
+          assert.equal(sha,current);
+          assert.equal(context.head,SHA);
+          assert.equal(sources.changedRows,changedRows);
+          assert.equal(config.trustedPolicyBaseSha,current);
+          validated=true;
+          return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+        },cleanup:()=>{cleanup=true;},
+      }),
+    });
+  assert.equal(result.policyRevalidatedAgainst,current);
+  assert.equal(validated,true);
+  assert.equal(cleanup,true);
+  assert.ok(reads>=3);
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(
+    {...api,compare:async()=>valid(['app/api/payments/route.ts'])},
+    {repo,number:27,head:SHA,base:BASE},{changedRows},{loadPolicy:async()=>{throw Error('must not load');}}),
+  /PRODUCTION_BASE_CHANGED/);
+});
+
+test('actual specialist verification still blocks CI-policy changes without trusted latest policy', async () => {
+  const current='c'.repeat(40);
+  const updated={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},commits:[{sha:current}],
+    files:[{filename:'lib/ci/specialist-aggregate.mjs',status:'modified'}]};
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
+  const api={pr:async()=>({...pr(),base:{...pr().base,sha:current}}),
+    target:async()=>current,compare:async()=>updated,runs:async()=>[run()],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  const success=await verify(api,ctx,sources,{maxWaitMs:0,trustedPolicyBaseSha:current});
+  assert.deepEqual(success.expected,[path]);
+  await assert.rejects(()=>verify({...api,compare:async()=>({...updated,files:[
+    {filename:'.github/workflows/core.yml',status:'modified'}]})},ctx,sources,
+    {maxWaitMs:0,trustedPolicyBaseSha:current}),/PRODUCTION_BASE_CHANGED/);
+});
+
 test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
   const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
   const compare = files => ({
@@ -1275,6 +1365,23 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+});
+
+test('trusted Mandala WebKit allowlist accepts exact branch entries and the full prefix list',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const actual=readFileSync(path,'utf8');
+  const files={base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/support-confidence-harmony-goal-filter-20261102',
+    ['components/holistic-support-goal-filter.tsx']),true);
+  assert.equal(optionalMandalaMacosSkip(files,
+    'codex/professional-growth-templates-20261031',
+    ['components/holistic-support-goal-filter.tsx']),false,
+    'the exact BASE branch remains required to execute WebKit');
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/video-studio-project-renderplan-v2-20261102',
+    ['lib/mandala/video-project-v2.mjs']),false,
+    'encoded video work is never excused from WebKit');
 });
 
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
@@ -1385,4 +1492,51 @@ test('Mandala macOS branch-gated skip is wired into exact-head specialist verify
     {jobRows:[focused,{...mac,conclusion:'failure'}]},
   ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB/,
     'all untrusted or failed jobs remain release-blocking');
+});
+
+test('Mandala accepts only an exact required-preflight dependency before optional macOS', () => {
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const base=[
+    'on:',
+    '  pull_request:',
+    "    paths: ['components/mandala-*']",
+    'jobs:',
+    '  focused-unit-types-build:',
+    '    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:',
+    "    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'fix/video-')) }}",
+    '    runs-on: macos-15',
+    '    steps:',
+    '      - run: node scripts/verify-affirmation-voice-browser.mjs',
+    '',
+  ].join('\n');
+  const extra=[
+    '  webkit_preflight:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    '    runs-on: ubuntu-slim',
+  ].join('\n')+'\n';
+  const candidate=base.replace('  voice-webkit-macos:',extra+'  voice-webkit-macos:')
+    .replace('    runs-on: macos-15', '    needs: [webkit_preflight]\n    runs-on: macos-15');
+  const run=(next,branch='codex/ci-cheap-browser-preflight-20261103',changed=[path])=>
+    optionalMandalaMacosSkip({
+      base:new Map([[path,base]]),current:new Map([[path,next]]),
+    },branch,changed);
+  assert.equal(run(candidate),true,
+    'unmodified BASE branch condition allows CI-only skip with one required preflight');
+  assert.equal(run(candidate,'fix/video-release-20261103'),false,
+    'original BASE-required WebKit must execute on matching video branch');
+  assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
+    ['scripts/verify-affirmation-voice-browser.mjs']),false,
+    'a relevant voice or encoded media change must still require WebKit');
+  const invalid=[
+    candidate.replace('needs: [webkit_preflight]', 'needs: [other_job]'),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight, other_job]\n'),
+    candidate.replace('    runs-on: macos-15','    runs-on: ubuntu-latest'),
+    candidate.replace('    steps:','    timeout-minutes: 1\n    steps:'),
+    candidate.replace("startsWith(github.head_ref, 'fix/video-')","startsWith(github.head_ref, 'codex/ci-')"),
+    candidate.replace("    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}","    if: ${{ false }}"),
+    candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight]\n    continue-on-error: true\n'),
+  ];
+  for (const changedJob of invalid)
+    assert.equal(run(changedJob),false,'unsafe macOS policy change must never self-waive');
 });

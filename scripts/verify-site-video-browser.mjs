@@ -248,21 +248,40 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // About now shows ten verified archived public testimonials (6 EN, 4 RU
-  // with matching approved local posters). The two unverified-poster RU
-  // clips are excluded by PersonalTestimonials, never silently substituted.
-  const approvedReviewIds = [
-    'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
-    '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
-    'VABgpmn4ZYA', 'muOnIHllI7E',
-  ].sort()
-  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
-  await expect(aboutReviews).toHaveCount(approvedReviewIds.length)
-  const renderedIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
-  assert.deepEqual(renderedIds, approvedReviewIds, 'About contains only the approved public testimonial originals')
-  await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
+  // Two approved layouts during rollout: the legacy 10 archived public posters
+  // or six original-language players plus six behind explicit disclosure.
+  // The browser asserts exact YouTube IDs in either version, never an arbitrary count.
+  const enIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js',
+    'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc'].sort()
+  const ruIds = ['m9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM',
+    'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'].sort()
+  const primaryGrid = page.locator('[data-about-primary-testimonials="en"]')
+  if (await primaryGrid.count()) {
+    const primary = primaryGrid.locator('[data-about-testimonial-audio="en"][data-testimonial-video-id]')
+    await expect(primary).toHaveCount(enIds.length)
+    const ids = await primary.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+    assert.deepEqual(ids, enIds, 'English About must lead with the six authentic English originals')
+    const disclosure = page.locator('[data-about-other-language-testimonials="true"]')
+    await expect(disclosure).toHaveCount(1)
+    await expect(disclosure.locator('[data-about-secondary-testimonials]')).toHaveCount(0)
+    await disclosure.locator('summary').click()
+    const secondary = disclosure.locator('[data-about-secondary-testimonials="ru"] [data-about-testimonial-audio="ru"][data-testimonial-video-id]')
+    await expect(secondary).toHaveCount(ruIds.length)
+    const idsAfterOpen = await secondary.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+    assert.deepEqual(idsAfterOpen, ruIds, 'Disclosed RU archive retains six exact Russian originals')
+    await expect(page.locator('iframe')).toHaveCount(0)
+    pass((live ? 'Production' : 'Local')+': six EN first, six RU only after disclosure; no eager iframe')
+  } else {
+    const approvedReviewIds = [...enIds, 'MIVLm1GUTtM', 'ttQxUHopaUM',
+      'VABgpmn4ZYA', 'muOnIHllI7E'].sort()
+    const legacy = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
+    await expect(legacy).toHaveCount(approvedReviewIds.length)
+    const ids = await legacy.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+    assert.deepEqual(ids, approvedReviewIds, 'Legacy About retains ten approved original public videos')
+    await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
+    pass((live ? 'Production' : 'Local')+': legacy 10 approved public testimonial videos; no eager iframe')
+  }
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten identity-matched public testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
