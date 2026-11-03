@@ -182,6 +182,28 @@ test('general conditional jobs may skip only when BASE explicitly makes them opt
     trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
   assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
 });
+test('trusted BASE branch-scoped browser jobs skip only outside their exact head-ref allow-list',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:','    if: '+guard,'    runs-on: macos-15',''
+  ].join('\n');
+  const guard="${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'fix/video-')) }}";
+  const yaml=build(guard);
+  const optional=trustedConditionalJobs(yaml,'feat/support-confidence-harmony-goal-filter-20261102');
+  assert.deepEqual(optional,['voice-webkit-macos']);
+  const jobs=[
+    {name:'required',status:'completed',conclusion:'success'},
+    {name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'},
+  ];
+  assert.equal(inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',optional),2);
+  assert.deepEqual(trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225'),[]);
+  assert.throws(()=>inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',
+    trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225')),
+    /UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.deepEqual(trustedConditionalJobs(build("${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-') || success()) }}"),
+    'feat/support-confidence-harmony-goal-filter-20261102'),[]);
+});
 test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
   const build=guard=>[
     'jobs:','  required:','    runs-on: ubuntu-latest',
