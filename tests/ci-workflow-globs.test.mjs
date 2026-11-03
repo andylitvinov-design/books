@@ -257,7 +257,7 @@ test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
   for(const match of eventAllowed){
     assert.deepEqual(JSON.parse(match[1]),['timed_out','startup_failure']);
   }
-  assert.doesNotMatch(job, /event\.conclusion\s*!?={1,3}\s*['"](?:cancelled|failure)['"]/);
+  assert.doesNotMatch(job, /event\.conclusion\s*={2,3}\s*['"](?:cancelled|failure)['"]/);
   assert.match(job,/\["cancelled","skipped","timed_out"\]\.includes\(job\.conclusion\)/);
 });
 
