@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice
+ validatePatch,promptFor,boundedPromptSources,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice
 }=require('../scripts/ci-pr-repair-free-agent.cjs');
 const SHA='a'.repeat(40);
 test('free model fixed and no paid model routing',()=>{
@@ -115,4 +115,22 @@ test('CLI entrypoint awaits the async price-checked proposer',()=>{
  const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-free-agent.cjs'),'utf8');
  assert.match(source,/async function main\(\)[\s\S]*?await propose\(\)/);
  assert.match(source,/if\(require\.main===module\)main\(\)/);
+});
+test('bounded free AI context retains exact source diagnostic lines at eight-file scale',()=>{
+ const files=Array.from({length:8},(_,i)=>{
+   const lines=Array.from({length:900},(_,n)=>
+     n===639&&i===0?'TARGET_ERROR_LINE_640':'// harmless source line '+n+' '.repeat(30));
+   return {file:'components/f'+i+'.tsx',content:lines.join('\n')};
+ });
+ const bounded=boundedPromptSources(files,{
+   types:{ok:false,detail:'components/f0.tsx(640,1): error TS2322'}
+ });
+ assert.equal(bounded.length,8);
+ assert.equal(bounded.every(f=>f.partial),true);
+ assert.match(bounded[0].content,/L640: TARGET_ERROR_LINE_640/);
+ assert.ok(bounded.every(f=>Buffer.byteLength(f.content)<7400));
+ assert.ok(bounded.reduce((n,f)=>n+Buffer.byteLength(f.content),0)<58000);
+ assert.match(promptFor({sha:SHA,files:files.map(f=>f.file)},bounded,{types:{detail:'TS2322'}}),/PARTIAL exact-HEAD excerpt/);
+ const small=boundedPromptSources([{file:'components/small.tsx',content:'export const a = 1;'}],{});
+ assert.deepEqual(small,[{file:'components/small.tsx',content:'export const a = 1;',partial:false}]);
 });
