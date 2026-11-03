@@ -22,8 +22,12 @@ function signedWake(task,comments){
  return wake.length?wake.at(-1):null;
 }
 function runAssociation(run,task){
- if(run?.event!=='pull_request'||run.head_branch!==task.head_ref ||
-    !SHA.test(run.head_sha||''))return 'OTHER';
+ if(run?.event!=='pull_request')return 'OTHER';
+ if(run.head_branch!==task.head_ref){
+  return Array.isArray(run.pull_requests)&&run.pull_requests.some(p=>p.number===task.pr_number)
+   ?'UNKNOWN':'OTHER';
+ }
+ if(!SHA.test(run.head_sha||''))return 'UNKNOWN';
  const links=run.pull_requests;
  if(links!==undefined&&links!==null&&!Array.isArray(links))return 'UNKNOWN';
  if(Array.isArray(links)&&links.length&&
@@ -32,8 +36,9 @@ function runAssociation(run,task){
    links.find(pr=>pr.number===task.pr_number):null;
  if(related?.head?.sha && related.head.sha!==task.head_sha)
    return 'OTHER_HEAD';
- if(run.head_sha===task.head_sha || related?.head?.sha===task.head_sha)
-   return 'EXACT';
+ // Synthetic pull_request merge commits must prove their second parent is
+ // this exact HEAD. A PR link alone may be recomputed after the run began.
+ if(run.head_sha===task.head_sha)return 'EXACT';
  return 'MERGE_PARENT_REQUIRED';
 }
 async function inspectCore({github,limited,owner,repo,task,wake,now}){
@@ -85,7 +90,8 @@ async function inspectCore({github,limited,owner,repo,task,wake,now}){
   if(['queued','waiting','pending','requested'].includes(run.status))
    return {state:'QUEUED',reason:'CORE_RUN_QUEUED',runId:run.id};
   if(run.status==='completed'&&['cancelled','skipped'].includes(run.conclusion))
-   return {state:'WAITING',reason:'CORE_RUN_CANCELLED_OR_SKIPPED',runId:run.id};
+   return {state:now-when>=GRACE_MS?'STALLED':'WAITING',
+    reason:'CORE_RUN_CANCELLED_OR_SKIPPED',runId:run.id};
   uncertain=true;
  }
  if(uncertain)return {state:'UNKNOWN',reason:'CORE_ASSOCIATION_UNVERIFIED'};
