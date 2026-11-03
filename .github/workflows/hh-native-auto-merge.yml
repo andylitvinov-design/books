@@ -93,6 +93,31 @@ jobs:
             } else return;
             if (!Number.isInteger(number)) return;
             let pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            // Record Ready only on an authenticated opened / ready_for_review
+            // event. Existing pull_request_target runner, no extra CI or job.
+            // Telemetry is best-effort and cannot change merge authorization.
+            if (context.eventName === "pull_request_target" &&
+                ["opened","ready_for_review"].includes(context.payload.action) &&
+                pr.state === "open" && pr.draft === false &&
+                pr.base?.ref === "codex/public-book-library" &&
+                pr.head?.repo?.full_name === fullRepo &&
+                pr.head?.sha === expectedHead && Number.isSafeInteger(context.runId)) {
+              try {
+                const {stageLine}=require(process.env.GITHUB_WORKSPACE+
+                  "/scripts/ci-pr-stage-receipts.cjs");
+                const source=context.payload.pull_request;
+                const opened=context.payload.action==="opened";
+                const at=opened?source.created_at:new Date().toISOString();
+                const receipt=stageLine({stage:"ready",pr_number:number,
+                  head_sha:pr.head.sha,run_id:context.runId,at,
+                  source:opened?"pr_opened_ready":"ready_event_observed"});
+                await github.rest.issues.createComment({owner,repo,issue_number:number,
+                  body:receipt+"\nReady event observed on verified PR HEAD; not CI-green or merge proof."});
+              } catch (error) {
+                log("READY_TIMESTAMP_RECEIPT_UNAVAILABLE #"+number+" "+
+                  String(error.message||error).slice(0,120));
+              }
+            }
             // Mergeability may be temporarily unknown immediately after Core CI.
             // Recover inside the successful event, not in the next hourly Sweep.
             for (const delayMs of [1500, 3000, 5000, 8000]) {
