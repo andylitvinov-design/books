@@ -120,7 +120,6 @@ jobs:
               ['app/[locale]/app/messages/messages-page.css','M'],
               ['components/app/messages-bottom-navigation.jsx','M'],
               ['lib/mobile-visual-bottom.mjs','M'],
-              ['tests/mobile-visual-dock.test.mjs','M'],
             ])
             const rows=[]
             if(fields.length===expected.size*2){
@@ -135,6 +134,8 @@ jobs:
           }
           appendFileSync(process.env.GITHUB_OUTPUT,'dock_only='+dockOnly+'\n')
           JS
+      # These contract suites are deliberately not part of the fast-lane diff allowlist.
+      # They are trusted unchanged tests from the production base, never self-modified by the PR.
       - name: Mobile Dock geometry and iPhone keyboard contracts
         if: ${{ steps.dock-scope.outputs.dock_only == 'true' }}
         run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
@@ -206,7 +207,6 @@ jobs:
             ["app/[locale]/app/messages/messages-page.css","M"],
             ["components/app/messages-bottom-navigation.jsx","M"],
             ["lib/mobile-visual-bottom.mjs","M"],
-            ["tests/mobile-visual-dock.test.mjs","M"],
           ])
           const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
           let operatorOnly=false

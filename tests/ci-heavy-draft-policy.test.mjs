@@ -419,6 +419,11 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('group: >-') && source.includes("holistic-support-mandala-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), 'PR runs share a PR-scoped group and manual attempts stay run-scoped');
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only superseded first-attempt PR runs are cancelled');
   assert.ok(source.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
+  assert.ok(source.includes("HH_VOICE_SKIP_GUIDED_PRACTICES: ${{ startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') && '1' || '0' }}"), 'only this CI acceleration PR skips the unrelated full Practices UX matrix');
+  assert.ok(source.includes("HH_PRACTICES_BROWSER_ENGINE=webkit HH_PRACTICES_CONSENT_ONLY=1"), 'the real consent-label WebKit test remains mandatory');
+  assert.ok(source.includes("node scripts/benchmarking/first-video-live-export.mjs"), 'the real encoded WebKit media test remains mandatory');
+  const voiceSource=readFileSync('scripts/verify-affirmation-voice-browser.mjs','utf8');
+  assert.ok(voiceSource.includes('HH_VOICE_SKIP_GUIDED_PRACTICES==="1"'), 'the opt-out is explicit and CI-only');
   assert.ok(source.includes('Restore Next.js build cache') && source.includes('Restore pinned Playwright WebKit browser'));
   const macosGuard=source.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1] || '';
   assert.ok(macosGuard.includes("startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-')"));

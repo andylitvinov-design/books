@@ -202,7 +202,7 @@ jobs:
             git show "$tested_base:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs"
             route="$(HH_TESTED_BASE_SHA="$tested_base" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs")"
           fi
-          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Verified CI route: $route (HEAD $HH_HEAD_SHA; BASE $tested_base)" >> "$GITHUB_STEP_SUMMARY"
 
@@ -284,22 +284,25 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
+      - name: Mobile Dock Core geometry and iPhone keyboard contracts
+        if: ${{ github.event_name == 'pull_request' && steps.fast.outputs.route == 'DOCK' }}
+        run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
       # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
       # A miss safely falls back to the existing full real build and validations.
       - name: Restore production-owned scenario MP3 cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Restore production-owned Next compiler cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         uses: actions/cache/restore@v4
         with:
           path: .next/cache
           key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
         run: npm run build
@@ -390,11 +393,11 @@ jobs:
             git show "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs"
             route="$(HH_TESTED_BASE_SHA="$HH_TRUSTED_BASE_SHA" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs")"
           fi
-          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
+          case "$route" in ASSETS|TEXT|DOCK|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && steps.specialist_route.outputs.route == 'FULL'
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}

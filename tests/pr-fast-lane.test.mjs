@@ -129,6 +129,8 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'Mobile Dock still uses the immutable exact-head Specialist aggregator');
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'DOCK must still run the trusted specialist aggregator');
   assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));

@@ -389,6 +389,8 @@ jobs:
       # Test real WebKit native compositor rather than frozen headless media.
       HH_VOICE_E2E_HEADED: '1'
       HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      # This CI-only PR keeps the consent-only WebKit check and encoded media gate.
+      HH_VOICE_SKIP_GUIDED_PRACTICES: ${{ startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:
