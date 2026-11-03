@@ -1,0 +1,72 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync,statSync} from "node:fs";
+import {fileURLToPath} from "node:url";
+import {resolve,dirname} from "node:path";
+import {isApprovedMontageScene,validateMontageClips,montageReplacementOptions} from "../lib/mandala/video-montage-sources.mjs";
+import {compileVerifiedRenderPlanV2} from "../lib/mandala/render-plan-v2.mjs";
+
+const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
+const source=JSON.parse(readFileSync(resolve(root,"data/video-catalog/original-motion-scenes-v1.json"),"utf8"));
+const fixture=id=>({
+  id,theme:"health",collection:"original-motion-v1",status:"approved",
+  media:"original_motion_mp4",
+  visualOrigin:"original_procedural_non_photographic",
+  sha256:"a".repeat(64),
+  video:"/videos/holistic-house/original-motion-v1/"+id+".mp4",
+  poster:"/videos/holistic-house/original-motion-v1/"+id+".jpg",
+  motifs:["flowers","light"],tags:["meditation","light"],pace:"slow",
+  rightsReference:{kind:"project_generated_original",creator:"Holistic House"},
+});
+test("original animation must never be accepted as licensed stock or arbitrary external URLs",()=>{
+ const row=fixture("motion-stress-recovery-stress-relief-v1");
+ assert.equal(isApprovedMontageScene(row),true);
+ assert.equal(isApprovedMontageScene({...row,sha256:"bad"}),false);
+ assert.equal(isApprovedMontageScene({...row,media:"licensed_mp4"}),false);
+ assert.equal(isApprovedMontageScene({...row,visualOrigin:"stock_photography"}),false);
+ assert.equal(isApprovedMontageScene({...row,rightsReference:{kind:"dareful_cc_by_4_0"}}),false);
+ assert.equal(isApprovedMontageScene({...row,video:"https://example.com/video.mp4"}),false);
+});
+test("four different project-original moving MP4s are allowed by the same protected renderer",()=>{
+ const scenes=[1,2,3,4,5].map(i=>fixture("motion-stress-recovery-stress-relief-v"+i));
+ const ids=scenes.slice(0,4).map(s=>s.id);
+ assert.equal(validateMontageClips(ids,scenes),true);
+ assert.equal(validateMontageClips([ids[0],ids[0],ids[2],ids[3]],scenes),false);
+ assert.equal(montageReplacementOptions({scenes,currentId:ids[0],selectedIds:ids}).length,1);
+ const script={
+    version:"hh-executable-video-scenario-v1",readyToExecute:true,
+    paidRenderApproved:false,noExternalClientData:true,presetId:"motion-film-stress-relief",
+    durationSeconds:20,aspect:"portrait",rendering:{quality:"hd"},
+    audio:{kind:"silent",trackId:"none",volumePercent:0},edit:{excludedMotifs:[]},
+    shots:ids.map((id,i)=>({sceneId:id,assetPath:scenes[i].video,startSeconds:i*5,durationSeconds:5,captionText:""})),
+ };
+ const plan=compileVerifiedRenderPlanV2({scenario:script,scenes});
+ assert.equal(plan.shots.length,4);
+ assert.ok(plan.rightsProof.every(r=>r.rightsKind==="project_generated_original"));
+});
+test("production abstract motion library contains 320 individually encoded H264 source records",()=>{
+ // The placeholder is allowed ONLY before the one-time batch artifacts exist
+ // on the isolated integration preparation branch. A release must require 320.
+ if(source.count===0){
+   assert.equal(source.status,"awaiting_one_time_encoded_media");
+   assert.equal(source.scenes.length,0);
+   return;
+ }
+ assert.equal(source.count,320);
+ assert.equal(source.scenes.length,320);
+ assert.equal(source.presets.length,64);
+ assert.equal(new Set(source.scenes.map(s=>s.id)).size,320);
+ assert.equal(new Set(source.scenes.map(s=>s.sha256)).size,320);
+ for(const scene of source.scenes){
+    assert.equal(isApprovedMontageScene(scene),true);
+    assert.equal(scene.visualOrigin,"original_procedural_non_photographic");
+    assert.equal(scene.rightsReference.thirdPartyFootage,false);
+    assert.ok(statSync(resolve(root,"public"+scene.video)).size>10000);
+    assert.ok(statSync(resolve(root,"public"+scene.poster)).size>1000);
+ }
+ for(const preset of source.presets){
+   assert.equal(preset.clips.length,4);
+   assert.equal(new Set(preset.clips).size,4);
+   assert.equal(validateMontageClips(preset.clips,source.scenes),true);
+ }
+});
