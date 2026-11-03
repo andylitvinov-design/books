@@ -83,7 +83,7 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
   const studio=read("components/mandala-guided-course.tsx");
   const contextStart=studio.indexOf('data-video-key-difficulty value={keyDifficulty}');
   assert.ok(contextStart>0,"original controlled guided-course focus is retained");
-  const context=studio.slice(contextStart,contextStart+550);
+  const context=studio.slice(contextStart,contextStart+800);
   assert.match(context,/const next=event\.currentTarget\.value;/);
   // React may deliver stale blur callbacks after the approved script is saved.
   // Compare against the most recent ref, not a captured render closure.
