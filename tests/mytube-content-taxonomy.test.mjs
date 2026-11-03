@@ -43,7 +43,7 @@ test("search matching resolves an exact localized label or seed phrase without f
     categoryId: "goals-money", subcategoryId: "goals-discipline", topicId: "goal-achievement",
   });
   assert.deepEqual(resolveMyTubeTopic("panic attacks", "en"), {
-    categoryId: "stress-recovery", subcategoryId: "anxiety-panic", topicId: "panic-attacks",
+    categoryId: "stress-recovery", subcategoryId: "anxiety-fears", topicId: "panic-attacks",
   });
   assert.deepEqual(resolveMyTubeTopic("autoaceptación", "es"), {
     categoryId: "energy-confidence", subcategoryId: "confidence-worth", topicId: "self-acceptance",
