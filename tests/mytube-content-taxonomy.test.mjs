@@ -26,6 +26,7 @@ test("all labels and choice hints are localized in RU, EN and ES", () => {
         assert.equal(topics.length, 4);
         for (const topic of topics) {
           assert.ok(topic.label);
+          assert.ok(Array.isArray(topic.legacyTags) && topic.legacyTags.length > 0);
           assert.equal(topic.scenarioCount, 4);
           assert.equal(listMyTubeScenarios(topic.id, locale).length, 4);
         }
