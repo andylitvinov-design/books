@@ -259,9 +259,21 @@ test('WebKit defers saved-position seek until an actual new decoded frame after 
   assert.deepEqual(f.writes,[],'Preroll play/playing must not seek');
   assert.equal(f.callbacks.length,1,'Only one resumed-frame observation may run');
   f.frame(0.066666);
-  assert.deepEqual(f.writes,[5.391310898],'Frame zero on a playing pipeline authorizes one exact recovery');
+  f.frame(0.2);
+  f.frame(0.366666);
+  assert.deepEqual(f.writes,[],'Early WebKit preroll frames must never trigger a seek');
+  f.frame(0.533333);
+  assert.deepEqual(f.writes,[5.391310898],'Only a warmed decoded pipeline authorizes one exact recovery');
   f.handlers.onPlaying(f.event);
   assert.equal(f.writes.length,1,'Never repeat a resolved native seek');
+});
+
+test('reopened WebKit decoder cannot be sought by repeated unadvanced preroll frames',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();f.media.paused=false;
+  f.handlers.onPlay(f.event);
+  for(let i=0;i<7;i++)f.frame(0.066666);
+  assert.deepEqual(f.writes,[],'A stuck frame-zero decoder cannot authorize another seek');
+  assert.equal(f.callbacks.length,1,'Native controls remain available without a retry timer');
 });
 test('healthy same-source native replay advances two real frames without mutating time',()=>{
   const f=deferredWebKitFixture();f.close();f.reopen();
@@ -291,7 +303,9 @@ test('Space and pointer activation preserve a true play while native seeking rem
   f.handlers.onKeyDown({...f.event,key:' '});
   f.media.paused=false;f.handlers.onPlay(f.event);
   assert.equal(f.callbacks.length,1);
-  f.frame(0.066666);assert.equal(f.writes.length,1);
+  f.frame(0.066666);assert.equal(f.writes.length,0,'Native play stays untouched during preroll');
+  for(const at of [0.2,0.366666,0.533333])f.frame(at);
+  assert.equal(f.writes.length,1,'One restored seek follows decoded warmup');
 });
 test('closing during an unfinished frame observer rejects stale callbacks without losing the paused position',()=>{
   const f=deferredWebKitFixture();f.close();f.reopen();
@@ -300,7 +314,9 @@ test('closing during an unfinished frame observer rejects stale callbacks withou
   f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
   assert.equal(f.callbacks.length,2);
   f.frame(0.066666);assert.deepEqual(f.writes,[],'Old frame generation cannot override new state');
-  f.frame(0.066666);assert.deepEqual(f.writes,[5.391310898]);
+  f.frame(0.066666);assert.deepEqual(f.writes,[],'Fresh generation must also warm its decoder');
+  for(const at of [0.2,0.366666,0.533333])f.frame(at);
+  assert.deepEqual(f.writes,[5.391310898]);
 });
 
 

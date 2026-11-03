@@ -83,12 +83,21 @@ export function TantraVideoTestimonials(props: Props) {
         return;
       }
       if (metadata.mediaTime < saved.time - 0.25) {
-        // WebKit/GStreamer sometimes restarts its decoder at frame zero
-        // after a closed disclosure. A seek in play-event preroll hangs.
-        // Only a newly presented active frame authorizes ONE exact seek.
+        // A hidden WebKit/GStreamer decoder can restart at frame zero.
+        // Its first post-reopen presented frame is still PREROLL: seeking at
+        // that instant was observed to leave WebKit seeking forever (ES390).
+        // Require several actual advancing decoded frames from the new
+        // pipeline before one same-source position restoration. No timer,
+        // autoplay, reload, blind retries or fake clock progress.
+        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+        if (saved.confirmedFrames < 4 || metadata.mediaTime < 0.5) {
+          try { video.requestVideoFrameCallback(onFrame); }
+          catch { retained.current.delete(video); }
+          return;
+        }
         retained.current.delete(video);
         try { video.currentTime = saved.time; } catch {
-          // Refused native seek must not cause autoplay or a retry loop.
+          // Refused native seek leaves native controls available.
         }
         return;
       }
