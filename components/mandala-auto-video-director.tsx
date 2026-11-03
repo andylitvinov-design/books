@@ -353,9 +353,9 @@ export function MandalaAutoVideoDirector({
        <strong>{scenarioCardHeading[locale][index]} · {selectedTaxonomyTopic?.topic.label[locale]}</strong>
        <small>{scenario.creativeBrief}</small>
        <small data-scenario-source-coverage={coverage.candidateCount}>
-         {locale==="ru"?`Подходящих видеофрагментов: ${coverage.candidateCount} из 4 необходимых`:
-          locale==="es"?`Clips relacionados: ${coverage.candidateCount} de 4 necesarios`:
-          `Matching clips: ${coverage.candidateCount} of 4 required`}
+         {locale==="ru"?`Подходящих видеофрагментов: ${coverage.candidateCount}; для монтажа нужно минимум 4`:
+          locale==="es"?`Clips relacionados: ${coverage.candidateCount}; se necesitan al menos 4`:
+          `Matching clips: ${coverage.candidateCount}; at least 4 required`}
        </small>
        <small>{locale==="ru"?"Концепция сюжета; готовый видеоряд проверяется отдельно.":locale==="es"?"Concepto narrativo; el material de vídeo se verifica por separado.":"Story concept; matching footage is verified separately."}</small>
      </button>;
