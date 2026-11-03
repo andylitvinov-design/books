@@ -136,7 +136,7 @@ export async function middleware(request: NextRequest) {
     if (!privateSupportPhotoCabinet) return ''
     try {
       const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
-      return url.protocol === 'https:' && /^[a-z0-9]{20}\\.supabase\\.co$/.test(url.hostname)
+      return url.protocol === 'https:' && /^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)
         ? ' ' + url.origin : ''
     } catch { return '' }
   })()
