@@ -917,10 +917,10 @@
 .quickWish:focus-within{outline:3px solid #b3e4c9}
 .quickImageRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(92px,130px);
   gap:8px;max-width:100%;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:thin;padding:2px 2px 6px}
-.quickImageRail button{position:relative;display:flex;align-items:center;justify-content:center;
+.quickImageRail :is(button,label){position:relative;display:flex;align-items:center;justify-content:center;
   width:100%;aspect-ratio:1;min-width:0;overflow:hidden;border:2px solid transparent;
   border-radius:14px;background:#e9efe8;color:#1b765c;scroll-snap-align:start}
-.quickImageRail button.quickImageUpload{flex-direction:column;gap:7px;border:2px dashed #c8d8d0;
+.quickImageRail .quickImageUpload{flex-direction:column;gap:7px;border:2px dashed #c8d8d0;
   background:#fbfcfa;text-align:center}
 .quickImageUpload span{max-width:100%;font-size:12px;font-weight:700;overflow-wrap:break-word}
 .quickImageRail button[aria-pressed="true"]{border-color:#089e74;box-shadow:0 0 0 2px #c4eadc}
@@ -1385,7 +1385,7 @@
   box-shadow:0 4px 23px #122d2778}
 .quickPreviewPlay:hover{background:#e2f6e8}
 .quickBuilder .quickImageRail{grid-auto-columns:minmax(108px,130px);gap:9px;padding:3px 2px 8px}
-.quickBuilder .quickImageRail button{aspect-ratio:1.45;border-radius:13px}
+.quickBuilder .quickImageRail :is(button,label){aspect-ratio:1.45;border-radius:13px}
 .quickBuilder .quickImageUpload span{font-size:12.5px}
 .quickBuilder .quickStyles{grid-auto-columns:minmax(118px,145px);gap:9px}
 .quickBuilder .quickStyles button span{font-size:13px;font-weight:700}
@@ -3014,3 +3014,12 @@
  .studio[data-active-workspace="effects"] .hypnoNavSlot>.quickVideoNav{
    display:grid;width:100%;min-width:0;margin:0}
 }
+
+/* The actual input receives the trusted iPhone Photos/Files tap. Keep it
+   full-sized and hit-testable even in Safari/PWA; never display:none. */
+.nativePhotoControl{position:relative;cursor:pointer}
+.nativePhotoControl[aria-disabled="true"]{cursor:not-allowed;opacity:.75}
+.nativePhotoInput{position:absolute;inset:0;z-index:3;display:block;width:100%;height:100%;
+  opacity:0;cursor:pointer;touch-action:manipulation;font-size:16px}
+.nativePhotoInput:disabled{cursor:not-allowed}
+.nativePhotoControl:focus-within{outline:3px solid #d4ad5c;outline-offset:3px}
