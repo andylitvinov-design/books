@@ -159,6 +159,47 @@ function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY
    OPENCODE_ENABLE_PARALLEL:'0',
    ...(typeof freeApiKey==='string'&&freeApiKey.length>0?{OPENCODE_API_KEY:freeApiKey}:{})};
 }
+
+
+function verifyFreeModelMetadata(payload,model=MODEL){
+ const suffix=String(model).split('/').at(-1);
+ const rows=Array.isArray(payload)?payload:Array.isArray(payload?.data)?payload.data:null;
+ if(!rows)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+ const entry=rows.find(item=>item&&(
+   item.id===model||item.id==='opencode/'+suffix||
+   (item.providerID==='opencode'&&item.modelID===suffix)
+ ));
+ if(!entry||!Array.isArray(entry.variants)||entry.variants.length===0)
+  throw Error('FREE_AI_MODEL_NOT_IN_FREE_CATALOG');
+ const costs=[];
+ for(const variant of entry.variants){
+  if(!variant||!Array.isArray(variant.cost)||variant.cost.length===0)
+   throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+  costs.push(...variant.cost);
+ }
+ if(!costs.length)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+ for(const cost of costs){
+  if(!cost||typeof cost.input!=='number'||typeof cost.output!=='number'||
+    !cost.cache||typeof cost.cache.read!=='number'||typeof cost.cache.write!=='number')
+   throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+  if(cost.input!==0||cost.output!==0||cost.cache.read!==0||cost.cache.write!==0)
+   throw Error('FREE_AI_MODEL_PRICE_NOT_ZERO');
+ }
+ return {model,costRows:costs.length,zeroCost:true};
+}
+
+
+async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutMs=10000}={}){
+ if(typeof fetchImpl!=='function')throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
+ let response;
+ try{response=await fetchImpl('https://opencode.ai/inference/v1/models',{
+   method:'GET',headers:{Accept:'application/json'},signal:AbortSignal.timeout(timeoutMs)});}
+ catch{throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');}
+ if(!response?.ok)throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
+ let payload;try{payload=await response.json();}catch{throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');}
+ return verifyFreeModelMetadata(payload,model);
+}
+
 function propose(){
  const scope=sourceScope(),root=process.cwd();
  const sources=checkScopeFiles(root,scope);
@@ -172,6 +213,8 @@ function propose(){
  const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
  if(!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
  try{
+   const priceCheck=await verifyFreeModelPrice();
+   console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
    const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
    if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
    validateAgentAcl(acl.stdout);
@@ -212,4 +255,4 @@ if(require.main===module){
  }
 }
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment};
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};
