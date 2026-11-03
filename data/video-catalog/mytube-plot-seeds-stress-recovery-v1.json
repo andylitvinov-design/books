@@ -1,0 +1,1902 @@
+{
+  "schemaVersion": "mytube-topic-plots-v1",
+  "categoryId": "stress-recovery",
+  "status": "editorial_storyboards_unbound",
+  "createdAt": "2026-11-03",
+  "plotsPerTopic": 4,
+  "locales": [
+    "ru",
+    "en",
+    "es"
+  ],
+  "topics": {
+    "stress-relief": [
+      {
+        "id": "stress-relief-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Пятиминутная пауза",
+          "en": "A five-minute pause",
+          "es": "Una pausa de cinco minutos"
+        },
+        "shots": {
+          "ru": [
+            "После сложного разговора сердце спешит",
+            "Человек садится в знакомое место",
+            "Замечает три предмета вокруг",
+            "Возвращается к делам постепенно"
+          ],
+          "en": [
+            "A difficult talk leaves someone tense",
+            "They sit in a familiar place",
+            "Three surrounding objects are noticed",
+            "The day resumes gradually"
+          ],
+          "es": [
+            "Una conversación deja tensión",
+            "Se sienta en lugar conocido",
+            "Se observan tres objetos",
+            "Se retoma el día despacio"
+          ]
+        }
+      },
+      {
+        "id": "stress-relief-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тихая бухта",
+          "en": "The sheltered bay",
+          "es": "Bahía protegida"
+        },
+        "shots": {
+          "ru": [
+            "Ветер вздымает волны у скал",
+            "За мысом открывается защищённая бухта",
+            "Лодка входит в спокойную воду",
+            "Путник решает немного постоять"
+          ],
+          "en": [
+            "Wind raises waves by the rocks",
+            "A sheltered bay opens beyond the headland",
+            "A boat reaches calmer water",
+            "The traveler pauses there"
+          ],
+          "es": [
+            "El viento levanta olas",
+            "Tras el cabo hay una bahía",
+            "La barca entra en aguas calmas",
+            "Se queda un momento"
+          ]
+        }
+      },
+      {
+        "id": "stress-relief-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Узел из верёвок",
+          "en": "The knot of ropes",
+          "es": "Nudo de cuerdas"
+        },
+        "shots": {
+          "ru": [
+            "На столе лежит тугой узел",
+            "Человек перестаёт тянуть сразу всё",
+            "Находит одну свободную петлю",
+            "Узел становится чуть мягче"
+          ],
+          "en": [
+            "A tight knot lies on a table",
+            "The urge to pull everything stops",
+            "One loose loop is found",
+            "The knot softens a little"
+          ],
+          "es": [
+            "Hay un nudo muy tenso",
+            "Se deja de tirar de todo",
+            "Se encuentra una lazada libre",
+            "El nudo se afloja un poco"
+          ]
+        }
+      },
+      {
+        "id": "stress-relief-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Проверка нагрузки",
+          "en": "Checking the load",
+          "es": "Revisar la carga"
+        },
+        "shots": {
+          "ru": [
+            "В расписании не осталось свободного места",
+            "Человек замечает уровень напряжения",
+            "Убирает одну необязательную задачу",
+            "Выбирает доступную помощь или отдых"
+          ],
+          "en": [
+            "A schedule has no free space",
+            "Stress is recognized",
+            "One optional task is removed",
+            "Available support or rest is chosen"
+          ],
+          "es": [
+            "La agenda está llena",
+            "Se nota el nivel de estrés",
+            "Se quita algo no esencial",
+            "Se busca apoyo o descanso"
+          ]
+        }
+      }
+    ],
+    "chronic-stress": [
+      {
+        "id": "chronic-stress-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Неделя без пустых полей",
+          "en": "A week with no empty space",
+          "es": "Semana sin huecos"
+        },
+        "shots": {
+          "ru": [
+            "В календаре все дни перегружены",
+            "Человек отмечает повторяющийся источник стресса",
+            "Защищает один короткий перерыв",
+            "Планирует разговор о нагрузке"
+          ],
+          "en": [
+            "Every calendar day is crowded",
+            "A repeating stressor is identified",
+            "One short break is protected",
+            "A workload conversation is planned"
+          ],
+          "es": [
+            "Todos los días están llenos",
+            "Se identifica presión recurrente",
+            "Se protege una pausa",
+            "Se planea hablar de la carga"
+          ]
+        }
+      },
+      {
+        "id": "chronic-stress-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Мельница на сильном ветру",
+          "en": "The mill in strong wind",
+          "es": "Molino bajo viento"
+        },
+        "shots": {
+          "ru": [
+            "Лопасти мельницы крутятся слишком быстро",
+            "Мельник замечает перегрузку механизма",
+            "Уменьшает нагрузку на одну часть",
+            "Система получает время на проверку"
+          ],
+          "en": [
+            "Wind spins the mill too fast",
+            "The miller notices strain on gears",
+            "One part receives less load",
+            "Time is allowed for inspection"
+          ],
+          "es": [
+            "El viento gira muy fuerte",
+            "Se nota desgaste del mecanismo",
+            "Se reduce carga en una parte",
+            "Se revisa con tiempo"
+          ]
+        }
+      },
+      {
+        "id": "chronic-stress-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Страж у ворот",
+          "en": "The gatekeeper off duty",
+          "es": "Guardián de la puerta"
+        },
+        "shots": {
+          "ru": [
+            "Страж всё время следит за дорогой",
+            "Смена давно закончилась",
+            "К нему приходит второй помощник",
+            "Первый страж уходит на отдых"
+          ],
+          "en": [
+            "A gatekeeper watches the road nonstop",
+            "The shift has long ended",
+            "Another helper arrives",
+            "The first gatekeeper rests"
+          ],
+          "es": [
+            "Vigila sin parar",
+            "Su turno terminó hace tiempo",
+            "Llega un relevo",
+            "El guardián descansa"
+          ]
+        }
+      },
+      {
+        "id": "chronic-stress-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Карта повторяющихся сигналов",
+          "en": "Mapping recurring signals",
+          "es": "Mapa de señales repetidas"
+        },
+        "shots": {
+          "ru": [
+            "Человек часто чувствует перенапряжение",
+            "Записывает когда оно появляется",
+            "Находит одну изменяемую нагрузку",
+            "При длительных симптомах обсуждает их со специалистом"
+          ],
+          "en": [
+            "Overload appears repeatedly",
+            "Its timing is noted",
+            "One modifiable demand is found",
+            "Persistent symptoms are discussed with a professional"
+          ],
+          "es": [
+            "Vuelve la sobrecarga",
+            "Se anota cuándo ocurre",
+            "Se identifica una demanda modificable",
+            "Síntomas persistentes se consultan"
+          ]
+        }
+      }
+    ],
+    "work-stress": [
+      {
+        "id": "work-stress-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Письма после работы",
+          "en": "Emails after work",
+          "es": "Mensajes fuera de horario"
+        },
+        "shots": {
+          "ru": [
+            "Рабочие уведомления приходят ночью",
+            "Человек замечает напряжение",
+            "Устанавливает согласованное время ответа",
+            "Вечером возвращается к личному пространству"
+          ],
+          "en": [
+            "Work notifications arrive at night",
+            "Tension is recognized",
+            "A reasonable response window is set",
+            "Evening becomes personal time"
+          ],
+          "es": [
+            "Llegan avisos laborales de noche",
+            "Se nota tensión",
+            "Se fija horario razonable",
+            "La noche vuelve a ser propia"
+          ]
+        }
+      },
+      {
+        "id": "work-stress-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Город на перекрёстке",
+          "en": "The crowded intersection",
+          "es": "Cruce congestionado"
+        },
+        "shots": {
+          "ru": [
+            "Светофоры требуют движения сразу всюду",
+            "Один перекрёсток перегружен",
+            "Движение регулируют по очереди",
+            "На дороге появляется место для паузы"
+          ],
+          "en": [
+            "Traffic lights demand motion everywhere",
+            "One crossing becomes overloaded",
+            "Movement is paced in turns",
+            "A stopping point becomes available"
+          ],
+          "es": [
+            "Todo exige avanzar a la vez",
+            "Un cruce se satura",
+            "Se organiza el paso por turnos",
+            "Aparece espacio para parar"
+          ]
+        }
+      },
+      {
+        "id": "work-stress-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Башня из задач",
+          "en": "The tower of tasks",
+          "es": "Torre de tareas"
+        },
+        "shots": {
+          "ru": [
+            "Башня задач растёт слишком высоко",
+            "Верхние блоки шатаются",
+            "Часть переносится на другую полку",
+            "Основание снова становится устойчивым"
+          ],
+          "en": [
+            "A task tower grows too high",
+            "The top blocks wobble",
+            "Some are moved to another shelf",
+            "The base becomes stable"
+          ],
+          "es": [
+            "La torre crece demasiado",
+            "Los bloques tiemblan",
+            "Se pasan algunos a otro estante",
+            "La base se estabiliza"
+          ]
+        }
+      },
+      {
+        "id": "work-stress-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Один приоритет",
+          "en": "One priority",
+          "es": "Una prioridad"
+        },
+        "shots": {
+          "ru": [
+            "Утро начинается с нескольких срочных просьб",
+            "Человек уточняет что действительно важно",
+            "Согласует порядок с коллегами",
+            "Заканчивает один небольшой этап"
+          ],
+          "en": [
+            "Morning brings several urgent requests",
+            "What truly matters is clarified",
+            "Order is agreed with colleagues",
+            "One small phase finishes"
+          ],
+          "es": [
+            "La mañana trae muchas urgencias",
+            "Se aclara lo importante",
+            "Se acuerda orden con colegas",
+            "Se completa una parte"
+          ]
+        }
+      }
+    ],
+    "burnout": [
+      {
+        "id": "burnout-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Выключенная мастерская",
+          "en": "The quiet workshop",
+          "es": "Taller apagado"
+        },
+        "shots": {
+          "ru": [
+            "Человек заходит в любимую мастерскую без радости",
+            "Замечает что прежние силы исчерпаны",
+            "Откладывает лишние обязательства",
+            "Обращается за поддержкой вместо новых рывков"
+          ],
+          "en": [
+            "Someone enters a once-loved workshop without joy",
+            "Depleted energy is acknowledged",
+            "Extra commitments are deferred",
+            "Support replaces another push"
+          ],
+          "es": [
+            "Un lugar antes querido ya no ilusiona",
+            "Se reconoce agotamiento",
+            "Se aplazan obligaciones",
+            "Se busca apoyo"
+          ]
+        }
+      },
+      {
+        "id": "burnout-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Поле после урожая",
+          "en": "A field after harvest",
+          "es": "Campo tras la cosecha"
+        },
+        "shots": {
+          "ru": [
+            "Земля долго отдавала урожай",
+            "Полю дают сезон отдыха",
+            "Садовник восстанавливает почву",
+            "Будущий посев не торопят"
+          ],
+          "en": [
+            "The earth has yielded crops for long",
+            "The field receives a resting season",
+            "A gardener restores the soil",
+            "New planting is not rushed"
+          ],
+          "es": [
+            "La tierra produjo mucho tiempo",
+            "El campo descansa",
+            "Se cuida el suelo",
+            "No se precipita nueva siembra"
+          ]
+        }
+      },
+      {
+        "id": "burnout-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Маяк без смены",
+          "en": "The lighthouse without a shift",
+          "es": "Faro sin relevo"
+        },
+        "shots": {
+          "ru": [
+            "Смотритель маяка работает ночами",
+            "Фонарь начинает тускнеть",
+            "Приходит сменщик и берёт часть забот",
+            "Маяк продолжает светить без истощения одного"
+          ],
+          "en": [
+            "A keeper works through endless nights",
+            "The lamp starts to dim",
+            "A relief keeper arrives",
+            "The beacon no longer rests on one person"
+          ],
+          "es": [
+            "La guardia dura noches enteras",
+            "La luz se debilita",
+            "Llega un relevo",
+            "El cuidado se comparte"
+          ]
+        }
+      },
+      {
+        "id": "burnout-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "План уменьшения нагрузки",
+          "en": "A plan to reduce demands",
+          "es": "Plan de bajar la carga"
+        },
+        "shots": {
+          "ru": [
+            "Обычные задачи стали невыносимыми",
+            "Человек признаёт серьёзность истощения",
+            "Выбирает кого попросить о помощи",
+            "Планирует профессиональную оценку если нужно"
+          ],
+          "en": [
+            "Ordinary tasks feel unmanageable",
+            "Exhaustion is taken seriously",
+            "A person to ask for help is chosen",
+            "Professional evaluation is considered"
+          ],
+          "es": [
+            "Lo cotidiano resulta insoportable",
+            "Se toma en serio el agotamiento",
+            "Se elige a quién pedir ayuda",
+            "Se valora apoyo profesional"
+          ]
+        }
+      }
+    ],
+    "constant-anxiety": [
+      {
+        "id": "constant-anxiety-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Окно проверки фактов",
+          "en": "The window of facts",
+          "es": "Ventana de los hechos"
+        },
+        "shots": {
+          "ru": [
+            "Тревожная мысль возвращается утром",
+            "Человек записывает что известно точно",
+            "Отделяет догадку от наблюдения",
+            "Выбирает одно доступное действие"
+          ],
+          "en": [
+            "An anxious thought returns in the morning",
+            "Known facts are written down",
+            "Guesses are separated from observation",
+            "One available action is chosen"
+          ],
+          "es": [
+            "Vuelve un pensamiento ansioso",
+            "Se anota lo que se sabe",
+            "Se separan suposiciones",
+            "Se elige una acción posible"
+          ]
+        }
+      },
+      {
+        "id": "constant-anxiety-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Облака над дорогой",
+          "en": "Clouds above the road",
+          "es": "Nubes sobre el camino"
+        },
+        "shots": {
+          "ru": [
+            "Тучи быстро сменяют друг друга",
+            "Дорога остаётся видимой под ними",
+            "Путник замечает твёрдую землю",
+            "Продолжает только если хочет"
+          ],
+          "en": [
+            "Clouds change quickly overhead",
+            "The road stays visible beneath them",
+            "The walker notices solid ground",
+            "Continuing is a choice"
+          ],
+          "es": [
+            "Las nubes cambian rápido",
+            "El camino sigue visible",
+            "Se nota suelo firme",
+            "Se avanza si se desea"
+          ]
+        }
+      },
+      {
+        "id": "constant-anxiety-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Радио тревоги",
+          "en": "The worry radio",
+          "es": "Radio de preocupaciones"
+        },
+        "shots": {
+          "ru": [
+            "Радиоприёмник передаёт много предупреждений",
+            "Человек замечает громкость сигнала",
+            "Уменьшает звук без спора с ним",
+            "Слышит звуки комнаты рядом"
+          ],
+          "en": [
+            "A radio broadcasts many warnings",
+            "Its volume becomes noticeable",
+            "The sound is turned down gently",
+            "Nearby room sounds emerge"
+          ],
+          "es": [
+            "La radio da muchas alarmas",
+            "Se nota el volumen",
+            "Se baja suavemente",
+            "Se oyen sonidos cercanos"
+          ]
+        }
+      },
+      {
+        "id": "constant-anxiety-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Опора здесь и сейчас",
+          "en": "An anchor in the present",
+          "es": "Apoyo en el presente"
+        },
+        "shots": {
+          "ru": [
+            "Тревога требует предсказать будущее",
+            "Человек называет сегодняшнюю дату",
+            "Оглядывает знакомое помещение",
+            "Выбирает короткий посильный шаг"
+          ],
+          "en": [
+            "Anxiety demands certainty about tomorrow",
+            "Today's date is named",
+            "A familiar room is noticed",
+            "One manageable next step is selected"
+          ],
+          "es": [
+            "La ansiedad exige saber el futuro",
+            "Se nombra la fecha de hoy",
+            "Se observa lugar conocido",
+            "Se elige un paso breve"
+          ]
+        }
+      }
+    ],
+    "panic-attacks": [
+      {
+        "id": "panic-attacks-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Сесть там где безопасно",
+          "en": "Finding a safe seat",
+          "es": "Sentarse donde sea seguro"
+        },
+        "shots": {
+          "ru": [
+            "Неожиданно появляется сильный страх",
+            "Человек выбирает безопасное место",
+            "Замечает опору под ногами и вокруг",
+            "При новых или необычных симптомах ищет медпомощь"
+          ],
+          "en": [
+            "Sudden intense fear appears",
+            "A safe place is chosen",
+            "Ground and surroundings are noticed",
+            "New or unusual symptoms need medical assessment"
+          ],
+          "es": [
+            "Aparece miedo intenso repentino",
+            "Se elige lugar seguro",
+            "Se nota suelo y entorno",
+            "Síntomas nuevos requieren revisión médica"
+          ]
+        }
+      },
+      {
+        "id": "panic-attacks-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Тихий берег",
+          "en": "The quiet shoreline",
+          "es": "Orilla segura"
+        },
+        "shots": {
+          "ru": [
+            "На берег быстро набегает волна",
+            "Человек остаётся вдали от воды",
+            "Наблюдает безопасную опору под собой",
+            "Ждёт не заставляя волну исчезнуть"
+          ],
+          "en": [
+            "A wave rushes toward shore",
+            "The observer stays on safe ground",
+            "The steady shore is noticed",
+            "The wave is not forced away"
+          ],
+          "es": [
+            "Llega una ola fuerte",
+            "Se permanece en terreno seguro",
+            "Se nota el suelo estable",
+            "No se fuerza a la ola"
+          ]
+        }
+      },
+      {
+        "id": "panic-attacks-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Сигнальный колокол",
+          "en": "The alarm bell",
+          "es": "Campana de alarma"
+        },
+        "shots": {
+          "ru": [
+            "Колокол неожиданно звучит очень громко",
+            "Сторож проверяет действительную обстановку",
+            "Рядом видит спокойную комнату",
+            "Обращается за помощью когда необходимо"
+          ],
+          "en": [
+            "A bell rings suddenly and loudly",
+            "A caretaker checks actual surroundings",
+            "A calm room becomes visible",
+            "Help is sought when needed"
+          ],
+          "es": [
+            "Suena una campana fuerte",
+            "Se revisa el entorno real",
+            "Se ve un cuarto tranquilo",
+            "Se pide ayuda si hace falta"
+          ]
+        }
+      },
+      {
+        "id": "panic-attacks-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "План на случай волны",
+          "en": "A plan for a fear wave",
+          "es": "Plan ante la oleada"
+        },
+        "shots": {
+          "ru": [
+            "Человек узнаёт знакомое ощущение страха",
+            "Напоминает себе о доступных контактах",
+            "Сохраняет обычное комфортное дыхание",
+            "Решает обращаться за помощью при сомнении"
+          ],
+          "en": [
+            "A familiar surge of fear is recognized",
+            "Available contacts are remembered",
+            "Breathing stays natural and comfortable",
+            "Help is sought when in doubt"
+          ],
+          "es": [
+            "Se reconoce una oleada de miedo",
+            "Se recuerdan contactos de apoyo",
+            "Se mantiene respiración natural",
+            "Ante duda se busca ayuda"
+          ]
+        }
+      }
+    ],
+    "social-anxiety": [
+      {
+        "id": "social-anxiety-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Дверь в небольшую группу",
+          "en": "The doorway to a small group",
+          "es": "Puerta a grupo pequeño"
+        },
+        "shots": {
+          "ru": [
+            "У входа в комнату неловко",
+            "Человек выбирает место у выхода",
+            "Здоровается с одним участником",
+            "Остаётся ровно столько сколько комфортно"
+          ],
+          "en": [
+            "Entering a room feels awkward",
+            "A seat near the exit is chosen",
+            "One person receives a greeting",
+            "Staying remains voluntary"
+          ],
+          "es": [
+            "Entrar produce nervios",
+            "Se elige sitio cerca de salida",
+            "Se saluda a una persona",
+            "Se queda lo que resulte cómodo"
+          ]
+        }
+      },
+      {
+        "id": "social-anxiety-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Скамейка в парке",
+          "en": "The park bench",
+          "es": "Banco del parque"
+        },
+        "shots": {
+          "ru": [
+            "В парке много незнакомцев",
+            "На краю стоит свободная скамейка",
+            "Путник садится и наблюдает",
+            "Решает нужно ли приближаться"
+          ],
+          "en": [
+            "A park is full of strangers",
+            "An empty bench stands at its edge",
+            "The traveler sits and observes",
+            "Approaching others remains optional"
+          ],
+          "es": [
+            "Hay desconocidos por todas partes",
+            "Se ve un banco libre",
+            "Se descansa y observa",
+            "Acercarse es opcional"
+          ]
+        }
+      },
+      {
+        "id": "social-anxiety-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Маска оценки",
+          "en": "The mask of judgment",
+          "es": "Máscara del juicio"
+        },
+        "shots": {
+          "ru": [
+            "На стене висят воображаемые взгляды",
+            "Человек замечает страх быть увиденным",
+            "Свет направляется на реальную задачу",
+            "Маски теряют часть значения"
+          ],
+          "en": [
+            "Imagined gazes cover a wall",
+            "Fear of being observed is noticed",
+            "Light turns toward the actual task",
+            "The masks lose some importance"
+          ],
+          "es": [
+            "Hay miradas imaginadas",
+            "Se reconoce miedo a ser visto",
+            "La atención va a la tarea",
+            "Las máscaras pesan menos"
+          ]
+        }
+      },
+      {
+        "id": "social-anxiety-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Одна фраза",
+          "en": "One simple sentence",
+          "es": "Una frase sencilla"
+        },
+        "shots": {
+          "ru": [
+            "Перед разговором трудно подобрать слова",
+            "Человек выбирает простое приветствие",
+            "Произносит его без идеальности",
+            "Замечает что может отойти"
+          ],
+          "en": [
+            "Words feel hard before a conversation",
+            "A short greeting is chosen",
+            "It is spoken imperfectly",
+            "Leaving remains allowed"
+          ],
+          "es": [
+            "Cuesta encontrar palabras",
+            "Se elige saludo breve",
+            "Se dice sin perfección",
+            "Se puede retirarse"
+          ]
+        }
+      }
+    ],
+    "specific-phobias": [
+      {
+        "id": "specific-phobias-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "План безопасного пути",
+          "en": "A safe route plan",
+          "es": "Plan de ruta segura"
+        },
+        "shots": {
+          "ru": [
+            "Определённая ситуация вызывает страх",
+            "Человек обозначает реальные условия безопасности",
+            "Выбирает обходной маршрут если нужен",
+            "Обсуждает поддержку без принуждения"
+          ],
+          "en": [
+            "A specific situation brings fear",
+            "Actual safety needs are identified",
+            "An alternative route is allowed",
+            "Support is discussed without pressure"
+          ],
+          "es": [
+            "Una situación concreta provoca miedo",
+            "Se identifican necesidades reales",
+            "Se permite otra ruta",
+            "Se habla de apoyo sin presión"
+          ]
+        }
+      },
+      {
+        "id": "specific-phobias-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Далёкий грозовой фронт",
+          "en": "A distant storm front",
+          "es": "Tormenta lejana"
+        },
+        "shots": {
+          "ru": [
+            "На горизонте видна гроза",
+            "Путник остаётся в надёжном укрытии",
+            "Издалека наблюдает изменение облаков",
+            "Сам выбирает когда завершить наблюдение"
+          ],
+          "en": [
+            "A storm is visible on the horizon",
+            "The traveler stays in safe shelter",
+            "Clouds are watched from a distance",
+            "Observation ends by choice"
+          ],
+          "es": [
+            "Se ve tormenta a lo lejos",
+            "Se queda en refugio seguro",
+            "Se observan nubes desde lejos",
+            "Se termina cuando se quiera"
+          ]
+        }
+      },
+      {
+        "id": "specific-phobias-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Светофор выбора",
+          "en": "The traffic light of choice",
+          "es": "Semáforo de elección"
+        },
+        "shots": {
+          "ru": [
+            "Перед человеком три сигнала",
+            "Красный означает остановиться",
+            "Жёлтый предлагает оценить условия",
+            "Зелёный возможен только при готовности"
+          ],
+          "en": [
+            "Three signals appear ahead",
+            "Red means stop",
+            "Amber invites checking conditions",
+            "Green is only possible when ready"
+          ],
+          "es": [
+            "Hay tres señales",
+            "Rojo significa parar",
+            "Amarillo invita a evaluar",
+            "Verde solo si se está listo"
+          ]
+        }
+      },
+      {
+        "id": "specific-phobias-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Без форсирования",
+          "en": "Without forcing exposure",
+          "es": "Sin forzar exposición"
+        },
+        "shots": {
+          "ru": [
+            "Человек замечает конкретный триггер",
+            "Называет что сейчас безопасно",
+            "Выбирает дистанцию и поддержку",
+            "Не проводит сам себе принудительную экспозицию"
+          ],
+          "en": [
+            "A specific trigger is noticed",
+            "Current safety is checked",
+            "Distance and support are chosen",
+            "No forced self-exposure takes place"
+          ],
+          "es": [
+            "Se nota un detonante",
+            "Se comprueba la seguridad",
+            "Se elige distancia y apoyo",
+            "No se fuerza la exposición"
+          ]
+        }
+      }
+    ],
+    "childhood-trauma": [
+      {
+        "id": "childhood-trauma-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Альбом по желанию",
+          "en": "The album by choice",
+          "es": "Álbum a elección"
+        },
+        "shots": {
+          "ru": [
+            "Человек видит старый закрытый альбом",
+            "Замечает что тема непростая",
+            "Решает сегодня его не открывать",
+            "Обращается к доступной поддержке"
+          ],
+          "en": [
+            "An old album rests closed",
+            "The topic feels difficult",
+            "Opening it is not required today",
+            "Available support is considered"
+          ],
+          "es": [
+            "Hay un álbum antiguo cerrado",
+            "El tema resulta difícil",
+            "No hay que abrirlo hoy",
+            "Se busca apoyo disponible"
+          ]
+        }
+      },
+      {
+        "id": "childhood-trauma-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Сад с безопасной оградой",
+          "en": "The sheltered garden",
+          "es": "Jardín protegido"
+        },
+        "shots": {
+          "ru": [
+            "Молодое дерево когда-то росло на ветру",
+            "Садовник строит защитную ограду",
+            "Корни получают спокойное место",
+            "Никто не требует быстрого цветения"
+          ],
+          "en": [
+            "A young tree has faced harsh wind",
+            "A gardener builds a protective fence",
+            "The roots gain calmer ground",
+            "No early blooming is demanded"
+          ],
+          "es": [
+            "Un árbol joven sufrió viento",
+            "Se instala una cerca segura",
+            "Las raíces tienen calma",
+            "No se exige florecer"
+          ]
+        }
+      },
+      {
+        "id": "childhood-trauma-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Дом с дверями выбора",
+          "en": "The house of choices",
+          "es": "Casa de puertas libres"
+        },
+        "shots": {
+          "ru": [
+            "В доме множество закрытых комнат",
+            "Герой выбирает оставаться в светлом холле",
+            "У него есть ключ и право не входить",
+            "Рядом обозначена поддержка"
+          ],
+          "en": [
+            "A house contains many closed rooms",
+            "The visitor stays in a bright hallway",
+            "A key is available but entry optional",
+            "Support waits nearby"
+          ],
+          "es": [
+            "La casa tiene puertas cerradas",
+            "Se permanece en sala iluminada",
+            "Se puede entrar o no",
+            "Hay apoyo cercano"
+          ]
+        }
+      },
+      {
+        "id": "childhood-trauma-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Границы практики",
+          "en": "Keeping practice safe",
+          "es": "Límites de la práctica"
+        },
+        "shots": {
+          "ru": [
+            "Всплывает болезненное воспоминание",
+            "Человек замечает опору вокруг",
+            "Не углубляется в воспоминание самостоятельно",
+            "При необходимости обсуждает это с терапевтом"
+          ],
+          "en": [
+            "A painful memory begins to surface",
+            "The present surroundings are noticed",
+            "The memory is not explored alone",
+            "A therapist can help when needed"
+          ],
+          "es": [
+            "Surge un recuerdo doloroso",
+            "Se nota el entorno actual",
+            "No se profundiza a solas",
+            "Puede ayudar una terapeuta"
+          ]
+        }
+      }
+    ],
+    "inner-child": [
+      {
+        "id": "inner-child-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Маленькая куртка",
+          "en": "The little jacket",
+          "es": "Chaqueta pequeña"
+        },
+        "shots": {
+          "ru": [
+            "В шкафу находится детская куртка",
+            "Человек вспоминает раннюю радость",
+            "Не требует от воспоминания подробностей",
+            "Выбирает добрый жест к себе сейчас"
+          ],
+          "en": [
+            "A child's jacket appears in a closet",
+            "An early joy is remembered",
+            "No details have to be forced",
+            "A kind act is chosen now"
+          ],
+          "es": [
+            "Se encuentra una chaqueta infantil",
+            "Viene un recuerdo alegre",
+            "No se fuerzan detalles",
+            "Se elige un gesto amable"
+          ]
+        }
+      },
+      {
+        "id": "inner-child-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Гнездо среди ветвей",
+          "en": "A nest in the branches",
+          "es": "Nido entre ramas"
+        },
+        "shots": {
+          "ru": [
+            "На ветке качается маленькое гнездо",
+            "Вокруг стихает ветер",
+            "Взрослая птица остаётся рядом",
+            "Птенец выбирает свой темп"
+          ],
+          "en": [
+            "A small nest sways in a branch",
+            "The wind calms around it",
+            "An adult bird stays nearby",
+            "The chick moves at its own pace"
+          ],
+          "es": [
+            "Un nido se mueve en árbol",
+            "El viento se calma",
+            "Un ave adulta permanece cerca",
+            "El polluelo va a su ritmo"
+          ]
+        }
+      },
+      {
+        "id": "inner-child-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Комната для игры",
+          "en": "A room for play",
+          "es": "Sala de juego"
+        },
+        "shots": {
+          "ru": [
+            "В комнате лежат забытые карандаши",
+            "Взрослый открывает дверь не торопясь",
+            "Выбирает один безопасный цвет",
+            "Оставляет рисунок без оценки"
+          ],
+          "en": [
+            "Forgotten crayons lie in a room",
+            "An adult opens the door slowly",
+            "One safe color is chosen",
+            "The drawing needs no judgment"
+          ],
+          "es": [
+            "Hay lápices olvidados",
+            "Una persona abre despacio",
+            "Elige un color agradable",
+            "No se juzga el dibujo"
+          ]
+        }
+      },
+      {
+        "id": "inner-child-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Взрослая поддержка",
+          "en": "Adult support",
+          "es": "Apoyo adulto"
+        },
+        "shots": {
+          "ru": [
+            "Появляется чувство маленькой беспомощности",
+            "Человек обращает внимание на сегодняшний возраст",
+            "Замечает доступные взрослые ресурсы",
+            "Делает одну заботливую вещь"
+          ],
+          "en": [
+            "A feeling of small helplessness appears",
+            "Today's age is remembered",
+            "Present adult resources come into view",
+            "One caring act follows"
+          ],
+          "es": [
+            "Surge sensación de pequeñez",
+            "Se recuerda la edad actual",
+            "Se ven recursos adultos",
+            "Se realiza un cuidado"
+          ]
+        }
+      }
+    ],
+    "rejection-wounds": [
+      {
+        "id": "rejection-wounds-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Ответа не было",
+          "en": "No reply came",
+          "es": "No llegó respuesta"
+        },
+        "shots": {
+          "ru": [
+            "Человек не получил приглашение",
+            "Замечает старое чувство отвержения",
+            "Разделяет этот случай и собственную ценность",
+            "Ищет подходящее место для контакта"
+          ],
+          "en": [
+            "An invitation did not arrive",
+            "An old feeling of rejection appears",
+            "This event is separated from self-worth",
+            "A suitable connection is considered"
+          ],
+          "es": [
+            "No hubo invitación",
+            "Surge herida de rechazo",
+            "Se separa hecho y valor propio",
+            "Se busca un contacto adecuado"
+          ]
+        }
+      },
+      {
+        "id": "rejection-wounds-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Дерево у забора",
+          "en": "The tree by the fence",
+          "es": "Árbol junto a valla"
+        },
+        "shots": {
+          "ru": [
+            "Один сад закрывает калитку",
+            "Рядом растёт другое дерево",
+            "Его ветви находят собственный свет",
+            "Путник видит больше одного сада"
+          ],
+          "en": [
+            "One garden closes its gate",
+            "Another tree grows nearby",
+            "Its branches find their own light",
+            "More than one garden becomes visible"
+          ],
+          "es": [
+            "Un jardín cierra su puerta",
+            "Otro árbol crece cerca",
+            "Sus ramas encuentran luz",
+            "Hay más jardines"
+          ]
+        }
+      },
+      {
+        "id": "rejection-wounds-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Незаполненное место",
+          "en": "The unfilled place",
+          "es": "Asiento vacío"
+        },
+        "shots": {
+          "ru": [
+            "На круглом столе одно место пустует",
+            "Герой замечает болезненные догадки",
+            "Стол не определяет его достоинство",
+            "Он выбирает другое приглашение или отдых"
+          ],
+          "en": [
+            "One seat at a round table is empty",
+            "Painful interpretations arise",
+            "The table does not define a person's worth",
+            "Another invitation or rest is possible"
+          ],
+          "es": [
+            "Hay una silla libre",
+            "Surgen interpretaciones dolorosas",
+            "La mesa no define el valor personal",
+            "Se elige otro encuentro o descanso"
+          ]
+        }
+      },
+      {
+        "id": "rejection-wounds-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Слово вместо догадки",
+          "en": "A question instead of a guess",
+          "es": "Preguntar sin suponer"
+        },
+        "shots": {
+          "ru": [
+            "Знакомый отвечает коротко",
+            "Человек замечает страх быть отвергнутым",
+            "Задаёт ясный нейтральный вопрос",
+            "Даёт другому право ответить позже"
+          ],
+          "en": [
+            "A friend replies briefly",
+            "Fear of rejection is noticed",
+            "A neutral clear question is asked",
+            "The other may answer later"
+          ],
+          "es": [
+            "Alguien responde muy breve",
+            "Surge miedo al rechazo",
+            "Se hace pregunta clara",
+            "La otra persona puede responder después"
+          ]
+        }
+      }
+    ],
+    "abandonment-wounds": [
+      {
+        "id": "abandonment-wounds-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Ожидание у двери",
+          "en": "Waiting at the door",
+          "es": "Esperar en la puerta"
+        },
+        "shots": {
+          "ru": [
+            "Друг опаздывает на встречу",
+            "Появляется чувство покинутости",
+            "Человек проверяет доступную информацию",
+            "Выбирает опору вместо катастрофы"
+          ],
+          "en": [
+            "A friend is late for a meeting",
+            "A feeling of abandonment appears",
+            "Available information is checked",
+            "Support replaces catastrophic guessing"
+          ],
+          "es": [
+            "Una amistad llega tarde",
+            "Surge miedo al abandono",
+            "Se revisa la información",
+            "Se busca apoyo"
+          ]
+        }
+      },
+      {
+        "id": "abandonment-wounds-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Маяк на расстоянии",
+          "en": "The distant lighthouse",
+          "es": "Faro a lo lejos"
+        },
+        "shots": {
+          "ru": [
+            "Лодка не видит берег в тумане",
+            "Маяк остаётся на месте",
+            "Его свет периодически появляется",
+            "Лодка ориентируется без спешки"
+          ],
+          "en": [
+            "A boat loses sight of shore in fog",
+            "A lighthouse stays in place",
+            "Its beam returns periodically",
+            "The boat orients slowly"
+          ],
+          "es": [
+            "La barca no ve costa",
+            "El faro sigue allí",
+            "Su luz vuelve por momentos",
+            "Se orienta despacio"
+          ]
+        }
+      },
+      {
+        "id": "abandonment-wounds-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Связь без цепи",
+          "en": "Connection without a chain",
+          "es": "Vínculo sin cadena"
+        },
+        "shots": {
+          "ru": [
+            "Между людьми тянется тонкая нить",
+            "Ветер меняет её натяжение",
+            "Нить остаётся гибкой",
+            "Каждый может стоять на своей земле"
+          ],
+          "en": [
+            "A thin thread links two people",
+            "Wind changes its tension",
+            "The thread stays flexible",
+            "Each stands on their own ground"
+          ],
+          "es": [
+            "Un hilo une a dos personas",
+            "El viento cambia tensión",
+            "El hilo sigue flexible",
+            "Cada una tiene su suelo"
+          ]
+        }
+      },
+      {
+        "id": "abandonment-wounds-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "План на время разлуки",
+          "en": "A plan during separation",
+          "es": "Plan durante distancia"
+        },
+        "shots": {
+          "ru": [
+            "Близкий человек уезжает ненадолго",
+            "Человек заранее обсуждает связь",
+            "Выбирает собственные занятия и контакты",
+            "Помнит что отсутствие не всегда разрыв"
+          ],
+          "en": [
+            "Someone close leaves for a short time",
+            "Contact expectations are discussed",
+            "Personal activities and friends are chosen",
+            "Absence need not mean a rupture"
+          ],
+          "es": [
+            "Alguien querido viaja",
+            "Se acuerda cómo comunicarse",
+            "Se eligen actividades propias",
+            "Ausencia no siempre es ruptura"
+          ]
+        }
+      }
+    ],
+    "depressed-mood": [
+      {
+        "id": "depressed-mood-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Обычное утро",
+          "en": "An ordinary low morning",
+          "es": "Mañana difícil"
+        },
+        "shots": {
+          "ru": [
+            "Человек просыпается с тяжёлым настроением",
+            "Не требует от себя бодрости",
+            "Готовит воду и открывает шторы",
+            "Решает сообщить близкому о состоянии"
+          ],
+          "en": [
+            "Someone wakes with a heavy mood",
+            "Cheerfulness is not demanded",
+            "Water and daylight are welcomed",
+            "A trusted person is told how it feels"
+          ],
+          "es": [
+            "Se despierta con ánimo pesado",
+            "No se exige alegría",
+            "Se bebe agua y entra luz",
+            "Se habla con alguien de confianza"
+          ]
+        }
+      },
+      {
+        "id": "depressed-mood-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Небо между облаками",
+          "en": "A gap in the clouds",
+          "es": "Un claro entre nubes"
+        },
+        "shots": {
+          "ru": [
+            "Плотные облака закрывают пейзаж",
+            "Между ними появляется небольшой просвет",
+            "Свет касается одного дерева",
+            "Путник просто замечает перемену"
+          ],
+          "en": [
+            "Thick clouds cover the landscape",
+            "A small opening appears between them",
+            "Light reaches one tree",
+            "The observer simply notices"
+          ],
+          "es": [
+            "Nubes densas tapan el paisaje",
+            "Se abre un pequeño hueco",
+            "La luz toca un árbol",
+            "Se observa sin obligación"
+          ]
+        }
+      },
+      {
+        "id": "depressed-mood-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Комната с одним огоньком",
+          "en": "The room with one light",
+          "es": "Habitación con una luz"
+        },
+        "shots": {
+          "ru": [
+            "Большая комната кажется тусклой",
+            "На столе загорается маленькая лампа",
+            "Не требуется осветить всё сразу",
+            "Свет остаётся рядом"
+          ],
+          "en": [
+            "A large room looks dim",
+            "A little desk lamp turns on",
+            "No one needs to brighten everything",
+            "The small light stays close"
+          ],
+          "es": [
+            "La habitación está apagada",
+            "Se enciende lámpara pequeña",
+            "No hace falta iluminar todo",
+            "La luz acompaña"
+          ]
+        }
+      },
+      {
+        "id": "depressed-mood-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Маленькая связь",
+          "en": "One small connection",
+          "es": "Pequeño vínculo"
+        },
+        "shots": {
+          "ru": [
+            "Настроение мешает привычным делам",
+            "Человек выбирает простую базовую заботу",
+            "Пишет короткое сообщение доверенному человеку",
+            "При стойких симптомах ищет профессиональную поддержку"
+          ],
+          "en": [
+            "Low mood hinders ordinary tasks",
+            "A basic care action is selected",
+            "A short message goes to someone trusted",
+            "Persistent symptoms warrant professional support"
+          ],
+          "es": [
+            "El ánimo dificulta lo cotidiano",
+            "Se elige cuidado básico",
+            "Se escribe a alguien de confianza",
+            "Si persiste se busca ayuda profesional"
+          ]
+        }
+      }
+    ],
+    "apathy": [
+      {
+        "id": "apathy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Пауза без требования",
+          "en": "A pause without pressure",
+          "es": "Pausa sin presión"
+        },
+        "shots": {
+          "ru": [
+            "Привычные занятия не вызывают отклика",
+            "Человек перестаёт себя ругать",
+            "Выбирает одно простое действие по необходимости",
+            "Наблюдает ощущения без ожиданий"
+          ],
+          "en": [
+            "Familiar activities bring little response",
+            "Self-criticism is set aside",
+            "One necessary simple action is chosen",
+            "Experience is observed without expectations"
+          ],
+          "es": [
+            "Lo habitual ya no motiva",
+            "Se deja la autocrítica",
+            "Se hace una acción necesaria",
+            "Se observa sin exigir"
+          ]
+        }
+      },
+      {
+        "id": "apathy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Зимний сад",
+          "en": "The winter garden",
+          "es": "Jardín de invierno"
+        },
+        "shots": {
+          "ru": [
+            "Зимний сад кажется неподвижным",
+            "Под землёй сохраняются корни",
+            "Садовник поливает только нужное",
+            "Весну не подгоняют"
+          ],
+          "en": [
+            "A winter garden looks still",
+            "Roots remain alive beneath the earth",
+            "Only essential care is given",
+            "Spring is not hurried"
+          ],
+          "es": [
+            "Parece que nada se mueve",
+            "Las raíces siguen abajo",
+            "Se atiende lo esencial",
+            "No se fuerza la primavera"
+          ]
+        }
+      },
+      {
+        "id": "apathy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Музыкальная пауза",
+          "en": "The pause in the music",
+          "es": "Pausa musical"
+        },
+        "shots": {
+          "ru": [
+            "Оркестр умолк посреди пьесы",
+            "Ноты лежат перед музыкантами",
+            "Они не обязаны играть сразу",
+            "Одна тихая нота возможна позже"
+          ],
+          "en": [
+            "An orchestra falls silent mid-piece",
+            "Sheet music stays in place",
+            "Playing again is not demanded",
+            "A quiet note may come later"
+          ],
+          "es": [
+            "La orquesta queda en silencio",
+            "Las partituras esperan",
+            "No hay que tocar ya",
+            "Quizá llegue una nota"
+          ]
+        }
+      },
+      {
+        "id": "apathy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Минимальный день",
+          "en": "A minimum viable day",
+          "es": "Día mínimo"
+        },
+        "shots": {
+          "ru": [
+            "Человек не чувствует мотивации",
+            "Составляет список базовых потребностей",
+            "Выбирает одну доступную заботу",
+            "Длительное отсутствие интереса обсуждает с врачом"
+          ],
+          "en": [
+            "Motivation feels absent",
+            "Basic needs are listed",
+            "One manageable care step is taken",
+            "Lasting loss of interest is discussed with a clinician"
+          ],
+          "es": [
+            "No hay motivación",
+            "Se anotan necesidades básicas",
+            "Se hace un cuidado posible",
+            "La apatía persistente se consulta"
+          ]
+        }
+      }
+    ],
+    "loss-joy": [
+      {
+        "id": "loss-joy-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Знакомая музыка",
+          "en": "A familiar song",
+          "es": "Canción conocida"
+        },
+        "shots": {
+          "ru": [
+            "Любимая песня не вызывает прежних чувств",
+            "Человек слушает без проверки радости",
+            "Замечает один звук или воспоминание",
+            "Выбирает отдых вместо принуждения"
+          ],
+          "en": [
+            "A favorite song no longer stirs joy",
+            "It plays without a demand to feel",
+            "One sound or memory is noticed",
+            "Rest is chosen over pressure"
+          ],
+          "es": [
+            "La música favorita no emociona",
+            "Se escucha sin exigirse alegría",
+            "Se nota un sonido o recuerdo",
+            "Se permite descansar"
+          ]
+        }
+      },
+      {
+        "id": "loss-joy-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Парк после дождя",
+          "en": "A park after rain",
+          "es": "Parque tras la lluvia"
+        },
+        "shots": {
+          "ru": [
+            "Парк кажется серым после ливня",
+            "На листе видна маленькая капля",
+            "В капле отражается небо",
+            "Наблюдатель не обязан улыбаться"
+          ],
+          "en": [
+            "A park looks gray after rainfall",
+            "A droplet rests on a leaf",
+            "The sky reflects inside it",
+            "No smile is required"
+          ],
+          "es": [
+            "El parque está gris",
+            "Hay una gota en hoja",
+            "Refleja el cielo",
+            "No hay obligación de sonreír"
+          ]
+        }
+      },
+      {
+        "id": "loss-joy-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Потускневшая палитра",
+          "en": "A faded palette",
+          "es": "Paleta apagada"
+        },
+        "shots": {
+          "ru": [
+            "Художник смотрит на бледные краски",
+            "Не заставляет полотно стать ярким",
+            "Добавляет один нейтральный оттенок",
+            "Оставляет картину незавершённой"
+          ],
+          "en": [
+            "A painter looks at muted colors",
+            "No bright masterpiece is demanded",
+            "One neutral tone is added",
+            "The painting may remain unfinished"
+          ],
+          "es": [
+            "Se miran colores suaves",
+            "No se exige brillo",
+            "Se añade un tono neutro",
+            "La obra puede quedar abierta"
+          ]
+        }
+      },
+      {
+        "id": "loss-joy-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Без охоты за радостью",
+          "en": "Not chasing joy",
+          "es": "Sin perseguir alegría"
+        },
+        "shots": {
+          "ru": [
+            "Приятные дела перестали радовать",
+            "Человек перестаёт оценивать каждый момент",
+            "Выбирает спокойное действие по силам",
+            "При продолжительной потере интереса обращается за помощью"
+          ],
+          "en": [
+            "Pleasant activities feel flat",
+            "Each moment stops being graded",
+            "A gentle available action is chosen",
+            "Prolonged loss of pleasure prompts support"
+          ],
+          "es": [
+            "Lo agradable se siente plano",
+            "Se deja de evaluar cada momento",
+            "Se elige actividad suave",
+            "Si persiste se busca ayuda"
+          ]
+        }
+      }
+    ],
+    "emotional-emptiness": [
+      {
+        "id": "emotional-emptiness-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Тихая комната",
+          "en": "The quiet room",
+          "es": "Habitación tranquila"
+        },
+        "shots": {
+          "ru": [
+            "Человек замечает внутреннюю пустоту",
+            "Оглядывается на предметы в комнате",
+            "Касается знакомой ткани если комфортно",
+            "Выбирает контакт с безопасным человеком"
+          ],
+          "en": [
+            "A sense of emptiness is noticed",
+            "The room's objects come into focus",
+            "A familiar fabric is touched if comfortable",
+            "Safe human contact is considered"
+          ],
+          "es": [
+            "Se nota vacío interior",
+            "Se miran objetos reales",
+            "Se toca una tela si resulta cómodo",
+            "Se considera contacto seguro"
+          ]
+        }
+      },
+      {
+        "id": "emotional-emptiness-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Пустое русло",
+          "en": "The dry riverbed",
+          "es": "Cauce seco"
+        },
+        "shots": {
+          "ru": [
+            "В сухом русле видны камни",
+            "У горизонта собираются облака",
+            "Первая капля касается почвы",
+            "Путник наблюдает без ожидания потока"
+          ],
+          "en": [
+            "Stones lie in a dry riverbed",
+            "Clouds gather on the horizon",
+            "A first drop reaches the soil",
+            "The traveler waits without demanding a river"
+          ],
+          "es": [
+            "Se ven piedras sin agua",
+            "Se juntan nubes",
+            "Cae una gota",
+            "No se exige río inmediato"
+          ]
+        }
+      },
+      {
+        "id": "emotional-emptiness-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Чаша без наполнения",
+          "en": "The unfilled bowl",
+          "es": "Cuenco vacío"
+        },
+        "shots": {
+          "ru": [
+            "На столе стоит пустая чаша",
+            "Человек замечает желание срочно заполнить",
+            "Ставит чашу на устойчивую поверхность",
+            "Позволяет ей пока оставаться пустой"
+          ],
+          "en": [
+            "An empty bowl sits on a table",
+            "The urge to fill it immediately arises",
+            "The bowl receives stable support",
+            "It may remain empty for now"
+          ],
+          "es": [
+            "Hay un cuenco sin nada",
+            "Surge impulso de llenarlo",
+            "Se apoya con firmeza",
+            "Puede seguir vacío"
+          ]
+        }
+      },
+      {
+        "id": "emotional-emptiness-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Контакт с настоящим",
+          "en": "Contacting the present",
+          "es": "Contacto con presente"
+        },
+        "shots": {
+          "ru": [
+            "Человек ощущает эмоциональную отстранённость",
+            "Называет день и место",
+            "Проверяет простые потребности тела",
+            "При сохраняющемся состоянии обсуждает поддержку"
+          ],
+          "en": [
+            "Emotional disconnection is noticed",
+            "The day and place are named",
+            "Basic physical needs are checked",
+            "Persistent disconnection is discussed with support"
+          ],
+          "es": [
+            "Se nota desconexión emocional",
+            "Se nombra día y lugar",
+            "Se revisan necesidades básicas",
+            "Si persiste se busca apoyo"
+          ]
+        }
+      }
+    ]
+  }
+}
