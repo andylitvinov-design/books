@@ -319,6 +319,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
+      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       // Unlike the unrelated edit, removing the phrase selected for actual
       // synthesis must invalidate the attached soundtrack before export.
       const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="1"]');
@@ -330,7 +331,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "pending edits do not revoke the prior approved transcript");
       await page.locator('[data-hypno-approve]').click();
-      await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
+      // The old WAV must never be available for silent reuse after its exact
+      // approved spoken line is removed. The editor may mark it stale and
+      // block export, or eagerly detach it; both preserve the safety gate.
+      await page.waitForFunction(() => {
+        const warning=document.querySelector("[data-video-narration-stale]");
+        const attached=document.querySelector("[data-video-live-audio]");
+        return Boolean(warning)||!attached;
+      },null,{timeout:15000});
+      assert.ok(await page.locator("[data-video-narration-stale]").isVisible() ||
+        await page.locator("[data-video-live-audio]").count()===0,
+        "removed spoken phrase must block stale WAV reuse or detach it");
       // The approved Video Studio puts narration in fifth Montage → Voice.
       // Do not click the removed global voice disclosure in the first workspace.
       await page.locator('[data-video-quick-control="editor"]').click();
