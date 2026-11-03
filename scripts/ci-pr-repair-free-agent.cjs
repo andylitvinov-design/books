@@ -8,7 +8,7 @@ const os=require('node:os');
 const cp=require('node:child_process');
 
 const MODEL='opencode/glm-5.3-flash-free';
-const MAX_FILES=8, MAX_SOURCE=18000, MAX_CONTEXT=58000, MAX_PATCH=35000;
+const MAX_FILES=8, MAX_SOURCE=18000, MAX_CONTEXT=58000, MAX_RAW_SOURCE=150000, MAX_RAW_CONTEXT=800000, MAX_PATCH=35000;
 const SOURCE=/^(?:app|components|lib|scripts)\/(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx)$/;
 const SENSITIVE=/(^|[\/_.-])(?:api|auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration|supabase|ci)(?=$|[\/_.-])/i;
 function safeSourcePath(file){
@@ -47,13 +47,54 @@ function checkScopeFiles(root,scope){
    }
    if(!fs.statSync(full).isFile())throw Error('FREE_AI_NOT_FILE');
    const content=fs.readFileSync(full,'utf8');
-   if(!content||Buffer.byteLength(content)>MAX_SOURCE||content.includes('\0'))
+   if(!content||Buffer.byteLength(content)>MAX_RAW_SOURCE||content.includes('\0'))
      throw Error('FREE_AI_SOURCE_TOO_LARGE');
    total+=Buffer.byteLength(content);
    return {file,content};
  }).filter(x=>{
-   if(total>MAX_CONTEXT)throw Error('FREE_AI_TOTAL_SOURCE_TOO_LARGE');
+   if(total>MAX_RAW_CONTEXT)throw Error('FREE_AI_TOTAL_SOURCE_TOO_LARGE');
    return true;
+ });
+}
+// Large allowlisted files may provide bounded diagnostic context, not a bypass.
+// Full exact-HEAD files, source-allowlist and unrelated checks remain authoritative
+// in the independent no-credential verifier and trusted publisher.
+function boundedPromptSources(sources,signals={}){
+ if(!Array.isArray(sources)||!sources.length||sources.length>MAX_FILES)
+   throw Error('FREE_AI_INVALID_CONTEXT_SCOPE');
+ const diagnosticText=JSON.stringify(signals);
+ const budget=Math.floor(MAX_CONTEXT/sources.length)-256;
+ if(budget<1024)throw Error('FREE_AI_CONTEXT_BUDGET_EXHAUSTED');
+ return sources.map(({file,content})=>{
+   if(typeof file!=='string'||typeof content!=='string')
+     throw Error('FREE_AI_INVALID_CONTEXT_SOURCE');
+   if(Buffer.byteLength(content)<=budget)return {file,content,partial:false};
+   const lines=content.split('\n'),preferred=[],seen=new Set();
+   const offer=i=>{if(i>=0&&i<lines.length&&!seen.has(i)){seen.add(i);preferred.push(i);}};
+   for(const token of [file+':',file+'(']){
+     let from=0,found=0,index;
+     while((index=diagnosticText.indexOf(token,from))!==-1&&found++<24){
+       const line=Number((/^\d{1,6}/.exec(diagnosticText.slice(index+token.length))||[])[0]);
+       if(Number.isSafeInteger(line)&&line>=1&&line<=lines.length)
+         for(let i=Math.max(0,line-17);i<Math.min(lines.length,line+16);i++)offer(i);
+       from=index+token.length;
+     }
+   }
+   for(let i=0;i<Math.min(35,lines.length);i++)offer(i);
+   for(let i=Math.max(0,lines.length-14);i<lines.length;i++)offer(i);
+   const header='[PARTIAL SOURCE EXCERPT; exact-HEAD line numbers; omitted lines are not evidence of absence]\n';
+   const room=budget-Buffer.byteLength(header);
+   let used=0;
+   const selected=[];
+   for(const index of preferred){
+     const row='L'+(index+1)+': '+lines[index]+'\n';
+     const size=Buffer.byteLength(row);
+     if(size>room||used+size>room)continue;
+     selected.push({index,row});used+=size;
+   }
+   if(!selected.length)throw Error('FREE_AI_CONTEXT_UNUSABLE');
+   selected.sort((a,b)=>a.index-b.index);
+   return {file,content:header+selected.map(x=>x.row).join(''),partial:true};
  });
 }
 function safeDiagnostic(value,limit=5500){
@@ -90,10 +131,11 @@ function promptFor(scope,sources,signals){
   'Patch only EXISTING allowlisted files. Never add, delete, rename or chmod files.',
   'No edits to tests, config, lockfiles, workflows, private/consent/payment code.',
   'When a safe fix is impossible, output exactly NO_SAFE_PATCH.',
+  'PARTIAL excerpts omit source lines; only propose a patch grounded in visible exact-HEAD context.',
   'Exact HEAD: '+scope.sha,
   'Allowlisted source files: '+JSON.stringify(scope.files),
   'Reproduced diagnostics: '+JSON.stringify(signals),
-  ...sources.map(s=>'FILE '+s.file+' (full contents):\n'+s.content),
+  ...sources.map(s=>'FILE '+s.file+(s.partial?' (PARTIAL exact-HEAD excerpt):\n':' (full contents):\n')+s.content),
  ].join('\n\n');
 }
 function validateAgentAcl(stdout){
@@ -219,7 +261,7 @@ async function propose(){
  const scope=sourceScope(),root=process.cwd();
  const sources=checkScopeFiles(root,scope);
  const signals=collectDiagnostics(root,scope);
- const prompt=promptFor(scope,sources,signals);
+ const prompt=promptFor(scope,boundedPromptSources(sources,signals),signals);
  if(prompt.length>92000)throw Error('FREE_AI_PROMPT_TOO_LARGE');
  const cli=process.env.HH_OPENCODE_BIN;
  if(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile())
@@ -272,4 +314,4 @@ async function main(){
 }
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};
+ validatePatch,promptFor,boundedPromptSources,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};
