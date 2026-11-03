@@ -770,6 +770,8 @@ test('direct Core failures run deterministic repair before remaining manual with
  assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
  assert.match(fix,/if: needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
  assert.match(fix,/Apply trusted TypeScript type-only import codemods/);
+ assert.match(fix,/Verify deterministic Core repair with TypeScript/);
+ assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
  assert.ok(wf.includes("core.setOutput('code_available','false')"));
  assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
