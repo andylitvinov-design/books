@@ -26,7 +26,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
 import type { AffirmationVoiceResult, AffirmationVoicePreferences } from "./mandala-affirmation-voice";
-import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
+import { affirmationNarrationText, isApprovedAffirmationNarration, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -1847,7 +1847,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
   const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
-    (attachedAudio.spokenText!==currentAffirmationSpeech || attachedAudio.mixSeconds!==duration ||
+    (!isApprovedAffirmationNarration(affirmationLines,attachedAudio.spokenText,affirmations.enabled) || attachedAudio.mixSeconds!==duration ||
       attachedAudio.voiceId!==voicePreferences.voiceId || attachedAudio.language!==voicePreferences.language ||
       attachedAudio.bed!==voicePreferences.bed ||
       (attachedAudio.speechSeconds||0)>duration-0.35));
