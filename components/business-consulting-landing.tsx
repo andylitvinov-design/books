@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, ChevronDown, ClipboardCheck, Compass, Lightbulb, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -154,6 +155,11 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
               </article>
             ))}
           </div>
+        </section>
+
+        <section className={styles.businessVideo} data-business-visual-screen="constellation-video"
+          aria-label={locale === "ru" ? "Видео о бизнес-расстановках" : locale === "es" ? "Vídeo sobre constelaciones empresariales" : "Business Constellations video"}>
+          <ServiceVideoShowcase topic="constellation-case" locale={locale} id="business-constellation-video" />
         </section>
 
         <section className={styles.problems} aria-labelledby="business-problems-title">
