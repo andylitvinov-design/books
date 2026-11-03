@@ -160,7 +160,11 @@ test("effects moves the single original tab rail above Wave on mobile only",()=>
   assert.match(css,/\.hypnoNavSlot\{display:none\}/);
 });
 
-test("Hypno Effects audio helper builds bounded local stereo WAV layers without provider calls",()=>{
+test("Hypno Effects audio helper rejects stale/unapproved speech and builds bounded local stereo WAV",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/needsSpeech&&\(!hypnoSpeechSource\|\|phrasePending\|\|hypnoSpeechText!==currentAffirmationSpeech\|\|hypnoSpeechDuration!==duration\)/);
+  assert.match(studio,/setHypnoSpeechText\(clip\.spokenText\)/);
+  assert.match(studio,/setHypnoSpeechDuration\(clip\.mixSeconds\)/);
   const helper=readFileSync(new URL("../lib/mandala/hypno-audio-effects.ts",import.meta.url),"utf8");
   assert.match(helper,/export async function createHypnoAudioEffectFile/);
   assert.match(helper,/new OfflineContext\\(2,/);
