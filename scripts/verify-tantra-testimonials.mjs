@@ -247,7 +247,13 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
       const retryAt = Math.min(stalled.duration - 1, stalled.time + 0.4);
       if (retryAt <= stalled.time + 0.2) throw firstStall;
       observation.stage = 'recover-one-webkit-native-stall';
-      await video.evaluate((el, at) => { el.pause(); el.currentTime = at; }, retryAt);
+      // Safari may leave an outstanding play() promise attached to the
+      // paused decoder. Pausing it a second time before a seek can deadlock
+      // WebKit's remote MP4 pipeline in the seeking state indefinitely.
+      // Use ONE real bounded seek while playback remains requested. We still
+      // require seek completion, verified media readiness, advancing time and
+      // newly decoded frames; a frozen clock or stale poster cannot pass.
+      await video.evaluate((el, at) => { el.currentTime = at; }, retryAt);
       // In Safari a paused seek may never replenish HAVE_CURRENT_DATA until
       // playback is requested. Request genuine playback before waiting for
       // decoded data; source, time and fresh frames remain strict below.
