@@ -75,3 +75,24 @@ test('fresh verified monitor report updates only the public KPI issue',async()=>
   assert.equal(written.issue_number,3128);
   assert.equal(parseExisting(written.body).counts.production_prs,160);
 });
+
+
+test('public monitor reports denied manual CI wake rather than zero blockers',()=>{
+ const s=buildMonitorSnapshot(report({actionable:1,candidates:1,inspected:1,
+  blocked:{CI_WAKE_MANUAL_HOLD_UNVERIFIED:1},
+  blockerExamples:{CI_WAKE_MANUAL_HOLD_UNVERIFIED:[
+   {pr_number:1805,head_sha:'02bc193643df'}]}}),context);
+ assert.equal(s.counts.total_blockers,1);
+ assert.equal(s.queue_states.ci_wake_manual_hold_unverified,1);
+ assert.equal(s.delivery_status,'HANDOFF_BLOCKED');
+ assert.equal(s.counts.worker_dispatches,0);
+ assert.equal(s.blocked_examples.CI_WAKE_MANUAL_HOLD_UNVERIFIED[0].pr_number,1805);
+ assert.deepEqual(parseExisting(renderSnapshot(s)),s);
+});
+test('recovered stale CI hold stays separate from Worker started or delivered',()=>{
+ const s=buildMonitorSnapshot(report({actionable:1,candidates:1,inspected:1,
+  ciHoldRecovered:1,blocked:{},runnerStartedConfirmed:0,dispatchAccepted:0}),context);
+ assert.equal(s.queue_states.ci_hold_recovered,1);
+ assert.equal(s.counts.worker_dispatches,0);
+ assert.equal(s.counts.total_blockers,0);
+});

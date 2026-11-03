@@ -54,6 +54,8 @@ function buildMonitorSnapshot(report,context){
     parent_blocked:validCount(blocked.STACKED_PARENT||0,'parent_blocked'),
     source_proof_missing:validCount(blocked.SOURCE_PROOF_MISSING||0,'source_proof_missing'),
     source_proof_unverified:validCount(blocked.SOURCE_PROOF_UNVERIFIED||0,'source_proof_unverified'),
+    ci_wake_manual_hold_unverified:validCount(blocked.CI_WAKE_MANUAL_HOLD_UNVERIFIED||0,'ci_wake_manual_hold_unverified'),
+    ci_hold_recovered:validCount(report.ciHoldRecovered||0,'ci_hold_recovered'),
     conflict_unverified:validCount(blocked.CONFLICT_NOT_VERIFIED||0,'conflict_unverified'),
     already_handled:validCount(blocked.ALREADY_HANDLED||0,'already_handled'),
     manual_conflict_handoffs:validCount(report.manualConflictHandoffs||0,'manual_conflict_handoffs')
@@ -69,6 +71,8 @@ function buildMonitorSnapshot(report,context){
   }
   const blockedTotal=Object.values(blocked).reduce((sum,n)=>sum+n,0);
   if(!Number.isSafeInteger(blockedTotal))throw Error('INVALID_BLOCKED_TOTAL');
+  // Public UI must never render zero blockers when a sampled handoff was denied.
+  counts.total_blockers=validCount(blockedTotal,'total_blockers');
   const deliveryStatus=counts.dispatch_requests_accepted>0
     ? 'DISPATCH_ACCEPTED_RUNNER_NOT_YET_PROVEN'
     : counts.candidates===0?'NO_AUTOMATION_ELIGIBLE_TASKS'

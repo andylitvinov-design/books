@@ -229,3 +229,95 @@ test('previous undelivered signed receipt retries only label cleanup',async()=>{
  assert.equal(f.calls.comment.length,0);
  assert.equal(f.calls.history.length,0);
 });
+
+
+const {recoverVerifiedCiManualHold}=require('../scripts/ci-pr-ci-wake-reconcile.cjs');
+test('a signed old-head manual CI hold retires ONLY after a real current-HEAD Core runner',async()=>{
+ const old='b'.repeat(40);
+ const held={...pr,labels:[{name:'hh:ci-needed'},{name:'hh:ci-wake-unverified'}]};
+ const stateTask=taskFor(held,{tier:'P3'});
+ const oldReceipt={...signed('CI_WAKE_UNDELIVERED'),
+  body:commentBody({...stateTask,head_sha:old,state:'CI_WAKE_UNDELIVERED',
+   created_at:new Date(NOW-90*60000).toISOString()})};
+ const deleted=[],calls={checks:0,jobs:0,runs:0};
+ const check={id:777,name:'core-lint-types-build',app:{id:15368},head_sha:SHA,
+  status:'completed',conclusion:'success',started_at:new Date(NOW-5*60000).toISOString(),
+  pull_requests:[{number:pr.number,head:{sha:SHA}}]};
+ const job={id:777,run_id:999,name:'core-lint-types-build',status:'completed',
+  conclusion:'success',started_at:check.started_at,runner_name:'GitHub Actions 14'};
+ const workflow={id:999,name:'HH PR core release gate',status:'completed',
+  event:'pull_request',head_sha:SHA,head_branch:pr.head.ref,
+  repository:{full_name:REPO},head_repository:{full_name:REPO},
+  pull_requests:[{number:pr.number,head:{sha:SHA},base:{ref:pr.base.ref}}]};
+ const github={rest:{
+  checks:{listForRef:async a=>{calls.checks++;assert.equal(a.ref,SHA);
+   return {data:{total_count:1,check_runs:[check]}};}},
+  actions:{
+   getJobForWorkflowRun:async a=>{calls.jobs++;assert.equal(a.job_id,777);
+    return {data:job};},
+   getWorkflowRun:async a=>{calls.runs++;assert.equal(a.run_id,999);
+    return {data:workflow};}},
+  pulls:{get:async()=>({data:held})},
+  issues:{removeLabel:async a=>{deleted.push(a.name);return {data:{}};}}
+ }};
+ const args={task:stateTask,comments:[oldReceipt],now:NOW,dryRun:false,github,
+  owner:'andylitvinov-design',repo:'books',limited:async(_,fn)=>fn()};
+ const good=await recoverVerifiedCiManualHold(args);
+ assert.equal(good.state,'CI_HOLD_RECOVERED_VERIFIED_CORE');
+ assert.equal(good.cleared,true);
+ assert.equal(good.coreRunId,999);
+ assert.deepEqual(deleted,['hh:ci-needed','hh:ci-wake-unverified']);
+ assert.deepEqual(calls,{checks:1,jobs:1,runs:1});
+ const dry=await recoverVerifiedCiManualHold({...args,dryRun:true});
+ assert.equal(dry.state,'CI_HOLD_RECOVERABLE_DRY_RUN');
+ assert.equal(deleted.length,2,'dry-run must not mutate any label');
+ // A check reported by another PR/HEAD or a failed Core is never release evidence.
+ for(const bad of [
+  {...check,head_sha:old},
+  {...check,conclusion:'failure'},
+  {...check,pull_requests:[{number:999,head:{sha:SHA}}]},
+  {...check,app:{id:123}}
+ ]){
+  github.rest.checks.listForRef=async()=>({data:{total_count:1,check_runs:[bad]}});
+  const denied=await recoverVerifiedCiManualHold(args);
+  assert.equal(denied.cleared,false);
+  assert.equal(deleted.length,2);
+ }
+ // An unsuccessful/unknown runner and mismatched workflow provenance also fail shut.
+ github.rest.checks.listForRef=async()=>({data:{total_count:1,check_runs:[check]}});
+ github.rest.actions.getJobForWorkflowRun=async()=>({data:{...job,runner_name:null}});
+ assert.equal((await recoverVerifiedCiManualHold(args)).cleared,false);
+ github.rest.actions.getJobForWorkflowRun=async()=>({data:job});
+ github.rest.actions.getWorkflowRun=async()=>({data:{...workflow,head_sha:old}});
+ assert.equal((await recoverVerifiedCiManualHold(args)).cleared,false);
+ assert.equal(deleted.length,2);
+});
+test('current-HEAD hold cannot be cleared by Core evidence from before signed failure',async()=>{
+ const held={...pr,labels:[{name:'hh:ci-needed'},{name:'hh:ci-wake-unverified'}]};
+ const stateTask=taskFor(held,{tier:'P3'});
+ const sameHeadReceipt=signed('CI_WAKE_UNDELIVERED',new Date(NOW-1*60000).toISOString());
+ let deletes=0;
+ const check={id:777,name:'core-lint-types-build',head_sha:SHA,app:{id:15368},
+  status:'completed',conclusion:'success',started_at:new Date(NOW-20*60000).toISOString(),
+  pull_requests:[{number:pr.number,head:{sha:SHA}}]};
+ const github={rest:{
+  checks:{listForRef:async()=>({data:{total_count:1,check_runs:[check]}})},
+  actions:{
+   getJobForWorkflowRun:async()=>({data:{id:777,run_id:999,
+    name:'core-lint-types-build',status:'completed',conclusion:'success',
+    runner_name:'GitHub Actions 9',started_at:check.started_at}}),
+   getWorkflowRun:async()=>({data:{id:999,name:'HH PR core release gate',
+    event:'pull_request',status:'completed',head_sha:SHA,head_branch:pr.head.ref,
+    repository:{full_name:REPO},head_repository:{full_name:REPO},
+    pull_requests:[{number:pr.number,head:{sha:SHA},base:{ref:pr.base.ref}}]}})},
+  pulls:{get:async()=>({data:held})},
+  issues:{removeLabel:async()=>{deletes++;}}
+ }};
+ const outcome=await recoverVerifiedCiManualHold({
+  task:stateTask,comments:[sameHeadReceipt],now:NOW,dryRun:false,
+  github,owner:'andylitvinov-design',repo:'books',limited:async(_,fn)=>fn()
+ });
+ assert.equal(outcome.cleared,false);
+ assert.equal(outcome.reason,'SAME_HEAD_HOLD_NOT_SUPERSEDED_BY_CORE');
+ assert.equal(deletes,0);
+});

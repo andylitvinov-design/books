@@ -1381,3 +1381,44 @@ test('forged source-free conflict marker cannot suppress signed manual handoff',
  assert.equal(f.calls.reserved.length,1);
  assert.equal(f.calls.dispatched.length,0);
 });
+
+
+test('Watchdog removes a stale signed CI hold after real current-HEAD Core proof, without redispatch',async()=>{
+ const item=pr(9007,'ci',{labels:[{name:'hh:ci-needed'},
+  {name:'hh:ci-wake-unverified'}]});
+ const t=taskFor(item,{tier:'P4'});
+ const oldReceipt={id:78,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody({...t,head_sha:'b'.repeat(40),state:'CI_WAKE_UNDELIVERED',
+   created_at:new Date(NOW-60*60000).toISOString()})};
+ const f=fixture([item],{comments:{9007:[oldReceipt]}});
+ const started_at=new Date(NOW-60000).toISOString();
+ f.github.rest.checks={listForRef:async({ref})=>{
+  assert.equal(ref,SHA);
+  return {data:{total_count:1,check_runs:[{
+   id:777,name:'core-lint-types-build',app:{id:15368},
+   head_sha:SHA,status:'completed',conclusion:'success',started_at,
+   pull_requests:[{number:9007,head:{sha:SHA}}]
+  }]}};
+ }};
+ f.github.rest.actions.getJobForWorkflowRun=async()=>({data:{
+  id:777,run_id:999,name:'core-lint-types-build',status:'completed',
+  conclusion:'success',runner_name:'GitHub Actions 42',started_at
+ }});
+ f.github.rest.actions.getWorkflowRun=async()=>({data:{
+  id:999,name:'HH PR core release gate',status:'completed',
+  event:'pull_request',repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  head_sha:SHA,head_branch:item.head.ref,
+  pull_requests:[{number:9007,head:{sha:SHA},base:{ref:item.base.ref}}]
+ }});
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.ciHoldRecovered,1);
+ assert.equal(result.reason,'CI_HOLD_RECOVERED_VERIFIED_CORE');
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.deepEqual(f.calls.removed.map(x=>x.name),
+  ['hh:ci-needed','hh:ci-wake-unverified']);
+});
