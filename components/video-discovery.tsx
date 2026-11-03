@@ -154,6 +154,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       :myTubeCategory!=="all"
         ?(MYTUBE_CATEGORY_LEGACY_TAGS[myTubeCategory as keyof typeof MYTUBE_CATEGORY_LEGACY_TAGS]||[]):[];
   const selectedTopic=myTubeTopics.find(item=>item.id===myTubeTopic);
+  const myTubeScopeTopicIds=new Set(myTubeScope.map(item=>item.id));
+  const myTubeScopeHasSpecificTags=videos.some(item=>
+    (item.topicTags||[]).some(tag=>myTubeScopeTopicIds.has(tag)));
   const sources=useMemo(()=>[...new Set(videos
     .map(item=>item.sourceLabel||item.author||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b,locale)),
     [videos,locale]);
@@ -168,8 +171,10 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       if(needle && !searchable.includes(needle))return false;
       if(variant==="mytube"&&myTubeScope.length){
         const tags=Array.isArray(item.topicTags)?item.topicTags:[];
-        const matches=myTubeScope.some(topic=>topic.searchTerms.some(term=>searchable.includes(term.toLocaleLowerCase(locale)))||searchable.includes(topic.id.toLocaleLowerCase(locale)))||
-          myTubeLegacyTags.some(tag=>tags.includes(tag));
+        const directTopicTag=tags.some(tag=>myTubeScopeTopicIds.has(tag));
+        const textMatch=myTubeScope.some(topic=>topic.searchTerms.some(term=>searchable.includes(term.toLocaleLowerCase(locale))));
+        const legacyMatch=!myTubeScopeHasSpecificTags&&myTubeLegacyTags.some(tag=>tags.includes(tag));
+        const matches=directTopicTag||textMatch||legacyMatch;
         if(!matches)return false;
       }
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
@@ -192,7 +197,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale,variant,myTubeScope,myTubeLegacyTags]);
+  },[videos,search,source,period,durationRange,locale,variant,myTubeScope,myTubeLegacyTags,myTubeScopeTopicIds,myTubeScopeHasSpecificTags]);
   const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
     goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
   }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
