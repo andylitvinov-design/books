@@ -7,6 +7,7 @@ import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
 import { DaoHexagramLibrarySection } from "@/components/dao-hexagram-library-section";
 import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
+import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import { greekVideoSeries } from "@/data/academy/greek-video-series";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
@@ -200,17 +201,19 @@ const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "
 // Source-backed discovery indexes reuse the verified Academy manifests, never private videos.
 // Original Russian teaching records are shown only on the Russian page.
 const discoveryTags: Record<string,string[]>={
-  "tantra-reiki":["relationships","energy","practices"],
-  "reiki-yggdrasil":["energy","meaning","practices"],
-  "kundalini-reiki":["energy","practices"],
-  "videos/greek-mysteries-dionysus":["relationships","meaning","practices"],
-  "videos/greek-mysteries-demeter":["relationships","meaning","practices"],
-  "videos/egypt-osiris":["meaning","practices"],
-  "videos/maya-archetypes":["meaning","practices"],
-  "videos/planetary-power":["energy","practices"],
-  "videos/strength-protection":["stress","energy","practices"],
-  "videos/energy-pump-ups":["energy","practices"],
-  "videos/sun-meditations":["meaning","energy","practices"],
+  // Keep the legacy intent tags used by Library's existing filters, and add
+  // primary MyTube topic IDs for the new four-direction catalog.
+  "tantra-reiki":["relationships","energy","practices","emotional-intimacy","life-energy"],
+  "reiki-yggdrasil":["energy","meaning","practices","vitality","body-awareness"],
+  "kundalini-reiki":["energy","practices","vitality","boost-energy"],
+  "videos/greek-mysteries-dionysus":["relationships","meaning","practices","emotional-intimacy","family-relationships"],
+  "videos/greek-mysteries-demeter":["relationships","meaning","practices","family-relationships","self-acceptance"],
+  "videos/egypt-osiris":["meaning","practices","life-purpose","finding-self"],
+  "videos/maya-archetypes":["meaning","practices","life-purpose","finding-self"],
+  "videos/planetary-power":["energy","practices","life-purpose","vitality"],
+  "videos/strength-protection":["stress","energy","practices","self-confidence","stress-relief"],
+  "videos/energy-pump-ups":["energy","practices","low-energy","boost-energy"],
+  "videos/sun-meditations":["meaning","energy","practices","life-purpose","vitality"],
 };
 function approvedAcademyDiscoveryVideos(locale:PublicLocale):LibraryFeedItem[]{
   const english:LibraryFeedItem[]=englishGuidedMeditations.flatMap(video=>{
@@ -298,17 +301,25 @@ export function buildLibraryFeedItems(
     }];
   });
   const topicPictures: Record<string,string> = {
-    stress: '/images/holistic-house/hero-olive-incense.webp',
-    relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-    business: '/images/holistic-house/course-focus-mountain-boy.webp',
-    energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
-    effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+    "goals-money": '/images/holistic-house/course-focus-mountain-boy.webp',
+    "love-relationships": '/images/holistic-house/video-posters/constellations-en-v1.webp',
+    "energy-confidence": '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+    "stress-anxiety": '/images/holistic-house/hero-olive-incense.webp',
   };
-  const growthFeed: LibraryFeedItem[] = ['stress','relationships','business','energy','effectiveness'].flatMap(theme => {
-    const guide = growthGuideFor(theme,locale);
+  const categoryRoute: Record<string,string> = {
+    "goals-money":"business",
+    "love-relationships":"love",
+    "energy-confidence":"energy",
+    "stress-anxiety":"stress",
+  };
+  const growthFeed: LibraryFeedItem[] = listMyTubeCategories(locale).flatMap(category => {
+    const route=categoryRoute[category.id];
+    const guideKey=route==="love"?"relationships":route;
+    const guide = growthGuideFor(guideKey,locale);
     return guide ? [{
-      id:'public-growth-'+theme,kind:'guide' as const,title:guide.title,
-      description:guide.lead,image:topicPictures[theme],href:'/'+locale+'/explore/'+theme,
+      id:'public-growth-'+category.id,kind:'guide' as const,
+      title:category.label,description:guide.lead,image:topicPictures[category.id],
+      href:'/'+locale+'/explore/'+route,
     }] : [];
   });
   const guideFeed: LibraryFeedItem[] = guides.map(guide => ({
