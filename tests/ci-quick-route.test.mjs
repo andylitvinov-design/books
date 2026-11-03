@@ -76,6 +76,29 @@ test('public JSX is only a candidate until BASE-pinned #2777 proof succeeds',()=
     'components/remote-energy-landing.tsx',
   ])assert.notEqual(decideRoute([row(risk)],trusted,()=>{}),'TEXT_CANDIDATE');
 });
+test('exact four-file Mobile Dock routes only to DOCK; every scope extension fails closed',()=>{
+  const dock=[
+    row('app/[locale]/app/[[...path]]/workspace.css'),
+    row('app/[locale]/app/messages/messages-page.css'),
+    row('components/app/messages-bottom-navigation.jsx'),
+    row('lib/mobile-visual-bottom.mjs'),
+  ];
+  assert.equal(decideRoute(dock,trusted),'DOCK');
+  const unsafe=[
+    [...dock,row('tests/mobile-visual-dock.test.mjs')],
+    [...dock,row('tests/messages-iphone-keyboard-layout.test.mjs')],
+    [...dock,row('app/api/app/messages/route.js')],
+    [...dock.slice(0,3),row('lib/mobile-visual-bottom.mjs','A')],
+    [...dock.slice(0,3),row('lib/mobile-visual-bottom.mjs','D')],
+    [dock[0],dock[1],dock[2]],
+  ];
+  for(const changed of unsafe) assert.notEqual(decideRoute(changed,trusted),'DOCK',JSON.stringify(changed));
+  const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  assert.match(workflow,/ASSETS\|TEXT\|DOCK\|CORE\|FULL/);
+  assert.match(workflow,/Mobile Dock Core geometry and iPhone keyboard contracts/);
+  assert.match(workflow,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
+});
+
 test('sensitive changes always demand full Core and specialist route',()=>{
   const paths=[
     'app/api/payment/route.ts','app/[locale]/client/page.tsx',
@@ -112,13 +135,22 @@ test('images do not allow active SVG, executable extension or truncated media',(
   assert.throws(()=>validateImage('public/banner.avif',bytes),/AVIF_/);
   assert.throws(()=>validateImage('public/icon.ico',bytes),/ICO_/);
 });
-test('Core workflow never accepts a skipped job on FULL or CORE',()=>{
+test('Core workflow keeps source checks on FULL/CORE/DOCK and only DOCK skips Next build',()=>{
   const w=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.match(w,/route: \${{ steps\.fast\.outputs\.route }}/);
   assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
   assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
   assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
   assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
+  assert.match(w,/case "\$route" in ASSETS\|TEXT\|DOCK\|CORE\|FULL/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'DOCK'/);
+  assert.match(w,/Mobile Dock Core geometry and iPhone keyboard contracts/);
+  const preflight=w.split('name: Source Preflight — syntax and TypeScript before costly Next build')[1]?.split('      - name:')[0]??'';
+  const changedLint=w.split('name: Lint changed JS/TS sources on PR')[1]?.split('      - name:')[0]??'';
+  assert.ok(preflight && changedLint);
+  assert.doesNotMatch(preflight,/route != 'DOCK'/,'TypeScript source preflight remains mandatory');
+  assert.doesNotMatch(changedLint,/route != 'DOCK'/,'changed-file ESLint remains mandatory');
+  assert.match(w,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
   assert.match(w,/npm run build/);
   assert.match(w,/git show "\$tested_base:scripts\/ci-quick-route\.mjs"/);
   assert.match(w,/HH_HEAD_SHA: \${{ github\.event\.pull_request\.head\.sha }}/);

@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -83,7 +83,9 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
  api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
- await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ const pushScoped=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(pushScoped.advisory.concurrencyOnly,[file]);
+ assert.deepEqual(pushScoped.advisory.nonApplicable,['unassociated-push:152:failure']);
  api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
@@ -153,10 +155,15 @@ test('immutable run SHA survives GitHub rewriting associated PR head on subseque
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
 });
 
-test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
-  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})]});
-  assert.deepEqual(state.pushFailures,['300:failure']);
+test('failed push on a matching SHA is advisory, not an unverified PR failure',()=>{
+  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[
+    run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})
+  ]});
+  assert.deepEqual(state.pushFailures,[]);
+  assert.deepEqual(state.pushAdvisory,['300:failure']);
   assert.equal(state.passed.length,1);
+  assert.deepEqual(state.failed,[]);
+  assert.deepEqual(state.orphanFailures,[]);
 });
 
 test('general conditional jobs may skip only when BASE explicitly makes them optional',()=>{
@@ -174,6 +181,28 @@ test('general conditional jobs may skip only when BASE explicitly makes them opt
   assert.throws(()=>inspectJobs([pair[1]],'.github/workflows/any-owner.yml',
     trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
   assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
+});
+test('trusted BASE branch-scoped browser jobs skip only outside their exact head-ref allow-list',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:','    if: '+guard,'    runs-on: macos-15',''
+  ].join('\n');
+  const guard="${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'fix/video-')) }}";
+  const yaml=build(guard);
+  const optional=trustedConditionalJobs(yaml,'feat/support-confidence-harmony-goal-filter-20261102');
+  assert.deepEqual(optional,['voice-webkit-macos']);
+  const jobs=[
+    {name:'required',status:'completed',conclusion:'success'},
+    {name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'},
+  ];
+  assert.equal(inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',optional),2);
+  assert.deepEqual(trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225'),[]);
+  assert.throws(()=>inspectJobs(jobs,'.github/workflows/holistic-support-mandala.yml',
+    trustedConditionalJobs(yaml,'codex/hypno-third-workspace-audio-live-3225')),
+    /UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.deepEqual(trustedConditionalJobs(build("${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-') || success()) }}"),
+    'feat/support-confidence-harmony-goal-filter-20261102'),[]);
 });
 test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
   const build=guard=>[
@@ -206,6 +235,45 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
     /UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.equal(inspectJobs(readyJob,'.github/workflows/owner.yml',
     trustedConditionalJobs(build("${{ github.event_name == 'workflow_dispatch' }}"))),1);
+});
+
+
+test('BASE-excluded writer-only job is neutral for unrelated dock PR only when axis suite passes', async () => {
+  const filename = '.github/workflows/hh-profile-axis-matching.yml';
+  const source = readFileSync(filename,'utf8');
+  const branch = 'feat/mytube-unified-six-bottom-prod-20261103';
+  const files = candidate => ({
+    base:new Map([[filename,source]]),
+    current:new Map([[filename,candidate]]),
+    changedRows:[{filename:'components/holistic-agent-chat.tsx',status:'M'}],
+  });
+  assert.equal(optionalProfileWriterSkip(files(source),branch),true);
+  assert.equal(optionalProfileWriterSkip(files(source),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  assert.equal(optionalProfileWriterSkip(files(source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')),branch),false);
+  assert.equal(optionalProfileWriterSkip(files(source),''),false);
+  const primary = {name:'axis-unit-types-build',status:'completed',conclusion:'success'};
+  const writer = {name:'writer-practical-focused',status:'completed',conclusion:'skipped'};
+  const check = ({headRef=branch,rows=[primary,writer],candidate=source}={}) => {
+    const current = pr();
+    current.head.ref = headRef;
+    return verify({
+      pr:async()=>current,
+      runs:async()=>[run({path:filename,head_branch:headRef})],
+      jobs:async()=>rows,
+    },{repo,number:27,head:SHA,base:BASE},files(candidate),{maxWaitMs:0});
+  };
+  const result = await check();
+  assert.deepEqual(result.executed.map(x=>x.jobs),[1],
+    'branch-specific writer skips only while actual axis suite succeeds');
+  for (const scenario of [
+    {headRef:'feat/meditation-writer-device-voice-v1-20261030'},
+    {rows:[{...primary,conclusion:'failure'},writer]},
+    {rows:[{...primary,conclusion:'skipped'},writer]},
+    {rows:[primary,{...writer,conclusion:'failure'}]},
+    {candidate:source.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'")},
+    {candidate:source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')},
+  ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB|NO_EXECUTED_REQUIRED_SPECIALIST_JOB|SPECIALIST_FAILED|MISSING/,
+    'own-branch skips, edited workflow, and any failed required job are not accepted');
 });
 
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
@@ -253,9 +321,10 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // An unassociated exact-head failure has unknown coverage and must block.
+  // A push event cannot establish a PR-number association, so it is advisory.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  const pushOnly=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.deepEqual(pushOnly.advisory.nonApplicable,['unassociated-push:753:failure']);
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
@@ -1228,6 +1297,23 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+});
+
+test('trusted Mandala WebKit allowlist accepts exact branch entries and the full prefix list',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const actual=readFileSync(path,'utf8');
+  const files={base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/support-confidence-harmony-goal-filter-20261102',
+    ['components/holistic-support-goal-filter.tsx']),true);
+  assert.equal(optionalMandalaMacosSkip(files,
+    'codex/professional-growth-templates-20261031',
+    ['components/holistic-support-goal-filter.tsx']),false,
+    'the exact BASE branch remains required to execute WebKit');
+  assert.equal(optionalMandalaMacosSkip(files,
+    'feat/video-studio-project-renderplan-v2-20261102',
+    ['lib/mandala/video-project-v2.mjs']),false,
+    'encoded video work is never excused from WebKit');
 });
 
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {

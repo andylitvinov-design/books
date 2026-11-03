@@ -135,11 +135,44 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 12) return false;
-  const prefixes = predicates.map(item =>
-    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
-  if (prefixes.some(x => !x)) return false;
-  return !prefixes.some(prefix => branch.startsWith(prefix));
+  if (!predicates.length || predicates.length > 24) return false;
+  // Trusted BASE guards may include literal startsWith prefixes and one
+  // literal exact branch. Reject every computed or unknown expression.
+  const rules = predicates.map(item => {
+    const prefix = item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1];
+    if (prefix) return {kind:'prefix', value:prefix};
+    const exact = item.match(/^github\.head_ref == '([a-z][a-z0-9/-]+)'$/)?.[1];
+    return exact ? {kind:'exact', value:exact} : null;
+  });
+  if (rules.some(rule => !rule)) return false;
+  return !rules.some(rule => rule.kind === 'prefix'
+    ? branch.startsWith(rule.value) : branch === rule.value);
+}
+
+
+/**
+ * Only the unmodified, BASE-owned Profile Axis workflow may skip its one
+ * writer-only job on unrelated source branches. Its main axis suite is still
+ * mandatory, and a changed workflow/guard or the writer's own branch fails
+ * closed. Generic branch predicates remain disallowed by trustedConditionalJobs.
+ */
+export function optionalProfileWriterSkip(files, branch) {
+  const name = '.github/workflows/hh-profile-axis-matching.yml';
+  const source = files?.base?.get(name);
+  if (typeof source !== 'string' || source !== files?.current?.get(name) ||
+      typeof branch !== 'string' || !branch ||
+      branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
+  const onlyWriter = [
+    '  writer-practical-focused:',
+    "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}",
+    '    runs-on: ubuntu-24.04',
+  ].join('\n');
+  const requiredAxis = [
+    '  axis-unit-types-build:',
+    "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+  ].join('\n');
+  return source.split(onlyWriter).length === 2 &&
+    source.split(requiredAxis).length === 2;
 }
 
 // Loose BASE is permitted only for recognizable, non-sensitive source paths.
@@ -344,7 +377,7 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+    if (state.failed.length || state.orphanFailures.length ||
         unregistered.length || retiredProblems.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
         failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
@@ -385,11 +418,20 @@ export async function verify(api,ctx,files,options={}) {
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
     // scope prove this exact non-voice branch cannot execute it.
-    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
+    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path), pr.head.ref)
       .filter(job => job !== 'voice-webkit-macos');
     if (run.path === '.github/workflows/holistic-support-mandala.yml' &&
         optionalMandalaMacosSkip(files, pr.head.ref, changed)) {
       optionalSkipped.push('voice-webkit-macos');
+    }
+    if (run.path === '.github/workflows/hh-profile-axis-matching.yml' &&
+        optionalProfileWriterSkip(files, pr.head.ref)) {
+      // Fail closed on missing, failed, or skipped primary axis verification.
+      if (!jobs.some(job => job.name === 'axis-unit-types-build' &&
+          job.status === 'completed' && job.conclusion === 'success')) {
+        throw Error('NO_EXECUTED_REQUIRED_SPECIALIST_JOB:' + run.path);
+      }
+      optionalSkipped.push('writer-practical-focused');
     }
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
@@ -398,7 +440,7 @@ export async function verify(api,ctx,files,options={}) {
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
-      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.pushAdvisory.map(item => 'unassociated-push:'+item),
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };

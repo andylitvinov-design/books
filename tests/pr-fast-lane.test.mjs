@@ -129,6 +129,8 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'Mobile Dock still uses the immutable exact-head Specialist aggregator');
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'DOCK must still run the trusted specialist aggregator');
   assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
@@ -815,7 +817,13 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   }
   assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 0);
   assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 2);
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3,
+    'Core, Specialist and isolated deterministic Repair each use shallow exact-source checkout');
+  const repairJob=source.split(/^  hh-eslint-repair:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
+  assert.match(repairJob,/^    needs: \[scope\]$/m,
+    'optional deterministic repair may depend on failed Core, but Specialist must remain parallel');
+  assert.match(repairJob,/fetch-depth:\s*2/,
+    'optional deterministic repair must use a bounded exact HEAD checkout');
   assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
   assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
   assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
@@ -1459,7 +1467,7 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const core = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
-  const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
+  const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0] ?? '';
   const gate = source.split(/^  hh-merge-check:\s*$/m)[1] ?? '';
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);

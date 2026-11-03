@@ -59,9 +59,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     context.setDefaultTimeout(25000);
     context.setDefaultNavigationTimeout(90000);
     try{
-      phase(engine,"guided-practices-mobile");
-      await verifyGuidedPractices({browser,base:BASE,engine});
-      phase(engine,"guided-practices-passed");
+      if(process.env.HH_VOICE_SKIP_GUIDED_PRACTICES==="1"){
+        // The workflow runs dedicated consent-only WebKit acceptance separately.
+        // Real encoded voice/video media acceptance continues below.
+        phase(engine,"guided-practices-skipped-by-exact-ci-only-policy");
+      }else{
+        phase(engine,"guided-practices-mobile");
+        await verifyGuidedPractices({browser,base:BASE,engine});
+        phase(engine,"guided-practices-passed");
+      }
       const page=await context.newPage();
       const payloads=[];
       const errors=[];

@@ -24,6 +24,10 @@ test("eight-day course request uses existing encrypted, reply-consented public e
 test("client form needs explicit contact, keeps private text out and never checks out",()=>{
   const src=read("components/meditation-course-enquiry.tsx");
   assert.match(src,/contactConsent:true/);
+  assert.match(src,/const consentId=formId\+"-contact-consent"/);
+  assert.match(src,/id=\{consentId\} name="contactConsent" type="checkbox"/);
+  assert.match(src,/label htmlFor=\{consentId\}/);
+  assert.match(src,/onClick=\{event=>\{event\.preventDefault\(\);setConsent\(value=>!value\);\}\}/);
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
   assert.match(src,/crypto.randomUUID/);
