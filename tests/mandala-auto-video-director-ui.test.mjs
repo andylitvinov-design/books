@@ -288,3 +288,12 @@ test("owner-approved second Montage and sixth PRO reuse one operational video/au
  assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
+
+test("MyTube cards display the original scenario, not the four generic archetype headings",()=>{
+ assert.match(director,/data-mytube-scenario-concepts/);
+ assert.match(director,/<strong>\{scenario\.label\}<\/strong>/);
+ assert.match(director,/data-mytube-concept-storyboard/);
+ assert.match(director,/sceneOutline\.map\(\(beat,index\)=>/);
+ assert.ok(!director.includes("scenarioCardHeading"),"generic shared titles must never override unique story concepts");
+ assert.match(director,/Story concept; matching footage is verified separately/);
+});
