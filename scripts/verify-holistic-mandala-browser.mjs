@@ -169,19 +169,37 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
-        // Final owner-approved reference screen, before expansion: four photo
-        // goals and six text topics drive the same one source-backed Director.
+        // Owner 03 Nov: one compact row of four photo-free categories. Subtopics
+        // open directly underneath and allow at most two selected choices.
         const goalCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-category]');
-        const topicCards=quick.locator('[data-video-director-topic-controls] [data-auto-video-goal]');
+        const topicCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-subcategories] [data-auto-video-goal]');
         await expect(goalCards.first()).toBeVisible({timeout:15000});
-        assert.equal(await goalCards.count(),4,"exactly four pictured goals on one row");
-        assert.equal(await topicCards.count(),6,"six text topics in a 3x2 selector");
+        assert.equal(await goalCards.count(),4,"four text-only categories in one row");
+        assert.equal(await goalCards.locator("img").count(),0,"no photo thumbnails in goals");
+        const goalRects=await goalCards.evaluateAll(nodes=>nodes.map(node=>({
+          x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y,
+          width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height
+        })));
+        assert.ok(goalRects.every(rect=>Math.abs(rect.y-goalRects[0].y)<=2),
+          engine+" "+locale+" "+width+" four categories must share one row: "+JSON.stringify(goalRects));
+        assert.equal(await topicCards.count(),0,"subcategories start collapsed");
+        await goalCards.first().click();
+        await expect(topicCards.first()).toBeVisible({timeout:10000});
+        assert.equal(await topicCards.count(),6,"subcategories appear beneath selected category");
+        await topicCards.nth(0).click();await topicCards.nth(1).click();
+        assert.equal(await topicCards.locator('[aria-pressed="true"]').count(),2,
+          "exactly two subcategories can be selected");
+        assert.equal(await topicCards.nth(2).isDisabled(),true,"third choice is blocked");
+        await topicCards.nth(1).click();
+        assert.equal(await topicCards.nth(2).isEnabled(),true,"deselecting frees one choice");
         const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
         await expect(initialStories.first()).toBeVisible({timeout:20000});
         assert.equal(await initialStories.count(),4,"four verified scenario choices are visible before a click");
         await expect(quick.locator("[data-auto-video-confirm]")).toBeVisible();
         const initialAdvanced=quick.locator("[data-video-advanced-toggle]");
-        await expect(initialAdvanced).toHaveAttribute("aria-expanded","false");
+        assert.equal(await initialAdvanced.count(),1,"advanced style settings stay reusable in Montage");
+        assert.equal(await initialAdvanced.isVisible(),false,
+          "old Video-level advanced button is not displayed");
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
         // Free Help is a real launcher for #2913's existing AI Director; it
@@ -197,8 +215,6 @@ const runEngine = async ([engine, browserType]) => {
           await helpDetails.locator(":scope > summary").click();
           await expect(helpDetails).not.toHaveAttribute("open","",{timeout:10000});
         }
-        await initialAdvanced.click(); // Expand only for existing full-editor E2E below.
-        await expect(initialAdvanced).toHaveAttribute("aria-expanded","true");
         // A shared direct link to the Audio picker must reveal the Music
         // workspace instead of leaving the only picker in closed advanced
         // settings. Run once per real engine at the owner iPhone width.
@@ -874,6 +890,11 @@ const runEngine = async ([engine, browserType]) => {
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
         }
         await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        const montageStyleSettings=page.locator('[data-video-editor-style-settings]');
+        await expect(montageStyleSettings).toBeVisible({timeout:15000});
+        await expect(page.locator('[data-video-montage-script]')).toBeVisible();
+        if(!(await montageStyleSettings.evaluate(node=>node.open)))
+          await montageStyleSettings.locator(":scope > summary").click();
         await expect(page.locator('[data-video-duration="30"]')).toBeVisible({timeout:15000});
         assert.equal(await page.locator("[data-video-aspect]").count(),3);
         assert.equal(await page.locator("[data-video-duration]").count(),5);
@@ -1441,6 +1462,11 @@ const runEngine = async ([engine, browserType]) => {
             const audioDetails=page.locator("[data-video-audio-details]");
             if(!(await audioDetails.evaluate(node=>node.open)))
               await audioDetails.locator(":scope > summary").click();
+          }
+          if(id==="video-settings"){
+            const styleDetails=page.locator("[data-video-editor-style-settings]");
+            if(!(await styleDetails.evaluate(node=>node.open)))
+              await styleDetails.locator(":scope > summary").click();
           }
           await expect(page.locator("#"+id)).toBeVisible({timeout:12000});
           assert.equal(await page.evaluate(()=>window.location.hash),unchangedHash,
@@ -2141,6 +2167,9 @@ const runEngine = async ([engine, browserType]) => {
         await workspaceNav.locator('[data-video-quick-control="pro"]').click();
         await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+        const styleDetails=page.locator("[data-video-editor-style-settings]");
+        if(!(await styleDetails.evaluate(node=>node.open)))
+          await styleDetails.locator(":scope > summary").click();
         await expect(page.locator('[data-video-quick-builder] #video-settings')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="practices"]').click();
         assert.ok(await page.locator('[data-workspace-section="practices"] a').count()>=2);
@@ -2172,8 +2201,9 @@ const runEngine = async ([engine, browserType]) => {
           await topicPanel.locator("[data-auto-video-input]").waitFor({state:"visible",timeout:12000});
           assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),4,
             "four high-level goals are individually selectable");
-          assert.equal(await topicPanel.locator("[data-auto-video-goal]").count(),6,
-            "six contextual text topics, no obligatory 49-question intake");
+          await goalPanel.locator('[data-auto-video-category="strength"]').click();
+          assert.equal(await goalPanel.locator("[data-auto-video-goal]").count(),6,
+            "six inline contextual subtopics, no obligatory 49-question intake");
           // Owner-reported iPhone regression: focus must not zoom, trailing
           // whitespace must survive, user intent must change the real proposal,
           // and one of the alternative film cards must be selectable.
@@ -2204,7 +2234,7 @@ const runEngine = async ([engine, browserType]) => {
             "approved Video flow keeps sound adjustment after the storyboard");
 
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
-          await topicPanel.locator('[data-auto-video-goal="calm"]').click();
+          await goalPanel.locator('[data-auto-video-goal="calm"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
             "goal gives four actual source scenes");
@@ -2240,8 +2270,11 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(selectedPaths.length,4);
           for(const path of selectedPaths)assert.match(path||"",/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/);
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
-          // The legacy quick-duration control is intentionally in a collapsed
-          // details panel. Exercise the actually visible Video workspace button.
+          // The single real duration control now belongs to Montage settings.
+          await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+          const montageDetails=page.locator('[data-video-editor-style-settings]');
+          if(!(await montageDetails.evaluate(node=>node.open)))
+            await montageDetails.locator(":scope > summary").click();
           await page.locator('[data-video-duration="15"]').click();
           await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
           assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
