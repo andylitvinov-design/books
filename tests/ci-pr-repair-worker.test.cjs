@@ -653,17 +653,17 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
 });
 test('free model is activated only after deterministic failure and never sees write token',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- assert.match(wf,/code_available: \\$\\{\\{ steps\\.select\\.outputs\\.code_available \\$\\}\\}/);
- assert.match(wf,/core\\.setOutput\\('code_available','true'\\)/);
+ assert.match(wf,/code_available: \$\{\{ steps\.select\.outputs\.code_available \$\}\}/);
+ assert.match(wf,/core\.setOutput\('code_available','true'\)/);
  const codeFix=wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0];
  const codeVerify=wf.split('\n  code_verify:\n')[1].split('\n  publish:\n')[0];
- assert.match(codeFix,/needs\\.fix\\.outputs\\.candidate_status == 'manual_required'/);
- assert.match(codeFix,/ci-pr-repair-free-agent\\.cjs/);
- assert.match(codeFix,/opencode\\/cli@2\\.1\\.2/);
+ assert.match(codeFix,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
+ assert.match(codeFix,/ci-pr-repair-free-agent\.cjs/);
+ assert.match(codeFix,/opencode\/cli@2\.1\.2/);
  assert.match(codeFix,/persist-credentials: false/);
- assert.match(codeVerify,/ci-pr-repair-code-candidate\\.cjs verify/);
+ assert.match(codeVerify,/ci-pr-repair-code-candidate\.cjs verify/);
  assert.match(codeVerify,/candidate_status == 'proposed'/);
- assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\\/codex-action@v1/);
+ assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(pub,/HH_AUTOMERGE_TOKEN/);
  for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
