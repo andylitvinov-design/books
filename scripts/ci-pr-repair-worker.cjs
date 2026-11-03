@@ -339,9 +339,9 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
-  const repairKind=candidate.repair_kind==='codex'?'free_ai':'lint';
+  const repairKind=candidate.repair_kind==='free_ai'?'free_ai':'lint';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='codex'?'Codex source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free-model source repair':'deterministic source repair')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
