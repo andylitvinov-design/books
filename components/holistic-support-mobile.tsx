@@ -550,17 +550,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   }, []);
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
-  useEffect(() => {
-    let mounted = true;
-    const readEpoch = photoStorageEpoch.current;
-    fetch("/api/app/support-photo", { credentials:"same-origin", cache:"no-store" })
-      .then(response => response.ok ? response.json() : null)
-      .then(data => {
-        if (mounted && readEpoch === photoStorageEpoch.current && typeof data?.url === "string")
-          setStoredPhotoUrl(data.url);
-      }).catch(() => {});
-    return () => { mounted = false; photoEpoch.current += 1; };
-  }, []);
+  // Public Support never reads a private portrait just because a guest lands
+  // on the page (including Google/checkout return flows). Saving is voluntary;
+  // authenticated My Videos performs its own private read when explicitly opened.
+  // Invalidate any pending on-device photo decode when this page unmounts.
+  useEffect(() => () => { photoEpoch.current += 1; }, []);
   const onPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";

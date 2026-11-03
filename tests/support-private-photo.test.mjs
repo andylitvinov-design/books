@@ -131,7 +131,9 @@ test('late initial private-image GET cannot restore a deleted portrait or overri
   assert.ok(save.indexOf('photoStorageEpoch.current+=1')<save.indexOf('setUrl(result.url)'))
   assert.ok(remove.indexOf('photoStorageEpoch.current+=1')<remove.indexOf('setUrl(null)'))
   assert.match(support,/const photoStorageEpoch = useRef\(0\)/)
-  assert.match(support,/readEpoch === photoStorageEpoch\.current/)
+  // A guest landing or payment return must never auto-fetch private media.
+  assert.doesNotMatch(support,/fetch\("\/api\/app\/support-photo",\s*\{\s*credentials:"same-origin"/)
+  assert.match(support,/useEffect\(\(\) => \(\) => \{ photoEpoch\.current \+= 1; \}, \[\]\)/)
   const photoSave=support.slice(support.indexOf('const savePhoto = async'),support.indexOf('// Quick matching'))
   assert.ok(photoSave.indexOf('photoStorageEpoch.current += 1')<photoSave.indexOf('setStoredPhotoUrl(data.url)'))
 })
