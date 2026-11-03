@@ -63,22 +63,24 @@ export async function createHypnoAudioEffectFile(options: HypnoAudioMixOptions):
   if (options.speechFile) {
     const encoded = await options.speechFile.arrayBuffer();
     const decoded = await context.decodeAudioData(encoded.slice(0));
+    // Never trim the final spoken phrase to fit the clip. The caller must
+    // choose a video duration that can hold the complete source voice track.
+    if (decoded.duration > duration - 0.35) throw new Error("SPEECH_TRACK_EXCEEDS_DURATION");
     const playVoice = (startAt: number, gainValue: number) => {
-      const remaining = duration - startAt;
-      if (remaining <= 0) return;
+      if (startAt + decoded.duration > duration) return;
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = decoded;
       gain.gain.setValueAtTime(gainValue, startAt);
       source.connect(gain);
       gain.connect(context.destination);
-      source.start(startAt, 0, Math.min(decoded.duration, remaining));
+      source.start(startAt, 0, decoded.duration);
     };
     if (options.whisperEnabled) {
       const pause = Math.max(4, Math.min(20, options.repeatEverySeconds ?? 7));
       const interval = decoded.duration + pause;
       const level = Math.max(0.04, Math.min(0.3, options.whisperGain ?? 0.16));
-      for (let at = 0; at < duration; at += interval) playVoice(at, level);
+      for (let at = 0; at + decoded.duration <= duration; at += interval) playVoice(at, level);
     } else {
       playVoice(0, 1);
     }
