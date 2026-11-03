@@ -1,0 +1,100 @@
+name: Holistic House visual service landing QA
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'components/personal-service-landing.tsx'
+      - 'components/alchemy-soul-landing.tsx'
+      - 'components/alchemy-soul-landing.module.css'
+      - 'components/business-consulting-landing.tsx'
+      - 'components/business-consulting-landing.module.css'
+      - 'components/personal-support-landing.tsx'
+      - 'components/personal-support-landing.module.css'
+      - 'components/free-entry-landing.tsx'
+      - 'components/free-entry-landing.module.css'
+      - 'components/academy-tradition-coaching-landing.tsx'
+      - 'components/academy-tradition-coaching-landing.module.css'
+      - 'components/remote-energy-support-booking.tsx'
+      - 'components/reiki-referral-landing.tsx'
+      - 'components/reiki-referral-landing.module.css'
+      - 'components/public-antistress-landing.tsx'
+      - 'components/public-antistress-landing.module.css'
+      - 'components/remote-energy-support-booking.module.css'
+      - 'tests/visual-landing-sitewide-audit.test.mjs'
+      - 'scripts/verify-public-landing-matrix.mjs'
+      - 'components/personal-service-landing.module.css'
+      - 'components/core-service-detail.tsx'
+      - 'components/core-service-detail.module.css'
+      - 'app/sitewide-capture.css'
+      - 'tests/visual-service-story.test.mjs'
+      - 'scripts/verify-visual-service-mobile.mjs'
+      - '.github/workflows/hh-visual-service-landings.yml'
+permissions:
+  contents: read
+concurrency:
+  group: visual-services-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visual-service-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-visual-services-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Visual stage and on-site CRM source contracts
+        run: >-
+          node --test
+          tests/visual-service-story.test.mjs
+          tests/visual-landing-sitewide-audit.test.mjs
+          tests/reiki-referral-landing.test.mjs
+          tests/personal-service-details.test.mjs
+          tests/services-landing-conversion-20261018.test.mjs
+          tests/sitewide-lead-capture.test.mjs
+      - name: Lint updated service components
+        run: >-
+          npx --no-install eslint
+          components/personal-service-landing.tsx
+          components/core-service-detail.tsx
+          components/alchemy-soul-landing.tsx
+          components/business-consulting-landing.tsx
+          components/personal-support-landing.tsx
+          components/free-entry-landing.tsx
+          components/academy-tradition-coaching-landing.tsx
+          components/remote-energy-support-booking.tsx
+          components/reiki-referral-landing.tsx
+          components/public-antistress-landing.tsx
+      - name: Typecheck changed pages in full project context
+        run: npx --no-install tsc --noEmit
+      - name: Production build (no external payment or lead traffic)
+        run: |
+          mkdir -p artifacts/visual-service-mobile
+          npm run build > artifacts/visual-service-mobile/build.log 2>&1 || { tail -n 130 artifacts/visual-service-mobile/build.log; exit 1; }
+      - name: Install isolated browsers
+        run: |
+          npm install --prefix /tmp/hh-visual-services-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-visual-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: 320–430px Chromium and iPhone WebKit QA on isolated production server
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-visual-services-next.log 2>&1 & SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 90); do
+            if curl --silent --fail http://127.0.0.1:3100/en/services/imagery-therapy >/dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-public-landing-matrix.mjs
+          node scripts/verify-visual-service-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-visual-services-qa
+          path: artifacts/visual-service-mobile/
+          retention-days: 7
+          if-no-files-found: ignore
