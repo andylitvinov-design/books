@@ -107,7 +107,7 @@ export function MandalaLocalVoiceTracks({locale,disabled,approvalPending,hidden,
       setNotice(t.error);
     }
   }
-  function useTrack(track:Track){
+  function selectRecordedTrack(track:Track){
     if(disabled||approvalPending){setNotice(t.approve);return;}
     const mixSeconds=durationChoices.find(n=>n>=Math.ceil(track.seconds+1))||60;
     onAttach({file:track.file,spokenText:"",voiceId:"local-"+track.id,language:locale,
@@ -143,7 +143,7 @@ export function MandalaLocalVoiceTracks({locale,disabled,approvalPending,hidden,
         <div className={css.localActions}>
           <button type="button" data-video-own-voice-attach={track.id}
             aria-pressed={selected===track.id} disabled={disabled||approvalPending}
-            onClick={()=>useTrack(track)}>
+            onClick={()=>selectRecordedTrack(track)}>
             {selected===track.id?<Check size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
             {t.use}
           </button>
