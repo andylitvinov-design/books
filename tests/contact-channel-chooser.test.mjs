@@ -75,7 +75,12 @@ test("contact controls wait for the reset associated with the currently selected
   const src = read("components/contact-channel-chooser.tsx");
   assert.match(src, /settledResetSignature === resetSignature/);
   assert.match(src, /JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
-  assert.equal((src.match(/setSettledResetSignature\(resetSignature\)/g)||[]).length, 2);
+  assert.equal((src.match(/setSettledResetSignature\(resetSignature\)/g)||[]).length, 1);
+  assert.match(src, /const firstReset = !resetEffectInitialized\.current/);
+  assert.match(src, /if \(firstReset && !compactPhone\) return/);
+  assert.match(src, /if \(compactPhone\) \{[\s\S]*setConsent\(false\)/);
+  assert.match(src, /setOpen\(false\);[\s\S]*setConsent\(false\)/);
+  assert.match(read("components/consultation-choice-capture.tsx"), /<ContactChannelChooser\s+key=\{serviceChoice\}/);
   assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return/);
   assert.match(src, /if \(!interactive \|\| googleBusy \|\| busy\) return/);
 });

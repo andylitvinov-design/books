@@ -73,7 +73,24 @@ export function TantraVideoTestimonials(props: Props) {
 
   function onToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const details = event.currentTarget;
-    if (details.open) return;
+    if (details.open) {
+      // WebKit can park the decoder while <details> is closed without firing
+      // another load/metadata event on reopening. Nudge only the paused,
+      // previously verified source with a tiny bounded seek; never play/reload.
+      details.querySelectorAll("video").forEach(video => {
+        const saved = retained.current.get(video);
+        if (!saved || !video.paused || video.seeking || video.ended ||
+          video.readyState < 1 || video.currentSrc !== saved.source ||
+          !Number.isFinite(saved.time) || saved.time <= 0 ||
+          !Number.isFinite(video.duration) || saved.time + 0.02 >= video.duration) return;
+        try {
+          video.currentTime = saved.time + 0.01;
+        } catch {
+          // Keep controls available even when the paused backend rejects seek.
+        }
+      });
+      return;
+    }
     // Native controls can open/play before hydration. The observed DOM state,
     // not initiallyOpen or a missed earlier toggle, decides whether to stop.
     // Keep native playback positions. Reset only the YouTube component, removing

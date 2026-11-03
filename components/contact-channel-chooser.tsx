@@ -195,6 +195,7 @@ export function ContactChannelChooser({
   const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const resetEffectInitialized = useRef(false);
   const operationId = useRef<string | null>(null);
   const submitting = useRef(false);
   const pathname = usePathname();
@@ -228,6 +229,14 @@ export function ContactChannelChooser({
   }, [pathname]);
 
   useEffect(() => {
+    const firstReset = !resetEffectInitialized.current;
+    resetEffectInitialized.current = true;
+    // A newly mounted chooser already has empty contact, consent and closed
+    // state. Do not close a visitor's first hydrated click with a delayed
+    // passive effect (observed on mobile WebKit). Genuine offer changes below
+    // still clear all private input and require fresh explicit consent.
+    setSettledResetSignature(resetSignature);
+    if (firstReset && !compactPhone) return;
     if (compactPhone) {
       // A changed option must create a fresh enquiry, but keep an entered phone
       // so switching between free/personal choices never requires retyping it.
@@ -238,7 +247,6 @@ export function ContactChannelChooser({
       setPaymentExpanded(false);
       setError("");
       operationId.current = null;
-      setSettledResetSignature(resetSignature);
       return;
     }
     setOpen(false);
@@ -255,7 +263,6 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-    setSettledResetSignature(resetSignature);
   }, [enquiryResetKey, quick, compactPhone, cartContact, resetSignature]);
 
   useEffect(() => {
