@@ -33,12 +33,27 @@ export function context(env, event) {
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
 const CORE_FORCE_PATH = '.github/workflows/hh-pr-core-release.yml';
+// Only browser-focused workflows may be interrupted after a runner started.
+// A stale source SHA alone does not authorize cancelling an active Core,
+// Specialist, Repair, merge, or independent non-browser verification.
+const IN_PROGRESS_BROWSER_WORKFLOWS = new Set([
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-messages-wellness-browser.yml',
+  '.github/workflows/practice-visual-browser.yml',
+]);
+const isRunningBrowserWorkflow = path => typeof path === 'string' &&
+  [...IN_PROGRESS_BROWSER_WORKFLOWS].some(file =>
+    path === file || path.startsWith(file + '@refs/'));
 const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
   'hh-specialist', 'hh-merge-check', 'release-ready']);
 
 export function eligible(run, pr, ctx) {
   if (!run || run.event !== 'pull_request' ||
       (run.status !== 'queued' && !(ctx.headSha && run.status === 'in_progress')) ||
+      (run.status === 'in_progress' && !isRunningBrowserWorkflow(run.path)) ||
       run.pull_requests?.length !== 1 || run.pull_requests[0]?.number !== pr?.number ||
       (ctx.number && pr.number !== ctx.number) ||
       run.pull_requests[0]?.base?.ref !== TARGET || pr.base?.ref !== TARGET ||

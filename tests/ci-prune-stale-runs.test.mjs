@@ -287,9 +287,32 @@ test('a trusted PR synchronize must match exact previous and new same-repo HEADs
   assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/main' }, e));
 });
 
+test('stale running non-browser checks remain untouched, while only known browser workflow paths qualify', async () => {
+  const live = { ...ctx, headSha: NEW };
+  for (const path of [
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-pr-repair-worker.yml',
+    '.github/workflows/unrecognized-browser.yml',
+    '.github/workflows/site-video-browser.yml@malformed',
+  ]) assert.equal(eligible(run({status:'in_progress', path}), pr(), live), false, path);
+  const browser = run({status:'in_progress', path:'.github/workflows/site-video-browser.yml@refs/pull/5/merge'});
+  assert.equal(eligible(browser, pr(), live), true);
+  assert.equal(eligible(browser, pr(), ctx), false);
+  const cancelled = [];
+  const api = {
+    list: async (page, branch, status) => ({workflow_runs: status === 'in_progress' ?
+      [run({id:401,status:'in_progress'}), run({id:402,status:'in_progress',path:'.github/workflows/hh-pr-repair-worker.yml'})] : []}),
+    pr:async()=>pr(), run:async id=>run({id,status:'in_progress'}),
+    compare:async()=>({status:'ahead',ahead_by:1}),
+    cancel:async id=>cancelled.push(id),
+  };
+  assert.deepEqual((await prune(api,live,{sleep:async()=>{},settleMs:0})).cancelled, []);
+  assert.deepEqual(cancelled, []);
+});
+
 test('only a verified PR synchronize cancels an already-running ancestor HEAD, never forces it', async () => {
   const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
-  const active = run({ id: 301, status: 'in_progress' });
+  const active = run({ id: 301, status: 'in_progress', path: '.github/workflows/site-video-browser.yml@refs/pull/5/merge' });
   const accepted = [];
   let completed = false;
   const api = {
@@ -314,7 +337,7 @@ test('only a verified PR synchronize cancels an already-running ancestor HEAD, n
 
 test('a moved head or non-ancestor history blocks cancellation even during synchronize', async () => {
   const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
-  const active = run({ id: 302, status: 'in_progress' });
+  const active = run({ id: 302, status: 'in_progress', path: '.github/workflows/site-video-browser.yml' });
   let cancelled = 0;
   const api = {
     list: async (page, branch, status) => ({ workflow_runs: status === 'in_progress' ? [active] : [] }),

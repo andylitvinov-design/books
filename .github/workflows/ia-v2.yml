@@ -305,6 +305,13 @@ jobs:
       - name: Full TypeScript outside production PR (core release-ready owns production typing)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: steps.dock-scope.outputs.dock_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Isolated browser tools and Redis CLI
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: |
