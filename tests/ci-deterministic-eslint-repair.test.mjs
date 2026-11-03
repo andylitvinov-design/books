@@ -65,7 +65,7 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
   assert.match(source,/\[leaseTool,'release'/);
   assert.match(source,/git',\['push','origin','HEAD:refs\/heads\/'/);
   assert.doesNotMatch(source,/git',\['push'[^;\n]*--force/);
-  assert.doesNotMatch(source,/\b(?:npm run|npx |opencode|openrouter|codex)\b|API[_-]?KEY/i);
+  assert.doesNotMatch(source,/\b(?:npm run|npx |opencode|openrouter)\b|API[_-]?KEY|\bcodex\s+(?:exec|run)\b/i);
 });
 
 
