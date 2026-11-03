@@ -2,12 +2,49 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
+ zeroPrice,parseVerboseModelCatalog,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment
 }=require('../scripts/ci-pr-repair-free-agent.cjs');
 const SHA='a'.repeat(40);
 test('free model fixed and no paid model routing',()=>{
  assert.equal(MODEL,'opencode/glm-5.3-flash-free');
 });
+
+test('free model is approved only by fresh explicit zero-cost catalog metadata',()=>{
+ const catalog={models:[{id:MODEL,status:'active',
+   cost:{input:0,output:0,cache_read:0,cache_write:0}}]};
+ const result=parseVerboseModelCatalog(JSON.stringify(catalog));
+ assert.deepEqual(result,{ok:true,model:MODEL,source:'json'});
+ assert.equal(zeroPrice(0),true);
+ assert.equal(zeroPrice('0.000'),true);
+ assert.equal(zeroPrice('Free'),true);
+ assert.equal(zeroPrice(0.01),false);
+ assert.equal(zeroPrice(undefined),false);
+});
+test('free model price preflight fails closed on paid, unknown, unavailable or inactive metadata',()=>{
+ const paid={models:[{id:MODEL,status:'active',cost:{input:0.01,output:0}}]};
+ const missing={models:[{id:MODEL,status:'active'}]};
+ const inactive={models:[{id:MODEL,status:'disabled',cost:{input:0,output:0}}]};
+ const absent={models:[{id:'opencode/other-free',status:'active',cost:{input:0,output:0}}]};
+ assert.equal(parseVerboseModelCatalog(JSON.stringify(paid)).reason,'FREE_AI_MODEL_PRICE_NOT_ZERO');
+ assert.equal(parseVerboseModelCatalog(JSON.stringify(missing)).reason,'FREE_AI_MODEL_PRICE_NOT_ZERO');
+ assert.equal(parseVerboseModelCatalog(JSON.stringify(inactive)).reason,'FREE_AI_MODEL_PRICE_NOT_ZERO');
+ assert.equal(parseVerboseModelCatalog(JSON.stringify(absent)).reason,'FREE_AI_MODEL_NOT_IN_CATALOG');
+ assert.equal(parseVerboseModelCatalog('').reason,'FREE_AI_MODEL_CATALOG_EMPTY');
+});
+test('verbose human catalog requires exact model id and explicit zero costs',()=>{
+ const good=[
+  MODEL,'  status: active','  input: $0','  output: $0',
+  '  cache_read: $0','  cache_write: $0',
+  'opencode/another-paid-model','  input: $0.2','  output: $1'
+ ].join('\n');
+ assert.deepEqual(parseVerboseModelCatalog(good),{ok:true,model:MODEL,source:'verbose'});
+ const noCost=good.replace('  output: $0','  output: unknown');
+ assert.equal(parseVerboseModelCatalog(noCost).reason,'FREE_AI_MODEL_PRICE_UNKNOWN');
+ const cachePaid=good.replace('  cache_write: $0','  cache_write: $0.01');
+ assert.equal(parseVerboseModelCatalog(cachePaid).reason,'FREE_AI_MODEL_CACHE_PRICE_NOT_ZERO');
+});
+
 test('only nonsensitive existing source paths may be proposed',()=>{
  for(const file of ['components/public-card.tsx','app/[locale]/about/page.tsx',
    'lib/public-entry.js','scripts/verify-public-route.mjs'])
