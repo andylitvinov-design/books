@@ -14,7 +14,7 @@ const copy = {
 
 /** The free video editor is a part of the approved Support experience, not
  * a return to the legacy seven-link site navigation. */
-export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale }) {
+export function HolisticSupportMandalaDock({ locale, photoMode = false }: { locale: PublicLocale; photoMode?: boolean }) {
   const t = copy[locale];
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
@@ -34,7 +34,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <p>{t.language}</p>
           <div className={styles.localeLinks}>
             {(["en", "ru", "es"] as const).map(language => (
-              <Link key={language} href={"/" + language + "/holistic-support/mandala"}
+              <Link key={language} href={"/" + language + "/holistic-support/mandala" + (photoMode ? "?mode=photo" : "")}
                 hrefLang={language} aria-current={locale === language ? "page" : undefined}>
                 {language.toUpperCase()}
               </Link>

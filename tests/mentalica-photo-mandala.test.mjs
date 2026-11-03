@@ -64,7 +64,7 @@ test("the existing public Mandala route has separate navigable video/photo modes
   assert.match(page, /mandala\?mode=photo/);
   assert.match(page, /photoMode \? <MentalicaPhotoMandala locale=\{locale\} \/>/);
   assert.match(page, /<MandalaMeditationClient locale=\{locale\}/);
-  assert.match(page, /<HolisticSupportMandalaDock locale=\{locale\}/);
+  assert.match(page, /<HolisticSupportMandalaDock locale=\{locale\} photoMode=\{photoMode\}/);
   assert.match(page, /isPublicLocale\(locale\)/);
   assert.match(page, /alternates/);
 });

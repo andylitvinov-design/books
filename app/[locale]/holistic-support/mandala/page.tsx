@@ -106,7 +106,7 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
         (process.env.VERCEL_ENV !== "production" ||
          process.env.HH_MEDITATION_WRITER_PRODUCTION_APPROVED === "true") ?
           <MeditationWriterPreview locale={locale} /> : null}
-      <HolisticSupportMandalaDock locale={locale} />
+      <HolisticSupportMandalaDock locale={locale} photoMode={photoMode} />
     </main>
   );
 }

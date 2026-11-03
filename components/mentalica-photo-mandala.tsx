@@ -346,7 +346,10 @@ export function MentalicaPhotoMandala({locale}: Props) {
     try {
       const newAssets:MentalicaPhotoAsset[]=[];
       for (const file of selected) newAssets.push({id:uuid(),name:file.name.slice(0,80),data:await normalizePhoto(file)});
-      if (!newAssets.length) throw Error("Limit reached");
+      if (!newAssets.length || project.assets.reduce((sum,asset)=>sum+asset.data.length,0)
+        + newAssets.reduce((sum,asset)=>sum+asset.data.length,0)>45_000_000) {
+        throw Error("Local project image limit reached");
+      }
       setProject(current=>({...current,assets:[...current.assets,...newAssets],assignments:{...current.assignments,[key]:newAssets[0].id}}));
       setTarget(key);setNotice("");
     } catch {setError(t.badImage);} finally {setProcessing(false);}
@@ -402,8 +405,8 @@ export function MentalicaPhotoMandala({locale}: Props) {
   },[]);
   async function save() {
     setError("");setNotice("");
-    const copy=sanitizeMentalicaPhotoProject({...project,id:project.id||uuid(),title:project.title||t.namePlaceholder});
     try {
+      const copy=sanitizeMentalicaPhotoProject({...project,id:project.id||uuid(),title:project.title||t.namePlaceholder});
       await putProject(copy);setProject(copy);
       setSaved(items=>[{id:copy.id,title:copy.title},...items.filter(item=>item.id!==copy.id)]);
       setNotice(t.savedOk);
