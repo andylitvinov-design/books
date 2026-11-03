@@ -830,3 +830,24 @@ test('only actual source Core failure can authorize a structured Watchdog repair
  assert.equal(hasVerifiedSourceHandoff([source],sha),true);
  assert.equal(verifiedCoreCodeFailure([source],sha),true);
 });
+
+
+test('stacked parent repair is admitted when merge ancestry is safe',async()=>{
+ for(const auto_merge of [null,{merge_method:'merge'}]){
+  const parent=pr({auto_merge});
+  const child={number:3103,state:'open',base:{ref:parent.head.ref}};
+  const f=fixture({pr:parent,children:[child]});
+  const r=await claim({github:f.github,core,context,number:11,hasToken:true});
+  assert.equal(r.status,'claimed');
+  assert.equal(f.log.comments,1);
+ }
+});
+test('stacked parent does not auto-repair with a destructive squash/rebase method',async()=>{
+ for(const method of ['squash','rebase']){
+  const parent=pr({auto_merge:{merge_method:method}});
+  const f=fixture({pr:parent,children:[{number:3103,state:'open',base:{ref:parent.head.ref}}]});
+  const r=await claim({github:f.github,core,context,number:11,hasToken:true});
+  assert.equal(r.status,'skipped');
+  assert.equal(f.log.comments,0);
+ }
+});
