@@ -190,6 +190,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"offline-remix-ready");
       assert.equal(payloads.filter(item=>item.mode==="affirmations").length,1,
         "remixing voice/music must not invoke voice generation again");
+
+      // Exercise the actual third-workspace audio cards in real WebKit.
+      // The consented narration is already attached; both effects must render
+      // locally to one real WAV before the MP4 export begins.
+      await page.locator('[data-video-quick-control="effects"]').click();
+      const audioGroup=page.locator('[data-hypno-group="audio"]');
+      await audioGroup.waitFor({state:"visible",timeout:10000});
+      const whisperName=locale==="ru"?"Гипнозвук":locale==="es"?"Voz tenue":"Quiet speech";
+      const binauralName=locale==="ru"?"Бинауральные ритмы":locale==="es"?"Ritmos binaurales":"Binaural beats";
+      const whisperSwitch=audioGroup.getByRole("switch",{name:whisperName,exact:true});
+      const binauralSwitch=audioGroup.getByRole("switch",{name:binauralName,exact:true});
+      await expect(whisperSwitch).toHaveAttribute("aria-checked","false");
+      await whisperSwitch.click();
+      await expect(whisperSwitch).toHaveAttribute("aria-checked","true",{timeout:30000});
+      await binauralSwitch.click();
+      await expect(binauralSwitch).toHaveAttribute("aria-checked","true",{timeout:30000});
+      await expect(page.locator("[data-hypno-audio-effect-busy]")).toHaveCount(0);
+      phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
       const generate=page.locator("[data-video-quick-generate]");
@@ -258,12 +276,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
-        const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+        const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
-        const tracks=JSON.parse(probe.stdout).streams.map(row=>row.codec_type);
-        assert.ok(tracks.includes("video"),"real video stream present");
-        assert.ok(tracks.includes("audio"),"generated affirmation WAV survived into exported video");
+        const tracks=JSON.parse(probe.stdout).streams;
+        assert.ok(tracks.some(row=>row.codec_type==="video"),"real video stream present");
+        const audioTrack=tracks.find(row=>row.codec_type==="audio");
+        assert.ok(audioTrack,"generated Hypno WAV survived into exported video");
+        assert.equal(audioTrack.channels,2,"stereo binaural layer survives the final video mux");
         const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
           "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
           {input:bytes,maxBuffer:1024*1024,timeout:20000});
