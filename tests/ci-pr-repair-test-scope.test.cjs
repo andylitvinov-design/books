@@ -21,6 +21,28 @@ test('selects only direct imports for every modified file',()=>{
   assert.equal(selectTests(f.root,['src/c.js'],['tests/empty.test.mjs']),null);
  }finally{f.cleanup()}
 });
+
+test('accepts literal repository-root source reads but not dynamic or spoofed helpers',()=>{
+ const f=fixture();try{
+  f.put('src/landing.tsx','export const page=true;\n');
+  const prolog="import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n";
+  const literal="const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')\n";
+  f.put('tests/source.test.mjs',prolog+literal+
+   "test('entry',()=>{\n const freeEntry=read('src/landing.tsx')\n if(!freeEntry)throw Error('missing')\n})\n");
+  assert.deepEqual(selectTests(f.root,['src/landing.tsx'],['tests/source.test.mjs']),
+    ['tests/source.test.mjs']);
+  f.put('tests/source.test.mjs',prolog+
+   "const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')\n"+
+   "test('entry',()=>{const freeEntry=read('src/landing.tsx')})\n");
+  assert.equal(selectTests(f.root,['src/landing.tsx'],['tests/source.test.mjs']),null,
+    'unverified helper aliases must not be counted as coverage');
+  f.put('tests/source.test.mjs',prolog+literal+
+   "test('entry',()=>{\n const file='src/landing.tsx'\n const freeEntry=read(file)\n})\n");
+  assert.equal(selectTests(f.root,['src/landing.tsx'],['tests/source.test.mjs']),null,
+    'dynamic paths do not establish direct source coverage');
+ }finally{f.cleanup()}
+});
+
 test('missing coverage, malformed paths, symlinks and excessive test scope fail closed',()=>{
  const f=fixture();try{
   f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('a',()=>{});\n");
