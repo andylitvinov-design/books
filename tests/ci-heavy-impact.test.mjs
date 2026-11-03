@@ -346,3 +346,11 @@ test('Mandala PRs skip redundant Linux browsers but keep required source contrac
   assert.match(yaml,/Mandala and mobile support contracts/);
   assert.match(yaml,/node --test tests\/video-chat-ai\.test\.mjs/);
 });
+
+test('cheap CI routing jobs allow bounded checkout time without weakening specialist gates', () => {
+  const guard = read('hh-pr-sweep-guard.yml');
+  const app = read('hh-app-r1.yml');
+  assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
+  for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
