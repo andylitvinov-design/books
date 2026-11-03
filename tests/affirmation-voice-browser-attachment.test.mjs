@@ -78,3 +78,13 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
   for(const requirement of ['tracks.includes("video")','tracks.includes("audio")','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
 });
+
+test("post-edit consent reset is checked on the mounted inline Voice Studio",()=>{
+  const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
+  const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
+  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',studio);
+  assert.ok(panel>=0&&studio>panel&&consent>studio,
+    "mount the real voice studio before checking its current consent control");
+  assert.ok(source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent)>consent,
+    "a changed phrase must require fresh, explicit consent in the currently mounted studio");
+});
