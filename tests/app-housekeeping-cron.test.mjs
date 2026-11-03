@@ -142,6 +142,8 @@ test('external backstop verifies an exact dispatch ID, real jobs and idle receip
   const getResponse=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
   const fetcher=async(url,opt)=>{
     calls.push({url,method:opt.method||'GET'})
+    if(url.includes('/runs?event=')&&url.includes('&per_page=5'))
+      return getResponse({total_count:0,workflow_runs:[]})
     if(url.endsWith('/dispatches'))return {status:200,json:async()=>({workflow_run_id:200})}
     if(url.endsWith('/runs?per_page=10'))
       return getResponse({total_count:0,workflow_runs:[]})
@@ -150,9 +152,9 @@ test('external backstop verifies an exact dispatch ID, real jobs and idle receip
       status:'completed',head_branch:'codex/bootstrap-books',created_at:at})
     if(url.endsWith('/runs/200/jobs?per_page=50'))return getResponse({
       total_count:2,jobs:[
-        {id:1,run_id:200,name:'reconcile',status:'completed',started_at:at},
+        {id:1,run_id:200,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
         {id:2,run_id:200,name:'direct-handoff',status:'completed',
-          conclusion:'success',started_at:at}]})
+          conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
     if(url.endsWith('/jobs/2/logs'))return {status:200,text:async()=>log}
     throw Error('Unexpected URL '+url)
   }
@@ -165,7 +167,7 @@ test('external backstop verifies an exact dispatch ID, real jobs and idle receip
   assert.equal(value.body.ciStartedVerified,false)
   assert.equal(value.body.taskDeliveryVerified,false)
   assert.equal(value.body.dispatchRunId,200)
-  assert.deepEqual(calls.map(x=>x.method),['GET','POST','GET','GET','GET'])
+  assert.deepEqual(calls.map(x=>x.method),['GET','GET','GET','POST','GET','GET','GET'])
 })
 test('a green Watchdog without actual handoff is not successful execution',async()=>{
   const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
@@ -183,9 +185,9 @@ test('a green Watchdog without actual handoff is not successful execution',async
       event:'schedule',head_branch:'codex/bootstrap-books',
       status:'completed',conclusion:'success',created_at:at})
     if(url.endsWith('/runs/300/jobs?per_page=50'))return fixture({total_count:2,
-      jobs:[{id:3,run_id:300,name:'reconcile',status:'completed',started_at:at},
+      jobs:[{id:3,run_id:300,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
         {id:4,run_id:300,name:'direct-handoff',status:'completed',
-          conclusion:'success',started_at:at}]})
+          conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
     if(url.endsWith('/jobs/4/logs'))return {status:200,text:async()=>(
       'HH_CONTROL_TOWER: '+JSON.stringify(blocked)+'\n'+
       'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
@@ -218,9 +220,9 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
       event:'workflow_dispatch',status:'completed',
       head_branch:'codex/bootstrap-books',created_at:at})
     if(url.endsWith('/runs/400/jobs?per_page=50'))return f({total_count:2,jobs:[
-      {id:41,run_id:400,name:'reconcile',status:'completed',started_at:at},
+      {id:41,run_id:400,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
       {id:42,run_id:400,name:'direct-handoff',status:'completed',
-        conclusion:'success',started_at:at}]})
+        conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
     if(url.endsWith('/jobs/42/logs'))return {status:200,text:async()=>(
       'HH_CONTROL_TOWER: '+JSON.stringify(summary)+'\n'+
       'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
@@ -230,7 +232,7 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
         head_branch:'codex/bootstrap-books',
         created_at:'2026-11-03T19:56:00Z'}]})
     if(url.endsWith('/runs/501/jobs?per_page=50'))return f({total_count:1,jobs:[
-      {id:502,run_id:501,name:'bootstrap',status:'completed',
+      {id:502,run_id:501,name:'bootstrap',status:'completed',runner_name:'GitHub Actions 3',
         started_at:'2026-11-03T19:56:10Z'}]})
     if(url.endsWith('/jobs/502/logs'))return {status:200,text:async()=>(
       'HH_CI_METADATA_WAKE '+JSON.stringify({
@@ -241,7 +243,7 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
         created_at:'2026-11-03T19:57:00Z',
         pull_requests:[{number:551,head:{sha}}]}]})
     if(url.endsWith('/runs/601/jobs?per_page=50'))return f({total_count:1,
-      jobs:[{id:602,run_id:601,name:'core-lint-types-build',status:'in_progress',
+      jobs:[{id:602,run_id:601,name:'core-lint-types-build',status:'in_progress',runner_name:'GitHub Actions 4',
         started_at:'2026-11-03T19:58:00Z'}]})
     throw Error('Unexpected URL '+url)
   }
@@ -293,4 +295,40 @@ test('dispatch accepted without run ID, pending runner and uncertain history fai
   assert.match(route,/HH_PR_CRON_DISPATCH_TOKEN/)
   const code=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
   assert.doesNotMatch(code,/update-branch|merge_pull_request|sourceChanged:true/)
+})
+
+
+test('green callback-only Watchdog does not suppress real independent CI wake',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const at='2026-11-03T19:59:00Z',now=Date.parse('2026-11-03T20:00:00Z')
+  const get=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  let dispatches=0
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST'){
+      dispatches++;return {status:200,json:async()=>({workflow_run_id:601})}
+    }
+    if(url.endsWith('/runs?per_page=10'))return get({total_count:1,workflow_runs:[{
+      id:600,workflow_id:403593743,event:'workflow_run',status:'completed',
+      conclusion:'success',head_branch:'codex/bootstrap-books',created_at:at
+    }]})
+    if(url.endsWith('/runs/600'))return get({id:600,workflow_id:403593743,
+      event:'workflow_run',status:'completed',conclusion:'success',
+      head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/600/jobs?per_page=50'))return get({total_count:2,jobs:[
+      {id:7,run_id:600,name:'reconcile',status:'completed',conclusion:'skipped'},
+      {id:8,run_id:600,name:'direct-handoff',status:'completed',conclusion:'skipped'}
+    ]})
+    if(url.includes('/runs?event='))return get({total_count:0,workflow_runs:[]})
+    if(url.endsWith('/runs/601'))return get({id:601,workflow_id:403593743,
+      event:'workflow_dispatch',status:'queued',head_branch:'codex/bootstrap-books',
+      created_at:at})
+    if(url.endsWith('/runs/601/jobs?per_page=50'))return get({total_count:0,jobs:[]})
+    throw Error('unexpected '+url)
+  }
+  const outcome=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined,wait:async()=>{}})
+  assert.equal(dispatches,1)
+  assert.equal(outcome.body.dispatchRunId,601)
+  assert.equal(outcome.body.executionVerified,false)
+  assert.equal(outcome.body.status,'runner_pending')
 })
