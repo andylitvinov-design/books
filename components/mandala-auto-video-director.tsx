@@ -5,6 +5,7 @@ import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
+import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
 import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
@@ -173,6 +174,10 @@ export function MandalaAutoVideoDirector({
  const taxonomyScenarios=selectedTopicId?listMyTubeScenarios(selectedTopicId,locale):[];
  const taxonomyPlots=plotData?.scenarioId===selectedScenarioId&&plotData.locale===locale?plotData.plots:[];
  const selectedTaxonomyPlot=taxonomyPlots.find(plot=>plot.id===selectedPlotId);
+ const selectedPlotMedia=useMemo(()=>selectedTaxonomyPlot?recommendMyTubePlotMontage({
+   plot:selectedTaxonomyPlot,scenes,excludedMotifs:proposal?.excludedMotifs||[],
+ }):null,[selectedTaxonomyPlot,scenes,proposal?.excludedMotifs]);
+ const plotLacksApprovedClips=Boolean(selectedPlotId&&!selectedPlotMedia?.hasFourApprovedSources);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
  const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
@@ -233,15 +238,20 @@ export function MandalaAutoVideoDirector({
  };
  // A prompt changed in the other shared editor must not leave a stale confirmation.
  const timelineForTopic=(topicId:string,scenarioId:string|null,
-   recommended:ReturnType<typeof recommendAutoVideo>)=>{
-   const selection=recommendMyTubeTopicStoryClips({
+   recommended:ReturnType<typeof recommendAutoVideo>,plot:MyTubePlot|null=null,
+   requestedSeconds?:10|15|20|30|60,presetOverride?:string)=>{
+   if(!recommended.presetId)return null;
+   const clipIds=plot?recommendMyTubePlotMontage({
+     plot,scenes,excludedMotifs:recommended.excludedMotifs,
+   }).clipIds:recommendMyTubeTopicStoryClips({
      topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,
-   });
-   if(!selection.dedicatedFourSceneReady||!recommended.presetId)return null;
-   const clipIds=selection.clipIds;
-   return {presetId:recommended.presetId,totalSeconds:recommended.durationSeconds,
-     clipIds,durations:allocateAdaptiveFilmTimeline(recommended.durationSeconds,clipIds)
-       .map(shot=>shot.durationSeconds),captions:["","","",""]};
+   }).clipIds;
+   if(clipIds.length!==4)return null;
+   const desiredSeconds=requestedSeconds||recommended.durationSeconds;
+   return {presetId:presetOverride||recommended.presetId,totalSeconds:desiredSeconds,
+     clipIds,durations:allocateAdaptiveFilmTimeline(desiredSeconds,clipIds)
+       .map(shot=>shot.durationSeconds),
+     captions:plot?plot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join("")):["","","",""]};
  };
  // A prompt changed in the other shared editor must not leave a stale confirmation.
  const showProposal=Boolean(proposal&&proposalContext?.goal===goal&&
@@ -316,7 +326,7 @@ export function MandalaAutoVideoDirector({
    setProposalContext({goal:nextGoal,theme:nextTheme});setProposal(recommended);
    setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
    // Scene matcher is scenario-level only; plot-level footage is NOT certified.
-   setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,selectedScenarioId,recommended):null);
+   setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,selectedScenarioId,recommended,plot):null);
  };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <div className={css.goalChoices} role="group" aria-label={
@@ -437,15 +447,30 @@ export function MandalaAutoVideoDirector({
         locale==="es"?"Las cuatro tramas no están disponibles; no se ha elegido ninguna.":
         "Four plots are unavailable; no plot has been selected."}
      </p>:null}
+   {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
+     role="status" data-mytube-plot-media-status
+     data-ready={selectedPlotMedia?.hasFourApprovedSources?"true":"false"}>
+     {selectedPlotMedia?.hasFourApprovedSources
+       ?(locale==="ru"?`Для символического предпросмотра подобраны 4 проверенных MP4 из ${selectedPlotMedia.candidateCount} тематических кандидатов. События истории в кадрах не подтверждены.`:
+         locale==="es"?`Seleccionados 4 MP4 aprobados entre ${selectedPlotMedia.candidateCount} candidatos temáticos. Interpretación simbólica, no escenas exactas verificadas.`:
+         `4 approved MP4s selected from ${selectedPlotMedia.candidateCount} topic candidates. Symbolic preview, not verified plot actions.`)
+       :(locale==="ru"?`Недостаточно лицензированных тематических кадров: ${selectedPlotMedia?.candidateCount??0} из 4. Экспорт выбранного сюжета недоступен; можно снять его выбор и сделать общий символический ролик.`:
+         locale==="es"?`Solo hay ${selectedPlotMedia?.candidateCount??0} de 4 clips aprobados. Esta trama no se puede exportar; quita su selección para un vídeo simbólico general.`:
+         `Only ${selectedPlotMedia?.candidateCount??0} of 4 approved topic clips. Plot export is unavailable; deselect it for a general symbolic film.`)}
+     <button type="button" data-mytube-clear-plot disabled={disabled}
+       onClick={()=>chooseTaxonomyScenario(selectedScenarioId)}>
+       {locale==="ru"?"Снять выбор сюжета":locale==="es"?"Quitar selección de trama":"Deselect plot"}
+     </button>
+   </div>:null}
    {selectedTaxonomyPlot?<div className={css.notice} data-mytube-selected-plot-outline>
      <strong>{locale==="ru"?"Сюжет и четыре события":locale==="es"?"Trama y cuatro acontecimientos":"Selected plot and four events"}: {selectedTaxonomyPlot.label}</strong>
      <p>{selectedTaxonomyPlot.synopsis}</p>
      <ol>{selectedTaxonomyPlot.beats.map((beat,index)=><li key={index}>{index+1}. {beat}</li>)}</ol>
      <small>{locale==="ru"?"Вектор изменения: ":locale==="es"?"Vector de cambio: ":"Transformation vector: "}{selectedTaxonomyPlot.transformationIdea}</small>
      <small data-mytube-plot-media-disclaimer>
-       {locale==="ru"?"Это сюжетная идея, а не готовое видео. Подбор существующих MP4 выполняется по теме и сценарию; точное совпадение с событиями сюжета не гарантируется.":
-        locale==="es"?"Es un concepto, no un vídeo terminado. Los MP4 se eligen por tema y escenario, sin garantía de reproducir exactamente los cuatro acontecimientos.":
-        "This is an editorial plot, not finished footage. Existing MP4s are matched by topic and scenario, with no guarantee of matching all four plot events."}
+       {locale==="ru"?"Это сюжетная идея, а не готовое видео. MP4 подбираются по теме, сценарию и визуальным подсказкам сюжета; сами события в кадрах не подтверждены.":
+        locale==="es"?"Es una idea creativa, no un vídeo terminado. Los MP4 se eligen por tema, escenario y pistas visuales; los acontecimientos exactos no están verificados.":
+        "This is an editorial plot, not finished footage. Approved MP4s are ranked by topic, scenario and visual cues; the events themselves are not verified."}
      </small>
    </div>:null}
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
@@ -503,7 +528,10 @@ export function MandalaAutoVideoDirector({
            return option?<button key={id} type="button" data-auto-video-option={id}
              aria-pressed={chosen.id===id} disabled={disabled}
              onClick={()=>{if(chosen?.id!==id)onInvalidate?.();
-               setOverrideId(id===proposal.presetId?null:id);setTimelineEdits(null);
+               setOverrideId(id===proposal.presetId?null:id);
+               setTimelineEdits(selectedTaxonomyPlot&&selectedTopicId?
+                 timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,
+                   length as 10|15|20|30|60,id):null);
                setConfirmedTimelineKey(null);}}>
              {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
                alt="" loading="lazy" className={css.storyPoster}/>:null}
@@ -635,12 +663,16 @@ export function MandalaAutoVideoDirector({
          <div className={css.adjust}><span>{t.duration}:</span>
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
              aria-pressed={length===n} onClick={()=>{if(length!==n)onInvalidate?.();
-               setSeconds(n);setTimelineEdits(null);setConfirmedTimelineKey(null);}}>{n} s</button>)}
+               setSeconds(n);
+               setTimelineEdits(selectedTaxonomyPlot&&selectedTopicId&&proposal?
+                 timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,n,
+                   chosen?.id):null);
+               setConfirmedTimelineKey(null);}}>{n} s</button>)}
          </div>
        </details>
        </details>
        <button type="button" data-auto-video-confirm className={css.confirm}
-         disabled={disabled} onClick={()=>{
+         disabled={disabled||plotLacksApprovedClips} onClick={()=>{
            const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
              clipIds:stageClipIds,durationSecondsByStage:stageDurations,
              excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
@@ -658,7 +690,7 @@ export function MandalaAutoVideoDirector({
        {activePresetId===chosen.id&&confirmedTimelineKey===timelineKey?<div className={css.appliedActions}>
          <p className={css.notice} role="status">{t.applied}</p>
          {onCreate?<button type="button" className={css.create} data-auto-video-create
-           disabled={disabled||!canCreate} onClick={onCreate}>
+           disabled={disabled||!canCreate||plotLacksApprovedClips} onClick={onCreate}>
            <Play size={17} fill="currentColor" aria-hidden="true"/>
            {rendering?t.waiting:t.create}
          </button>:null}
