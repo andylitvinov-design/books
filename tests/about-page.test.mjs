@@ -67,8 +67,9 @@ test('About reviews stay on Holistic House with genuine local posters and intern
   const aboutCopy = source('../data/about-biography.ts')
   const spanishCopy = source('../data/about-es.ts')
   for (const page of [enRuPage, esPage]) {
-    assert.match(page, /PersonalTestimonials/)
-    assert.match(page, /variant="about"/)
+    assert.match(page, /AboutTestimonialGallery/)
+    assert.match(page, /primaryVideos=/)
+    assert.match(page, /otherLanguageVideos=/)
     assert.doesNotMatch(page, /psimaster\.net|about-review-archive|archiveCards|archiveImage|target="_blank"/)
     assert.match(page, /internalOnly/)
   }
