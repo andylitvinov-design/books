@@ -156,9 +156,9 @@
                   "id": "goal-achievement-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Достижение целей",
+                    "en": "Path: Goal Achievement",
+                    "es": "Camino: Logro de objetivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Достижение целей»: постепенное движение от запроса к ясному следующему шагу.",
@@ -170,9 +170,9 @@
                   "id": "goal-achievement-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Достижение целей",
+                    "en": "Anchor: Goal Achievement",
+                    "es": "Apoyo: Logro de objetivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Достижение целей»: бережное пространство опоры и выбора.",
@@ -184,9 +184,9 @@
                   "id": "goal-achievement-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Достижение целей",
+                    "en": "New view: Goal Achievement",
+                    "es": "Nueva mirada: Logro de objetivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Достижение целей»: мягкая смена перспективы без давления.",
@@ -198,9 +198,9 @@
                   "id": "goal-achievement-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Достижение целей",
+                    "en": "Integration: Goal Achievement",
+                    "es": "Integración: Logro de objetivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Достижение целей»: интеграция идеи в небольшой повседневный шаг.",
@@ -240,9 +240,9 @@
                   "id": "procrastination-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Прокрастинация",
+                    "en": "Path: Procrastination",
+                    "es": "Camino: Procrastinación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Прокрастинация»: постепенное движение от запроса к ясному следующему шагу.",
@@ -254,9 +254,9 @@
                   "id": "procrastination-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Прокрастинация",
+                    "en": "Anchor: Procrastination",
+                    "es": "Apoyo: Procrastinación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Прокрастинация»: бережное пространство опоры и выбора.",
@@ -268,9 +268,9 @@
                   "id": "procrastination-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Прокрастинация",
+                    "en": "New view: Procrastination",
+                    "es": "Nueva mirada: Procrastinación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Прокрастинация»: мягкая смена перспективы без давления.",
@@ -282,9 +282,9 @@
                   "id": "procrastination-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Прокрастинация",
+                    "en": "Integration: Procrastination",
+                    "es": "Integración: Procrastinación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Прокрастинация»: интеграция идеи в небольшой повседневный шаг.",
@@ -324,9 +324,9 @@
                   "id": "self-discipline-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Самодисциплина",
+                    "en": "Path: Self-Discipline",
+                    "es": "Camino: Autodisciplina"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Самодисциплина»: постепенное движение от запроса к ясному следующему шагу.",
@@ -338,9 +338,9 @@
                   "id": "self-discipline-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Самодисциплина",
+                    "en": "Anchor: Self-Discipline",
+                    "es": "Apoyo: Autodisciplina"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Самодисциплина»: бережное пространство опоры и выбора.",
@@ -352,9 +352,9 @@
                   "id": "self-discipline-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Самодисциплина",
+                    "en": "New view: Self-Discipline",
+                    "es": "Nueva mirada: Autodisciplina"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Самодисциплина»: мягкая смена перспективы без давления.",
@@ -366,9 +366,9 @@
                   "id": "self-discipline-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Самодисциплина",
+                    "en": "Integration: Self-Discipline",
+                    "es": "Integración: Autodisciplina"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Самодисциплина»: интеграция идеи в небольшой повседневный шаг.",
@@ -408,9 +408,9 @@
                   "id": "focus-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Концентрация внимания",
+                    "en": "Path: Focus & Concentration",
+                    "es": "Camino: Enfoque y concentración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Концентрация внимания»: постепенное движение от запроса к ясному следующему шагу.",
@@ -422,9 +422,9 @@
                   "id": "focus-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Концентрация внимания",
+                    "en": "Anchor: Focus & Concentration",
+                    "es": "Apoyo: Enfoque y concentración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Концентрация внимания»: бережное пространство опоры и выбора.",
@@ -436,9 +436,9 @@
                   "id": "focus-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Концентрация внимания",
+                    "en": "New view: Focus & Concentration",
+                    "es": "Nueva mirada: Enfoque y concentración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Концентрация внимания»: мягкая смена перспективы без давления.",
@@ -450,9 +450,9 @@
                   "id": "focus-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Концентрация внимания",
+                    "en": "Integration: Focus & Concentration",
+                    "es": "Integración: Enfoque y concentración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Концентрация внимания»: интеграция идеи в небольшой повседневный шаг.",
@@ -502,9 +502,9 @@
                   "id": "life-purpose-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Поиск предназначения",
+                    "en": "Path: Life Purpose",
+                    "es": "Camino: Propósito de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск предназначения»: постепенное движение от запроса к ясному следующему шагу.",
@@ -516,9 +516,9 @@
                   "id": "life-purpose-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Поиск предназначения",
+                    "en": "Anchor: Life Purpose",
+                    "es": "Apoyo: Propósito de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск предназначения»: бережное пространство опоры и выбора.",
@@ -530,9 +530,9 @@
                   "id": "life-purpose-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Поиск предназначения",
+                    "en": "New view: Life Purpose",
+                    "es": "Nueva mirada: Propósito de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск предназначения»: мягкая смена перспективы без давления.",
@@ -544,9 +544,9 @@
                   "id": "life-purpose-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Поиск предназначения",
+                    "en": "Integration: Life Purpose",
+                    "es": "Integración: Propósito de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск предназначения»: интеграция идеи в небольшой повседневный шаг.",
@@ -586,9 +586,9 @@
                   "id": "find-yourself-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Поиск себя",
+                    "en": "Path: Finding Yourself",
+                    "es": "Camino: Encontrarse a uno mismo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск себя»: постепенное движение от запроса к ясному следующему шагу.",
@@ -600,9 +600,9 @@
                   "id": "find-yourself-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Поиск себя",
+                    "en": "Anchor: Finding Yourself",
+                    "es": "Apoyo: Encontrarse a uno mismo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск себя»: бережное пространство опоры и выбора.",
@@ -614,9 +614,9 @@
                   "id": "find-yourself-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Поиск себя",
+                    "en": "New view: Finding Yourself",
+                    "es": "Nueva mirada: Encontrarse a uno mismo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск себя»: мягкая смена перспективы без давления.",
@@ -628,9 +628,9 @@
                   "id": "find-yourself-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Поиск себя",
+                    "en": "Integration: Finding Yourself",
+                    "es": "Integración: Encontrarse a uno mismo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Поиск себя»: интеграция идеи в небольшой повседневный шаг.",
@@ -670,9 +670,9 @@
                   "id": "life-changes-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Изменение жизни",
+                    "en": "Path: Life Changes",
+                    "es": "Camino: Cambios de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изменение жизни»: постепенное движение от запроса к ясному следующему шагу.",
@@ -684,9 +684,9 @@
                   "id": "life-changes-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Изменение жизни",
+                    "en": "Anchor: Life Changes",
+                    "es": "Apoyo: Cambios de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изменение жизни»: бережное пространство опоры и выбора.",
@@ -698,9 +698,9 @@
                   "id": "life-changes-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Изменение жизни",
+                    "en": "New view: Life Changes",
+                    "es": "Nueva mirada: Cambios de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изменение жизни»: мягкая смена перспективы без давления.",
@@ -712,9 +712,9 @@
                   "id": "life-changes-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Изменение жизни",
+                    "en": "Integration: Life Changes",
+                    "es": "Integración: Cambios de vida"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изменение жизни»: интеграция идеи в небольшой повседневный шаг.",
@@ -754,9 +754,9 @@
                   "id": "life-transitions-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Жизненные перемены",
+                    "en": "Path: Life Transitions",
+                    "es": "Camino: Transiciones vitales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Жизненные перемены»: постепенное движение от запроса к ясному следующему шагу.",
@@ -768,9 +768,9 @@
                   "id": "life-transitions-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Жизненные перемены",
+                    "en": "Anchor: Life Transitions",
+                    "es": "Apoyo: Transiciones vitales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Жизненные перемены»: бережное пространство опоры и выбора.",
@@ -782,9 +782,9 @@
                   "id": "life-transitions-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Жизненные перемены",
+                    "en": "New view: Life Transitions",
+                    "es": "Nueva mirada: Transiciones vitales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Жизненные перемены»: мягкая смена перспективы без давления.",
@@ -796,9 +796,9 @@
                   "id": "life-transitions-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Жизненные перемены",
+                    "en": "Integration: Life Transitions",
+                    "es": "Integración: Transiciones vitales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Жизненные перемены»: интеграция идеи в небольшой повседневный шаг.",
@@ -848,9 +848,9 @@
                   "id": "money-mindset-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Психология денег",
+                    "en": "Path: Money Mindset",
+                    "es": "Camino: Mentalidad financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Психология денег»: постепенное движение от запроса к ясному следующему шагу.",
@@ -862,9 +862,9 @@
                   "id": "money-mindset-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Психология денег",
+                    "en": "Anchor: Money Mindset",
+                    "es": "Apoyo: Mentalidad financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Психология денег»: бережное пространство опоры и выбора.",
@@ -876,9 +876,9 @@
                   "id": "money-mindset-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Психология денег",
+                    "en": "New view: Money Mindset",
+                    "es": "Nueva mirada: Mentalidad financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Психология денег»: мягкая смена перспективы без давления.",
@@ -890,9 +890,9 @@
                   "id": "money-mindset-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Психология денег",
+                    "en": "Integration: Money Mindset",
+                    "es": "Integración: Mentalidad financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Психология денег»: интеграция идеи в небольшой повседневный шаг.",
@@ -932,9 +932,9 @@
                   "id": "financial-confidence-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Финансовая уверенность",
+                    "en": "Path: Financial Confidence",
+                    "es": "Camino: Confianza financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Финансовая уверенность»: постепенное движение от запроса к ясному следующему шагу.",
@@ -946,9 +946,9 @@
                   "id": "financial-confidence-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Финансовая уверенность",
+                    "en": "Anchor: Financial Confidence",
+                    "es": "Apoyo: Confianza financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Финансовая уверенность»: бережное пространство опоры и выбора.",
@@ -960,9 +960,9 @@
                   "id": "financial-confidence-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Финансовая уверенность",
+                    "en": "New view: Financial Confidence",
+                    "es": "Nueva mirada: Confianza financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Финансовая уверенность»: мягкая смена перспективы без давления.",
@@ -974,9 +974,9 @@
                   "id": "financial-confidence-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Финансовая уверенность",
+                    "en": "Integration: Financial Confidence",
+                    "es": "Integración: Confianza financiera"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Финансовая уверенность»: интеграция идеи в небольшой повседневный шаг.",
@@ -1016,9 +1016,9 @@
                   "id": "abundance-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Изобилие и процветание",
+                    "en": "Path: Abundance & Prosperity",
+                    "es": "Camino: Abundancia y prosperidad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изобилие и процветание»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1030,9 +1030,9 @@
                   "id": "abundance-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Изобилие и процветание",
+                    "en": "Anchor: Abundance & Prosperity",
+                    "es": "Apoyo: Abundancia y prosperidad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изобилие и процветание»: бережное пространство опоры и выбора.",
@@ -1044,9 +1044,9 @@
                   "id": "abundance-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Изобилие и процветание",
+                    "en": "New view: Abundance & Prosperity",
+                    "es": "Nueva mirada: Abundancia y prosperidad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изобилие и процветание»: мягкая смена перспективы без давления.",
@@ -1058,9 +1058,9 @@
                   "id": "abundance-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Изобилие и процветание",
+                    "en": "Integration: Abundance & Prosperity",
+                    "es": "Integración: Abundancia y prosperidad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Изобилие и процветание»: интеграция идеи в небольшой повседневный шаг.",
@@ -1100,9 +1100,9 @@
                   "id": "income-growth-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Рост дохода",
+                    "en": "Path: Income Growth",
+                    "es": "Camino: Aumentar ingresos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рост дохода»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1114,9 +1114,9 @@
                   "id": "income-growth-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Рост дохода",
+                    "en": "Anchor: Income Growth",
+                    "es": "Apoyo: Aumentar ingresos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рост дохода»: бережное пространство опоры и выбора.",
@@ -1128,9 +1128,9 @@
                   "id": "income-growth-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Рост дохода",
+                    "en": "New view: Income Growth",
+                    "es": "Nueva mirada: Aumentar ingresos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рост дохода»: мягкая смена перспективы без давления.",
@@ -1142,9 +1142,9 @@
                   "id": "income-growth-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Рост дохода",
+                    "en": "Integration: Income Growth",
+                    "es": "Integración: Aumentar ingresos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рост дохода»: интеграция идеи в небольшой повседневный шаг.",
@@ -1194,9 +1194,9 @@
                   "id": "entrepreneurship-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Предпринимательство",
+                    "en": "Path: Entrepreneurship",
+                    "es": "Camino: Emprendimiento"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Предпринимательство»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1208,9 +1208,9 @@
                   "id": "entrepreneurship-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Предпринимательство",
+                    "en": "Anchor: Entrepreneurship",
+                    "es": "Apoyo: Emprendimiento"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Предпринимательство»: бережное пространство опоры и выбора.",
@@ -1222,9 +1222,9 @@
                   "id": "entrepreneurship-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Предпринимательство",
+                    "en": "New view: Entrepreneurship",
+                    "es": "Nueva mirada: Emprendimiento"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Предпринимательство»: мягкая смена перспективы без давления.",
@@ -1236,9 +1236,9 @@
                   "id": "entrepreneurship-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Предпринимательство",
+                    "en": "Integration: Entrepreneurship",
+                    "es": "Integración: Emprendimiento"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Предпринимательство»: интеграция идеи в небольшой повседневный шаг.",
@@ -1277,9 +1277,9 @@
                   "id": "career-growth-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Карьерный рост",
+                    "en": "Path: Career Growth",
+                    "es": "Camino: Crecimiento profesional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Карьерный рост»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1291,9 +1291,9 @@
                   "id": "career-growth-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Карьерный рост",
+                    "en": "Anchor: Career Growth",
+                    "es": "Apoyo: Crecimiento profesional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Карьерный рост»: бережное пространство опоры и выбора.",
@@ -1305,9 +1305,9 @@
                   "id": "career-growth-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Карьерный рост",
+                    "en": "New view: Career Growth",
+                    "es": "Nueva mirada: Crecimiento profesional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Карьерный рост»: мягкая смена перспективы без давления.",
@@ -1319,9 +1319,9 @@
                   "id": "career-growth-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Карьерный рост",
+                    "en": "Integration: Career Growth",
+                    "es": "Integración: Crecimiento profesional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Карьерный рост»: интеграция идеи в небольшой повседневный шаг.",
@@ -1361,9 +1361,9 @@
                   "id": "leadership-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Лидерство",
+                    "en": "Path: Leadership",
+                    "es": "Camino: Liderazgo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Лидерство»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1375,9 +1375,9 @@
                   "id": "leadership-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Лидерство",
+                    "en": "Anchor: Leadership",
+                    "es": "Apoyo: Liderazgo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Лидерство»: бережное пространство опоры и выбора.",
@@ -1389,9 +1389,9 @@
                   "id": "leadership-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Лидерство",
+                    "en": "New view: Leadership",
+                    "es": "Nueva mirada: Liderazgo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Лидерство»: мягкая смена перспективы без давления.",
@@ -1403,9 +1403,9 @@
                   "id": "leadership-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Лидерство",
+                    "en": "Integration: Leadership",
+                    "es": "Integración: Liderazgo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Лидерство»: интеграция идеи в небольшой повседневный шаг.",
@@ -1445,9 +1445,9 @@
                   "id": "fear-of-failure-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Страх неудачи",
+                    "en": "Path: Fear of Failure",
+                    "es": "Camino: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1459,9 +1459,9 @@
                   "id": "fear-of-failure-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Страх неудачи",
+                    "en": "Anchor: Fear of Failure",
+                    "es": "Apoyo: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: бережное пространство опоры и выбора.",
@@ -1473,9 +1473,9 @@
                   "id": "fear-of-failure-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Страх неудачи",
+                    "en": "New view: Fear of Failure",
+                    "es": "Nueva mirada: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: мягкая смена перспективы без давления.",
@@ -1487,9 +1487,9 @@
                   "id": "fear-of-failure-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Страх неудачи",
+                    "en": "Integration: Fear of Failure",
+                    "es": "Integración: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: интеграция идеи в небольшой повседневный шаг.",
@@ -1552,9 +1552,9 @@
                   "id": "find-love-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Как найти любовь",
+                    "en": "Path: How to Find Love",
+                    "es": "Camino: Cómo encontrar el amor"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Как найти любовь»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1566,9 +1566,9 @@
                   "id": "find-love-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Как найти любовь",
+                    "en": "Anchor: How to Find Love",
+                    "es": "Apoyo: Cómo encontrar el amor"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Как найти любовь»: бережное пространство опоры и выбора.",
@@ -1580,9 +1580,9 @@
                   "id": "find-love-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Как найти любовь",
+                    "en": "New view: How to Find Love",
+                    "es": "Nueva mirada: Cómo encontrar el amor"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Как найти любовь»: мягкая смена перспективы без давления.",
@@ -1594,9 +1594,9 @@
                   "id": "find-love-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Как найти любовь",
+                    "en": "Integration: How to Find Love",
+                    "es": "Integración: Cómo encontrar el amor"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Как найти любовь»: интеграция идеи в небольшой повседневный шаг.",
@@ -1636,9 +1636,9 @@
                   "id": "ready-for-love-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Готовность к отношениям",
+                    "en": "Path: Ready for a Relationship",
+                    "es": "Camino: Prepararse para una relación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Готовность к отношениям»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1650,9 +1650,9 @@
                   "id": "ready-for-love-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Готовность к отношениям",
+                    "en": "Anchor: Ready for a Relationship",
+                    "es": "Apoyo: Prepararse para una relación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Готовность к отношениям»: бережное пространство опоры и выбора.",
@@ -1664,9 +1664,9 @@
                   "id": "ready-for-love-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Готовность к отношениям",
+                    "en": "New view: Ready for a Relationship",
+                    "es": "Nueva mirada: Prepararse para una relación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Готовность к отношениям»: мягкая смена перспективы без давления.",
@@ -1678,9 +1678,9 @@
                   "id": "ready-for-love-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Готовность к отношениям",
+                    "en": "Integration: Ready for a Relationship",
+                    "es": "Integración: Prepararse para una relación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Готовность к отношениям»: интеграция идеи в небольшой повседневный шаг.",
@@ -1720,9 +1720,9 @@
                   "id": "dating-confidence-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Уверенность на свиданиях",
+                    "en": "Path: Dating Confidence",
+                    "es": "Camino: Confianza en las citas"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Уверенность на свиданиях»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1734,9 +1734,9 @@
                   "id": "dating-confidence-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Уверенность на свиданиях",
+                    "en": "Anchor: Dating Confidence",
+                    "es": "Apoyo: Confianza en las citas"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Уверенность на свиданиях»: бережное пространство опоры и выбора.",
@@ -1748,9 +1748,9 @@
                   "id": "dating-confidence-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Уверенность на свиданиях",
+                    "en": "New view: Dating Confidence",
+                    "es": "Nueva mirada: Confianza en las citas"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Уверенность на свиданиях»: мягкая смена перспективы без давления.",
@@ -1762,9 +1762,9 @@
                   "id": "dating-confidence-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Уверенность на свиданиях",
+                    "en": "Integration: Dating Confidence",
+                    "es": "Integración: Confianza en las citas"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Уверенность на свиданиях»: интеграция идеи в небольшой повседневный шаг.",
@@ -1804,9 +1804,9 @@
                   "id": "partner-choice-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Выбор партнёра",
+                    "en": "Path: Choosing a Partner",
+                    "es": "Camino: Elegir pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Выбор партнёра»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1818,9 +1818,9 @@
                   "id": "partner-choice-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Выбор партнёра",
+                    "en": "Anchor: Choosing a Partner",
+                    "es": "Apoyo: Elegir pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Выбор партнёра»: бережное пространство опоры и выбора.",
@@ -1832,9 +1832,9 @@
                   "id": "partner-choice-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Выбор партнёра",
+                    "en": "New view: Choosing a Partner",
+                    "es": "Nueva mirada: Elegir pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Выбор партнёра»: мягкая смена перспективы без давления.",
@@ -1846,9 +1846,9 @@
                   "id": "partner-choice-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Выбор партнёра",
+                    "en": "Integration: Choosing a Partner",
+                    "es": "Integración: Elegir pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Выбор партнёра»: интеграция идеи в небольшой повседневный шаг.",
@@ -1898,9 +1898,9 @@
                   "id": "relationship-problems-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Проблемы отношений",
+                    "en": "Path: Relationship Problems",
+                    "es": "Camino: Problemas de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Проблемы отношений»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1912,9 +1912,9 @@
                   "id": "relationship-problems-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Проблемы отношений",
+                    "en": "Anchor: Relationship Problems",
+                    "es": "Apoyo: Problemas de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Проблемы отношений»: бережное пространство опоры и выбора.",
@@ -1926,9 +1926,9 @@
                   "id": "relationship-problems-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Проблемы отношений",
+                    "en": "New view: Relationship Problems",
+                    "es": "Nueva mirada: Problemas de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Проблемы отношений»: мягкая смена перспективы без давления.",
@@ -1940,9 +1940,9 @@
                   "id": "relationship-problems-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Проблемы отношений",
+                    "en": "Integration: Relationship Problems",
+                    "es": "Integración: Problemas de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Проблемы отношений»: интеграция идеи в небольшой повседневный шаг.",
@@ -1982,9 +1982,9 @@
                   "id": "couple-conflict-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Конфликты в паре",
+                    "en": "Path: Couple Conflict",
+                    "es": "Camino: Conflictos de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Конфликты в паре»: постепенное движение от запроса к ясному следующему шагу.",
@@ -1996,9 +1996,9 @@
                   "id": "couple-conflict-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Конфликты в паре",
+                    "en": "Anchor: Couple Conflict",
+                    "es": "Apoyo: Conflictos de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Конфликты в паре»: бережное пространство опоры и выбора.",
@@ -2010,9 +2010,9 @@
                   "id": "couple-conflict-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Конфликты в паре",
+                    "en": "New view: Couple Conflict",
+                    "es": "Nueva mirada: Conflictos de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Конфликты в паре»: мягкая смена перспективы без давления.",
@@ -2024,9 +2024,9 @@
                   "id": "couple-conflict-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Конфликты в паре",
+                    "en": "Integration: Couple Conflict",
+                    "es": "Integración: Conflictos de pareja"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Конфликты в паре»: интеграция идеи в небольшой повседневный шаг.",
@@ -2066,9 +2066,9 @@
                   "id": "trust-and-betrayal-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Доверие и предательство",
+                    "en": "Path: Trust & Betrayal",
+                    "es": "Camino: Confianza y traición"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Доверие и предательство»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2080,9 +2080,9 @@
                   "id": "trust-and-betrayal-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Доверие и предательство",
+                    "en": "Anchor: Trust & Betrayal",
+                    "es": "Apoyo: Confianza y traición"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Доверие и предательство»: бережное пространство опоры и выбора.",
@@ -2094,9 +2094,9 @@
                   "id": "trust-and-betrayal-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Доверие и предательство",
+                    "en": "New view: Trust & Betrayal",
+                    "es": "Nueva mirada: Confianza y traición"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Доверие и предательство»: мягкая смена перспективы без давления.",
@@ -2108,9 +2108,9 @@
                   "id": "trust-and-betrayal-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Доверие и предательство",
+                    "en": "Integration: Trust & Betrayal",
+                    "es": "Integración: Confianza y traición"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Доверие и предательство»: интеграция идеи в небольшой повседневный шаг.",
@@ -2150,9 +2150,9 @@
                   "id": "emotional-intimacy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Эмоциональная близость",
+                    "en": "Path: Emotional Intimacy",
+                    "es": "Camino: Intimidad emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональная близость»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2164,9 +2164,9 @@
                   "id": "emotional-intimacy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Эмоциональная близость",
+                    "en": "Anchor: Emotional Intimacy",
+                    "es": "Apoyo: Intimidad emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональная близость»: бережное пространство опоры и выбора.",
@@ -2178,9 +2178,9 @@
                   "id": "emotional-intimacy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Эмоциональная близость",
+                    "en": "New view: Emotional Intimacy",
+                    "es": "Nueva mirada: Intimidad emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональная близость»: мягкая смена перспективы без давления.",
@@ -2192,9 +2192,9 @@
                   "id": "emotional-intimacy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Эмоциональная близость",
+                    "en": "Integration: Emotional Intimacy",
+                    "es": "Integración: Intimidad emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональная близость»: интеграция идеи в небольшой повседневный шаг.",
@@ -2244,9 +2244,9 @@
                   "id": "loneliness-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Одиночество",
+                    "en": "Path: Loneliness",
+                    "es": "Camino: Soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Одиночество»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2258,9 +2258,9 @@
                   "id": "loneliness-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Одиночество",
+                    "en": "Anchor: Loneliness",
+                    "es": "Apoyo: Soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Одиночество»: бережное пространство опоры и выбора.",
@@ -2272,9 +2272,9 @@
                   "id": "loneliness-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Одиночество",
+                    "en": "New view: Loneliness",
+                    "es": "Nueva mirada: Soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Одиночество»: мягкая смена перспективы без давления.",
@@ -2286,9 +2286,9 @@
                   "id": "loneliness-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Одиночество",
+                    "en": "Integration: Loneliness",
+                    "es": "Integración: Soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Одиночество»: интеграция идеи в небольшой повседневный шаг.",
@@ -2328,9 +2328,9 @@
                   "id": "fear-of-loneliness-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Страх одиночества",
+                    "en": "Path: Fear of Being Alone",
+                    "es": "Camino: Miedo a la soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх одиночества»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2342,9 +2342,9 @@
                   "id": "fear-of-loneliness-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Страх одиночества",
+                    "en": "Anchor: Fear of Being Alone",
+                    "es": "Apoyo: Miedo a la soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх одиночества»: бережное пространство опоры и выбора.",
@@ -2356,9 +2356,9 @@
                   "id": "fear-of-loneliness-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Страх одиночества",
+                    "en": "New view: Fear of Being Alone",
+                    "es": "Nueva mirada: Miedo a la soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх одиночества»: мягкая смена перспективы без давления.",
@@ -2370,9 +2370,9 @@
                   "id": "fear-of-loneliness-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Страх одиночества",
+                    "en": "Integration: Fear of Being Alone",
+                    "es": "Integración: Miedo a la soledad"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх одиночества»: интеграция идеи в небольшой повседневный шаг.",
@@ -2412,9 +2412,9 @@
                   "id": "breakup-recovery-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Пережить расставание",
+                    "en": "Path: Breakup Recovery",
+                    "es": "Camino: Superar una ruptura"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Пережить расставание»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2426,9 +2426,9 @@
                   "id": "breakup-recovery-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Пережить расставание",
+                    "en": "Anchor: Breakup Recovery",
+                    "es": "Apoyo: Superar una ruptura"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Пережить расставание»: бережное пространство опоры и выбора.",
@@ -2440,9 +2440,9 @@
                   "id": "breakup-recovery-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Пережить расставание",
+                    "en": "New view: Breakup Recovery",
+                    "es": "Nueva mirada: Superar una ruptura"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Пережить расставание»: мягкая смена перспективы без давления.",
@@ -2454,9 +2454,9 @@
                   "id": "breakup-recovery-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Пережить расставание",
+                    "en": "Integration: Breakup Recovery",
+                    "es": "Integración: Superar una ruptura"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Пережить расставание»: интеграция идеи в небольшой повседневный шаг.",
@@ -2496,9 +2496,9 @@
                   "id": "unrequited-love-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Неразделённая любовь",
+                    "en": "Path: Unrequited Love",
+                    "es": "Camino: Amor no correspondido"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Неразделённая любовь»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2510,9 +2510,9 @@
                   "id": "unrequited-love-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Неразделённая любовь",
+                    "en": "Anchor: Unrequited Love",
+                    "es": "Apoyo: Amor no correspondido"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Неразделённая любовь»: бережное пространство опоры и выбора.",
@@ -2524,9 +2524,9 @@
                   "id": "unrequited-love-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Неразделённая любовь",
+                    "en": "New view: Unrequited Love",
+                    "es": "Nueva mirada: Amor no correspondido"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Неразделённая любовь»: мягкая смена перспективы без давления.",
@@ -2538,9 +2538,9 @@
                   "id": "unrequited-love-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Неразделённая любовь",
+                    "en": "Integration: Unrequited Love",
+                    "es": "Integración: Amor no correspondido"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Неразделённая любовь»: интеграция идеи в небольшой повседневный шаг.",
@@ -2590,9 +2590,9 @@
                   "id": "low-self-esteem-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Низкая самооценка",
+                    "en": "Path: Low Self-Esteem",
+                    "es": "Camino: Baja autoestima"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Низкая самооценка»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2604,9 +2604,9 @@
                   "id": "low-self-esteem-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Низкая самооценка",
+                    "en": "Anchor: Low Self-Esteem",
+                    "es": "Apoyo: Baja autoestima"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Низкая самооценка»: бережное пространство опоры и выбора.",
@@ -2618,9 +2618,9 @@
                   "id": "low-self-esteem-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Низкая самооценка",
+                    "en": "New view: Low Self-Esteem",
+                    "es": "Nueva mirada: Baja autoestima"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Низкая самооценка»: мягкая смена перспективы без давления.",
@@ -2632,9 +2632,9 @@
                   "id": "low-self-esteem-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Низкая самооценка",
+                    "en": "Integration: Low Self-Esteem",
+                    "es": "Integración: Baja autoestima"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Низкая самооценка»: интеграция идеи в небольшой повседневный шаг.",
@@ -2674,9 +2674,9 @@
                   "id": "self-acceptance-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Принятие себя",
+                    "en": "Path: Self-Acceptance",
+                    "es": "Camino: Autoaceptación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Принятие себя»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2688,9 +2688,9 @@
                   "id": "self-acceptance-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Принятие себя",
+                    "en": "Anchor: Self-Acceptance",
+                    "es": "Apoyo: Autoaceptación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Принятие себя»: бережное пространство опоры и выбора.",
@@ -2702,9 +2702,9 @@
                   "id": "self-acceptance-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Принятие себя",
+                    "en": "New view: Self-Acceptance",
+                    "es": "Nueva mirada: Autoaceptación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Принятие себя»: мягкая смена перспективы без давления.",
@@ -2716,9 +2716,9 @@
                   "id": "self-acceptance-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Принятие себя",
+                    "en": "Integration: Self-Acceptance",
+                    "es": "Integración: Autoaceptación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Принятие себя»: интеграция идеи в небольшой повседневный шаг.",
@@ -2758,9 +2758,9 @@
                   "id": "fear-of-judgment-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Страх осуждения",
+                    "en": "Path: Fear of Judgment",
+                    "es": "Camino: Miedo al juicio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх осуждения»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2772,9 +2772,9 @@
                   "id": "fear-of-judgment-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Страх осуждения",
+                    "en": "Anchor: Fear of Judgment",
+                    "es": "Apoyo: Miedo al juicio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх осуждения»: бережное пространство опоры и выбора.",
@@ -2786,9 +2786,9 @@
                   "id": "fear-of-judgment-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Страх осуждения",
+                    "en": "New view: Fear of Judgment",
+                    "es": "Nueva mirada: Miedo al juicio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх осуждения»: мягкая смена перспективы без давления.",
@@ -2800,9 +2800,9 @@
                   "id": "fear-of-judgment-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Страх осуждения",
+                    "en": "Integration: Fear of Judgment",
+                    "es": "Integración: Miedo al juicio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх осуждения»: интеграция идеи в небольшой повседневный шаг.",
@@ -2842,9 +2842,9 @@
                   "id": "personal-boundaries-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Личные границы",
+                    "en": "Path: Personal Boundaries",
+                    "es": "Camino: Límites personales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Личные границы»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2856,9 +2856,9 @@
                   "id": "personal-boundaries-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Личные границы",
+                    "en": "Anchor: Personal Boundaries",
+                    "es": "Apoyo: Límites personales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Личные границы»: бережное пространство опоры и выбора.",
@@ -2870,9 +2870,9 @@
                   "id": "personal-boundaries-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Личные границы",
+                    "en": "New view: Personal Boundaries",
+                    "es": "Nueva mirada: Límites personales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Личные границы»: мягкая смена перспективы без давления.",
@@ -2884,9 +2884,9 @@
                   "id": "personal-boundaries-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Личные границы",
+                    "en": "Integration: Personal Boundaries",
+                    "es": "Integración: Límites personales"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Личные границы»: интеграция идеи в небольшой повседневный шаг.",
@@ -2949,9 +2949,9 @@
                   "id": "stress-relief-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Снятие стресса",
+                    "en": "Path: Stress Relief",
+                    "es": "Camino: Alivio del estrés"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Снятие стресса»: постепенное движение от запроса к ясному следующему шагу.",
@@ -2963,9 +2963,9 @@
                   "id": "stress-relief-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Снятие стресса",
+                    "en": "Anchor: Stress Relief",
+                    "es": "Apoyo: Alivio del estrés"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Снятие стресса»: бережное пространство опоры и выбора.",
@@ -2977,9 +2977,9 @@
                   "id": "stress-relief-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Снятие стресса",
+                    "en": "New view: Stress Relief",
+                    "es": "Nueva mirada: Alivio del estrés"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Снятие стресса»: мягкая смена перспективы без давления.",
@@ -2991,9 +2991,9 @@
                   "id": "stress-relief-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Снятие стресса",
+                    "en": "Integration: Stress Relief",
+                    "es": "Integración: Alivio del estrés"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Снятие стресса»: интеграция идеи в небольшой повседневный шаг.",
@@ -3033,9 +3033,9 @@
                   "id": "chronic-stress-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Хронический стресс",
+                    "en": "Path: Chronic Stress",
+                    "es": "Camino: Estrés crónico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Хронический стресс»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3047,9 +3047,9 @@
                   "id": "chronic-stress-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Хронический стресс",
+                    "en": "Anchor: Chronic Stress",
+                    "es": "Apoyo: Estrés crónico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Хронический стресс»: бережное пространство опоры и выбора.",
@@ -3061,9 +3061,9 @@
                   "id": "chronic-stress-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Хронический стресс",
+                    "en": "New view: Chronic Stress",
+                    "es": "Nueva mirada: Estrés crónico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Хронический стресс»: мягкая смена перспективы без давления.",
@@ -3075,9 +3075,9 @@
                   "id": "chronic-stress-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Хронический стресс",
+                    "en": "Integration: Chronic Stress",
+                    "es": "Integración: Estrés crónico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Хронический стресс»: интеграция идеи в небольшой повседневный шаг.",
@@ -3117,9 +3117,9 @@
                   "id": "work-stress-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Рабочий стресс",
+                    "en": "Path: Work Stress",
+                    "es": "Camino: Estrés laboral"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рабочий стресс»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3131,9 +3131,9 @@
                   "id": "work-stress-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Рабочий стресс",
+                    "en": "Anchor: Work Stress",
+                    "es": "Apoyo: Estrés laboral"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рабочий стресс»: бережное пространство опоры и выбора.",
@@ -3145,9 +3145,9 @@
                   "id": "work-stress-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Рабочий стресс",
+                    "en": "New view: Work Stress",
+                    "es": "Nueva mirada: Estrés laboral"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рабочий стресс»: мягкая смена перспективы без давления.",
@@ -3159,9 +3159,9 @@
                   "id": "work-stress-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Рабочий стресс",
+                    "en": "Integration: Work Stress",
+                    "es": "Integración: Estrés laboral"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Рабочий стресс»: интеграция идеи в небольшой повседневный шаг.",
@@ -3201,9 +3201,9 @@
                   "id": "burnout-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Эмоциональное выгорание",
+                    "en": "Path: Emotional Burnout",
+                    "es": "Camino: Agotamiento emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональное выгорание»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3215,9 +3215,9 @@
                   "id": "burnout-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Эмоциональное выгорание",
+                    "en": "Anchor: Emotional Burnout",
+                    "es": "Apoyo: Agotamiento emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональное выгорание»: бережное пространство опоры и выбора.",
@@ -3229,9 +3229,9 @@
                   "id": "burnout-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Эмоциональное выгорание",
+                    "en": "New view: Emotional Burnout",
+                    "es": "Nueva mirada: Agotamiento emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональное выгорание»: мягкая смена перспективы без давления.",
@@ -3243,9 +3243,9 @@
                   "id": "burnout-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Эмоциональное выгорание",
+                    "en": "Integration: Emotional Burnout",
+                    "es": "Integración: Agotamiento emocional"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Эмоциональное выгорание»: интеграция идеи в небольшой повседневный шаг.",
@@ -3295,9 +3295,9 @@
                   "id": "constant-anxiety-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Постоянная тревога",
+                    "en": "Path: Constant Anxiety",
+                    "es": "Camino: Ansiedad constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная тревога»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3309,9 +3309,9 @@
                   "id": "constant-anxiety-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Постоянная тревога",
+                    "en": "Anchor: Constant Anxiety",
+                    "es": "Apoyo: Ansiedad constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная тревога»: бережное пространство опоры и выбора.",
@@ -3323,9 +3323,9 @@
                   "id": "constant-anxiety-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Постоянная тревога",
+                    "en": "New view: Constant Anxiety",
+                    "es": "Nueva mirada: Ansiedad constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная тревога»: мягкая смена перспективы без давления.",
@@ -3337,9 +3337,9 @@
                   "id": "constant-anxiety-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Постоянная тревога",
+                    "en": "Integration: Constant Anxiety",
+                    "es": "Integración: Ansiedad constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная тревога»: интеграция идеи в небольшой повседневный шаг.",
@@ -3379,9 +3379,9 @@
                   "id": "anxiety-no-reason-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Тревога без причины",
+                    "en": "Path: Anxiety for No Reason",
+                    "es": "Camino: Ansiedad sin motivo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Тревога без причины»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3393,9 +3393,9 @@
                   "id": "anxiety-no-reason-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Тревога без причины",
+                    "en": "Anchor: Anxiety for No Reason",
+                    "es": "Apoyo: Ansiedad sin motivo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Тревога без причины»: бережное пространство опоры и выбора.",
@@ -3407,9 +3407,9 @@
                   "id": "anxiety-no-reason-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Тревога без причины",
+                    "en": "New view: Anxiety for No Reason",
+                    "es": "Nueva mirada: Ansiedad sin motivo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Тревога без причины»: мягкая смена перспективы без давления.",
@@ -3421,9 +3421,9 @@
                   "id": "anxiety-no-reason-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Тревога без причины",
+                    "en": "Integration: Anxiety for No Reason",
+                    "es": "Integración: Ansiedad sin motivo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Тревога без причины»: интеграция идеи в небольшой повседневный шаг.",
@@ -3463,9 +3463,9 @@
                   "id": "overthinking-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Навязчивые мысли",
+                    "en": "Path: Overthinking & Intrusive Thoughts",
+                    "es": "Camino: Pensamientos repetitivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Навязчивые мысли»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3477,9 +3477,9 @@
                   "id": "overthinking-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Навязчивые мысли",
+                    "en": "Anchor: Overthinking & Intrusive Thoughts",
+                    "es": "Apoyo: Pensamientos repetitivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Навязчивые мысли»: бережное пространство опоры и выбора.",
@@ -3491,9 +3491,9 @@
                   "id": "overthinking-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Навязчивые мысли",
+                    "en": "New view: Overthinking & Intrusive Thoughts",
+                    "es": "Nueva mirada: Pensamientos repetitivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Навязчивые мысли»: мягкая смена перспективы без давления.",
@@ -3505,9 +3505,9 @@
                   "id": "overthinking-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Навязчивые мысли",
+                    "en": "Integration: Overthinking & Intrusive Thoughts",
+                    "es": "Integración: Pensamientos repetitivos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Навязчивые мысли»: интеграция идеи в небольшой повседневный шаг.",
@@ -3547,9 +3547,9 @@
                   "id": "future-anxiety-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Страх будущего",
+                    "en": "Path: Fear of the Future",
+                    "es": "Camino: Miedo al futuro"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх будущего»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3561,9 +3561,9 @@
                   "id": "future-anxiety-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Страх будущего",
+                    "en": "Anchor: Fear of the Future",
+                    "es": "Apoyo: Miedo al futuro"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх будущего»: бережное пространство опоры и выбора.",
@@ -3575,9 +3575,9 @@
                   "id": "future-anxiety-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Страх будущего",
+                    "en": "New view: Fear of the Future",
+                    "es": "Nueva mirada: Miedo al futuro"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх будущего»: мягкая смена перспективы без давления.",
@@ -3589,9 +3589,9 @@
                   "id": "future-anxiety-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Страх будущего",
+                    "en": "Integration: Fear of the Future",
+                    "es": "Integración: Miedo al futuro"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх будущего»: интеграция идеи в небольшой повседневный шаг.",
@@ -3641,9 +3641,9 @@
                   "id": "panic-attacks-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Панические атаки",
+                    "en": "Path: Panic Attacks",
+                    "es": "Camino: Ataques de pánico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Панические атаки»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3655,9 +3655,9 @@
                   "id": "panic-attacks-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Панические атаки",
+                    "en": "Anchor: Panic Attacks",
+                    "es": "Apoyo: Ataques de pánico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Панические атаки»: бережное пространство опоры и выбора.",
@@ -3669,9 +3669,9 @@
                   "id": "panic-attacks-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Панические атаки",
+                    "en": "New view: Panic Attacks",
+                    "es": "Nueva mirada: Ataques de pánico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Панические атаки»: мягкая смена перспективы без давления.",
@@ -3683,9 +3683,9 @@
                   "id": "panic-attacks-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Панические атаки",
+                    "en": "Integration: Panic Attacks",
+                    "es": "Integración: Ataques de pánico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Панические атаки»: интеграция идеи в небольшой повседневный шаг.",
@@ -3725,9 +3725,9 @@
                   "id": "phobias-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Фобии",
+                    "en": "Path: Phobias",
+                    "es": "Camino: Fobias"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Фобии»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3739,9 +3739,9 @@
                   "id": "phobias-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Фобии",
+                    "en": "Anchor: Phobias",
+                    "es": "Apoyo: Fobias"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Фобии»: бережное пространство опоры и выбора.",
@@ -3753,9 +3753,9 @@
                   "id": "phobias-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Фобии",
+                    "en": "New view: Phobias",
+                    "es": "Nueva mirada: Fobias"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Фобии»: мягкая смена перспективы без давления.",
@@ -3767,9 +3767,9 @@
                   "id": "phobias-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Фобии",
+                    "en": "Integration: Phobias",
+                    "es": "Integración: Fobias"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Фобии»: интеграция идеи в небольшой повседневный шаг.",
@@ -3809,9 +3809,9 @@
                   "id": "social-anxiety-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Социальная тревога",
+                    "en": "Path: Social Anxiety",
+                    "es": "Camino: Ansiedad social"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Социальная тревога»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3823,9 +3823,9 @@
                   "id": "social-anxiety-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Социальная тревога",
+                    "en": "Anchor: Social Anxiety",
+                    "es": "Apoyo: Ansiedad social"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Социальная тревога»: бережное пространство опоры и выбора.",
@@ -3837,9 +3837,9 @@
                   "id": "social-anxiety-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Социальная тревога",
+                    "en": "New view: Social Anxiety",
+                    "es": "Nueva mirada: Ansiedad social"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Социальная тревога»: мягкая смена перспективы без давления.",
@@ -3851,9 +3851,9 @@
                   "id": "social-anxiety-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Социальная тревога",
+                    "en": "Integration: Social Anxiety",
+                    "es": "Integración: Ansiedad social"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Социальная тревога»: интеграция идеи в небольшой повседневный шаг.",
@@ -3893,9 +3893,9 @@
                   "id": "fear-of-failure-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Страх неудачи",
+                    "en": "Path: Fear of Failure",
+                    "es": "Camino: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: постепенное движение от запроса к ясному следующему шагу.",
@@ -3907,9 +3907,9 @@
                   "id": "fear-of-failure-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Страх неудачи",
+                    "en": "Anchor: Fear of Failure",
+                    "es": "Apoyo: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: бережное пространство опоры и выбора.",
@@ -3921,9 +3921,9 @@
                   "id": "fear-of-failure-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Страх неудачи",
+                    "en": "New view: Fear of Failure",
+                    "es": "Nueva mirada: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: мягкая смена перспективы без давления.",
@@ -3935,9 +3935,9 @@
                   "id": "fear-of-failure-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Страх неудачи",
+                    "en": "Integration: Fear of Failure",
+                    "es": "Integración: Miedo al fracaso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Страх неудачи»: интеграция идеи в небольшой повседневный шаг.",
@@ -3987,9 +3987,9 @@
                   "id": "childhood-trauma-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Детские травмы",
+                    "en": "Path: Childhood Trauma",
+                    "es": "Camino: Trauma infantil"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Детские травмы»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4001,9 +4001,9 @@
                   "id": "childhood-trauma-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Детские травмы",
+                    "en": "Anchor: Childhood Trauma",
+                    "es": "Apoyo: Trauma infantil"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Детские травмы»: бережное пространство опоры и выбора.",
@@ -4015,9 +4015,9 @@
                   "id": "childhood-trauma-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Детские травмы",
+                    "en": "New view: Childhood Trauma",
+                    "es": "Nueva mirada: Trauma infantil"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Детские травмы»: мягкая смена перспективы без давления.",
@@ -4029,9 +4029,9 @@
                   "id": "childhood-trauma-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Детские травмы",
+                    "en": "Integration: Childhood Trauma",
+                    "es": "Integración: Trauma infantil"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Детские травмы»: интеграция идеи в небольшой повседневный шаг.",
@@ -4071,9 +4071,9 @@
                   "id": "inner-child-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Внутренний ребёнок",
+                    "en": "Path: Inner Child",
+                    "es": "Camino: Niño interior"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Внутренний ребёнок»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4085,9 +4085,9 @@
                   "id": "inner-child-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Внутренний ребёнок",
+                    "en": "Anchor: Inner Child",
+                    "es": "Apoyo: Niño interior"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Внутренний ребёнок»: бережное пространство опоры и выбора.",
@@ -4099,9 +4099,9 @@
                   "id": "inner-child-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Внутренний ребёнок",
+                    "en": "New view: Inner Child",
+                    "es": "Nueva mirada: Niño interior"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Внутренний ребёнок»: мягкая смена перспективы без давления.",
@@ -4113,9 +4113,9 @@
                   "id": "inner-child-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Внутренний ребёнок",
+                    "en": "Integration: Inner Child",
+                    "es": "Integración: Niño interior"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Внутренний ребёнок»: интеграция идеи в небольшой повседневный шаг.",
@@ -4155,9 +4155,9 @@
                   "id": "depression-low-mood-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Депрессия и подавленность",
+                    "en": "Path: Depression & Low Mood",
+                    "es": "Camino: Depresión y ánimo bajo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Депрессия и подавленность»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4169,9 +4169,9 @@
                   "id": "depression-low-mood-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Депрессия и подавленность",
+                    "en": "Anchor: Depression & Low Mood",
+                    "es": "Apoyo: Depresión y ánimo bajo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Депрессия и подавленность»: бережное пространство опоры и выбора.",
@@ -4183,9 +4183,9 @@
                   "id": "depression-low-mood-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Депрессия и подавленность",
+                    "en": "New view: Depression & Low Mood",
+                    "es": "Nueva mirada: Depresión y ánimo bajo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Депрессия и подавленность»: мягкая смена перспективы без давления.",
@@ -4197,9 +4197,9 @@
                   "id": "depression-low-mood-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Депрессия и подавленность",
+                    "en": "Integration: Depression & Low Mood",
+                    "es": "Integración: Depresión y ánimo bajo"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Депрессия и подавленность»: интеграция идеи в небольшой повседневный шаг.",
@@ -4239,9 +4239,9 @@
                   "id": "apathy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Апатия",
+                    "en": "Path: Apathy",
+                    "es": "Camino: Apatía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Апатия»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4253,9 +4253,9 @@
                   "id": "apathy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Апатия",
+                    "en": "Anchor: Apathy",
+                    "es": "Apoyo: Apatía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Апатия»: бережное пространство опоры и выбора.",
@@ -4267,9 +4267,9 @@
                   "id": "apathy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Апатия",
+                    "en": "New view: Apathy",
+                    "es": "Nueva mirada: Apatía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Апатия»: мягкая смена перспективы без давления.",
@@ -4281,9 +4281,9 @@
                   "id": "apathy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Апатия",
+                    "en": "Integration: Apathy",
+                    "es": "Integración: Apatía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Апатия»: интеграция идеи в небольшой повседневный шаг.",
@@ -4347,9 +4347,9 @@
                   "id": "body-awareness-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Телесная осознанность",
+                    "en": "Path: Body Awareness",
+                    "es": "Camino: Conciencia corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Телесная осознанность»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4361,9 +4361,9 @@
                   "id": "body-awareness-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Телесная осознанность",
+                    "en": "Anchor: Body Awareness",
+                    "es": "Apoyo: Conciencia corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Телесная осознанность»: бережное пространство опоры и выбора.",
@@ -4375,9 +4375,9 @@
                   "id": "body-awareness-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Телесная осознанность",
+                    "en": "New view: Body Awareness",
+                    "es": "Nueva mirada: Conciencia corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Телесная осознанность»: мягкая смена перспективы без давления.",
@@ -4389,9 +4389,9 @@
                   "id": "body-awareness-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Телесная осознанность",
+                    "en": "Integration: Body Awareness",
+                    "es": "Integración: Conciencia corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Телесная осознанность»: интеграция идеи в небольшой повседневный шаг.",
@@ -4431,9 +4431,9 @@
                   "id": "breathing-practices-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Дыхательные практики",
+                    "en": "Path: Breathing Practices",
+                    "es": "Camino: Prácticas de respiración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Дыхательные практики»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4445,9 +4445,9 @@
                   "id": "breathing-practices-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Дыхательные практики",
+                    "en": "Anchor: Breathing Practices",
+                    "es": "Apoyo: Prácticas de respiración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Дыхательные практики»: бережное пространство опоры и выбора.",
@@ -4459,9 +4459,9 @@
                   "id": "breathing-practices-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Дыхательные практики",
+                    "en": "New view: Breathing Practices",
+                    "es": "Nueva mirada: Prácticas de respiración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Дыхательные практики»: мягкая смена перспективы без давления.",
@@ -4473,9 +4473,9 @@
                   "id": "breathing-practices-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Дыхательные практики",
+                    "en": "Integration: Breathing Practices",
+                    "es": "Integración: Prácticas de respiración"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Дыхательные практики»: интеграция идеи в небольшой повседневный шаг.",
@@ -4515,9 +4515,9 @@
                   "id": "muscle-tension-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Мышечное напряжение",
+                    "en": "Path: Muscle Tension",
+                    "es": "Camino: Tensión muscular"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мышечное напряжение»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4529,9 +4529,9 @@
                   "id": "muscle-tension-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Мышечное напряжение",
+                    "en": "Anchor: Muscle Tension",
+                    "es": "Apoyo: Tensión muscular"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мышечное напряжение»: бережное пространство опоры и выбора.",
@@ -4543,9 +4543,9 @@
                   "id": "muscle-tension-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Мышечное напряжение",
+                    "en": "New view: Muscle Tension",
+                    "es": "Nueva mirada: Tensión muscular"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мышечное напряжение»: мягкая смена перспективы без давления.",
@@ -4557,9 +4557,9 @@
                   "id": "muscle-tension-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Мышечное напряжение",
+                    "en": "Integration: Muscle Tension",
+                    "es": "Integración: Tensión muscular"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мышечное напряжение»: интеграция идеи в небольшой повседневный шаг.",
@@ -4599,9 +4599,9 @@
                   "id": "body-care-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Забота о теле",
+                    "en": "Path: Body Care",
+                    "es": "Camino: Cuidado corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Забота о теле»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4613,9 +4613,9 @@
                   "id": "body-care-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Забота о теле",
+                    "en": "Anchor: Body Care",
+                    "es": "Apoyo: Cuidado corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Забота о теле»: бережное пространство опоры и выбора.",
@@ -4627,9 +4627,9 @@
                   "id": "body-care-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Забота о теле",
+                    "en": "New view: Body Care",
+                    "es": "Nueva mirada: Cuidado corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Забота о теле»: мягкая смена перспективы без давления.",
@@ -4641,9 +4641,9 @@
                   "id": "body-care-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Забота о теле",
+                    "en": "Integration: Body Care",
+                    "es": "Integración: Cuidado corporal"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Забота о теле»: интеграция идеи в небольшой повседневный шаг.",
@@ -4693,9 +4693,9 @@
                   "id": "boost-energy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Повышение энергии",
+                    "en": "Path: Boost Energy",
+                    "es": "Camino: Aumentar la energía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Повышение энергии»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4707,9 +4707,9 @@
                   "id": "boost-energy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Повышение энергии",
+                    "en": "Anchor: Boost Energy",
+                    "es": "Apoyo: Aumentar la energía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Повышение энергии»: бережное пространство опоры и выбора.",
@@ -4721,9 +4721,9 @@
                   "id": "boost-energy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Повышение энергии",
+                    "en": "New view: Boost Energy",
+                    "es": "Nueva mirada: Aumentar la energía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Повышение энергии»: мягкая смена перспективы без давления.",
@@ -4735,9 +4735,9 @@
                   "id": "boost-energy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Повышение энергии",
+                    "en": "Integration: Boost Energy",
+                    "es": "Integración: Aumentar la energía"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Повышение энергии»: интеграция идеи в небольшой повседневный шаг.",
@@ -4777,9 +4777,9 @@
                   "id": "morning-energy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Утренняя бодрость",
+                    "en": "Path: Morning Energy",
+                    "es": "Camino: Energía por la mañana"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Утренняя бодрость»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4791,9 +4791,9 @@
                   "id": "morning-energy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Утренняя бодрость",
+                    "en": "Anchor: Morning Energy",
+                    "es": "Apoyo: Energía por la mañana"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Утренняя бодрость»: бережное пространство опоры и выбора.",
@@ -4805,9 +4805,9 @@
                   "id": "morning-energy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Утренняя бодрость",
+                    "en": "New view: Morning Energy",
+                    "es": "Nueva mirada: Energía por la mañana"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Утренняя бодрость»: мягкая смена перспективы без давления.",
@@ -4819,9 +4819,9 @@
                   "id": "morning-energy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Утренняя бодрость",
+                    "en": "Integration: Morning Energy",
+                    "es": "Integración: Energía por la mañana"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Утренняя бодрость»: интеграция идеи в небольшой повседневный шаг.",
@@ -4861,9 +4861,9 @@
                   "id": "motivation-drive-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Мотивация и импульс",
+                    "en": "Path: Motivation & Drive",
+                    "es": "Camino: Motivación e impulso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мотивация и импульс»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4875,9 +4875,9 @@
                   "id": "motivation-drive-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Мотивация и импульс",
+                    "en": "Anchor: Motivation & Drive",
+                    "es": "Apoyo: Motivación e impulso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мотивация и импульс»: бережное пространство опоры и выбора.",
@@ -4889,9 +4889,9 @@
                   "id": "motivation-drive-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Мотивация и импульс",
+                    "en": "New view: Motivation & Drive",
+                    "es": "Nueva mirada: Motivación e impulso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мотивация и импульс»: мягкая смена перспективы без давления.",
@@ -4903,9 +4903,9 @@
                   "id": "motivation-drive-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Мотивация и импульс",
+                    "en": "Integration: Motivation & Drive",
+                    "es": "Integración: Motivación e impulso"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Мотивация и импульс»: интеграция идеи в небольшой повседневный шаг.",
@@ -4945,9 +4945,9 @@
                   "id": "mental-clarity-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Ясность мышления",
+                    "en": "Path: Mental Clarity",
+                    "es": "Camino: Claridad mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ясность мышления»: постепенное движение от запроса к ясному следующему шагу.",
@@ -4959,9 +4959,9 @@
                   "id": "mental-clarity-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Ясность мышления",
+                    "en": "Anchor: Mental Clarity",
+                    "es": "Apoyo: Claridad mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ясность мышления»: бережное пространство опоры и выбора.",
@@ -4973,9 +4973,9 @@
                   "id": "mental-clarity-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Ясность мышления",
+                    "en": "New view: Mental Clarity",
+                    "es": "Nueva mirada: Claridad mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ясность мышления»: мягкая смена перспективы без давления.",
@@ -4987,9 +4987,9 @@
                   "id": "mental-clarity-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Ясность мышления",
+                    "en": "Integration: Mental Clarity",
+                    "es": "Integración: Claridad mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ясность мышления»: интеграция идеи в небольшой повседневный шаг.",
@@ -5039,9 +5039,9 @@
                   "id": "constant-fatigue-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Постоянная усталость",
+                    "en": "Path: Constant Fatigue",
+                    "es": "Camino: Cansancio constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная усталость»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5053,9 +5053,9 @@
                   "id": "constant-fatigue-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Постоянная усталость",
+                    "en": "Anchor: Constant Fatigue",
+                    "es": "Apoyo: Cansancio constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная усталость»: бережное пространство опоры и выбора.",
@@ -5067,9 +5067,9 @@
                   "id": "constant-fatigue-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Постоянная усталость",
+                    "en": "New view: Constant Fatigue",
+                    "es": "Nueva mirada: Cansancio constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная усталость»: мягкая смена перспективы без давления.",
@@ -5081,9 +5081,9 @@
                   "id": "constant-fatigue-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Постоянная усталость",
+                    "en": "Integration: Constant Fatigue",
+                    "es": "Integración: Cansancio constante"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Постоянная усталость»: интеграция идеи в небольшой повседневный шаг.",
@@ -5123,9 +5123,9 @@
                   "id": "mental-exhaustion-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Умственное истощение",
+                    "en": "Path: Mental Exhaustion",
+                    "es": "Camino: Agotamiento mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Умственное истощение»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5137,9 +5137,9 @@
                   "id": "mental-exhaustion-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Умственное истощение",
+                    "en": "Anchor: Mental Exhaustion",
+                    "es": "Apoyo: Agotamiento mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Умственное истощение»: бережное пространство опоры и выбора.",
@@ -5151,9 +5151,9 @@
                   "id": "mental-exhaustion-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Умственное истощение",
+                    "en": "New view: Mental Exhaustion",
+                    "es": "Nueva mirada: Agotamiento mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Умственное истощение»: мягкая смена перспективы без давления.",
@@ -5165,9 +5165,9 @@
                   "id": "mental-exhaustion-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Умственное истощение",
+                    "en": "Integration: Mental Exhaustion",
+                    "es": "Integración: Agotamiento mental"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Умственное истощение»: интеграция идеи в небольшой повседневный шаг.",
@@ -5207,9 +5207,9 @@
                   "id": "physical-exhaustion-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Физическое истощение",
+                    "en": "Path: Physical Exhaustion",
+                    "es": "Camino: Agotamiento físico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Физическое истощение»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5221,9 +5221,9 @@
                   "id": "physical-exhaustion-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Физическое истощение",
+                    "en": "Anchor: Physical Exhaustion",
+                    "es": "Apoyo: Agotamiento físico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Физическое истощение»: бережное пространство опоры и выбора.",
@@ -5235,9 +5235,9 @@
                   "id": "physical-exhaustion-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Физическое истощение",
+                    "en": "New view: Physical Exhaustion",
+                    "es": "Nueva mirada: Agotamiento físico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Физическое истощение»: мягкая смена перспективы без давления.",
@@ -5249,9 +5249,9 @@
                   "id": "physical-exhaustion-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Физическое истощение",
+                    "en": "Integration: Physical Exhaustion",
+                    "es": "Integración: Agotamiento físico"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Физическое истощение»: интеграция идеи в небольшой повседневный шаг.",
@@ -5291,9 +5291,9 @@
                   "id": "recovery-rest-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Восстановление сил",
+                    "en": "Path: Rest & Recovery",
+                    "es": "Camino: Descanso y recuperación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Восстановление сил»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5305,9 +5305,9 @@
                   "id": "recovery-rest-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Восстановление сил",
+                    "en": "Anchor: Rest & Recovery",
+                    "es": "Apoyo: Descanso y recuperación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Восстановление сил»: бережное пространство опоры и выбора.",
@@ -5319,9 +5319,9 @@
                   "id": "recovery-rest-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Восстановление сил",
+                    "en": "New view: Rest & Recovery",
+                    "es": "Nueva mirada: Descanso y recuperación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Восстановление сил»: мягкая смена перспективы без давления.",
@@ -5333,9 +5333,9 @@
                   "id": "recovery-rest-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Восстановление сил",
+                    "en": "Integration: Rest & Recovery",
+                    "es": "Integración: Descanso y recuperación"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Восстановление сил»: интеграция идеи в небольшой повседневный шаг.",
@@ -5385,9 +5385,9 @@
                   "id": "insomnia-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Бессонница",
+                    "en": "Path: Insomnia",
+                    "es": "Camino: Insomnio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Бессонница»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5399,9 +5399,9 @@
                   "id": "insomnia-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Бессонница",
+                    "en": "Anchor: Insomnia",
+                    "es": "Apoyo: Insomnio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Бессонница»: бережное пространство опоры и выбора.",
@@ -5413,9 +5413,9 @@
                   "id": "insomnia-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Бессонница",
+                    "en": "New view: Insomnia",
+                    "es": "Nueva mirada: Insomnio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Бессонница»: мягкая смена перспективы без давления.",
@@ -5427,9 +5427,9 @@
                   "id": "insomnia-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Бессонница",
+                    "en": "Integration: Insomnia",
+                    "es": "Integración: Insomnio"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Бессонница»: интеграция идеи в небольшой повседневный шаг.",
@@ -5469,9 +5469,9 @@
                   "id": "fall-asleep-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Трудности с засыпанием",
+                    "en": "Path: Trouble Falling Asleep",
+                    "es": "Camino: Dificultad para dormir"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Трудности с засыпанием»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5483,9 +5483,9 @@
                   "id": "fall-asleep-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Трудности с засыпанием",
+                    "en": "Anchor: Trouble Falling Asleep",
+                    "es": "Apoyo: Dificultad para dormir"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Трудности с засыпанием»: бережное пространство опоры и выбора.",
@@ -5497,9 +5497,9 @@
                   "id": "fall-asleep-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Трудности с засыпанием",
+                    "en": "New view: Trouble Falling Asleep",
+                    "es": "Nueva mirada: Dificultad para dormir"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Трудности с засыпанием»: мягкая смена перспективы без давления.",
@@ -5511,9 +5511,9 @@
                   "id": "fall-asleep-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Трудности с засыпанием",
+                    "en": "Integration: Trouble Falling Asleep",
+                    "es": "Integración: Dificultad para dormir"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Трудности с засыпанием»: интеграция идеи в небольшой повседневный шаг.",
@@ -5553,9 +5553,9 @@
                   "id": "night-waking-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Ночные пробуждения",
+                    "en": "Path: Waking Up at Night",
+                    "es": "Camino: Despertares nocturnos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ночные пробуждения»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5567,9 +5567,9 @@
                   "id": "night-waking-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Ночные пробуждения",
+                    "en": "Anchor: Waking Up at Night",
+                    "es": "Apoyo: Despertares nocturnos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ночные пробуждения»: бережное пространство опоры и выбора.",
@@ -5581,9 +5581,9 @@
                   "id": "night-waking-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Ночные пробуждения",
+                    "en": "New view: Waking Up at Night",
+                    "es": "Nueva mirada: Despertares nocturnos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ночные пробуждения»: мягкая смена перспективы без давления.",
@@ -5595,9 +5595,9 @@
                   "id": "night-waking-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Ночные пробуждения",
+                    "en": "Integration: Waking Up at Night",
+                    "es": "Integración: Despertares nocturnos"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Ночные пробуждения»: интеграция идеи в небольшой повседневный шаг.",
@@ -5637,9 +5637,9 @@
                   "id": "sleep-quality-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Первый шаг",
-                    "en": "First Step",
-                    "es": "Primer paso"
+                    "ru": "Путь: Качество сна",
+                    "en": "Path: Sleep Quality",
+                    "es": "Camino: Calidad del sueño"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Качество сна»: постепенное движение от запроса к ясному следующему шагу.",
@@ -5651,9 +5651,9 @@
                   "id": "sleep-quality-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Безопасное место",
-                    "en": "A Safe Place",
-                    "es": "Un lugar seguro"
+                    "ru": "Опора: Качество сна",
+                    "en": "Anchor: Sleep Quality",
+                    "es": "Apoyo: Calidad del sueño"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Качество сна»: бережное пространство опоры и выбора.",
@@ -5665,9 +5665,9 @@
                   "id": "sleep-quality-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Новый взгляд",
-                    "en": "A New Perspective",
-                    "es": "Una nueva perspectiva"
+                    "ru": "Новый взгляд: Качество сна",
+                    "en": "New view: Sleep Quality",
+                    "es": "Nueva mirada: Calidad del sueño"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Качество сна»: мягкая смена перспективы без давления.",
@@ -5679,9 +5679,9 @@
                   "id": "sleep-quality-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Новый выбор",
-                    "en": "A New Choice",
-                    "es": "Una nueva elección"
+                    "ru": "Интеграция: Качество сна",
+                    "en": "Integration: Sleep Quality",
+                    "es": "Integración: Calidad del sueño"
                   },
                   "creativeBrief": {
                     "ru": "Сценарий «Качество сна»: интеграция идеи в небольшой повседневный шаг.",
