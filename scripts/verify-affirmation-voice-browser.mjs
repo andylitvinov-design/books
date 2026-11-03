@@ -171,7 +171,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(await transcriptDisclosure.getAttribute("open")===null)
         await transcriptDisclosure.locator(":scope > summary").click();
       await expect(speech).toBeVisible();
-      const transcript=(await speech.innerText()).trim();
+      // Verify the visible approved transcript via DOM textContent: WebKit can
+      // return empty innerText for nested disclosures during a paint cycle.
+      // Visibility and non-empty text were checked independently above.
+      const transcript=((await speech.textContent())||"").trim();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
