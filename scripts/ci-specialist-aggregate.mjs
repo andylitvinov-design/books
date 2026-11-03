@@ -136,10 +136,17 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
   if (!predicates.length || predicates.length > 24) return false;
-  const prefixes = predicates.map(item =>
-    item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1]);
-  if (prefixes.some(x => !x)) return false;
-  return !prefixes.some(prefix => branch.startsWith(prefix));
+  // The trusted BASE list may contain either a literal prefix or one exact
+  // literal branch. Do not accept computed expressions or arbitrary predicates.
+  const branches = predicates.map(item => {
+    const prefix = item.match(/^startsWith\(github\.head_ref, '([a-z][a-z0-9/-]+)'\)$/)?.[1];
+    if (prefix) return {kind:'prefix', value:prefix};
+    const exact = item.match(/^github\.head_ref == '([a-z][a-z0-9/-]+)'$/)?.[1];
+    return exact ? {kind:'exact', value:exact} : null;
+  });
+  if (branches.some(x => !x)) return false;
+  return !branches.some(rule =>
+    rule.kind === 'prefix' ? branch.startsWith(rule.value) : branch === rule.value);
 }
 
 
