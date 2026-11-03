@@ -2804,6 +2804,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number;repeatEverySeconds?:number;whisperGain?:number}){
     if(recording||preparing||hypnoAudioBusy)return;
+    const needsSpeech=next.whisper||(attachedAudio?.kind==="file"&&attachedAudio.narration);
+    if(needsSpeech&&(!hypnoSpeechSource||phrasePending||hypnoSpeechText!==currentAffirmationSpeech||hypnoSpeechDuration!==duration)){
+      setNotice(locale==="ru"?"Сначала утвердите фразы и создайте для них новую озвучку.":
+        locale==="es"?"Primero confirma las frases y genera una nueva pista de voz.":"Approve your phrases and regenerate their voice before applying speech effects.");
+      return;
+    }
     if(next.whisper&&!hypnoSpeechSource){
       setNotice(locale==="ru"?"Сначала создайте озвучку фраз в блоке «Озвучка фраз».":
         locale==="es"?"Primero crea la voz de tus frases.":"Create a spoken-phrases track first.");
