@@ -134,7 +134,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
 
-      if(variant==="mytube"){
+      if(mytubeCategoryId!=="all"||mytubeSubcategoryId!=="all"||mytubeTopicId!=="all"){
         const tags=Array.isArray(item.topicTags)?item.topicTags:[];
         const text=[item.title,item.description||"",item.seriesTitle||""].join(" ").toLocaleLowerCase(locale);
         const categoryTags={
@@ -245,27 +245,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               aria-pressed={mytubeTopicId===item.id} onClick={()=>setMyTubeTopicId(item.id)}>{item.label}</button>)}
           </div>
         </>:null}
-      </div>:<>
-      <div className={styles.areaSection}>
-        <div className={styles.groupHeading}>
-          <strong>{t.areaTitle}</strong>
-          {area!=="all"&&<button type="button" className={styles.areaReset}
-            onClick={()=>{setArea("all");setGoal("all");}}>{t.areaReset}</button>}
-        </div>
-        <div className={styles.lifeAreas} role="group" aria-label={t.areaTitle}>
-          {VIDEO_LIFE_AREAS.map((id,i)=><button type="button" key={id}
-            data-video-life-area={id} aria-pressed={area===id}
-            onClick={()=>{setArea(a=>a===id?"all":id);setGoal("all");}}>{t.areas[i]}</button>)}
-        </div>
       </div>
-      <div className={styles.areaSection}>
-        <div className={styles.groupHeading}><strong>{t.focusTitle}</strong></div>
-        <div className={styles.goals} role="group" aria-label={t.focusTitle}>
-          {allowedGoals.map(id=><button type="button" key={id} aria-pressed={goal===id}
-            onClick={()=>setGoal(id)}>{t.goals[VIDEO_GOALS.indexOf(id)]}</button>)}
-        </div>
-      </div>
-      </>}      <div className={styles.controls}>
+      <div className={styles.controls}>
         <label>{t.original}
           <select value={language} onChange={event=>setLanguage(event.target.value)}>
             <option value="all">{t.allAudio}</option><option value="ru">Русский</option>
