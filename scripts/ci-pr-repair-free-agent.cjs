@@ -1,8 +1,7 @@
 'use strict';
 // Zero-tool, free-only patch proposer. It may receive one owner-provisioned
-// OpenCode free-tier provider key, but never a GitHub write token. This process never receives a
-// GitHub write token and never publishes. Only a separate clean verifier and
-// trusted publisher can turn its patch into a commit.
+// OpenCode free-tier provider key, but no GitHub write token. It never publishes;
+// only a separate clean verifier and trusted publisher can create the source commit.
 const fs=require('node:fs');
 const path=require('node:path');
 const os=require('node:os');
