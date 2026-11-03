@@ -61,6 +61,7 @@ jobs:
         run: |
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
+          node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
@@ -161,6 +162,11 @@ jobs:
           cache: npm
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply trusted TypeScript type-only import codemods
+        env:
+          REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+          REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+        run: node .hh-trusted/scripts/ci-pr-repair-deterministic.cjs
       - id: build_candidate
         name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
