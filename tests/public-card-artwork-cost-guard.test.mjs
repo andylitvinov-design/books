@@ -122,15 +122,18 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
   assert.match(core, /^  hh-specialist:/m);
   // Unified protected gate replaces the obsolete release-ready wrapper.
-  // The aggregate must consume real Scope, Core and Specialist results.
-  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]/m);
+  // The unified Scope job owns Core checks; the aggregate consumes Scope and Specialist results.
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);
   assert.match(core.split(/^  hh-merge-check:/m)[1], /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(core, /- name: Require real Core and specialist results from this workflow/);
   assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
   assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
-  assert.match(core, /if \[\[ "\$DOCS_ONLY" == true \|\| "\$ROUTE" == ASSETS \|\| "\$ROUTE" == TEXT \]\]; then/);
-  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$CODE_RESULT" == skipped \]\]/);
-  assert.match(core, /\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
+  assert.match(core, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
+  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.doesNotMatch(core, /^  code:/m);
+  assert.doesNotMatch(core, /CODE_RESULT|needs\.code/);
   assert.doesNotMatch(core, /^  release-ready:/m);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
