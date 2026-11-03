@@ -1,0 +1,43 @@
+.editor{display:grid;gap:9px;margin:12px 0 4px;padding:12px 10px;border:1px solid #d3e3dc;border-radius:18px;background:#fffdf8;color:#193d37;min-width:0}
+.transport,.transportActions,.addBar,.shotActions{display:flex;align-items:center;gap:8px}
+.transport{justify-content:space-between}
+.transport strong{display:inline-flex;align-items:center;gap:6px;font-size:15px}
+.transportActions button{width:42px;height:42px;display:grid;place-items:center;border:0;border-radius:50%;background:#0b9577;color:#fff}
+.clock{font-size:15px;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+.clock small{color:#667670}
+.rulerRow,.trackRow{display:grid;grid-template-columns:50px minmax(0,1fr);align-items:center;gap:6px;min-width:0}
+.laneName{font-size:10px;font-weight:800;color:#52675d;display:grid;justify-items:center;gap:2px}
+.ruler{position:relative;border:0;border-top:1px solid #d6ded9;border-radius:0;background:transparent;height:32px;min-width:0;touch-action:none;cursor:crosshair}
+.ruler>span:not(.scrubHead){position:absolute;top:8px;transform:translateX(-50%);color:#748078;font-size:10px;pointer-events:none}
+.ruler>span:first-child{transform:none}
+.ruler>span:nth-child(5){transform:translateX(-100%)}
+.scrubHead,.playhead{position:absolute;top:0;bottom:0;width:2px;background:#173c35;z-index:3;pointer-events:none}
+.scrubHead:before{content:"";position:absolute;width:8px;height:8px;top:-4px;left:-3px;background:#173c35;border-radius:50%}
+.lane{position:relative;min-height:54px;overflow:hidden;border-radius:9px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),#e4e9e6 calc(25% - 1px),#e4e9e6 25%),#f2f3ef;min-width:0}
+.block{position:absolute;top:5px;bottom:5px;display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 5px;border-radius:8px;border:1px solid transparent;font-size:11px;font-weight:750;white-space:nowrap;text-overflow:ellipsis;touch-action:none;cursor:grab;user-select:none}
+.block:active{cursor:grabbing}
+.block span:not(.waveform){position:relative;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.block img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.88;pointer-events:none}
+.videoBlock{color:#fff;background:#4d7f88;border-color:#70b9ba;text-shadow:0 1px 3px #193f40}
+.textBlock{color:#104146;background:linear-gradient(90deg,#8bdadd,#b1efec);border-color:#5bc6c6}
+.audioBlock{color:#fff;background:linear-gradient(90deg,#8052a6,#a377ce);border-color:#7245b4}
+.waveform{position:absolute;inset:0;display:flex;align-items:center;opacity:.23;letter-spacing:1px;font-size:22px;overflow:hidden;pointer-events:none}
+.selected{outline:2px solid #0d8e75;outline-offset:-2px}
+.placeholder{font-size:10px;color:#86928c;position:absolute;top:50%;left:10px;transform:translateY(-50%);pointer-events:none}
+.addBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.addBar button{display:flex;align-items:center;justify-content:center;gap:2px;min-height:40px;padding:5px 3px;border:1px solid #c3dfd5;border-radius:12px;background:#eaf8f3;color:#17644e;font-weight:750;font-size:11px}
+.addBar button:disabled,.shotActions button:disabled{opacity:.4;cursor:not-allowed}
+.inspector{display:grid;gap:8px;background:#f5f8f4;padding:10px;border-radius:12px}
+.inspector strong{font-size:12px}
+.inspector label{font-size:11px;font-weight:700;display:grid;gap:3px}
+.inspector input{min-width:0;padding:8px;border:1px solid #c6dacf;border-radius:8px;background:white;color:#183f35;font-size:16px}
+.numberFields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.remove{justify-self:start;display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:#a13b45;font-size:12px}
+.shotActions{flex-wrap:wrap;background:#f2f5f0;border-radius:10px;padding:5px;font-size:11px}
+.shotActions>span{font-weight:800;margin-right:auto}
+.shotActions button{border:1px solid #c9dacf;background:#fff;border-radius:8px;min-height:34px;min-width:34px;padding:3px 7px;color:#1d4e42}
+.audioOffset{display:grid;gap:5px;color:#584474;font-size:12px;font-weight:700}
+.audioOffset input{width:100%;accent-color:#8657b5;min-height:32px}
+.hint{font-size:10px;color:#758078;line-height:1.35}
+@media(max-width:359px){.editor{padding:9px 6px}.rulerRow,.trackRow{grid-template-columns:43px minmax(0,1fr);gap:4px}.block{font-size:9px}.addBar button{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.block,.scrubHead,.playhead{transition:none!important}}

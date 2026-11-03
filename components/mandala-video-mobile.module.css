@@ -3055,3 +3055,39 @@
     max-width:100%;text-align:center;overflow-wrap:anywhere}
   .montageScenario{padding:11px}
 }
+
+
+/* Montage multitrack: one compact screen using the original Canvas, not a second player. */
+.montageSettingsDisclosure{min-width:0;border:1px solid #d9e5db;border-radius:14px;
+  background:#f9fcf8;padding:0 12px}
+.montageSettingsDisclosure>summary{min-height:45px;display:flex;align-items:center;
+  color:#17644e;cursor:pointer;font-weight:750;font-size:13px;list-style:revert}
+.montageSettingsDisclosure[open]{padding-bottom:13px}
+.montageSettingsDisclosure>.quickSectionHeading{margin:6px 0 11px}
+.montageSettingsDisclosure:focus-within{border-color:#7bb9a2}
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"] .previewStageHeading,
+  .studio[data-active-workspace="editor"] .previewMiniSource,
+  .studio[data-active-workspace="editor"] .workspaceHeading{display:none!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero,
+  .studio[data-active-workspace="editor"][data-video-studio-mode="therapy"] .previewStage .hero{
+    width:100%;aspect-ratio:16/9!important;min-height:0!important;max-height:280px!important;
+    border-radius:15px!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero[data-hero-promo="true"] .heroPromo{
+    opacity:0!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroCanvas{
+    opacity:1!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroEditorial{
+    display:none!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroPlay{
+    left:50%!important;top:50%!important}
+  .studio[data-active-workspace="editor"] .basicStudio{
+    margin-top:5px;padding:9px 8px;gap:7px;border-radius:16px}
+  .studio[data-active-workspace="editor"] .montageScenario{gap:5px;padding:8px 9px}
+  .studio[data-active-workspace="editor"] .montageScenario p{display:none}
+  .studio[data-active-workspace="editor"] .montageScenario textarea{
+    min-height:62px;height:65px;padding:8px 10px}
+  .studio[data-active-workspace="editor"] .montageScenario button{
+    min-height:39px;padding:7px 10px}
+  .studio[data-active-workspace="editor"] .quickVideoNav{margin:3px 0 0}
+}
