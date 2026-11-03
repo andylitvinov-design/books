@@ -59,9 +59,13 @@ test('marketing → topic → prefiltered simple test explorer → course or fre
   const more = await readFile('components/home-more-disclosure.tsx', 'utf8')
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=\{locale\}/)
   assert.doesNotMatch(home, /<HomepageTopicJourneys locale=\{locale\}/);
-  assert.match(more, /data-home-topic-filter="energy"/);
-  assert.match(more, /data-home-topic-filter="love"/);
-  assert.match(more, /data-home-topic-filter="business"/)
+  assert.match(more, /listMyTubeCategories\(locale\)/)
+  assert.match(more, /data-home-topic-directions/)
+  for (const category of ['goals-money','love-relationships','energy-confidence','stress-recovery'])
+    assert.ok(more.includes('data-home-topic-filter={category.id}'), category)
+  assert.match(more,/categoryRoutes/)
+  for (const route of ['business','love','energy','stress']) assert.ok(more.includes('"'+route+'"'), route)
+  assert.match(more,/href=\{"\/" \+ locale \+ "\/temple-support"\}/)
   assert.match(tiles,/listMyTubeCategories\(locale\)/)
   assert.match(tiles,/directionMeta/)
   assert.match(tiles,/goals-money/)
