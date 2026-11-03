@@ -1,7 +1,7 @@
 'use strict';
 const {summarizeWindow}=require('./ci-pr-kpi.cjs');
 const {summarizeCancellationWindow}=require('./ci-pr-kpi-cancellations.cjs');
-const WINDOWS={'1h':3600000,'24h':86400000,'7d':604800000};
+const WINDOWS={'1h':3600000,'12h':43200000,'24h':86400000,'7d':604800000};
 function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellations={},taskHistoryVerified=false}){
  if(!Number.isFinite(now)||![backlog,receipts,merges,actions,dispatch,ci].every(x=>x&&typeof x==='object'))
   throw Error('INVALID_REPORT_INPUT');
