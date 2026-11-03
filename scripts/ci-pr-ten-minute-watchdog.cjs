@@ -221,7 +221,7 @@ function classifyCoreFailureJobs(jobs) {
   // A failed classify-change is an ancestry/routing preflight, not evidence
   // that a TypeScript/ESLint build even ran. For old PR bases the source job
   // can be skipped and must not reserve the source-coding Repair Worker.
-  if(scope?.conclusion==='failure' && build?.conclusion!=='failure')
+  if(scope?.conclusion==='failure')
     return 'CI_PREFLIGHT_OR_ROUTING';
   // Aggregate gates report downstream consequences, not the causal step.
   // Treat setup/checkout failures as environment triage at any age; the
@@ -255,7 +255,19 @@ function classifyCoreFailureJobs(jobs) {
   // evidence for privileged source repair.
   if(failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
     return 'UNVERIFIED';
-  if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
+  // The unified Core executes source tests and CI contracts on the same
+  // runner. A red Core job alone does not prove a broken application.
+  // Only known, executed source-step failures may enter source Repair.
+  const sourceStep=/^(?:TypeScript (?:build|check)|Lint changed (?:sources|JS\/TS sources on PR(?:;.*)?)|Source Preflight — syntax and TypeScript before costly Next build|Mobile Dock Core geometry and iPhone keyboard contracts|Exact proposed release production build and TypeScript check)$/i;
+  if(build?.conclusion==='failure'){
+    const named=buildFailures.map(step=>String(step.name||''));
+    if(named.some(name=>sourceStep.test(name)) &&
+       named.every(name=>sourceStep.test(name)||setupStep.test(name)))
+      return 'SOURCE_OR_PREFLIGHT';
+    if(named.length && named.every(name=>!sourceStep.test(name)))
+      return 'CI_PREFLIGHT_OR_ROUTING';
+    return 'UNVERIFIED';
+  }
   return 'UNVERIFIED';
 }
 function latestCompletedFailedGate(checks, name) {
@@ -278,7 +290,7 @@ const INHERITED_CORE_CHECKS=new Set([
 ]);
 // A failed Sweep Guard unit check is a CI policy failure, not product QA.
 // This applies only to repair classification, never to required CI gating.
-const CI_POLICY_CHECKS=new Set(['guard-unit']);
+const CI_POLICY_CHECKS=new Set(['guard-unit','actionlint-changed']);
 // A red aggregate alone can mean skipped macOS/optional QA or a changed
 // production base, NOT a broken product. Require independent same-HEAD
 // failed GitHub Actions evidence before sending work to Product Repair.
@@ -290,11 +302,14 @@ function classifyIndependentSpecialistChecks(checks) {
   const latest=latestByName(checks.check_runs);
   if([...latest.values()].some(check=>check.status!=='completed'))
     return 'UNKNOWN';
-  if([...latest.values()].some(check=>
-      check.conclusion==='failure' && check.app?.id===15368 &&
-      !INHERITED_CORE_CHECKS.has(check.name) &&
-      !CI_POLICY_CHECKS.has(check.name)))
-    return 'PRODUCT_FAILURE';
+  const red=[...latest.values()].filter(check=>
+    check.conclusion==='failure' && check.app?.id===15368 &&
+    !INHERITED_CORE_CHECKS.has(check.name));
+  // Even a mixed red Specialist suite must not become an app-code repair
+  // while a trusted independent CI-policy contract is failing.
+  if(red.some(check=>CI_POLICY_CHECKS.has(check.name)))
+    return 'SPECIALIST_CONTRACT_FAILED';
+  if(red.length)return 'PRODUCT_FAILURE';
   return 'POLICY_OR_SKIPPED';
 }
 function needsFailedCoreCronBackstop(state) {
@@ -605,7 +620,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
-    specialistPolicyHolds:0,specialistEvidenceUnverified:0,
+    specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
     policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,infraOrEnvironment:0,
     ciContractFailures:0,staleSourceLabelsRetired:0,
@@ -643,13 +658,19 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     const to=product?SPECIALIST_LABEL:RELEASE_GATE_LABEL;
     const from=product?RELEASE_GATE_LABEL:SPECIALIST_LABEL;
     if(product)summary.specialistFailures++;
-    else {summary.specialistPolicyHolds++;summary.releaseGateOnly++;}
+    else {
+      summary.specialistPolicyHolds++;
+      if(decision==='SPECIALIST_CONTRACT_FAILED')summary.specialistContractFailures++;
+      summary.releaseGateOnly++;
+    }
     const max=product?MAX_RELEASE_GATE_LABELS:MAX_RELEASE_GATE_LABELS;
     const count=product?summary.specialistQueued:summary.releaseGateQueued;
     if(!hasLabel(live,to)&&count>=max)return decision;
     const newly=await ensureQueueLabel(github,owner,repo,live,to,
       product?'Verified independent exact-HEAD specialist failure: fix actual source/browser QA':
-      'Specialist aggregate failed without a failed independent QA check; inspect skipped/policy/base cause',
+      decision==='SPECIALIST_CONTRACT_FAILED'?
+        'Trusted Specialist CI contract failed; repair CI policy, not app code':
+        'Specialist aggregate failed; inspect base drift, skipped jobs and required contracts, not app source',
       product?'d93f0b':'fbca04',dryRun,limited,log);
     if(newly){
       if(product)summary.specialistQueued++;

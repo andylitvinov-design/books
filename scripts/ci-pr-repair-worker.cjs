@@ -50,13 +50,18 @@ function repairMode(pr) {
 }
 function hasVerifiedSourceHandoff(comments, sha) {
   const receipt='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
-  // The marker is public text and can be copied into an issue comment.
-  // Only the GitHub Actions app identity can establish this handoff.
-  return Array.isArray(comments) && comments.some(c=>
-    c?.user?.id===41898282 && c.user.login==='github-actions[bot]' &&
-    c.user.type==='Bot' && c.performed_via_github_app?.id===15368 &&
-    c.performed_via_github_app.slug==='github-actions' &&
-    typeof c.body==='string' && c.body.includes(receipt));
+  // Verify the Actions application and exact HEAD, never PR-authored prose.
+  // A historical receipt that identifies ONLY Specialist/merge-gate errors
+  // must not become authorization to write application source code.
+  return Array.isArray(comments) && comments.some(c=>{
+    if(c?.user?.id!==41898282||c.user.login!=='github-actions[bot]'||
+       c.user.type!=='Bot'||c.performed_via_github_app?.id!==15368||
+       c.performed_via_github_app.slug!=='github-actions'||
+       typeof c.body!=='string'||!c.body.includes(receipt))return false;
+    const failed=/^Failed jobs: ([^\n]+)$/m.exec(c.body);
+    return !failed || failed[1].split(',').some(name=>
+      name.trim().replace(/\.$/,'')==='core-lint-types-build');
+  });
 }
 // An exact-HEAD, Actions-bot-authenticated Watchdog Core source failure
 // bypasses ESLint autofix. Never trust PR text or aggregate gate failures.
@@ -72,7 +77,7 @@ function verifiedCoreCodeFailure(comments,sha){
      !comment.body.startsWith(marker+'\n'))return false;
   const match=/^Failed jobs: ([^\n]+)$/m.exec(comment.body);
   return !!match&&match[1].split(',').some(name=>
-   ['core-lint-types-build','hh-core-verified'].includes(name.trim().replace(/\.$/,'')));
+   name.trim().replace(/\.$/,'')==='core-lint-types-build');
  });
 }
 function safeFiles(items) {

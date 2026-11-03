@@ -809,3 +809,24 @@ test('free AI publisher rejects sensitive path even if PR lists it',async()=>{
    expectedSha:sha,candidate,writer:f.writer}),/HH_REPAIR_PUBLISH_UNSAFE_PATH/);
  assert.equal(f.log.commit,0);
 });
+
+
+test('only actual source Core failure can authorize a structured Watchdog repair receipt',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ for(const names of ['hh-specialist, hh-merge-check','hh-core-verified, release-ready',
+   'release-ready']){
+   const signed={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\n'+
+     'Core CI failed on exact HEAD.\nFailed jobs: '+names+'.\n'};
+   assert.equal(hasVerifiedSourceHandoff([signed],sha),false,names);
+   assert.equal(verifiedCoreCodeFailure([signed],sha),false,names);
+   const f=fixture({comments:[signed]});
+   assert.equal((await claim({github:f.github,core,context,hasToken:true,number:11})).status,
+     'skipped',names);
+   assert.equal(f.log.comments,0);
+ }
+ const source={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->\n'+
+   'Core CI failed on exact HEAD.\nFailed jobs: core-lint-types-build, hh-specialist.\n'};
+ assert.equal(hasVerifiedSourceHandoff([source],sha),true);
+ assert.equal(verifiedCoreCodeFailure([source],sha),true);
+});

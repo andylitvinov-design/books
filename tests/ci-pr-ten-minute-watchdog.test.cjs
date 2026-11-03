@@ -961,7 +961,7 @@ test('PR #3245 CI source-contract failure routes to policy, not product Source R
   assert.equal(classifyCoreFailureJobs([
     {...jobs[0],steps:[contract,{name:'Lint changed JS/TS sources on PR',conclusion:'failure'}]},
     ...jobs.slice(1),
-  ]),'SOURCE_OR_PREFLIGHT','a genuine mixed contract + product source failure remains repairable');
+  ]),'UNVERIFIED','mixed CI contract and source failure requires diagnosis; no automatic source write');
   assert.equal(classifyCoreFailureJobs([
     {...jobs[0],steps:[{name:'TypeScript check',conclusion:'failure'}]},
     ...jobs.slice(1),
@@ -969,11 +969,11 @@ test('PR #3245 CI source-contract failure routes to policy, not product Source R
   const check=(name,conclusion,id)=>({name,conclusion,id,status:'completed',app:{id:15368}});
   assert.equal(classifyIndependentSpecialistChecks({
     total_count:2,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2)],
-  }),'POLICY_OR_SKIPPED','Sweep Guard unit tests are CI policy, not product QA');
+  }),'SPECIALIST_CONTRACT_FAILED','Sweep Guard unit tests are CI policy, not product QA');
   assert.equal(classifyIndependentSpecialistChecks({
     total_count:3,check_runs:[check('guard-unit','failure',1),check('hh-specialist','failure',2),
       check('real-browser-acceptance','failure',3)],
-  }),'PRODUCT_FAILURE','a real failed product browser suite is still routed to Product Repair');
+  }),'SPECIALIST_CONTRACT_FAILED','mixed red CI contract and product QA must not launch app Repair');
 });
 
 test('CI contract-only failed Core labels release gate and does not hand off source',async()=>{
@@ -1019,7 +1019,8 @@ test('CI contract-only failed Core labels release gate and does not hand off sou
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
-  const fail=name=>({name,conclusion:'failure',status:'completed'});
+  const fail=(name,step)=>({name,conclusion:'failure',status:'completed',
+    ...(step?{steps:[{name:step,conclusion:'failure'}]}:{})});
   const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
@@ -1040,13 +1041,14 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
     fail('hh-merge-check')]),'UNVERIFIED');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
     'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
-  assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),
+  assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build','TypeScript check'),
     fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
     'a genuinely failed source build must not be hidden');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-core-verified'),
-    fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
-    'an explicitly failed legacy Core job blocks specialist-only classification');
-  assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
+    fail('hh-specialist'),fail('hh-merge-check')]),'UNVERIFIED',
+    'red legacy aggregate without a failed source step cannot authorize source Repair');
+  assert.equal(classifyCoreFailureJobs([success('classify-change'),
+    fail('core-lint-types-build','Lint changed sources'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
   assert.equal(classifyCoreFailureJobs(null),'UNVERIFIED');
@@ -1621,4 +1623,35 @@ test('watchdog removes CI hint only for a real Core run on the same PR and HEAD'
   assert.equal(await check({...matching,head_sha:'c'.repeat(40)}),0);
   assert.equal(await check({...matching,pull_requests:[{number:403,head:{sha:SHA,ref:'test-402'}}]}),0);
   assert.equal(await check(matching,{head:{...pr(402).head,sha:'c'.repeat(40)}}),0);
+});
+
+
+test('unknown Core steps and Specialist-only base drift cannot create source Repair',()=>{
+ const {classifyCoreFailureJobs,classifyIndependentSpecialistChecks}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const fail=(name,step)=>({name,conclusion:'failure',status:'completed',
+   steps:step?[{name:step,conclusion:'failure'}]:[]});
+ const green=name=>({name,conclusion:'success',status:'completed'});
+ const modern=[green('core-lint-types-build')];
+ for(const reason of ['PRODUCTION_BASE_CHANGED','NO_EXECUTED_REQUIRED_SPECIALIST_JOB']){
+   assert.equal(classifyCoreFailureJobs([...modern,
+     {...fail('hh-specialist','Validate exact-head risk and required specialist workflows'),detail:reason},
+     fail('hh-merge-check')]),'SPECIALIST_FAILED',reason);
+ }
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Verify Source Preflight unit contracts'),fail('hh-merge-check')]),'CI_CONTRACT_OR_POLICY');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Verify bounded shallow scope ancestry before PR routing'),fail('hh-merge-check')]),
+   'CI_PREFLIGHT_OR_ROUTING');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build'),fail('hh-merge-check')]),
+   'UNVERIFIED','failed Core without a failed step is not app source proof');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'Unexpected new CI routing contract'),fail('hh-merge-check')]),
+   'CI_PREFLIGHT_OR_ROUTING','unknown CI step stays out of source repair');
+ assert.equal(classifyCoreFailureJobs([fail('core-lint-types-build',
+   'TypeScript check'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT');
+ const check=(id,name,conclusion)=>({id,name,conclusion,status:'completed',app:{id:15368}});
+ assert.equal(classifyIndependentSpecialistChecks({total_count:4,check_runs:[
+   check(1,'core-lint-types-build','success'),check(2,'hh-specialist','failure'),
+   check(3,'actionlint-changed','failure'),check(4,'real-browser-acceptance','failure')
+ ]}),'SPECIALIST_CONTRACT_FAILED');
 });

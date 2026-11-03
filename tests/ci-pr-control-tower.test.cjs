@@ -1304,3 +1304,27 @@ test('manual owner safety handoff cannot label a newly advanced PR head',async()
  assert.equal(calls.labels.length,0);
  assert.equal(calls.dispatched.length,0);
 });
+
+
+test('red trusted Specialist CI contract is routed to release policy, never product repair',async()=>{
+ const source=pr(3273,'repair',{mergeable:true,mergeable_state:'behind'});
+ const f=fixture([source],{comments:{3273:[]}});
+ const fresh={...source,labels:[...source.labels]},changes=[];
+ const check=(id,name,conclusion)=>({id,name,conclusion,status:'completed',app:{id:15368}});
+ f.github.rest.checks={listForRef:async()=>({data:{total_count:4,check_runs:[
+   check(1,'core-lint-types-build','success'),
+   check(2,'hh-specialist','failure'),
+   check(3,'hh-merge-check','failure'),
+   check(4,'guard-unit','failure')
+ ]}})};
+ f.github.rest.issues.addLabels=async({labels})=>{
+   changes.push(['add',labels[0]]);fresh.labels.push({name:labels[0]});
+ };
+ f.github.rest.issues.removeLabel=async({name})=>{changes.push(['remove',name]);};
+ f.github.rest.pulls.get=async()=>({data:fresh});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.policyReclassified,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(changes,[['add','hh:release-gate-review'],['remove','hh:repair-needed']]);
+ assert.equal(f.calls.dispatched.length,0);
+});

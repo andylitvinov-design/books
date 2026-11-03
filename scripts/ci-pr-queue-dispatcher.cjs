@@ -32,7 +32,8 @@ function verifiedSpecialistProductFailure(checks){
 // Red aggregate gates with green source and no failed independent QA are
 // policy/stale-base blockers, not a source-writing authorization.
 function verifiedAggregatePolicyHold(checks){
- if(classifyIndependentSpecialistChecks(checks)!=='POLICY_OR_SKIPPED'||
+ const decision=classifyIndependentSpecialistChecks(checks);
+ if(!['POLICY_OR_SKIPPED','SPECIALIST_CONTRACT_FAILED'].includes(decision)||
     !verifiedSourceGreen(checks))return false;
  const latest=latestByName(checks.check_runs);
  const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
@@ -41,8 +42,12 @@ function verifiedAggregatePolicyHold(checks){
     merge.status!=='completed'||merge.conclusion!=='failure')return false;
  const inherited=new Set(['hh-specialist','hh-merge-check','hh-specialists-verified',
    'release-ready','hh-core-verified','classify-change','core-lint-types-build']);
+ const trustedPolicyJobs=new Set(['guard-unit','actionlint-changed']);
  return ![...latest.values()].some(c=>!inherited.has(c.name)&&
-   ['failure','timed_out','startup_failure','cancelled','action_required'].includes(c.conclusion));
+   ['failure','timed_out','startup_failure','cancelled','action_required'].includes(c.conclusion)&&
+   !(trustedPolicyJobs.has(c.name)&&c.app?.id===15368&&
+     c.status==='completed'&&c.conclusion==='failure'));
+
 }
 function trustedContext(context){
  if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
