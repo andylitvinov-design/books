@@ -556,7 +556,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     <section className={css.flowBlock} data-guided-meditation-step>
       <div className={css.flowTitle}><span>02</span><Headphones size={23} aria-hidden="true"/><h4>{f.meditation}</h4></div>
       <button type="button" className={css.flowPrimary} data-guided-generate-meditation
-        disabled={disabled||!firstScript||!focusReady} onClick={generateMeditation}>
+        disabled={disabled||!firstScript||!focusReady}
+        data-guided-context-committed-length={keyDifficulty.length}
+        onClick={generateMeditation}>
         <Sparkles size={22} aria-hidden="true"/>{f.generateMeditation}<ArrowRight size={20} aria-hidden="true"/>
       </button>
       {currentMeditation?<div className={css.flowResult} data-guided-meditation-result>
