@@ -2873,8 +2873,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function toggleHypnoBinaural(){
     void applyHypnoAudioEffects({whisper:hypnoWhisperEnabled,binaural:!hypnoBinauralEnabled,beatHz:hypnoBeatHz});
   }
-  function toggleHypnoVoice(){
-    if(!hypnoSpeechSource)return;
+  async function toggleHypnoVoice(){
+    if(!hypnoSpeechSource||phrasePending||narrationInvalid)return;
     if(attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights){
       setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);previousHypnoAudioRef.current=null;
       clearUploadedAudio();setAttachedAudio(null);
