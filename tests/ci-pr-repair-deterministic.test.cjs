@@ -63,7 +63,7 @@ test('preserves class extends runtime dependency but permits implements type-onl
   ""
  ].join('\n');
  const out=repairTypeOnlyImports(input,'sample.ts');
- assert.equal(out.edits,0);
- // The class base is a runtime use; conservative all-use policy keeps both.
- assert.equal(out.changed,false);
+ assert.equal(out.edits,1);
+ // The class base is runtime-required; only the implements contract is type-only.
+ assert.match(out.code,/import \{ Base, type Contract \} from '\.\/types';/);
 });
