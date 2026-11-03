@@ -492,8 +492,8 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
   const loader = options.loadPolicy ?? (async sha => {
     const extracted = loadProtectedValidator(sha);
     try {
-      const module = await import(pathToFileURL(extracted.path).href);
-      return {verify:module.verify,cleanup:extracted.cleanup};
+      const policyModule = await import(pathToFileURL(extracted.path).href);
+      return {verify:policyModule.verify,cleanup:extracted.cleanup};
     } catch (error) { extracted.cleanup(); throw error; }
   });
   const policy = await loader(target);
