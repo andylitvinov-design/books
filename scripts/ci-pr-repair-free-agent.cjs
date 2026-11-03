@@ -142,7 +142,7 @@ function validatePatch(text,scope){
  // in the non-privileged worktree; verification later repeats from clean HEAD.
  return patch+'\n';
 }
-function isolatedEnvironment(dir){
+function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
  const config=path.join(dir,'config'),home=path.join(dir,'home');
  for(const p of [config,home,path.join(dir,'data'),path.join(dir,'cache'),
     path.join(config,'opencode','agents')])fs.mkdirSync(p,{recursive:true,mode:0o700});
@@ -156,7 +156,8 @@ function isolatedEnvironment(dir){
    XDG_CACHE_HOME:path.join(dir,'cache'),TMPDIR:dir,
    PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C.UTF-8',CI:'true',
    OPENCODE_DISABLE_CLAUDE_CODE:'1',OPENCODE_ENABLE_EXA:'0',
-   OPENCODE_ENABLE_PARALLEL:'0'};
+   OPENCODE_ENABLE_PARALLEL:'0',
+   ...(typeof freeApiKey==='string'&&freeApiKey.length>0?{OPENCODE_API_KEY:freeApiKey}:{})};
 }
 function propose(){
  const scope=sourceScope(),root=process.cwd();
@@ -168,7 +169,8 @@ function propose(){
  if(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile())
    throw Error('FREE_AI_CLI_NOT_INSTALLED');
  const isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
- const env=isolatedEnvironment(isolated);
+ const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
+ if(!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
  try{
    const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
    if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
