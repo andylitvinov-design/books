@@ -145,7 +145,8 @@ test('external backstop verifies an exact dispatch ID, real jobs and idle receip
     if(url.includes('/runs?event=')&&url.includes('&per_page=5'))
       return getResponse({total_count:0,workflow_runs:[]})
     if(url.endsWith('/dispatches'))return {status:200,json:async()=>({workflow_run_id:200})}
-    if(url.endsWith('/runs?per_page=10'))
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=') &&
+       url.includes('&per_page=10'))
       return getResponse({total_count:0,workflow_runs:[]})
     if(url.endsWith('/runs/200'))return getResponse({
       id:200,workflow_id:403593743,event:'workflow_dispatch',
@@ -167,7 +168,7 @@ test('external backstop verifies an exact dispatch ID, real jobs and idle receip
   assert.equal(value.body.ciStartedVerified,false)
   assert.equal(value.body.taskDeliveryVerified,false)
   assert.equal(value.body.dispatchRunId,200)
-  assert.deepEqual(calls.map(x=>x.method),['GET','GET','GET','POST','GET','GET','GET'])
+  assert.deepEqual(calls.map(x=>x.method),['GET','GET','POST','GET','GET','GET'])
 })
 test('a green Watchdog without actual handoff is not successful execution',async()=>{
   const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
@@ -178,7 +179,9 @@ test('a green Watchdog without actual handoff is not successful execution',async
     blocked:{SOURCE_PROOF_MISSING:1,STACKED_PARENT:1}}
   const fetcher=async(url,opt)=>{
     if(opt.method==='POST')assert.fail('recent run must not be dispatched twice')
-    if(url.endsWith('/runs?per_page=10'))return fixture({total_count:1,
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=workflow_dispatch&per_page=10'))
+      return fixture({total_count:0,workflow_runs:[]})
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=schedule&per_page=10'))return fixture({total_count:1,
       workflow_runs:[{id:300,event:'schedule',head_branch:'codex/bootstrap-books',
         status:'completed',conclusion:'success',created_at:at}]})
     if(url.endsWith('/runs/300'))return fixture({id:300,workflow_id:403593743,
@@ -213,7 +216,9 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
     dispatchAccepted:1,workerRuns:[task],checkedAt:at}
   const fetcher=async(url,opt)=>{
     if(opt.method==='POST')assert.fail('recent real Watchdog should not dispatch')
-    if(url.endsWith('/runs?per_page=10'))return f({total_count:1,
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=schedule&per_page=10'))
+      return f({total_count:0,workflow_runs:[]})
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=workflow_dispatch&per_page=10'))return f({total_count:1,
       workflow_runs:[{id:400,event:'workflow_dispatch',status:'completed',
         head_branch:'codex/bootstrap-books',created_at:at}]})
     if(url.endsWith('/runs/400'))return f({id:400,workflow_id:403593743,
@@ -277,7 +282,8 @@ test('dispatch accepted without run ID, pending runner and uncertain history fai
     wait:async()=>{},fetcher:async(url,opt)=>{
       if(opt.method==='POST')return {status:200,
         json:async()=>({workflow_run_id:600})}
-      if(url.endsWith('/runs?per_page=10'))return history(0,[])
+      if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=') &&
+         url.includes('&per_page=10'))return history(0,[])
       if(url.endsWith('/runs/600'))return {
         status:200,headers:{get:()=> '4800'},json:async()=>({
           id:600,workflow_id:403593743,event:'workflow_dispatch',
