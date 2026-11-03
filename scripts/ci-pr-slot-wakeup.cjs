@@ -16,6 +16,30 @@ function trustedEvent(context) {
     e.conclusion==='success' && e.repository?.full_name===REPO &&
     (!e.head_repository?.full_name || e.head_repository.full_name===REPO);
 }
+// Core success already wakes native AutoMerge. A second Watchdog run is useful
+// only when it can drain an existing trusted CI/Repair queue. This is one
+// read-only GraphQL request, never another PR/source mutation.
+async function hasDurableBacklog(github,owner,repo){
+  if(typeof github?.graphql!=='function')throw Error('BACKLOG_QUERY_UNAVAILABLE');
+  const names=[['ci','hh:ci-needed'],['repair','hh:repair-needed'],
+    ['conflict','hh:conflict-repair-needed']];
+  const exclusions=' -label:"hh:hold" -label:"hh:blocked"'+
+    ' -label:"hh:repair-manual" -label:"hh:worker-claimed"';
+  const fields=names.map(([key,label])=>{
+    const q='repo:'+owner+'/'+repo+' is:open is:pr label:"'+label+'"'+exclusions;
+    return key+': search(type: ISSUE, query: '+JSON.stringify(q)+
+      ', first: 1) { nodes { ... on PullRequest { number } } }';
+  });
+  const result=await github.graphql('query { '+fields.join(' ')+' }');
+  for(const [key] of names){
+    const nodes=result?.[key]?.nodes;
+    if(!Array.isArray(nodes)||nodes.some(node=>!Number.isSafeInteger(node?.number)||node.number<1))
+      throw Error('BACKLOG_QUERY_INCOMPLETE_'+key);
+    if(nodes.length)return true;
+  }
+  return false;
+}
+
 function admission(active,queued,runs,now=Date.now()) {
   if(!Number.isSafeInteger(active)||!Number.isSafeInteger(queued)||
      active<0||queued<0)return 'CAPACITY_UNKNOWN';
@@ -42,7 +66,7 @@ function admission(active,queued,runs,now=Date.now()) {
   return 'DISPATCH';
 }
 async function run({github,core,context,now=Date.now()}){
-  const report={decision:'UNVERIFIED',active:null,queued:null,dispatched:0};
+  const report={decision:'UNVERIFIED',active:null,queued:null,backlog:null,dispatched:0};
   const write=async()=>{
     core.info('HH_SLOT_WAKEUP '+JSON.stringify(report));
     await core.summary.addHeading('HH Core CI freed-slot wakeup')
@@ -67,6 +91,17 @@ async function run({github,core,context,now=Date.now()}){
   const sched=scheduled?.data?.workflow_runs, manual=dispatched?.data?.workflow_runs;
   const realHistory=Array.isArray(sched)&&Array.isArray(manual)?[...sched,...manual]:null;
   report.decision=admission(report.active,report.queued,realHistory,now);
+  // For ordinary successful Core events, no queue means no reason to scan
+  // the entire repository a second time. Emergency stale-cron rescue remains.
+  if(report.decision==='DISPATCH'){
+    try{
+      report.backlog=await hasDurableBacklog(github,owner,repo);
+      if(!report.backlog)report.decision='NO_ACTIONABLE_BACKLOG';
+    }catch(error){
+      report.decision='BACKLOG_UNVERIFIED';
+      core.warning('HH_SLOT_WAKEUP '+String(error?.message||error).slice(0,140));
+    }
+  }
   if(report.decision==='DISPATCH'||report.decision==='DISPATCH_STALE_CI'){
     // Workflow dispatch is the GITHUB_TOKEN recursion exception.
     await github.rest.actions.createWorkflowDispatch({
@@ -77,4 +112,4 @@ async function run({github,core,context,now=Date.now()}){
   }
   return write();
 }
-module.exports={admission,trustedEvent,run};
+module.exports={admission,trustedEvent,hasDurableBacklog,run};
