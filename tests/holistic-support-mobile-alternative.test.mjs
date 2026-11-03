@@ -25,17 +25,31 @@ test("alternate support screen is separate, linked and localized without replaci
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
-test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
+test("personal scores stay local; iPhone photos are previewed locally and saved only by explicit private action", () => {
+  const photoHelper = read("lib/mandala/prepare-browser-photo.ts");
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /URL\.createObjectURL\(file\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_ACCEPT = "image\/\*,\.heic,\.heif,\.jpg,\.jpeg,\.png,\.webp"/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
+  assert.match(photoHelper, /canvas\.toBlob\(resolve, "image\/jpeg"/);
+  assert.match(client, /prepareBrowserPhoto\(file\)/);
+  assert.match(client, /URL\.createObjectURL\(blob\)/);
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
-  assert.match(client, /8 \* 1024 \* 1024/);
+  // The selected original remains local. Only an explicitly tapped Save action
+  // sends the stripped, resized JPEG to the authenticated first-party route.
+  assert.match(client, /photoBlob && <button/);
+  assert.match(client, /data-support-photo-save/);
+  assert.match(client, /onClick=\{\(\) => \{ void savePhoto\(\); \}\}/);
+  assert.match(client, /fetch\("\/api\/app\/support-photo", \{/);
+  assert.match(client, /method:"POST", credentials:"same-origin"/);
+  assert.match(client, /response\.status === 401/);
+  assert.match(client, /data-support-photo-signin/);
   assert.match(client, /data-support-recommendations/);
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
