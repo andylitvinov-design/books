@@ -291,15 +291,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Do not click the removed global voice disclosure in the first workspace.
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
-      // Consent for the previous transcript never carries over to new lines.
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
+      // The former phrase narrator is no longer mounted in this editor tab.
+      // Check consent on the current inline Voice Studio, after its real panel mounts.
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)
         await voicePanel.locator(":scope > summary").click();
       const studio=voicePanel.locator("[data-voice-studio]");
       await studio.waitFor({state:"visible"});
+      const studioConsent=studio.locator('input[type="checkbox"]');
+      await expect(studioConsent).not.toBeChecked({timeout:10000});
+      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
