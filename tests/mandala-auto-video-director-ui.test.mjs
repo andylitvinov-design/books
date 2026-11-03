@@ -295,6 +295,8 @@ test("owner correction: two independent subtopics selected, input last and style
  assert.match(goalBlock,/popularTopicOrder\[selectedCategoryId\]\.map/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
  assert.match(director,/setSelectedGoalIds\(nextIds\)/);
+ assert.match(director,/goalId:nextIds\[0\],locale,\s*fallbackTheme:selectedTheme,preferredTheme:selectedTheme/,
+   "subtopics must refine, never silently replace, the selected parent video category");
  assert.match(director,/selectedGoalIds\.includes\(item\.id\)/);
  assert.match(director,/selectedGoalIds\.length>=2/);
  assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-clarify"),
