@@ -133,7 +133,8 @@ jobs:
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   fix:
     needs: claim
-    if: needs.claim.outputs.strategy == 'lint'
+    # Deterministic repair is always first, including verified Core/TypeScript failures.
+    if: needs.claim.outputs.strategy == 'lint' || needs.claim.outputs.strategy == 'code'
     outputs:
       candidate_status: ${{ steps.build_candidate.outputs.candidate_status }}
       candidate_detail: ${{ steps.build_candidate.outputs.candidate_detail }}
