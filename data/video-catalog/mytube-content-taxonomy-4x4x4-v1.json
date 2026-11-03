@@ -40,7 +40,8 @@
     "Fatigue and low energy belong to Energy & Fatigue; work-related burnout belongs to Stress & Burnout.",
     "Confidence and self-esteem belong to Energy & Confidence; fear of a specific situation belongs to Fears & Phobias.",
     "Sleep difficulty belongs to Sleep & Rest even when stress is a contributing factor.",
-    "Breakup grief belongs to Love & Relationships; childhood rejection wounds belong to Trauma & Childhood."
+    "Breakup grief belongs to Love & Relationships; childhood rejection wounds belong to Trauma & Childhood.",
+    "Fear or worry without a specific trigger belongs to Anxiety & Fears; a defined phobia or social fear also remains in that same branch."
   ],
   "scenarioArchetypes": [
     {
@@ -4467,11 +4468,16 @@
           }
         },
         {
-          "id": "anxiety-panic",
+          "id": "anxiety-fears",
           "label": {
-            "ru": "Тревога и паника",
-            "en": "Anxiety & Panic",
-            "es": "Ansiedad y pánico"
+            "ru": "Тревога и страхи",
+            "en": "Anxiety & Fears",
+            "es": "Ansiedad y miedos"
+          },
+          "chooseWhen": {
+            "ru": "Выбирайте при тревожных переживаниях, панике, социальной тревоге или конкретных фобиях.",
+            "en": "Choose this for anxious worry, panic, social anxiety or specific phobias.",
+            "es": "Elige esta opción para preocupación ansiosa, pánico, ansiedad social o fobias específicas."
           },
           "topics": [
             {
@@ -4484,15 +4490,18 @@
               "searchIntent": {
                 "ru": [
                   "постоянная тревога",
-                  "тревожность каждый день"
+                  "тревога без причины",
+                  "беспокойство о будущем"
                 ],
                 "en": [
                   "constant anxiety",
-                  "daily anxiety"
+                  "unexplained anxiety",
+                  "future worry"
                 ],
                 "es": [
                   "ansiedad constante",
-                  "ansiedad diaria"
+                  "ansiedad sin motivo",
+                  "preocupación por el futuro"
                 ]
               },
               "scenarios": [
@@ -4505,7 +4514,7 @@
                     "es": "Ansiedad constante: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная тревога»: путь от исходной ситуации к ясному следующему шагу.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Постоянная тревога»: путь к небольшому реалистичному шагу.",
                     "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Constant Anxiety.",
                     "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Ansiedad constante."
                   }
@@ -4519,7 +4528,7 @@
                     "es": "Ansiedad constante: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная тревога»: бережное пространство поддержки и выбора.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Постоянная тревога»: безопасная опора и возможность выбора.",
                     "en": "Build a calm story around safety, resources and a sense of choice. Topic: Constant Anxiety.",
                     "es": "Build a calm story around safety, resources and a sense of choice. Tema: Ansiedad constante."
                   }
@@ -4533,7 +4542,7 @@
                     "es": "Ansiedad constante: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная тревога»: новая символическая перспектива именно для этой темы.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Постоянная тревога»: новая символическая перспектива.",
                     "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Constant Anxiety.",
                     "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Ansiedad constante."
                   }
@@ -4547,89 +4556,9 @@
                     "es": "Ansiedad constante: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная тревога»: интеграция в повседневность через одно необязательное действие.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Постоянная тревога»: мягкая интеграция в повседневность.",
                     "en": "End with one small, optional action grounded in everyday life. Topic: Constant Anxiety.",
                     "es": "End with one small, optional action grounded in everyday life. Tema: Ansiedad constante."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "anxiety-no-reason",
-              "label": {
-                "ru": "Тревога без причины",
-                "en": "Anxiety for No Clear Reason",
-                "es": "Ansiedad sin motivo aparente"
-              },
-              "searchIntent": {
-                "ru": [
-                  "тревога без причины",
-                  "непонятная тревога"
-                ],
-                "en": [
-                  "anxiety for no clear reason",
-                  "unexplained anxiety"
-                ],
-                "es": [
-                  "ansiedad sin motivo aparente",
-                  "ansiedad inexplicable"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "anxiety-no-reason-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Тревога без причины: Путь",
-                    "en": "Anxiety for No Clear Reason: Path",
-                    "es": "Ansiedad sin motivo aparente: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Тревога без причины»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Anxiety for No Clear Reason.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Ansiedad sin motivo aparente."
-                  }
-                },
-                {
-                  "id": "anxiety-no-reason-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Тревога без причины: Опора",
-                    "en": "Anxiety for No Clear Reason: Support",
-                    "es": "Ansiedad sin motivo aparente: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Тревога без причины»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Anxiety for No Clear Reason.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Ansiedad sin motivo aparente."
-                  }
-                },
-                {
-                  "id": "anxiety-no-reason-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Тревога без причины: Новый взгляд",
-                    "en": "Anxiety for No Clear Reason: New Perspective",
-                    "es": "Ansiedad sin motivo aparente: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Тревога без причины»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Anxiety for No Clear Reason.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Ansiedad sin motivo aparente."
-                  }
-                },
-                {
-                  "id": "anxiety-no-reason-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Тревога без причины: Новый шаг",
-                    "en": "Anxiety for No Clear Reason: Integration",
-                    "es": "Ansiedad sin motivo aparente: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Тревога без причины»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Anxiety for No Clear Reason.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Ansiedad sin motivo aparente."
                   }
                 }
               ]
@@ -4665,7 +4594,7 @@
                     "es": "Ataques de pánico: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Панические атаки»: путь от исходной ситуации к ясному следующему шагу.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Панические атаки»: путь к небольшому реалистичному шагу.",
                     "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Panic Attacks.",
                     "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Ataques de pánico."
                   }
@@ -4679,7 +4608,7 @@
                     "es": "Ataques de pánico: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Панические атаки»: бережное пространство поддержки и выбора.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Панические атаки»: безопасная опора и возможность выбора.",
                     "en": "Build a calm story around safety, resources and a sense of choice. Topic: Panic Attacks.",
                     "es": "Build a calm story around safety, resources and a sense of choice. Tema: Ataques de pánico."
                   }
@@ -4693,7 +4622,7 @@
                     "es": "Ataques de pánico: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Панические атаки»: новая символическая перспектива именно для этой темы.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Панические атаки»: новая символическая перспектива.",
                     "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Panic Attacks.",
                     "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Ataques de pánico."
                   }
@@ -4707,187 +4636,9 @@
                     "es": "Ataques de pánico: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Панические атаки»: интеграция в повседневность через одно необязательное действие.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Панические атаки»: мягкая интеграция в повседневность.",
                     "en": "End with one small, optional action grounded in everyday life. Topic: Panic Attacks.",
                     "es": "End with one small, optional action grounded in everyday life. Tema: Ataques de pánico."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "overthinking",
-              "label": {
-                "ru": "Навязчивые мысли",
-                "en": "Overthinking & Intrusive Thoughts",
-                "es": "Pensamientos repetitivos"
-              },
-              "searchIntent": {
-                "ru": [
-                  "навязчивые мысли",
-                  "накручиваю себя"
-                ],
-                "en": [
-                  "overthinking",
-                  "intrusive thoughts"
-                ],
-                "es": [
-                  "pensamientos repetitivos",
-                  "pensamientos intrusivos"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "overthinking-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Навязчивые мысли: Путь",
-                    "en": "Overthinking & Intrusive Thoughts: Path",
-                    "es": "Pensamientos repetitivos: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Навязчивые мысли»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Overthinking & Intrusive Thoughts.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Pensamientos repetitivos."
-                  }
-                },
-                {
-                  "id": "overthinking-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Навязчивые мысли: Опора",
-                    "en": "Overthinking & Intrusive Thoughts: Support",
-                    "es": "Pensamientos repetitivos: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Навязчивые мысли»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Overthinking & Intrusive Thoughts.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Pensamientos repetitivos."
-                  }
-                },
-                {
-                  "id": "overthinking-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Навязчивые мысли: Новый взгляд",
-                    "en": "Overthinking & Intrusive Thoughts: New Perspective",
-                    "es": "Pensamientos repetitivos: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Навязчивые мысли»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Overthinking & Intrusive Thoughts.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Pensamientos repetitivos."
-                  }
-                },
-                {
-                  "id": "overthinking-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Навязчивые мысли: Новый шаг",
-                    "en": "Overthinking & Intrusive Thoughts: Integration",
-                    "es": "Pensamientos repetitivos: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Навязчивые мысли»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Overthinking & Intrusive Thoughts.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Pensamientos repetitivos."
-                  }
-                }
-              ]
-            }
-          ],
-          "chooseWhen": {
-            "ru": "Беспокоят тревога, паника или повторяющиеся мысли.",
-            "en": "You experience anxiety, panic or recurring thoughts.",
-            "es": "Experimentas ansiedad, pánico o pensamientos repetitivos."
-          }
-        },
-        {
-          "id": "fears-phobias",
-          "label": {
-            "ru": "Страхи и фобии",
-            "en": "Fears & Phobias",
-            "es": "Miedos y fobias"
-          },
-          "topics": [
-            {
-              "id": "specific-phobias",
-              "label": {
-                "ru": "Фобии",
-                "en": "Specific Phobias",
-                "es": "Fobias específicas"
-              },
-              "searchIntent": {
-                "ru": [
-                  "фобии",
-                  "страх высоты",
-                  "клаустрофобия"
-                ],
-                "en": [
-                  "specific phobias",
-                  "fear of heights",
-                  "claustrophobia"
-                ],
-                "es": [
-                  "fobias específicas",
-                  "miedo a las alturas",
-                  "claustrofobia"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "specific-phobias-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Фобии: Путь",
-                    "en": "Specific Phobias: Path",
-                    "es": "Fobias específicas: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Фобии»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Specific Phobias.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fobias específicas."
-                  }
-                },
-                {
-                  "id": "specific-phobias-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Фобии: Опора",
-                    "en": "Specific Phobias: Support",
-                    "es": "Fobias específicas: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Фобии»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Specific Phobias.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fobias específicas."
-                  }
-                },
-                {
-                  "id": "specific-phobias-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Фобии: Новый взгляд",
-                    "en": "Specific Phobias: New Perspective",
-                    "es": "Fobias específicas: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Фобии»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Specific Phobias.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fobias específicas."
-                  }
-                },
-                {
-                  "id": "specific-phobias-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Фобии: Новый шаг",
-                    "en": "Specific Phobias: Integration",
-                    "es": "Fobias específicas: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Фобии»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Specific Phobias.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Fobias específicas."
                   }
                 }
               ]
@@ -4902,15 +4653,18 @@
               "searchIntent": {
                 "ru": [
                   "социальная тревога",
-                  "страх общения"
+                  "страх общения",
+                  "страх людей"
                 ],
                 "en": [
                   "social anxiety",
-                  "fear of social situations"
+                  "fear of social situations",
+                  "fear of people"
                 ],
                 "es": [
                   "ansiedad social",
-                  "miedo a situaciones sociales"
+                  "miedo a situaciones sociales",
+                  "miedo a la gente"
                 ]
               },
               "scenarios": [
@@ -4923,7 +4677,7 @@
                     "es": "Ansiedad social: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Социальная тревога»: путь от исходной ситуации к ясному следующему шагу.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Социальная тревога»: путь к небольшому реалистичному шагу.",
                     "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Social Anxiety.",
                     "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Ansiedad social."
                   }
@@ -4937,7 +4691,7 @@
                     "es": "Ansiedad social: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Социальная тревога»: бережное пространство поддержки и выбора.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Социальная тревога»: безопасная опора и возможность выбора.",
                     "en": "Build a calm story around safety, resources and a sense of choice. Topic: Social Anxiety.",
                     "es": "Build a calm story around safety, resources and a sense of choice. Tema: Ansiedad social."
                   }
@@ -4951,7 +4705,7 @@
                     "es": "Ansiedad social: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Социальная тревога»: новая символическая перспектива именно для этой темы.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Социальная тревога»: новая символическая перспектива.",
                     "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Social Anxiety.",
                     "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Ansiedad social."
                   }
@@ -4965,7 +4719,7 @@
                     "es": "Ansiedad social: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Социальная тревога»: интеграция в повседневность через одно необязательное действие.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Социальная тревога»: мягкая интеграция в повседневность.",
                     "en": "End with one small, optional action grounded in everyday life. Topic: Social Anxiety.",
                     "es": "End with one small, optional action grounded in everyday life. Tema: Ansiedad social."
                   }
@@ -4973,178 +4727,104 @@
               ]
             },
             {
-              "id": "fear-future",
+              "id": "specific-phobias",
               "label": {
-                "ru": "Страх будущего",
-                "en": "Fear of the Future",
-                "es": "Miedo al futuro"
+                "ru": "Фобии и конкретные страхи",
+                "en": "Specific Phobias & Fears",
+                "es": "Fobias y miedos específicos"
               },
               "searchIntent": {
                 "ru": [
-                  "страх будущего",
-                  "боюсь неизвестности"
+                  "фобии",
+                  "страх высоты",
+                  "клаустрофобия",
+                  "специфические страхи"
                 ],
                 "en": [
-                  "fear of the future",
-                  "fear of the unknown"
+                  "specific phobias",
+                  "fear of heights",
+                  "claustrophobia",
+                  "specific fears"
                 ],
                 "es": [
-                  "miedo al futuro",
-                  "miedo a lo desconocido"
+                  "fobias específicas",
+                  "miedo a las alturas",
+                  "claustrofobia",
+                  "miedos específicos"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "fear-future-s1",
+                  "id": "specific-phobias-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Страх будущего: Путь",
-                    "en": "Fear of the Future: Path",
-                    "es": "Miedo al futuro: Camino"
+                    "ru": "Фобии и конкретные страхи: Путь",
+                    "en": "Specific Phobias & Fears: Path",
+                    "es": "Fobias y miedos específicos: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх будущего»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Fear of the Future.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Miedo al futuro."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Фобии и конкретные страхи»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Specific Phobias & Fears.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fobias y miedos específicos."
                   }
                 },
                 {
-                  "id": "fear-future-s2",
+                  "id": "specific-phobias-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Страх будущего: Опора",
-                    "en": "Fear of the Future: Support",
-                    "es": "Miedo al futuro: Apoyo"
+                    "ru": "Фобии и конкретные страхи: Опора",
+                    "en": "Specific Phobias & Fears: Support",
+                    "es": "Fobias y miedos específicos: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх будущего»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Fear of the Future.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Miedo al futuro."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Фобии и конкретные страхи»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Specific Phobias & Fears.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fobias y miedos específicos."
                   }
                 },
                 {
-                  "id": "fear-future-s3",
+                  "id": "specific-phobias-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Страх будущего: Новый взгляд",
-                    "en": "Fear of the Future: New Perspective",
-                    "es": "Miedo al futuro: Nueva perspectiva"
+                    "ru": "Фобии и конкретные страхи: Новый взгляд",
+                    "en": "Specific Phobias & Fears: New Perspective",
+                    "es": "Fobias y miedos específicos: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх будущего»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Fear of the Future.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Miedo al futuro."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Фобии и конкретные страхи»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Specific Phobias & Fears.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fobias y miedos específicos."
                   }
                 },
                 {
-                  "id": "fear-future-s4",
+                  "id": "specific-phobias-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Страх будущего: Новый шаг",
-                    "en": "Fear of the Future: Integration",
-                    "es": "Miedo al futuro: Integración"
+                    "ru": "Фобии и конкретные страхи: Новый шаг",
+                    "en": "Specific Phobias & Fears: Integration",
+                    "es": "Fobias y miedos específicos: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх будущего»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Fear of the Future.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Miedo al futuro."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "fear-change",
-              "label": {
-                "ru": "Страх перемен",
-                "en": "Fear of Change",
-                "es": "Miedo al cambio"
-              },
-              "searchIntent": {
-                "ru": [
-                  "страх перемен",
-                  "боюсь изменений"
-                ],
-                "en": [
-                  "fear of change",
-                  "afraid of change"
-                ],
-                "es": [
-                  "miedo al cambio",
-                  "temor al cambio"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "fear-change-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Страх перемен: Путь",
-                    "en": "Fear of Change: Path",
-                    "es": "Miedo al cambio: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх перемен»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Fear of Change.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Miedo al cambio."
-                  }
-                },
-                {
-                  "id": "fear-change-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Страх перемен: Опора",
-                    "en": "Fear of Change: Support",
-                    "es": "Miedo al cambio: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх перемен»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Fear of Change.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Miedo al cambio."
-                  }
-                },
-                {
-                  "id": "fear-change-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Страх перемен: Новый взгляд",
-                    "en": "Fear of Change: New Perspective",
-                    "es": "Miedo al cambio: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх перемен»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Fear of Change.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Miedo al cambio."
-                  }
-                },
-                {
-                  "id": "fear-change-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Страх перемен: Новый шаг",
-                    "en": "Fear of Change: Integration",
-                    "es": "Miedo al cambio: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх перемен»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Fear of Change.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Miedo al cambio."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Фобии и конкретные страхи»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Specific Phobias & Fears.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Fobias y miedos específicos."
                   }
                 }
               ]
             }
-          ],
-          "chooseWhen": {
-            "ru": "Есть конкретный объект или ситуация, которых вы боитесь.",
-            "en": "There is a specific object or situation that you fear.",
-            "es": "Hay un objeto o situación concreta que te provoca miedo."
-          }
+          ]
         },
         {
-          "id": "trauma-depression",
+          "id": "trauma-childhood",
           "label": {
-            "ru": "Травмы и эмоциональное состояние",
-            "en": "Trauma & Emotional Health",
-            "es": "Trauma y salud emocional"
+            "ru": "Травмы и детство",
+            "en": "Trauma & Childhood",
+            "es": "Trauma e infancia"
+          },
+          "chooseWhen": {
+            "ru": "Выбирайте для работы с болезненным детским опытом, отвержением или покинутостью.",
+            "en": "Choose this for difficult childhood experiences, rejection or abandonment wounds.",
+            "es": "Elige esta opción para experiencias difíciles de la infancia o heridas de rechazo y abandono."
           },
           "topics": [
             {
@@ -5178,7 +4858,7 @@
                     "es": "Trauma infantil: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Детские травмы»: путь от исходной ситуации к ясному следующему шагу.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Детские травмы»: путь к небольшому реалистичному шагу.",
                     "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Childhood Trauma.",
                     "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Trauma infantil."
                   }
@@ -5192,7 +4872,7 @@
                     "es": "Trauma infantil: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Детские травмы»: бережное пространство поддержки и выбора.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Детские травмы»: безопасная опора и возможность выбора.",
                     "en": "Build a calm story around safety, resources and a sense of choice. Topic: Childhood Trauma.",
                     "es": "Build a calm story around safety, resources and a sense of choice. Tema: Trauma infantil."
                   }
@@ -5206,7 +4886,7 @@
                     "es": "Trauma infantil: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Детские травмы»: новая символическая перспектива именно для этой темы.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Детские травмы»: новая символическая перспектива.",
                     "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Childhood Trauma.",
                     "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Trauma infantil."
                   }
@@ -5220,7 +4900,7 @@
                     "es": "Trauma infantil: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Детские травмы»: интеграция в повседневность через одно необязательное действие.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Детские травмы»: мягкая интеграция в повседневность.",
                     "en": "End with one small, optional action grounded in everyday life. Topic: Childhood Trauma.",
                     "es": "End with one small, optional action grounded in everyday life. Tema: Trauma infantil."
                   }
@@ -5258,7 +4938,7 @@
                     "es": "Niño interior: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Внутренний ребёнок»: путь от исходной ситуации к ясному следующему шагу.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Внутренний ребёнок»: путь к небольшому реалистичному шагу.",
                     "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Inner Child.",
                     "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Niño interior."
                   }
@@ -5272,7 +4952,7 @@
                     "es": "Niño interior: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Внутренний ребёнок»: бережное пространство поддержки и выбора.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Внутренний ребёнок»: безопасная опора и возможность выбора.",
                     "en": "Build a calm story around safety, resources and a sense of choice. Topic: Inner Child.",
                     "es": "Build a calm story around safety, resources and a sense of choice. Tema: Niño interior."
                   }
@@ -5286,7 +4966,7 @@
                     "es": "Niño interior: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Внутренний ребёнок»: новая символическая перспектива именно для этой темы.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Внутренний ребёнок»: новая символическая перспектива.",
                     "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Inner Child.",
                     "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Niño interior."
                   }
@@ -5300,7 +4980,7 @@
                     "es": "Niño interior: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Внутренний ребёнок»: интеграция в повседневность через одно необязательное действие.",
+                    "ru": "Уникальный поддерживающий сюжет для темы «Внутренний ребёнок»: мягкая интеграция в повседневность.",
                     "en": "End with one small, optional action grounded in everyday life. Topic: Inner Child.",
                     "es": "End with one small, optional action grounded in everyday life. Tema: Niño interior."
                   }
@@ -5308,174 +4988,506 @@
               ]
             },
             {
-              "id": "depression-low-mood",
+              "id": "rejection-wounds",
               "label": {
-                "ru": "Депрессия и подавленность",
-                "en": "Depression & Low Mood",
-                "es": "Depresión y ánimo bajo"
+                "ru": "Травма отвержения",
+                "en": "Rejection Wounds",
+                "es": "Heridas de rechazo"
               },
               "searchIntent": {
                 "ru": [
-                  "депрессия",
-                  "подавленное настроение"
+                  "травма отвержения",
+                  "боюсь быть отвергнутым"
                 ],
                 "en": [
-                  "depression",
-                  "low mood"
+                  "rejection wounds",
+                  "fear of rejection"
                 ],
                 "es": [
-                  "depresión",
-                  "ánimo bajo"
+                  "heridas de rechazo",
+                  "miedo al rechazo"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "depression-low-mood-s1",
+                  "id": "rejection-wounds-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Депрессия и подавленность: Путь",
-                    "en": "Depression & Low Mood: Path",
-                    "es": "Depresión y ánimo bajo: Camino"
+                    "ru": "Травма отвержения: Путь",
+                    "en": "Rejection Wounds: Path",
+                    "es": "Heridas de rechazo: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Депрессия и подавленность»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Depression & Low Mood.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Depresión y ánimo bajo."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма отвержения»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Rejection Wounds.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Heridas de rechazo."
                   }
                 },
                 {
-                  "id": "depression-low-mood-s2",
+                  "id": "rejection-wounds-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Депрессия и подавленность: Опора",
-                    "en": "Depression & Low Mood: Support",
-                    "es": "Depresión y ánimo bajo: Apoyo"
+                    "ru": "Травма отвержения: Опора",
+                    "en": "Rejection Wounds: Support",
+                    "es": "Heridas de rechazo: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Депрессия и подавленность»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Depression & Low Mood.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Depresión y ánimo bajo."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма отвержения»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Rejection Wounds.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Heridas de rechazo."
                   }
                 },
                 {
-                  "id": "depression-low-mood-s3",
+                  "id": "rejection-wounds-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Депрессия и подавленность: Новый взгляд",
-                    "en": "Depression & Low Mood: New Perspective",
-                    "es": "Depresión y ánimo bajo: Nueva perspectiva"
+                    "ru": "Травма отвержения: Новый взгляд",
+                    "en": "Rejection Wounds: New Perspective",
+                    "es": "Heridas de rechazo: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Депрессия и подавленность»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Depression & Low Mood.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Depresión y ánimo bajo."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма отвержения»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Rejection Wounds.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Heridas de rechazo."
                   }
                 },
                 {
-                  "id": "depression-low-mood-s4",
+                  "id": "rejection-wounds-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Депрессия и подавленность: Новый шаг",
-                    "en": "Depression & Low Mood: Integration",
-                    "es": "Depresión y ánimo bajo: Integración"
+                    "ru": "Травма отвержения: Новый шаг",
+                    "en": "Rejection Wounds: Integration",
+                    "es": "Heridas de rechazo: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Депрессия и подавленность»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Depression & Low Mood.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Depresión y ánimo bajo."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма отвержения»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Rejection Wounds.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Heridas de rechazo."
                   }
                 }
               ]
             },
             {
-              "id": "apathy-loss-joy",
+              "id": "abandonment-wounds",
               "label": {
-                "ru": "Апатия и потеря радости",
-                "en": "Apathy & Loss of Joy",
-                "es": "Apatía y pérdida de alegría"
+                "ru": "Травма покинутости",
+                "en": "Abandonment Wounds",
+                "es": "Heridas de abandono"
+              },
+              "searchIntent": {
+                "ru": [
+                  "травма покинутости",
+                  "страх оставления"
+                ],
+                "en": [
+                  "abandonment wounds",
+                  "fear of abandonment"
+                ],
+                "es": [
+                  "heridas de abandono"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "abandonment-wounds-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Травма покинутости: Путь",
+                    "en": "Abandonment Wounds: Path",
+                    "es": "Heridas de abandono: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма покинутости»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Abandonment Wounds.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Heridas de abandono."
+                  }
+                },
+                {
+                  "id": "abandonment-wounds-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Травма покинутости: Опора",
+                    "en": "Abandonment Wounds: Support",
+                    "es": "Heridas de abandono: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма покинутости»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Abandonment Wounds.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Heridas de abandono."
+                  }
+                },
+                {
+                  "id": "abandonment-wounds-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Травма покинутости: Новый взгляд",
+                    "en": "Abandonment Wounds: New Perspective",
+                    "es": "Heridas de abandono: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма покинутости»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Abandonment Wounds.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Heridas de abandono."
+                  }
+                },
+                {
+                  "id": "abandonment-wounds-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Травма покинутости: Новый шаг",
+                    "en": "Abandonment Wounds: Integration",
+                    "es": "Heridas de abandono: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Травма покинутости»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Abandonment Wounds.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Heridas de abandono."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "depression-apathy",
+          "label": {
+            "ru": "Депрессия и апатия",
+            "en": "Depression & Apathy",
+            "es": "Depresión y apatía"
+          },
+          "chooseWhen": {
+            "ru": "Выбирайте при подавленном настроении, апатии, потере радости или ощущении пустоты.",
+            "en": "Choose this for low mood, apathy, loss of joy or emotional emptiness.",
+            "es": "Elige esta opción para ánimo bajo, apatía, pérdida de alegría o vacío emocional."
+          },
+          "topics": [
+            {
+              "id": "depressed-mood",
+              "label": {
+                "ru": "Подавленное настроение",
+                "en": "Low Mood",
+                "es": "Ánimo bajo"
+              },
+              "searchIntent": {
+                "ru": [
+                  "подавленное настроение",
+                  "постоянная грусть"
+                ],
+                "en": [
+                  "low mood",
+                  "persistent sadness"
+                ],
+                "es": [
+                  "ánimo bajo",
+                  "tristeza persistente"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "depressed-mood-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Подавленное настроение: Путь",
+                    "en": "Low Mood: Path",
+                    "es": "Ánimo bajo: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Подавленное настроение»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Low Mood.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Ánimo bajo."
+                  }
+                },
+                {
+                  "id": "depressed-mood-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Подавленное настроение: Опора",
+                    "en": "Low Mood: Support",
+                    "es": "Ánimo bajo: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Подавленное настроение»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Low Mood.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Ánimo bajo."
+                  }
+                },
+                {
+                  "id": "depressed-mood-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Подавленное настроение: Новый взгляд",
+                    "en": "Low Mood: New Perspective",
+                    "es": "Ánimo bajo: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Подавленное настроение»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Low Mood.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Ánimo bajo."
+                  }
+                },
+                {
+                  "id": "depressed-mood-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Подавленное настроение: Новый шаг",
+                    "en": "Low Mood: Integration",
+                    "es": "Ánimo bajo: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Подавленное настроение»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Low Mood.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Ánimo bajo."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "apathy",
+              "label": {
+                "ru": "Апатия",
+                "en": "Apathy",
+                "es": "Apatía"
               },
               "searchIntent": {
                 "ru": [
                   "апатия",
+                  "ничего не хочется",
+                  "безразличие"
+                ],
+                "en": [
+                  "apathy",
+                  "lack of interest",
+                  "indifference"
+                ],
+                "es": [
+                  "apatía",
+                  "falta de interés",
+                  "indiferencia"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "apathy-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Апатия: Путь",
+                    "en": "Apathy: Path",
+                    "es": "Apatía: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Апатия»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Apathy.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Apatía."
+                  }
+                },
+                {
+                  "id": "apathy-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Апатия: Опора",
+                    "en": "Apathy: Support",
+                    "es": "Apatía: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Апатия»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Apathy.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Apatía."
+                  }
+                },
+                {
+                  "id": "apathy-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Апатия: Новый взгляд",
+                    "en": "Apathy: New Perspective",
+                    "es": "Apatía: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Апатия»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Apathy.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Apatía."
+                  }
+                },
+                {
+                  "id": "apathy-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Апатия: Новый шаг",
+                    "en": "Apathy: Integration",
+                    "es": "Apatía: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Апатия»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Apathy.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Apatía."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "loss-joy",
+              "label": {
+                "ru": "Потеря радости",
+                "en": "Loss of Joy",
+                "es": "Pérdida de alegría"
+              },
+              "searchIntent": {
+                "ru": [
+                  "потеря радости",
                   "ничего не радует",
                   "потеря интереса к жизни"
                 ],
                 "en": [
-                  "apathy",
+                  "loss of joy",
                   "nothing brings me joy",
                   "loss of interest in life"
                 ],
                 "es": [
-                  "apatía",
+                  "pérdida de alegría",
                   "nada me alegra",
                   "pérdida de interés por la vida"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "apathy-loss-joy-s1",
+                  "id": "loss-joy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Апатия и потеря радости: Путь",
-                    "en": "Apathy & Loss of Joy: Path",
-                    "es": "Apatía y pérdida de alegría: Camino"
+                    "ru": "Потеря радости: Путь",
+                    "en": "Loss of Joy: Path",
+                    "es": "Pérdida de alegría: Camino"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Апатия и потеря радости»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Apathy & Loss of Joy.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Apatía y pérdida de alegría."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Потеря радости»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Loss of Joy.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Pérdida de alegría."
                   }
                 },
                 {
-                  "id": "apathy-loss-joy-s2",
+                  "id": "loss-joy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Апатия и потеря радости: Опора",
-                    "en": "Apathy & Loss of Joy: Support",
-                    "es": "Apatía y pérdida de alegría: Apoyo"
+                    "ru": "Потеря радости: Опора",
+                    "en": "Loss of Joy: Support",
+                    "es": "Pérdida de alegría: Apoyo"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Апатия и потеря радости»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Apathy & Loss of Joy.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Apatía y pérdida de alegría."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Потеря радости»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Loss of Joy.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Pérdida de alegría."
                   }
                 },
                 {
-                  "id": "apathy-loss-joy-s3",
+                  "id": "loss-joy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Апатия и потеря радости: Новый взгляд",
-                    "en": "Apathy & Loss of Joy: New Perspective",
-                    "es": "Apatía y pérdida de alegría: Nueva perspectiva"
+                    "ru": "Потеря радости: Новый взгляд",
+                    "en": "Loss of Joy: New Perspective",
+                    "es": "Pérdida de alegría: Nueva perspectiva"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Апатия и потеря радости»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Apathy & Loss of Joy.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Apatía y pérdida de alegría."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Потеря радости»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Loss of Joy.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Pérdida de alegría."
                   }
                 },
                 {
-                  "id": "apathy-loss-joy-s4",
+                  "id": "loss-joy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Апатия и потеря радости: Новый шаг",
-                    "en": "Apathy & Loss of Joy: Integration",
-                    "es": "Apatía y pérdida de alegría: Integración"
+                    "ru": "Потеря радости: Новый шаг",
+                    "en": "Loss of Joy: Integration",
+                    "es": "Pérdida de alegría: Integración"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Апатия и потеря радости»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Apathy & Loss of Joy.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Apatía y pérdida de alegría."
+                    "ru": "Уникальный поддерживающий сюжет для темы «Потеря радости»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Loss of Joy.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Pérdida de alegría."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "emotional-emptiness",
+              "label": {
+                "ru": "Эмоциональная пустота",
+                "en": "Emotional Emptiness",
+                "es": "Vacío emocional"
+              },
+              "searchIntent": {
+                "ru": [
+                  "внутренняя пустота",
+                  "чувство пустоты"
+                ],
+                "en": [
+                  "feeling empty",
+                  "emotional emptiness"
+                ],
+                "es": [
+                  "sentirse vacío",
+                  "vacío emocional"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "emotional-emptiness-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Эмоциональная пустота: Путь",
+                    "en": "Emotional Emptiness: Path",
+                    "es": "Vacío emocional: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Эмоциональная пустота»: путь к небольшому реалистичному шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Emotional Emptiness.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Vacío emocional."
+                  }
+                },
+                {
+                  "id": "emotional-emptiness-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Эмоциональная пустота: Опора",
+                    "en": "Emotional Emptiness: Support",
+                    "es": "Vacío emocional: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Эмоциональная пустота»: безопасная опора и возможность выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Emotional Emptiness.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Vacío emocional."
+                  }
+                },
+                {
+                  "id": "emotional-emptiness-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Эмоциональная пустота: Новый взгляд",
+                    "en": "Emotional Emptiness: New Perspective",
+                    "es": "Vacío emocional: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Эмоциональная пустота»: новая символическая перспектива.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Emotional Emptiness.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Vacío emocional."
+                  }
+                },
+                {
+                  "id": "emotional-emptiness-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Эмоциональная пустота: Новый шаг",
+                    "en": "Emotional Emptiness: Integration",
+                    "es": "Vacío emocional: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный поддерживающий сюжет для темы «Эмоциональная пустота»: мягкая интеграция в повседневность.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Emotional Emptiness.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Vacío emocional."
                   }
                 }
               ]
             }
-          ],
-          "chooseWhen": {
-            "ru": "Ищете бережную поддержку при последствиях прошлого опыта или подавленности.",
-            "en": "You seek gentle support for past experiences or low mood.",
-            "es": "Buscas apoyo cuidadoso para experiencias pasadas o ánimo bajo."
-          }
+          ]
         }
       ]
     }
