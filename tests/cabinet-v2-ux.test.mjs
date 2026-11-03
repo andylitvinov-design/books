@@ -142,7 +142,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /<Link href=\{root \+ '\/monitoring'\}/)
   assert.match(workspace, /page === 'consultations'/)
   assert.match(workspace, /page === 'monitoring'/)
-  assert.match(workspace, /<PersonalPortraitSummary data=\{data\} locale=\{locale\}/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)
@@ -155,7 +155,11 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /Заказать консультацию специалиста/)
   assert.match(workspace, /Your result stays private and is not shared automatically/)
   assert.match(catalog, /cabinet-result-page/)
-  assert.match(catalog, /cabinet-result-actions-grid/)
+  assert.match(catalog, /<GuestScaleInterpretation result=\{guestResult\} locale=\{locale\} \/>\s*(?:<TestRatingCard locale=\{locale\} definitionKey=\{guestResult\.definitionKey\} guest \/>\s*)?<section className=\{guestActions\.capture\} data-guest-analysis-gate/,
+    'guest scores keep the explicit Cabinet explanations gate, with only the optional usefulness-rating prompt between')
+  assert.match(catalog, /className=\{guestActions\.googleButton\} type="button" onClick=\{saveToCabinet\} disabled=\{busy\}/)
+  assert.match(catalog, /This test is saved to your account only after you confirm\./)
+  assert.match(catalog, /<nav className=\{guestActions\.nextActions\}/)
   assert.match(catalog, /cabinet-result-footer/)
   assert.match(workspace, /c\.contextAtCheckIn/)
   assert.match(workspace, /\['trigger', c\.trigger\]/)
@@ -164,7 +168,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
 })
 
 
-test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused in landing and portrait', async () => {
+test('Mood check-in stays in My Tests, not in any guest test questionnaire or the portrait', async () => {
   const [mood, landing, workspace] = await Promise.all([
     readFile('components/app/mood-checkin.jsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
@@ -187,16 +191,22 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(mood.includes('onMoodChange'))
   assert.ok(mood.includes('onDismiss'))
   assert.doesNotMatch(mood, /localStorage|sessionStorage/)
-  assert.ok(landing.includes('<MoodCheckIn'))
-  assert.ok(landing.includes('onMoodChange={handleGuestMoodChange}'))
-  assert.ok(landing.includes("begin('state', payload)"))
-  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(!landing.includes('<MoodCheckIn'))
+  assert.ok(!landing.includes('latestGuestMood'))
+  assert.ok(!landing.includes('handleGuestMoodChange'))
+  assert.ok(landing.includes("phase === 'questions' && definition"))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
   assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
   assert.ok(landing.includes('Start a free wellbeing check-in'))
   assert.ok(landing.includes('Create my free monitoring plan'))
   assert.ok(landing.includes('Начать бесплатную проверку состояния'))
   assert.ok(landing.includes('Составить мой бесплатный план мониторинга'))
-  assert.ok(workspace.includes('<MoodCheckIn'))
+  assert.equal((workspace.match(/<MoodCheckIn/g) || []).length, 1)
+  assert.ok(workspace.includes('data-cabinet-mood-checkin'))
+  assert.ok(workspace.includes("page === 'tests'"))
+  assert.ok(workspace.includes("sourceSurface: 'monitoring'"))
+  assert.ok(workspace.includes("!searchParams.get('courseId')"))
+  assert.ok(!workspace.includes('className="hh-profile-mood"'))
   assert.ok(workspace.includes("getAssessmentDefinition('hh-current-state', 'v2', locale)"))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))
 })
@@ -234,9 +244,9 @@ test('Cabinet entry prioritizes the one-click monitoring battery with optional G
   assert.ok(landing.includes('className="cabinet-signin-strip cabinet-signin-hero"'))
   assert.ok(landing.includes('Enter personal cabinet with Google'))
   assert.ok(landing.includes('Войти в личный кабинет через Google'))
-  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
   assert.ok(landing.includes("phase !== 'catalog' && <section"))
-  assert.ok(landing.indexOf('<PublicTestExplorer locale={locale} embedded />') < landing.indexOf('cabinet-signin-hero'))
+  assert.ok(landing.indexOf('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />') < landing.indexOf('cabinet-signin-hero'))
   assert.ok(!landing.includes('className="cabinet-test-image"'))
   assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
   assert.ok(!landing.includes("import Image from 'next/image'"))
@@ -269,7 +279,7 @@ test('external Cabinet resumes only a server-owned consented test plan from its 
   assert.ok(landing.includes("getDefinitionById(plan.definitionIds[plan.currentIndex])"))
 })
 
-test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
+test('My Tests reveals the three compact mood buttons only when the optional card is expanded', async () => {
   const [mood, ia] = await Promise.all([
     readFile('components/app/mood-checkin.jsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
@@ -278,7 +288,7 @@ test('public and signed-in Cabinet share a white mood card with three separate m
   assert.ok(mood.includes('<p className="hh-mood-kicker">{c.welcome}</p>'))
   assert.ok(mood.includes('<h1 className="hh-mood-title"'))
   assert.ok(mood.includes('<h2 className="hh-mood-title"'))
-  assert.ok(ia.includes('.cabinet-landing-shell .hh-mood-checkin'))
+  assert.ok(ia.includes('.hh-app .hh-tests-mood-disclosure > summary'))
   assert.ok(ia.includes('.hh-app .hh-mood-checkin--compact'))
   assert.ok(ia.includes('background: #fffdfa'))
   assert.ok(ia.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'))
@@ -365,7 +375,8 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
   assert.match(workspace, /hh-runner-methodology/)
   assert.match(workspaceCss, /\.hh-app \.hh-runner--guided \.hh-scale-words button/)
   assert.match(ia, /\.cabinet-landing-shell \.cabinet-guided-question \.cabinet-answer-list button/)
-  assert.ok(landing.includes("phase === 'mode'"))
+  assert.ok(landing.includes("phase === 'questions'"))
+  assert.ok(!landing.includes("phase === 'mode'"))
   assert.ok(workspaceCss.includes('Test runner v2 — two equivalent completion modes'))
   assert.ok(ia.includes('Cabinet test runner v2 — shared Quick / Guided interaction model'))
   assert.ok(workspaceCss.includes('@media (prefers-reduced-motion:reduce)'))
@@ -404,8 +415,12 @@ test('My Profile v3 is action-first, prioritizes one next step, and keeps dense 
   assert.ok(workspace.includes('Build a personal test battery'))
   assert.ok(workspace.includes('hh-profile-summary'))
   assert.ok(workspace.includes('hh-profile-next'))
-  assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} />'))
-  assert.ok(workspace.includes('<MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />'))
+  assert.ok(workspace.includes("import { profileScreeningPresentation } from '@/lib/profile/profile-scale-presentation'"))
+  assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} results={data.results} />'))
+  assert.ok(workspace.includes('function ProfileOverview({ profile, locale, results = [] })'))
+  assert.ok(workspace.includes('screening: profileScreeningPresentation(row, results, locale)'))
+  assert.ok(workspace.includes('data-screening-verified={row.screening.verified}>{row.screening.label}'))
+  assert.ok(workspace.includes('<MetricCard key={`${d.sourceDefinitionId}::${d.key}`} dimension={d} locale={locale} onSelect={setSelected} />'))
   assert.ok(workspace.includes('if (!reports.length) return null'))
   assert.ok(workspace.includes("definitionKey: def.key"))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))

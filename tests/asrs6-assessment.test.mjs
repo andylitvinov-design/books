@@ -1,3 +1,6 @@
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
+import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
@@ -25,7 +28,7 @@ import { buildClientReport } from '../lib/profile/client-report.js'
 const source = JSON.parse(readFileSync(new URL('../docs/assessments/sources/asrs6/instrument-extraction.json',import.meta.url),'utf8'))
 const digest = value => createHash('sha256').update(canonicalJSON(value)).digest('hex')
 const answers = values => Object.fromEntries(values.map((value,i)=>[`asrs6.${String(i+1).padStart(2,'0')}`,value]))
-const score = (values,language='en') => scoreAssessment(getAssessmentDefinition('asrs-6','v1',language),answers(values))
+const score = (values,language='en') => scoreAssessment(getAssessmentDefinition('asrs-6','v1',language),answers(values), syntheticTraumaContext(getAssessmentDefinition('asrs-6','v1',language)))
 const text = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('source-exact EN/RU six items, anchors, instructions, safety, attribution and immutable identities',()=>{
@@ -84,20 +87,20 @@ test('all six valid answers required, including zero; missing/null never become 
     assert.equal(Object.keys(validateAnswers(d,complete)).length,6)
     for(const q of d.questions){
       const missing={...complete};delete missing[q.id]
-      assert.throws(()=>scoreAssessment(d,missing),/REQUIRED_ANSWER/)
-      assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}),/REQUIRED_ANSWER/)
+      assert.throws(()=>scoreAssessment(d,missing, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+      assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
       assert.equal(Object.keys(validateAnswers(d,missing,{requireComplete:false})).length,5)
-      for(const invalid of [-1,5,.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:invalid}),/INVALID_ANSWER/)
+      for(const invalid of [-1,5,.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:invalid}, syntheticTraumaContext(d)),/INVALID_ANSWER/)
     }
-    assert.throws(()=>scoreAssessment(d,answers([2,2,2,3,0,null])),/REQUIRED_ANSWER/)
-    assert.throws(()=>scoreAssessment(d,{...complete,extra:0}),/UNKNOWN_FIELD/)
-    assert.throws(()=>scoreAssessment({...d,title:'changed'},complete),/INVALID_PROVENANCE/)
+    assert.throws(()=>scoreAssessment(d,answers([2,2,2,3,0,null]), syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+    assert.throws(()=>scoreAssessment(d,{...complete,extra:0}, syntheticTraumaContext(d)),/UNKNOWN_FIELD/)
+    assert.throws(()=>scoreAssessment({...d,title:'changed'},complete, syntheticTraumaContext({...d,title:'changed'})),/INVALID_PROVENANCE/)
   }
 })
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
@@ -153,7 +156,7 @@ test('Insights, all scales and profile show discrete count, never favorable gaug
     assert.deepEqual(guide.skillAxes,[])
     assert.equal(guide.suggestedRepeatDays,null)
     const result={...score([2,2,2,3,0,0],locale),id:'synthetic',accountId:'synthetic-account',measurementAt:'2026-10-12T20:00:00Z'}
-    const d=result.dimensions[0],display=gaugeModel(d)
+    const d=result.dimensions[0],display=gaugeModel(d,result)
     assert.equal(display.displayKind,'screening-count')
     assert.equal(display.fraction,null)
     assert.equal(display.rawFraction,null)
@@ -202,7 +205,25 @@ test('source-backed runner and report wiring preserve adult guard, accessible sh
   assert.match(sql,/definition is distinct from d/)
   assert.doesNotMatch(sql,/^\s*(update app\.|delete from|alter table|create policy|grant )/im)
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
+  // Exclude only the six appended split-v2 IDs from this historical baseline.
+  const splitV2Ids=new Set([
+    '52c75d85-d99e-5178-8ee4-3b7faa802601',
+    '7715324b-f54c-5d7c-8ca7-08ff17ba8c8e',
+    'f65b9e09-2818-5c01-abb7-438600530e8f',
+    '3ea615ee-b188-5c1e-8e41-2bfd221a75d7',
+    '0c27f7d6-0280-5dcd-8f10-59447585b1df',
+    '9a864e36-7362-567b-923e-ea99228f933d',
+  ])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
+  // The separately approved Bach pair is additive; no historical ID is excluded.
+  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
+  const newerIDs=new Set(ADDITIONAL_PROFESSIONAL_DEFINITIONS.map(d=>d.id))
+  const historicalDefinitions=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key) && !newerIDs.has(d.id))
+  const beforeSplit=historicalDefinitions.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id))
+  assert.equal(beforeSplit.length,210)
+  assert.equal(digest(beforeSplit),'2eaa644a6c1d3db5c1a661ce9b9d180a7cc420b54cbe9d0dfe2a6561851efc36')
+  const prior=historicalDefinitions.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
   assert.equal(prior.length,178)
   assert.equal(digest(prior),'a6c1b0cca75863dc951a02003aa914437dff637d9dd61f9f0dc36925b40e12c0')
 })
@@ -219,7 +240,10 @@ test('synthetic history/snapshot retain zero, count display identity and reject 
   assert.throws(()=>validateResult({...result,dimensions:[{...result.dimensions[0],value:.5}]}),/INVALID_RESULT/)
   assert.throws(()=>validateResult({...result,dimensions:[{...result.dimensions[0],displayKind:undefined}]}),/INVALID_RESULT/)
   const invalid=buildClientReport({results:[{...result,contentHash:'tampered'}],locale:'en'})
-  assert.equal(invalid.tests.length,0)
+  assert.equal(invalid.tests.length,1)
+  assert.equal(invalid.tests[0].interpretation.verified,false)
+  assert.equal(invalid.tests[0].dimensions[0].value,result.dimensions[0].value)
+  assert.ok(invalid.verificationWarnings.length)
 })
 
 test('three-run Psi-Monitoring patterns stay higher/lower/unchanged, never improvement or decline',async()=>{
@@ -241,7 +265,8 @@ test('three-run Psi-Monitoring patterns stay higher/lower/unchanged, never impro
 test('Advanced charts and all-scale MetricCard explicitly omit ASRS percentage bars without null-to-zero coercion',()=>{
   const ui=text('components/app/app-workspace.jsx')
   const advanced=ui.slice(ui.indexOf('function ProfileOverview('),ui.indexOf('function MetricCard('))
-  assert.match(advanced,/row\.displayKind === 'screening-count' \|\| row\.key === 'symptoms\.asrs6\.shaded_count'/)
+  assert.match(advanced,/profileScreeningPresentation\(row, results, locale\)/)
+  assert.match(advanced,/row\.screening \? \(/)
   assert.match(advanced,/Number\.isFinite\(row.currentPercent\) \? <div/)
   assert.doesNotMatch(advanced,/row.currentPercent \|\| 0/)
   assert.match(advanced,/ASRS screening count is shown separately without a percentage bar/)

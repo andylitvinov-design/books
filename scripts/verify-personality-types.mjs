@@ -1,7 +1,16 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { assertAccountScaleJumpLayout } from './helpers/scale-jump-layout-verifier.mjs'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { collectReportOverflowDiagnostics } from './helpers/report-overflow-diagnostics.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { createGuestVerifierPacer } from './helpers/guest-verifier-pacing.mjs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
 import { PERSONALITY_TYPE_DEFINITIONS, PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
@@ -14,6 +23,8 @@ const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{})
 const output='artifacts/app-r1/typology-'+engine.name()
 await mkdir(output,{recursive:true})
+const guestPacer=createGuestVerifierPacer()
+let pacedGuestContext=null
 const checks=[], errors=[]
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
 function observePage(page,label){
@@ -39,6 +50,7 @@ async function navigate(page,url){
  await page.waitForLoadState('networkidle')
 }
 async function api(context,path,body){
+ if(context===pacedGuestContext)guestPacer.record('/api/app/'+path,body?'POST':'GET')
  const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
  const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
 }
@@ -56,21 +68,42 @@ async function fill(page,d,mode,guest,locale){
   assert.ok((await saved).ok())
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
+ await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
  await expect(report.locator('[data-assessment-methodology]')).toContainText(locale==='ru'?'Авторские вопросы Holistic House':'Original Holistic House self-reflection')
  const summary=report.locator('[data-personality-type-summary]')
+ await expect(summary).toHaveCount(1)
+ await expect(summary.locator(':scope > h3')).toHaveCount(1)
  await expect(summary).toBeVisible()
  await expect(summary).toContainText(d.key==='hh-socionics-32'
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'
    : locale==='ru'?'Несколько равных ведущих паттернов':'Several equally prominent patterns')
  await summary.scrollIntoViewIfNeeded()
+ }
+ // Passive evidence for the hosted WebKit RU Enneagram overflow. Capture before
+ // the unchanged assertion; do not resize, scroll, hide content or retry it.
+ if(!guest&&locale==='ru'&&d.key==='hh-enneagram-36'){
+  try{
+   const layout=await page.evaluate(collectReportOverflowDiagnostics)
+   await writeFile(output+'/layout-account-hh-enneagram-36-ru.json',JSON.stringify({commit:process.env.GITHUB_SHA,scenario:{definitionKey:d.key,locale,mode,guest},...layout},null,2))
+   console.log('TYPOLOGY_LAYOUT',JSON.stringify({viewport:layout.viewport,document:layout.document,body:layout.body,counts:layout.counts,escapingWithoutClippingAncestor:layout.escapingWithoutClippingAncestor.slice(0,6)}))
+  }catch(error){console.log('TYPOLOGY_LAYOUT_DIAGNOSTIC_ERROR',error.message)}
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
+ if(!guest&&d.scoring.dimensions.length>6){
+  const expected=buildAssessmentResultReport(scoreAssessment(d,Object.fromEntries(d.questions.map(question=>[question.id,3]))),locale)
+  const layouts=await assertAccountScaleJumpLayout(page,expect,expected.sections,{screenshotPrefix:output+'/picker-'+d.key+'-'+locale})
+  await writeFile(output+'/picker-layout-'+d.key+'-'+locale+'.json',JSON.stringify({commit:process.env.GITHUB_SHA,definitionKey:d.key,locale,layouts},null,2))
+  console.log('TYPOLOGY_PICKER_LAYOUT',JSON.stringify({definitionKey:d.key,locale,layouts}))
+ }
 }
 let page
 try{
@@ -78,24 +111,26 @@ try{
  page=await account.newPage()
  observePage(page,'account')
  await navigate(page,origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await page.getByRole('button',{name: 'Open my Cabinet with Google', exact: true}).click()
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  for(const [i,base] of defs.entries()){
   const locale=i%2?'ru':'en',mode=i%2?'guided':'quick',d=localized(base.key,locale)
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
   await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
-  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await assertQuestionnaireMode(page,expect,{mode,guest:false,definition:d})
   await fill(page,d,mode,false,locale)
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(d.scoring.dimensions.length).fill(d.key==='hh-disc-style-20'?15:12))
+  await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
@@ -139,6 +174,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
@@ -149,22 +186,35 @@ try{
  // One consented guest completes four instruments, retaining the same private
  // cookie while changing UI language and runner mode. Creating a new guest for
  // every instrument exhausts the unchanged 12/IP/hour limit after earlier suites.
- const guest=await browser.newContext({viewport:{width:390,height:844}})
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+ pacedGuestContext=guest
+ guest.on('request',request=>{
+  const url=new URL(request.url())
+  if(url.origin===origin&&url.pathname.startsWith('/api/app/guest/'))guestPacer.record(url.pathname,request.method())
+ })
+ guest.on('response',response=>{
+  const url=new URL(response.url())
+  if(url.origin===origin&&url.pathname.startsWith('/api/app/guest/')&&response.status()===429)
+   console.log('TYPOLOGY_GUEST_RATE_LIMIT',JSON.stringify({endpoint:url.pathname.replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}(?=\/|$)/gi,'/:id'),status:response.status()}))
+ })
  for(const [i,base] of defs.entries()){
   const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale)
+  // Same guest, unchanged quotas: let the prior request window expire naturally.
+  await guestPacer.beforeScenario(d.key)
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
-  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
-  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await enterGuestQuestionnaireMode(page,expect,{mode,definition:d})
   await fill(page,d,mode,true,locale)
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(d.scoring.dimensions.length).fill(d.key==='hh-disc-style-20'?15:12))
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await page.waitForLoadState('networkidle')
   await page.close()
+  guestPacer.settled()
  }
  const guestResults=(await api(guest,'guest/bootstrap')).results
  assert.deepEqual(guestResults.map(result=>result.definitionKey).sort(),defs.map(d=>d.key).sort())

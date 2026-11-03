@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
@@ -5,6 +6,7 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { interpretationForDimension } from '../lib/assessments/interpretation-registry.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { FOCUS_KEYS, SCALE_FOCUS, getTestScaleGuide, scaleAxisFor, scaleOverlap } from '../lib/assessments/scale-guides.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
 
@@ -32,7 +34,7 @@ test('every active test has one separate bilingual source document and correct s
     assert.match(document,/What this test explores/)
     for (const language of ['en','ru']) {
       const def=defFor(item,language)
-      const result=scoreAssessment(def,answers(def))
+      const result=scoreAssessment(def,answers(def), syntheticTraumaContext(def))
       const guide=getTestScaleGuide(item.key,language)
       assert.ok(guide,item.key+'/'+language)
       assert.equal(guide.scales.length,result.dimensions.length,item.key+'/'+language)
@@ -112,8 +114,9 @@ test('simple picker uses topic cards as measured-scale intent, without a duplica
   assert.match(simple,/onToggleFocus\(key\)/)
   assert.match(simple,/data-topic-problem-filter/)
   assert.match(simple,/TestScaleGuide guide=\{entry\.scaleGuide\} locale=\{locale\}/)
-  assert.match(full,/simpleMode \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
-  assert.match(full,/setAxes\(\[\]\); setBrowseFull\(false\)/)
+  assert.match(full,/preserveScaleFilters = false/)
+  assert.match(full,/simpleMode && !preserveScaleFilters \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
+  assert.match(full,/if \(!preserveScaleFilters\) setAxes\(\[\]\); setBrowseFull\(false\)/)
   // The full database keeps its explicit measured-scale refinement controls.
   assert.match(full,/data-scale-first-selection/)
   assert.match(full,/measurementAxes\?\.includes\(key\)/)
@@ -132,4 +135,75 @@ test('unknown/restricted catalog items never gain runnable test guides',()=>{
   assert.equal(getTestScaleGuide('mmpi-3','en'),null)
   assert.equal(getTestScaleGuide('functioning-review','en'),null)
   assert.equal(getTestScaleGuide('not-a-real-instrument','en'),null)
+})
+
+
+test('every runnable test reports the scored numerical range for every actual scale in both languages', () => {
+  let checked = 0
+  for (const item of active) {
+    for (const locale of ['en', 'ru']) {
+      const definition = defFor(item, locale)
+      const scored = scoreAssessment(definition, answers(definition), syntheticTraumaContext(definition))
+      const guide = getTestScaleGuide(item.key, locale)
+      const report = buildAssessmentResultReport(scored, locale)
+      assert.ok(guide?.scales?.length, item.key + '/' + locale)
+      assert.equal(report.sections.length, scored.dimensions.length, item.key + '/' + locale)
+      assert.equal(guide.scales.length, scored.dimensions.length, item.key + '/' + locale)
+      for (const [index, dimension] of scored.dimensions.entries()) {
+        const scale = guide.scales[index]
+        const section = report.sections[index]
+        assert.equal(section.key, dimension.key, item.key + '/' + locale)
+        assert.equal(scale.key, dimension.key, item.key + '/' + locale)
+        assert.equal(scale.min, dimension.min, item.key + '/' + dimension.key)
+        assert.equal(scale.max, dimension.max, item.key + '/' + dimension.key)
+        assert.ok(Number.isFinite(dimension.min) && Number.isFinite(dimension.max) && dimension.max > dimension.min)
+        assert.ok(section.meaning?.length > 35, item.key + '/' + dimension.key)
+        checked++
+      }
+    }
+  }
+  assert.ok(checked > active.length * 2, 'Audit covers multidimensional scales, not only test counts')
+})
+
+test('weekly connection 5/10 has bilingual score-linked analysis and real questionnaire endpoints', () => {
+  for (const locale of ['en', 'ru']) {
+    const definition = getAssessmentDefinition('hh-weekly-pulse', 'v1', locale)
+    const answerSet = answers(definition)
+    answerSet['weekly.connection'] = 5
+    const scored = scoreAssessment(definition, answerSet)
+    const report = buildAssessmentResultReport(scored, locale)
+    const section = report.sections.find(item => item.key === 'weekly.connection')
+    assert.ok(section)
+    assert.equal(section.value, 5)
+    assert.equal(section.min, 0)
+    assert.equal(section.max, 10)
+    assert.deepEqual(section.responseAnchors, locale === 'ru'
+      ? {low: 'Совсем не чувствовал(а)', high: 'Очень сильно'}
+      : {low: 'Not at all', high: 'Very much'})
+    assert.match(section.summary, locale === 'ru' ? /посередине шкалы ответов/ : /halfway along the response scale/)
+    assert.ok(!/no verified categorical cutoffs/i.test(section.summary), locale)
+    const low = buildAssessmentResultReport(scoreAssessment(definition, answers(definition)), locale)
+      .sections.find(item => item.key === 'weekly.connection')
+    const highAnswers = {...answerSet, 'weekly.connection': 10}
+    const high = buildAssessmentResultReport(scoreAssessment(definition, highAnswers), locale)
+      .sections.find(item => item.key === 'weekly.connection')
+    assert.notEqual(section.summary, low.summary, 'Midpoint must not reuse low-range text')
+    assert.notEqual(section.summary, high.summary, 'Midpoint must not reuse high-range text')
+    assert.equal(section.bandBasis, 'descriptive', 'Original scales are not clinical categories')
+    assert.ok(section.steps.some(step => locale === 'ru' ? /контакт|поддержк/i.test(step) : /connection|support/i.test(step)))
+    assert.equal(buildAssessmentResultReport({...scored, contentHash:'tampered'}, locale)
+      .sections.find(item => item.key === 'weekly.connection').responseAnchors, null,
+      'An unverified result must never gain verified response anchors')
+  }
+})
+
+test('compact result UI prioritizes useful analysis and keeps methodological caveats collapsed', () => {
+  const component = read('components/app/compact-assessment-report.jsx')
+  assert.match(component, /data-questionnaire-anchors/)
+  assert.match(component, /data-scale-meaning/)
+  assert.match(component, /styles\.quietGauge/)
+  assert.match(component, /showCaveatsInline/)
+  assert.match(read('components/app/compact-assessment-report.module.css'), /\.quietGauge figure > small/)
+  assert.match(component, /!showCaveatsInline && section\.limitations\?\.map/)
+  assert.doesNotMatch(component, /\{!anchor && section\.limitations\?\.map/)
 })

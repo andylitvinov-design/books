@@ -177,6 +177,12 @@ it moves with it.
 Its roots are deep,
 and strength becomes calm.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Responsibility turns into an unending struggle: you must endure at any cost, and stopping feels like weakness.
+
+After (desired state): A calm dependability that makes room for rest and your own needs, with effort alternating with recovery.
+
 ## RITUAL
 
 Take 2–5 drops of OAK under the tongue,

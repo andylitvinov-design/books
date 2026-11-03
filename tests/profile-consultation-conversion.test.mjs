@@ -1,0 +1,73 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('signed-in Profile always shows saved reports and one local free-consultation landing CTA', () => {
+  const profile = source('components/app/profile-domains.jsx')
+  const workspace = source('components/app/app-workspace.jsx')
+  const archive = profile.indexOf('id="personal-reports"')
+  const reportRenderer = profile.indexOf('{reportsContent}', archive)
+  const offer = profile.indexOf('data-profile-free-consultation')
+  const archiveEnd = profile.indexOf('</section>}', archive)
+  const categories = profile.indexOf('className="hh-domain-more"', archive)
+
+  assert.ok(archive >= 0 && reportRenderer > archive && offer > reportRenderer &&
+    offer < archiveEnd && categories > archiveEnd)
+  assert.match(profile, /data-report-archive-always-open/)
+  assert.match(profile, /latestReceivedReport\(savedReports\)/)
+  assert.match(profile, /data-profile-mode=\{mode\}/)
+  assert.match(profile, /className="hh-domain-appointment-button"/)
+  assert.match(profile, /\{t\.consultation\}/)
+  assert.match(profile, /consultation: 'Book free consultation'/)
+  assert.match(profile, /consultation: 'Заказать бесплатную консультацию'/)
+  assert.match(profile, /data-consultation-kind="free-options"/)
+  assert.ok(profile.includes("href={'/' + locale + '/services/free-consultation'}"))
+  assert.doesNotMatch(profile, /setArchiveOpen|hh-account-report-toggle|hidden=\{!archiveOpen\}/)
+  assert.doesNotMatch(profile, /freeIntroConsultationHref/)
+  assert.ok(profile.includes("href={'/' + locale + '/services/free-situation-review#request-free-review'}"))
+  assert.ok(profile.includes("href={'/' + locale + '/services'}"))
+  assert.match(workspace, /reportsContent=\{<><PersonalAnalysisPanel key=\{data\.account\.id\}/)
+  assert.match(workspace, /<ClientExpressReports locale=\{locale\} accountId=\{data\.account\.id\}/)
+  assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
+  assert.doesNotMatch(profile, /localStorage|sessionStorage|Math\.random\(/)
+})
+
+test('mobile Profile uses near edge-to-edge cards and a compact first viewport', () => {
+  const profile = source('components/app/profile-domains.jsx')
+  const css = source('components/app/profile-refresh.css')
+  const banner = source('components/sitewide-antistress-banner.module.css')
+  assert.match(profile, /import '\.\/profile-refresh\.css'/)
+  assert.match(profile, /className="hh-domain-topic-pills"/)
+  assert.match(profile, /role="tablist"/)
+  assert.match(profile, /aria-selected=\{active === key\}/)
+  assert.match(profile, /<details className="hh-domain-more"/)
+  assert.match(css, /\.hh-profile-domains\[data-profile-mode="account"\]/)
+  assert.match(css, /\.hh-app:has\(\.hh-profile-domains\[data-profile-mode="account"\]\)/)
+  assert.match(css, /min-height:\s*0;/)
+  assert.match(css, /@media\(max-width:560px\)/)
+  assert.match(css, /max-height:720px/)
+  assert.match(css, /prefers-reduced-motion:reduce/)
+  assert.match(css, /:focus-visible/)
+  assert.doesNotMatch(css, /^\s*body\s*\{/m, 'only private Profile can be affected')
+  // Actual shared sitewide ribbon is already navy + burgundy; do not duplicate or recolour it.
+  assert.match(banner, /\.ribbon\{[^\n]*background:#102849/)
+  assert.match(banner, /\.cta\{[^\n]*background:#922f51/)
+})
+
+test('compact copy is exclusive to embedded authenticated reports; original private readers remain', () => {
+  const panel = source('components/app/personal-analysis-panel.jsx')
+  assert.match(panel, /empty: 'No reports yet'/)
+  assert.match(panel, /empty: 'Отчётов пока нет'/)
+  assert.match(panel, /emptyCompact: 'Open a report link from Andrey to save it here\.'/)
+  assert.match(panel, /emptyCompact: 'Откройте ссылку на отчёт Андрея и сохраните его здесь\.'/)
+  assert.match(panel, /reportsIntroCompact: 'Reports from Andrey\.'/)
+  assert.match(panel, /reportsIntroCompact: 'Отчёты от Андрея\.'/)
+  assert.match(panel, /compact \? t\.reportsIntroCompact : t\.reportsIntro/)
+  assert.match(panel, /compact \? t\.emptyCompact : t\.emptyGoogle/)
+  assert.match(panel, /<PersonalAnalysisReportList reports=\{\[\.\.\.visibleReports, \.\.\.legacyReports\]\} locale=\{locale\} selector=\{selector\} compact \/>/)
+  assert.match(panel, /<SavedSessionsPanel items=\{savedSessions\}/)
+  assert.match(panel, /credentials: 'same-origin'/)
+  assert.match(panel, /<DownloadPractitionerReport reportId=\{item\.id\}/)
+})

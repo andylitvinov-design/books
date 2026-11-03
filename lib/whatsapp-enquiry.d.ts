@@ -13,3 +13,6 @@ export type WhatsAppEnquiryArgs = {
 export declare const WHATSAPP_NUMBER: string;
 export declare function safePublicWhatsAppPath(pathname: unknown): string;
 export declare function whatsappEnquiryUrl(args: WhatsAppEnquiryArgs): string;
+
+export declare const TELEGRAM_USERNAME: string;
+export declare function telegramEnquiryUrlFromWhatsApp(whatsappUrl: string): string;

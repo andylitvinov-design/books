@@ -1,0 +1,775 @@
+/* AS-5.7 Calm Morning. A bright, legible, one-step mobile learning experience.
+   Existing lesson structure and persistence contract are unchanged. */
+.overlay{
+  position:fixed;inset:0;z-index:2147483001;
+  background:#e7f6f4;color:#173f50;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+.overlay *{box-sizing:border-box}
+.frame{
+  position:relative;isolation:isolate;height:100dvh;width:100%;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  background:#eaf6f3;
+}
+/* The photograph is brightened independently; copy never sits directly on it. */
+.frame::before,.frame::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0}
+.frame::before{
+  background:var(--scene-photo) center/cover no-repeat;
+  filter:brightness(1.04) contrast(1.06) saturate(1.02);
+  transform:scale(1.005);
+}
+.frame::after{
+  background:linear-gradient(180deg,
+    rgba(245,253,250,.20) 0%,
+    rgba(234,249,249,.07) 31%,
+    rgba(223,244,244,.16) 58%,
+    rgba(218,241,240,.45) 100%);
+}
+.welcome{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.baseline{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.checkin{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recall{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+/* The second screen explains today's skill and purpose, never scores a task. */
+.support{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.support::after{background:linear-gradient(180deg,rgba(250,246,236,.50),rgba(237,245,233,.75))}
+.support .stage{align-items:center}
+.support .panel{
+  margin:auto;padding:clamp(22px,5.5vw,34px);
+  background:linear-gradient(145deg,rgba(255,253,246,.96),rgba(244,250,244,.94));
+  border-color:rgba(255,251,241,.95);
+}
+.supportMessage{display:grid;gap:10px}
+.supportBody{
+  margin:0;color:#36535b;font-size:clamp(18px,4.55vw,21px);
+  font-weight:530;line-height:1.55;text-wrap:pretty;
+}
+@media(max-width:359px){
+  .support .panel{padding:19px 17px}
+  .supportBody{font-size:17px;line-height:1.47}
+}
+/* A clear 3-sentence rationale must fit one short iPhone viewport. */
+@media(max-height:700px){
+  .support .panel{padding:clamp(14px,3.5vw,20px);gap:8px}
+  .support .title{font-size:clamp(23px,6vw,30px);line-height:1.16}
+  .supportBody{font-size:clamp(16px,4.2vw,18px);line-height:1.42}
+}
+
+.practice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.feel{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ocean{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ocean::after{background:linear-gradient(180deg,rgba(236,251,249,.30),rgba(217,242,244,.54))}
+.ocean .stage{align-items:center}
+.ocean .panel{margin:auto}
+.save{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.frame.receipt{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recap{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.invite{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.header,.stage,.footer{position:relative;z-index:1}
+/* Crisp full-bleed scenic image; overlays protect the controls and reading panel. */
+.welcome::before, .arrive::before{
+  filter:brightness(1.04) contrast(1.04) saturate(.96);
+  transform:scale(1.005);
+}
+.welcome::after, .arrive::after{
+  background:linear-gradient(180deg,rgba(238,251,248,.54),rgba(222,247,244,.73));
+}
+.welcome .stage, .arrive .stage{
+  flex-direction:column;align-items:center;justify-content:flex-end;
+  gap:clamp(8px,1.25vh,14px);
+}
+/* The original coast photo is portrait (1600 × 2394), but this is a
+   panoramic welcome slot. Containing it leaves nearly the whole card blank.
+   Fill the card instead, with a local landscape photo underneath if the
+   coast image fails to load. Keep both images decorative. */
+.arrivalPhoto{
+  position:relative;isolation:isolate;
+  flex:1 1 185px;min-height:55px;max-height:clamp(130px,28vh,245px);
+  width:min(100%,590px);overflow:hidden;
+  border:1px solid rgba(255,255,255,.85);border-radius:23px;
+  background:#dcefeb url('/images/holistic-house/course-focus-mountain-boy.webp') center 52%/cover no-repeat;
+  box-shadow:0 8px 30px rgba(20,81,88,.11);
+}
+.arrivalPhoto img{
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  object-fit:cover;object-position:center 64%;
+}
+.arrivalPanel{
+  margin:0 auto;flex:0 1 auto;
+  gap:clamp(8px,1.15vh,12px);padding:clamp(15px,3.6vw,23px);
+}
+.arrivalPanel .title{
+  font-size:clamp(27px,6.9vw,36px);line-height:1.16;
+}
+.arrivalPanel .lead{
+  font-size:clamp(16px,4.2vw,19px);font-weight:550;line-height:1.34;
+}
+.moodChoices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+.moodChoices button{
+  display:flex;align-items:center;justify-content:flex-start;gap:9px;
+  min-width:0;min-height:50px;padding:9px 11px;
+  border:1.5px solid #a5ced1;border-radius:15px;
+  background:rgba(255,255,255,.94);color:#214f60;
+  font:750 clamp(14px,3.65vw,16px)/1.25 system-ui,-apple-system,sans-serif;
+  cursor:pointer;text-align:left;box-shadow:0 2px 8px rgba(33,100,107,.08);
+}
+.moodChoices button::before{content:attr(data-symbol);flex-shrink:0;font-size:19px;line-height:1}
+.moodChoices button[aria-pressed=true]{
+  border-color:#078b90;background:#d7f7ee;color:#125763;
+  box-shadow:0 0 0 1px rgba(6,139,144,.32),0 4px 12px rgba(17,129,133,.11);
+}
+.moodChoices button:disabled{opacity:.58;cursor:not-allowed}
+.moodChoices button:focus-visible{outline:3px solid #096d89;outline-offset:3px}
+.moodReply{
+  margin:0;padding:9px 12px;border-radius:12px;
+  border-left:3px solid #159e99;background:rgba(215,246,236,.90);
+  color:#205260;font-size:clamp(14px,3.55vw,16px);font-weight:590;line-height:1.36;
+}
+.moodOptional{
+  margin:0;color:#476c77;font-size:clamp(13px,3.25vw,14px);line-height:1.4;
+}
+@media(max-height:680px){
+  .arrivalPhoto{max-height:105px;min-height:30px;border-radius:17px}
+  .welcome .stage, .arrive .stage{gap:7px}
+  .arrivalPanel{padding:12px 15px;gap:7px}
+  .arrivalPanel .title{font-size:26px}
+  .arrivalPanel .lead{font-size:15.5px}
+  .moodChoices{gap:7px}
+  .moodChoices button{min-height:43px;padding:7px 9px;font-size:14px}
+  .moodReply{padding:7px 10px;font-size:13.5px}
+}
+@media(max-height:580px){
+  .arrivalPhoto{max-height:57px;min-height:24px}
+  .arrivalPanel .title{font-size:24px}
+}
+.error{position:relative;z-index:1}
+.header{
+  display:flex;align-items:center;gap:12px;min-height:64px;
+  padding:calc(8px + env(safe-area-inset-top)) clamp(12px,3.5vw,24px) 9px;
+  border-bottom:1px solid rgba(255,255,255,.73);
+  background:rgba(243,253,251,.83);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+}
+.iconButton,.pause{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:48px;min-height:48px;padding:0 11px;border-radius:15px;
+  border:1px solid #bfdedb;background:rgba(255,255,255,.9);
+  color:#225669;cursor:pointer;box-shadow:0 2px 9px #2b687016;
+}
+.pause{gap:7px;font-size:16px;font-weight:740}
+.progress{flex:1;min-width:0;display:grid;gap:7px}
+.progressCopy{
+  display:flex;justify-content:space-between;gap:7px;
+  color:#234e5f;font-size:clamp(13px,3.45vw,15px);font-weight:780;
+  letter-spacing:.01em;
+}
+.track{height:7px;border-radius:100px;overflow:hidden;background:rgba(67,133,145,.20)}
+.fill{
+  height:100%;border-radius:100px;
+  background:linear-gradient(90deg,#69cfc4,#129fad);
+  transition:width .2s ease;
+}
+.stage{
+  flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:clamp(8px,1.5vh,19px) clamp(12px,3.4vw,28px) clamp(8px,1.8vh,17px);
+}
+.panel{
+  display:flex;flex-direction:column;gap:clamp(10px,1.55vh,15px);
+  width:min(100%,590px);min-width:0;max-height:100%;overflow-y:auto;
+  margin:auto auto 0;padding:clamp(18px,3.7vw,27px);
+  border:1.5px solid rgba(255,255,255,.92);border-radius:26px;
+  background:linear-gradient(155deg,rgba(250,255,253,.92),rgba(232,248,249,.90));
+  color:#204b5b;box-shadow:0 11px 38px #1f64701f;
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px);
+}
+/* Day 1 names the core orientation skill and explains its value before trying it. */
+.corePractice{gap:9px;padding:clamp(15px,3.2vw,22px)}
+.corePractice .lead{font-size:clamp(17px,4.25vw,19px);line-height:1.38;font-weight:650}
+.practiceDetail{display:block;margin-top:9px;color:#2e6870;
+  font-size:clamp(15px,3.9vw,18px);line-height:1.4;font-weight:570}
+.frame.arrive .panel[data-opora-first-exercise-consent="true"]{
+  gap:clamp(12px,1.8vh,18px);padding:clamp(17px,4vw,25px)
+}
+.frame.arrive .panel[data-opora-first-exercise-consent="true"] .lead{
+  font-size:clamp(17px,4.1vw,20px);line-height:1.43
+}
+.coreWhy{
+  padding:9px 12px;border-left:3px solid #30a9a2;border-radius:10px;
+  background:rgba(255,255,255,.66);color:#295868;
+}
+.coreWhy strong{
+  display:block;font-size:clamp(11px,3vw,12px);line-height:1.2;
+  font-weight:850;letter-spacing:.08em;color:#187a7f;
+}
+.coreWhy p{margin:3px 0 0;font-size:clamp(14px,3.55vw,16px);line-height:1.35}
+.corePractice .miniLabel{font-size:clamp(14px,3.7vw,16px)}
+.corePractice .chips{gap:7px}
+.corePractice .chips button{min-height:46px;padding:9px 10px;font-size:clamp(15px,3.95vw,17px)}
+.eyebrow{
+  font-size:clamp(12px,3.2vw,14px);font-weight:850;
+  letter-spacing:.12em;text-transform:uppercase;color:#167c83;line-height:1.4;
+}
+.title{
+  margin:0;outline:none;color:#153e51;
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(28px,7.3vw,38px);font-weight:700;
+  line-height:1.13;letter-spacing:-.02em;text-wrap:balance;
+}
+.lead{
+  margin:0;color:#245266;font-size:clamp(18px,4.7vw,21px);
+  font-weight:560;line-height:1.44;text-wrap:pretty;
+}
+.soft,.subtle{
+  margin:0;color:#3e6472;font-size:clamp(15px,3.8vw,17px);
+  line-height:1.45;
+}
+.action{
+  margin:0;padding:12px 14px;
+  border-left:4px solid #41b9b3;border-radius:5px 15px 15px 5px;
+  background:rgba(219,244,240,.82);color:#1d5563;
+  font-size:clamp(17px,4.3vw,19px);font-weight:680;line-height:1.4;
+}
+.miniLabel{
+  margin:0;font-size:clamp(15px,3.8vw,17px);
+  font-weight:800;color:#225464;
+}
+.choiceRow{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.actionButton,.plain,.chips button{
+  display:flex;align-items:center;justify-content:center;min-width:0;
+  min-height:52px;padding:11px 12px;border-radius:16px;
+  cursor:pointer;text-align:center;
+  font-size:clamp(16px,4.05vw,18px);line-height:1.25;font-weight:760;
+  color:#245164;background:rgba(255,255,255,.92);
+  border:1.5px solid #afced1;
+  box-shadow:0 2px 8px #3b879014;
+}
+.chips button:last-child:nth-child(odd){grid-column:1/-1}
+.actionButton{gap:8px;background:#d9faf3;color:#146978;border-color:#76c9c8}
+.plain{background:rgba(255,255,255,.76)}
+.chips button[aria-pressed=true]{
+  background:#cdf3eb;color:#0f5c67;border:2px solid #179e9f;
+  box-shadow:inset 0 0 0 1px #fff,0 2px 9px #159a9b1c;
+}
+.chips button:disabled{opacity:.6}
+/* This is a real-life choice rather than a second quote. Single-column actions
+   keep their meaning readable on 320–430px phones without horizontal scrolling. */
+.microChoices{grid-template-columns:minmax(0,1fr);gap:8px}
+.microChoices button{justify-content:flex-start;text-align:left;min-height:51px;padding:9px 13px;
+  font-size:clamp(15px,3.85vw,17px);line-height:1.3;font-weight:700}
+.microChoices button:last-child{justify-content:center;text-align:center;min-height:43px;
+  background:rgba(255,255,255,.75);font-weight:630}
+/* Day 4 has one short task and one optional emotion field. */
+.day4Feeling{display:grid;gap:11px}
+.oneTask{margin:0;padding:14px 15px;border:1.5px solid #accdd1;border-radius:17px;
+  background:rgba(255,255,255,.93);color:#24546a;
+  font:700 clamp(16px,4.1vw,19px)/1.35 system-ui,-apple-system,sans-serif;
+  box-shadow:0 2px 8px #3b879014}
+.day4Feeling .supportLabel{margin:0}
+.day4Feeling .microChoices button{justify-content:center;text-align:center;min-height:43px;font-weight:630}
+
+/* Exactly one future action: two status controls, not two competing exercises. */
+.singlePlanChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.singlePlanChoices button{min-height:49px;padding:9px 7px;font-size:clamp(13px,3.8vw,17px)}
+.singlePlanChoices button:last-child:nth-child(odd){grid-column:auto}
+.emotionPractice{gap:clamp(7px,1vh,10px);padding:clamp(12px,3vw,20px)}
+.emotionPractice .title{font-size:clamp(25px,6.3vw,33px)}
+.emotionPractice .lead{font-size:clamp(16px,4vw,19px);line-height:1.3}
+.emotionPicker{display:grid;gap:7px;min-width:0;width:100%}
+.emotionPrompt{margin:0;color:#265968;font-size:clamp(12px,3.3vw,15px);font-weight:750;line-height:1.25}
+.emotionChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.emotionChoices button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  min-width:0;min-height:51px;padding:5px 2px;
+  border:1.5px solid #aacbcc;border-radius:12px;background:rgba(255,255,255,.93);
+  color:#285568;font-size:clamp(11px,3vw,13px);font-weight:730;
+  line-height:1.12;text-align:center;overflow-wrap:anywhere;cursor:pointer
+}
+.emotionChoices button::before{content:attr(data-symbol);font-size:17px;line-height:1.14}
+.emotionChoices button[aria-pressed=true]{
+  border:2px solid #138f94;background:#d7f7ef;color:#115d64;
+  box-shadow:0 0 0 1px rgba(25,150,150,.22)
+}
+.emotionChoices button:disabled{opacity:.58;cursor:not-allowed}
+.emotionChoices button:focus-visible,.emotionOwnInput:focus-visible{
+  outline:3px solid #096d89;outline-offset:2px
+}
+.emotionOwnLabel{color:#356878;font-size:clamp(12px,3.2vw,14px);font-weight:700;line-height:1.25}
+.emotionOwnInput{
+  display:block;width:100%;min-width:0;min-height:44px;padding:9px 12px;
+  border:1.5px solid #a7cbd0;border-radius:12px;
+  background:rgba(255,255,255,.94);color:#214e60;
+  font:600 clamp(14px,3.7vw,16px)/1.2 system-ui,-apple-system,sans-serif
+}
+.emotionOwnInput::placeholder{color:#63828e;font-weight:440;opacity:1}
+.emotionOwnInput:not(:placeholder-shown){border-color:#159c9f}
+.emotionPractice .chips{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.emotionPractice .chips button{min-height:46px;padding:6px 4px;font-size:clamp(12px,3.4vw,15px)}
+.emotionPractice .chips button:last-child:nth-child(odd){grid-column:auto}
+@media(max-width:359px),(max-height:680px){
+  .emotionPractice{padding:10px 12px;gap:6px}
+  .emotionChoices{gap:4px}
+  .emotionChoices button{min-height:44px;font-size:10.75px}
+  .emotionOwnInput{min-height:42px}
+  .emotionPractice .chips button{min-height:43px;font-size:12px}
+  .day4Feeling{gap:7px}
+  .oneTask{padding:10px 12px;font-size:15px}
+}
+/* Optional own resource fits the same compact, soft Day 1 card. */
+.supportLabel{
+  margin:-2px 0 -7px;color:#356878;
+  font-size:clamp(13px,3.4vw,15px);font-weight:700;line-height:1.25;
+}
+.supportInput{
+  display:block;width:100%;min-width:0;min-height:49px;padding:10px 14px;
+  border:1.5px solid #a7cbd0;border-radius:15px;
+  background:rgba(255,255,255,.94);color:#214e60;
+  font:600 clamp(15px,3.9vw,17px)/1.3 system-ui,-apple-system,sans-serif;
+  box-shadow:0 2px 8px #3b879014;
+}
+.supportInput::placeholder{color:#688993;font-weight:450;opacity:1}
+.supportInput:not(:placeholder-shown){border-color:#159c9f;background:#f5fffd}
+.supportInput:focus-visible{outline:3px solid #096d89;outline-offset:2px}
+.supportInput:disabled{opacity:.6}
+/* Short optional 0–10 observations: two thumb-friendly rows, no giant questionnaire. */
+.ratingGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.ratingGrid button{
+  min-width:0;min-height:44px;padding:8px 0;border-radius:12px;
+  border:1.5px solid #afced1;background:rgba(255,255,255,.92);
+  color:#235467;font-size:clamp(16px,4.3vw,19px);font-weight:750;cursor:pointer;
+}
+.ratingGrid button[aria-pressed=true]{
+  border:2px solid #138e98;background:#cdf3eb;color:#0f5c67;
+}
+.ratingGrid button:disabled{opacity:.6}
+.ratingBounds{display:flex;justify-content:space-between;gap:8px;color:#446979;
+  font-size:clamp(12px,3.4vw,14px);line-height:1.3}
+.ratingGrid button:focus-visible{outline:3px solid #096d89;outline-offset:2px}
+.guidanceGroup{display:grid;gap:7px;min-width:0}
+.guidanceRow{display:flex;align-items:center;gap:9px;min-width:0}
+.guidanceAnimal{
+  flex:0 0 46px;width:46px;height:46px;object-fit:contain;
+  filter:drop-shadow(0 3px 5px rgba(49,101,90,.15));
+}
+.linkHint{
+  display:flex;align-items:center;justify-content:space-between;
+  flex:1;min-width:0;min-height:47px;gap:7px;
+  padding:9px 13px;border:1px solid #e6d8c7;border-radius:15px;
+  background:rgba(255,252,247,.96);color:#304e50;
+  box-shadow:0 2px 8px rgba(74,83,65,.09);
+  cursor:pointer;text-align:left;
+  font-size:clamp(14px,3.65vw,16px);font-weight:680;line-height:1.3;
+}
+.linkHint svg{flex:none;transition:transform .2s ease}
+.linkHint[aria-expanded=true] svg{transform:rotate(180deg)}
+.linkHint:disabled{opacity:.6;cursor:not-allowed}
+.guidanceGroup > .soft{
+  padding:10px 12px;border-radius:12px;
+  background:rgba(240,250,246,.92);
+  border:1px solid rgba(152,208,194,.55);
+  font-size:clamp(14px,3.55vw,16px);line-height:1.4;
+}
+.quotation{
+  margin:0;padding:2px 3px 4px;
+  color:#205466;font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(24px,6.1vw,33px);font-weight:500;font-style:italic;
+  line-height:1.33;letter-spacing:-.01em;
+}
+.receiptNote{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:15px;background:rgba(217,244,236,.92);color:#20586a;
+  font-size:clamp(15px,3.85vw,17px);font-weight:690;line-height:1.4;
+}
+.receiptNote svg{flex-shrink:0;color:#178e86}
+.disclaimer{
+  color:#52717c;font-size:clamp(12px,3.15vw,13px);
+  font-weight:500;line-height:1.4;
+}
+.error{
+  margin:0;padding:9px 18px;background:#fff0f0;
+  border-top:1px solid #dc9da5;color:#9a273b;
+  font-size:15px;text-align:center;line-height:1.35;
+}
+.footer{
+  display:flex;align-items:center;gap:9px;
+  padding:9px clamp(12px,3.5vw,24px) calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(255,255,255,.88);
+  background:rgba(237,251,249,.89);
+  -webkit-backdrop-filter:blur(17px);backdrop-filter:blur(17px);
+}
+.primary,.back{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  min-height:56px;border-radius:16px;padding:11px 15px;
+  font-size:clamp(17px,4.4vw,20px);font-weight:790;cursor:pointer;
+  box-shadow:0 3px 12px #195a6920;
+}
+.primary{
+  flex:1;border:1px solid #53b8b7;color:#fff;
+  background:linear-gradient(115deg,#159aab,#167b92);
+}
+.back{border:1.5px solid #a7c7cc;background:rgba(255,255,255,.89);color:#23576a}
+.primary:disabled,.back:disabled,.pause:disabled{opacity:.58;cursor:not-allowed}
+.iconButton:focus-visible,.pause:focus-visible,.primary:focus-visible,
+.back:focus-visible,.linkHint:focus-visible,.chips button:focus-visible,
+.actionButton:focus-visible,.plain:focus-visible{
+  outline:3px solid #096d89;outline-offset:3px;
+}
+/* A quiet four-screen finish with thumb-friendly response cards. */
+.recapSummary,.offerList{display:grid;gap:8px}
+.summaryItem{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.82);border:1px solid rgba(150,205,204,.62);border-radius:14px
+}
+.summaryItem>span{flex:0 0 25px;font-size:20px;line-height:1.2}
+.summaryItem div{display:grid;gap:3px;min-width:0}
+.summaryItem strong{font-size:clamp(14px,3.6vw,16px);line-height:1.24}
+.summaryItem small{font-size:clamp(13px,3.35vw,15px);line-height:1.32;color:#456b76}
+.confidenceChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.confidenceChoices button{
+  min-height:50px;padding:10px 8px;border:1.5px solid #a4caca;border-radius:14px;
+  background:rgba(255,255,255,.91);color:#265566;
+  font-size:clamp(13px,3.5vw,16px);font-weight:740;line-height:1.23;cursor:pointer
+}
+.confidenceChoices button[aria-pressed=true]{
+  border:2px solid #119b97;background:#d2f4ea;color:#135b62
+}
+.confidenceChoices button:focus-visible,.offerList a:focus-visible{
+  outline:3px solid #096d89;outline-offset:3px
+}
+.celebrationMark{
+  width:66px;height:66px;display:grid;place-items:center;border-radius:50%;
+  color:#0e8f8f;background:#d8f6eb;border:2px solid #8bd3c8;box-shadow:0 6px 18px #286e6d26
+}
+.offerList a{
+  display:flex;align-items:center;gap:11px;padding:14px 12px;min-height:63px;
+  border:1.5px solid #a2c9ca;border-radius:16px;background:rgba(255,255,255,.92);
+  color:#15576b;font-size:clamp(15px,3.9vw,17px);font-weight:760;
+  text-decoration:none;line-height:1.3
+}
+.offerList a>span{font-size:23px;flex:none}
+.offerList a>svg{flex:none;margin-left:auto}
+@media(max-height:680px){
+  .recap .panel{gap:7px;padding:12px 14px}
+  .summaryItem{padding:7px 9px;gap:7px}
+  .summaryItem small{font-size:13px}
+  .confidenceChoices button{min-height:43px;padding:6px;font-size:13.5px}
+  .offerList a{min-height:54px;padding:9px 11px}
+}
+.shade{
+  position:fixed;inset:0;z-index:3;
+  display:grid;place-items:center;padding:20px;
+  background:rgba(18,48,59,.70);
+}
+.safetyCard{
+  display:grid;gap:12px;width:min(100%,410px);
+  padding:24px;border:1px solid #daeeec;border-radius:24px;
+  background:#f7ffff;color:#173f51;
+  box-shadow:0 16px 42px #082e3747;
+}
+.safetyCard h3{margin:0;font:700 25px/1.24 Georgia,serif}
+.safetyCard p{margin:0;font-size:17px;line-height:1.52}
+.safetyCard button{
+  min-height:50px;padding:12px;border-radius:14px;
+  border:1.5px solid #93cdd2;background:#e0f5f1;
+  color:#164d61;font-size:16px;font-weight:730;cursor:pointer;
+}
+.safetyCard .safetyExit{background:#fff;color:#7e4455;border-color:#e6c6cf}
+@media(min-width:640px){
+  .stage{align-items:center}
+  .panel{margin:auto}
+}
+@media(max-width:370px){
+  .header{gap:7px;padding-left:10px;padding-right:10px}
+  .pause{padding:0 9px;font-size:15px}
+  .stage{padding:7px 9px}
+  .panel{padding:16px;border-radius:22px;gap:9px}
+  .title{font-size:27px}
+  .chips{gap:7px}
+  .chips button{padding:9px;font-size:15.5px;min-height:48px}
+  .ratingGrid{gap:5px}
+}
+@media(max-height:680px){
+  .header{padding-top:calc(5px + env(safe-area-inset-top));padding-bottom:5px;min-height:57px}
+  .iconButton,.pause{min-height:43px;min-width:43px}
+  .stage{padding-top:5px;padding-bottom:5px}
+  .panel{gap:8px;padding:14px 16px}
+  .title{font-size:clamp(25px,6.7vw,31px)}
+  .lead{font-size:17px;line-height:1.38}
+  .chips button{min-height:46px}
+  .ratingGrid button{min-height:42px}
+  .quotation{font-size:clamp(22px,5.7vw,27px);line-height:1.26}
+  .footer{padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .primary,.back{min-height:49px;font-size:16px}
+}
+/* Compact scenic programme pages after a confirmed daily save. */
+.frame.nextStep{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.frame.habit{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.habitBenefit{margin:0;padding:14px;border-radius:15px;border:1px solid #b0ded9;color:#235a66;
+  background:rgba(222,249,243,.9);font-size:clamp(15px,3.8vw,17px);line-height:1.48;font-weight:600}
+.habitSetup{min-width:0;display:grid;gap:8px}
+.frame.habit .panel{gap:clamp(9px,1.3vh,13px)}
+
+/* Scrollable, Duolingo-inspired learning path: 14 accessible previews, no
+   future-lesson navigation or false completion claims. The header and CTA
+   remain outside the scrolling panel at 320–430px. */
+.frame.nextStep .stage{align-items:stretch;overflow:hidden}
+.frame.nextStep .panel{height:100%;max-height:100%;min-height:0;margin:0 auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.coursePath{display:grid;gap:10px;min-width:0}
+.pathFinish{margin:0;display:flex;align-items:flex-start;gap:9px;padding:12px;border:1.5px solid #83cbc1;border-radius:15px;background:#e0f9ed;color:#225965;font-size:14px;line-height:1.42}
+.pathFinish svg{flex:none;color:#0b9488}
+.pathFinish strong{display:block;color:#13566a;font-size:16px;margin-bottom:3px}
+.pathIntro{margin:0;color:#345f6b;font-size:clamp(14px,3.6vw,16px);line-height:1.43}
+.pathProgress{display:grid;gap:7px;padding:10px 13px;border:1px solid #b5dfdb;border-radius:13px;background:#e2f7f0}
+.pathProgress span{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:720;color:#215766}
+.pathProgress strong{font-size:16px;color:#087b80;font-variant-numeric:tabular-nums}
+.pathProgress progress{width:100%;height:9px;accent-color:#159e95}
+.pathHint{margin:0;font-size:13px;line-height:1.4;color:#436a75}
+.pathChapter{display:grid;gap:9px;min-width:0}
+.pathChapterHead{padding:7px 7px 2px 46px}
+.pathChapterHead span{font-size:11px;letter-spacing:.11em;font-weight:850;color:#187c80}
+.pathChapterHead h3{margin:3px 0 0;font:700 clamp(18px,4.6vw,23px)/1.22 Georgia,serif;color:#204b57}
+.pathList{list-style:none;display:grid;gap:8px;padding:0;margin:0}
+.pathItem{display:grid;grid-template-columns:37px minmax(0,1fr);align-items:start;column-gap:6px;position:relative;min-width:0}
+.pathItem::before{content:"";position:absolute;top:30px;bottom:-11px;left:17px;border-left:3px dashed #a7d5d0}
+.pathItem:last-child::before{display:none}
+.pathNode{position:relative;z-index:1;display:grid;place-items:center;width:35px;height:35px;border-radius:50%;border:2px solid #acd2cf;background:#f8fdfb;color:#49757c;box-shadow:0 3px 0 #c3dad7}
+.pathItem[data-day-status="completed"] .pathNode{background:#179e92;color:#fff;border-color:#0b8c85;box-shadow:0 4px 0 #087a72}
+.pathItem[data-day-status="today"] .pathNode,.pathItem[data-day-status="next"] .pathNode{background:#d5f8e9;color:#097e7e;border-color:#48bcb0;box-shadow:0 4px 0 #a1d7cc}
+.pathItem[data-day-status="locked"] .pathNode{background:#eef3f0;color:#738b8d}
+.pathCard{min-width:0;background:rgba(255,255,255,.91);border:1.5px solid #c4dcd9;border-radius:16px;box-shadow:0 4px 0 #d0e0de;overflow:hidden}
+.pathItem:nth-child(even) .pathCard{margin-left:clamp(0px,2vw,12px)}
+.pathItem[data-day-status="completed"] .pathCard{background:#e7faf2;border-color:#a1d8c8}
+.pathItem[data-day-status="today"] .pathCard,.pathItem[data-day-status="next"] .pathCard{background:#ddf6f2;border:2px solid #58beb8;box-shadow:0 4px 0 #a3d6cf}
+.pathCard summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 7px;align-items:center;padding:10px 11px;min-height:64px}
+.pathCard summary::-webkit-details-marker{display:none}
+.pathCard summary:focus-visible{outline:3px solid #087a91;outline-offset:-3px;border-radius:12px}
+.pathCardMeta{grid-column:1;font-size:11px;line-height:1.3;letter-spacing:.035em;text-transform:uppercase;font-weight:830;color:#3e7379}
+.pathCard summary strong{grid-column:1;font-size:clamp(15px,3.9vw,17px);line-height:1.23;color:#204956;overflow-wrap:anywhere}
+.pathCard summary svg{grid-column:2;grid-row:1 / 3;color:#49818a;transition:transform .15s ease}
+.pathCard[open] summary svg{transform:rotate(180deg)}
+.pathPractice{padding:0 11px 11px;color:#335c67;font-size:clamp(13px,3.45vw,15px);line-height:1.4}
+.pathPractice p{margin:0 0 3px}
+.pathPractice small{color:#536d73;font-size:12px}
+@media(max-width:370px){
+  .frame.nextStep .panel{padding:12px}
+  .pathChapterHead{padding-left:41px}
+  .pathItem{grid-template-columns:32px minmax(0,1fr);gap:4px}
+  .pathNode{width:31px;height:31px}
+  .pathItem::before{left:15px}
+  .pathCard summary{padding:9px;min-height:60px}
+}
+@media(prefers-reduced-motion:reduce){
+  .fill,.pathCard summary svg{transition:none}
+  .frame::before{transform:none}
+}
+@media(forced-colors:active){
+  .panel,.chips button,.primary,.back,.iconButton,.pause{forced-color-adjust:auto;border:1px solid ButtonText}
+}
+
+@media(max-width:370px){.guidanceAnimal{flex-basis:39px;width:39px;height:39px}.guidanceRow{gap:7px}.linkHint{min-height:43px;padding:8px 10px;font-size:14px}}
+@media(prefers-reduced-motion:reduce){.linkHint svg{transition:none}}
+
+/* Inline player replaces the extra music screen on each daily practice. */
+.inlinePracticeAudio{width:100%;min-width:0;margin-top:clamp(5px,.9vh,9px)}
+.corePractice .inlinePracticeAudio{margin-top:4px}
+
+/* Three brief, optional grounding steps beside the existing inline audio player. */
+.meditationGuide{display:grid;gap:4px;color:#245266;text-align:left}
+.meditationGuide strong{font-size:clamp(13px,3.65vw,15px);line-height:1.25;color:#166b78}
+.meditationGuide ol{display:grid;gap:3px;padding-left:19px;margin:0;
+  font-size:clamp(12px,3.25vw,14px);line-height:1.32}
+.meditationGuide li{padding-left:2px}
+.meditationGuide li::marker{color:#158b91;font-weight:800}
+@media(max-height:680px){.meditationGuide ol{font-size:12px;gap:2px;line-height:1.25}}
+
+/* One thought per step: four soft, day-specific orientation moments precede the
+   practice, and the three takeaways never compete with the self-report. */
+.why{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.story{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.options{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.settle{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.recapPractice{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recapNext{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.recapFeedback{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.why .stage,.story .stage,.options .stage,.settle .stage,
+.recap .stage,.recapPractice .stage,.recapNext .stage,.recapFeedback .stage{
+  align-items:center;
+}
+.why .panel,.story .panel,.options .panel,.settle .panel,
+.recap .panel,.recapPractice .panel,.recapNext .panel,.recapFeedback .panel{
+  margin:auto;gap:clamp(9px,1.45vh,14px);padding:clamp(18px,4vw,26px);
+}
+.why .lead,.story .lead,.options .lead,.settle .lead{
+  font-size:clamp(17px,4.4vw,21px);line-height:1.46;
+}
+.gentleVariant{
+  margin:0;display:flex;align-items:center;min-height:60px;
+  padding:13px 15px;border-radius:16px;border:1.5px solid #a5d9d0;
+  background:rgba(246,255,249,.95);color:#285862;
+  font-size:clamp(16px,4vw,18px);font-weight:620;line-height:1.43;
+}
+.recap .summaryItem,.recapPractice .summaryItem,.recapNext .summaryItem{
+  padding:14px 15px;gap:12px;align-items:center;
+}
+.recap .summaryItem strong,.recapPractice .summaryItem strong,.recapNext .summaryItem strong{
+  font-size:clamp(17px,4.3vw,19px);line-height:1.33;
+}
+.recap .summaryItem small,.recapPractice .summaryItem small,.recapNext .summaryItem small{
+  font-size:clamp(15px,3.75vw,17px);line-height:1.43;
+}
+.recapFeedback .confidenceChoices{gap:8px}
+.recapFeedback .confidenceChoices button{min-height:49px}
+/* Short goal + action preview at the start of each lesson, not a second task.
+   Keep both blocks readable without a nested scroll on 320–430px phones. */
+.recapPractice .panel{gap:clamp(8px,1.2vh,12px)}
+.overviewPurpose{
+  display:grid;gap:5px;min-width:0;
+  padding:clamp(11px,2.7vw,14px) clamp(12px,3.1vw,16px);
+  border-left:3px solid #38a8a0;border-radius:12px;
+  background:rgba(248,255,252,.86);
+}
+.overviewPurpose strong{
+  color:#18767e;font-size:clamp(11px,3vw,12px);
+  letter-spacing:.07em;font-weight:850;
+}
+.overviewPurpose p{
+  margin:0;color:#315a65;
+  font-size:clamp(14px,3.55vw,16px);line-height:1.4;
+}
+@media(max-width:370px),(max-height:680px){
+  .recapPractice .title{font-size:clamp(25px,6vw,31px)}
+  .recapPractice .summaryItem{padding:10px 11px;gap:8px}
+  .recapPractice .summaryItem strong{font-size:clamp(15px,4vw,17px)}
+  .recapPractice .summaryItem small{font-size:clamp(13px,3.5vw,15px);line-height:1.35}
+  .overviewPurpose{padding:10px 12px;gap:3px}
+  .overviewPurpose p{font-size:clamp(13px,3.55vw,15px);line-height:1.35}
+}
+/* The 14-day closing meditation is always visible on its own screen.
+   It is optional and never opens a tab, popover or accordion. */
+.closingMeditation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.closingMeditation .stage{align-items:center}
+.closingMeditation .panel{margin:auto;gap:clamp(8px,1.25vh,12px)}
+.closingMeditationBlock{
+  width:100%;min-width:0;display:grid;gap:clamp(8px,1.25vh,12px);
+  padding:clamp(10px,2.8vw,15px);border:1px solid rgba(132,191,190,.75);
+  border-radius:17px;background:rgba(248,255,252,.91);
+}
+.closingMeditationBlock .meditationGuide ol{font-size:clamp(13px,3.45vw,15px)}
+.meditationOptional{margin:0;font-size:clamp(12px,3.15vw,13px);line-height:1.35;color:#476a72}
+.practiceGuidance{
+  margin:0;padding:9px 11px;border-radius:13px;
+  border-left:3px solid #77c7bc;background:rgba(249,255,252,.77);
+  color:#426a70;font-size:clamp(13px,3.4vw,15px);line-height:1.4
+}
+@media(max-width:370px),(max-height:680px){
+  .why .panel,.story .panel,.options .panel,.settle .panel,
+  .recap .panel,.recapPractice .panel,.recapNext .panel,.recapFeedback .panel{
+    padding:14px 15px;gap:8px;
+  }
+  .gentleVariant{min-height:50px;padding:10px 12px;font-size:15px}
+  .recap .summaryItem,.recapPractice .summaryItem,.recapNext .summaryItem{padding:11px}
+}
+@media(max-width:370px),(max-height:680px){
+  .closingMeditationBlock{padding:9px;gap:8px}
+  .closingMeditationBlock .meditationGuide ol{font-size:12px;line-height:1.27}
+}
+
+/* AS-6.0 · a single compact interactive micro-experiment inside the existing practice screen.
+   Step navigation never saves progress or claims an attempt. */
+.miniExperiment{
+  display:grid;gap:7px;padding:10px 11px;
+  border:1.5px solid #a3d1ca;border-radius:16px;
+  background:linear-gradient(145deg,rgba(253,255,247,.94),rgba(223,245,240,.90));
+}
+.miniExperimentHead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:clamp(11px,2.95vw,13px);font-weight:840;color:#246e70;letter-spacing:.04em}
+.miniExperimentHead span{white-space:nowrap}
+.miniExperimentStep{margin:0;color:#1e515b;font-size:clamp(15px,3.9vw,17px);
+  line-height:1.35;font-weight:700}
+.miniExperimentPrompt{margin:1px 0 0;color:#345e66;font-size:13px;line-height:1.25;font-weight:750}
+.miniExperimentChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.miniExperimentChoices button,.miniExperimentNav button{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;
+  padding:7px 5px;text-align:center;border:1.5px solid #aacdcb;border-radius:11px;
+  background:#fffefa;color:#255361;font:700 clamp(12px,3.2vw,14px)/1.2 system-ui,sans-serif;
+  cursor:pointer;overflow-wrap:anywhere}
+.miniExperimentChoices button[aria-pressed=true]{background:#ccf1e7;border-color:#178c8c;color:#135861}
+.miniExperimentChoices button:disabled,.miniExperimentNav button:disabled{opacity:.55;cursor:not-allowed}
+.miniExperimentNav{display:flex;justify-content:flex-end;gap:7px}
+.miniExperimentNav button{gap:6px;padding:7px 12px;min-width:92px}
+.miniExperimentNote{margin:0;color:#476c72;font-size:clamp(11px,2.95vw,12px);line-height:1.25}
+.miniExperimentChoices button:focus-visible,.miniExperimentNav button:focus-visible{
+  outline:3px solid #116c80;outline-offset:2px}
+@media(max-width:359px),(max-height:680px){
+  .practice .panel:has(.miniExperiment){padding:11px 12px;gap:7px}
+  .practice .panel:has(.miniExperiment) .title{font-size:clamp(22px,6.1vw,27px)}
+  .practice .panel:has(.miniExperiment) .lead{font-size:15px;line-height:1.3}
+  .miniExperiment{padding:8px;gap:5px}
+  .miniExperimentStep{font-size:14px}
+  .miniExperimentNote{font-size:11px}
+  .practice .panel:has(.miniExperiment) .chips button{min-height:44px;font-size:13px}
+}
+
+
+/* AS-6.0 integrated multimodal exercises: each channel is a separate slide,
+   with a natural page scroll on small phones and 44px+ accessible controls. */
+.bodyExperience{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.emotionExperience{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.mentalExperience{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.imageryMeditation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ritualPractice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.integratedExperience{display:grid;gap:clamp(9px,1.6vh,14px);min-width:0}
+.integratedInstruction{
+  margin:0;color:#1f4d5b;font-size:clamp(17px,4.5vw,20px);
+  line-height:1.42;font-weight:620;text-wrap:pretty;
+}
+.integratedHint,.integratedMeta{
+  margin:0;color:#426572;font-size:clamp(12px,3.2vw,14px);
+  line-height:1.36;
+}
+.integratedPlan{
+  display:grid;gap:6px;padding:12px 14px;border-radius:17px;
+  border:1px solid #b7d8d2;background:rgba(242,255,249,.92);
+}
+.integratedPlan span{font-size:13px;letter-spacing:.025em;font-weight:800;color:#196473}
+.integratedPlan p{margin:0;font-size:clamp(15px,3.8vw,17px);line-height:1.35}
+.imagerySymbol{
+  width:54px;height:54px;display:grid;place-items:center;margin:auto;
+  border-radius:50%;background:rgba(207,248,233,.90);color:#277786;
+  border:1px solid rgba(136,196,190,.80);
+}
+.integratedAttemptChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.integratedAttemptChoices button{
+  cursor:pointer;min-height:48px;min-width:0;padding:8px 7px;
+  border:1px solid #b1d1d0;border-radius:12px;
+  background:rgba(252,255,253,.96);color:#22586a;font:730 13px/1.25 system-ui,sans-serif;
+  text-align:center;overflow-wrap:anywhere;
+}
+.integratedAttemptChoices button[aria-pressed=true]{border:2px solid #118d91;background:#dcf9ec;color:#0c555a}
+.integratedAttemptChoices button:focus-visible{outline:3px solid #08788d;outline-offset:2px}
+.integratedAttemptChoices button:disabled{opacity:.55}
+.imageryMeditation .panel{padding:clamp(12px,3.1vw,21px);gap:clamp(8px,1.2vh,12px)}
+.imageryMeditation .integratedExperience{gap:clamp(7px,1vh,10px)}
+.imageryMeditation .title{font-size:clamp(22px,5.45vw,30px)}
+.imageryMeditation .integratedInstruction{font-size:clamp(15px,4vw,18px);line-height:1.35}
+.imageryMeditation .imagerySymbol{width:40px;height:40px}
+.imageryMeditation .integratedMeta{font-size:12px}
+@media(max-width:359px),(max-height:690px){
+  .integratedExperience{gap:8px}
+  .integratedInstruction{font-size:16px;line-height:1.32}
+  .integratedAttemptChoices{gap:5px}
+  .integratedAttemptChoices button{font-size:12px;padding:6px 4px;min-height:44px}
+  .imageryMeditation .panel{padding:11px 12px}
+  .imageryMeditation .integratedHint{font-size:12px}
+  .imageryMeditation .imagerySymbol{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .integratedExperience *, .integratedExperience *::before, .integratedExperience *::after{
+    scroll-behavior:auto;animation:none;transition:none;
+  }
+}

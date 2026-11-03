@@ -160,6 +160,12 @@ then stronger and stronger.
 
 And the darkness begins to dissolve.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: An inner crisis feels like a dark night: everything is constricted, familiar points of reference are lost and no way out is yet visible.
+
+After (desired state): The possibility of noticing a glimmer of light and new meaning, and allowing that there may be a way forward beyond the present impasse.
+
 ## RITUAL
 
 • take 2–5 drops

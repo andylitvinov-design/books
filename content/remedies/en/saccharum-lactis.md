@@ -171,3 +171,11 @@ warmth
 Place your hand on your stomach and say:
 
 'I am allowed to receive. I am safe.'
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Inner emptiness and powerlessness; support is needed, but accepting it is difficult.
+
+After (desired state): The right to receive care without having to earn it, and a sense that you do not have to carry everything alone.

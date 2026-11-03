@@ -8,11 +8,13 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   const publicExplorer = read('components/app/public-test-explorer.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const styles = read('components/app/test-explorer.module.css')
-  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('className="cabinet-signin-strip'), 'one-click start must precede secondary account entry')
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('<MoodCheckIn'), 'mood check-in is optional and must not block test start')
-  assert.doesNotMatch(cabinet, /without signing in|можно подобрать и пройти без входа/)
-  assert.match(publicExplorer, /<TestExplorer locale=\{locale\} audience="account" embedded=\{embedded\}/)
+  assert.match(cabinet, /Take available tests without registering\./, 'guest tests must be accessible before Google sign-in')
+  assert.match(cabinet, /See your scores and gauges first; free explanations and advice are available in your Cabinet\./,
+    'pre-login copy must explain the score-first result and where the full analysis is available')
+  assert.match(publicExplorer, /<TestExplorer locale=\{locale\} audience="guest" embedded=\{embedded\}/)
   assert.match(explorer, /embedded \? styles\.embedded/)
   assert.match(styles, /\.explorer \.battery\{position:static/)
   assert.match(styles, /\.customizer\[hidden\]\{display:none/)
@@ -22,7 +24,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(explorer, /\[activeFilterGroup, setActiveFilterGroup\] = useState\(initialFilterGroup\)/)
   assert.match(explorer, /onStart\(activeBattery, \{/)
   assert.match(explorer, /aria-expanded=\{customizeOpen\}/)
-  assert.match(explorer, /showAll \? visible : visible\.slice\(0, 8\)/)
+  assert.match(explorer, /showAll \? visibleCatalog : visibleCatalog\.slice\(0, 8\)/)
   assert.match(explorer, /if \(aSelected !== bSelected\) return aSelected \? -1 : 1/)
   assert.match(explorer, /selectedKeys\.includes\(a\.key\)/)
   assert.match(explorer, /selectedKeys\.includes\(b\.key\)/)
@@ -33,7 +35,7 @@ test('public Client entry shows the photo portrait immediately with Booking-styl
   const explorer = read('components/app/test-explorer.jsx')
   const visual = read('components/app/test-explorer-visual.jsx')
   const styles = read('components/app/test-explorer.module.css')
-  // One click must start the existing rights-cleared battery and OAuth handoff.
+  // One click must start the existing rights-cleared guest battery without OAuth.
   assert.match(explorer, /<button type="button" className=\{styles\.quickPrimary\}/)
   assert.match(explorer, /buildStarterBattery\(/)
   assert.match(explorer, /onStart\(activeBattery, \{/)
@@ -74,7 +76,8 @@ test('mobile design keeps head and one-click CTA above horizontally scrollable c
   assert.match(css, /\.visualCompact \.portraitSource\{width:1019px!important/)
   assert.match(css, /\.explorer \.row\{padding:14px 11px;gap:10px;grid-template-columns:/)
   assert.match(explorer, /<TestArtwork entry=\{entry\} \/>/)
-  assert.match(explorer, /GraduationCap \} from 'lucide-react'/)
+  assert.match(explorer, /import \{[^}]*\bGraduationCap\b[^}]*\} from 'lucide-react'/)
+  assert.match(explorer, /import \{[^}]*\bFileDown\b[^}]*\} from 'lucide-react'/)
   assert.match(explorer, /data-test-kind-badge/)
   assert.match(visual, /className=\{styles\.focusRays\}/)
   assert.match(visual, /topicCount > 0 \|\| selectedCount > 0/)
@@ -102,7 +105,7 @@ test('matching test cards and search remain visible while expert filters are col
   assert.match(css, /\.catalogControls\{/)
   assert.match(client, /showAssessmentStrip=\{false\}/)
   assert.match(client, /<ClientAssessmentInvite locale=\{typedLocale\} \/>/)
-  assert.match(header, /showAssessmentStrip = true/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|showAssessmentStrip = true/)
 })
 
 
@@ -163,4 +166,17 @@ test('signed-in and full database test selector use the same monitoring CTA as t
     assert.ok(simple.includes(label), 'Simple explorer: ' + label)
   }
   assert.doesNotMatch(full, /Start free testing|Пройти тестирование бесплатно|Comenzar pruebas gratuitas/)
+})
+
+ test('VIA family collapse preserves explicit selections and search, with independent expansion',()=>{
+ const explorer=read('components/app/test-explorer.jsx')
+ const expression=explorer.match(/const visibleCatalog = visible\.filter\(\(entry\) =>\s*([^\n]+)\)/)[1]
+ const filter=new Function('visible','showStandaloneVia','query','selectedKeys','isStandaloneVia',`return visible.filter(entry=>${expression})`)
+ const rows=[{key:'ipip-via-r-curiosity-4'},{key:'ipip-via-r-strengths-96'},{key:'gad-7'}]
+ const standalone=key=>/^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(key)
+ assert.deepEqual(filter(rows,false,'',[],standalone),rows.slice(1))
+ assert.deepEqual(filter(rows,false,'',['ipip-via-r-curiosity-4'],standalone),rows)
+ assert.deepEqual(filter(rows,false,'curiosity',[],standalone),rows)
+ assert.deepEqual(filter(rows,true,'',[],standalone),rows)
+ assert.match(explorer,/aria-expanded=\{showStandaloneVia\} onClick=\{\(\) => setShowStandaloneVia\(\(value\) => !value\)\}/)
 })

@@ -1,3 +1,6 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import Link from "next/link";
+import { Fragment } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
@@ -305,10 +308,10 @@ const stages = [
  */
 const levelPhotos = [
   { src: tantraReikiArchive.images.ru[17], description: "People sharing a Tantra Reiki gathering", archive: true, position: "center 48%" },
-  { src: tantraReikiArchive.images.ru[18], description: "A real moment of connection at a Tantra event", archive: true, position: "center 48%" },
   { src: tantraReikiArchive.images.ru[19], description: "A group exploring embodied practice", archive: true, position: "center 50%" },
-  { src: tantraReikiArchive.images.ru[20], description: "Tantra workshop participants together", archive: true, position: "center 50%" },
+  { src: tantraReikiArchive.images.ru[18], description: "A real moment of connection at a Tantra event", archive: true, position: "center 48%" },
   { src: tantraReikiArchive.images.ru[21], description: "Mindful connection in a group practice", archive: true, position: "center 47%" },
+  { src: tantraReikiArchive.images.ru[20], description: "Tantra workshop participants together", archive: true, position: "center 50%" },
   { src: tantraReikiArchive.images.ru[22], description: "Personal experience shared at a gathering", archive: true, position: "center 52%" },
   { src: tantraReikiArchive.images.ru[4], description: "Participants of an original Tantra event", archive: true, position: "center 50%" },
   { src: tantraReikiArchive.images.ru[6], description: "An original Tantra gathering and its participants", archive: true, position: "center 48%" },
@@ -493,52 +496,127 @@ const levelApplications: Record<PublicLocale, string[]> = {
 };
 
 const ui = {
-  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", details: "Explore attunements & practical exercises", original: "Andrey’s perspective", practice: "Practical assignment", restored: "From the original Master Teacher programme", fullSource: "Full original nine-level research", previous: "Previous level", next: "Next level", overview: "Course overview", photoContext: "Real gathering photographs illustrate each level’s theme; they do not depict its specific initiation.", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
-  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", details: "Раскрыть настройки и задания", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", restored: "Оригинальная программа обучения · авторский текст", fullSource: "Полное авторское исследование девяти ступеней", previous: "Предыдущая ступень", next: "Следующая ступень", overview: "Обзор программы", photoContext: "Реальные фотографии встреч иллюстрируют темы ступеней, но не изображают конкретные посвящения.", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
-  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", details: "Ver sintonizaciones y ejercicios", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", restored: "Programa original de formación · traducción", fullSource: "Investigación original completa de las nueve etapas", previous: "Etapa anterior", next: "Siguiente etapa", overview: "Resumen del programa", photoContext: "Fotos de encuentros reales ilustran los temas; no representan iniciaciones específicas.", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
+  en: { eyebrow: "The nine levels", heading: "A journey, one level at a time", subtitle: "Explore nine progressive initiations through grounded exercises, partner connection, mandalas and personal practice.", level: "Level", settings: "Traditional attunements", application: "What you will learn", details: "Explore attunements & practical exercises", original: "Andrey’s perspective", practice: "Practical assignment", restored: "From the original Master Teacher programme", fullSource: "Full original nine-level research", previous: "Previous level", next: "Next level", overview: "Course overview", photoContext: "Real event photos illustrate each theme, not the initiation itself.", final: "Explore the original materials", phases: ["Foundation · levels 1–3", "Deepening · levels 4–6", "Master path · levels 7–9"], quickPhases: ["1–3 Foundation", "4–6 Deepening", "7–9 Mastery"], notice: "These are traditional names and symbolic practices, not promises of medical or financial outcomes." },
+  ru: { eyebrow: "Девять ступеней", heading: "Одна ступень — одна глава пути", subtitle: "Девять ступеней — от телесной чувствительности и контакта до работы с архетипами, мандалами и собственной практикой.", level: "Ступень", settings: "Настройки ступени", application: "Что вы освоите", details: "Раскрыть настройки и задания", original: "Авторское описание Андрея · без сокращений", practice: "Практическое задание", restored: "Оригинальная программа обучения · авторский текст", fullSource: "Полное авторское исследование девяти ступеней", previous: "Предыдущая ступень", next: "Следующая ступень", overview: "Обзор программы", photoContext: "Фото реальных встреч передают тему ступени, но не сами посвящения.", final: "Перейти к материалам", phases: ["Основа · ступени 1–3", "Углубление · ступени 4–6", "Мастерский путь · ступени 7–9"], quickPhases: ["1–3 Основа", "4–6 Углубление", "7–9 Мастерство"], notice: "Названия настроек и образы относятся к традиции практики, а не являются медицинскими или финансовыми гарантиями." },
+  es: { eyebrow: "Nueve etapas", heading: "Un camino, una etapa a la vez", subtitle: "Nueve etapas progresivas de práctica corporal, conexión y trabajo simbólico.", level: "Etapa", settings: "Sintonizaciones", application: "Qué aprenderás", details: "Ver sintonizaciones y ejercicios", original: "Texto original de Andrey · traducción del ruso", practice: "Práctica", restored: "Programa original de formación · traducción", fullSource: "Investigación original completa de las nueve etapas", previous: "Etapa anterior", next: "Siguiente etapa", overview: "Resumen del programa", photoContext: "Las fotos muestran encuentros reales, no la iniciación de cada etapa.", final: "Ver materiales originales", phases: ["Base · etapas 1–3", "Profundización · etapas 4–6", "Maestría · etapas 7–9"], quickPhases: ["1–3 Base", "4–6 Práctica", "7–9 Maestría"], notice: "Los nombres son prácticas simbólicas de una tradición, no garantías médicas o económicas." },
 } as const;
 
-export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
-  const c=ui[locale];
+// The mobile study guide and the nine-level index share one compact intro.
+// Keep these links here so translations and chapter anchors stay in sync.
+export function TantraReikiOverviewLinks({locale}:{locale:PublicLocale}) {
+  const c = ui[locale];
   return (
-    <div className="tantra-journey">
-      <div className="tantra-journey__intro">
-        <p className="homeopathy-kicker">{c.eyebrow}</p>
-        <h2 id="tantra-level-summary-title">{c.heading}</h2>
-        <p>{c.subtitle}</p>
-        <p className="tantra-journey__photo-context">{c.photoContext}</p>
-        <div className="tantra-journey__phase-links">
-          {[0,1,2].map((group) => <a href={"#tantra-level-" + (group * 3 + 1)} key={group}>{c.phases[group]} <span aria-hidden="true">↗</span></a>)}
+    <div className="tantra-journey__overview-links">
+      <nav className="tantra-journey__phase-links" aria-label={c.overview}>
+        {[0, 1, 2].map((group) => (
+          <a href={"#tantra-level-" + (group * 3 + 1)} key={group}>
+            {c.quickPhases[group]} <span aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </nav>
+      <a className="tantra-journey__original-link" href="#tantra-original-author-research">{c.fullSource} ↓</a>
+      <p className="tantra-mobile-guide__photo-context">{c.photoContext}</p>
+    </div>
+  );
+}
+const levelOneFocus: Record<PublicLocale, {
+  eyebrow: string; title: string; description: string; request: string; tests: string; note: string;
+  furtherEyebrow: string; furtherTitle: string; furtherDescription: string; expand: string; collapse: string; exploreNext: string;
+}> = {
+  en: {
+    eyebrow: "BEGIN HERE · LEVEL 1",
+    title: "Your first step: Spring of Life",
+    description: "Notice gentle sensations, practise presence and explore respectful connection at your own pace.",
+    request: "Get Tantra Reiki Level 1 as a gift",
+    tests: "Take free Tantra self-reflection tests",
+    note: "The free introductory initiation is confirmed personally by Andrey; tests support self-reflection, not diagnosis.",
+    furtherEyebrow: "OPTIONAL · EXPLORE AT YOUR OWN PACE",
+    furtherTitle: "Curious about Levels 2–9?",
+    furtherDescription: "Choose a level to explore its original lesson and traditional practices.",
+    expand: "Open details",
+    collapse: "Close details",
+    exploreNext: "Explore later levels",
+  },
+  ru: {
+    eyebrow: "НАЧНИТЕ ЗДЕСЬ · ПЕРВАЯ СТУПЕНЬ",
+    title: "Первый шаг: «Родник жизни»",
+    description: "Замечайте ощущения в теле, развивайте чувствительность и бережный контакт в комфортном темпе.",
+    request: "Получить 1-ю ступень Тантра Рейки в подарок",
+    tests: "Пройти бесплатные тантрические тесты",
+    note: "Бесплатная вводная инициация подтверждается лично Андреем; тесты предназначены для самопознания, не диагностики.",
+    furtherEyebrow: "ПРОДОЛЖЕНИЕ · ПО ВАШЕМУ ЖЕЛАНИЮ",
+    furtherTitle: "Хотите узнать о ступенях 2–9?",
+    furtherDescription: "Выберите ступень, чтобы изучить авторские материалы и практики.",
+    expand: "Раскрыть описание",
+    collapse: "Свернуть",
+    exploreNext: "Посмотреть следующие ступени",
+  },
+  es: {
+    eyebrow: "EMPIEZA AQUÍ · NIVEL 1",
+    title: "Tu primer paso: Manantial de vida",
+    description: "Observa las sensaciones, practica la presencia y explora una conexión respetuosa a tu ritmo.",
+    request: "Recibir Tantra Reiki Nivel 1 de regalo",
+    tests: "Hacer los tests tántricos gratuitos",
+    note: "La iniciación introductoria gratuita se acuerda con Andrey; los tests son para la reflexión personal, no el diagnóstico.",
+    furtherEyebrow: "OPCIONAL · A TU RITMO",
+    furtherTitle: "¿Quieres explorar los niveles 2–9?",
+    furtherDescription: "Elige una etapa para conocer sus materiales y prácticas originales.",
+    expand: "Ver detalles",
+    collapse: "Cerrar detalles",
+    exploreNext: "Ver niveles posteriores",
+  },
+};
+
+export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
+  const c = ui[locale];
+  const focus = levelOneFocus[locale];
+
+  const renderLevel = (stage: (typeof stages)[number], i: number) => {
+    const n = i + 1;
+    const copy = stage[locale];
+    const phase = Math.floor(i / 3);
+    const photo = levelPhotos[i];
+
+    const article = (
+      <article
+        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "") + " reiki-screen reiki-screen--chapter"}
+        id={n === 1 ? "tantra-level-1" : undefined}
+        aria-labelledby={"tantra-heading-" + n}
+      >
+        {n === 1 ? (
+          <figure className="tantra-journey__photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+          </figure>
+        ) : null}
+        <div className="tantra-journey__level-heading">
+          <div className="tantra-journey__chapter">
+            <strong className="tantra-journey__level-number">{n === 1 ? focus.eyebrow : c.level + " " + String(n).padStart(2, "0")}{n === 1 ? null : <small> / 09</small>}</strong>
+            <span>{c.phases[phase]}</span>
+          </div>
+          {n === 1 ? <h2 id={"tantra-heading-" + n}>{focus.title}</h2> : <h3 id={"tantra-heading-" + n}>{copy.title}</h3>}
+          <p className="tantra-journey__subtitle">{copy.subtitle}</p>
         </div>
-        <a className="tantra-journey__original-link" href="#tantra-original-author-research">{c.fullSource} ↓</a>
-      </div>
-      {stages.map((stage, i) => {
-        const n=i+1;
-        const copy=stage[locale];
-        const phase=Math.floor(i/3);
-        const photo = levelPhotos[i];
-        return (
-          <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
-            <figure className="tantra-journey__photo">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-            </figure>
-            <div className="tantra-journey__level-heading">
-              <div className="tantra-journey__chapter">
-                <strong className="tantra-journey__level-number">{c.level} {String(n).padStart(2,"0")} <small>/ 09</small></strong>
-                <span>{c.phases[phase]}</span>
-              </div>
-              <h3 id={"tantra-heading-"+n}>{copy.title}</h3>
-              <p className="tantra-journey__subtitle">{copy.subtitle}</p>
+        <div className="tantra-journey__details">
+          <p className="tantra-journey__first-description">{n === 1 ? focus.description : copy.intro}</p>
+          {n > 1 ? (
+            <div className="tantra-journey__collapsed-learning">
+              <strong>{c.application}</strong>
+              <p>{levelApplications[locale][i]}</p>
+              <strong>{c.practice}</strong>
+              <p>{copy.practice}</p>
             </div>
-            
-            <div className="tantra-journey__details">
-              
+          ) : null}
+          <details className="tantra-journey__source">
+            <summary>
+              <span>{locale === "ru" ? "Полное описание и упражнения" : locale === "es" ? "Descripción y ejercicios completos" : "Full lesson & exercises"}</span>
+              <span className="tantra-journey__source-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div className="tantra-journey__source-body">
+              {n === 1 ? <p className="tantra-journey__source-intro">{copy.intro}</p> : null}
               <div className="tantra-journey__author-text" lang={locale}>
                 <h4>{c.original}</h4>
-                {originalAuthorDescription(locale, i).map((paragraph, j) => (
-                  <p key={j}>{paragraph}</p>
-                ))}
+                {originalAuthorDescription(locale, i).map((paragraph, j) => <p key={j}>{paragraph}</p>)}
               </div>
               <div className="tantra-journey__practice tantra-journey__practice--restored">
                 <strong>{c.restored}</strong>
@@ -551,20 +629,61 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                   <div className="tantra-journey__settings">
                     <h4>{c.settings}</h4>
                     <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
-                    {originalSettingDescription(locale, i) ? (
-                      <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p>
-                    ) : null}
+                    {originalSettingDescription(locale, i) ? <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p> : null}
                   </div>
                 </div>
               </details>
-              <div className="tantra-journey__actions">
-                {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
-                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):(locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n<9?c.next:c.final} →</a>
-              </div>
             </div>
-          </article>
-        );
-      })}
+          </details>
+          {n === 1 ? (
+            <div className="tantra-journey__first-cta">
+              <Link href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
+              <p>{focus.note}</p>
+            </div>
+          ) : null}
+          <div className="tantra-journey__actions">
+            {n > 1 ? <a href={"#tantra-level-" + (n - 1)} aria-label={c.previous + " " + (n - 1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
+            <a className="tantra-journey__next" href={n === 1 ? "#tantra-next-levels" : n < 9 ? "#tantra-level-"+(n+1) : (locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n === 1 ? focus.exploreNext : n < 9 ? c.next : c.final} →</a>
+          </div>
+        </div>
+      </article>
+    );
+    if (n === 1) return article;
+    return (
+      <details className="tantra-journey__collapsed" id={"tantra-level-"+n} key={n}>
+        <summary className="tantra-journey__collapsed-summary">
+          <span className="tantra-journey__collapsed-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={reikiPhotoUrl(photo.src, 640)} alt="" style={{ objectPosition: photo.position }} loading="lazy" decoding="async" />
+            <span className="tantra-journey__collapsed-number">{String(n).padStart(2, "0")}</span>
+          </span>
+          <span className="tantra-journey__collapsed-title"><strong>{copy.title}</strong><small>{copy.subtitle}</small></span>
+          <span className="tantra-journey__collapsed-action">
+            <span className="tantra-journey__collapsed-open-label">{focus.expand}</span>
+            <span className="tantra-journey__collapsed-close-label">{focus.collapse}</span>
+            <span className="tantra-journey__collapsed-chevron" aria-hidden="true">⌄</span>
+          </span>
+        </summary>
+        {article}
+      </details>
+    );
+  };
+
+  return (
+    <div className="tantra-journey">
+      {stages.map((stage, i) => (
+        <Fragment key={i}>
+          {i === 1 ? (
+            <section className="tantra-journey__continuation" id="tantra-next-levels" aria-labelledby="tantra-next-levels-title">
+              <p className="homeopathy-kicker">{focus.furtherEyebrow}</p>
+              <h2 id="tantra-next-levels-title">{focus.furtherTitle}</h2>
+              <p>{focus.furtherDescription}</p>
+            </section>
+          ) : null}
+          {renderLevel(stage, i)}
+        </Fragment>
+      ))}
       <p className="tantra-journey__notice">{c.notice}</p>
     </div>
   );

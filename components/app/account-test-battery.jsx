@@ -5,14 +5,12 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
-import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
-import { coverageForFocus } from '@/lib/assessments/test-explorer'
-import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
-import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { profileCompletionRecommendations } from '@/lib/profile/summary'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
@@ -67,15 +65,15 @@ function TestSymbol({topics}) {
   return <span className={styles.iconTile} data-theme={key} aria-hidden="true"><Icon size={23} strokeWidth={1.8}/></span>
 }
 
-async function api(path, body, { signal } = {}) {
+async function request(path, body, { signal, accountId } = {}) {
   const response = await fetch('/api/app/' + path, {
     signal,
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...(accountId ? { 'X-HH-Account-ID': accountId } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   })
-  const json = await response.json().catch(() => ({}))
-  if (!response.ok) {
+  const json = await response.json()
+  if (!response.ok || json?.error || !json || typeof json !== 'object' || Array.isArray(json)) {
     const error = new Error(json.error || 'SERVICE_UNAVAILABLE')
     error.code = json.error
     throw error
@@ -119,21 +117,56 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const searchParams = useSearchParams()
+  const requestedProfileCompletion = searchParams.get('profile') === 'missing'
+  const profileCompletion = requestedProfileCompletion
+    ? profileCompletionRecommendations({
+        snapshot: data.snapshot, results: data.results, locale, limit: 5,
+      })
+    : null
   // Old saved deep links continue to reach dynamics in its new Results home.
   const legacyDynamics = searchParams.get('tab') === 'dynamics'
   useEffect(() => {
     if (legacyDynamics) router.replace('/' + locale + '/app/portfolio?tab=dynamics', { scroll: false })
   }, [legacyDynamics, locale, router])
-  const openFromInsights = searchParams.get('explore') === '1'
+  const rayParam = searchParams.get('axis')
+  const portraitAxis = rayParam && rayParam !== 'personality' && TEST_EXPLORER_AXES.includes(rayParam) ? rayParam : null
+  const openFromInsights = searchParams.get('explore') === '1' || Boolean(portraitAxis)
   const fromCourse = searchParams.get('course') === '1'
+  const requestedCourseId = searchParams.get('courseId') || null
+  const accountId = data.account?.id
+  const scopeKey = JSON.stringify([accountId, requestedCourseId])
+  const scope = useRef({ key: scopeKey, revision: 0 }), mounted = useRef(false)
+  if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, revision: scope.current.revision + 1 }
+  const scopeRevision = scope.current.revision
+  const isCurrent = () => mounted.current && scope.current.key === scopeKey && scope.current.revision === scopeRevision
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const requestedCategory = searchParams.get('category')
   const insightsCategory = INSIGHTS_TEST_CATEGORIES.some((item) => item.key === requestedCategory) ? requestedCategory : null
   const once = useRef(false)
   const [plan, setPlan] = useState(null)
   const [courseState, setCourseState] = useState(null)
+  const selectedCourseId = requestedCourseId || courseState?.course?.id || null
+  const courseHref = (params = {}, id = selectedCourseId) => {
+    const query = new URLSearchParams(params)
+    if (id) query.set('courseId', id)
+    return '/' + locale + '/app/course' + (query.size ? '?' + query.toString() : '')
+  }
+  async function api(path, body, options = {}) {
+    if (!isCurrent()) throw new Error('COURSE_SELECTION_CHANGED')
+    const isCourse = path === 'course'
+    const target = isCourse ? body?.courseId || selectedCourseId : null
+    const result = await request(isCourse && target ? path + '?courseId=' + encodeURIComponent(target) : path,
+      isCourse && body ? { ...body, courseId: target } : body, { ...options, accountId })
+    if (!isCurrent() || (isCourse && target && result.course?.id !== target)) throw new Error('COURSE_SELECTION_CHANGED')
+    return result
+  }
+  // A rapid double tap must not create two plans or two runner requests.
+  const singleStartInFlight = useRef(false)
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
-  const [exploring, setExploring] = useState(openFromInsights)
+  const [exploring, setExploring] = useState(openFromInsights || fromCourse || Boolean(recommendedKey))
+  const [explorerMounted, setExplorerMounted] = useState(false)
+  const [explorerRevision, setExplorerRevision] = useState(0)
   useEffect(() => {
     if (!openFromInsights) return
     setExploring(true)
@@ -142,14 +175,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     let childFrame
     const frame = window.requestAnimationFrame(() => {
       childFrame = window.requestAnimationFrame(() => {
-        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document.getElementById(portraitAxis ? 'hh-test-list' : 'hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     })
     return () => {
       window.cancelAnimationFrame(frame)
       if (childFrame !== undefined) window.cancelAnimationFrame(childFrame)
     }
-  }, [openFromInsights, insightsCategory])
+  }, [openFromInsights, insightsCategory, portraitAxis])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
   const [statusFiltersOpen, setStatusFiltersOpen] = useState(Boolean(requestedFilter))
@@ -178,6 +211,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     : (plan.status === 'cancelled' ? null : plan)
   useEffect(() => {
     let active = true
+    setCourseState(null)
     const controller = new AbortController()
     api('course', undefined, { signal: controller.signal }).then(course => {
       if (active) setCourseState(course)
@@ -187,7 +221,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     // Safari/WebKit can treat an unfinished course fetch as a cross-origin
     // navigation rejection when a user immediately opens a test. Cancel it.
     return () => { active = false; controller.abort() }
-  }, [data.account?.id, data.results?.length])
+  }, [data.account?.id, data.results?.length, requestedCourseId]) // eslint-disable-line react-hooks/exhaustive-deps
   const courseKeys = courseTestKeys(courseState)
   const courseStatusByKey = new Map((courseState?.assessments?.selectedTests || [])
     .map(item => [item.key, item]))
@@ -208,6 +242,11 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     return [...regular, ...missing].map(row => completedKeys.has(row.key)
       ? { ...row, completedInPlan: true } : row)
   }, [currentPlan, data, locale, courseState])
+  // A true disclosure: opening and closing are controlled by the visible top button.
+  const explorerVisible = exploring
+  useEffect(() => {
+    if (explorerVisible) setExplorerMounted(true)
+  }, [explorerVisible])
   const completed = rows.filter((row) => row.completedInPlan).length
   const pastRows = useMemo(() => {
     const ids = [...new Set((data.results || []).map((result) => result.definitionId).filter(Boolean))]
@@ -218,10 +257,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   // A category-scoped invitation starts a fresh *filter view*, never modifies
   // stored selections. Saving uses the existing appendActive flow.
   const categoryFocus = TEST_RECOMMENDATION_FOCUS.some((item) => item.key === insightsCategory) ? [insightsCategory] : []
-  const explorerPreferences = openFromInsights
-    ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
-    : selectionPreferences
-  const initialFilterGroup = !openFromInsights || !insightsCategory ? null
+  const explorerPreferences = portraitAxis
+    ? { axes: [portraitAxis], focus: [] }
+    : openFromInsights
+      ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
+      : selectionPreferences
+  const initialFilterGroup = portraitAxis ? 'scales' : !openFromInsights || !insightsCategory ? null
     : insightsCategory === 'wu-xing' ? 'areas' : categoryFocus.length ? 'topics' : null
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
   const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
@@ -255,23 +296,19 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         appendActive: !replaceActive,
         ...(selectionPreferences === undefined ? {} : { selectionPreferences }),
       })
-      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
-      setConflict(null)
-      setPlan(created)
-      setNotice(c.added)
-      setExploring(false)
-      setShowList(true)
       // When the person came from My Course, these are the EXACT tests they
       // deliberately checked in the full Explorer. Explicitly bind them to
       // that private course, not the default five or the account's entire
       // (possibly much larger) historical test-plan selection.
+      let returnCourseId = selectedCourseId
       if (fromCourse) {
         const current = await api('course')
         if (current.course?.stage !== 2) {
           throw Object.assign(new Error('COURSE_STAGE_CHANGED'), { code: 'COURSE_STAGE_CHANGED' })
         }
+        returnCourseId = current.course.id
         await api('course', {
-          action: 'confirm-tests',
+          action: 'confirm-tests', courseId: current.course.id,
           expectedRevision: current.course.revision,
           testKeys: valid,
         })
@@ -279,8 +316,18 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
-      router.replace(fromCourse ? root + '/course' : root + '/tests?plan=' + encodeURIComponent(created.id))
+      if (!isCurrent()) return
+      // Keep the unsaved draft available if course confirmation or reload fails.
+      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
+      setConflict(null)
+      setPlan(created)
+      setExplorerRevision((revision) => revision + 1)
+      setNotice(c.added)
+      setExploring(false)
+      setShowList(true)
+      router.replace(fromCourse ? courseHref({}, returnCourseId) : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
+      if (!isCurrent()) return
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
       else if (cause.code === 'ACTIVE_PLAN_EXISTS') setConflict({ keys: valid, preferences: selectionPreferences })
       else setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
@@ -321,11 +368,97 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   async function choose(entriesToStart, selectionPreferences) {
     await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
+
+  // One signed-in "Start test" is an append-then-launch operation, not
+  // the multi-test Save Selection flow. Both server methods are idempotent:
+  // appendActive deduplicates the selected instrument, and runs reuses its draft.
+  async function chooseAndStart(entry) {
+    if (singleStartInFlight.current || busy) return
+    if (!entry?.selectable || !entry.definition ||
+        !entries.some((item) => item.key === entry.key && item.selectable &&
+          item.definition?.id === entry.definition.id)) {
+      throw new Error(c.error)
+    }
+    singleStartInFlight.current = true
+    setBusy(true)
+    setError('')
+    let savedPlan = null
+    try {
+      const definition = entry.definition
+      savedPlan = await api('test-plans', {
+        items: [{
+          definitionKey: definition.key,
+          definitionVersion: definition.version,
+          instrumentLocale: definition.instrumentLocale,
+        }],
+        operationId: crypto.randomUUID(),
+        appendActive: true,
+        // Do not overwrite the saved topics/preferences from a one-card start.
+      })
+      if (!isCurrent()) return
+
+      let run = null
+      let courseId = null
+      // A course-assigned questionnaire still belongs to its course journey.
+      // Keep its special assignment/progression rules from the regular test list.
+      if (courseKeys.includes(entry.key) &&
+          !courseStatusByKey.get(entry.key)?.completed) {
+        const fresh = await api('course')
+        if (isCourseTest(fresh, entry.key) &&
+            coursePendingKeys(fresh).includes(entry.key)) {
+          run = await startOrResumeCourseTest({
+            courseState: fresh, key: entry.key, locale, request: api,
+          })
+          courseId = fresh.course.id
+        }
+      }
+      if (!run) run = await api('runs', {
+        definitionKey: definition.key,
+        definitionVersion: definition.version,
+        instrumentLocale: definition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      if (!run?.id) throw new Error('RUN_UNAVAILABLE')
+      if (!isCurrent()) return
+
+      const query = courseId
+        ? '&course=1&courseId=' + encodeURIComponent(courseId)
+        // A completed historic plan can still be retaken, but must not
+        // receive /advance from the runner unless the plan is active.
+        : savedPlan.status === 'active' ? '&plan=' + encodeURIComponent(savedPlan.id) : ''
+      setPlan(savedPlan)
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick' + query)
+    } catch (cause) {
+      if (!isCurrent()) return
+      if (savedPlan) setPlan(savedPlan)
+      const message = savedPlan
+        ? (locale === 'ru'
+          ? 'Тест добавлен в «Мои тесты», но не открылся. Нажмите «Начать тест» ещё раз.'
+          : 'Test saved to My tests, but could not open. Tap Start test again.')
+        : cause.code === 'TEST_PLAN_CAPACITY' ? c.capacity
+          : (locale === 'ru' ? 'Не удалось добавить тест. Попробуйте ещё раз.' : 'Could not add the test. Please try again.')
+      setError(message)
+      // The picker displays a user-readable error, instead of a raw API code.
+      throw new Error(message)
+    } finally {
+      singleStartInFlight.current = false
+      if (isCurrent()) setBusy(false)
+    }
+  }
   function openFilters() {
-    setExploring((open) => !open)
-    if (!exploring) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }))
+    const opening = !exploring
+    setExploring(opening)
+    if (opening) window.requestAnimationFrame(() => {
+      const trigger = document.getElementById('my-tests-picker-toggle')
+      const y = trigger?.getBoundingClientRect().top
+      // Follow a lower "refine" link to the actual top picker, without jumping on a direct tap.
+      if (trigger && (y < 0 || y > window.innerHeight / 2)) {
+        trigger.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start',
+        })
+      }
+    })
   }
   function openList() {
     if (!rows.length) return openFilters()
@@ -346,8 +479,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.removed)
       if (updated.status === 'cancelled') setExploring(false)
       // Avoid keeping stale plan IDs in the URL after editing the current set.
-      if (requestedPlanId) router.replace(root + '/tests')
+      if (requestedPlanId && isCurrent()) router.replace(root + '/tests')
     } catch (cause) {
+      if (!isCurrent()) return
       if (cause.code === 'REVISION_CONFLICT') {
         setPlan(null)
         await reload()
@@ -375,6 +509,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   function keepSavedSet() {
     try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
     setConflict(null)
+    setExplorerRevision((revision) => revision + 1)
     setPlan(data.activeTestPlan || data.latestTestPlan || null)
     setExploring(false)
     router.replace(root)
@@ -392,14 +527,16 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       const fresh = await api('course')
       const key = coursePendingKeys(fresh)[0]
       if (!key) {
-        router.push(root + '/course?tests=complete')
+        router.push(courseHref({ tests: 'complete' }, fresh.course?.id))
         return
       }
       const run = await startOrResumeCourseTest({
         courseState: fresh, key, locale, request: api,
       })
-      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+      if (!isCurrent()) return
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1&courseId=' + encodeURIComponent(fresh.course.id))
     } catch (cause) {
+      if (!isCurrent()) return
       setError(c.error + ' (' + (cause.code || cause.message || 'COURSE_UNAVAILABLE') + ')')
       setBusy(false)
     }
@@ -433,7 +570,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           const run = await startOrResumeCourseTest({
             courseState: fresh, key: row.key, locale, request: api,
           })
-          router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
+          if (!isCurrent()) return
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1&courseId=' + encodeURIComponent(fresh.course.id))
           return
         }
       }
@@ -445,14 +583,90 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       })
       const isPlanStep = currentPlan?.status === 'active' &&
         currentPlan.definitionIds.includes(row.definition.id)
+      if (!isCurrent()) return
       router.push(root + '/runs/' + encodeURIComponent(run.id) +
         '?mode=quick' + (isPlanStep ? '&plan=' + encodeURIComponent(currentPlan.id) : ''))
     } catch (cause) {
+      if (!isCurrent()) return
       setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
       setBusy(false)
     }
   }
+  // Keep unsaved filter choices mounted when collapsed, just as before.
+  const explorerPanel = (
+      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}
+        hidden={!explorerVisible} style={explorerVisible ? undefined : { display: 'none' }}>
+        {(explorerVisible || explorerMounted) && <>
+        {conflict && <aside className={styles.reviewSelection} data-pending-selection>
+          <div>
+            <strong>{c.pendingReview}</strong>
+            <p>{c.pendingDescription}</p>
+          </div>
+          <div className={styles.reviewActions}>
+            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
+            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
+          </div>
+        </aside>}
+        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', portraitAxis || '', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
+          audience="account" onStart={choose} onStartSingle={!fromCourse ? chooseAndStart : null} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
+          simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup} initialAxis={portraitAxis}
+          pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
+          recommendedKey={recommendedKey}
+          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+        </>}
+      </section>
+  )
+
   return <>
+    {profileCompletion && <section className={styles.profileCompletion}
+      aria-labelledby="hh-profile-missing-tests-title" data-testid="profile-missing-tests">
+      <header className={styles.profileCompletionHeading}>
+        <p>{locale === 'ru' ? 'МОЙ ПСИХОЛОГИЧЕСКИЙ ПРОФИЛЬ' : 'MY PSYCHOLOGICAL PROFILE'}</p>
+        <h1 id="hh-profile-missing-tests-title">
+          {locale === 'ru' ? 'Ключевые тесты для завершения профиля' : 'Key tests to complete your profile'}
+        </h1>
+        <p>{profileCompletion.verificationRequired
+          ? (locale === 'ru'
+            ? 'Некоторые результаты не подтверждены. Проверьте сохранённые отчёты: автоматически подбирать тесты по непроверенным данным нельзя.'
+            : 'Some saved results could not be verified. Check your existing reports before building a new profile test set.')
+          : profileCompletion.complete
+            ? (locale === 'ru'
+              ? 'Основные области профиля уже измерены. Повторное тестирование не требуется для заполнения пробелов.'
+              : 'Your core profile areas are measured. There are no required tests to fill missing layers.')
+            : (locale === 'ru'
+              ? 'Рекомендации учитывают уже пройденные тесты и отдают приоритет тем, которые добавят недостающие стороны профиля. Повторно проходить завершённые тесты не нужно.'
+              : 'These recommendations exclude completed tests and prioritize missing profile layers. You do not need to repeat completed tests.')}
+        </p>
+      </header>
+      {!profileCompletion.verificationRequired && profileCompletion.recommendations.length > 0 &&
+        <ol className={styles.profileCompletionList}>
+          {profileCompletion.recommendations.map((recommendation, index) => (
+            <li key={recommendation.key} className={styles.profileCompletionItem}>
+              <span className={styles.profileCompletionRank} aria-label={locale === 'ru' ? 'Приоритет ' + (index + 1) : 'Priority ' + (index + 1)}>
+                {index + 1}
+              </span>
+              <div>
+                <h2>{recommendation.item.title[locale] || recommendation.item.title.en}</h2>
+                <p>{recommendation.reason}</p>
+                <small>{recommendation.item.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · ~{recommendation.item.durationMinutes} {locale === 'ru' ? 'мин' : 'min'}{recommendation.item.instrumentLocale === 'en' && locale === 'ru' ? ' · EN' : ''}</small>
+              </div>
+              <Link href={`/${locale}/app/monitoring/${encodeURIComponent(recommendation.key)}`}
+                prefetch={false} className={styles.profileCompletionStart}>
+                {locale === 'ru' ? 'Пройти тест' : 'Start test'} <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ol>}
+      {!profileCompletion.verificationRequired && !profileCompletion.complete &&
+        profileCompletion.recommendations.length === 0 &&
+        <p className={styles.profileCompletionEmpty}>{locale === 'ru'
+          ? 'Пока нет доступных ключевых тестов для оставшихся областей. Можно выбрать другие тесты ниже.'
+          : 'No additional key tests are currently available for these areas. You can explore other tests below.'}</p>}
+      <Link className={styles.profileCompletionBack} href={`/${locale}/app/portfolio`} prefetch={false}>
+        {locale === 'ru' ? '← Вернуться к моим отчётам' : '← Back to my reports'}
+      </Link>
+    </section>}
     <div className={styles.batteryLayout}>
       <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
         <MyTestsDashboard
@@ -461,6 +675,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           onOpenFilters={openFilters} filtersOpen={exploring}
           hasNewSelection={Boolean(conflict)}
           hasList={Boolean(rows.length || (statusFilter === 'completed' && pastRows.length))}
+          explorer={explorerPanel}
         >
           {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) && (
             <section className={styles.listArea} id="my-tests-list"
@@ -495,7 +710,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                           disabled={busy} onClick={openNextCourseTest}>
                           {locale === 'ru' ? 'Продолжить курс' : 'Continue course'} <ArrowRight size={15}/>
                         </button>
-                      : <Link href={root + '/course'}>{locale === 'ru' ? 'Открыть курс' : 'Open my course'} <ArrowRight size={15}/></Link>}
+                      : <Link href={courseHref()}>{locale === 'ru' ? 'Открыть курс' : 'Open my course'} <ArrowRight size={15}/></Link>}
                   </div>}
                 </header>}
                 <div className={styles.group}>
@@ -515,11 +730,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         <strong className={state === 'inProgress' ? styles.inProgress
                           : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                       </div>
-                      <details className={styles.aboutTest}>
-                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
-                         <p>{row.description}</p>
-                         <p>{row.methodology}</p>
-                       </details>
                        {row.run && <div className={styles.draftProgress}>
                         <progress max="100" value={row.progress} aria-label={status}/>
                         <small>{row.progress}% {c.percent}</small>
@@ -535,6 +745,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                       </button>
                       {row.result && <Link href={root + '/results/' + encodeURIComponent(row.result.id)}
                         prefetch={false}>{c.see}</Link>}
+                       {row.result && <Link href={root + '/results/' + encodeURIComponent(row.result.id) + '?discuss=1#hh-test-result-discussion'}
+                         prefetch={false}>{locale === 'ru' ? 'Обсудить этот тест' : locale === 'es' ? 'Comentar esta prueba' : 'Discuss this test'}</Link>}
                     </div>
                     {group.id !== 'course' && currentPlan?.status === 'active' &&
                       currentPlan.definitionIds.includes(row.definition.id) && statusFilter !== 'completed' &&
@@ -545,6 +757,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         data-remove-selected-test={row.key}>
                         <Trash2 size={17} aria-hidden="true"/>
                       </button>}
+                    {/* Test evidence spans the card width instead of squeezing the title. */}
+                    <details className={styles.aboutTest}>
+                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
+                         <p>{row.description}</p>
+                         <p>{row.methodology}</p>
+                       </details>
                   </article>
                 })}
                 </div>
@@ -590,31 +808,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           }}>{c.retry}</button></p>}
         {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
       </section>
-      <details className={styles.portraitDetails}>
-        <summary>{locale === 'ru' ? 'Мой психологический портрет · открыть подробности'
-          : 'My psychological portrait · view details'}</summary>
-        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
-          portrait={buildPsychPortrait(data.results)}/>
-      </details>
     </div>
-    {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}>
-        {conflict && <aside className={styles.reviewSelection} data-pending-selection>
-          <div>
-            <strong>{c.pendingReview}</strong>
-            <p>{c.pendingDescription}</p>
-          </div>
-          <div className={styles.reviewActions}>
-            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
-            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
-          </div>
-        </aside>}
-        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
-          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
-          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
-          pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
-          recommendedKey={recommendedKey}
-          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
-      </section>}
+
   </>
 }

@@ -2,15 +2,23 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Reiki landing shows meditation, free first level and consultation before reviews", async () => {
+test("Reiki Yggdrasil restores a guide-first hero capture and a final capture after the video archive and resource links", async () => {
   const hub = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
+  const record = await readFile("components/academy-record-page.tsx", "utf8");
+  const hero = hub.indexOf('<section className="yggdrasil-program-hero reiki-screen reiki-screen--hero">');
+  const top = hub.indexOf('<YggdrasilLeadForms locale={locale} placement="top" />');
+  const modules = hub.indexOf('id="system-modules"');
   const meditation = hub.indexOf("<YggdrasilMeditationFeature");
-  const leads = hub.indexOf("<YggdrasilLeadForms");
   const reviews = hub.indexOf("<YggdrasilTestimonials");
-  const courseVideos = hub.indexOf("<YggdrasilEnglishVideoGuide");
-  assert.ok(meditation > 0 && meditation < leads && leads < reviews && reviews < courseVideos);
+  const archive = hub.indexOf('<YggdrasilEnglishVideoGuide locale={locale} scope="all" />');
+  const resources = record.indexOf('className="academy-resource-links"');
+  const bottom = record.indexOf('isCanonicalYggdrasil ? <YggdrasilLeadForms locale={locale} placement="bottom" />');
+  assert.ok(hero >= 0 && hero < top && top < modules && modules < meditation && meditation < reviews && reviews < archive);
+  assert.ok(resources >= 0 && resources < bottom, "Bottom capture must follow the actual last archive/resource links");
+  assert.equal((hub.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
+  assert.equal((record.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
+  assert.match(record, /isCanonicalYggdrasil \? <YggdrasilLeadForms/);
   assert.match(hub, /\/academy\/reiki\/yggdrasil\/free-initiation/);
-  assert.match(hub, /<YggdrasilLeadForms locale=\{locale\}/);
   assert.match(hub, /Rediscover your centre/);
   assert.match(hub, /Encuentra tu centro/);
 });
@@ -25,19 +33,27 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /"guide", "express", "personal"/);
   assert.match(capture, /data-reiki-choice-capture=\{course\}/);
   assert.match(capture, /aria-pressed=\{selected === choice\}/);
-  assert.match(capture, /id="reiki-free-consultation"/);
-  assert.match(capture, /course === "tantra" \? "tantra-next-steps" : "reiki-free-level-one"/);
+  assert.match(capture, /compactPhone/);
+  assert.match(capture, /publicTopic=\{t\.common\.options\[selected\]\}/);
+  assert.doesNotMatch(capture, /<div className=\{styles\.footer\}>/);
+  assert.match(capture, /"yggdrasil-top-capture"/);
+  assert.match(capture, /: course === "tantra" \? "tantra-next-steps" : "reiki-free-level-one"/);
+  assert.match(capture, /const isTop = placement === "top"/);
+  assert.match(capture, /isTop \? "guide" : "express"/);
+  assert.match(capture, /id=\{sectionId\}/);
+  assert.match(capture, /course === "yggdrasil" && !isTop/);
+  assert.match(capture, /styles\.yggdrasilTopCapture/);
   assert.match(capture, /Request free express Level 1 initiation/);
   assert.match(capture, /Бесплатная экспресс-инициация 1-й ступени/);
   assert.match(capture, /Скачать учебные материалы и цены/);
   assert.match(capture, /whatsappEnquiryUrl\(\{/);
-  assert.match(capture, /WhatsAppMark/);
+  assert.match(capture, /<ContactChannelChooser/);
   assert.match(capture, /option: t\.common\.options\[selected\]/);
   assert.match(capture, /reiki-guide/);
   assert.match(capture, /formatReikiLevelPrice\(course, locale\)/);
   assert.match(capture, /data-reiki-initiation-price=\{course\}/);
-  assert.match(capture, /t\.me\/AndyTherapist/);
-  assert.match(capture, /download=\{download \? true : undefined\}/);
+  assert.doesNotMatch(capture, /href="https:\/\/t\.me\/AndyTherapist"/);
+  assert.match(capture, /href=\{guideUrl\}/);
   for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
     assert.ok(!capture.includes(tag), "Unexpected long lead form: " + tag);
   }
@@ -46,6 +62,10 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /\.choices \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /\.choice:nth-child\(3\) \{ grid-column: 1 \/ -1/);
+  // Top Yggdrasil keeps the approved compact 2 + 1 layout without modifying Tantra.
+  assert.match(css, /\.yggdrasilTopCapture \.choices \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.yggdrasilTopCapture \.choice:nth-child\(3\) \{/);
+  assert.match(css, /\.yggdrasilTopCapture \.action \{ min-height: 48px/);
   const mobile = css.split("@media (max-width: 640px) {")[1];
   assert.match(mobile, /\.choices \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(mobile, /\.choice:nth-child\(3\) \{ min-height: 60px/);
@@ -95,7 +115,8 @@ test("Tantra Reiki ends with the shared selector, without a long Master applicat
   assert.match(chooser, /"tantra-master-course"/);
   assert.match(chooser, /Request free express Level 1 initiation/);
   assert.match(chooser, /Request full personal Level 1 initiation/);
-  assert.match(chooser, /WhatsApp opens with your exact selection/);
+  assert.match(chooser, /compactPhone/);
+  assert.doesNotMatch(chooser, /data-reiki-choice-action="guide-secondary"/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea/);
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
 });

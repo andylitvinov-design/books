@@ -1,0 +1,83 @@
+{
+  "project": "Holistic House",
+  "revision": "2026-10-20",
+  "platform": "Meta Ads",
+  "status": "DRAFT_ONLY_NOT_IMPORTED_NOT_ACTIVE",
+  "campaignCreated": false,
+  "spendAuthorized": false,
+  "accountId": null,
+  "accountRequirement": {
+    "currency": "CAD",
+    "timeZone": "America/Toronto",
+    "businessOwnership": "verified Holistic House owner",
+    "connectedToMetaAds": false
+  },
+  "note": "Do not use a different owner's, USD or non-Toronto account. Windsor.ai currently reads two USD accounts, and HYPD exposes no Meta account. Creating and running this campaign requires verified owner identity and separate explicit budget approval.",
+  "campaign": {
+    "name": "HH | Meta | Free Written Review | EN | Toronto | PILOT",
+    "status": "PAUSED",
+    "objectiveCandidate": "Traffic / landing page views OR Leads / higher-intent neutral instant form; validate policy, account availability, and actual server-received enquiries before choosing",
+    "maxDurationDays": 7,
+    "currency": "CAD",
+    "lifetimeBudgetCad": 35,
+    "dailyAveragePlanningCad": 5,
+    "budgetTypeRequired": "LIFETIME_HARD_CAP",
+    "noAutomaticExtension": true,
+    "targeting": {
+      "geo": "Toronto / Greater Toronto Area (presence only where supported)",
+      "ageMin": 18,
+      "gender": "all",
+      "language": "en",
+      "remarketing": false,
+      "lookalikes": false,
+      "customerMatch": false,
+      "sensitiveInterests": false,
+      "healthSegments": false
+    },
+    "media": "Existing approved real photo only; no new HeyGen render; no private video",
+    "adSet": {
+      "name": "HH | EN | Toronto | Broad Adult Audience",
+      "status": "PAUSED",
+      "maxAds": 2
+    },
+    "ads": [
+      {
+        "id": "ad_a",
+        "status": "PAUSED",
+        "headline": "A Thoughtful Place to Begin",
+        "primaryText": "Sometimes a fresh perspective helps clarify what matters. Holistic House offers a free personal written situation review, beginning with a simple reflection exercise and a hand-drawn picture. Learn how it works, at your own pace.",
+        "cta": "Learn More",
+        "landingUrl": "https://holistichouse.vercel.app/en/services/free-situation-review?utm_source=facebook&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a",
+        "asset": "Approved real Andrey photo; Facebook feed format 4:5 after rights and crop review"
+      },
+      {
+        "id": "ad_b",
+        "status": "PAUSED",
+        "headline": "Explore Your Next Step",
+        "primaryText": "Meet Andy and discover a gentle, structured way to look at your goals and resources. Start with a free written reflection request. There is no obligation to book a paid session.",
+        "cta": "Learn More",
+        "landingUrl": "https://holistichouse.vercel.app/en/services/free-situation-review?utm_source=instagram&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_b",
+        "asset": "Second approved real photo; Instagram placements only if correctly cropped and connected"
+      }
+    ]
+  },
+  "exclusions": [
+    "No clinical or medical efficacy promises",
+    "No diagnosis or mental-health personal-attribute targeting",
+    "No therapy-license claim unless verified",
+    "No customer-list or private cabinet retargeting",
+    "No ads automatically enabled",
+    "No paid budget increased above CAD 35",
+    "No fake submitted leads or GA4 conversion events",
+    "No external video generation/publication"
+  ],
+  "releaseGates": [
+    "Owner-selected CAD advertiser account and Toronto timezone verified",
+    "Meta Business Portfolio/Page/Instagram ownership verified",
+    "Ads-policy and real-person asset rights review",
+    "Real visitor can complete free review and owner can confirm receipt",
+    "Consent and attribution boundaries tested; no personal data enters pixels",
+    "Actual Ads Manager supports a hard lifetime CAD 35 cap and 7-day end date",
+    "Separate explicit owner's permission to spend and launch"
+  ]
+}

@@ -1,0 +1,92 @@
+.frame{
+  box-sizing:border-box;
+  margin:0 0 16px;
+  padding:clamp(14px,2vw,24px);
+  border:1.5px solid #c9aa73;
+  border-radius:18px;
+  background:#fcfaf5;
+  color:#233954;
+  box-shadow:0 6px 18px rgba(76,55,25,.045);
+  scroll-margin-top:100px;
+}
+.header{margin:0 0 14px}
+.eyebrow{
+  display:flex;align-items:center;gap:7px;margin:0 0 6px;
+  color:#936f39;font:750 10px/1.35 system-ui,sans-serif;letter-spacing:.11em;
+}
+.header h2{
+  margin:0 0 5px;color:#203650;
+  font:400 clamp(22px,2.5vw,28px)/1.15 Georgia,serif;letter-spacing:-.025em;
+}
+.intro{margin:0;color:#687487;font:12px/1.45 system-ui,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.card{
+  box-sizing:border-box;display:flex;flex-direction:column;gap:16px;
+  min-width:0;padding:14px;
+  border:1px solid #e9dfce;border-radius:13px;background:#fffefd;
+  box-shadow:0 2px 6px rgba(29,38,59,.026);
+}
+.cardIdentity{display:grid;grid-template-columns:35px minmax(0,1fr);align-items:start;gap:10px;min-width:0}
+.icon{
+  display:grid;place-items:center;flex:none;width:35px;height:35px;
+  border-radius:10px;color:#936f39;background:#f5ecd9;
+}
+.cardText{min-width:0}
+.cardTitleRow{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px}
+.cardTitle{min-width:0;max-width:100%;margin:0;color:#223852;font:750 14px/1.25 system-ui,sans-serif;overflow-wrap:anywhere}
+.freeBadge{
+  display:inline-flex;flex:none;align-items:center;justify-content:center;
+  border-radius:999px;padding:4px 7px;
+  background:#e9f4ed;color:#30624b;
+  font:750 9px/1.2 system-ui,sans-serif;
+}
+.cardDescription{margin:6px 0 0;color:#667284;font:11px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
+.actions{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:7px;margin-top:auto}
+.order,.details{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;min-width:0;min-height:40px;padding:9px 10px;border-radius:9px;
+  font:750 11px/1.2 system-ui,sans-serif;text-decoration:none;text-align:center;
+}
+.order{background:#84334e;color:#fff;border:1px solid #84334e}
+.order:hover{background:#6f2741;border-color:#6f2741}
+.details{background:#f4f5f8;border:1px solid #e2e5ec;color:#283d56}
+.details:hover{background:#e9edf3;border-color:#ced6e1}
+.order svg,.details svg{flex:none}
+.order:focus-visible,.details:focus-visible{outline:3px solid #b77b94;outline-offset:3px}
+.note{margin:11px 1px 0;color:#797269;font:10px/1.45 system-ui,sans-serif}
+@media(max-width:900px){
+  .grid{grid-template-columns:minmax(0,1fr);gap:8px}
+  .card{gap:11px;padding:12px 13px}
+  .cardIdentity{grid-template-columns:34px minmax(0,1fr);gap:10px}
+  .icon{width:34px;height:34px}
+  .cardTitleRow{align-items:center}
+  .cardTitle{font-size:14px}
+  .cardDescription{margin-top:4px}
+  .actions{margin:0 0 0 44px;max-width:460px}
+}
+@media(max-width:620px){
+  .frame{margin:0 0 13px;padding:13px 12px;border-radius:16px}
+  .header{margin-bottom:11px}
+  .header h2{font-size:23px}
+  .intro{font-size:11px}
+  .card{padding:10px 11px;gap:9px;border-radius:11px}
+  .cardIdentity{grid-template-columns:32px minmax(0,1fr);gap:9px}
+  .icon{width:32px;height:32px}
+  .icon svg{width:18px;height:18px}
+  .cardTitle{font-size:13px}
+  .cardDescription{font-size:10.5px;line-height:1.38}
+  .freeBadge{font-size:9px;padding:4px 7px}
+  .actions{margin-left:41px;gap:6px;max-width:none}
+  .order,.details{min-height:38px;padding:7px 8px;font-size:11px;border-radius:8px}
+  .order svg,.details svg{width:14px;height:14px}
+  .note{font-size:9.5px;margin-top:10px}
+}
+@media(max-width:360px){
+  .frame{padding:12px 10px}
+  .card{padding:9px}
+  .actions{margin-left:40px}
+  .order,.details{padding:7px 5px;font-size:10px;gap:4px}
+}
+@media(prefers-reduced-motion:reduce){
+  .order,.details{scroll-behavior:auto}
+}

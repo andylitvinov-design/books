@@ -3,83 +3,60 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
-import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
+import { TestSelectionCourseBanner } from '@/components/sitewide-antistress-banner'
 import { COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent } from '@/lib/inner-growth/course-entry-intent'
 
-async function request(path, body, method = 'POST') {
-  const response = await fetch('/api/app/' + path, {
-    method, credentials: 'same-origin', cache: 'no-store',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
-  if (!response.ok) {
-    const error = new Error(value.error || 'SERVICE_UNAVAILABLE')
-    error.code = value.error
-    error.status = response.status
-    throw error
-  }
-  return value
+// An entire selected battery can start as a temporary guest session.
+// Selection is limited to rights-cleared, server-verifiable instruments.
+export function guestStartable(entries) {
+  return Array.isArray(entries) && entries.length > 0 && entries.length <= 12 &&
+    entries.every((entry) =>
+      entry?.selectable === true && entry?.startable === true &&
+      entry?.rightsStatus === 'cleared' && entry?.guestEligible === true &&
+      Boolean(entry?.definition))
 }
 
-/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course' }} props */
-export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests' }) {
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course', initialBrowseFull?: boolean, reviewFirst?: boolean, onGuestStart?: ((entries: object[]) => Promise<void>) | null }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, reviewFirst = false, onGuestStart = null }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
-  const submit = async (entries, selectionPreferences) => {
+  const submit = async (entries) => {
     setError('')
     try {
-      // Validate the selection before navigating. Account users are saved on
-      // the server immediately; only guests need a short same-tab OAuth intent.
-      const intent = makeTestSelectionIntent(entries.map((entry) => entry.key), Date.now(), selectionPreferences)
-      let signedIn = false
-      try {
-        const session = await request('bootstrap', undefined, 'GET')
-        signedIn = Boolean(session.account?.id)
-      } catch (cause) {
-        if (cause.status !== 401) throw cause
+      if (!guestStartable(entries)) {
+        const cause = new Error('GUEST_TEST_UNAVAILABLE')
+        cause.code = 'GUEST_TEST_UNAVAILABLE'
+        throw cause
       }
-      if (signedIn) {
-        const saved = await request('test-plans', {
-          items: entries.map((entry) => ({
-            definitionKey: entry.definition.key,
-            definitionVersion: entry.definition.version,
-            instrumentLocale: entry.definition.instrumentLocale,
-          })),
-          operationId: crypto.randomUUID(),
-          appendActive: true,
-          selectionPreferences,
-        })
-        router.push('/' + effectiveLocale + '/app/tests?plan=' + encodeURIComponent(saved.id))
-        return
+      if (typeof onGuestStart === 'function') {
+        await onGuestStart(entries)
+      } else {
+        // Only public test keys travel in the URL; never answers, results,
+        // subjective concerns, email or account identity.
+        const keys = entries.map((entry) => entry.definition.key).join(',')
+        router.push('/' + effectiveLocale + '/client?startTests=' + encodeURIComponent(keys))
       }
-      // No answers, personal data or account details are placed in browser
-      // storage. Keep the selected identifiers only for the Google round-trip.
-      window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
-      const { redirectUrl } = await request('auth/start', {
-        locale: effectiveLocale, continueTo: 'tests',
-      })
-      window.location.assign(redirectUrl)
     } catch (cause) {
-      setError(cause?.code === 'APP_UNAVAILABLE' || cause?.code === 'SIGN_IN_UNAVAILABLE'
-        ? (locale === 'ru' ? 'Вход через Google сейчас недоступен. Попробуйте позже.' : locale === 'es' ? 'El acceso con Google no está disponible ahora.' : 'Google sign-in is currently unavailable. Please try again.')
-        : (locale === 'ru' ? 'Не удалось продолжить. Проверьте соединение и повторите попытку.' : locale === 'es' ? 'No se pudo continuar. Inténtalo de nuevo.' : 'Could not continue. Please check your connection and try again.'))
+      setError(cause?.code === 'GUEST_TEST_UNAVAILABLE'
+        ? (locale === 'ru' ? 'Этот тест пока недоступен без регистрации из-за ограничений методики или безопасности. Выберите другой доступный тест.' : locale === 'es' ? 'Esta prueba no está disponible para invitados. Elige una prueba habilitada.' : 'This test is not guest-available due to rights or safety restrictions. Choose an available test.')
+        : (locale === 'ru' ? 'Не удалось начать тесты. Проверьте соединение и повторите попытку.' : locale === 'es' ? 'No se pudieron iniciar las pruebas. Inténtalo de nuevo.' : 'Could not start your tests. Please check your connection and try again.'))
       throw cause
     }
   }
   const launchCourse = (entries, selectionPreferences) => {
-    // Same-tab, short-lived editorial selection only; an explicit course
-    // consent screen controls any eventual server-side saving.
+    // Courses use their independent consent flow, not a guest result claim.
     try {
       window.sessionStorage.setItem(COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent(entries, selectionPreferences))
     } catch { /* Private mode may block session storage; the course still opens. */ }
     router.push('/' + effectiveLocale + '/app/course?entry=personal')
   }
   return <>
-    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded}
-      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode}
-      initialPreferences={initialPreferences} initialMode={initialMode} onStart={submit} onStartCourse={launchCourse} />
+    {reviewFirst && <TestSelectionCourseBanner locale={locale} showCourse={false} showReview />}
+    <TestExplorer locale={locale} audience="guest" embedded={embedded} simpleMode={embedded}
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
+      initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
+    <TestSelectionCourseBanner locale={locale} showReview={!reviewFirst} />
   </>
 }

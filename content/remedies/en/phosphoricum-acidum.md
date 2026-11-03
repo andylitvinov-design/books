@@ -130,6 +130,12 @@ STRESS / LESSON
 
 energy and inspiration.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Emptiness after loss and an attempt to keep going without acknowledging your own exhaustion.
+
+After (desired state): A gentle acknowledgment of your limits, care for yourself and openness to new sources of meaning.
+
 ## ALCHEMY
 
 - Nigredo (the black stage of alchemy): a state of decline that precedes rebirth.

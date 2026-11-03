@@ -9,6 +9,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { PrescriptionDocument } from '@/components/prescription-document'
 import { PaymentDocument } from '@/components/payment-document'
 import { SavedDocumentManagement } from '@/components/app/saved-document-management'
+import { ReportFinalActions } from '@/components/report-final-actions'
 import '../../[[...path]]/workspace.css'
 import '@/components/app/saved-document-reader.css'
 
@@ -61,14 +62,18 @@ export default async function AuthenticatedSavedDocument({ params }) {
             <Link href={'/' + otherLocale + '/app/document-view/' + encodeURIComponent(id)} prefetch={false}>
               {otherLocale.toUpperCase()}
             </Link>
-            <a className="hh-saved-document-reader__pdf" href={pdfUrl} download>
+            {!payment && <a className="hh-saved-document-reader__pdf-preview" href={pdfUrl + '&preview=1'}>
+              {ru ? 'Просмотреть PDF крупно' : 'View large PDF'}
+            </a>}
+                        <a className="hh-saved-document-reader__pdf" href={pdfUrl} download>
               {ru ? 'Скачать PDF' : 'Download PDF'}
             </a>
           </div>
         </nav>
         {payment
           ? <PaymentDocument document={saved.document} locale={locale} embedded />
-          : <PrescriptionDocument document={saved.document} locale={locale} embedded />}
+          : <PrescriptionDocument document={saved.document} locale={locale} embedded narration={{scope:'saved-document',id}} />}
+        {!payment&&<ReportFinalActions locale={locale} mode="saved"/>}
         <details className="hh-saved-document-reader__management">
           <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
           <p>

@@ -4,24 +4,27 @@ import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
 
-export function PersonalResultReport({ result, locale = 'en', previous = null }) {
+export function PersonalResultReport({ result, locale = 'en', previous = null, focusScaleKey = null }) {
   const report = buildAssessmentResultReport(result, locale)
-  if (!report.sections.length) return null
+  if (!report.sections.length) return <section data-personal-result-report data-unverified-assessment-result>
+    <p role="note">{report.intro}</p>
+  </section>
   const ru = locale === 'ru'
-  const bach = result?.definitionKey === 'hh-bach-flower-profile'
+  const bach = report.reportKind === 'bach'
+  const verified = report.verified !== false
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
-  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
+  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} focusScaleKey={focusScaleKey} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
-  const featured = bach ? report.sections.slice(0, report.highlightedCount) : report.sections
-  const extra = bach ? report.sections.slice(report.highlightedCount) : []
+  const featured = bach && verified ? report.sections.slice(0, report.highlightedCount) : report.sections
+  const extra = bach && verified ? report.sections.slice(report.highlightedCount) : []
   const renderCard = (section, index) => (
     <article key={section.key + ':' + index} className={styles.card}>
       <div className={styles.cardHead}>
         <span className={styles.number}>{String(index + 1).padStart(2, '0')}</span>
         <div>
-          {bach && section.group !== 'not-marked' && (
+          {bach && verified && section.group !== 'not-marked' && (
             <p className={styles.groupLabel}>
               {section.group === 'main'
                 ? (ru ? 'Основное совпадение' : 'Primary match')
@@ -32,8 +35,17 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
           )}
           <h3>{section.title}</h3>
           <p className={styles.construct}>{section.construct}</p>
+          {bach && verified && <p className={styles.bachSelectedGroup} data-bach-selected-group={section.group}>
+            <strong>{ru ? 'Статус совпадения:' : 'Match status:'}</strong>{' '}
+            {section.group === 'main' ? (ru ? 'ведущая эмоциональная тема' : 'leading emotional theme')
+              : section.group === 'support' ? (ru ? 'дополнительная тема для изучения' : 'supporting theme for reflection')
+                : (ru ? 'тема вне ведущих совпадений' : 'theme outside the leading matches')}
+          </p>}
           <p className={styles.score}>{bach
-            ? (ru ? 'Вес совпадений' : 'Weighted match') + ': ' + section.value
+            ? (verified ? (ru ? 'Вес совпадений' : 'Weighted match') : (ru ? 'Сохранённое значение' : 'Saved value')) + ': ' +
+              (section.value ?? (ru ? 'недоступно' : 'unavailable')) + ' (' +
+              (verified ? (ru ? 'диапазон' : 'range') : (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range')) + ' ' +
+              (section.min ?? '?') + '–' + (section.max ?? '?') + ')'
             : (ru ? 'Результат' : 'Your score') + ': ' + section.value + ' (' + (ru ? 'диапазон' : 'range') + ' ' + section.min + '–' + section.max + ')'}</p>
         </div>
       </div>
@@ -43,12 +55,15 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         {!!byScale.get(section.key).skill && <p><strong>{ru?'Навык по желанию':'Optional skill'}:</strong> {byScale.get(section.key).skill}</p>}
       </div>}
       {!bach && section.bandBasis && <p className={styles.band}>{section.bandBasis === 'screening' ? (ru ? 'Опубликованный скрининговый диапазон' : 'Published screening band') : section.bandBasis === 'published-reference' ? (ru ? 'Справочный диапазон инструмента' : 'Instrument reference band') : (ru ? 'Описательный показатель' : 'Descriptive measure')}</p>}
-      <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
-      <ol className={styles.steps}>
-        {section.steps.map((step) => <li key={step}>{step}</li>)}
-      </ol>
+      {section.steps.length > 0 && <>
+        <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
+        <ol className={styles.steps}>
+          {section.steps.map((step) => <li key={step}>{step}</li>)}
+        </ol>
+      </>}
+      {section.limitations?.map(limitation => <p key={limitation} className={styles.followUp}>{limitation}</p>)}
       <p className={styles.followUp}>{section.followUp}</p>
-      {!bach && section.source && <a className={styles.source} href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник интерпретации' : 'Interpretation source'}</a>}
+      {section.source && <a className={styles.source} href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник интерпретации' : 'Interpretation source'}</a>}
     </article>
   )
   return (
@@ -60,10 +75,29 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         <div className={styles.purpose}>
           <strong>{ru ? 'Что измеряет тест' : 'What this test measures'}</strong>
           <p>{report.purpose}</p>
+          {report.scaleNote && <p>{report.scaleNote}</p>}
+          {report.source && <a className={styles.source} href={report.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник опросника' : 'Questionnaire source'}</a>}
           {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
       </header>
-      {bach && featured.length > 0 && (
+      {bach && verified && <section className={styles.bachScaleGuide} data-bach-score-reading>
+        <h3>{ru ? 'Как читать эмоциональный профиль' : 'How to read your emotional profile'}</h3>
+        <p>{ru
+          ? 'Здесь не используются клинические уровни. Каждая тема получает вес совпадений по вашим ответам и свою позицию относительно других тем именно этого прохождения.'
+          : 'There are no clinical severity levels here. Each emotional theme receives a weighted match score and a position relative to the other themes in this particular response set.'}</p>
+        <div className={styles.bachRankLegend} data-bach-match-categories>
+          <span><strong>{ru ? '3 ведущие темы' : '3 leading themes'}</strong>
+            {ru ? 'Самые заметные совпадения для размышления' : 'Most prominent questionnaire matches to explore'}</span>
+          <span><strong>{ru ? 'До 4 дополнительных' : 'Up to 4 supporting'}</strong>
+            {ru ? 'Другие заметные эмоциональные темы' : 'Other notable emotional themes'}</span>
+          <span><strong>{ru ? 'Остальные темы' : 'Other themes'}</strong>
+            {ru ? 'Не входят в ведущую группу этого прохождения' : 'Outside this attempt’s leading matches'}</span>
+        </div>
+        <small>{ru
+          ? 'Группы основаны на рейтинге ответов, а не на опубликованных диагностических порогах. Результат не является назначением препаратов или эссенций.'
+          : 'Groups reflect within-attempt response ranking, not published diagnostic cutoffs. The result is not a remedy or essence prescription.'}</small>
+      </section>}
+      {bach && verified && featured.length > 0 && (
         <p className={styles.profileLead}>
           {ru
             ? 'Сначала три основных совпадения, затем до четырёх дополнительных. Все 38 тем доступны ниже для просмотра.'

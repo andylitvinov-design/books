@@ -14,7 +14,7 @@ const COPY = {
     intro:'A simple overview of the resources you have explored, areas you may want to understand and the direction you choose next.',
     portraitNote:'The portrait uses saved professional measurements only. Missing results have no scores.',
     resources:'My resources', growth:'Areas to explore', progress:'My progress', focus:'Current focus',
-    noResources:'Not measured yet', noGaps:'All five profile layers explored',
+    noResources:'Not measured yet', noGaps:'No missing themes in the five-class summary',
     noComparisons:'No comparable retest yet', comparison:'comparable measured changes',
     focusEmpty:'Choose my development direction', focusNote:'Only your chosen course themes or approved measured skills appear here.',
     resourcesNote:'Measured themes, not a claim of personal strength.',
@@ -28,7 +28,7 @@ const COPY = {
     intro:'Ваши измеренные ресурсы, ещё не исследованные стороны профиля и направления развития, которые вы выбираете сами.',
     portraitNote:'Портрет строится только по реальным результатам профессиональных тестов. Отсутствующим данным баллы не присваиваются.',
     resources:'Мои ресурсы', growth:'Что ещё изучить', progress:'Моя динамика', focus:'Мой фокус',
-    noResources:'Пока не измерено', noGaps:'Изучены все пять слоёв профиля',
+    noResources:'Пока не измерено', noGaps:'Нет пропущенных тем в сводке пяти классов',
     noComparisons:'Пока нет сопоставимых повторных замеров', comparison:'сопоставимых изменений',
     focusEmpty:'Выберите направление развития', focusNote:'Показаны только выбранные вами темы или подтверждённые шкалы курса.',
     resourcesNote:'Измеренные темы, а не вывод о сильных сторонах.',
@@ -46,13 +46,14 @@ export function PersonalPortraitSummary({ data, locale = 'en' }) {
   const [courseFocus, setCourseFocus] = useState([])
   useEffect(() => {
     // Read-only authenticated course preferences. Never show optional private notes.
+    setCourseFocus([])
     const controller = new AbortController()
-    fetch('/api/app/course', { credentials:'same-origin', cache:'no-store', signal:controller.signal })
+    fetch('/api/app/course', { credentials:'same-origin', cache:'no-store', signal:controller.signal, headers: { 'X-HH-Account-ID': data.account.id } })
       .then(response => response.ok ? response.json() : null)
-      .then(value => { if (value?.course) setCourseFocus(approvedCourseFocus(value.course, locale)) })
+      .then(value => { if (!controller.signal.aborted && value?.course) setCourseFocus(approvedCourseFocus(value.course, locale)) })
       .catch(() => {})
     return () => controller.abort()
-  }, [locale])
+  }, [locale, data.account.id])
   const cards = [
     {
       id:'resources', icon:Leaf, title:t.resources, href:root+'/portfolio',

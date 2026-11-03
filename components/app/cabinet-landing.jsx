@@ -1,19 +1,24 @@
 'use client'
+import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
-import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
-import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
+import { TEST_DISCUSSION_INTENT_KEY } from '@/lib/assessments/test-result-discussion.mjs'
+import { GuestTestJourneyProgress } from '@/components/app/guest-test-journey-progress'
+import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
+import { TestRatingCard } from '@/components/app/test-rating-card'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
+import { isGuestReference, replaceGuestRoute as replaceGuestRoutePath } from '@/lib/app/guest-route'
 
 const UI = {
   en: {
@@ -25,7 +30,7 @@ const UI = {
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Free wellbeing & resources monitoring',
-    tryText: 'Choose self-checks for stress, mood and resilience. View guidance now; save results if you want to track changes over time.',
+    tryText: 'Take available tests without registering. See your scores and gauges first; free explanations and advice are available in your Cabinet.',
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -57,11 +62,6 @@ const UI = {
     traitText: '20 questions · ~3 min',
     traitNotice: 'This questionnaire uses the English original. It is a brief self-report, not an IQ test or diagnosis.',
     start: 'Start test',
-    consentTitle: 'Before you start',
-    consentText: 'Your answers will be stored temporarily so this browser can resume the test. No name or email is required.',
-    adult: 'I am 18 or older.',
-    necessary: 'I agree to temporary private processing of my answers and result for this self-observation test.',
-    continue: 'Continue',
     back: 'Back',
     next: 'Next',
     modeTitle: 'Choose your test experience',
@@ -90,8 +90,8 @@ const UI = {
     result: 'Your result',
     measured: 'Measured',
     source: 'Source',
-    save: 'Save to my Cabinet',
-    saveHint: 'Saving is optional. Only this selected result will be attached to the Google account you confirm.',
+    save: 'Create my Cabinet and get explanations',
+    saveHint: 'Sign in with Google to get free explanations of your scores and personal recommendations in your Cabinet.',
     consultKicker: 'If you would like to discuss your result',
     consultTitle: 'Book a consultation with a specialist',
     consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
@@ -114,7 +114,7 @@ const UI = {
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Бесплатный мониторинг состояния и ресурсов',
-    tryText: 'Выберите опросники о стрессе, настроении и ресурсах. Получите рекомендации и сохраняйте результаты для наблюдения за динамикой.',
+    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите шкалы и баллы, затем получайте бесплатные пояснения и рекомендации в кабинете.',
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -146,11 +146,6 @@ const UI = {
     traitText: '20 вопросов · ~3 мин',
     traitNotice: 'Опрос использует английский оригинал. Это краткий самоотчёт, а не IQ-тест и не диагноз.',
     start: 'Начать тест',
-    consentTitle: 'Перед началом',
-    consentText: 'Ответы временно сохраняются, чтобы этот браузер мог продолжить тест. Имя и email не нужны.',
-    adult: 'Мне 18 лет или больше.',
-    necessary: 'Я согласен на временную приватную обработку ответов и результата для этого теста самонаблюдения.',
-    continue: 'Продолжить',
     back: 'Назад',
     next: 'Далее',
     modeTitle: 'Как вы хотите пройти тест?',
@@ -179,8 +174,8 @@ const UI = {
     result: 'Ваш результат',
     measured: 'Дата измерения',
     source: 'Источник',
-    save: 'Сохранить в личном кабинете',
-    saveHint: 'Сохранение необязательно. Только этот выбранный результат будет добавлен в подтверждённый Google-аккаунт.',
+    save: 'Создать кабинет и получить пояснения',
+    saveHint: 'Войдите через Google и бесплатно получите пояснения к результатам и индивидуальные рекомендации в своём кабинете.',
     consultKicker: 'Если хочется обсудить результат',
     consultTitle: 'Заказать консультацию специалиста',
     consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
@@ -202,7 +197,7 @@ function definitionFor(id, locale) {
   if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
   if (id === 'trait') return MINI_IPIP_20_EN_V1
   const item = monitoringCatalogItem(id)
-  if (!item?.startable || item.guestEligible === false || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
+  if (!item?.startable || item.rightsStatus !== 'cleared' || item.guestEligible === false || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
   return getAssessmentDefinition(
     item.key,
     item.version,
@@ -212,7 +207,7 @@ function definitionFor(id, locale) {
 
 function publicRecommendationDefinitions(locale) {
   return MONITORING_CATALOG
-    .filter((item) => item.startable && item.guestEligible !== false && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
+    .filter((item) => item.startable && item.rightsStatus === 'cleared' && item.guestEligible !== false && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
     .map((item) =>
       getAssessmentDefinition(
         item.key,
@@ -245,10 +240,6 @@ function answerLabels(definition, question) {
     value: min + index,
     label: String(min + index),
   }))
-}
-
-function resultLabel(definition, dimension) {
-  return dimension.sourceConstruct || definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
 }
 
 function localZone() {
@@ -317,25 +308,39 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const c = UI[locale] || UI.en
   const searchParams = useSearchParams()
   const planId = searchParams.get('plan')
+  const requestedGuestTests = searchParams.get('startTests')
+  const requestedGuestRun = searchParams.get('run')
+  const requestedGuestResult = searchParams.get('result')
   const [active, setActive] = useState(null)
   const [run, setRun] = useState(null)
   const [answers, setAnswers] = useState({})
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
-  const [mode, setMode] = useState(null)
+  const [mode, setMode] = useState('quick')
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [activePlan, setActivePlan] = useState(null)
   const [planResults, setPlanResults] = useState([])
+  const initialLaunchRef = useRef(null)
   const [sessionExpires, setSessionExpires] = useState(null)
-  const [pendingMood, setPendingMood] = useState(null)
-  const [latestGuestMood, setLatestGuestMood] = useState(null)
-  const [adult, setAdult] = useState(false)
-  const [necessary, setNecessary] = useState(false)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
-  const definition = useMemo(() => (active ? definitionFor(active, locale) : null), [active, locale])
+  const runLifetime = useRef(0)
+  const selfGuestRoute = useRef(null)
+  const saveOperation = useRef(null)
+  const saving = useRef(false)
+  const completion = useRef(null)
+  const submitting = useRef(false)
+  const recoveryPending = Boolean(saveOperation.current || completion.current)
+  // A resumed attempt keeps its exact registered version and instrument language.
+  // UI language changes only labels; a new selection may use the UI locale.
+  const definition = useMemo(() => {
+    if (run) {
+      try { return getDefinitionById(run.definitionId) } catch { return null }
+    }
+    return active ? definitionFor(active, locale) : null
+  }, [run, active, locale])
   const question = definition?.questions[index]
   const selected = question ? answers[question.id] : undefined
   const answeredCount = definition ? definition.questions.filter(item => Object.prototype.hasOwnProperty.call(answers, item.id)).length : 0
@@ -344,41 +349,147 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4))
   const timeUnit = locale === 'ru' ? 'мин' : 'min'
 
+  function replaceGuestRoute({ planId = null, runId = null, resultId = null } = {}) {
+    // Next observes replaceState. Do not let our own URL update replay bootstrap
+    // over an active run, an unsaved zero answer, or pending retry recovery.
+    const route = JSON.stringify([planId, runId, resultId])
+    const previousRoute = selfGuestRoute.current
+    selfGuestRoute.current = route
+    try { return replaceGuestRoutePath({ planId, runId, resultId }) }
+    catch (error) { selfGuestRoute.current = previousRoute; throw error }
+  }
+
+  useEffect(() => () => {
+    runLifetime.current += 1
+    initialLaunchRef.current = null
+    selfGuestRoute.current = null
+  }, [])
+
   useEffect(() => {
     let live = true
+    const route = JSON.stringify([planId, requestedGuestRun, requestedGuestResult])
+    if (selfGuestRoute.current === route) {
+      selfGuestRoute.current = null
+      return
+    }
+    selfGuestRoute.current = null
+    // A real URL navigation owns a new lifetime, including pending run creation.
+    const epoch = ++runLifetime.current
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
+    setBusy(false)
+    setActive(null)
+    setRun(null)
+    setAnswers({})
+    setMode('quick')
+    setGuestResult(null)
+    setActivePlan(null)
+    setPlanResults([])
+    setSaveState('')
+    setError('')
+    setPhase('catalog')
+    // Result and draft references identify only a server-owned guest record.
+    // Never use URL-carried answer payloads or unsaved client-side scores.
+    if ((requestedGuestResult && !isGuestReference(requestedGuestResult)) ||
+        (requestedGuestRun && !isGuestReference(requestedGuestRun)) ||
+        (planId && !isGuestReference(planId)) ||
+        (requestedGuestResult && requestedGuestRun)) {
+      setError(c.error)
+      return
+    }
     guestFetch('guest/bootstrap')
       .then(async (bootstrap) => {
-        if (!live) return
+        if (!live || runLifetime.current !== epoch) return
         setSessionExpires(bootstrap.expiresAt)
-        setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
-        if (!planId) return
-        const plan = await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
-        if (!live) return
-        setActivePlan(plan)
-        const planResultRows = (bootstrap.results || []).filter((result) => plan.completedRunIds?.includes(result.runId))
-        setPlanResults(planResultRows)
+        const plan = planId
+          ? await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
+          : bootstrap.activeTestPlan
+        if (!live || runLifetime.current !== epoch) return
+        if (planId && plan && !requestedGuestRun && !requestedGuestResult) {
+          setActivePlan(plan)
+          setPlanResults((bootstrap.results || []).filter(item => plan.completedRunIds?.includes(item.runId)))
+        }
+
+        if (requestedGuestResult) {
+          const result = (bootstrap.results || []).find((item) => item.id === requestedGuestResult)
+          if (!result) throw new Error('GUEST_RESULT_UNAVAILABLE')
+          // Only reveal a result already authorized by this same-browser guest cookie.
+          setActive(result.definitionKey)
+          setGuestResult(result)
+          setRun(null)
+          if (plan && plan.completedRunIds?.includes(result.runId)) {
+            setActivePlan(plan)
+            setPlanResults((bootstrap.results || []).filter(item => plan.completedRunIds.includes(item.runId)))
+          }
+          setPhase('result')
+          return
+        }
+
+        if (requestedGuestRun) {
+          const existing = (bootstrap.runs || []).find(item => item.id === requestedGuestRun)
+          if (!existing) throw new Error('GUEST_RUN_UNAVAILABLE')
+          const definition = getDefinitionById(existing.definitionId)
+          if (!definition) throw new Error('GUEST_TEST_UNAVAILABLE')
+          const owningPlan = plan?.status === 'active' && plan.definitionIds?.[plan.currentIndex] === definition.id ? plan : null
+          if (planId && !owningPlan) throw new Error('GUEST_PLAN_RUN_MISMATCH')
+          if (owningPlan) {
+            setActivePlan(owningPlan)
+            setPlanResults((bootstrap.results || []).filter(item => owningPlan.completedRunIds?.includes(item.runId)))
+          }
+          setActive(definition.key)
+          setRun(existing)
+          setAnswers(existing.answers || {})
+          setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
+          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, definition.questions.length - 1)))
+          setMode('quick')
+          setPhase('questions')
+          return
+        }
+
+        if (!planId || !plan) return
         if (plan.status === 'completed') {
           setPhase('summary')
           return
         }
         const nextDefinition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-        const existing = bootstrap.runs.find((item) => item.definitionId === nextDefinition.id)
+        if (!nextDefinition) throw new Error('GUEST_TEST_UNAVAILABLE')
+        const existing = (bootstrap.runs || []).find(item => item.definitionId === nextDefinition.id)
         setActive(nextDefinition.key)
         if (existing) {
           setRun(existing)
           setAnswers(existing.answers || {})
           setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
           setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, nextDefinition.questions.length - 1)))
-          setPhase('mode')
+          setPhase('questions')
         } else {
-          await startRun(nextDefinition)
+          await startRun(nextDefinition, plan.id)
         }
       })
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [locale, planId])
+      .catch(() => {
+        if (!live || runLifetime.current !== epoch) return
+        if (requestedGuestRun || requestedGuestResult || planId) {
+          setError(locale === 'ru'
+            ? 'Временный результат или тест недоступен. Возможно, срок гостевой сессии истёк. Начните новый тест.'
+            : 'This temporary result or test is unavailable. Your guest session may have expired. Start a new test.')
+        }
+      })
+    return () => { live = false }
+    // UI locale only changes labels; it must not restart the persisted instrument.
+  }, [planId, requestedGuestRun, requestedGuestResult])
+
+  useEffect(() => {
+    // Dedicated /client/tests passes only allowlisted public definition keys.
+    // URL resume references take precedence over a stale initial selection.
+    if (!requestedGuestTests) { initialLaunchRef.current = null; return }
+    if (requestedGuestResult || requestedGuestRun || planId) return
+    if (!requestedGuestTests || initialLaunchRef.current === requestedGuestTests) return
+    initialLaunchRef.current = requestedGuestTests
+    const keys = [...new Set(requestedGuestTests.split(',').map(value => value.trim()).filter(Boolean))]
+    if (keys.length === 0 || keys.length > 12) { setError(c.error); return }
+    void beginGuestBattery(keys.map(key => ({ key })))
+  }, [requestedGuestTests, requestedGuestRun, requestedGuestResult, planId])
 
   async function signIn(intentId = null) {
     if (!appAvailable) {
@@ -399,47 +510,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function handleGuestMoodChange(payload) {
-    setPendingMood(payload)
-    try {
-      const saved = await guestFetch('guest/mood', {
-        ...payload,
-        timezone: localZone(),
-        sourceSurface: 'cabinet_landing',
-      })
-      setLatestGuestMood(saved)
-      setPendingMood(null)
-      return saved
-    } catch (e) {
-      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') return null
-      setError(c.error)
-      return null
-    }
-  }
-
-  async function persistGuestMood(payload = pendingMood) {
-    if (!payload) return null
-    try {
-      const saved = await guestFetch('guest/mood', {
-        ...payload,
-        timezone: localZone(),
-        sourceSurface: 'cabinet_landing',
-      })
-      setLatestGuestMood(saved)
-      setPendingMood(null)
-      return saved
-    } catch {
-      return null
-    }
-  }
-
-  async function startRun(def) {
+  async function startRun(def, owningPlanId = null) {
+    const epoch = runLifetime.current
     const created = await guestFetch('guest/runs', {
       definitionKey: def.key,
       definitionVersion: def.version,
       instrumentLocale: def.instrumentLocale,
       operationId: crypto.randomUUID(),
     })
+    if (runLifetime.current !== epoch) return
+    runLifetime.current += 1
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
     setRun(created)
     setAnswers(created.answers || {})
     setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
@@ -448,26 +532,55 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       Math.max(0, def.questions.length - 1),
     )
     setIndex(nextIndex)
-    setMode(null)
-    setPhase('mode')
+    setMode('quick')
+    setPhase('questions')
+    setBusy(false)
+    replaceGuestRoute({ planId: owningPlanId, runId: created.id })
   }
 
-  async function begin(id, moodPayload = pendingMood) {
-    const def = definitionFor(id, locale)
+  async function bootstrapForStartedTest(epoch = runLifetime.current) {
+    // A guest session is created only after the visitor deliberately starts a test.
+    try {
+      return await guestFetch('guest/bootstrap')
+    } catch (error) {
+      if (runLifetime.current !== epoch) return null
+      if (error.status !== 401 || error.code !== 'GUEST_SESSION_REQUIRED') throw error
+      const session = await guestFetch('guest/session', {
+        adult: true,
+        necessary: true,
+        uiLocale: locale === 'ru' ? 'ru' : 'en',
+        timezone: localZone(),
+      })
+      if (runLifetime.current !== epoch) return null
+      setSessionExpires(session.expiresAt)
+      return guestFetch('guest/bootstrap')
+    }
+  }
+
+  async function begin(id, pinnedDefinition = null) {
+    const def = pinnedDefinition || definitionFor(id, locale)
     if (!def) {
       setError(c.error)
       return
     }
+    const epoch = ++runLifetime.current
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
+    if (!pinnedDefinition) { setActivePlan(null); setPlanResults([]) }
+    setRun(null)
     setActive(id)
     setGuestResult(null)
     setError('')
     setSaveState('')
     setBusy(true)
     try {
-      const bootstrap = await guestFetch('guest/bootstrap')
+      const bootstrap = await bootstrapForStartedTest()
+      if (runLifetime.current !== epoch) return
       setSessionExpires(bootstrap.expiresAt)
-      setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
-      if (moodPayload) await persistGuestMood(moodPayload)
+      if (runLifetime.current !== epoch) return
+      const currentPlan = pinnedDefinition && activePlan?.status === 'active' && activePlan.definitionIds?.[activePlan.currentIndex] === def.id ? activePlan : null
       const existing = bootstrap.runs.find((item) => item.definitionId === def.id)
       if (existing) {
         setRun(existing)
@@ -479,81 +592,224 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             Math.max(0, def.questions.length - 1),
           ),
         )
-        setMode(null)
-        setPhase('mode')
+        setMode('quick')
+        setPhase('questions')
+        replaceGuestRoute({planId: currentPlan?.id, runId: existing.id})
       } else {
-        await startRun(def)
+        await startRun(def, currentPlan?.id)
       }
-    } catch (e) {
-      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') {
-        setPhase('consent')
-      } else {
-        setError(c.error)
-      }
+    } catch {
+      if (runLifetime.current !== epoch) return
+      setError(c.error)
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
-  async function createGuestSession() {
-    if (!adult || !necessary || !definition) return
+  async function beginGuestBattery(entries) {
+    const keys = entries.map(entry => entry.key)
+    if (keys.length < 1 || keys.length > 12 || new Set(keys).size !== keys.length) {
+      setError(c.error)
+      return
+    }
+    const definitions = []
+    for (const key of keys) {
+      try {
+        const resolved = definitionFor(key, locale)
+        if (!resolved) { setError(c.error); return }
+        definitions.push(resolved)
+      } catch { setError(c.error); return }
+    }
+    if (definitions.length === 1) {
+      setActivePlan(null)
+      return begin(definitions[0].key)
+    }
+
+    const epoch = ++runLifetime.current
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
+    setRun(null)
+    setActivePlan(null)
+    setAnswers({})
+    setMode('quick')
+    setActive(definitions[0].key)
+    setGuestResult(null)
+    setPlanResults([])
+    setSaveState('')
+    setError('')
+    setBusy(true)
+    try {
+      const bootstrap = await bootstrapForStartedTest()
+      if (runLifetime.current !== epoch) return
+      setSessionExpires(bootstrap.expiresAt)
+      const plan = await guestFetch('guest/test-plans', {
+        items: definitions.map(item => ({
+          definitionKey: item.key, definitionVersion: item.version, instrumentLocale: item.instrumentLocale,
+        })),
+        replaceActive: true,
+        operationId: crypto.randomUUID(),
+      })
+      if (runLifetime.current !== epoch) return
+      setActivePlan(plan)
+      if (plan.status === 'completed') {
+        const latest = await guestFetch('guest/bootstrap')
+        if (runLifetime.current !== epoch) return
+        setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
+        replaceGuestRoute({planId: plan.id})
+        setPhase('summary')
+      } else {
+        // Reopening the same guest battery resumes the actual outstanding test,
+        // rather than restarting the first item or losing previous measurements.
+        const next = getDefinitionById(plan.definitionIds[plan.currentIndex])
+        setActive(next.key)
+        await startRun(next, plan.id)
+      }
+    } catch {
+      if (runLifetime.current !== epoch) return
+      setError(c.error)
+    } finally { if (runLifetime.current === epoch) setBusy(false) }
+  }
+
+  async function saveGuestRun(body) {
+    if (saving.current) throw new Error('SAVE_IN_PROGRESS')
+    if (completion.current) throw new Error('IMMUTABLE_RUN')
+    const epoch = runLifetime.current
+    const pending = saveOperation.current || { runId: run.id, body }
+    if (pending.runId !== run.id) throw new Error('RUN_CHANGED')
+    saveOperation.current = pending
+    saving.current = true
+    try {
+      const saved = await guestFetch('guest/runs/' + pending.runId + '/save', pending.body)
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      saveOperation.current = null
+      return saved
+    } catch (error) {
+      pending.errorCode = error.code
+      throw error
+    } finally {
+      if (runLifetime.current === epoch) saving.current = false
+    }
+  }
+
+  async function retryGuestSave() {
+    const epoch = runLifetime.current
+    if (busy || saving.current || !saveOperation.current) return
     setBusy(true)
     setError('')
     try {
-      const session = await guestFetch('guest/session', {
-        adult: true,
-        necessary: true,
-        uiLocale: locale === 'ru' ? 'ru' : 'en',
-        timezone: localZone(),
-      })
-      setSessionExpires(session.expiresAt)
-      if (pendingMood) await persistGuestMood(pendingMood)
-      await startRun(definition)
+      const saved = await saveGuestRun(saveOperation.current.body)
+      if (runLifetime.current !== epoch) return
+      setRun(saved)
+      setAnswers(saved.answers || {})
+      setContext(saved.context || {})
+      setSaveState(c.saved)
     } catch {
-      setError(c.error)
+      if (runLifetime.current === epoch) setError(c.error)
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
+    }
+  }
+
+  async function reloadGuestRun() {
+    const epoch = runLifetime.current
+    if (busy || saving.current || !run) return
+    setBusy(true)
+    setError('')
+    try {
+      const fresh = await guestFetch('guest/runs/' + run.id)
+      if (runLifetime.current !== epoch) return
+      saveOperation.current = null
+      setRun(fresh)
+      setAnswers(fresh.answers || {})
+      setContext(fresh.context || {})
+      setIndex(Math.min(fresh.progress || 0, definition.questions.length - 1))
+      setSaveState('')
+      if (!['draft', 'in_progress'].includes(fresh.status)) resetToCatalog()
+    } catch {
+      if (runLifetime.current === epoch) setError(c.error)
+    } finally {
+      if (runLifetime.current === epoch) setBusy(false)
+    }
+  }
+
+  async function saveTraumaContext() {
+    const epoch = runLifetime.current
+    if (!run || busy || saving.current || saveOperation.current) return
+    setBusy(true)
+    setError('')
+    try {
+      const saved = await saveGuestRun({
+        answers: {}, context, progress: index, expectedRevision: run.revision, operationId: crypto.randomUUID(),
+      })
+      if (runLifetime.current !== epoch) return
+      setRun(saved)
+      setContext(saved.context || {})
+    } catch {
+      if (runLifetime.current === epoch) setError(c.error)
+    } finally {
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
   async function submitSavedRun(currentRun, destination = 'report') {
-    const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
-      expectedRevision: currentRun.revision,
+    const epoch = runLifetime.current
+    const request = async (path, body) => {
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      const response = await guestFetch(path, body)
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      return response
+    }
+    if (!completion.current) completion.current = { run: currentRun, destination, result: null }
+    const pending = completion.current
+    if (pending.run.id !== currentRun.id) throw new Error('RUN_CHANGED')
+    destination = pending.destination
+    const result = pending.result || await request('guest/runs/' + pending.run.id + '/submit', {
+      expectedRevision: pending.run.revision,
     })
+    pending.result = result
     setGuestResult(result)
     let advanced = null
-    if (activePlan?.status === 'active') {
-      advanced = await guestFetch('guest/test-plans/' + activePlan.id + '/advance', {
+    if (activePlan) {
+      // A lost advance response may have already credited this exact run.
+      const fresh = await request('guest/test-plans/' + encodeURIComponent(activePlan.id))
+      if (!fresh) throw new Error('PLAN_UNAVAILABLE')
+      advanced = fresh.completedRunIds?.includes(result.runId) ? fresh : await request('guest/test-plans/' + fresh.id + '/advance', {
         completedRunId: result.runId,
-        expectedRevision: activePlan.revision,
+        expectedRevision: fresh.revision,
       })
       setActivePlan(advanced)
-      const bootstrap = await guestFetch('guest/bootstrap')
-      const rows = (bootstrap.results || []).filter(item => advanced.completedRunIds?.includes(item.runId))
+      const refreshed = await request('guest/bootstrap')
+      const rows = (refreshed.results || []).filter(item => advanced.completedRunIds?.includes(item.runId))
       setPlanResults(rows)
     }
     if (destination === 'next') {
       if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
         const nextDefinition = getDefinitionById(advanced.definitionIds[advanced.currentIndex])
         setActive(nextDefinition.key)
-        await startRun(nextDefinition)
+        await startRun(nextDefinition, advanced.id)
       } else if (advanced?.status === 'completed') {
+        replaceGuestRoute({planId: advanced.id})
         setPhase('summary')
       } else {
         setActive(null)
         setRun(null)
-        setMode(null)
+        setMode('quick')
         setPhase('catalog')
       }
     } else {
-      // Always display this saved attempt's full recommendations.
+      // Persist only opaque IDs so a refresh restores the same scored scales and CTA.
+      replaceGuestRoute({planId: advanced?.id || activePlan?.id, resultId: result.id})
       setPhase('result')
     }
+    if (completion.current === pending) completion.current = null
     return result
   }
 
   async function choose(value, targetQuestion = question) {
-    if (!run || !targetQuestion || busy) return
+    const epoch = runLifetime.current
+    if (!run || !targetQuestion || busy || saving.current || recoveryPending) return
     const nextAnswers = { ...answers, [targetQuestion.id]: value }
     const quick = mode === 'quick'
     const firstMissing = definition.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(nextAnswers, item.id))
@@ -563,52 +819,59 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setSaveState(c.saving)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: { [targetQuestion.id]: value },
         context: run.context || {},
         progress,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setAnswers(saved.answers || nextAnswers)
       setSaveState(c.saved)
       // Quick remains on the full questionnaire; Guided advances with the Next action.
     } catch {
+      if (runLifetime.current !== epoch) return
       setAnswers(run.answers || {})
       setError(c.error)
       setSaveState('')
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
   async function submitResult(currentRun = run, destination = 'report') {
-    if (!currentRun || busy) return
+    const epoch = runLifetime.current
+    if (!currentRun || busy || submitting.current || saving.current || saveOperation.current) return
+    submitting.current = true
     setBusy(true)
     setError('')
     try {
       await submitSavedRun(currentRun, destination)
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) { submitting.current = false; setBusy(false) }
     }
   }
 
   async function next() {
-    if (selected === undefined || busy || !run) return
+    const epoch = runLifetime.current
+    if (selected === undefined || busy || !run || saving.current || recoveryPending) return
     setBusy(true)
     setSaveState(c.saving)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: {},
         context: run.context || {},
         progress: Math.min(index + 1, definition.questions.length),
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setSaveState(c.saved)
       if (index < definition.questions.length - 1) {
@@ -619,35 +882,40 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         await submitSavedRun(saved)
       }
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
       setSaveState('')
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
   async function saveContextAndFinish(destination = 'report') {
-    if (!run || busy) return
+    const epoch = runLifetime.current
+    if (!run || busy || saving.current || saveOperation.current) return
+    if (completion.current) { await submitResult(completion.current.run, completion.current.destination); return }
     setBusy(true)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: {},
         context,
         progress: definition.questions.length,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setBusy(false)
       await submitResult(saved, destination)
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
       setBusy(false)
     }
   }
 
-  async function saveToCabinet(selectedResult = guestResult) {
+  async function saveToCabinet(selectedResult = guestResult, discussAfterSave = false) {
     // React may pass a click event to the original result button; preserve that path.
     const resultToSave = selectedResult?.id ? selectedResult : guestResult
     if (!resultToSave || busy) return
@@ -659,8 +927,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         sourceId: resultToSave.id,
         operationId: crypto.randomUUID(),
       })
+      if (discussAfterSave) {
+        try { window.sessionStorage.setItem(TEST_DISCUSSION_INTENT_KEY, intent.id) }
+        catch { /* Storage can be blocked; the saved report still has its discussion button. */ }
+      }
       if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
+        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
       }
       await signIn(intent.id)
@@ -685,11 +957,18 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   }
 
   function resetToCatalog() {
+    setBusy(false)
+    runLifetime.current += 1
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
+    replaceGuestRoute()
     setActive(null)
     setRun(null)
     setAnswers({})
     setIndex(0)
-    setMode(null)
+    setMode('quick')
     setPhase('catalog')
     setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
@@ -701,13 +980,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   async function continuePlan() {
     if (!activePlan || activePlan.status !== 'active') return
-    const definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex])
-    await begin(definition.key)
+    let definition
+    try { definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex]) } catch { setError(c.error); return }
+    if (!definition) { setError(c.error); return }
+    replaceGuestRoute({planId: activePlan.id})
+    await begin(definition.key, definition)
   }
 
   return (
     <>
-      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded /></div>}
+      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} /></div>}
       {phase === 'catalog' && (
       <section className="cabinet-signin-strip cabinet-signin-hero" aria-labelledby="cabinet-title">
         <div className="cabinet-signin-copy">
@@ -724,22 +1006,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       </section>
       )}
 
-      <MoodCheckIn
-        locale={locale}
-        latestMood={latestGuestMood}
-        onMoodChange={handleGuestMoodChange}
-        onDismiss={(payload) => {
-          if (pendingMood?.operationId === payload.operationId) setPendingMood(null)
-        }}
-        onQuickCheckin={(payload) => {
-          setPendingMood(payload)
-          begin('state', payload)
-        }}
-        disabled={busy}
-      />
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
-        {phase === 'questions' ? (
+        <GuestTestJourneyProgress locale={locale} plan={activePlan}
+          definition={definition} answeredCount={answeredCount} phase={phase} />
+        {phase === 'questions' && definition ? (
           <header className="cabinet-tests-heading cabinet-tests-heading--compact">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>
           </header>
@@ -751,54 +1022,18 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </header>
         )}
 
-        {phase === 'consent' && (
-          <div className="cabinet-guest-runner">
-            <h3>{c.consentTitle}</h3>
-            <p>{c.consentText}</p>
-            {definition?.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
-            <label className="hh-check">
-              <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
-              {c.adult}
-            </label>
-            <label className="hh-check">
-              <input type="checkbox" checked={necessary} onChange={(e) => setNecessary(e.target.checked)} />
-              {c.necessary}
-            </label>
-            <div className="cabinet-test-actions">
-              <button type="button" onClick={resetToCatalog}>{c.back}</button>
-              <button type="button" disabled={busy || !adult || !necessary} onClick={createGuestSession}>
-                {c.continue}
-              </button>
-            </div>
-          </div>
+        {run && !definition && <div className="cabinet-guest-runner" role="alert">
+          <p>{locale === 'ru' ? 'Эта сохранённая версия теста сейчас недоступна. Ответы не изменены.' : 'This saved test version is currently unavailable. Your answers have not been changed.'}</p>
+          <button type="button" disabled={busy} onClick={resetToCatalog}>{c.back}</button>
+        </div>}
+
+        {phase === 'questions' && definition && run && hasTraumaAdministration(definition) && !traumaContextReady(definition, run.context || {}) && (
+          <TraumaFrontMatter definition={definition} context={context} onChange={setContext}
+            onContinue={saveTraumaContext} onExit={resetToCatalog} busy={busy || recoveryPending} error={error} />
         )}
 
-        {phase === 'mode' && definition && run && (
-          <div className="cabinet-guest-runner hh-test-mode-picker">
-            <div className="hh-test-mode-intro">
-              <p className="cabinet-test-progress">{definitionTitle(definition, locale)}</p>
-              <h3>{c.modeTitle}</h3>
-              <p>{c.modeText}</p>
-            </div>
-            <div className="hh-test-mode-grid">
-              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('quick'); setPhase('questions') }}>
-                <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
-                <span><small>{c.quick} · ~{quickMinutes} {timeUnit}</small><strong>{c.quickTitle}</strong><em>{c.quickText}</em></span>
-              </button>
-              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('guided'); setPhase('questions') }}>
-                <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
-                <span><small>{c.guided} · ~{guidedMinutes} {timeUnit}</small><strong>{c.guidedTitle}</strong><em>{c.guidedText}</em></span>
-              </button>
-            </div>
-            <p className="cabinet-test-note hh-test-mode-same">{c.sameModeResult}</p>
-            <div className="cabinet-test-actions">
-              <button type="button" onClick={resetToCatalog}>{c.back}</button>
-            </div>
-          </div>
-        )}
-
-        {phase === 'questions' && definition && question && run && (
-          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode || 'guided'}`}>
+        {phase === 'questions' && definition && question && run && traumaContextReady(definition, run.context || {}) && (
+          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode}`}>
             <div className="hh-runner-topline">
               <p className="cabinet-test-progress">
                 {mode === 'quick'
@@ -830,14 +1065,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               ))}
             </div>
 
+            {hasTraumaAdministration(definition) && <p lang="en" className="cabinet-test-note">{definition.safetyText}</p>}
             {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
             <Asrs6SourceNotice definition={definition} startedAt={run.startedAt} locale={locale} />
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (
-                  <fieldset key={item.id} className="cabinet-quick-question" disabled={busy}>
+                  <fieldset key={item.id} className="cabinet-quick-question" disabled={busy || recoveryPending}>
                     <legend>
                       <span className="cabinet-question-number">{c.question} {step + 1} / {definition.questions.length}</span>
+                      <TraumaSectionInstructions question={item} />
                       <h3>{item.text}</h3>
                     </legend>
                     {definition.key === 'mini-ipip-20' && step === 0 && <p className="cabinet-test-note">{c.traitNotice}</p>}
@@ -845,7 +1082,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                       <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
                     )}
                     <GuestAnswerChoices definition={definition} question={item} selected={answers[item.id]}
-                      onChoose={value => choose(value, item)} disabled={busy} locale={locale} />
+                      onChoose={value => choose(value, item)} disabled={busy || recoveryPending} locale={locale} />
                   </fieldset>
                 ))}
                 <p className="cabinet-test-note hh-quick-hint">{c.tapContinue}</p>
@@ -861,7 +1098,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                       ['note', c.note],
                     ].map(([key, label]) => (
                       <label key={key}>{label}
-                        <textarea value={context[key] || ''} maxLength={1000}
+                        <textarea disabled={busy || recoveryPending} value={context[key] || ''} maxLength={1000}
                           onChange={event => setContext(value => ({ ...value, [key]: event.target.value }))} />
                       </label>
                     ))}
@@ -870,35 +1107,36 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             ) : (
               <div className="cabinet-guided-question">
-                <h3>{question.text}</h3>
+                <TraumaSectionInstructions question={question} />
+                  <h3>{question.text}</h3>
                 {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
                 {definition.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && answers['hrqol4.02'] === 0 && answers['hrqol4.03'] === 0 && (
                   <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
                 )}
                 <GuestAnswerChoices definition={definition} question={question} selected={selected}
-                  onChoose={value => choose(value)} disabled={busy} locale={locale} />
+                  onChoose={value => choose(value)} disabled={busy || recoveryPending} locale={locale} />
               </div>
             )}
             <p className="cabinet-test-note hh-runner-save-state" role="status" aria-live="polite">{saveState}</p>
             <div className="cabinet-test-actions">
               {mode === 'guided' && (
-                <button type="button" disabled={busy || index === 0}
+                <button type="button" disabled={busy || recoveryPending || index === 0}
                   onClick={() => { setIndex(value => value - 1); setSaveState('') }}>
                   {c.back}
                 </button>
               )}
               {mode === 'guided' &&
                 (index !== definition.questions.length - 1 || definition.optionalContext?.length > 0) && (
-                <button type="button" disabled={busy || selected === undefined} onClick={next}>
+                <button type="button" disabled={busy || recoveryPending || selected === undefined} onClick={next}>
                   {c.next}
                 </button>
               )}
             </div>
             {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
               (mode === 'quick' && allAnswered)) && (
-              <TestFinishActions locale={locale} disabled={busy} temporary
+              <TestFinishActions locale={locale} disabled={busy || recoveryPending} temporary guestScaleOnly
                 onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
-                onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
+                />
             )}
           </div>
         )}
@@ -907,17 +1145,17 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           <div className="cabinet-guest-runner">
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
-            <label>{c.focus}<textarea value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
-            <label>{c.trigger}<textarea value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
-            <label>{c.helps}<textarea value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
-            <label>{c.desiredChange}<textarea value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
-            <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
+            <label>{c.focus}<textarea disabled={busy || recoveryPending} value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
+            <label>{c.trigger}<textarea disabled={busy || recoveryPending} value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
+            <label>{c.helps}<textarea disabled={busy || recoveryPending} value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
+            <label>{c.desiredChange}<textarea disabled={busy || recoveryPending} value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
+            <label>{c.note}<textarea disabled={busy || recoveryPending} value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
-              <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
+              <button type="button" disabled={busy || recoveryPending} onClick={() => setPhase('questions')}>{c.back}</button>
             </div>
-            <TestFinishActions locale={locale} disabled={busy} temporary
+            <TestFinishActions locale={locale} disabled={busy || recoveryPending} temporary guestScaleOnly
               onReport={() => saveContextAndFinish('report')}
-              onNext={() => saveContextAndFinish('next')} />
+              />
           </div>
         )}
 
@@ -927,11 +1165,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               <div>
                 <p className="about-kicker">{c.result}</p>
                 <h3>{definitionTitle(definition, locale)}</h3>
-                <p className="cabinet-result-intro">
-                  {locale === 'ru'
-                    ? 'Ваш личный результат самонаблюдения — спокойно, без ярлыков и автоматических выводов.'
-                    : 'Your personal self-observation result — calm, private and without automatic labels.'}
-                </p>
               </div>
               <div className="cabinet-result-meta">
                 <span>{new Date(guestResult.measurementAt).toLocaleString(locale)}</span>
@@ -939,79 +1172,52 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </header>
 
-            <section className="cabinet-result-section" aria-labelledby="guest-result-values">
-              <div className="cabinet-result-section-heading">
-                <div>
-                  <p className="about-kicker">{locale === 'ru' ? 'Результаты' : 'Results'}</p>
-                  <h4 id="guest-result-values">{locale === 'ru' ? 'Ваши показатели' : 'Your measurements'}</h4>
-                </div>
-                <p>
-                  {locale === 'ru'
-                    ? 'Это личная точка отсчёта. Повторные совместимые замеры помогут увидеть изменения со временем.'
-                    : 'This is a personal baseline. Compatible repeat measurements can show change over time.'}
-                </p>
-              </div>
-              <div className="cabinet-result-grid" data-count={Math.min(guestResult.dimensions.length, 3)}>
-                {guestResult.dimensions.map((dimension) => (
-                  <section key={dimension.key}>
-                    <h5>{resultLabel(definition, dimension)}</h5>
-                    <div className="cabinet-result-score">
-                      <strong>{dimension.value}</strong>
-                      <small>/ {dimension.max}</small>
-                    </div>
-                    <div className="cabinet-result-scale">
-                      <span>{locale === 'ru' ? 'Шкала' : 'Scale'} {dimension.min}–{dimension.max}</span>
-                      <b>{locale === 'ru' ? 'Первый замер' : 'Baseline'}</b>
-                    </div>
-                  </section>
-                ))}
-              </div>
+            <GuestScaleInterpretation result={guestResult} locale={locale} />
+            <TestRatingCard locale={locale} definitionKey={guestResult.definitionKey} guest />
+            <section className={guestActions.capture} data-guest-analysis-gate aria-label={locale === 'ru' ? 'Бесплатные пояснения к тесту' : 'Free test explanations'}>
+              <p className={guestActions.kicker}>{locale === 'ru' ? 'БЕСПЛАТНО · ЧЕРЕЗ GOOGLE' : 'FREE · WITH GOOGLE'}</p>
+              <h4 className={guestActions.heading}>{locale === 'ru' ? 'Что означают ваши результаты?' : 'What do your scores mean?'}</h4>
+              <p className={guestActions.explain}>{c.saveHint}</p>
+              <button className={guestActions.googleButton} type="button" onClick={saveToCabinet} disabled={busy}>
+                <span className={guestActions.googleMark} aria-hidden="true">G</span>
+                <span>{c.save}</span>
+                <span className={guestActions.buttonArrow} aria-hidden="true">→</span>
+              </button>
+              <button type="button" className={guestActions.secondary} data-guest-discuss-test
+                disabled={busy} onClick={() => saveToCabinet(guestResult, true)}>
+                {locale === 'ru' ? 'Обсудить этот тест в Google-кабинете →'
+                  : locale === 'es' ? 'Comentar esta prueba en tu cuenta de Google →'
+                  : 'Discuss this test in your Google Cabinet →'}
+              </button>
+              <p className={guestActions.privacy}>{locale === 'ru'
+                ? 'Этот тест сохраняется в аккаунте только после вашего подтверждения.'
+                : 'This test is saved to your account only after you confirm.'}</p>
             </section>
 
-            <PersonalResultReport result={guestResult} locale={locale} />
-            <div className="cabinet-result-actions-grid">
-              <section className="cabinet-result-save-panel">
-                <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>
-                <h4>{locale === 'ru' ? 'Сохранить результат в кабинете' : 'Save this result to your Cabinet'}</h4>
-                <p>{c.saveHint}</p>
-                <button className="cabinet-save-result" type="button" onClick={saveToCabinet} disabled={busy}>
-                  {c.save}
-                </button>
-              </section>
+            <nav className={guestActions.nextActions} aria-label={locale === 'ru' ? 'Что делать дальше' : 'Next steps'}>
+              <a className={guestActions.secondary} href={`/${locale}/courses/antistress`}>
+                {locale === 'ru' ? 'Пройти антистресс-курс →' : 'Take the Anti-Stress course →'}
+              </a>
+              <button className={guestActions.secondary} type="button" disabled={busy}
+                onClick={activePlan?.status === 'active' ? continuePlan : resetToCatalog}>
+                {locale === 'ru' ? 'Перейти к следующему тесту →' : 'Go to the next test →'}
+              </button>
+            </nav>
 
-              <aside className="cabinet-result-consultation" aria-label={c.consultTitle}>
-                <p className="about-kicker">{c.consultKicker}</p>
-                <h4>{c.consultTitle}</h4>
-                <p>{c.consultText}</p>
-                <Link className="cabinet-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
-                  {c.consultAction}
-                </Link>
-              </aside>
-            </div>
-
-            <footer className="cabinet-result-footer">
-              <p className="cabinet-test-note">
-                {c.source}: {guestResult.definitionKey} · {guestResult.definitionVersion} · {guestResult.instrumentLocale?.toUpperCase()}
-              </p>
-              {(guestResult.expiresAt || sessionExpires) && (
-                <p className="cabinet-test-note">
-                  {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
-                </p>
-              )}
-              <div className="cabinet-test-actions">
-                {activePlan?.status === 'active' && (
-                  <button className="cabinet-save-result" type="button" disabled={busy} onClick={continuePlan}>
-                    {locale === 'ru' ? 'Продолжить набор' : 'Continue set'}
+            <details className={guestActions.more}>
+              <summary>{locale === 'ru' ? 'Управление результатом' : 'Result options'}</summary>
+              <div className={guestActions.moreBody}>
+                <p>{c.source}: {guestResult.definitionKey} · {guestResult.definitionVersion} · {guestResult.instrumentLocale?.toUpperCase()}</p>
+                {(guestResult.expiresAt || sessionExpires) && <p>{c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.</p>}
+                {activePlan?.status === 'completed' && (
+                  <button type="button" disabled={busy}
+                    onClick={() => { replaceGuestRoute({planId: activePlan.id}); setPhase('summary') }}>
+                    {locale === 'ru' ? 'Обзор пройденных тестов' : 'View completed test set'}
                   </button>
                 )}
-                <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
-                  {c.restart}
-                </button>
-                <button className="cabinet-text-button" type="button" disabled={busy} onClick={deleteResult}>
-                  {c.delete}
-                </button>
+                <button type="button" disabled={busy} onClick={deleteResult}>{c.delete}</button>
               </div>
-            </footer>
+            </details>
           </article>
         )}
         {phase === 'summary' && activePlan && (
@@ -1021,7 +1227,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <footer className="cabinet-result-footer"><p className="cabinet-test-note">{locale === 'ru' ? 'Каждый тест имеет отдельный результат. Вы можете по желанию сохранить конкретные результаты в личном кабинете через Google.' : 'Each test has a separate result. Choose which results to save to your private Cabinet with Google.'}</p><div className="cabinet-test-actions"><button className="cabinet-text-button" type="button" onClick={resetToCatalog}>{c.restart}</button></div></footer>
           </article>
         )}
-        {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
+        {error && phase !== 'catalog' && <div className="client-entry-error" role="alert">
+          <p>{error}</p>
+          {(saveOperation.current || completion.current) && <button type="button" disabled={busy}
+            onClick={() => completion.current ? submitResult(completion.current.run, completion.current.destination) : retryGuestSave()}>
+            {locale === 'ru' ? 'Повторить' : 'Retry'}
+          </button>}
+          {['REVISION_CONFLICT', 'IMMUTABLE_RUN', 'IDEMPOTENCY_CONFLICT'].includes(saveOperation.current?.errorCode) && <button type="button" disabled={busy} onClick={reloadGuestRun}>
+            {locale === 'ru' ? 'Загрузить сохранённые ответы' : 'Reload saved answers'}
+          </button>}
+        </div>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
       </section>}
 

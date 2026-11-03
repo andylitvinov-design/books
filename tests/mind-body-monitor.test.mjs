@@ -10,10 +10,10 @@ import {
   registryCount,
 } from '../data/assessments/mind-body-monitor-registry.js'
 
-test('Mind–Body Monitor registry contains 154 unique research instruments', () => {
-  assert.equal(registryCount(), 154)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 154)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 154)
+test('Mind–Body Monitor registry contains 168 unique research instruments', () => {
+  assert.equal(registryCount(), 168)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 168)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 168)
   assert.equal(MONITOR_AREAS.length, 14)
 })
 
@@ -40,7 +40,7 @@ test('research registry is metadata-gated and cannot silently publish questionna
   }
 })
 
-test('existing runnable modules remain separate from the 139-instrument research registry', () => {
+test('existing runnable modules remain separate from the 145-instrument test catalog', () => {
   assert.deepEqual(
     PRODUCT_MONITOR_MODULES.filter((item) => item.enabled).map((item) => item.key),
     ['hh-current-state', 'mini-ipip-20'],
@@ -57,7 +57,7 @@ test('public monitor discovery is wired without adding a seventh main navigation
     readFile('app/[locale]/wu-xing/page.tsx', 'utf8'),
     readFile('lib/site-navigation-model.js', 'utf8'),
   ])
-  assert.match(header, /MindBodyMonitorStrip/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|mind-body-monitor-strip/)
   assert.match(home, /entry\.selfCheck\.href/)
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/)
   assert.match(home, /Wellbeing & inner resources/)
@@ -110,21 +110,13 @@ test('homepage monitor offers soft focus choices and recommendation framing', as
 })
 
 
-test('public header banner links only to the free situation assessment on desktop and mobile', async () => {
-  const [strip, styles] = await Promise.all([
-    readFile('components/mind-body-monitor-strip.tsx', 'utf8'),
-    readFile('app/ia-v2.css', 'utf8'),
-  ])
+test('legacy public header banner stays removed on every locale', async () => {
+  const header = await readFile('components/public-site-header.tsx', 'utf8')
 
-  assert.match(strip, /Бесплатная диагностика ситуации/)
-  assert.match(strip, /Free situation assessment/)
-  assert.match(strip, /Evaluación inicial gratuita/)
-  assert.match(strip, /data-monitor-action="free-situation-review"/)
-  assert.match(strip, /\/en\/services\/free-situation-review/)
-  assert.ok(strip.includes('${locale}/services/free-situation-review'))
-  assert.equal((strip.match(/<Link\b/g) ?? []).length, 1)
-  assert.doesNotMatch(strip, /\/wu-xing|\/client#cabinet-tests/)
-  assert.match(styles, /\.mind-body-monitor-strip__inner\s*\{[^}]*border-radius:\s*16px/)
-  assert.match(styles, /\.mind-body-monitor-strip__action\s*\{[^}]*min-height:\s*40px/)
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.mind-body-monitor-strip__action\s*\{[^}]*min-height:\s*36px/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|mind-body-monitor-strip|data-monitor-strip/)
+  await assert.rejects(readFile('components/mind-body-monitor-strip.tsx', 'utf8'), { code: 'ENOENT' })
+  assert.ok(header.includes('<SiteNavigation locale={locale} />'))
+  for (const locale of ['en', 'ru', 'es']) {
+    assert.ok(header.includes(`${locale}: { home:`))
+  }
 })

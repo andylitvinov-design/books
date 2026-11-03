@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Download, Languages, Printer, PencilLine } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Languages, Printer, PencilLine } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { PaymentDocument } from '@/components/payment-document'
 import { PrescriptionDocument } from '@/components/prescription-document'
@@ -8,6 +8,8 @@ import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { documentPreviewEditHref } from '@/lib/consultations/document-preview-navigation'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
+import { ReportFinalActions } from '@/components/report-final-actions'
 import styles from './viewer.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -52,7 +54,8 @@ export default async function AdminFullReportView({ params, searchParams }) {
           <Link href={root + '/view?locale=' + nextLocale} className={styles.control} aria-label={ru ? 'Switch to English' : 'Переключить на русский'}>
             <Languages size={16} aria-hidden="true" />{nextLocale.toUpperCase()}
           </Link>
-          <a href={pdf} download className={styles.control}><Download size={16} aria-hidden="true" />PDF</a>
+          {!payment && <a href={pdf + '&preview=1'} className={styles.control}><FileText size={16} aria-hidden="true" />{ru ? 'Читать PDF крупно' : 'Read large PDF'}</a>}
+          <a href={pdf} download={payment ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(doc)} className={styles.control}><Download size={16} aria-hidden="true" />{ru ? 'Скачать A4' : 'Download A4'}</a>
           <Link href={reader + '&print=1'} className={styles.control}><Printer size={16} aria-hidden="true" />{ru ? 'Печать' : 'Print'}</Link>
           <Link href={edit} className={styles.edit}><PencilLine size={16} aria-hidden="true" />{ru ? 'Редактировать' : 'Edit'}</Link>
         </div>
@@ -64,6 +67,7 @@ export default async function AdminFullReportView({ params, searchParams }) {
       {payment
         ? <PaymentDocument document={doc} locale={locale} admin embedded autoPrint={query.print === '1'} />
         : <PrescriptionDocument document={doc} locale={locale} admin embedded autoPrint={query.print === '1'} />}
+      {!payment&&query.print!=='1'&&<ReportFinalActions locale={locale} mode="preview"/>}
     </main>
   )
 }

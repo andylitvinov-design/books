@@ -6,20 +6,25 @@ import { cookies } from 'next/headers'
 import { CabinetLinkActions } from '@/components/cabinet-link-actions'
 import { MaterialCopyButton } from '@/components/material-copy-button'
 import { ClientAccessDangerActions } from '@/components/client-access-danger-actions'
+import { DeleteClientPanel } from '@/components/owner-delete-controls'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { savedReportLocale } from '@/lib/consultations/report-directory'
 import { uiLocaleCookie } from '@/lib/ui-locale'
 import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getLegacyClientBinding } from '@/lib/app/client-account-binding'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { listClientSessions } from '@/lib/clients/session-delivery-service'
+import { OwnerClientSessions } from '@/components/client-session-list'
 
-import { addClientMaterialAction, editClientAction, removeClientMaterialAction, revokeClientAction, rotateClientAction } from '../actions'
+import { addClientMaterialAction, editClientAction, removeClientMaterialAction, revokeClientAction, rotateClientAction, deleteClientAction } from '../actions'
 import '../client-workspace.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Client history', robots: { index: false, follow: false } }
 
-export default async function ClientDetail({ params }) {
+export default async function ClientDetail({ params, searchParams }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const ru = (await cookies()).get(uiLocaleCookie)?.value === 'ru'
   const copy = ru
@@ -54,6 +59,25 @@ export default async function ClientDetail({ params }) {
         cabinetHint: 'A separate private link for the client. Use this section when documents are ready to share.',
       }
 
+  const deletionNotice = (await searchParams)?.delete
+  const deleteLabels = ru
+    ? {
+        deleteClient: 'Удалить клиента и его историю', documents: 'документов', assessments: 'оценок',
+        deleteWarning: 'Удаление безвозвратное: исчезнут карточка клиента, отчёты и оценки. При привязанном Google-кабинете, опубликованных материалах или оплаченных счетах удаление блокируется. Вместо этого можно отправить клиента в архив.',
+        typeName: 'Для подтверждения точно введите имя клиента',
+        deleteForever: 'Удалить клиента навсегда',
+        deleteConfirm: 'Точно удалить клиента, все его отчёты и оценки? Отменить действие нельзя.',
+      }
+    : {
+        deleteClient: 'Delete client and history', documents: 'documents', assessments: 'assessments',
+        deleteWarning: 'Permanent deletion removes the client, their reports and assessments. Clients with a linked Google account, published sessions or paid invoices cannot be deleted here. You can archive them instead.',
+        typeName: 'Type the full client name to confirm',
+        deleteForever: 'Delete client permanently',
+        deleteConfirm: 'Delete this client and their reports and assessments forever? This cannot be undone.',
+      }
+  const deleteErrors = ru
+    ? { changed: 'Карточка изменена. Обновите страницу и попробуйте снова.', billing: 'Есть оплаченный счёт. Удаление заблокировано; используйте архив.', linked: 'Есть связанные аккаунты или материалы кабинета. Сначала разберите эти связи или отправьте клиента в архив.', unavailable: 'Проверка связанных данных временно недоступна. Удаление отменено.' }
+    : { changed: 'This record changed. Reload the page and try again.', billing: 'A paid invoice exists. Deletion is blocked; please archive this client instead.', linked: 'This client has linked accounts or cabinet materials. Review those links or archive the client instead.', unavailable: 'Related records could not be checked. Nothing was deleted.' }
   const { id } = await params
   const store = getPrescriptionStore()
   const client = await store?.findClientById(id)
@@ -67,6 +91,7 @@ export default async function ClientDetail({ params }) {
     }
   }
   const documents = await store.listClientDocuments(id)
+  const deliverySessions = deliveryEnabled() && client.status === 'active' ? await listClientSessions(getAppConfig(),store,id).catch(()=>[]) : []
   const groups = Object.entries(Object.groupBy(documents, (document) => `${document.dateIssued}|${document.consultationId ?? document.id}`)).sort(([left], [right]) => right.localeCompare(left))
   const lastConsultation = documents.map((document) => document.dateIssued).sort().at(-1)
   const assessments = (await store.listClientAssessments(id)).sort((left, right) => right.occurredOn.localeCompare(left.occurredOn) || right.id.localeCompare(left.id))
@@ -77,6 +102,7 @@ export default async function ClientDetail({ params }) {
       description={{ ru: 'Рабочая карточка клиента', en: 'Practitioner client record' }}
     />
     <Link className="client-workspace-back" href="/admin/clients" prefetch={false}>← {labels.back}</Link>
+    {Object.hasOwn(deleteErrors, deletionNotice) && <p className="client-delete-notice" role="alert">{deleteErrors[deletionNotice]}</p>}
 
     <section className="client-detail-primary-actions" aria-label={copy.primary}>
       <div className="client-detail-work-card">
@@ -110,6 +136,8 @@ export default async function ClientDetail({ params }) {
       {(client.email || client.phone) && <p className="client-detail-contact">{[client.email, client.phone].filter(Boolean).join(' · ')}</p>}
     </section>
 
+    {deliveryEnabled() && client.status === 'active' && <OwnerClientSessions clientId={id} sessions={deliverySessions} documents={documents} locale={ru?'ru':'en'} />}
+
     <section className="client-detail-history" aria-label={copy.history}>
       <div className="client-detail-section-heading">
         <div><h2>{copy.history}</h2><p>{labels.historyHint}</p></div>
@@ -119,7 +147,7 @@ export default async function ClientDetail({ params }) {
         {groups.map(([key, records]) => <article key={key}>
           <h3>{records[0].dateIssued}</h3>
           {records.map(document => <p key={document.id}>
-            <Link href={`/admin/documents/${document.id}?locale=${client.preferredLocale}`} prefetch={false}>
+            <Link href={`/admin/documents/${document.id}${document.kind === 'report' ? '' : '/view'}?locale=${savedReportLocale(document, client.preferredLocale)}`} prefetch={false}>
               {document.kind === 'payment'
                 ? `${document.paymentStatus === 'received' ? copy.receipt : copy.invoice} ${document.currency} ${(document.amount / 100).toFixed(2)}`
                 : document.kind === 'report' ? copy.report : copy.recommendation}
@@ -185,6 +213,10 @@ export default async function ClientDetail({ params }) {
         <h2>{copy.changes}</h2>
         <p>{copy.rotation}</p>
         <ClientAccessDangerActions copy={copy} revokeAction={revokeClientAction.bind(null, id)} rotateAction={rotateClientAction.bind(null, id)} />
+        <DeleteClientPanel
+          labels={deleteLabels} fullName={client.fullName} documentCount={documents.length} assessmentCount={assessments.length}
+          action={deleteClientAction.bind(null, id, client.updatedAt, documents.length, assessments.length)}
+        />
       </section>
     </details>
   </main>

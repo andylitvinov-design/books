@@ -56,3 +56,44 @@
     padding-inline: var(--hh-wide-page-gutter);
   }
 }
+
+/* Services landing (EN/RU/ES): align every following panel with the opening
+   portrait hero. The shell already supplies the page gutter, so the nested
+   section-level widths must not add a second inset. Keep this scoped to the
+   Services landing rather than widening consultation forms on other routes. */
+.services-shell--studio > :is(section, details) {
+  box-sizing: border-box;
+  width: min(1240px, calc(100% - 38px));
+  max-width: none;
+  margin-inline: auto;
+}
+
+@media screen and (max-width: 760px) {
+  .services-shell--studio > :is(section, details) {
+    width: calc(100% + 12px);
+    margin-inline: -6px;
+  }
+}
+
+
+/* Services-first-screen precise Tests parity.
+   The shared Services shell has its own 16px mobile gutter. Without this
+   override it is compounded by the Services panel inset, leaving the first
+   screen visibly narrower than /client/tests. Only the public finder escapes
+   that extra inset; practitioner detail pages and downstream panels retain
+   their existing width. */
+.services-shell--studio > #find-your-service {
+  box-sizing: border-box;
+  width: min(1240px, 100%);
+  max-width: none;
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
+@media screen and (max-width: 767px) {
+  .services-shell--studio > #find-your-service {
+    width: calc(100% + 16px);
+    margin-inline: -8px;
+    padding-inline: 0;
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "language": "en",
+  "checked_at": "2026-10-14",
+  "use": "Adult self-report, clinically supported screening or symptom measurement; not standalone diagnosis",
+  "rights": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+  "missingness": {
+    "official_rule_found": false,
+    "recommended_conservative_implementation": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule."
+  },
+  "reverse_scored_items": [],
+  "weighting": "unweighted",
+  "rounding": "none; integer sums",
+  "implementation_ready": false,
+  "instrument": "PC-PTSD-5",
+  "form": "2022 official English adult screen",
+  "source": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/pc-ptsd-5-v6.pdf",
+  "rights_source": "https://www.ptsd.va.gov/professional/assessment/screens/pc-ptsd.asp",
+  "responses": [
+    {
+      "value": 0,
+      "label": "NO"
+    },
+    {
+      "value": 1,
+      "label": "YES"
+    }
+  ],
+  "exposure_intro": "Sometimes things happen to people that are unusually or especially frightening, horrible, or traumatic. For example:",
+  "exposure_examples": [
+    "a serious accident or fire",
+    "a physical or sexual assault or abuse",
+    "an earthquake or flood",
+    "a war",
+    "seeing someone be killed or seriously injured",
+    "having a loved one die through homicide or suicide."
+  ],
+  "gate": {
+    "id": "exposure",
+    "text": "Have you ever experienced this kind of event?",
+    "no": "screen total = 0; stop; five symptom questions structurally skipped, not recorded as five NO answers",
+    "yes": "ask all five symptom questions",
+    "missing": "unavailable; do not treat as NO"
+  },
+  "stem": "In the past month, have you...",
+  "items": [
+    {
+      "id": "PC1",
+      "text": "had nightmares about the event(s) or thought about the event(s) when you did not want to?"
+    },
+    {
+      "id": "PC2",
+      "text": "tried hard not to think about the event(s) or went out of your way to avoid situations that reminded you of the event(s)?"
+    },
+    {
+      "id": "PC3",
+      "text": "been constantly on guard, watchful, or easily startled?"
+    },
+    {
+      "id": "PC4",
+      "text": "felt numb or detached from people, activities, or your surroundings?"
+    },
+    {
+      "id": "PC5",
+      "text": "felt guilty or unable to stop blaming yourself or others for the event(s) or any problems the event(s) may have caused?"
+    }
+  ],
+  "total": {
+    "operation": "count YES among five symptoms if exposure YES; 0 if exposure NO",
+    "range": [
+      0,
+      5
+    ]
+  },
+  "thresholds": "VA primary-care research: 4 balanced false positives/negatives overall and men; missed more women. No universal HH threshold selected.",
+  "remaining": [
+    "Branching/gate support and structural skip representation verified",
+    "Professional follow-up path and target-population/cut-point decision",
+    "Source-to-UI comparison and boundary tests",
+    "Separate RU source/validation needed"
+  ]
+}

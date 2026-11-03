@@ -2,94 +2,110 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Brain, Check, FileText, Flower2, HeartHandshake, Send, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Brain, Check, FileText, GraduationCap, HeartHandshake, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { Locale } from "@/data/remedies";
 import styles from "./consultation-choice-capture.module.css";
 
-type FreeOffer = "situation" | "wu" | "stress";
 
-const offerOrder: FreeOffer[] = ["situation", "wu", "stress"];
-const offerIcons = { situation: FileText, wu: Flower2, stress: Brain };
+type FreeOffer = "selfTest" | "analysis" | "reiki";
+
+const offerOrder: FreeOffer[] = ["selfTest", "analysis", "reiki"];
+const offerIcons = { selfTest: Brain, analysis: FileText, reiki: GraduationCap };
 
 const copy = {
   en: {
-    eyebrow: "THREE FREE SERVICES · HOLISTIC HOUSE",
-    title: "Choose your free assessment",
-    lead: "Begin with the question that matters to you. Choose one of three free options below — no paid appointment is required.",
-    question: "What would you like to explore?",
+    eyebrow: "THREE FREE OPTIONS · HOLISTIC HOUSE",
+    title: "Choose a free starting point",
+    lead: "Take a self-test, request personal analysis or start learning Reiki — all free.",
+    question: "How would you like to begin?",
     offers: {
-      situation: {
-        title: "Free situation analysis",
-        description: "Short questionnaire + hand drawing of Me / Goal / Problem. Request a personal written review.",
-        action: "Start free situation analysis",
-        note: "Next: complete the form and send your hand drawing. You will receive a written review, not a free live call.",
+      selfTest: {
+        title: "Free Self-Test",
+        compactTitle: "Free self-test",
+        description: "Explore stress, personality and personal resources with free self-check questionnaires.",
+        action: "Take a free self-test",
+        note: "Next: choose your topic, complete the tests and explore your results. These are self-reflection tools, not medical diagnoses.",
       },
-      wu: {
-        title: "Free Wu Xing resources & wellbeing analysis",
-        description: "Explore your energy, balance and resources through a symbolic Five Elements profile.",
-        action: "Explore my free Wu Xing profile",
-        note: "Next: request the personal resource overview. Wu Xing is a symbolic self-reflection model, not a medical diagnosis.",
+      analysis: {
+        title: "Free Personal Analysis",
+        compactTitle: "Free personal analysis",
+        description: "Complete a short questionnaire and send your Me / Goal / Problem drawing for a personal written review.",
+        action: "Get my free personal analysis",
+        note: "Next: leave your phone number and choose WhatsApp or Telegram. Andrey will explain how to send your questionnaire and drawing for a free written review, not a free live consultation.",
       },
-      stress: {
-        title: "Stress check & personality portrait",
-        description: "Take free wellbeing and personality questionnaires. Get results, explanations and practical guidance.",
-        action: "Start free stress & personality tests",
-        note: "Next: choose and take your tests. You can view the results first and optionally sign in to keep a history.",
+      reiki: {
+        title: "Free Reiki Practitioner Program",
+        compactTitle: "Free Reiki practitioner program",
+        description: "Learn about Tantra Reiki, Reiki Yggdrasil and Kundalini Reiki through free interactive lessons.",
+        action: "Start free Reiki practitioner program",
+        note: "Next: study the lessons, watch videos and answer questions. You may request teacher-led Level 1 initiations after completing the tasks; these are not automatic.",
       },
     },
     free: "Free to start",
     withoutBooking: "No paid session required",
     paid: "Looking for a personal paid consultation? See options (€50 / 30 min or €100 / 60 min)",
     telegram: "Or write on Telegram",
-    disclaimer: "Self-checks are not medical diagnoses. Written assessments are provided after you send a request; they are not free live consultations.",
+    disclaimer: "Self-tests are not medical diagnoses. Personal analysis is a written review. Reiki study does not automatically grant an initiation or certificate.",
   },
   ru: {
-    eyebrow: "ТРИ БЕСПЛАТНЫЕ УСЛУГИ · HOLISTIC HOUSE",
-    title: "Выберите бесплатный анализ",
-    lead: "Начните с того, что важно именно вам. Выберите один из трёх вариантов — платная консультация не требуется.",
-    question: "Что вы хотите исследовать?",
+    eyebrow: "ТРИ БЕСПЛАТНЫХ ВОЗМОЖНОСТИ · HOLISTIC HOUSE",
+    title: "С чего начать бесплатно?",
+    lead: "Пройдите самотест, получите личный разбор или начните обучение Рейки — бесплатно.",
+    question: "Как вы хотите начать?",
     offers: {
-      situation: {
-        title: "Бесплатный анализ ситуации",
-        description: "Короткая анкета и рисунок «Я / Цель / Проблема». Запросите персональный письменный разбор.",
-        action: "Начать бесплатный анализ ситуации",
-        note: "Далее: заполните анкету и отправьте рисунок. Вы получите письменный разбор, не бесплатный звонок.",
+      selfTest: {
+        title: "Бесплатный самотест",
+        compactTitle: "Бесплатные тесты",
+        description: "Исследуйте стресс, особенности личности и внутренние ресурсы с помощью бесплатных опросников.",
+        action: "Пройти бесплатные тесты",
+        note: "Далее: выберите тему и пройдите тесты. Посмотрите результаты и пояснения. Это инструменты самопознания, не медицинская диагностика.",
       },
-      wu: {
-        title: "Бесплатный анализ ресурсов и самочувствия по У-Син",
-        description: "Исследуйте энергию, баланс и ресурсы через символическую модель пяти стихий.",
-        action: "Получить бесплатный профиль У-Син",
-        note: "Далее: запросите личный обзор ресурсов. У-Син — символическая модель самопознания, не медицинская диагностика.",
+      analysis: {
+        title: "Бесплатный личный анализ",
+        compactTitle: "Личный разбор",
+        description: "Заполните небольшую анкету и пришлите рисунок «Я / Цель / Проблема» для письменного разбора.",
+        action: "Получить бесплатный личный разбор",
+        note: "Далее: оставьте номер телефона и выберите WhatsApp или Telegram. Андрей объяснит, как отправить анкету и рисунок. Вы получите письменный разбор бесплатно, без обязательной онлайн-консультации.",
       },
-      stress: {
-        title: "Анализ стресса и психологический портрет",
-        description: "Пройдите бесплатные тесты самочувствия и личности. Получите результаты, пояснения и рекомендации.",
-        action: "Пройти бесплатные психологические тесты",
-        note: "Далее: выберите и пройдите тесты. Результаты можно посмотреть сразу и при желании сохранить в кабинете.",
+      reiki: {
+        title: "Бесплатная программа «Практик Рейки»",
+        compactTitle: "Программа «Практик Рейки»",
+        description: "Изучайте Тантра Рейки, Рейки Иггдрасиль и Кундалини Рейки в интерактивном курсе.",
+        action: "Начать бесплатный курс «Практик Рейки»",
+        note: "Далее: изучайте уроки, смотрите видео и отвечайте на вопросы. После выполнения заданий можно запросить инициации 1-й ступени у преподавателя; автоматически они не предоставляются.",
       },
     },
     free: "Бесплатно",
     withoutBooking: "Без обязательной платной сессии",
     paid: "Нужна личная платная консультация? Форматы: €50 / 30 мин или €100 / 60 мин",
     telegram: "Или напишите в Telegram",
-    disclaimer: "Опросники не ставят медицинский диагноз. Личный разбор выполняется письменно после получения запроса, не в формате бесплатного звонка.",
+    disclaimer: "Опросники не ставят медицинский диагноз. Личный разбор предоставляется письменно. Обучение Рейки не означает автоматической инициации или сертификации.",
   },
 } as const;
 
 export function HomepageFreeCapture({ locale }: { locale: Locale }) {
   const titleId = useId();
   const t = copy[locale];
-  const [selected, setSelected] = useState<FreeOffer>("situation");
+  const [selected, setSelected] = useState<FreeOffer>("selfTest");
   const active = t.offers[selected];
   const ActiveIcon = offerIcons[selected];
-  const href = selected === "situation" ? `/${locale}/services/free-situation-review`
-    : selected === "wu" ? `/${locale}/services/dao-health-profile`
-      : `/${locale}/client#cabinet-tests`;
+  const href = selected === "selfTest" ? `/${locale}/client/tests`
+    : `/${locale}/academy/principles-of-energywork/learn`;
+  const analysisWhatsAppUrl = whatsappEnquiryUrl({
+    locale,
+    service: locale === "ru" ? "Бесплатный личный разбор ситуации" : "Free personal situation review",
+    request: locale === "ru"
+      ? "Пожалуйста, пришлите инструкцию к бесплатному письменному разбору, анкету и задание с рисунком «Я / Цель / Проблема»."
+      : "Please send instructions for my free written situation review, including the questionnaire and Me / Goal / Problem drawing.",
+    pagePath: locale === "ru" ? "/ru" : "/",
+  });
 
   return (
     <section
-      className={styles.capture}
+      className={`${styles.capture} ${styles.homeCapture}`}
       data-home-free-capture="true"
       data-consultation-capture="home-free"
       data-consultation-cta="true"
@@ -112,31 +128,44 @@ export function HomepageFreeCapture({ locale }: { locale: Locale }) {
               data-home-free-option={id}
               data-selected={selected === id}
               aria-pressed={selected === id}
+              aria-label={`${t.offers[id].title}. ${t.offers[id].description}`}
               onClick={() => setSelected(id)}
             >
               <span className={styles.homeFreeNumber} aria-hidden="true">0{index + 1}</span>
               <Icon size={21} strokeWidth={1.7} aria-hidden="true" />
               <span className={styles.homeFreeOptionText}>
-                <strong>{t.offers[id].title}</strong>
-                <small>{t.offers[id].description}</small>
+                <strong>{t.offers[id].compactTitle}</strong>
               </span>
               {selected === id ? <Check className={styles.homeFreeCheck} size={18} strokeWidth={2.6} aria-hidden="true" /> : null}
             </button>
           );
         })}
       </div>
-      <AcquisitionEventLink
-        prefetch={false}
-        className={styles.action}
-        href={href}
-        event={selected === "stress" ? "self_check_start" : "service_request_start"}
-        analyticsEvent={selected === "situation" ? "free_situation_assessment_click" : undefined}
-        attributes={{ "data-home-free-action": selected }}
-      >
-        <ActiveIcon size={19} aria-hidden="true" />
-        <span>{active.action}</span>
-        <ArrowUpRight size={20} aria-hidden="true" />
-      </AcquisitionEventLink>
+      {selected === "analysis" ? (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={analysisWhatsAppUrl}
+          label={active.action}
+          className={styles.action}
+          compactPhone compactTrigger stayAfterSave
+          publicTopic={locale === "ru" ? "Бесплатный письменный разбор: запрос инструкции к анкете и рисунку." : "Free written review: request for questionnaire and drawing instructions."}
+          event="service_request_start"
+          analyticsEvent="free_situation_assessment_click"
+          attributes={{ "data-home-free-action": "analysis" }}
+        />
+      ) : (
+        <AcquisitionEventLink
+          prefetch={false}
+          className={styles.action}
+          href={href}
+          event={selected === "selfTest" ? "self_check_start" : "service_view"}
+          attributes={{ "data-home-free-action": selected }}
+        >
+          <ActiveIcon size={19} aria-hidden="true" />
+          <span>{active.action}</span>
+          <ArrowUpRight size={20} aria-hidden="true" />
+        </AcquisitionEventLink>
+      )}
       <p className={styles.note}>{active.note}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>

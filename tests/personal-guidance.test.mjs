@@ -2,11 +2,13 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { interpretConcern, assessmentHistoryGroups, nextPersonalRecommendation, resultChangeSummary } from '../lib/assessments/personal-guidance.js'
 
-const result = (id, date, key = 'hh-current-state', value = 5) => ({
-  id, definitionKey: key, definitionId: 'stable-definition', contentHash: 'stable-hash',
-  measurementAt: date,
-  dimensions: [{ key: 'resource', value, min: 0, max: 10, unit: 'points', sourceConstruct: 'Resource' }],
-})
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+const result = (id, date, key = 'hh-current-state', value = 5) => {
+  const definition = getAssessmentDefinition(key, 'v2', 'en')
+  return { id, measurementAt: date, ...scoreAssessment(definition,
+    Object.fromEntries(definition.questions.map(question => [question.id, value]))) }
+}
 
 test('typed English, Russian and Spanish concerns map locally to relevant filters', () => {
   assert.deepEqual(interpretConcern('I am exhausted, cannot focus, and sleep badly').focus.sort(), ['attention', 'body', 'sleep'].sort())
@@ -44,13 +46,13 @@ test('compatible prior comparisons show raw differences only, not clinical infer
   const latest = result('b', '2026-10-01T11:00:00Z', 'hh-current-state', 6)
   const change = resultChangeSummary(latest, [prior, latest])
   assert.equal(change.previous.id, 'a')
-  assert.deepEqual(change.changes.map(({ delta }) => delta), [3])
+  assert.deepEqual(change.changes.map(({ delta }) => delta), latest.dimensions.map(() => 3))
   assert.equal(resultChangeSummary(latest, [{ ...prior, contentHash: 'different' }, latest]).previous, null)
 })
 
 test('change summary never mixes different owners, instruments or translations', () => {
-  const one = { ...result('old', '2026-09-01T00:00:00Z', 'hh-current-state', 2), accountId: 'account-A', instrumentLocale: 'en', scoringVersion: 'v1', resultVersion: 'v1' }
-  const current = { ...result('new', '2026-10-01T00:00:00Z', 'hh-current-state', 8), accountId: 'account-A', instrumentLocale: 'en', scoringVersion: 'v1', resultVersion: 'v1' }
+  const one = { ...result('old', '2026-09-01T00:00:00Z', 'hh-current-state', 2), accountId: 'account-A' }
+  const current = { ...result('new', '2026-10-01T00:00:00Z', 'hh-current-state', 8), accountId: 'account-A' }
   assert.equal(resultChangeSummary(current, [one, current]).previous.id, 'old')
   assert.equal(resultChangeSummary(current, [{ ...one, accountId: 'account-B' }, current]).previous, null)
   assert.equal(resultChangeSummary(current, [{ ...one, instrumentLocale: 'ru' }, current]).previous, null)

@@ -5,13 +5,23 @@ import { useRouter } from 'next/navigation'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
+import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import OporaV6SlidePlayer from './opora-v6-slide-player'
+import OporaExperiencePlayer from './opora-experience-player'
+import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
+import {COURSE_ANTISTRESS_SKILLS_V7} from '@/lib/inner-growth/anti-stress-skills-v7'
+import {COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
+import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
+import Course14DayOverview from './course-14-day-overview'
 import { appFetch } from '@/lib/app/client-fetch'
-import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
+import { startOrResumeCourseFinalRetest, startOrResumeCourseWeeklyCheckpoint } from '@/lib/app/course-test-flow'
+import { ANTISTRESS_MODULE_FINDER_ITEMS } from '@/lib/inner-growth/antistress-module-router'
 import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
+import CourseImmersiveStart from './course-immersive-start'
 import styles from './course-today.module.css'
 
 const UI={
@@ -22,8 +32,12 @@ const UI={
   addNote:'Optional private note',skip:'Skip this check-in',save:'Save today’s check-in',update:'Correct today’s check-in',
   saved:'Your check-in was saved. You can correct it without changing previous days.',
   thought:'Thought of the day',idea:'Why we practise this',meditation:'Guided practice',ritual:'Your small ritual',
-  reflection:'Integration and reflection',afterNow:'How strong is the feeling RIGHT NOW, after the exercise? (optional)',
-  beforeNow:'How strong was it RIGHT BEFORE the exercise? (optional)',feedback:'How did the practice feel?',
+  reflection:'Integration and reflection',afterNow:'How difficult did the same focus feel just after the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeNow:'How difficult did this focus feel just before the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeAvailability:'Before: how available did this small step feel? (0 = not yet available, 10 = available)',
+  afterAvailability:'After: how available did this small step feel? (0 = not yet available, 10 = available)',
+  availabilityClarification:'This earlier lesson used an availability scale: a higher number means the step felt more available, not greater distress.',
+  feedback:'How did the practice feel?',
   helpful:'Helpful',neutral:'Neutral',uncomfortable:'Uncomfortable',noAnswer:'Prefer not to say',
   journal:'Optional private reflection',finish:'Save completed practice',finished:'Today’s practice is saved.',
   step:'Step',next:'Next step',start:'Start practice',restart:'Read again',short:'2-minute practice',
@@ -44,6 +58,7 @@ const UI={
   consent:'My daily problem ratings are an optional Holistic House self-monitoring tool, not a validated psychological test.',
   recommendations:'Review tests and recommendations',disclaimer:'Self-guided educational practice, not a psychotherapy session or real-time clinical monitoring.',
   error:'Could not save your information. Nothing has been marked complete; you can try again.',
+  courseLimit:'Your active-course limit is reached. Pause another course before resuming this one. Your saved history is preserved.',
   retry:'Try again',quickTip:'Any section can be skipped. Finishing does not require a special feeling.',
   lessonDone:'Already completed',count:'practices',outOf:'out of',rating:'rating',zero:'0',none:'Not answered',
   reviewSaved:'Your weekly reflection was saved.',private:'Private to your account',printReport:'Print or save my course report',
@@ -81,8 +96,12 @@ const UI={
   addNote:'Личная заметка (необязательно)',skip:'Пропустить замер',save:'Сохранить сегодняшний замер',update:'Исправить сегодняшний замер',
   saved:'Замер сохранён. Сегодня его можно исправить, не меняя предыдущие дни.',
   thought:'Афоризм дня',idea:'Для чего эта практика',meditation:'Направленная практика',ritual:'Маленький ритуал',
-  reflection:'Интеграция и рефлексия',afterNow:'Насколько сильно ощущение ПРЯМО СЕЙЧАС после упражнения? (необязательно)',
-  beforeNow:'Насколько сильно оно было НЕПОСРЕДСТВЕННО ПЕРЕД упражнением? (необязательно)',feedback:'Как прошла практика?',
+  reflection:'Интеграция и рефлексия',afterNow:'Насколько трудной ощущалась эта тема сразу после упражнения? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeNow:'Насколько трудной ощущалась эта тема прямо перед упражнением? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeAvailability:'До: насколько доступным казался небольшой шаг? (0 — пока недоступен, 10 — доступен)',
+  afterAvailability:'После: насколько доступным казался тот же шаг? (0 — пока недоступен, 10 — доступен)',
+  availabilityClarification:'В этой ранней версии шкала показывала доступность шага: большее число — доступнее, а не сильнее беспокойство.',
+  feedback:'Как прошла практика?',
   helpful:'Помогло',neutral:'Нейтрально',uncomfortable:'Было некомфортно',noAnswer:'Не хочу отвечать',
   journal:'Личная рефлексия (необязательно)',finish:'Сохранить выполнение',finished:'Сегодняшняя практика сохранена.',
   step:'Шаг',next:'Следующий шаг',start:'Начать практику',restart:'Прочитать ещё раз',short:'2-минутная практика',
@@ -103,6 +122,7 @@ const UI={
   consent:'Ежедневные оценки — авторское наблюдение Holistic House, не валидированный психологический тест.',
   recommendations:'Результаты тестов и рекомендации',disclaimer:'Самостоятельная образовательная практика, а не сеанс психотерапии или круглосуточное наблюдение специалиста.',
   error:'Не удалось сохранить данные. Ничего не отмечено как выполненное; можно попробовать ещё раз.',
+  courseLimit:'Достигнут лимит активных курсов. Поставьте другой курс на паузу, чтобы возобновить этот. История сохраняется.',
   retry:'Повторить',quickTip:'Любой этап можно пропустить. Не требуется специально менять самочувствие.',
   lessonDone:'Уже выполнено',count:'практик',outOf:'из',rating:'оценка',zero:'0',none:'Нет оценки',
   reviewSaved:'Недельный обзор сохранён.',private:'Приватно в кабинете',printReport:'Распечатать или сохранить отчёт о курсе',
@@ -134,14 +154,17 @@ const UI={
   symbolSafety:'Образ используется только для личной рефлексии, не является диагнозом или лечением. Можно перейти к словам или пропустить.',
  }
 }
-async function api(action,locale,body){
-  const response=await fetch('/api/app/course/'+action+'?locale='+locale,{
-    method:body?'POST':'GET',cache:'no-store',credentials:'same-origin',
-    headers:body?{'Content-Type':'application/json'}:undefined,
+async function api(action,locale,body,{accountId,courseId,signal,reviewDay=null}={}){
+  if(!accountId||!courseId)throw new Error('COURSE_SELECTION_REQUIRED')
+  const response=await fetch('/api/app/course/'+action+'?locale='+encodeURIComponent(locale)+'&courseId='+encodeURIComponent(courseId)+
+    (reviewDay===null?'':'&reviewDay='+encodeURIComponent(String(reviewDay))),{
+    method:body?'POST':'GET',cache:'no-store',credentials:'same-origin',signal,
+    headers:{'X-HH-Account-ID':accountId,...(body?{'Content-Type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined,
   })
-  const value=await response.json().catch(()=>({}))
-  if(!response.ok)throw new Error(value.error||'SERVICE_UNAVAILABLE')
+  const value=await response.json()
+  if(!response.ok||value?.error)throw new Error(value?.error||'SERVICE_UNAVAILABLE')
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('SERVICE_UNAVAILABLE')
   return value
 }
 const choices=[null,0,1,2,3,4,5,6,7,8,9,10]
@@ -167,15 +190,33 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',accountId=null}){
- const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
+export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null,launchDirectly=false,onLaunchConsumed=null}){
+ const notifyLessonSaved=useLessonCompletionOffer()
  const router=useRouter()
- const promotion=useCoursePromotion(accountId)
- const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
+ const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
+ const [snapshot,setSnapshot]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
+ const data=snapshot?.accountId===accountId&&snapshot?.courseId===courseId?snapshot.value:null
+ const promotion=useCoursePromotion(accountId,{courseId,cycleId:data?.cycle?.id,day:data?.cycle?.day,lessonId:data?.lesson?.id})
+ const currentScope=useRef({accountId,courseId}),mounted=useRef(false),generation=useRef(0),readVersion=useRef(0)
+ const readController=useRef(null),reviewController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
+ currentScope.current={accountId,courseId,cycleId:data?.cycle?.id||null}
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [reviewLesson,setReviewLesson]=useState(null),[reviewBusy,setReviewBusy]=useState(null),[reviewError,setReviewError]=useState('')
+ const [focusOpen,setFocusOpen]=useState(true)
+ // The just-approved post-test CTA launches lesson 1 as soon as owner-scoped
+ // Today data is ready. Keep the intent only in this mounted React flow.
+ const firstLessonIntent=useRef(false),firstLessonConsumed=useRef(false)
+ const launchConsumedCallback=useRef(onLaunchConsumed)
+ useEffect(()=>{launchConsumedCallback.current=onLaunchConsumed},[onLaunchConsumed])
+ useEffect(()=>{
+   if(launchDirectly && !firstLessonConsumed.current) firstLessonIntent.current=true
+ },[launchDirectly])
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
+ const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
+ const [modulePrimarySkipped,setModulePrimarySkipped]=useState(false)
  const retestLock=useRef(false)
+ useEffect(()=>{if(questOpen)return promotion.dismiss},[questOpen,promotion.dismiss])
  const [view,setView]=useState('today')
  const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
@@ -184,7 +225,8 @@ export default function CourseToday({locale='en',accountId=null}){
  const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('')
  const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
-  setData(response)
+  currentScope.current={accountId,courseId,cycleId:response?.cycle?.id||null}
+  setSnapshot({accountId,courseId,value:response})
   const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day+':'+response.cycle.todayLocalDate : ''
   if(nextDay!==hydratedDayRef.current){
     // Change of local day or cycle: never carry an unsaved private answer into
@@ -198,13 +240,22 @@ export default function CourseToday({locale='en',accountId=null}){
     setInterference(response?.currentCheckin?.interference??null)
     setResource(response?.currentCheckin?.resource??null)
     setDailyNote(response?.currentCheckin?.note||'')
+    setModuleFollowUpAnswers({})
+    setModulePrimarySkipped(false)
     setReviewNote('')
     setReviewDecision('continue')
     setStage(0)
     setSymbolMode('image')
     setExpanded('checkin')
     setQuestOpen(false)
-    setView('today')
+    setReviewLesson(null)
+    setFocusOpen(true)
+    // Returning learners land on the existing zigzag 14-day quest map instead
+    // of replaying the scenic first-start screen. Keep the first-ever lesson
+    // and post-assessment direct launch unchanged.
+    const resumingStress = response?.programme?.id === 'stress' &&
+      (Number(response?.progress?.practiceCount || 0) > 0 || Number(response?.cycle?.day || 0) > 1)
+    setView(resumingStress ? 'path' : 'today')
   }else {
     if(response?.currentSession){
       setBeforeNow(response.currentSession.beforeNow)
@@ -219,34 +270,103 @@ export default function CourseToday({locale='en',accountId=null}){
       setDailyNote(response.currentCheckin.note||'')
     }
   }
- },[])
+  // The first screen already gave the learner the programme context and
+  // obtained explicit consent. Do not show a second welcome or scenic CTA.
+  // Never skip required activation, pause, course completion or review gates.
+  if(firstLessonIntent.current&&!firstLessonConsumed.current &&
+    response?.programme?.id==='stress' && response?.cycle?.status==='active' &&
+    !response.readOnly && !response.requiresTarget && !response.currentSession){
+    firstLessonIntent.current=false
+    firstLessonConsumed.current=true
+    setFocusOpen(false)
+    setView('today')
+    setQuestOpen(true)
+    launchConsumedCallback.current?.()
+  }
+ },[accountId,courseId])
  const reload=useCallback(async()=>{
+  const epoch=generation.current,version=++readVersion.current
+  readController.current?.abort()
+  const controller=new AbortController();readController.current=controller
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId&&readVersion.current===version&&!controller.signal.aborted
+  if(!mounted.current||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId)return
   setLoading(true);setError('')
-  try{hydrate(await api('today',locale))}catch(e){setError(e.message)}
-  finally{setLoading(false)}
- },[hydrate,locale])
- useEffect(()=>{void reload()},[reload])
- async function submit(action,body={},after){
-  setBusy(true);setError('')
+  try{
+    const response=await api('today',locale,undefined,{accountId,courseId,signal:controller.signal})
+    if(!isCurrent())return
+    if(response.courseId!==courseId)throw new Error('COURSE_SELECTION_CHANGED')
+    hydrate(response)
+  }catch(e){if(isCurrent())setError(e.message)}
+  finally{if(isCurrent())setLoading(false);if(readController.current===controller)readController.current=null}
+ },[hydrate,locale,accountId,courseId])
+ useEffect(()=>{
+  mounted.current=true;generation.current+=1;submitLock.current=null
+  retestLock.current=null;setRetestBusyKey('');setRetestError('')
+  hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false);setReviewLesson(null);setReviewBusy(null);setReviewError('')
+  void reload()
+  return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort();reviewController.current?.abort()}
+ },[reload])
+ const viewGeneration=generation.current
+ async function submit(action,body={},after,presentation='aside'){
+  const epoch=viewGeneration,cycleId=data?.cycle?.id||null
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId
+  if(submitLock.current||!data||data.readOnly||!isCurrent())return null
+  if(action!=='activate'&&!cycleId)return null
+  const token={};submitLock.current=token;setBusy(true);setError('')
+  readVersion.current+=1;readController.current?.abort()
+  body={...body,courseId,cycleId}
   try {
-    const result=await api(action,locale,body)
+    const result=await api(action,locale,body,{accountId,courseId})
+    if(!isCurrent())return null
+    if(result.courseId!==courseId)throw new Error('COURSE_SELECTION_CHANGED')
+    if(action==='session'&&result?.cycle?.id!==data?.cycle?.id)throw new Error('SERVICE_UNAVAILABLE')
+    if(!['activate','new-cycle'].includes(action)&&result?.cycle?.id!==cycleId)throw new Error('COURSE_SELECTION_CHANGED')
+    if(action==='session'&&(!result.currentSession?.completedAt||
+       !Number.isFinite(Date.parse(result.currentSession.completedAt))||
+       result.cycle.day!==body.day||result.lesson?.id!==body.lessonId))throw new Error('SERVICE_UNAVAILABLE')
     hydrate(result)
+    // Both V6 slides and the legacy button reach this verified-save boundary.
+    // Replays and already-complete lessons cannot enqueue a second offer.
+    if(action==='session'&&!data.currentSession){
+      const completionKey=[accountId,courseId,cycleId,body.day,body.lessonId].join(':')
+      if(!offeredCompletions.current.has(completionKey)){
+        offeredCompletions.current.add(completionKey)
+        notifyLessonSaved({cycleId,day:body.day,lessonId:body.lessonId},{accountId,courseId,presentation})
+      }
+    }
     if(['session','pause','resume','activate','review','new-cycle'].includes(action) &&
        typeof window!=='undefined') window.dispatchEvent(new Event('hh-course-changed'))
     if(after)after()
+    if(['activate','pause','resume','new-cycle','session'].includes(action))onCourseChange?.()
     return result
-  }catch(e){setError(e.message);return null}
-  finally{setBusy(false)}
+  }catch(e){if(isCurrent())setError(e.message);return null}
+  finally{if(submitLock.current===token){submitLock.current=null;if(isCurrent())setBusy(false)}}
  }
  async function openFinalRetest(key){
-  if(retestLock.current)return
-  retestLock.current=true
+  const epoch=viewGeneration,cycleId=data?.cycle?.id
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId&&currentScope.current.cycleId===cycleId
+  if(retestLock.current||!data||data.readOnly||!cycleId||!isCurrent())return
+  const token={};retestLock.current=token
   setRetestBusyKey(key);setRetestError('')
   try{
-   const run=await startOrResumeCourseFinalRetest({key,locale,request:appFetch})
-   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest')
-  }catch(e){setRetestError(e.message||'COURSE_RETEST_UNAVAILABLE')}
-  finally{setRetestBusyKey('');retestLock.current=false}
+   const run=await startOrResumeCourseFinalRetest({key,locale,accountId,courseId,cycleId,isCurrent,request:appFetch})
+   if(!isCurrent())return
+   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest&courseId='+encodeURIComponent(courseId)+'&cycleId='+encodeURIComponent(cycleId))
+  }catch(e){if(isCurrent())setRetestError(e.message||'COURSE_RETEST_UNAVAILABLE')}
+  finally{if(retestLock.current===token){retestLock.current=null;if(isCurrent())setRetestBusyKey('')}}
+ }
+ async function openWeeklyCheckpoint(){
+  const epoch=viewGeneration,cycleId=data?.cycle?.id
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId&&currentScope.current.cycleId===cycleId
+  if(retestLock.current||!data||data.readOnly||!cycleId||!isCurrent())return
+  const token={};retestLock.current=token
+  setRetestBusyKey('hh-weekly-pulse');setRetestError('')
+  try{
+   const run=await startOrResumeCourseWeeklyCheckpoint({locale,accountId,courseId,cycleId,isCurrent,request:appFetch})
+   if(!isCurrent())return
+   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest&courseId='+encodeURIComponent(courseId)+'&cycleId='+encodeURIComponent(cycleId))
+  }catch(e){if(isCurrent())setRetestError(e.message||'COURSE_WEEKLY_CHECKPOINT_UNAVAILABLE')}
+  finally{if(retestLock.current===token){retestLock.current=null;if(isCurrent())setRetestBusyKey('')}}
  }
  function showFinalRetest(){
   setQuestOpen(false);setView('today')
@@ -258,10 +378,13 @@ export default function CourseToday({locale='en',accountId=null}){
  if(loading&&!data)return <section className={'hh-panel '+styles.shell} aria-busy="true">{ru?'Открываем ваш ежедневный курс…':'Opening your daily course…'}</section>
  if(!data)return <section className={'hh-panel '+styles.shell} role="alert"><p>{t.error}</p><button type="button" onClick={reload}>{t.retry}</button></section>
  const cycle=data.cycle,lesson=data.lesson,progress=data.progress||{},target=data.target||{},today=data.currentCheckin
+ const legacyAvailabilityRatings = cycle?.contentVersion === COURSE_ANTISTRESS_SKILLS_V6
  const continuationGoals=(data.continuationGoals||[]).filter(goal=>GROWTH_GOALS[goal])
  const nextGoal=continuationGoals.includes(newGoal)?newGoal
   :continuationGoals.includes(cycle?.primaryGoal)?cycle.primaryGoal:continuationGoals[0]||''
  const session=data.currentSession,completed=Boolean(session),paused=cycle?.status==='paused',isFinished=cycle?.status==='completed'||Boolean(cycle?.afterCycle)
+ const currentAccess=data.access||access
+ const resumeBlocked=paused&&currentAccess&&currentAccess.activeCourseCount>=currentAccess.activeCourseLimit
  const reportDay=cycle?.day>=14?14:cycle?.day>=7?7:null
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
  const problem=target.label||''
@@ -274,6 +397,72 @@ export default function CourseToday({locale='en',accountId=null}){
  // guided timer repeat their text as additional meditation steps.
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
+ const focusEpoch=generation.current
+ async function openLessonDay(day){
+   if(!Number.isInteger(day)||!data||data.readOnly||busy)return
+   if(day===cycle.day){
+     setReviewLesson(data.currentSession?{
+       day,lesson:data.lesson,session:data.currentSession,
+     }:null)
+     setFocusOpen(false);setQuestOpen(true);return
+   }
+   if(!data.roadmap?.some(item=>item.day===day&&item.status==='completed'))return
+   reviewController.current?.abort()
+   const controller=new AbortController();reviewController.current=controller
+   const epoch=generation.current,cycleId=cycle.id
+   setReviewBusy(day);setReviewError('')
+   try{
+     const response=await api('today',locale,undefined,{accountId,courseId,signal:controller.signal,reviewDay:day})
+     if(!mounted.current||controller.signal.aborted||generation.current!==epoch||
+       currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||
+       currentScope.current.cycleId!==cycleId)return
+     if(response.courseId!==courseId||response.cycle?.id!==cycleId||
+       response.review?.day!==day||!response.review?.session?.completedAt||
+       !response.review?.lesson)throw new Error('COURSE_REVIEW_DAY_UNAVAILABLE')
+     setReviewLesson(response.review);setQuestOpen(true)
+   }catch(e){
+     if(!controller.signal.aborted&&mounted.current&&generation.current===epoch)
+       setReviewError(e.message||'COURSE_REVIEW_DAY_UNAVAILABLE')
+   }finally{
+     if(reviewController.current===controller){reviewController.current=null;setReviewBusy(null)}
+   }
+ }
+ const playerData=reviewLesson?{
+   ...data,cycle:{...cycle,day:reviewLesson.day},lesson:reviewLesson.lesson,
+   programme:data.programme?{...data.programme,
+     day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
+   currentSession:reviewLesson.session,currentCheckin:null,
+ }:data
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
+ const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
+ function startFocusLesson(){
+   if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
+   setFocusOpen(false)
+   setReviewLesson(completed?{day:cycle.day,lesson:data.lesson,session:data.currentSession}:null)
+   if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
+   if(data.finalRetest?.ready){showFinalRetest();return}
+   if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
+   setQuestOpen(true)
+ }
+ const immersiveStart=view==='today'&&data.programme?.id==='stress'
+ const scenicCtaLabel=paused?(ru?'Возобновить курс':'Resume course'):
+   data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests'):
+   isFinished?(ru?'Посмотреть итоги курса':'Review course results'):
+   completed&&reportDay&&!reviewed?(ru?'Подвести итоги недели':'Review my week'):
+   completed?(ru?'Посмотреть урок дня':'Review today’s lesson'):
+   (Number(progress.practiceCount)||0)===0&&cycle?.day===1?(ru?'Начать мой курс':'Start my course'):
+   (ru?'Начать практику':'Start today’s practice')
+ if(data.readOnly) return <section className={'hh-panel '+styles.shell} data-course-readonly-history>
+   <h2>{ru?'История курса':'Course history'}</h2>
+   <p>{ru?'Курс завершён вами. Сохранённые наблюдения доступны для чтения.':'You closed this course. Your saved observations remain available to read.'}</p>
+   <p>{target.label}</p><p>{progress.practiceCount||0} / {cycle?.durationDays||14} {t.count}</p>
+   <h3>{t.symptoms}</h3>
+   <ul>{(progress.days||[]).filter(day=>day.severity!==null).map(day=><li key={day.day}>{t.day} {day.day}: {day.severity}/10</li>)}</ul>
+   <h3>{t.savedWorkbookHistory}</h3>
+   <ol>{(data.journalHistory||[]).map(item=><li key={item.day}><strong>{t.day} {item.day}</strong><p>{item.reflection}</p></li>)}</ol>
+   <p>{t.changeText}</p>
+   <button type="button" onClick={()=>window.print()}>{t.printReport}</button>
+ </section>
  if(data.requiresTarget) return <section className={'hh-panel '+styles.shell+' '+styles.activatePanel}
     data-course-activation>
    <header className={styles.activateHeading}>
@@ -290,44 +479,56 @@ export default function CourseToday({locale='en',accountId=null}){
      onClick={()=>submit('activate',{problemLabel:targetLabel,intention,timeZone:timezone()},()=>setExpanded('checkin'))}>
      {t.activate}<ArrowRight size={18} aria-hidden="true"/>
    </button>
-   {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error})</p>}
+   {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_ACTIVE_LIMIT','COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.courseLimit:t.error} ({error})</p>}
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
- return <section className={styles.shell} data-daily-course data-course-view={view}>
-  {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
+ return <section className={styles.shell} data-daily-course data-course-view={view} data-course-immersive={immersiveStart?'true':undefined}>
+  {focusOpen&&data.programme?.id!=='stress'&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
+    progress={progress} programme={data.programme} completed={completed}
+    finished={isFinished} busy={busy||(paused&&resumeBlocked)} onStart={startFocusLesson}
+    onExit={()=>onExit?.()}/>}
+
+  {view==='today'&&!immersiveStart&&<div className={styles.todayGreeting} data-course-today-heading>
     <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
     <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
       <Sparkles size={20} aria-hidden="true"/>{20*(Number(progress.practiceCount)||0)} XP
     </span>
   </div>}
-  <div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
+  {!immersiveStart&&<div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
     {[
       ['today',ru?'Сегодня':'Today'],
       ['path',ru?'Путь · 14 дней':'14-day path'],
       ['details',ru?'Подробнее':'Details'],
     ].map(([key,label])=><button key={key} type="button" aria-pressed={view===key}
       onClick={()=>setView(key)}>{label}</button>)}
-  </div>
+  </div>}
   {view==='today'&&<>
-  <header className={styles.questHero} data-course-teal-hero>
+  {immersiveStart&&<CourseImmersiveStart locale={locale} day={cycle.day} duration={cycle.durationDays}
+    completed={progress.practiceCount||0} roadmap={data.roadmap||[]}
+    moduleTitle={data.programme?.title||''} actionLabel={scenicCtaLabel}
+    actionDisabled={busy||(paused&&resumeBlocked)}
+    onStart={startFocusLesson} onBack={()=>onExit?.()} onViewChange={setView}/>}
+  {!immersiveStart&&<header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
-    <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
-      alt="" aria-hidden="true" decoding="async"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
         <span className={styles.heroBrand}>{data.programme?.title || (ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP')}</span>
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
-      <h2>{lesson?.title||lesson?.journey?.heading}</h2>
-      <p className={styles.heroPurpose}>{completed&&!isFinished?
-        (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
-        (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
-      <button type="button" className={styles.todayPrimary} disabled={busy}
-        data-course-today-primary onClick={()=>
-          paused ? void submit('resume',{expectedRevision:cycle.revision}) :
-          data.finalRetest?.ready ? showFinalRetest() :
-          (isFinished||(completed&&reportDay&&!reviewed)) ? setView('details') :
-          setQuestOpen(true)}>
+      <div className={styles.todayCore}>
+        <div className={styles.todayStory}>
+        <h2>{lesson?.title||lesson?.journey?.heading}</h2>
+        <p className={styles.heroPurpose}>{completed&&!isFinished?
+          (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
+          (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
+        </div>
+        <div className={styles.todayVisual} aria-hidden="true">
+          <img className={styles.heroPerson} src="/images/holistic-house/course-focus-mountain-boy.webp" width={705} height={411}
+      alt="" aria-hidden="true" decoding="async"/>
+        </div>
+      </div>
+      <button type="button" className={styles.todayPrimary} disabled={busy||(paused&&resumeBlocked)}
+        data-course-today-primary onClick={startFocusLesson}>
         {paused?(ru?'Возобновить курс':'Resume course') :
           data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests') :
           isFinished?(ru?'Посмотреть итоги курса':'Review course results') :
@@ -341,15 +542,92 @@ export default function CourseToday({locale='en',accountId=null}){
         <progress max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
       </div>
     </div>
-  </header>
+  </header>}
   <details className={styles.momentPeek} data-course-today-trends>
     <summary><span><Sparkles size={16} aria-hidden="true"/>{ru?'Моя динамика':'My progress over time'}</span>
       <ChevronDown size={18} aria-hidden="true"/></summary>
     <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
       progress={progress} roadmap={data.roadmap||[]}/>
   </details>
+  {data.weeklyCheckpoint?.available&&<section className={styles.weeklyCheckpoint}
+    data-opora-weekly-checkpoint aria-labelledby="opora-weekly-checkpoint-title">
+    <div>
+      <strong id="opora-weekly-checkpoint-title">{ru?'Промежуточный замер после первой недели':'Optional check after week one'}</strong>
+      <p>{ru?'Weekly Pulse · 8 вопросов о последних семи днях. Это отдельный необязательный тест, а не часть сегодняшнего упражнения.':'Weekly Pulse · 8 questions covering the previous seven days. This is a separate optional test, not part of today’s exercise.'}</p>
+      {data.weeklyCheckpoint.baselineDate&&<small>{ru?'Исходный замер':'Baseline'}: {data.weeklyCheckpoint.baselineDate.slice(0,10)}</small>}
+      {!data.weeklyCheckpoint.completed&&!data.weeklyCheckpoint.canStart&&data.weeklyCheckpoint.dueAt&&
+        <small>{ru?'Повтор доступен с':'Next valid date'}: {data.weeklyCheckpoint.dueAt.slice(0,10)}</small>}
+    </div>
+    {data.weeklyCheckpoint.completed
+      ? <span className={styles.weeklyDone}><CheckCircle2 size={17}/>{ru?'Повтор сохранён':'Retest saved'}</span>
+      : data.weeklyCheckpoint.canStart&&<button type="button" className={styles.weeklyStart}
+        disabled={Boolean(retestBusyKey)||busy} onClick={()=>void openWeeklyCheckpoint()}>
+        {retestBusyKey==='hh-weekly-pulse'?(ru?'Открываем…':'Opening…'):(ru?'Повторить Weekly Pulse':'Repeat Weekly Pulse')}
+        <ArrowRight size={17}/>
+      </button>}
+    {retestError&&<p role="alert" className={styles.error}>{retestError}</p>}
+  </section>}
   <CourseFinalRetest locale={locale} plan={data.finalRetest}
     onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
+  {!!data.phaseEvidence?.length&&<section className={styles.weeklyCheckpoint} data-phase-educational-evidence>
+    <div><strong>{ru?'Сохранённые учебные пробы':'Saved educational checks'}</strong>
+      <p>{ru?'Выбор ответа и ваш отчёт о попытке отображаются отдельно от самооценок. Это не клиническая оценка навыка.':'Your selected answer and reported attempt are separate from self-ratings. This is not a clinical skill assessment.'}</p>
+      {data.phaseEvidence.map(check=><p key={check.id}>{check.prompt}<br/>
+        {check.evidence?({independent:ru?'Самостоятельная попытка (ваш отчёт)':'Independent attempt (your report)',guided:ru?'С подсказкой':'With guidance',not_tried:ru?'Не пробовали':'Not tried',not_suitable:ru?'Не подошло':'Not suitable'}[check.evidence.state]):ru?'Нет сохранённого ответа':'No saved evidence'}
+        {check.evidence?.choice&&<> · {check.options.find(option=>option.value===check.evidence.choice)?.label}</>}
+      </p>)}
+    </div>
+  </section>}
+  {data.moduleMeasurements&&<section className={styles.weeklyCheckpoint}
+    data-opora-module-measurements aria-label={ru?'Мои измерения навыков курса':'My course skill assessments'}>
+    <div>
+      <strong>{ru?'Мои сохранённые показатели курса':'My saved course measures'}</strong>
+      <p>{ru?'Основной показатель этого этапа':'Primary self-rating measure'}: <code>{data.moduleMeasurements.primaryMetric||'clinician-led'}</code></p>
+      <small>{ru?'Измерение F1–F8 относится к последним 7 дням; это авторские самооценки, не диагноз.':'F1–F8 refer to the last seven days; these are non-diagnostic self-ratings.'}</small>
+      {data.moduleMeasurements.baseline?.measuredAt&&<p><small>{ru?'Исходный вводный опрос сохранён':'Original intake recorded'}: {data.moduleMeasurements.baseline.measuredAt.slice(0,10)} · {data.moduleMeasurements.baseline.locale}</small></p>}
+      {data.moduleMeasurements.followUp?.measuredAt&&<p><small>{ru?'Повтор сохранён':'Follow-up recorded'}: {data.moduleMeasurements.followUp.measuredAt.slice(0,10)}</small></p>}
+      {!!data.moduleMeasurements.relevantItems?.length&&<div data-opora-module-history>
+        {data.moduleMeasurements.relevantItems.map(key=>{
+          const before=data.moduleMeasurements.baseline?.answers?.[key]
+          const after=data.moduleMeasurements.followUp?.answers?.[key]
+          return <p key={key}><b>{key}:</b> {ru?'до':'before'} {Number.isInteger(before)?before+'/10':'—'} →
+            {ru?' после ':' after '}{Number.isInteger(after)?after+'/10':'—'}
+            {data.moduleMeasurements.primaryComparison?.comparable&&Number.isInteger(before)&&Number.isInteger(after)&&<span> ({after-before>0?'+':''}{after-before})</span>}
+          </p>
+        })}
+      </div>}
+      {data.moduleMeasurements.retestDueAt&&!data.moduleMeasurements.retestAvailable&&!data.moduleMeasurements.followUp&&
+        <small>{ru?'Самооценка после курса будет доступна по завершении 14-го дня и по правилам интервала':'The follow-up opens after day 14 and the required recall interval'}: {data.moduleMeasurements.retestDueAt.slice(0,10)}</small>}
+      {data.moduleMeasurements.primaryComparison&&!data.moduleMeasurements.primaryComparison.comparable&&<p>{ru?'Основной показатель пока несопоставим: нет совместимой пары ответов или показатель явно пропущен.':'The primary measure is not comparable: a compatible pair is missing or the primary answer was explicitly skipped.'}</p>}
+      {data.moduleMeasurements.followUp&&<p>{ru?'Итоговые ответы сохранены приватно в вашем курсе.':'Follow-up answers are saved privately in your course.'}</p>}
+      {data.moduleMeasurements.retestAvailable&&<details data-opora-module-finder-follow-up>
+        <summary>{ru?'Повторить 8 вопросов о навыках':'Repeat eight skill questions'}</summary>
+        <p>{ru?'Ответьте за последние 7 дней. Можно пропускать пункты; результаты сохраняются в вашем кабинете.':'Answer for the last seven days. You can skip items; scores stay in your private cabinet.'}</p>
+        {ANTISTRESS_MODULE_FINDER_ITEMS.map(item=><label key={item.id} style={{display:'block',margin:'12px 0'}}>
+          <span>{item.id} · {item.text[locale]||item.text.en}</span>
+          <div><input type="range" min="0" max="10" step="1" style={{width:'100%'}}
+            aria-label={item.text[locale]||item.text.en}
+            value={moduleFollowUpAnswers[item.id]??5} disabled={busy}
+            onChange={e=>setModuleFollowUpAnswers(v=>({...v,[item.id]:Number(e.target.value)}))}/>
+            <small>{Number.isInteger(moduleFollowUpAnswers[item.id])?moduleFollowUpAnswers[item.id]+'/10':ru?'Не отвечено':'Unanswered'}</small>
+            <button type="button" disabled={busy} onClick={()=>setModuleFollowUpAnswers(v=>({...v,[item.id]:null}))}>
+              {ru?'Пропустить':'Skip'}
+            </button>
+          </div>
+        </label>)}
+        <label style={{display:'block',margin:'16px 0'}}><input type="checkbox" checked={modulePrimarySkipped} disabled={busy}
+          onChange={event=>setModulePrimarySkipped(event.target.checked)}/>
+          {ru?'Я явно пропускаю основной показатель. Сравнение по нему будет недоступно.':'I explicitly skip the primary measure. Its before/after comparison will be unavailable.'}</label>
+        <button type="button" className={'hh-primary '+styles.weeklyStart} disabled={busy||(!modulePrimarySkipped&&!
+          Number.isInteger(moduleFollowUpAnswers[data.moduleMeasurements.primaryMetric?.split('::').pop()]))}
+          onClick={()=>void submit('module-retest',{primarySkipped:modulePrimarySkipped,moduleAnswers:Object.fromEntries(
+            ANTISTRESS_MODULE_FINDER_ITEMS.map(item=>[item.id,moduleFollowUpAnswers[item.id]??null]))})}>
+          {busy?(ru?'Сохраняем…':'Saving…'):ru?'Сохранить итоговые оценки':'Save follow-up scores'}
+        </button>
+      </details>}
+    </div>
+  </section>}
+
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
@@ -365,7 +643,8 @@ export default function CourseToday({locale='en',accountId=null}){
     <span>“{lesson.aphorism}”</span>
   </aside>}
   </>}
-  {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
+  {error&&<p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_ACTIVE_LIMIT','COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.courseLimit:t.error} ({error}) <button type="button" onClick={reload}>{t.retry}</button></p>}
+  {resumeBlocked&&<p className={styles.notice}>{t.courseLimit}</p>}
   {view==='details'&&<>
     {paused&&<p className={styles.note}>{t.paused}</p>}
     {isFinished&&<p className={styles.notice}><CheckCircle2 size={20}/>{t.completed}</p>}
@@ -374,19 +653,50 @@ export default function CourseToday({locale='en',accountId=null}){
   </>}
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
-    onPlay={()=>setQuestOpen(true)}/>}
-  {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-    data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
-     onFinish={()=>{setQuestOpen(false);setView('path')}}
-    onOpenRetest={showFinalRetest}
-    onCheckin={body=>submit('checkin',body)}
-    onSession={body=>submit('session',body)}
-    onPreferences={patch=>submit('preferences',{
+    onPlay={day=>void openLessonDay(day)} loadingDay={reviewBusy}/>}
+  {view==='path'&&reviewError&&<p role="alert" className={styles.error}>{ru?'Не удалось открыть сохранённый урок. Попробуйте ещё раз.':'Unable to open the saved lesson. Please try again.'}</p>}
+  {view==='path'&&data.programme?.id==='stress'&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
+    <summary>{ru?'Все упражнения, результаты и слайды 14 дней':'Every exercise, outcome and slide across 14 days'}</summary>
+    <Course14DayOverview locale={locale} programId="stress" moduleId={data.programme?.moduleId} routerVersion={cycle.preferences?.oporaModuleRouter} />
+  </details>}
+  {view==='path'&&data.learningSkills?.length===7&&<section className={styles.antiStressSkills} data-antistress-seven-skill-progress>
+    <h3>{ru?'Семь навыков самоподдержки':'Seven self-support skills'}</h3>
+    <p>{ru?'Здесь отмечены только реальные учебные попытки и выборы. Это не шкала психического здоровья и не тест на «успешность».':'Only actual learning attempts and choices are shown. This is not a mental-health score or performance test.'}</p>
+    <ol>{data.learningSkills.map(skill=><li key={skill.id}>
+      <span className={styles.antiStressSkillNumber}>{skill.id}</span>
+      <strong>{skill.title}</strong>
+      <small>{skill.status==='new_context_choice'?(ru?'Выбор в новой ситуации':'New scenario choice')
+        :skill.status==='reported_attempt'?(ru?'Попробовал(а), по собственному сообщению':'Tried (self-reported)')
+        :skill.status==='guided_attempt'?(ru?'Выбор с подсказкой':'Choice with hint')
+        :skill.status==='introduced_only'?(ru?'Знакомство с навыком':'Introduced')
+        :(ru?'Пока не оценивался':'Not assessed')}</small>
+    </li>)}</ol>
+  </section>}
+  {questOpen&&(playerData?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
+    (playerData?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
+      ?<OporaExperiencePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>
+      :<OporaV6SlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
+    :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+    data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
+    promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer}
+     onFinish={finishLessonPlayer}
+    onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
+    onCheckin={body=>reviewLesson?null:submit('checkin',body)}
+    onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}
+    onPreferences={patch=>reviewLesson?null:submit('preferences',{
       expectedRevision:cycle.revision,
       length:patch.length||cycle.preferences?.length||'standard',
       imagery:patch.imagery||cycle.preferences?.imagery||'optional',
       checkinFrequency:cycle.preferences?.checkinFrequency||'daily',
-    })}/>}
+    })}/>) }
   {view==='details'&&<>
   <details className={styles.classicPanel}>
     <summary>{ru?'Полный текст урока и дополнительные настройки':'Full lesson text and additional settings'}</summary>
@@ -551,9 +861,10 @@ export default function CourseToday({locale='en',accountId=null}){
       <strong>{t.reflectionV3}:</strong> {lesson.practiceV3.review}
     </p>}
     <div className={styles.ratingPair}>
-      <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
-      <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.beforeAvailability:t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.afterAvailability:t.afterNow} value={afterNow} onChange={setAfterNow}/>
     </div>
+    {legacyAvailabilityRatings&&<p className={styles.hint} data-course-legacy-availability-direction>{t.availabilityClarification}</p>}
     <fieldset className={styles.feedback}><legend>{t.feedback}</legend>
       {[['helped',t.helpful],['neutral',t.neutral],['uncomfortable',t.uncomfortable],['skip',t.noAnswer]].map(([value,label])=>
       <label key={value}><input type="radio" name="course-feedback" checked={feedback===value} onChange={()=>setFeedback(value)}/>{label}</label>)}
@@ -563,10 +874,15 @@ export default function CourseToday({locale='en',accountId=null}){
       <small className={styles.hint}>{t.journalHelp}</small>
       {isV4&&<small className={styles.symbolNotebookCue}>{t.symbolArtifact}: {lesson.practiceV4.artifact}</small>}</label>
     {completed?<p className={styles.saved}><CheckCircle2 size={18}/>{t.finished}</p>:
-      <button type="button" className="hh-primary" disabled={busy||paused} onClick={()=>submit('session',{
-        operationId:crypto.randomUUID(),day:cycle.day,lessonId:lesson.id,feedback,
-        beforeNow:beforeValue(beforeNow),afterNow:beforeValue(afterNow),reflection,
-      },()=>setExpanded(''))}>{t.finish}<Check size={17}/></button>}
+      <>
+        <p className={styles.hint}>{ru
+          ? 'Урок дня завершается только после последнего слайда и подтверждения сохранения.'
+          : 'Today’s lesson is completed only after the final slide and a confirmed save.'}</p>
+        <button type="button" className="hh-primary" disabled={busy||paused}
+          data-open-complete-slide-lesson onClick={()=>setQuestOpen(true)}>
+          {ru?'Пройти все слайды урока':'Complete all lesson slides'}<ArrowRight size={17}/>
+        </button>
+      </>}
    </DailyCard>
   </>}
   </details>
@@ -640,7 +956,9 @@ export default function CourseToday({locale='en',accountId=null}){
     <label className={styles.field}>{t.newGoal}<select value={nextGoal} onChange={e=>setNewGoal(e.target.value)}>
       {continuationGoals.map(id=><option key={id} value={id}>{GROWTH_GOALS[id].title[locale]}</option>)}
     </select></label>
-    <button type="button" className="hh-primary" disabled={busy||!nextGoal||targetLabel.trim().length<3}
+    {cycle.moduleRouter==='opora-trauma-1.3-20261015'&&['AS1','AS3','AS5'].includes(cycle.moduleId)&&<p role="status">
+      {ru?'Для нового курса нужен новый вводный опрос с вашим согласием. Сохранённые ответы остаются историческими; начните новый подбор курса в кабинете.':'A new course needs a fresh intake with your consent. Saved answers remain historical; start a new course selection from your cabinet.'}<br/><Link href={root+'/course?add=1&entry=personal'} prefetch={false}>{ru?'Пройти новый вводный опрос':'Start a fresh intake'}</Link></p>}
+    <button type="button" className="hh-primary" disabled={busy||!nextGoal||targetLabel.trim().length<3||(cycle.moduleRouter==='opora-trauma-1.3-20261015'&&['AS1','AS3','AS5'].includes(cycle.moduleId))}
       onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:nextGoal},
         ()=>{setExpanded('checkin');setStage(0);setReflection('');setNewGoal('')})}>{t.nextCycle}<ArrowRight size={16}/></button>
    </section>}
@@ -651,7 +969,7 @@ export default function CourseToday({locale='en',accountId=null}){
       {t.startRetest}<ChevronRight size={16}/></Link>}
   </aside>}
   <div className={styles.footer}>
-    {!isFinished&&<button type="button" disabled={busy} onClick={()=>submit(paused?'resume':'pause',{expectedRevision:cycle.revision})}>
+    {!isFinished&&<button type="button" disabled={busy||resumeBlocked} onClick={()=>submit(paused?'resume':'pause',{expectedRevision:cycle.revision})}>
       {paused?<RotateCcw size={16}/>:<CirclePause size={16}/>}
       {paused?t.resume:t.stop}
     </button>}
@@ -661,3 +979,4 @@ export default function CourseToday({locale='en',accountId=null}){
   </>}
  </section>
 }
+

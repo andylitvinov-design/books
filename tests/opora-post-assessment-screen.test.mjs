@@ -1,0 +1,72 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { recommendAntistressModule } from '../lib/inner-growth/antistress-module-router.js'
+
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('post-test OPORA screen is one approved course welcome with a single direct start action', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  const steps = read('components/app/course-r3-steps.jsx')
+  const root = read('components/app/my-course.jsx')
+  assert.match(ui, /data-course-welcome-screen/)
+  assert.match(ui, /data-course-unified-entry/)
+  assert.match(ui, /data-course-first-lesson-preview/)
+  assert.match(ui, /data-opora-route-picker/)
+  assert.match(ui, /0\/14 completed/)
+  assert.match(ui, /<progress className=\{styles\.courseProgress\} value=\{0\} max=\{14\}/)
+  assert.match(ui, /Your course is ready/)
+  assert.match(ui, /Ваш курс готов!/)
+  assert.match(ui, /¡Tu curso está listo!/)
+  assert.match(ui, /course-focus-mountain-boy\.webp/)
+  assert.match(ui, /Based on your test results/)
+  assert.match(ui, /Start my first lesson/)
+  assert.match(ui, /Начать первый урок/)
+  assert.match(ui, /Empezar mi primera lección/)
+  assert.match(ui, /data-course-consent-module/)
+  assert.match(ui, /onClick=\{startDayOne\}/)
+  assert.match(steps, /onStart=\{startChosenModule\}/)
+  assert.match(steps, /onLaunchReady\?\.\(courseId\)/)
+  assert.match(root, /onLaunchReady=\{id=>/)
+  assert.match(root, /launchDirectly=\{directLaunchCourseId===state\.course\.id\}/)
+  const today = read('components/app/course-today.jsx')
+  assert.match(today, /setQuestOpen\(true\)/)
+  assert.match(today, /if\(firstLessonIntent\.current&&!firstLessonConsumed\.current/)
+  assert.match(today, /focusOpen&&data\.programme\?\.id!=='stress'/)
+  assert.match(steps, /submitFocusSelection\(useMeasuredScales \? selected : \[\], useMeasuredScales, selection\)/)
+  assert.doesNotMatch(steps, /if\(stage===3 && isAntistress\) \{\s*if\(!moduleSelection\)/)
+  assert.match(root, /const stressWelcome = stage === 3/)
+  assert.match(root, /!stressWelcome && !isHistory/)
+})
+
+test('six blocks are available in a closed-by-default compact disclosure', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  const css = read('components/app/antistress-module-finder.module.css')
+  assert.match(ui, /<details className=\{styles\.routeDisclosure\} data-opora-route-picker>/)
+  assert.doesNotMatch(ui, /<details className=\{styles\.routeDisclosure\} data-opora-route-picker open>/)
+  assert.match(ui, /ANTISTRESS_MODULE_GOALS\.map/)
+  assert.match(ui, /aria-pressed=\{chosen === item\.id\}/)
+  assert.match(ui, /onClick=\{\(\) => setChosenRoute\(item\.id\)\}/)
+  assert.match(ui, /setChosenRoute\(null\)/)
+  assert.match(css, /@media\(max-width:520px\)/)
+  assert.match(css, /@media\(max-width:390px\)/)
+  assert.match(css, /grid-template-columns:34px minmax\(0,1fr\)/)
+  assert.match(css, /overflow-wrap:break-word/)
+  assert.doesNotMatch(css, /word-break:break-all/)
+})
+
+test('test results are already saved; recommendation is educational and clinical-only AS4 is not self-started', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  assert.match(ui, /useMemo\(\(\) => savedWeekly\(profile\)/)
+  assert.match(ui, /recommendAntistressModule\(\{ weekly: weekly \|\| \{\}, answers: \{\} \}\)/)
+  assert.match(ui, /!isClinicianOnly/)
+  assert.match(ui, /disabled=\{!canStart\}/)
+  assert.match(ui, /Boolean\(weekly\)/)
+  assert.match(ui, /moduleId: chosen/)
+  assert.doesNotMatch(ui, /localStorage|sessionStorage/)
+  const suggested = recommendAntistressModule({
+    weekly: { 'weekly.load':6, 'weekly.tension':7, 'weekly.functioning':5 }, answers: {},
+  })
+  assert.equal(suggested.moduleId,'AS2')
+  assert.equal(suggested.reason,'reported_overload')
+})

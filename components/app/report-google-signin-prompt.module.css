@@ -1,0 +1,118 @@
+.spacer {
+  height: 220px;
+  pointer-events: none;
+}
+
+.prompt {
+  position: fixed;
+  z-index: 1000;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: min(100%, 520px);
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: 18px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid #d9dde3;
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  box-shadow: 0 -12px 35px rgba(27, 46, 68, .14);
+  color: #202124;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 16px;
+}
+
+.googleMark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: conic-gradient(from -30deg, #4285f4 0 28%, #34a853 28% 51%, #fbbc05 51% 69%, #ea4335 69% 89%, #4285f4 89% 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font: 800 42px/1 Arial, Helvetica, sans-serif;
+}
+
+.heading {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: #202124;
+  font-size: clamp(16px, 4.6vw, 19px);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -7px -9px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #68727d;
+  font: 32px/1 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.close:hover { background: #f2f4f7; }
+.action {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563d9;
+  color: #fff;
+  font: 650 16px/1.25 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.action:hover:not(:disabled) { background: #174eae; }
+.action:disabled { cursor: wait; opacity: .65; }
+.close:focus-visible,
+.action:focus-visible { outline: 3px solid #f3a268; outline-offset: 3px; }
+.note {
+  margin: 10px 3px 0;
+  color: #626972;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.error {
+  margin: 8px 3px 0;
+  color: #a02929;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (min-width: 560px) {
+  .prompt {
+    bottom: 16px;
+    width: calc(100% - 32px);
+    border-bottom: 1px solid #d9dde3;
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 355px) {
+  .prompt { padding-inline: 12px; }
+  .header { gap: 8px; }
+  .heading { font-size: 16px; }
+}
+
+@media print {
+  .prompt, .spacer { display: none; }
+}

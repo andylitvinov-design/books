@@ -1,0 +1,200 @@
+"use client";
+
+import { useEffect, useRef, useState, type TouchEvent } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { StaticPortrait } from "@/components/static-portrait";
+import type { PublicLocale } from "@/lib/public-locales";
+
+// The homepage reuses the exact photographic carousel layout already approved
+// for Services, but its slides link to real sections instead of changing filters.
+import styles from "./services-conversion-hero.module.css";
+
+const slides = [
+  { key: "services", href: "/explore/energy", image: "/images/holistic-house/hero-olive-incense.webp", position: "center" },
+  { key: "academy", href: "/explore/love", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", position: "center" },
+  { key: "business", href: "/explore/business", image: "/images/holistic-house/andy-about.png", position: "center 30%" },
+  { key: "tests", href: "/client/tests", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", position: "center" },
+  { key: "ideas", href: "/books", image: "/images/holistic-house/books-library.webp", position: "center" },
+  { key: "cabinet", href: "/app", image: "/academy/reiki-yggdrasil/source/program-overview.jpg", position: "center" },
+] as const;
+
+// Keep all six slides paired with their named category above the photograph.
+// The wordmark links to Home; Cabinet is a slide category as well as a header entry.
+const navKeys = ["services", "academy", "business", "tests", "ideas", "cabinet"] as const;
+
+const copy = {
+  en: {
+    navigationLabel: "Explore site sections",
+    nav: { tests: "Tests", services: "Energy", academy: "Love", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
+    region: "Explore Holistic House",
+    previous: "Previous section",
+    next: "Next section",
+    choose: "Choose a site section",
+    slides: {
+      services: { eyebrow: "ENERGY · WELLBEING & PRACTICE", title: "Energy, calm and personal support", lead: "Explore stress, daily energy and personal resources through free tests, courses and optional individual guidance.", action: "Request a consultation · from €50" },
+      tests: { eyebrow: "TESTS · FREE SELF-CHECKS", title: "Free tests to understand yourself", lead: "Explore stress, strengths and personal resources. See a report with insights for your next step.", action: "Take free tests" },
+      academy: { eyebrow: "LOVE · CONNECTION & RELATIONSHIPS", title: "Explore love, trust and personal boundaries", lead: "Understand communication, closeness and boundaries. Choose a free self-check, guided course or personal session.", action: "Explore Love options" },
+      business: { eyebrow: "BUSINESS · COACHING & STRATEGY", title: "Support for work and business decisions", lead: "Clarify goals and business challenges through coaching, strategy and practical next steps.", action: "View business services" },
+      ideas: { eyebrow: "IDEAS · QUESTIONS & BOOKS", title: "Fresh perspectives on your question", lead: "Ask a question for an I Ching reflection or aphorisms, and explore books for more inspiration.", action: "Explore Ideas" },
+      cabinet: { eyebrow: "PERSONAL CABINET · YOUR SPACE", title: "Your tests, courses & progress", lead: "Save test reports, continue courses, revisit recommendations and follow your development in one place.", action: "Open my Cabinet" },
+    },
+  },
+  ru: {
+    navigationLabel: "Разделы сайта",
+    nav: { tests: "Тесты", services: "Энергия", academy: "Любовь", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
+    region: "Разделы Holistic House",
+    previous: "Предыдущий раздел",
+    next: "Следующий раздел",
+    choose: "Выберите раздел сайта",
+    slides: {
+      services: { eyebrow: "ЭНЕРГИЯ · САМОЧУВСТВИЕ И ПРАКТИКА", title: "Энергия и внутренняя опора", lead: "Исследуйте стресс, усталость и ресурсы через бесплатные тесты, курсы и возможность личной консультации.", action: "Запросить консультацию · от €50" },
+      tests: { eyebrow: "ТЕСТЫ · БЕСПЛАТНО", title: "Узнайте свои сильные стороны", lead: "Пройдите тесты на стресс и личные ресурсы. Получите отчёт с результатами и выводами.", action: "Пройти тесты" },
+      academy: { eyebrow: "ЛЮБОВЬ · ОТНОШЕНИЯ И БЛИЗОСТЬ", title: "Любовь, доверие и личные границы", lead: "Исследуйте близость, общение и границы через бесплатный тест, курс самоподдержки или личную сессию.", action: "Открыть варианты" },
+      business: { eyebrow: "БИЗНЕС · КОУЧИНГ И СТРАТЕГИЯ", title: "Поддержка в работе и бизнесе", lead: "Разберите цели, трудности проекта и варианты решений. Наметьте практический следующий шаг.", action: "Услуги для бизнеса" },
+      ideas: { eyebrow: "ИДЕИ · ВОПРОСЫ И КНИГИ", title: "Подсказки для вашего вопроса", lead: "Задайте вопрос, получите афоризмы или символ Книги Перемен. Найдите новые идеи в книгах.", action: "Открыть Идеи" },
+      cabinet: { eyebrow: "ЛИЧНЫЙ КАБИНЕТ · МОЁ ПРОСТРАНСТВО", title: "Ваши тесты, курсы и прогресс", lead: "Сохраняйте отчёты, продолжайте курсы, возвращайтесь к рекомендациям и следите за динамикой.", action: "Перейти в кабинет" },
+    },
+  },
+  es: {
+    navigationLabel: "Secciones del sitio",
+    nav: { tests: "Pruebas", services: "Energía", academy: "Amor", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
+    region: "Explora Holistic House",
+    previous: "Sección anterior",
+    next: "Sección siguiente",
+    choose: "Elige una sección del sitio",
+    slides: {
+      services: { eyebrow: "ENERGÍA · BIENESTAR Y PRÁCTICA", title: "Energía, calma y apoyo personal", lead: "Explora estrés, energía y recursos a través de pruebas gratuitas, cursos y orientación personal opcional.", action: "Solicitar una consulta · desde €50" },
+      tests: { eyebrow: "PRUEBAS · GRATIS", title: "Pruebas gratis para conocerte mejor", lead: "Explora estrés, fortalezas y recursos personales. Consulta un informe con ideas para tu próximo paso.", action: "Hacer pruebas gratis" },
+      academy: { eyebrow: "AMOR · CONEXIÓN Y RELACIONES", title: "Amor, confianza y límites personales", lead: "Explora comunicación, cercanía y límites. Empieza por una prueba, un curso o una sesión personal.", action: "Explorar opciones" },
+      business: { eyebrow: "NEGOCIOS · COACHING Y ESTRATEGIA", title: "Apoyo para el trabajo y tus proyectos", lead: "Aclara objetivos y desafíos del negocio con orientación y pasos prácticos para avanzar.", action: "Ver servicios de negocios" },
+      ideas: { eyebrow: "IDEAS · PREGUNTAS Y LIBROS", title: "Nuevas ideas para tu pregunta", lead: "Haz una pregunta para recibir aforismos o un símbolo del I Ching y explora libros para reflexionar.", action: "Explorar Ideas" },
+      cabinet: { eyebrow: "MI ESPACIO · GABINETE PERSONAL", title: "Tus pruebas, cursos y avances", lead: "Guarda informes, continúa tus cursos, revisa recomendaciones y sigue tu progreso en un solo lugar.", action: "Abrir mi espacio" },
+    },
+  },
+} as const;
+
+export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
+  const t = copy[locale];
+  const [index, setIndex] = useState(0);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const navScroller = useRef<HTMLDivElement | null>(null);
+  const slide = slides[index];
+  const words = t.slides[slide.key];
+  // The Spanish public entry is localized; the full private app currently
+  // uses the English route, so do not direct guests to a missing /es/app page.
+  const href = slide.key === "services" ? `/${locale}/services#consultation`
+    : slide.key === "cabinet" && locale === "es" ? "/en/app" : "/" + locale + slide.href;
+
+  // Keep the first offer stable. Other sections change only by deliberate navigation.
+  // The sixth, "Cabinet", label may be outside the 320px navigation viewport.
+  // Scroll only the horizontal label strip, never the document itself.
+  useEffect(() => {
+    const scroller = navScroller.current;
+    const active = scroller?.querySelector<HTMLElement>(`[data-home-nav-section="${slide.key}"]`);
+    if (!scroller || !active || scroller.scrollWidth <= scroller.clientWidth) return;
+    const item = active.getBoundingClientRect();
+    const strip = scroller.getBoundingClientRect();
+    const left = scroller.scrollLeft + item.left - strip.left - (scroller.clientWidth - item.width) / 2;
+    scroller.scrollTo({
+      left: Math.max(0, left),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [slide.key, locale]);
+
+  function navigate(direction: number) {
+    setIndex(current => (current + direction + slides.length) % slides.length);
+  }
+
+  function endSwipe(event: TouchEvent<HTMLDivElement>) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || event.changedTouches.length === 0) return;
+    const dx = event.changedTouches[0].clientX - start.x;
+    const dy = event.changedTouches[0].clientY - start.y;
+    // Respect vertical page scroll; swipe only on deliberate horizontal movement.
+    if (Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.2) navigate(dx < 0 ? 1 : -1);
+  }
+
+  return (
+    <section className={styles.hero} data-home-section-carousel aria-label={t.region}>
+      <div
+        className={styles.slider}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label={t.region}
+        onTouchStart={event => {
+          touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+        }}
+        onTouchEnd={endSwipe}
+        onTouchCancel={() => { touchStart.current = null; }}
+      >
+        <div key={slide.key} className={styles.slideMedia}>
+          {slide.key === "business" ? (
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 760px) 100vw, 1240px"
+              className={styles.image} style={{ objectPosition: slide.position }} />
+          ) : (
+            <Image src={slide.image} alt="" fill unoptimized priority={index === 0}
+              sizes="(max-width: 760px) 100vw, 1240px"
+              className={styles.image} style={{ objectPosition: slide.position }} />
+          )}
+        </div>
+        <div className={styles.gradient} aria-hidden="true" />
+        <nav className={styles.sectionNav} aria-label={t.navigationLabel} data-home-hero-nav="true">
+          <div className={styles.sectionNavScroller} ref={navScroller}
+            onTouchStart={event => event.stopPropagation()}
+            onTouchEnd={event => event.stopPropagation()}
+            onTouchCancel={event => event.stopPropagation()}>
+            {navKeys.map(key => {
+              const target = slides.find(item => item.key === key);
+              if (!target) return null;
+              return (
+                <Link
+                  key={key}
+                  className={styles.sectionNavLink}
+                  href={key === "cabinet" && locale === "es" ? "/en/app" : `/${locale}${target.href}`}
+                  aria-current={key === slide.key ? "true" : undefined}
+                  data-home-nav-active={key === slide.key ? "true" : "false"}
+                  prefetch={false}
+                  data-home-nav-section={key}
+                >
+                  {t.nav[key]}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+        <div className={styles.slideCopy} data-home-slide={slide.key}>
+          <p className={styles.eyebrow}>{words.eyebrow}</p>
+          <h2 id="home-section-slide-title">{words.title}</h2>
+          <p className={styles.slideLead}>{words.lead}</p>
+          <Link className={styles.viewButton} href={href} prefetch={false} data-home-slide-action={slide.key}
+            data-home-first-screen-cta={slide.key === "services" ? "paid" : undefined}>
+            {words.action}<ArrowRight size={19} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className={styles.controls}>
+          <div className={styles.dots} role="group" aria-label={t.choose}>
+            {slides.map((item, position) => (
+              <button type="button" key={item.key}
+                className={position === index ? styles.dotActive : styles.dot}
+                aria-label={t.slides[item.key].title}
+                aria-current={position === index ? "true" : undefined}
+                data-home-slide-dot={item.key}
+                onClick={() => setIndex(position)} />
+            ))}
+          </div>
+          <div className={styles.arrows}>
+            <button type="button" onClick={() => navigate(-1)} aria-label={t.previous}>
+              <ChevronLeft size={21} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => navigate(1)} aria-label={t.next}>
+              <ChevronRight size={21} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

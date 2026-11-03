@@ -349,3 +349,25 @@
   .heading h1 {font-size:24px}
   .editButton {max-width:142px;line-height:1.2}
 }
+
+
+/* Prominent PDF reading action for previously saved practitioner reports. */
+.mobilePdfAccess {
+  margin: 17px 0;
+  text-align: center;
+}
+.mobilePdfAccess a {
+  display: block;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 13px;
+  background: #147b88;
+  border: 1px solid #0c6875;
+  color: #fff;
+  font: 750 16px/1.35 system-ui, sans-serif;
+  text-decoration: none;
+}
+.mobilePdfAccess a:focus-visible {
+  outline: 3px solid #163f54;
+  outline-offset: 3px;
+}

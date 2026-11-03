@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./client-teal.css";
 import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";
@@ -15,11 +16,11 @@ type PageProps = { params: Promise<{ locale: string }> };
 const copy = {
   en: {
     title: "Free wellbeing monitoring | Holistic House",
-    description: "Explore stress, mood and inner resources with free self-checks. These are not medical diagnoses; sign in to save a personal monitoring plan.",
+    description: "Take available self-assessments without registration. See your scales immediately and receive a free personal analysis after you choose to sign in to your Cabinet. Not a medical diagnosis.",
   },
   ru: {
     title: "Бесплатный мониторинг состояния | Holistic House",
-    description: "Пройдите бесплатный мониторинг психологического состояния и ресурсов. Опросники не ставят диагноз; войдите через Google, чтобы сохранять результаты.",
+    description: "Пройдите доступные тесты без регистрации, посмотрите шкалы и баллы. Бесплатные пояснения и персональный анализ — после входа в кабинет. Не медицинский диагноз.",
   },
 } as const;
 
@@ -34,6 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: current.title,
     description: current.description,
     robots: { index: false, follow: false },
+    referrer: 'no-referrer',
     alternates: {
       canonical: "/" + locale + "/client",
       languages: { ru: "/ru/client", en: "/en/client" },

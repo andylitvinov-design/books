@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import {phaseOutcomeContext,phaseScaleRole,phaseOrderScales} from '@/lib/inner-growth/trauma-phase-outcomes'
+import { orderAntistressScales, antistressRoleForScale, antistressSelectedMeasures } from '@/lib/inner-growth/anti-stress-measurement-contract'
 import { ArrowRight, Check, Pencil } from 'lucide-react'
 import styles from './course-r3-steps.module.css'
 
@@ -8,8 +10,69 @@ import styles from './course-r3-steps.module.css'
 // and after returning from the optional manual focus picker. No fake measurements.
 export default function CourseCompletionReview({
   t, root, confirmedStatuses, optionByKey, profile, suggested,
-  onSuggested, onAlternative, onEditTests, busy = false,
+  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en', compactResults=false, moduleId=null, routerVersion=null,
 }) {
+  const phase=phaseOutcomeContext(moduleId,routerVersion)
+  const role=(testKey,scaleKey)=>phaseScaleRole(phase,testKey,scaleKey)??antistressRoleForScale(testKey,scaleKey)
+  const resultSummary = (
+    <section className={styles.briefSummary} aria-label={t.briefSummary}>
+      <h3>{t.briefSummary}</h3>
+      {programId==='stress'&&<div className={styles.stressMeasureProtocol}
+        data-course-antistress-baseline-axes>
+        <strong>{t.stressMeasuresTitle}</strong>
+        <p>{t.stressMeasuresIntro}</p>
+        <ul>{antistressSelectedMeasures(confirmedStatuses.map(item=>item.key),locale).map(test=>
+          <li key={test.testKey}>
+            <span>{test.testKey==='hh-weekly-pulse'?'Weekly Pulse'
+              :test.testKey==='gad-7'?'GAD-7':'Resource Pulse'}</span>
+            <small>{test.testKey==='hh-weekly-pulse'?t.stressWindowWeek
+              :test.testKey==='gad-7'?t.stressWindowFortnight:t.stressWindowNow}</small>
+            <strong>{test.scales.length} {t.stressScalesUnit}</strong>
+          </li>)}</ul>
+      </div>}
+      <p className={styles.small}>{t.scaleGuide}</p>
+      {confirmedStatuses.map(item => {
+        // Do not display a newer score from a different language/run as
+        // the selected cycle's T0 measurement. The report link still opens the
+        // exact owner-scoped saved result if this summary has no matching row.
+        const allScales=profile.scales.filter(scale=>scale.testKey===item.key &&
+          (programId!=='stress'||!item.resultId||scale.resultId===item.resultId))
+        const scales=programId==='stress'?(phaseOrderScales(phase,item.key,allScales)??orderAntistressScales(item.key,allScales)):allScales
+        const meta = optionByKey.get(item.key)
+        return <article key={item.key} className={styles.summaryTest}>
+          <div className={styles.summaryHeading}>
+            <strong>{meta?.title || item.key}</strong>
+            {programId==='stress'&&item.instrumentLocale&&
+              <small className={styles.originalLanguage}>
+                {locale==='ru'?'Язык исходного теста':'Original instrument language'}: {item.instrumentLocale.toUpperCase()}
+              </small>}
+            {item.resultId && <Link href={root+'/results/'+encodeURIComponent(item.resultId)}
+              prefetch={false}>{t.report}<ArrowRight size={13} aria-hidden="true"/></Link>}
+          </div>
+          {scales.length ? <ul className={styles.briefScales}>
+            {scales.map(scale => <li key={scale.id}
+              data-antistress-measure-role={programId==='stress'
+                ?role(item.key,scale.id.split('::')[1])||undefined:undefined}
+              data-course-screening-scale={scale.testKey === 'asrs-6' && scale.type === 'screening_count' ? 'true' : undefined}>
+              <span>{programId==='stress'&&
+                role(item.key,scale.id.split('::')[1])==='primary'&&
+                <em className={styles.primaryOutcomeTag}>{t.stressPrimaryMeasure}</em>}
+                {scale.label}
+              </span>
+              {scale.testKey === 'asrs-6' && scale.type === 'screening_count'
+                ? <span data-course-screening-count>{scale.observation} {t.noMedical}</span>
+                : <meter min={scale.min} max={scale.max} value={scale.score}
+                    aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>}
+              <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
+              {scale.ineligibilityReason && <small data-course-ineligibility={scale.ineligibilityCode}
+                style={{ gridColumn: '1 / -1' }}>{scale.ineligibilityReason}</small>}
+            </li>)}
+          </ul> : <p className={styles.small}>{t.noMeasuredScales}</p>}
+        </article>
+      })}
+    </section>
+  )
+
   return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
     data-course-testing-complete>
     <header className={styles.completeHero} role="status">
@@ -21,32 +84,7 @@ export default function CourseCompletionReview({
         disabled={busy} onClick={onEditTests}><Pencil size={14} aria-hidden="true"/>{t.reviseSelection}</button>}
     </header>
 
-    <section className={styles.briefSummary} aria-label={t.briefSummary}>
-      <h3>{t.briefSummary}</h3>
-      <p className={styles.small}>{t.scaleGuide}</p>
-      {confirmedStatuses.map(item => {
-        const scales = profile.scales.filter(scale => scale.testKey === item.key)
-        const meta = optionByKey.get(item.key)
-        return <article key={item.key} className={styles.summaryTest}>
-          <div className={styles.summaryHeading}>
-            <strong>{meta?.title || item.key}</strong>
-            {item.resultId && <Link href={root+'/results/'+encodeURIComponent(item.resultId)}
-              prefetch={false}>{t.report}<ArrowRight size={13} aria-hidden="true"/></Link>}
-          </div>
-          {scales.length ? <ul className={styles.briefScales}>
-            {scales.map(scale => <li key={scale.id}
-              data-course-screening-scale={scale.testKey === 'asrs-6' && scale.type === 'screening_count' ? 'true' : undefined}>
-              <span>{scale.label}</span>
-              {scale.testKey === 'asrs-6' && scale.type === 'screening_count'
-                ? <span data-course-screening-count>{scale.observation} {t.noMedical}</span>
-                : <meter min={scale.min} max={scale.max} value={scale.score}
-                    aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>}
-              <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
-            </li>)}
-          </ul> : <p className={styles.small}>{t.noMeasuredScales}</p>}
-        </article>
-      })}
-    </section>
+    {!compactResults && resultSummary}
 
     <section className={styles.recommendedPanel} aria-label={t.recommendedFocusTitle}
       data-course-recommended-focus>
@@ -82,5 +120,9 @@ export default function CourseCompletionReview({
         {t.chooseDifferent}<ArrowRight size={17} aria-hidden="true"/>
       </button>
     </div>
+    {compactResults && <details className={styles.collapsibleSummary} data-course-compact-test-summary>
+      <summary>{t.briefSummary}</summary>
+      {resultSummary}
+    </details>}
   </section>
 }

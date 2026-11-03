@@ -1,18 +1,25 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { gaugeModel, gaugeChange, periodWindow, resultsForPeriod, periodComparison, validCalendarDay } from '../lib/assessments/dashboard-gauges.js'
 
-const base = {
-  accountId:'account',definitionId:'definition',definitionKey:'cbi-personal',definitionVersion:'v1',
-  contentHash:'hash',instrumentLocale:'en',scoringKey:'configured',scoringVersion:'v1',
-  resultVersion:'v1',timeframe:'past-30-days',
+const scored = key => {
+  const definition = getAssessmentDefinition(key, 'v1', 'en')
+  return scoreAssessment(definition, Object.fromEntries(definition.questions.map(question =>
+    [question.id, question.min ?? definition.answerScale.min])))
 }
-const metric = value => ({ key:'symptoms.cbi_personal.total',min:0,max:100,value,unit:'points',timeframe:'past-30-days',
-  direction:'lower-reported-difficulty',dimensionClass:'symptoms',sourceConstruct:'CBI Personal Burnout' })
-const result = (id, value, at) => ({ ...base,id,measurementAt:at,dimensions:[metric(value)] })
+const base = scored('cbi-personal')
+const metric = value => ({ ...base.dimensions[0], value })
+const resultFor = (key, id, value, at) => {
+  const measurement = scored(key)
+  return { ...measurement, accountId: 'account', id, measurementAt: at,
+    dimensions: measurement.dimensions.map((dimension, index) => index === 0 ? { ...dimension, value } : dimension) }
+}
+const result = (id, value, at) => resultFor('cbi-personal', id, value, at)
 
-test('burnout needle runs red to green in reverse raw-score order; resource runs normally; traits remain neutral',()=>{
+test('raw needle orientation follows difficulty/resource direction; traits remain neutral',()=>{
   assert.equal(gaugeModel(metric(100)).fraction,0)
   assert.equal(gaugeModel(metric(0)).fraction,1)
   assert.equal(gaugeModel({ ...metric(75),direction:'higher-reported-resource' }).fraction,.75)
@@ -22,17 +29,17 @@ test('burnout needle runs red to green in reverse raw-score order; resource runs
   assert.equal(gaugeModel({ ...metric(101) }),null)
 })
 
-test('change arrows depend on direction, never raw sign alone',()=>{
+test('comparable raw differences never become invented clinically meaningful changes',()=>{
   const old=result('1',75,'2026-09-01T12:00:00Z')
   const improved=result('2',45.83,'2026-10-11T12:00:00Z')
-  assert.deepEqual(gaugeChange(improved,old,metric(0).key),{state:'improved',delta:-29.17})
+  assert.deepEqual(gaugeChange(improved,old,metric(0).key),{state:'changed',delta:-29.17})
   assert.equal(gaugeChange(old,improved,metric(0).key).state,'baseline')
-  assert.equal(gaugeChange(result('3',95,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'worsened')
+  assert.equal(gaugeChange(result('3',95.83,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'changed')
   assert.equal(gaugeChange(result('4',75,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'unchanged')
-  const resources=(value,date)=>({...result('x',value,date),dimensions:[{...metric(value),direction:'higher-reported-resource'}]})
-  assert.equal(gaugeChange(resources(80,'2026-10-11T12:00:00Z'),resources(20,'2026-09-11T12:00:00Z'),metric(0).key).state,'improved')
-  const neutral=(value,date)=>({...result('x',value,date),dimensions:[{...metric(value),dimensionClass:'trait',direction:'non-normative'}]})
-  assert.equal(gaugeChange(neutral(80,'2026-10-11T12:00:00Z'),neutral(20,'2026-09-11T12:00:00Z'),metric(0).key).state,'changed')
+  const resources=(value,date)=>resultFor('brcs','x',value,date)
+  assert.equal(gaugeChange(resources(18,'2026-10-11T12:00:00Z'),resources(8,'2026-09-11T12:00:00Z'),'resources.brcs.total').state,'changed')
+  const neutral=(value,date)=>resultFor('ipip-big-five-50','x',value,date)
+  assert.equal(gaugeChange(neutral(40,'2026-10-11T12:00:00Z'),neutral(20,'2026-09-11T12:00:00Z'),'trait.ipip50.extraversion').state,'changed')
   assert.equal(gaugeChange({...improved,definitionVersion:'v2'},old,metric(0).key).state,'baseline')
   assert.equal(gaugeChange({...improved,contentHash:'altered'},old,metric(0).key).state,'baseline')
   assert.equal(gaugeChange({...improved,accountId:'another'},old,metric(0).key).state,'baseline')
@@ -60,9 +67,10 @@ test('custom dates are inclusive, strictly validated, and never silently behave 
 })
 
 test('period comparison picks earliest compatible baseline, not a different scoring revision',()=>{
- const a=result('one',80,'2026-09-01T12:00:00Z')
- const b={...result('other',20,'2026-09-21T12:00:00Z'),contentHash:'other'}
- const c=result('new',40,'2026-10-10T12:00:00Z')
+ // Real CBI six-item means: raw totals 19, 5 and 10, multiplied by 25.
+ const a=result('one',79.17,'2026-09-01T12:00:00Z')
+ const b={...result('other',20.83,'2026-09-21T12:00:00Z'),contentHash:'other'}
+ const c=result('new',41.67,'2026-10-10T12:00:00Z')
  assert.equal(periodComparison([c,b,a]).previous.id,'one')
  assert.equal(periodComparison([b,c]).previous,null)
  assert.equal(periodComparison([]).current,null)
@@ -86,7 +94,7 @@ test('account reports and Insights share measured dials; date ranges live under 
  assert.match(account,/<ScoreTrend current=\{latest\}/)
  assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)
  assert.match(account,/onClick=\{repeatTest\}/)
- assert.match(report,/section\.steps\.slice\(0,\s*2\)/)
+ assert.match(report,/data-primary-support/)
  assert.match(css,/\.hh-insights-test-list/)
  assert.match(css,/grid-template-columns:repeat\(auto-fit/)
 })

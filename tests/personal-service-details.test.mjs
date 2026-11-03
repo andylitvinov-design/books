@@ -28,25 +28,43 @@ test("three free paths and two personal cards retain all core service detail pag
   const offers = read("data/core-service-offers.ts");
   const ui = read("components/services-solutions.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(services, /<ServicesSolutions locale=/);
+  assert.match(services, /<ServicesStudioOffers locale=/);
   for(const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + slug + '"'));
-  for(const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"])
+  for(const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"])
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'));
   const freePaths = read("components/free-insights-paths.tsx");
   assert.match(freePaths, /free-situation-review/);
   assert.match(freePaths, /dao-health-profile/);
   assert.match(ui, /visibleOffers.map/);
-  assert.match(free, /FreeSituationReviewForm/);
+  assert.match(free, /<FreeEntryLanding locale=\{locale\} kind="situation"/);
+  assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\}/);
 });
 
-test("free diagnostic explains its scope and explicitly excludes diagnoses, prescriptions and obligation", () => {
-  const s = read("app/[locale]/services/free-situation-review/page.tsx");
-  for (const phrase of ["scopeTitle","scopeIntro","scopeItems","scopeLimit","Что входит в бесплатную диагностику ситуации","What is included in the free situation review","¿Qué incluye la evaluación gratuita?"]) assert.ok(s.includes(phrase), phrase);
-  assert.match(s, /className={styles.scope}/);
-  const css = read("app/[locale]/services/free-situation-review/review.module.css");
-  assert.match(css, /\.scope/);
-  assert.match(css, /@media\(max-width:767px\)/);
+test("free written review keeps personal scope, optional long questionnaire and no paid or false clinical claims", () => {
+  const route = read("app/[locale]/services/free-situation-review/page.tsx");
+  const landing = read("components/free-entry-landing.tsx");
+  const enquiry = read("components/free-resource-enquiry.tsx");
+  const css = read("components/free-entry-landing.module.css");
+  assert.match(route, /kind="situation"/);
+  assert.match(landing, /t\.steps\.map/);
+  assert.match(landing, /t\.faq\.map/);
+  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
+  assert.match(landing, /"request-free-review"/);
+  for (const phrase of [
+    "It does not include a video call or live consultation",
+    "Он не включает видеозвонок",
+    "No incluye videollamada ni consulta en directo",
+    "educational and symbolic",
+    "не диагностируют и не лечат заболевания",
+    "no diagnostican ni tratan enfermedades",
+  ]) assert.ok(landing.includes(phrase), phrase);
+  assert.match(enquiry, /<ContactChannelChooser/);
+  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /min-height:calc\(100svh - 150px\)/);
 });
 
 test("all personal services have source-backed educational language, approved prices and no medical claims", () => {

@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -6,7 +7,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessme
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, auditTestKey } from '../lib/assessments/test-kinds.js'
+import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, testKindCardLabel, testKindShortLabel, auditTestKey } from '../lib/assessments/test-kinds.js'
 
 const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'min' ? (q.min ?? def.answerScale?.min) : (q.max ?? def.answerScale?.max),
@@ -56,12 +57,12 @@ test('all active scoring keys match immutable registered versions and yield full
       assert.equal(audit.status, 'ready', item.key + '/' + locale + ': ' + audit.status)
       assert.ok(def.translationVersion && def.contentHash?.startsWith('sha256:'), item.key)
       for (const extreme of ['min', 'max']) {
-        const scored = scoreAssessment(def, answersFor(def, extreme))
+        const scored = scoreAssessment(def, answersFor(def, extreme), syntheticTraumaContext(def))
         assert.ok(scored.dimensions.length > 0, item.key)
         for (const language of ['en', 'ru']) {
           const report = buildAssessmentResultReport(scored, language)
           assert.equal(report.sections.length, scored.dimensions.length, item.key + '/' + language)
-          assert.ok(report.sections.every(s => s.meaning?.length > 40 && s.followUp?.length > 20 && s.steps?.length >= 2), item.key + '/' + language)
+          assert.ok(report.sections.every(s => s.meaning?.length > 40 && s.followUp?.length > 20 && (def.administration ? s.steps?.length === 0 : s.steps?.length >= 2)), item.key + '/' + language)
         }
       }
     }
@@ -123,7 +124,7 @@ test('test-kind checkboxes belong inside detailed selection, not the initial scr
     readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
   ])
-  const disclosure = simple.indexOf('<details className={styles.advanced}>')
+  const disclosure = simple.indexOf('<details className={styles.advanced} id="hh-more-test-filters">')
   const endDisclosure = simple.indexOf('</details>', disclosure)
   const typeChoices = simple.indexOf('<fieldset className={styles.kindFilters}')
   assert.ok(disclosure >= 0 && typeChoices > disclosure && typeChoices < endDisclosure)
@@ -142,7 +143,7 @@ test('author questionnaire cards do not repeat long evidence wording', async () 
     readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
   ])
   assert.doesNotMatch(methodology, /Авторский образовательный опросник Holistic House \(2026\)/)
-  assert.match(methodology, /Авторская шкала для самонаблюдения[^']+не предназначена для постановки диагноза/)
+  assert.match(methodology, /Авторская шкала для самонаблюдения[^']+Независимая психометрическая валидизация этой версии не подтверждена/)
   for (const file of [simple, full]) assert.match(file, /entry\.methodologyStatus !== 'original'/)
 })
 
@@ -156,4 +157,74 @@ test('public client and explorer guard against mobile horizontal overflow', asyn
   assert.match(simpleCss, /\.shell\s*\{[^}]*overflow-x:\s*clip/s)
   assert.match(fullCss, /\.explorer\s*\{[^}]*overflow-x:\s*clip/s)
   assert.match(fullCss, /\.explorer \.scaleRail, \.explorer \.quickFilterChips, \.explorer \.quickFilterExtras/)
+})
+
+
+test('type badges distinguish documented sources, HH-authored check-ins and exploratory tests without validation claims', () => {
+  const professional = { key: 'phq-4', testKind: 'professional' }
+  const authored = { key: 'hh-current-state', testKind: 'monitoring' }
+  const monitoring = { key: 'other-state-check', testKind: 'monitoring' }
+  const hobby = { key: 'hh-bach-flower-profile', testKind: 'hobby' }
+  for (const [language, labels] of Object.entries({
+    en: ['Source-backed method', 'Holistic House check-in', 'State questionnaire', 'Self-discovery'],
+    ru: ['Методика с источником', 'Авторский опросник', 'Опросник состояния', 'Самопознание'],
+    es: ['Método con fuente', 'Cuestionario de Holistic House', 'Cuestionario de estado', 'Autoconocimiento'],
+  })) {
+    assert.deepEqual([professional, authored, monitoring, hobby].map((entry) => testKindCardLabel(entry, language)), labels)
+  }
+  assert.equal(testKindCardLabel({testKind: 'unknown', key: 'unknown'}, 'en'), null)
+  assert.equal(testKindCardLabel(null, 'ru'), null)
+  assert.equal(testKindCardLabel(professional, 'xx'), 'Source-backed method')
+  const available = buildExplorerEntries({ locale: 'en' }).filter((item) => item.selectable)
+  assert.ok(available.length > 30)
+  for (const entry of available) {
+    assert.ok(testKindCardLabel(entry, 'en'), entry.key)
+    assert.ok(testKindCardLabel(entry, 'ru'), entry.key)
+  }
+})
+
+test('four public shortcuts sync with the real kind facet and small card badges', async () => {
+  const [simple, full, css] = await Promise.all([
+    readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/simple-test-picker.module.css', import.meta.url), 'utf8'),
+  ])
+  const tabBlock = simple.slice(simple.indexOf('const BROWSE_TABS'), simple.indexOf('// Always display the explicit assessment type'))
+  assert.deepEqual([...tabBlock.matchAll(/\{ key: '(all|monitoring|professional|hobby)'/g)].map((match) => match[1]),
+    ['all', 'monitoring', 'professional', 'hobby'])
+  assert.doesNotMatch(tabBlock, /Best fit|Personality|Relationships|Stress/)
+  assert.match(simple, /onSelectTestKind\?\.\(tab\.key === 'all' \? null : tab\.key\)/)
+  assert.match(full, /onSelectTestKind=\{\(kind\) => setKinds\(kind \? \[kind\] : \[\]\)\}/)
+  assert.match(simple, /aria-pressed=\{browseTab === tab\.key\}/)
+  assert.match(simple, /testKindShortLabel\(entry, locale\)/)
+  assert.match(full, /testKindShortLabel\(entry, locale\)/)
+  assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\) 36px/)
+  const translations = {
+    en: ['Check-in', 'Source', 'Hobby'],
+    ru: ['Чек-ин', 'Источник', 'Хобби'],
+    es: ['Chequeo', 'Fuente', 'Hobby'],
+  }
+  for (const [locale, labels] of Object.entries(translations)) {
+    assert.deepEqual(['monitoring','professional','hobby'].map((testKind) =>
+      testKindShortLabel({ testKind }, locale)), labels)
+  }
+  assert.equal(testKindShortLabel({ testKind: 'unknown' }, 'en'), null)
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  for (const kind of ['monitoring','professional','hobby']) {
+    const filtered = filterExplorerEntries(entries, { availability: 'available', kinds: [kind] })
+    assert.ok(filtered.length > 0, kind)
+    assert.ok(filtered.every((entry) => entry.testKind === kind), kind)
+  }
+})
+
+test('published-source filter names disclose provenance without claiming a validated diagnosis', () => {
+  const sourced = TEST_KINDS.find(kind => kind.key === 'professional')
+  assert.ok(sourced)
+  for (const locale of ['en','ru','es']) {
+    assert.ok(sourced.label[locale])
+    assert.doesNotMatch(sourced.label[locale], /clinically validated|diagnostic|сертифиц|diagnóstico/i)
+    assert.ok(testKindShortLabel({ testKind: 'professional' }, locale))
+  }
+  assert.equal(sourced.label.ru, 'Методики с источником')
+  assert.equal(testKindShortLabel({ testKind: 'professional' }, 'ru'), 'Источник')
 })

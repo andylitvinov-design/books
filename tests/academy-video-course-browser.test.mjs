@@ -12,7 +12,7 @@ test("Academy videos use program → module/category → lesson, not giant showc
     file("components/academy-video-library-client.tsx"),
     file("components/academy-video-library.module.css"),
   ]);
-  assert.match(hub, /view === "videos" \? <AcademyVideoCourses locale=\{locale\} \/>/);
+  assert.match(hub, /view === "videos" \? \(\s*<section id="academy-video-courses">\s*<AcademyVideoCourses locale=\{locale\} \/>/);
   assert.doesNotMatch(hub, /<EnglishGuidedMeditations\s*\/>/);
   assert.match(server, /yggdrasilCurriculum/);
   assert.match(server, /module\.steps\.flatMap/);
@@ -26,14 +26,16 @@ test("Academy videos use program → module/category → lesson, not giant showc
   assert.match(server, /videos\/energy-pump-ups/);
   assert.match(client, /program\.courses\.map/);
   assert.match(client, /course\.chapters\.map/);
-  assert.match(client, /chapter\.videos\.map/);
+  // Rating-aware sorting was introduced before this PR. Preserve real chapter
+  // videos and both sorted/unsorted presentation rather than asserting stale JSX.
+  assert.match(client, /sortRated \? sortByStars\(chapter\.videos/);
   assert.match(client, /setPlayingVideo\(null\)/);
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.match(css, /grid-template-columns: 72px minmax\(0,1fr\)/);
 });
 
-test("Academy catalog differentiates original audio, and pending videos stay unplayable", async () => {
+test("Academy catalog differentiates original audio and only loads source-verified videos", async () => {
   const [server, client, englishSource, curriculum, archive] = await Promise.all([
     file("components/academy-video-courses.tsx"),
     file("components/academy-video-library-client.tsx"),
@@ -49,7 +51,9 @@ test("Academy catalog differentiates original audio, and pending videos stay unp
   assert.match(client, /academy-video-ru/);
   assert.match(client, /t\.ruBoundary/);
   assert.match(client, /Flight to the Sun/);
-  assert.match(english, /youtubeId: null/);
+  assert.match(english, /youtubeId: "HqfixazXqRY"/);
+  assert.match(english, /youtubeId: "_IOX0E8N-To"/);
+  assert.doesNotMatch(english, /youtubeId: null,/);
   assert.ok(curriculum.levels.length >= 7);
   assert.equal(archive.length, 45);
   assert.ok(curriculum.levels[0].steps.every((step) => step.video?.videos?.length > 0));

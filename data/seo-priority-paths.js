@@ -8,6 +8,7 @@ export const SEO_PRIORITY_PAGE_FAMILIES = Object.freeze([
   Object.freeze({ id: "free-assessment", suffix: "/services/free-situation-review", priority: 0.9 }),
   Object.freeze({ id: "yggdrasil-basic-course", suffix: "/academy/reiki/yggdrasil/basic-course", priority: 0.8 }),
   Object.freeze({ id: "yggdrasil-level-1", suffix: "/academy/reiki/yggdrasil/free-initiation", priority: 0.85 }),
+  Object.freeze({ id: "tantra-free-initiation", suffix: "/academy/reiki/tantra-reiki/free-initiation", priority: 0.85 }),
 ]);
 
 export function getPrioritySitemapEntries(baseUrl) {

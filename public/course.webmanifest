@@ -1,0 +1,15 @@
+{
+  "id": "/holistic-house-course",
+  "name": "Holistic House Course",
+  "short_name": "Holistic House",
+  "description": "Your private self-guided course and optional reminders.",
+  "start_url": "/en/app/course",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffdf8",
+  "theme_color": "#f3ecdf",
+  "icons": [
+    { "src": "/course-icon/192", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/course-icon/512", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

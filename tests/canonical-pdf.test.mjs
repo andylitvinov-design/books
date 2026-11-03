@@ -10,13 +10,13 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.match(source, /\/MediaBox \[0 0 595.28 841.89\]/)
   assert.match(source, /ANDRII LITVINOV/)
   assert.match(source, /\/Subtype \/Image/)
-  assert.match(source, /143 779 Tm/)
-  assert.match(source, /68 716 m/)
+  assert.match(source, /164 788 Tm/, 'practitioner name anchors the restored premium letterhead')
+  assert.match(source, /68 715 m/, 'letterhead separator is below the restored logo and credentials')
   assert.match(source, /\/URI \(https:\/\/example.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
   const guidance = recommendationGuidance({ ...recommendation, recommendationType: 'homeopathy' }, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('5 granules of the remedy.'))
-  assert.match(source, /\(1\. Arsenicum album\) Tj ET/)
+  assert.match(source, /\(1\. Arsenicum album 30C\) Tj ET/, 'approved potency is shown inline in the real PDF card')
 })
 
 test('font metrics preserve newlines and wrap long unbroken values within content width', () => {

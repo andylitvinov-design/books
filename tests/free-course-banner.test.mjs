@@ -10,6 +10,9 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeChange, gaugeModel } from '../lib/assessments/dashboard-gauges.js'
+import { assessmentResultOverview } from '../lib/assessments/result-overview.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -27,6 +30,7 @@ runInNewContext(compiled, {
       : require(name),
 })
 const { FreeCourseBanner } = loaded.exports
+const isolatedReactState = { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] }
 const walk = node => node == null || typeof node === 'boolean' ? []
   : Array.isArray(node) ? node.flatMap(walk)
     : typeof node === 'object' ? [node, ...walk(node.props?.children)] : [node]
@@ -43,7 +47,7 @@ for (const locale of ['en', 'ru']) {
     assert.equal(nodes.filter(node => node.type === 'h3').length, 1)
     const links = nodes.filter(node => node.type === Link)
     assert.equal(links.length, 1)
-    assert.equal(links[0].props.href, '/' + locale + '/app/course')
+    assert.equal(links[0].props.href, '/' + locale + '/app/course?program=stress')
     assert.equal(links[0].props.prefetch, false)
     assert.match(text(links[0]), locale === 'ru' ? /Начать курс бесплатно/ : /Start course for free/)
     const details = nodes.find(node => node.type === 'details')
@@ -64,7 +68,7 @@ for (const locale of ['en', 'ru']) {
 test('default and unsupported locale safely use the English route and copy', () => {
   for (const props of [{}, { locale: 'es' }, { locale: '../../admin' }, { locale: null }]) {
     const tree = FreeCourseBanner(props)
-    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course')
+    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course?program=stress')
     assert.match(text(tree), /An optional next step/)
   }
 })
@@ -79,12 +83,12 @@ test('More is independent of course loading or stage and never writes or navigat
 
 test('all compact reports show exactly one optional banner after unchanged report content', () => {
   const report = read('components/app/compact-assessment-report.jsx')
-  assert.equal((report.match(/<FreeCourseBanner locale=\{locale\}\/>/g) || []).length, 1)
+  assert.equal((report.match(/<FreeCourseBanner locale=\{locale\} compact\/>/g) || []).length, 2)
   assert.ok(report.indexOf('<FreeCourseBanner') > report.indexOf('{report.rulesVersion}'))
   assert.doesNotMatch(report, /hasSkills|skillAxes/)
   assert.match(report, /getTestScaleGuide\(result\.definitionKey, locale\)/)
   assert.match(report, /<ScoreGauge dimension=\{dimension\} locale=\{locale\}/)
-  assert.match(report, /section\.steps\.slice\(0, 2\)/)
+  assert.match(report, /data-primary-support/)
 })
 
 test('the actual report renders the optional banner without skill mappings or course state', () => {
@@ -96,10 +100,13 @@ test('the actual report renders the optional banner without skill mappings or co
   const reportModule = { exports: {} }
   runInNewContext(reportCode, {
     exports: reportModule.exports,
-    require: name => name === './free-course-banner' ? { FreeCourseBanner }
+    require: name => name === 'react' ? isolatedReactState
+      : name === './free-course-banner' ? { FreeCourseBanner }
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
+            : name.endsWith('/result-overview') ? { assessmentResultOverview }
+              : name.endsWith('/assessment-evidence-status') ? { assessmentEvidenceStatus }
             : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
               : require(name),
   })
@@ -144,11 +151,15 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
   }
   const gauges = loadComponent('components/app/assessment-gauge.jsx', {
     '@/lib/assessments/dashboard-gauges': { gaugeChange, gaugeModel },
+    '@/lib/assessments/score-change-reading': { scoreChangeReading },
   })
   const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
+    'react': isolatedReactState,
     './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
+    '@/lib/assessments/result-overview': { assessmentResultOverview },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
   })
   // Exercise the exact pure boundary assertion used by the browser journey.
   const browserSource = read('scripts/verify-asrs6.mjs')
@@ -234,7 +245,7 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
     const report = element('section', { 'data-personal-result-report': '' }, outer)
     const score = element('article', {}, report)
     const banner = element('aside', { 'data-free-course-banner': '' }, report)
-    const link = element('a', { href: '/' + locale + '/app/course' }, banner)
+    const link = element('a', { href: '/' + locale + '/app/course?program=stress' }, banner)
     const valid = collect([link])
     assert.equal(link.closest('article'), outer)
     assert.equal(valid[0].insideScore, false)
@@ -246,9 +257,9 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
       assert.throws(() => check(collect([link, badLink]), locale), /single optional banner/)
     }
     const nestedBanner = element('aside', { 'data-free-course-banner': '' }, score)
-    const nestedLink = element('a', { href: '/' + locale + '/app/course' }, nestedBanner)
+    const nestedLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, nestedBanner)
     assert.throws(() => check(collect([nestedLink]), locale), /outside scored articles/)
-    const footerLink = element('a', { href: '/' + locale + '/app/course' }, report)
+    const footerLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, report)
     assert.throws(() => check(collect([footerLink]), locale), /score-derived course recommendation/)
   }
 })

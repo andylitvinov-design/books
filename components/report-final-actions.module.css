@@ -1,0 +1,44 @@
+.wrapper{
+  --ink:#173957;
+  width:min(100% - 26px,900px);margin:26px auto 30px;
+  padding:clamp(18px,3vw,25px);border-radius:20px;
+  border:1px solid #ccdfe7;background:linear-gradient(130deg,#edf5fa,#fff9fa);
+  color:var(--ink);box-shadow:0 10px 27px rgba(23,57,87,.08);
+  box-sizing:border-box;
+}
+.heading{margin:0 0 16px}
+.heading>span{font-size:11px;font-weight:850;letter-spacing:.1em;color:#52748a}
+.heading h2{font:650 clamp(21px,3vw,28px)/1.23 Georgia,serif;
+  color:#173957;margin:4px 0 0}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.actions .primary,.actions .bonus,
+.saveSlot :global(.prescription-save-to-cabinet) button{
+  width:100%;min-height:64px;box-sizing:border-box;display:flex;
+  justify-content:center;align-items:center;gap:10px;
+  border-radius:14px;padding:14px 17px;
+  border:1px solid #173957;background:#173957;color:#fff;
+  text-align:center;text-decoration:none;font:800 clamp(14px,1.7vw,16px)/1.35 system-ui,-apple-system,sans-serif;
+  cursor:pointer;box-shadow:0 4px 13px rgba(23,57,87,.13);
+}
+.actions .bonus{background:#843d55;border-color:#843d55}
+.actions .bonus:hover{background:#722b43}
+.actions .primary:hover:not(:disabled),
+.saveSlot :global(.prescription-save-to-cabinet) button:hover:not(:disabled){
+  background:#0e2d47;color:#fff
+}
+.actions .primary:disabled{opacity:.72;cursor:not-allowed;box-shadow:none}
+.saveSlot{min-width:0}
+.saveSlot :global(.prescription-save-to-cabinet){display:flex;flex-direction:column;gap:6px}
+.saveSlot :global(.prescription-save-to-cabinet) button{margin:0}
+.saveSlot :global(.prescription-save-to-cabinet) [role=alert]{
+  color:#963c48;font-size:13px
+}
+.hint{margin:12px 0 0;color:#576e7a;font-size:13px;line-height:1.5}
+.actions :is(a,button):focus-visible{outline:3px solid #ae6785;outline-offset:3px}
+@media(max-width:700px){
+  .wrapper{width:calc(100% - 20px);padding:16px 13px;margin:24px auto}
+  .actions{grid-template-columns:minmax(0,1fr)}
+  .actions .primary,.actions .bonus,
+  .saveSlot :global(.prescription-save-to-cabinet) button{min-height:57px;padding:13px}
+}
+@media print{.wrapper{display:none!important}}

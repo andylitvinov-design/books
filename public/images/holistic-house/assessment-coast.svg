@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-labelledby="title">
+<title id="title">Quiet sunrise above a coast, with a person peacefully sitting by the sea</title>
+<defs><linearGradient id="sky" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#f5fbf7"/><stop offset=".48" stop-color="#bbdfe2"/><stop offset="1" stop-color="#e7d6bc"/></linearGradient><linearGradient id="water" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#8dbbc3"/><stop offset=".58" stop-color="#5b9caf"/><stop offset="1" stop-color="#356e80"/></linearGradient><linearGradient id="ground" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9b99c"/><stop offset=".54" stop-color="#8f9382"/><stop offset="1" stop-color="#525d57"/></linearGradient><radialGradient id="sun"><stop stop-color="#fff8e1" stop-opacity=".95"/><stop offset="1" stop-color="#fff1d0" stop-opacity="0"/></radialGradient><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".38" numOctaves="2" seed="6"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".06"/></feComponentTransfer></filter></defs>
+<rect width="480" height="480" fill="url(#sky)"/><circle cx="102" cy="185" r="150" fill="url(#sun)"/><circle cx="96" cy="188" r="28" fill="#fff7da" opacity=".83"/>
+<path d="M0 237C83 222 135 228 206 240c62 11 131 6 274-20V480H0Z" fill="url(#water)"/>
+<path d="M0 256c90 5 178 14 254 2s145-18 226-13" fill="none" stroke="#e8f5ed" stroke-opacity=".46" stroke-width="3"/>
+<path d="M0 318c59-21 119-24 173-21 71 2 120 21 180 13" fill="none" stroke="#d3eef0" stroke-opacity=".4" stroke-width="2"/>
+<path d="M0 257c49-30 82-25 126-8 21 8 39 21 61 21-48 11-108 5-187-1Z" fill="#829789" opacity=".72"/>
+<path d="M0 339c47-23 86-12 132 10 51 24 90 37 125 29 79-18 146-8 223 47v55H0Z" fill="url(#ground)"/>
+<path d="M0 415c52-8 100-32 155-25 56 6 84 49 142 35 72-18 127-17 183 5" fill="none" stroke="#d5c8a2" stroke-opacity=".46" stroke-width="12"/>
+<g transform="translate(305 191)">
+<path d="M33 42c-11-4-21-18-13-30 6-10 17-13 26-7 13-6 25 5 22 16-2 9-12 11-13 23Z" fill="#4d4641"/>
+<circle cx="69" cy="10" r="15" fill="#554e43"/><path d="M48 16c-5 17-4 29 7 39l13 3 7-16c7-17-2-28-10-32Z" fill="#c4a18c"/>
+<path d="M51 51c-28 3-40 34-39 56l-4 54c-1 20 19 23 24 8l21-51 13 48 41 16c14 4 21-12 9-20l-28-24-10-65c-2-14-15-23-27-22Z" fill="#d6d0c7" stroke="#9e9c90" stroke-width="1.5"/>
+<path d="M36 131c-31 11-63 9-85 41-7 9 8 20 18 15l71-22 53 24c18 8 33 5 35-6-6-13-25-25-44-35Z" fill="#716f67"/>
+<path d="M-47 181c43-10 68-16 105-8 25 7 52 17 77 25" fill="none" stroke="#4c5550" stroke-width="15" stroke-linecap="round"/>
+</g>
+<rect width="480" height="480" filter="url(#grain)" opacity=".75"/>
+</svg>

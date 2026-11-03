@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "appId": "com.holistichouse.app",
+  "android": {
+    "status": "not_released",
+    "version": null,
+    "versionCode": null,
+    "downloadUrl": null,
+    "sha256": null,
+    "signingCertificateSha256": null,
+    "qaEvidenceUrl": null,
+    "ownerApproved": false
+  },
+  "ios": {
+    "status": "not_released",
+    "version": null,
+    "appStoreUrl": null,
+    "qaEvidenceUrl": null,
+    "ownerApproved": false
+  }
+}

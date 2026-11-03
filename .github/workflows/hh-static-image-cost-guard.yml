@@ -1,0 +1,118 @@
+name: Holistic House static image cost guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - "data/public-card-artwork*.json"
+      - "lib/public-card-artwork.ts"
+      - "scripts/build-public-card-artwork.mjs"
+      - "tests/public-card-artwork*.test.mjs"
+      - "components/book-catalog.tsx"
+      - "components/book-showcase.tsx"
+      - "components/spanish-book-showcase.tsx"
+      - "components/catalog-showcase.tsx"
+      - "components/yggdrasil-program-landing.tsx"
+      - "components/temple-studies.tsx"
+      - "components/core-service-detail.tsx"
+      - "next.config.ts"
+      - "package.json"
+  push:
+    branches: ["codex/public-book-library"]
+    paths:
+      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - "data/public-card-artwork*.json"
+      - "lib/public-card-artwork.ts"
+      - "scripts/build-public-card-artwork.mjs"
+      - "tests/public-card-artwork*.test.mjs"
+      - "components/book-catalog.tsx"
+      - "components/book-showcase.tsx"
+      - "components/spanish-book-showcase.tsx"
+      - "components/catalog-showcase.tsx"
+      - "components/yggdrasil-program-landing.tsx"
+      - "components/temple-studies.tsx"
+      - "components/core-service-detail.tsx"
+      - "next.config.ts"
+      - "package.json"
+      # Keep shared caches fresh on the exact production input changes.
+      - "package-lock.json"
+      - "scripts/generate-scenario-melodies.mjs"
+      - "scripts/generate-mandala-melodies.mjs"
+      - "lib/mandala/scenario-audio-catalog.mjs"
+      - "scripts/generate-soft-ocean-melody.mjs"
+      - ".github/workflows/hh-pr-core-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Superseded PR commits do not need another costly full verification build.
+concurrency:
+  group: hh-static-image-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  static-image-cost-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install lockfile-pinned packages
+        run: npm ci --no-audit --no-fund
+      # Production-only cache ownership. The existing static-image guard already
+      # performs a full build on relevant protected production pushes.
+      - name: Restore trusted scenario MP3 cache
+        id: ci_media_cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore trusted Next compiler cache
+        id: ci_next_cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+      - name: Verify public source hashes and static lookup paths
+        run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
+      # Every production-targeted PR already has an unconditional exact-head
+      # Core Next build/typecheck. The image gate must still generate and decode
+      # all 85 pinned WebP outputs independently before claiming success.
+      - name: Regenerate all content-pinned WebP on production PR
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        run: npm run build:static-artwork
+      - name: Build real Next.js app with prebuilt static WebP
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      - name: Prove generated WebP images are usable and bounded
+        run: node --test tests/public-card-artwork-generated.test.mjs
+      - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
+      - name: Verify all generated scenario MP3s before trusted cache publication
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_media_cache.outputs.cache-hit != 'true'
+        run: |
+          node scripts/generate-scenario-melodies.mjs --check
+          node --test tests/mandala-scenario-audio.test.mjs
+      - name: Save production-only scenario MP3 cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_media_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: ${{ steps.ci_media_cache.outputs.cache-primary-key }}
+      - name: Save production-only Next compiler cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_next_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .next/cache
+          key: ${{ steps.ci_next_cache.outputs.cache-primary-key }}

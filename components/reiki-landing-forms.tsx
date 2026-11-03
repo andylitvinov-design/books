@@ -1,4 +1,4 @@
-import { MessageCircle, Send } from "lucide-react";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { ReikiChoiceCapture } from "@/components/reiki-choice-capture";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -68,12 +68,8 @@ function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind
         <p>{item.lead}</p>
       </div>
       <div className="reiki-offer-card__actions" aria-label={item.title}>
-        <a className="reiki-offer-card__whatsapp" href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={"WhatsApp — " + item.title}>
-          <MessageCircle size={17} aria-hidden="true" /> WhatsApp
-        </a>
-        <a className="reiki-offer-card__telegram" href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer" aria-label={"Telegram — " + item.title}>
-          <Send size={16} aria-hidden="true" /> Telegram
-        </a>
+        <ContactChannelChooser
+        stayAfterSave locale={locale} whatsappUrl={whatsappUrl} />
       </div>
     </article>
   );
@@ -81,8 +77,8 @@ function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind
 
 // Keep existing exported names and anchor IDs so all site links continue to work.
 // Retain the historical export and the #reiki-free-level-one deep link.
-export function YggdrasilLeadForms({ locale }: { locale: PublicLocale }) {
-  return <ReikiChoiceCapture locale={locale} course="yggdrasil" />;
+export function YggdrasilLeadForms({ locale, placement = "bottom" }: { locale: PublicLocale; placement?: "top" | "bottom" }) {
+  return <ReikiChoiceCapture locale={locale} course="yggdrasil" placement={placement} />;
 }
 
 export function ReikiConsultationForm({ locale, course }: { locale: PublicLocale; course: string }) {

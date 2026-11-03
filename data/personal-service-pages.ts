@@ -1,10 +1,11 @@
-export type PersonalServiceKey = "psychohomeopathy" | "imagery-therapy" | "systemic-constellations";
+export type PersonalServiceKey = "psychohomeopathy" | "imagery-therapy" | "systemic-constellations" | "business-consulting";
 export type ServicePageLocale = "en" | "ru" | "es";
 
 export const personalServicePaths: Record<PersonalServiceKey, string> = {
   psychohomeopathy: "psychohomeopathy",
   "imagery-therapy": "imagery-therapy",
   "systemic-constellations": "systemic-constellations",
+  "business-consulting": "business-consulting",
 };
 
 export const servicePageShared = {
@@ -172,6 +173,182 @@ export const personalServiceCopy: Record<PersonalServiceKey, Record<ServicePageL
       disclaimer:"Las constelaciones y las prácticas arquetípicas son exploratorias y no garantizan resultados. No sustituyen asesoramiento médico, psiquiátrico, financiero o legal.",
       orderLabel:"Solicitar una sesión de constelaciones"
     }
+  },
+  "business-consulting": {
+    "ru": {
+      "title": "Бизнес-консалтинг, бизнес-расстановки и активация цели",
+      "description": "Индивидуальная бизнес-сессия: системная карта, бизнес-расстановка, активация цели и план конкретных действий на 14 дней.",
+      "eyebrow": "04 · Бизнес и цели",
+      "headline": "У бизнеса есть цель. Как найти точку движения?",
+      "lead": "Когда задача ясна, но решение буксует, полезно увидеть более широкую картину: роли владельца, команды, партнёров, клиентов, продукта и денег. Объединяем реальную бизнес-задачу с символической бизнес-расстановкой, практикой активации цели и планом действий. Получаем рабочие гипотезы, а не предсказания и гарантии.",
+      "questions": [
+        "Есть цель роста, но трудно выбрать следующий шаг.",
+        "В партнёрстве или команде возникли противоречия и повторяющиеся затруднения.",
+        "Продажи, позиционирование или деньги вызывают ощущение застоя.",
+        "Стою перед запуском проекта, сменой направления или важным выбором.",
+        "Знаю, чего хочу, но сомневаюсь, откладываю действие или теряю уверенность."
+      ],
+      "process": [
+        {
+          "title": "01 · Проясняем цель",
+          "text": "Выбираем одну бизнес-задачу, фиксируем исходное положение, ограничения и измеримый критерий продвижения."
+        },
+        {
+          "title": "02 · Строим бизнес-расстановку",
+          "text": "С помощью символических позиций исследуем собственника, команду, клиентов, продукт, деньги и цель. Отмечаем роли, конфликты и ресурсы как гипотезы, не как установленные факты."
+        },
+        {
+          "title": "03 · Активируем цель",
+          "text": "В добровольной образной практике представляем желаемый результат, замечаем внутреннюю готовность, сомнения и ресурсы. Связываем образ с реальным управленческим решением."
+        },
+        {
+          "title": "04 · Переходим к действию",
+          "text": "Отделяем впечатления от бизнес-фактов, выбираем один шаг на ближайшие 72 часа, ещё 2–3 действия и показатель, который проверим за 14 дней."
+        }
+      ],
+      "takeaways": [
+        "Чёткая приоритетная цель и критерий её достижения.",
+        "Карта бизнес-системы, ресурсов и гипотез для проверки.",
+        "Решение и первый конкретный шаг в течение 72 часов.",
+        "План на 14 дней с одним понятным показателем прогресса."
+      ],
+      "faqs": [
+        {
+          "q": "Что значит «активация цели»?",
+          "a": "Это добровольная визуализация и коучинговая работа: конкретизировать желаемое, исследовать готовность и выбрать следующий шаг. Она не «притягивает деньги» и не гарантирует результат."
+        },
+        {
+          "q": "Нужно ли звать партнёров или команду?",
+          "a": "Нет. Индивидуальная сессия исследует ваше восприятие системы, а не скрытые мотивы отсутствующих людей."
+        },
+        {
+          "q": "Это финансовый или стратегический аудит?",
+          "a": "Нет. Мы помогаем структурировать запрос и решения, но не подменяем анализ финансов, права, кадров или рынка профильными специалистами."
+        },
+        {
+          "q": "Стоимость и длительность?",
+          "a": "Основная сессия: 60 минут, €100. Экспресс-формат для прояснения цели: 30 минут, €50. Время и формат подтверждаем до записи; оплата на странице не списывается."
+        }
+      ],
+      "disclaimer": "Бизнес-расстановки и воображение — субъективные методы исследования, не доказанная диагностика организации и не способ гарантировать доход. Это не финансовая, юридическая или инвестиционная консультация. Решения и проверка фактов остаются за владельцем бизнеса.",
+      "orderLabel": "Запросить бизнес-сессию и активацию цели"
+    },
+    "en": {
+      "title": "Business consulting, constellations & goal activation",
+      "description": "One-to-one business consulting with a symbolic constellation, goal-activation exercise and a focused 14-day action plan.",
+      "eyebrow": "04 · Business & goals",
+      "headline": "Your business has a goal. What could move it forward?",
+      "lead": "When a business decision feels stuck, we examine the wider picture: your role, team, partners, customers, product and money. A symbolic business constellation and an optional goal-activation visualization help generate perspectives and turn one goal into a testable decision. This is a structured reflection, not a promise of commercial results.",
+      "questions": [
+        "I have a growth goal but cannot choose my next step.",
+        "Partnership or team roles create recurring difficulties.",
+        "Sales, pricing or positioning feel stuck.",
+        "I face a launch, pivot or important business choice.",
+        "I know what I want but postpone acting or doubt myself as a founder."
+      ],
+      "process": [
+        {
+          "title": "01 · Define the goal",
+          "text": "Choose one business question, establish the baseline and define a measurable sign of progress."
+        },
+        {
+          "title": "02 · Map the business system",
+          "text": "Use symbolic positions for the owner, team, customers, offer, money and goal. Explore roles, tensions and resources as hypotheses, not facts."
+        },
+        {
+          "title": "03 · Activate the goal",
+          "text": "Optional guided imagery explores the desired outcome, your readiness, doubts and strengths. Connect the image to a real decision."
+        },
+        {
+          "title": "04 · Translate it into action",
+          "text": "Reality-check insights, select an action within 72 hours, two or three further steps and one measure to review over 14 days."
+        }
+      ],
+      "takeaways": [
+        "One clearly framed priority goal with a success criterion.",
+        "A business-system map and hypotheses worth testing.",
+        "A first decision and action within 72 hours.",
+        "A lightweight 14-day plan with a metric for progress."
+      ],
+      "faqs": [
+        {
+          "q": "What is goal activation?",
+          "a": "It is a voluntary imagery and coaching exercise to clarify the desired outcome, notice motivations and select an action. It cannot manifest revenue or guarantee success."
+        },
+        {
+          "q": "Does my team need to attend?",
+          "a": "No. One-to-one work explores your experience of the system; it cannot uncover absent people's thoughts or motives."
+        },
+        {
+          "q": "Is this financial or management advice?",
+          "a": "It supports reflection and decision-making, not a financial audit, investment recommendation, legal opinion or substitute for evidence-based specialist advice."
+        },
+        {
+          "q": "What is the duration and fee?",
+          "a": "A 60-minute session is €100; a 30-minute goal-clarity express session is €50. We confirm the time and format before booking. No payment is taken here."
+        }
+      ],
+      "disclaimer": "Business constellations and guided imagery are subjective reflective tools, not validated organizational diagnostics or guaranteed ways to grow revenue. This session does not replace financial, legal, employment or investment expertise. You remain responsible for checking facts and decisions.",
+      "orderLabel": "Request business consulting & goal activation"
+    },
+    "es": {
+      "title": "Consultoría de negocios, constelaciones y activación de metas",
+      "description": "Sesión individual de consultoría empresarial con mapa sistémico, constelación, activación de metas y plan de acción de 14 días.",
+      "eyebrow": "04 · Negocios y objetivos",
+      "headline": "Tu negocio tiene una meta. ¿Cuál es el siguiente paso?",
+      "lead": "Cuando una decisión se estanca, exploramos los roles del propietario, equipo, socios, clientes, producto y dinero. Un mapa simbólico y una práctica voluntaria de activación de metas ayudan a elegir una decisión y comprobarla en la realidad. Son perspectivas nuevas, no promesas de crecimiento.",
+      "questions": [
+        "Tengo una meta de crecimiento, pero no sé cuál es el siguiente paso.",
+        "Los roles del equipo o la relación con socios generan dificultades.",
+        "Ventas, precios o posicionamiento parecen bloqueados.",
+        "Estoy ante un lanzamiento o una decisión importante.",
+        "Sé lo que quiero, pero sigo aplazando la acción."
+      ],
+      "process": [
+        {
+          "title": "01 · Definir la meta",
+          "text": "Elegimos una pregunta, el punto de partida y un indicador concreto de avance."
+        },
+        {
+          "title": "02 · Mapear el negocio",
+          "text": "Representamos simbólicamente al propietario, equipo, clientes, producto, dinero y meta. Las impresiones son hipótesis, no hechos."
+        },
+        {
+          "title": "03 · Activar la meta",
+          "text": "Con una visualización opcional exploramos el resultado deseado, la motivación y los recursos, y lo conectamos con una decisión real."
+        },
+        {
+          "title": "04 · Pasar a la acción",
+          "text": "Contrastamos ideas con datos y elegimos una acción en 72 horas, 2–3 pasos y un indicador para revisar en 14 días."
+        }
+      ],
+      "takeaways": [
+        "Una meta clara con un criterio de éxito.",
+        "Un mapa de roles, recursos e hipótesis contrastables.",
+        "Una primera decisión y acción en 72 horas.",
+        "Un plan de 14 días y una medida de progreso."
+      ],
+      "faqs": [
+        {
+          "q": "¿Qué significa activar una meta?",
+          "a": "Es una visualización voluntaria y una práctica de coaching para concretar el resultado y elegir una acción. No atrae ingresos mágicamente ni garantiza éxito."
+        },
+        {
+          "q": "¿Necesito reunir a mi equipo?",
+          "a": "No. Exploramos tu perspectiva, no pensamientos ocultos de otras personas."
+        },
+        {
+          "q": "¿Sustituye una auditoría empresarial?",
+          "a": "No. Las decisiones financieras, jurídicas y de personal requieren datos y asesoramiento especializado."
+        },
+        {
+          "q": "¿Cuánto dura y cuesta?",
+          "a": "60 minutos: €100. Formato exprés de 30 minutos: €50. Confirmamos modalidad y disponibilidad antes de reservar; no se cobra aquí."
+        }
+      ],
+      "disclaimer": "Las constelaciones empresariales y la visualización son métodos subjetivos de reflexión, no diagnósticos empresariales validados ni garantías de ingresos. No sustituyen asesoría financiera, jurídica o profesional.",
+      "orderLabel": "Solicitar consultoría y activación de metas"
+    }
   }
 };
 
@@ -179,4 +356,5 @@ export const personalServiceImages: Record<PersonalServiceKey, string> = {
   psychohomeopathy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
   "imagery-therapy": "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
   "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  "business-consulting": "/images/holistic-house/video-posters/constellations-en-v1.webp",
 };

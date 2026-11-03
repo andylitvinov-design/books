@@ -56,37 +56,63 @@
 @media(max-width:360px){.scaleRow{grid-template-columns:minmax(0,1fr) auto}.delta{grid-column:2;justify-self:center}.cardHeader{flex-wrap:wrap}.cardHeader a{margin-left:auto}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
 
-/* Score dials use each instrument's validated scale and orientation.
-   Baseline and repeat stay visibly distinct, including on narrow phones. */
+/* The dial occupies its own fixed column. Only the active interval appears
+   inline; other intervals and the remaining test scales are full-width disclosures. */
 .card{background:linear-gradient(165deg,#fff 0%,#fbfeff 100%);border-color:#c2e1e7;box-shadow:0 7px 22px #0a617014}
-.scaleRow{grid-template-columns:100px minmax(0,1fr);gap:12px;align-items:center;padding:11px 12px;background:linear-gradient(115deg,#f0f9fb,#f8fcfd);border-color:#d1e9ed}
-.scaleDial{display:grid;place-items:center;min-width:0;padding:2px 4px}
-.scaleDial :global([data-assessment-gauge]){width:94px;max-width:100%;margin:0}
-.scaleDial :global([data-assessment-gauge] svg){max-height:55px}
-.scaleDial :global([data-assessment-gauge] strong){font-size:1.16rem;color:#125d69;margin-top:-2px}
+.scaleRow{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;padding:12px;border:1px solid #d1e9ed;border-radius:13px;background:linear-gradient(115deg,#f0f9fb,#f8fcfd);min-width:0;max-width:100%;overflow-wrap:break-word}
+.scaleTitle{display:block;min-width:0;color:#245660;font:750 13px/1.35 system-ui,sans-serif;overflow-wrap:anywhere}
+.scaleMain{display:grid;grid-template-columns:94px minmax(0,1fr);gap:12px;align-items:start;min-width:0}
+.scaleDial{display:grid;place-items:start center;min-width:0;overflow:hidden;padding:3px 0}
+.scaleDial :global([data-assessment-gauge]){width:92px;max-width:100%;margin:0}
+.scaleDial :global([data-assessment-gauge] svg){max-height:57px}
+.scaleDial :global([data-assessment-gauge] strong){font-size:1.18rem;color:#125d69;margin-top:-2px}
 .scaleDial :global([data-assessment-gauge] strong span){font-size:.62rem}
 .scaleDial :global([data-assessment-gauge] figcaption){display:none}
-.scaleDial :global([data-assessment-gauge] small){font-size:.62rem}
-.scaleContent{min-width:0;display:grid;align-content:center;gap:4px}
-.scaleTitle{font:750 12px/1.4 system-ui,sans-serif;color:#245660;overflow-wrap:anywhere}
-.scaleContent .sparkline{max-width:140px;width:100%;height:18px;margin-top:4px}
-.values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:3px}
+.scaleDial :global([data-assessment-gauge] small){display:none}
+.scaleContent{display:grid;align-content:start;gap:7px;min-width:0}
+.activeBand{display:grid;gap:5px;padding:9px 10px;background:#e6f3f4;border:1px solid #c4e1e3;border-radius:10px;min-width:0;overflow-wrap:break-word}
+.activeBandCaption{font:700 10px/1.35 system-ui,sans-serif;color:#507985}
+.activeBandLine{display:flex;align-items:baseline;gap:4px 8px;flex-wrap:wrap;min-width:0}
+.activeBandRange{display:inline-block;white-space:nowrap;font:800 16px/1.25 system-ui,sans-serif;color:#096778;font-variant-numeric:tabular-nums}
+.activeBandLine strong{min-width:0;flex:1 1 110px;color:#255865;font:750 12px/1.4 system-ui,sans-serif;overflow-wrap:break-word}
+.activeBandNote{margin:0!important;color:#53717b!important;font:500 11px/1.45 system-ui,sans-serif!important;overflow-wrap:break-word}
+.noBandNote{margin:0!important;font:500 11px/1.45 system-ui,sans-serif!important;color:#607983!important}
+.values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:1px;min-width:0}
 .values span{min-width:0;display:grid;gap:4px;text-align:left}
-.values small{white-space:normal;font-size:10px;line-height:1.25;color:#6e838d}
-.values strong{font-size:18px;line-height:1.12}
-.values .delta{grid-column:1/-1;justify-self:start;display:inline-block;padding:5px 9px;font-size:11px}
+.values small{font-size:10px;line-height:1.3;white-space:normal;color:#6e838d}
+.values strong{font-size:17px;line-height:1.12}
+.values .delta{grid-column:1/-1;justify-self:start;display:inline-block;font-size:11px;padding:5px 9px;min-width:0}
 .values .awaiting{color:#8a9ea6;font-weight:700;letter-spacing:.08em}
+.scaleContent .sparkline{max-width:140px;width:100%;height:20px;margin-top:2px}
+.levelDetails{min-width:0;border-top:1px solid #d4e9eb;padding-top:7px}
+.levelDetails>summary{display:list-item;padding:5px 2px;cursor:pointer;color:#117583;font:750 12px/1.35 system-ui,sans-serif;overflow-wrap:break-word}
+.levelList{display:grid;gap:7px;padding:8px 0 0;min-width:0}
+.levelItem{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 9px;min-width:0;border:1px solid #dbeaec;border-radius:9px;background:#fff;padding:8px 10px}
+.levelItemRange{white-space:nowrap;color:#1c6975;font:800 12px/1.3 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.levelItem strong{min-width:0;flex:1 1 130px;color:#496a73;font:700 12px/1.4 system-ui,sans-serif;overflow-wrap:break-word}
+.levelItem p{flex-basis:100%;margin:0!important;color:#65808a!important;font:500 11px/1.45 system-ui,sans-serif!important}
+.levelCaveat{margin:9px 2px 2px!important;color:#67828b!important;font:500 10px/1.45 system-ui,sans-serif!important}
 .cardHeader h3{font-size:16px!important}
 .dateRow{font-size:11px}
 @media(max-width:480px){
-  .scaleRow{grid-template-columns:82px minmax(0,1fr);gap:8px;padding:9px 8px}
-  .scaleDial{padding:0}
-  .scaleDial :global([data-assessment-gauge]){width:79px}
-  .scaleDial :global([data-assessment-gauge] svg){max-height:48px}
-  .scaleDial :global([data-assessment-gauge] strong){font-size:1.04rem}
-  .scaleTitle{font-size:11.5px}
-  .values{gap:6px}
-  .values small{font-size:9px}
-  .values strong{font-size:16px}
-  .cardHeader a{white-space:normal;text-align:right}
+ .scaleRow{padding:10px;gap:8px}
+ .scaleTitle{font-size:12px}
+ .scaleMain{grid-template-columns:76px minmax(0,1fr);gap:9px}
+ .scaleDial :global([data-assessment-gauge]){width:75px}
+ .scaleDial :global([data-assessment-gauge] svg){max-height:48px}
+ .scaleDial :global([data-assessment-gauge] strong){font-size:1.02rem}
+ .activeBand{padding:8px}
+ .activeBandLine strong{font-size:11.5px;flex-basis:100px}
+ .activeBandRange{font-size:15px}
+ .values{gap:6px}
+ .values small{font-size:9px}
+ .values strong{font-size:16px}
+ .cardHeader a{white-space:normal;text-align:right}
+}
+@media(max-width:360px){
+ .scaleMain{grid-template-columns:67px minmax(0,1fr);gap:7px}
+ .scaleDial :global([data-assessment-gauge]){width:66px}
+ .activeBand{padding:7px}
+ .cardHeader{flex-wrap:wrap}
+ .cardHeader a{margin-left:auto}
 }

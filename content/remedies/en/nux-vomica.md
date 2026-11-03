@@ -130,6 +130,14 @@ Make a slow exhale.
 Say:
 “I do not have to push harder. I can act calmly.”
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: An inner rush: you have to do everything yourself, push harder and let nothing slip.
+
+After (desired state): Calm strength and trust in your own rhythm, with permission to pause and let go of excessive control.
+
 ## Additional materials and observations
 
 ### message1069 (02.10.2026 20:15 Telegram public view)

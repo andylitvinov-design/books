@@ -17,3 +17,7 @@
 /* Editorial photographs for each of the three Spanish homepage service choices. */
 .house-home:lang(es) .service-home-card-photo { position:relative; display:block; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:12px; margin:0 0 14px; background:#e6ddcf; }
 .house-home:lang(es) .service-home-card-photo img { object-fit:cover; }
+
+/* Balanced four-card Services catalogue in ES. */
+.services-shell:lang(es) .services-studio-grid--four{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){.services-shell:lang(es) .services-studio-grid--four{grid-template-columns:1fr}}

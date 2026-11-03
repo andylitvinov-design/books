@@ -1,5 +1,7 @@
 import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
+import { TRAUMA_SCREENING_CATALOG } from '../data/assessments/trauma-screening-catalog-2026.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
@@ -11,6 +13,7 @@ import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2
 import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
 import { PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
 import { RELATIONSHIPS_INTIMACY_KEYS } from '../data/assessments/relationships-intimacy-v1.js'
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from '../data/assessments/open-professional-2026.js'
 import { IPIP_VIA_R_COMPLETION_CATALOG } from '../data/assessments/ipip-via-r-completion-2026.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
@@ -23,11 +26,13 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 47 + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length)
+  assert.equal(items.length, 47 + TRAUMA_SCREENING_CATALOG.length + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + TANTRIC_REFLECTION_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length + 2)
   assert.deepEqual(
-    items.filter(item=>!IPIP_VIA_R_COMPLETION_CATALOG.some(candidate=>candidate.key===item.key)).map((item) => item.key).sort(),
+    items.filter(item=>!TRAUMA_SCREENING_CATALOG.some(candidate=>candidate.key===item.key)&&!IPIP_VIA_R_COMPLETION_CATALOG.some(candidate=>candidate.key===item.key)).map((item) => item.key).sort(),
     [
     'asrs-6',
+    'ipip-via-r-strengths-96',
+    'cfpb-financial-wellbeing-5',
     'mhc-sf',
     'scs-sf',
     'compassion-scale',
@@ -82,6 +87,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
     ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
     ...RELATIONSHIPS_INTIMACY_KEYS,
+    ...TANTRIC_REFLECTION_KEYS,
     ...IPIP_THREE_CATALOG.map((item) => item.key),
     ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
@@ -104,7 +110,7 @@ test('configured clinical and resource measures return valid scored dimensions',
     ['hh-monthly-profile','v1','en'],
   ]) {
     const definition = getAssessmentDefinition(key, version, locale)
-    const result = scoreAssessment(definition, answers(definition))
+    const result = scoreAssessment(definition, answers(definition), syntheticTraumaContext(definition))
     assert.equal(result.definitionKey, key)
     assert.ok(result.dimensions.length > 0, key)
     assert.ok(result.dimensions.every((dimension) => Number.isFinite(dimension.value)), key)

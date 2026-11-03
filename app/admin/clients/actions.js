@@ -1,9 +1,12 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
-import { createClient, normalizeSharedMaterial, updateClient, assignLegacyConsultation } from '@/lib/clients/service'
+import { createClient, normalizeSharedMaterial, updateClient, assignLegacyConsultation, isClientId } from '@/lib/clients/service'
 import { rotateCabinetAccess, revokeCabinetAccess } from '@/lib/clients/access'
+import { appEnabled, getAppConfig } from '@/lib/app/config'
+import { transaction } from '@/lib/app/database'
 async function ownerStore() { if (!await requireAdminRequest()) throw new Error('Unavailable'); const store = getPrescriptionStore(); if (!store) throw new Error('Unavailable'); return store }
 export async function createClientAction(data) {
   const store = await ownerStore()
@@ -57,4 +60,41 @@ export async function assignLegacyAction(id, data) {
   const clientId = data.get('clientId')
   if (clientId) await assignLegacyConsultation(store, id, clientId === 'new' ? { newClient: { fullName: data.get('fullName'), preferredLocale: data.get('preferredLocale') } } : clientId, { requestId: data.get('requestId') })
   redirect('/admin/clients/legacy')
+}
+
+/** Permanent deletion of an unlinked client. Active Google accounts, delivered
+ * sessions and received invoices are deliberately protected from this action. */
+export async function deleteClientAction(id, revision, expectedDocumentCount, expectedAssessmentCount, formData) {
+  const store = await ownerStore()
+  if (!isClientId(id)) redirect('/admin/clients')
+  const client = await store.findClientById(id)
+  if (!client || client.updatedAt !== revision ||
+    typeof formData.get('confirmation') !== 'string' ||
+    formData.get('confirmation') !== client.fullName) {
+    redirect('/admin/clients/' + id + '?delete=changed')
+  }
+  const docs = await store.listClientDocuments(id)
+  if (docs.some(doc => doc.kind === 'payment' && doc.paymentStatus === 'received')) {
+    redirect('/admin/clients/' + id + '?delete=billing')
+  }
+  if (appEnabled()) {
+    let linked
+    try {
+      linked = await transaction(getAppConfig(), null, async db => (
+        await db.query(`
+          select
+            exists(select 1 from app_private.client_account_bindings where legacy_client_id=$1) as account,
+            exists(select 1 from app_private.client_delivery_sessions where legacy_client_id=$1) as deliveries
+        `, [id])
+      ).rows[0], { server: true })
+    } catch {
+      redirect('/admin/clients/' + id + '?delete=unavailable')
+    }
+    if (linked.account || linked.deliveries) redirect('/admin/clients/' + id + '?delete=linked')
+  }
+  const removed = await store.deleteClientIfUnchanged(client, { expectedDocumentCount, expectedAssessmentCount })
+  if (!removed) redirect('/admin/clients/' + id + '?delete=changed')
+  revalidatePath('/admin/clients')
+  revalidatePath('/admin/reports')
+  redirect('/admin/clients?removed=1')
 }

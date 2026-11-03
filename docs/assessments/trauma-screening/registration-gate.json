@@ -1,0 +1,23 @@
+{
+  "status": "activation-candidate-pending-publication",
+  "baselineCommit": "e8968339771e1f3ae849dcb80703ea4a096dbcea",
+  "rows": [],
+  "activate": true,
+  "instruments": [
+    {
+      "key": "pcl-5",
+      "status": "opt-in-activation-candidate",
+      "reason": "Source/code review and exact new-version registration/readback verified; final activation review, canonical integration and hosted CI remain"
+    },
+    {
+      "key": "pc-ptsd-5",
+      "status": "unavailable",
+      "reason": "DB terminal-answer count guard disallows structural skip; DB-function change requires separate authorization"
+    },
+    {
+      "key": "itq-adult",
+      "status": "opt-in-activation-candidate",
+      "reason": "Source/code review and exact new-version registration/readback verified; final activation review, canonical integration and hosted CI remain"
+    }
+  ]
+}

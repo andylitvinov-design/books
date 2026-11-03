@@ -18,14 +18,12 @@ test('selected runnable tests can survive only a short same-tab OAuth handoff', 
   assert.match(PENDING_TEST_SELECTION_KEY, /test-selection/)
 })
 
-test('public Start button explicitly initiates Google and preserves the selected list', () => {
+test('public Start button directly opens guest selection and retains separate legacy OAuth compatibility', () => {
   const pub = read('components/app/public-test-explorer.jsx')
   const auth = read('app/api/app/[...path]/route.js')
-  assert.match(pub, /makeTestSelectionIntent\(entries\.map/)
-  assert.match(pub, /window\.sessionStorage\.setItem/)
-  assert.match(pub, /auth\/start/)
-  assert.match(pub, /continueTo: 'tests'/)
-  assert.doesNotMatch(pub, /guest\/test-plans/)
+  assert.match(pub, /guestStartable\(entries\)/)
+  assert.match(pub, /client\?startTests=/)
+  assert.doesNotMatch(pub, /auth\/start|makeTestSelectionIntent|PENDING_TEST_SELECTION_KEY/)
   assert.match(auth, /continueTo === 'tests'/)
   assert.match(auth, /app\/tests\?selection=pending/)
   assert.match(auth, /ensureAccount\(actor\)/)

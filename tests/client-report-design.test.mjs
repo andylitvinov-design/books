@@ -26,8 +26,9 @@ test('client PDF uses warm Holistic House styling without losing text, links or 
   for (const locale of ['en', 'ru']) {
     const source = buildPrescriptionPdf(example, locale, origin).toString('latin1')
     assert.match(source, /^%PDF-1\.7/)
-    assert.match(source, /0\.39 0\.21 0\.30 rg/)
-    assert.match(source, /0\.984 0\.961 0\.941 rg/)
+    assert.match(source, /0\.40 0\.22 0\.32 rg/)
+    assert.match(source, /0\.85 0\.91 0\.90 rg/, 'approved lighthouse now has a soft coastal hero without rectangular image fill')
+    assert.match(source, /q 207 0 0 81\.5 83 /, 'wide ink signature rests on white report paper')
     for (const value of [
       'Synthetic Client', 'TEST-2026-10', 'SYNTHETIC-ANALYSIS-VISIBILITY',
       'SYNTHETIC-GUIDANCE-VISIBILITY',
@@ -72,7 +73,7 @@ test('HTML and print report share the visible client layout and original remedy 
     readFile('components/consultation-report.css', 'utf8'),
   ])
   for (const selector of [
-    'canonical-report-heading', 'canonical-client', 'canonical-remedy-number',
+    'canonical-report-heading', 'canonical-client', 'canonical-remedy--unified',
     'canonical-remedy-fields', 'canonical-remedy-profile-action',
     'canonical-report-analysis', 'canonical-report-notes', 'canonical-follow-up',
   ]) {
@@ -100,7 +101,7 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
   const pdf = buildPrescriptionPdf(report, 'en', origin).toString('latin1')
   assert.match(pdf, /\(APPENDIX\)/)
   assert.doesNotMatch(pdf, /SELECTED REMEDY PROFILES|Original texts and photographs from the Holistic House library/)
-  const photos = [...pdf.matchAll(/q (\d+) 0 0 (\d+) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/g)]
+  const photos = [...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 (\d+(?:\.\d+)?) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/g)]
   assert.ok(photos.length >= 2, 'The same approved image appears in the recommendation and the appendix')
   assert.ok(photos.some(photo => Number(photo[3]) > 350), 'Appendix photo must float at the upper right')
   assert.ok(photos.some(photo => Number(photo[3]) < 180), 'Cover thumbnail belongs beside the selected remedy')
@@ -109,9 +110,60 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
     readFile('components/prescription-document.jsx', 'utf8'),
     readFile('components/consultation-report.css', 'utf8'),
   ])
-  assert.match(jsx, /'Приложение' : 'Appendix'/)
+  assert.doesNotMatch(jsx, /className="canonical-remedy-profiles"/, 'HTML no longer repeats an appendix')
   assert.doesNotMatch(jsx, /Описание выбранных препаратов|About your selected remedies/)
   assert.doesNotMatch(jsx, /Авторские описания и фотографии из библиотеки Holistic House/)
   assert.match(css, /\.canonical-shell \.canonical-document \.canonical-remedy-profile-photo \{\s*float: right;/)
   assert.match(css, /\.canonical-remedy-profile \.remedy-content-body \{[\s\S]*?font: 18\.5px\/1\.36/)
+})
+
+
+test('one combined card keeps instructions visible, and full source descriptions print safely', async () => {
+  const [jsx, css, printHandler] = await Promise.all([
+    readFile('components/prescription-document.jsx', 'utf8'),
+    readFile('components/consultation-report.css', 'utf8'),
+    readFile('components/report-appendix-print-expander.jsx', 'utf8'),
+  ])
+  const start = jsx.indexOf('return <section className="canonical-remedy canonical-remedy--unified" key={number}>')
+  const end = jsx.indexOf('</section>\n        })}', start)
+  assert.ok(start >= 0 && end > start)
+  const card = jsx.slice(start, end)
+  const summary = card.slice(card.indexOf('<summary'), card.indexOf('</summary>'))
+  assert.match(card, /<details className="canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure"/)
+  assert.match(summary, /RemedyReportThumbnail src=\{remedy\?\.primary_image\}/)
+  assert.match(summary, /item\.displayName/)
+  assert.match(summary, /administration/)
+  assert.match(summary, /detailKeys\.map\(\(key\) => <span/)
+  assert.match(summary, /item\[key\]/)
+  assert.match(summary, /Описание/)
+  assert.doesNotMatch(card, /<details[^>]*\sopen(?:\s|=|>)/, 'full description stays closed on screen')
+  assert.match(card, /<div className="canonical-remedy-profile-content">/)
+  assert.match(card, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
+  assert.match(card, /expandSupplementary fullSource/)
+  assert.match(card, /remedy\.primary_image/)
+  assert.match(card, /item\.remedyPath/)
+  assert.doesNotMatch(jsx, /className="canonical-remedy-profiles"/)
+  assert.match(jsx, /<ReportAppendixPrintExpander \/>/)
+  assert.ok(jsx.indexOf('<ReportAppendixPrintExpander />') < jsx.indexOf('<DocumentAutoPrint enabled='))
+  for (const marker of ['canonical-progress','canonical-report-analysis',
+    'canonical-remedy-group','canonical-guidance','canonical-follow-up-appointment',
+    'DocumentSignature']) assert.ok(jsx.includes(marker))
+  const unified = css.slice(css.indexOf('Unified prescription + remedy library cards — 2026-10-19'))
+  assert.match(unified, /details\.canonical-remedy-unified-disclosure > summary\.canonical-remedy-unified-summary/)
+  assert.match(unified, /@media screen and \(max-width: 700px\)/)
+  assert.match(unified, /@media print/)
+  assert.match(css, /details\.canonical-remedy-profile-disclosure > summary:focus-visible/)
+  assert.match(printHandler, /addEventListener\('beforeprint', expandForPrint\)/)
+  assert.match(printHandler, /addEventListener\('afterprint', restoreAfterPrint\)/)
+  assert.match(printHandler, /if \(!appendix\.open\)/)
+  assert.match(printHandler, /appendix\.open = true/)
+  assert.match(printHandler, /appendix\.open = false/)
+  const pdfSource = buildPrescriptionPdf({
+    ...example,
+    items: [{ ...example.items[0], remedySlug: 'colchicum-autumnale',
+      displayName: 'Colchicum autumnale' }],
+  }, 'en', origin).toString('latin1')
+  assert.match(pdfSource, /APPENDIX/)
+  assert.match(pdfSource, /SYNTHETIC-ANALYSIS-VISIBILITY/)
+  assert.doesNotMatch(pdfSource, /PRIVATE-PRACTITIONER-ONLY/)
 })

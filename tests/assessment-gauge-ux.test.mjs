@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('result page leads with score gauge, two practical actions and a true retake runner CTA', () => {
+test('result page leads with score gauge, one supportive option and a true retake runner CTA', () => {
   const page = source('components/app/app-workspace.jsx')
   const report = source('components/app/compact-assessment-report.jsx')
   const gauge = source('components/app/assessment-gauge.jsx')
@@ -19,10 +19,10 @@ test('result page leads with score gauge, two practical actions and a true retak
   assert.match(page, /operationId: crypto.randomUUID\(\)/)
   assert.match(page, /router.push\('\/' \+ locale \+ '\/app\/runs\/'/)
   assert.match(page, /Retake this test/)
-  assert.match(report, /section.steps.slice\(0, 2\)/)
+  assert.match(report, /data-primary-support/)
   assert.match(report, /data-compact-assessment-report/)
   assert.match(report, /<ScoreGauge dimension=\{dimension\}/)
-  assert.match(report, /More about this score & sources/)
+  assert.match(report, /More about this scale/)
   assert.match(gauge, /data-assessment-gauge=\{model.orientation\}/)
   assert.match(css, /\.hh-result-repeat button/)
 })
@@ -53,5 +53,11 @@ test('non-normative traits are not color coded as healthy or unhealthy', () => {
   const dial = source('components/app/assessment-gauge.jsx')
   assert.match(helper, /dimension.dimensionClass === 'trait'/)
   assert.match(helper, /orientation:.*neutral|orientation = trait/)
-  assert.match(dial, /model.orientation === 'neutral' \? neutral : favorable/)
+  assert.match(dial, /model.orientation === 'neutral' \|\| model.orientation === 'screening'\) return continuousColor/)
+  assert.match(dial, /model.orientation === 'neutral' && model.bands.length/)
+  assert.match(dial, /const graded = model.continuous &&/)
+  assert.match(dial, /stroke=\{graded \?/)
+  assert.match(dial, /No validated category cutoffs/)
+  assert.match(source('components/app/app-workspace.jsx'), /showLegend=\{false\} showScaleNote=\{false\}/)
+  assert.doesNotMatch(dial, /const neutral = \[|const favorable = \[|length: 24/)
 })

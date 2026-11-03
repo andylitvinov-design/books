@@ -1,18 +1,28 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
+import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import { BookOpen } from "lucide-react";
+import { BookCategoryPicker } from "@/components/book-category-picker";
 
 import { featuredBookUrls } from "@/data/featured-books";
 import type { Book } from "@/data/library";
+import type { BookSectionKey } from "@/data/library-sections";
 import { getBookMaterialRole } from "@/data/library-structure";
 import { spanishBookText } from "@/data/spanish-books";
 
 const roleLabels = { foundation: "Fundamentos", theory: "Teoría", practice: "Práctica", reference: "Referencia", project: "Guía del proyecto" } as const;
 
 export function SpanishBookShowcase({ books }: { books: Book[] }) {
-  const visibleBooks = books;
-  const showFeatured = true;
+  const [activeCategory, setActiveCategory] = useState<BookSectionKey | null>(null);
+  const visibleBooks = activeCategory ? books.filter(book => book.mediaSeries === activeCategory) : [];
+  const showFeatured = activeCategory === "alchemy";
 
   return (
+    <>
+      <BookCategoryPicker books={books} locale="es" activeCategory={activeCategory} onSelect={setActiveCategory} />
+      {activeCategory ? (
     <section className="catalog-grid remedies-book-grid" aria-label="Catálogo de libros">
       {showFeatured ? (
         <a
@@ -23,7 +33,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
           aria-label="The Power of Life: abrir edición inglesa en otra pestaña"
         >
           <figure className="catalog-cover">
-            <Image alt="Portada: The Power of Life" height={600} width={800} priority src="/images/holistic-house/books-library.webp" />
+            <Image alt="Portada: The Power of Life" height={600} width={800} priority unoptimized src="/images/holistic-house/books-library.webp" />
           </figure>
           <div className="catalog-card-body">
             <p className="catalog-card-series">Edición del autor · inglés</p>
@@ -43,14 +53,14 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
         return (
           <a
             className="catalog-card remedies-book-card"
-            href={`/books/${book.id}?lang=en`}
+            href={`/es/books/${book.id}`}
             key={book.id}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${copy.title}: abrir edición original en otra pestaña`}
+            aria-label={`${copy.title}: abrir ficha en español`}
           >
             <figure className="catalog-cover">
-              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={`/media/${book.mediaSeries}/${book.cover}`} />
+              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)} unoptimized={hasBookCoverArtwork(book.id)} />
             </figure>
             <div className="catalog-card-body">
               <p className="catalog-card-series"><span>{copy.category}</span><span className="catalog-material-role">{roleLabels[getBookMaterialRole(book.id)]}</span></p>
@@ -66,5 +76,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
         );
       })}
     </section>
+      ) : null}
+    </>
   );
 }

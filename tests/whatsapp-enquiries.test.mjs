@@ -18,6 +18,22 @@ function decode(link) {
   return u.searchParams.get("text") || "";
 }
 
+test("consented homepage requests use safe public CRM paths without exposing private pages", () => {
+  for (const path of ["/", "/en", "/ru", "/es"]) {
+    assert.equal(safePublicWhatsAppPath(path), path);
+    assert.equal(safePublicWhatsAppPath(path + "?phone=do-not-send"), path);
+  }
+  assert.equal(safePublicWhatsAppPath("/en/client/reports"), "");
+});
+
+test("coaching lounge uses a safe public CRM and messenger source in all locales", () => {
+  for(const locale of ["en","ru","es"]){
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching"), "/"+locale+"/coaching");
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching/intake"), "/"+locale+"/coaching/intake");
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching/private"), "");
+  }
+});
+
 test("all locales encode a named service, exact action, selected option, topic and public source", () => {
   for (const [locale, words] of Object.entries(translations)) {
     for (const [service, request, topic, pagePath] of [
@@ -87,7 +103,7 @@ test("every site lead surface uses structured service/request WhatsApp links, ne
     ["components/consultation-choice-capture.tsx",/whatsappEnquiryUrl\(\{/],
     ["components/reiki-choice-capture.tsx",/whatsappEnquiryUrl\(\{/],
     ["components/reiki-landing-forms.tsx",/whatsappEnquiryUrl\(\{/],
-    ["components/yggdrasil-free-initiation.tsx",/whatsappEnquiryUrl\(\{/],
+    ["components/yggdrasil-initiation-form.tsx",/whatsappEnquiryUrl\(\{/],
     ["components/client-cabinet.jsx",/whatsappEnquiryUrl\(\{/],
     ["app/[locale]/homeopathy/page.tsx",/whatsappEnquiryUrl\(\{/],
     ["lib/public-lead-capture.js",/whatsappEnquiryUrl\(\{/],
@@ -113,4 +129,34 @@ test("consultation choices do not duplicate the Request label in prepared WhatsA
   const capture = read("components/consultation-choice-capture.tsx");
   assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Request: I would like to book/);
   assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Запрос: хочу записаться/);
+});
+
+test("initiation capture uses a single safe service-based WhatsApp handoff for all locales", () => {
+  const source = read("components/yggdrasil-initiation-form.tsx");
+  assert.match(source, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
+  assert.match(source, /service: "Reiki Yggdrasil · Level 1"/);
+  assert.match(source, /request: t\.request\[index\]/);
+  assert.match(source, /option: t\.options\[index\]/);
+  assert.match(source, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/yggdrasil\/free-initiation"/);
+  assert.match(source, /whatsappUrl=\{enquiryUrl\}/);
+  assert.match(source, /<ContactChannelChooser/);
+  assert.match(source, /"data-reiki-initiation-handoff": mode/);
+  assert.match(source, /https:\/\/t\.me\/AndyTherapist/);
+  assert.doesNotMatch(source, /<input|<textarea|type="file"|setName|setAttachment|setAnswers/);
+  for (const locale of ["en", "ru", "es"]) {
+    const request = "Please arrange my free introductory Level 1 session & explain dates #practice";
+    const option = "FREE Level 1";
+    const message = decode(whatsappEnquiryUrl({
+      locale,
+      service: "Reiki Yggdrasil · Level 1",
+      request,
+      option,
+      pagePath: "/" + locale + "/academy/reiki/yggdrasil/free-initiation",
+    }));
+    assert.match(message, /Reiki Yggdrasil · Level 1/);
+    assert.ok(message.includes(translations[locale].request + ": " + request));
+    assert.ok(message.includes(translations[locale].option + ": " + option));
+    assert.ok(message.includes("https://holistichouse.vercel.app/" + locale + "/academy/reiki/yggdrasil/free-initiation"));
+    assert.ok(!message.includes("attachments") && !message.includes("private-selector"));
+  }
 });

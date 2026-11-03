@@ -165,3 +165,11 @@ Extinguish the candle, expressing gratitude and releasing past experiences, open
 ___
 
 The preparation leads you out of past stresses and directs you toward the light of the future.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Old sadness has become a familiar refuge; you long for closeness but fear losing again.
+
+After (desired state): Room for sadness and joy, a sense of your own worth and the right to choose your future.

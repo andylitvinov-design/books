@@ -51,3 +51,11 @@ I am working with a new remedy, Stramonium. It is made from henbane / jimsonweed
 It is used for states associated with fear. In my observations, it can have a strong effect when fear is accompanied by bursts of suppressed aggression.
 
 The remedy helps the person feel more gathered and supported.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Fear and restrained aggression make it difficult to feel inwardly composed.
+
+After (desired state): A sense of support within yourself and more space to notice your feelings.

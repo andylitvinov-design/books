@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import type { Locale, Remedy } from "@/data/remedies";
 import { countSupplementarySources } from "@/lib/remedy-sources";
+import { splitAtRemedyIndications } from "@/lib/remedies/symptom-placement";
+import { RemedySymptomsSection } from "@/components/remedy-symptoms-section";
 
 type RemedyContentProps = {
   locale: Locale;
@@ -203,8 +205,10 @@ function ContentSection({ section, locale, variant, sourceUrl }: { section: Sect
   </section>;
 }
 
-function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Section[]; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
+function SectionLayout({ sections, locale, variant, sourceUrl, slug, symptomsAfterState }: { sections: Section[]; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string; slug: string; symptomsAfterState: boolean }) {
   const rendered: ReactNode[] = [];
+  const indicatedIndex = sections.findIndex((section) => /^(показания|indications)$/u.test(normaliseHeading(section.heading)));
+  const symptomIndex = indicatedIndex >= 0 ? indicatedIndex : sections.findIndex((section) => section.key === "state");
   for (let index = 0; index < sections.length;) {
     const first = sections[index];
     const second = sections[index + 1];
@@ -215,6 +219,9 @@ function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Sec
       continue;
     }
     rendered.push(<ContentSection key={`${first.heading}-${first.index}`} locale={locale} section={first} sourceUrl={sourceUrl} variant={variant} />);
+    if (symptomsAfterState && index === symptomIndex) {
+      rendered.push(<RemedySymptomsSection key={`symptoms-after-${first.index}`} slug={slug} locale={locale} variant={variant} />);
+    }
     index += 1;
   }
   return rendered;
@@ -226,12 +233,21 @@ export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence 
   </div>;
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
+  const sourceIntroPlacement = splitAtRemedyIndications(content.intro);
+  const symptomsAfterState = !sourceIntroPlacement.foundIndications && content.sections.some((section) => section.key === "state");
+  const introPlacement = symptomsAfterState ? null : sourceIntroPlacement;
   const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);
 
   return <div className={`remedy-content-body remedy-content-body--${variant}`}>
     {showEssence ? <RemedyEssence locale={locale} remedy={remedy} /> : null}
-    {content.intro.length ? <div className="remedy-content-intro"><ContentBlocks blocks={content.intro} locale={locale} sourceUrl={sourceUrl} /></div> : null}
-    <SectionLayout locale={locale} sections={content.sections} sourceUrl={sourceUrl} variant={variant} />
+    {content.intro.length ? <div className="remedy-content-intro">
+      {introPlacement ? <>
+        <ContentBlocks blocks={introPlacement.before} locale={locale} sourceUrl={sourceUrl} />
+        <RemedySymptomsSection slug={remedy.slug} locale={locale} variant={variant} />
+        <ContentBlocks blocks={introPlacement.after} locale={locale} sourceUrl={sourceUrl} />
+      </> : <ContentBlocks blocks={content.intro} locale={locale} sourceUrl={sourceUrl} />}
+    </div> : !symptomsAfterState ? <RemedySymptomsSection slug={remedy.slug} locale={locale} variant={variant} /> : null}
+    <SectionLayout locale={locale} sections={content.sections} sourceUrl={sourceUrl} variant={variant} slug={remedy.slug} symptomsAfterState={symptomsAfterState} />
     {content.supplementary ? <details className="remedy-supplementary" open={expandSupplementary}>
       <summary>{labels.supplementary}{supplementaryCount ? ` (${supplementaryCount})` : ""}</summary>
       <div><ContentBlocks blocks={content.supplementary.blocks} locale={locale} sourceUrl={sourceUrl} /></div>

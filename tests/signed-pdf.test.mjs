@@ -67,15 +67,15 @@ for (const [name, build, input, dateY, lineY] of [
     // Recommendation signatures flow with the content; invoices retain their
     // approved fixed geometry. Verify actual spacing rather than old coordinates.
     if (name === 'recommendation') {
-      const stamp = final.match(/q 120 0 0 47 83 (\d+(?:\.\d+)?) cm \/Signature Do Q/)
-      const dateMatch = final.match(/1 0 0 1 224 (\d+(?:\.\d+)?) Tm \(2026-09-18\)/)
-      assert.ok(stamp, 'original signature retained in compact signed panel')
-      assert.ok(dateMatch, 'date belongs to the compact signed panel')
+      const stamp = final.match(/q 207 0 0 81\.5 83 (\d+(?:\.\d+)?) cm \/Signature Do Q/)
+      const dateMatch = final.match(/1 0 0 1 318 (\d+(?:\.\d+)?) Tm \(2026-09-18\)/)
+      assert.ok(stamp, 'original handwritten signature restored to a wide white closing')
+      assert.ok(dateMatch, 'date belongs to the signed body closing')
       const stampY = Number(stamp[1])
       const dateY = Number(dateMatch[1])
-      assert.ok(stampY > 78 && stampY + 47 < 755, 'compact signature stays on A4')
+      assert.ok(stampY > 98 && stampY + 81.5 < 755, 'wide signature stays above reserved footer')
       assert.ok(dateY > 80 && dateY < 755)
-      assert.equal(stampY, dateY - 6, 'signature image and date align inside one compact panel')
+      assert.equal(stampY, dateY - 5, 'handwriting and date align within the white body closing')
       assert.doesNotMatch(final, /Tm \(\+380 93 478 88 27\)/)
     } else {
       const dateMatch = final.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Odesa, Ukraine, 2026-09-18/)

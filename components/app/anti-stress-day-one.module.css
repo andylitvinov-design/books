@@ -1,0 +1,233 @@
+.section{display:grid;gap:15px;align-content:start;min-width:0;padding-bottom:8px}
+.headline{color:#173e58;font-size:clamp(17px,3.8vw,21px);font-weight:760;line-height:1.45;letter-spacing:-.02em;margin:2px 0 0}
+.hint{margin:0;color:#59798c;font-size:12px;line-height:1.65}
+.scene{position:relative;display:grid;gap:7px;width:100%;margin:0;overflow:hidden;padding:10px;border:1px solid #cbe7eb;border-radius:23px;background:linear-gradient(115deg,#e6f7fa,#f4fbf9 55%,#e9eef9)}
+.scene img{display:block;width:100%;height:clamp(150px,28vh,245px);object-fit:contain;object-position:center}
+.scene figcaption{padding:4px 8px;text-align:center;color:#58788c;font-size:11px;line-height:1.4}
+.choices{display:grid;gap:9px}
+.compactChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.choices button,.compactChoices button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:55px;width:100%;padding:13px 16px!important;border:1px solid #d3e5eb!important;border-bottom:3px solid #b9d5dd!important;border-radius:16px!important;background:#fff!important;color:#254f68!important;text-align:left;font-size:14px!important;font-weight:720!important;line-height:1.4;cursor:pointer}
+.choices button:hover,.compactChoices button:hover{border-color:#079ba9!important;background:#f4fffc!important}
+.choices button[aria-pressed=true],.compactChoices button[aria-pressed=true]{background:#e1f9f5!important;border:2px solid #0da2a7!important;border-bottom:4px solid #04858f!important;color:#106f78!important}
+.choices button:focus-visible,.compactChoices button:focus-visible,.wordsLabel textarea:focus-visible{outline:3px solid #009fb9;outline-offset:3px}
+.choices button:disabled,.compactChoices button:disabled{opacity:.55;cursor:wait}
+.choices button svg{flex:none}
+.visualIcon{display:grid;place-items:center;justify-self:center;width:102px;height:102px;border-radius:33px;color:#0d8c9a;background:linear-gradient(140deg,#efffff,#d1f0ed);border:1px solid #c0e7e4;box-shadow:0 10px 24px #0b8c9915}
+.practiceHeading{display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid #c9e6e4;background:#edfbf8;color:#197d82;border-radius:15px;font-size:14px}
+.practiceHeading svg{flex:none}
+.guidedList{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.guidedList li{display:flex;align-items:flex-start;gap:12px;padding:13px;background:#f4fbfc;border:1px solid #d7ebee;border-radius:15px;color:#365b70;font-size:14px;line-height:1.5}
+.guidedList li span{flex:none;display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#d2efec;color:#087886;font-weight:820;font-size:12px}
+.transcript{border:1px solid #d5e6ed;border-radius:14px;padding:11px 14px;background:#fff}
+.transcript summary{display:flex;align-items:center;gap:10px;cursor:pointer;color:#2a6880;font-size:12px;font-weight:760}
+.transcript summary svg{margin-left:auto}
+.transcript p{font-size:13px;line-height:1.7;color:#45697d;white-space:pre-wrap}
+.wordsLabel{display:grid;gap:10px;color:#31566c;font-weight:750;font-size:13px}
+.wordsLabel textarea{width:100%;min-height:100px;padding:14px;resize:vertical;border-radius:16px;border:1px solid #c5dee5;background:#fdfefe;font:inherit;font-weight:470;line-height:1.5;color:#17394f}
+.resourceCard{display:flex;align-items:center;gap:9px;padding:13px 16px;border:1px solid #c5e9e2;border-radius:17px;background:#eefaf5;color:#257a75;font-size:13px;line-height:1.5}
+.resourceCard svg{flex:none}
+.personalCard{display:grid;gap:7px;margin-top:6px;padding:21px;border:1px solid #aadcd8;border-radius:23px;background:linear-gradient(145deg,#edfbf8,#f7fbff);box-shadow:0 8px 23px #0c809a10}
+.personalCard>span{font-size:12px;color:#2b8b93;font-weight:800;letter-spacing:.02em}
+.personalCard>strong{color:#174b63;font-size:21px;line-height:1.28}
+.personalCard>p{margin:0;color:#245f75;font-size:14px}
+.personalCard>small{color:#637c8b;font-size:12px;line-height:1.6}
+@media(max-width:500px){.section{gap:12px}.scene img{height:clamp(128px,22vh,195px)}.choices button{min-height:51px;padding:11px 13px!important;font-size:13px!important}.compactChoices button{font-size:12px!important;padding:11px 10px!important}.visualIcon{width:75px;height:75px;border-radius:25px}.visualIcon svg{width:32px;height:32px}.guidedList li{padding:11px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.section *{scroll-behavior:auto!important;transition:none!important}}
+
+.returnAction{justify-self:start;margin-top:5px;min-height:44px;padding:11px 14px!important;border:1px solid #bddfdf!important;border-radius:13px!important;background:#eff9f9!important;color:#267687!important;font-size:13px!important;font-weight:750!important;cursor:pointer}
+.returnAction:focus-visible{outline:3px solid #039aaa;outline-offset:2px}
+
+
+/* AS-1.9 — recognizable but varied interactive treatment across the 10 activity screens. */
+.section{--opora-navy:#16334f;--opora-ink:#19475c;--opora-teal:#168e97;--opora-wine:#843d57;gap:14px}
+.overline{display:inline-flex;align-items:center;gap:8px;width:fit-content;max-width:100%;border:1px solid #c9e9e7;border-radius:999px;padding:7px 12px;background:#eefaf7;color:#207a86;font-size:10px;font-weight:850;letter-spacing:.105em;line-height:1.35}
+.tileChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tileChoices button{min-height:97px!important;display:grid!important;grid-template-columns:39px minmax(0,1fr) 16px;gap:8px!important;padding:14px 12px!important;background:linear-gradient(150deg,#fff,#f7fcfc)!important;border:1px solid #cfe4e9!important;border-bottom:3px solid #bdd6df!important;align-items:center!important;text-align:left;border-radius:19px!important;box-shadow:0 6px 18px #0f59750a}
+.tileChoices button:last-child:nth-child(odd){grid-column:1/-1;min-height:68px!important}
+.tileChoices button[aria-pressed=true]{border:2px solid var(--opora-teal)!important;border-bottom:4px solid #07808b!important;background:linear-gradient(135deg,#e8fbf6,#f5fcff)!important;box-shadow:0 7px 20px #168e971c}
+.tileIcon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;background:#e8f5f8;color:#16818f;font-size:12px;font-weight:850}
+.tileChoices button[aria-pressed=true] .tileIcon{background:#caefe9;color:#0c7884}
+.tileCopy{display:grid;gap:4px;min-width:0;font-weight:inherit}
+.tileCopy strong{font-size:13px;font-weight:810;line-height:1.35}
+.tileCopy small{font-size:11px;font-weight:500;line-height:1.4;color:#648092}
+.compactChoices .tileCopy strong{font-size:12px}
+.compactChoices button{font-weight:760}
+.compactChoices button[aria-pressed=true]{box-shadow:0 5px 14px #0b8b9816}
+.scene{border-radius:24px;border-color:#c5dfe8;padding:9px 11px 11px;background:radial-gradient(circle at 45% 12%,#f7fefd 0%,#e5f4f3 60%,#edf2fa 100%);box-shadow:0 12px 30px #164f7213}
+.scene img{height:clamp(160px,29vh,245px);border-radius:17px;background:linear-gradient(135deg,#e3eff3,#f7fcf7);object-fit:contain!important}
+.selectedNotice{display:flex;align-items:center;gap:9px;margin:0;border:1px solid #badedc;border-radius:15px;padding:11px 13px;background:#f0fbf8;color:#287580;font-size:12px;line-height:1.5;font-weight:670}
+.selectedNotice svg{flex:none}
+.photoRegions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.photoRegions button{min-height:47px;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #cce4e9!important;border-radius:14px!important;background:#fff!important;color:#2f6074!important;font-size:12px!important;font-weight:770!important;padding:8px 7px!important;cursor:pointer}
+.photoRegions button[aria-pressed=true]{border-color:#0a97a2!important;background:#dff8f1!important;color:#176e7c!important;box-shadow:0 4px 16px #1597a21d}
+.photoRegionMark{display:grid;place-items:center;color:#5b92a1}
+.practiceHeading{background:linear-gradient(110deg,#e5f7f3,#f2fafd);border-color:#b9e0dc}
+.practiceStepper{display:grid;gap:14px;border:1px solid #1f6683;border-radius:23px;padding:19px 19px 17px;background:linear-gradient(135deg,#16334f 0%,#214e67 76%,#276676 100%);color:#fff;box-shadow:0 18px 28px #153e5536}
+.practiceStepHeader{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.practiceStepHeader small{font-size:11px;letter-spacing:.09em;font-weight:800;color:#a3e1e0}
+.stepDots{display:flex;gap:5px}
+.stepDots i{width:20px;height:5px;border-radius:10px;background:#7aa1af66}
+.stepDots i[data-active=true]{background:#70d8ca}
+.practiceStepper>strong{font-size:21px;font-weight:830;line-height:1.3;letter-spacing:-.025em}
+.practiceStepper>p{margin:0;min-height:66px;font-size:14px;line-height:1.65;color:#e2f1f4}
+.stepControls{display:flex;gap:9px;justify-content:space-between}
+.stepControls button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:41px;padding:9px 12px!important;border:1px solid #6ca2ad!important;border-radius:13px!important;background:#ffffff16!important;color:#fff!important;font-size:12px!important;font-weight:800!important;cursor:pointer}
+.stepControls button:last-child{background:#f5ffff!important;color:#17425a!important;border-color:#f0ffff!important}
+.stepControls button:disabled{opacity:.36;cursor:not-allowed}
+.softIllustration{display:flex;align-items:center;gap:16px;padding:17px 19px;border-radius:20px;background:linear-gradient(115deg,#e6f8f3 0%,#eef8fa 55%,#faf6f7 100%);border:1px solid #cee8e8;color:#207f88}
+.softIllustration>span{font-size:15px;line-height:1.4;color:#275770;font-weight:790}
+.swatchPanel{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid #d7e5e8;background:#f8fcfc;border-radius:17px;padding:12px}
+.swatchPanel>span{width:100%;color:#557587;font-size:12px;font-weight:730;margin-bottom:3px}
+.swatchPanel button{display:inline-flex;align-items:center;gap:8px;min-height:40px;border:1px solid #c9dfe4!important;background:#fff!important;border-radius:999px!important;color:#375e70!important;font-size:12px!important;font-weight:750!important;padding:7px 11px!important;cursor:pointer}
+.swatchPanel button[aria-pressed=true]{outline:2px solid #178d98;outline-offset:2px}
+.swatchDot{display:block;width:18px;height:18px;border-radius:50%;background:#64a6d2;box-shadow:0 0 0 1px #00000010}
+.swatchPanel button[data-tone=green] .swatchDot{background:#68b69d}
+.swatchPanel button[data-tone=sand] .swatchDot{background:#d3b891}
+.personalCard{border-color:#b7dfdc;background:linear-gradient(145deg,#edfaf5,#fbfbff);box-shadow:0 12px 30px #27597018}
+.personalCard>span{display:flex;align-items:center;gap:7px;font-size:11px;color:#226d83}
+.personalCard>strong{font-size:clamp(19px,4vw,24px)}
+.anchorPreviewTone{height:28px;border-radius:999px;background:#64a6d2;box-shadow:inset 0 1px 3px #00000016}
+.anchorPreviewTone[data-tone=green]{background:#68b69d}
+.anchorPreviewTone[data-tone=sand]{background:#d3b891}
+.wordTokens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wordToken{display:grid;gap:7px;min-width:0}
+.wordToken>span{font-size:12px;font-weight:780;color:#54798c}
+.wordToken input{width:100%;min-width:0;min-height:50px;border:1px solid #bfdae3;border-radius:13px;background:#fff;color:#254b61;font-size:13px;padding:11px 10px}
+.wordToken input:focus-visible{outline:3px solid #17a0aa;outline-offset:2px}
+.wordCount{display:flex;justify-content:space-between;padding:9px 13px;margin:0;border-radius:12px;background:#eaf7f7;color:#406e80;font-size:12px}
+.qualityPanel{display:grid;gap:10px;border:1px solid #cfe3e7;border-radius:17px;background:#f8fbfc;padding:13px}
+.qualityPanel p{margin:0;font-size:13px;color:#375f73;font-weight:730}
+.qualityOptions{display:flex;flex-wrap:wrap;gap:7px}
+.qualityOptions button{min-height:38px;padding:8px 11px!important;border:1px solid #d2e3e7!important;border-radius:12px!important;background:#fff!important;color:#3b677a!important;font-size:12px!important;font-weight:690!important;cursor:pointer}
+.qualityOptions button[aria-pressed=true]{border-color:#b6758c!important;background:#f9eaf0!important;color:#783a52!important}
+.hintToggle{display:flex;align-items:center;justify-content:center;gap:9px;min-height:45px;border:1px solid #addbdc!important;border-radius:14px!important;padding:10px 14px!important;background:#eafaf7!important;color:#207b83!important;font-size:13px!important;font-weight:790!important;cursor:pointer}
+.hintToggle svg:last-child{margin-left:auto}
+.verticalRule{height:1px;background:linear-gradient(90deg,transparent,#cbdfe3 15%,#cbdfe3 85%,transparent);margin:6px 0}
+.reflectionCard{padding:15px 17px;border-left:4px solid #914a67;border-radius:7px 16px 16px 7px;background:#fcf6f8;color:#7d4058}
+.reflectionCard span{font-size:11px;letter-spacing:.02em;font-weight:790}
+.reflectionCard p{font-size:13px;line-height:1.5;margin:7px 0 0}
+.planSentence{border-left:3px solid #0aa5a5;background:#f7ffff;border-radius:8px;padding:13px;font-size:14px!important;line-height:1.55!important;color:#1f6570!important;font-weight:760}
+@media(max-width:560px){
+  .tileChoices button{min-height:82px!important;grid-template-columns:30px minmax(0,1fr) 16px;gap:7px!important;padding:10px!important}
+  .tileCopy strong{font-size:12px}.tileCopy small{font-size:10px}
+  .tileIcon{width:30px;height:30px;border-radius:9px}
+  .practiceStepper{padding:15px}.practiceStepper>strong{font-size:19px}
+  .wordTokens{grid-template-columns:1fr;gap:8px}.wordToken{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center}
+  .wordToken input{min-height:43px}
+  .scene img{height:clamp(135px,22vh,195px)}
+}
+@media(max-width:360px){.tileChoices{grid-template-columns:1fr}.tileChoices button{min-height:65px!important}.tileChoices button:last-child:nth-child(odd){grid-column:auto}.photoRegions button{font-size:11px!important;padding:7px 3px!important}}
+@media(prefers-reduced-motion:reduce){.practiceStepper *,.tileChoices *{transition:none!important;animation:none!important}}
+
+/* OPORA 2026-10-18 · calm-first day one. Mobile photos and three tiny choices,
+   not another battery of questionnaires. User's larger text may still scroll. */
+.section[data-day-one-calm="true"]{
+  gap:clamp(7px,1.5dvh,11px);
+  padding:0 0 8px;align-content:start;
+}
+.calmHeadline{
+  font-size:clamp(17px,4.6vw,22px);line-height:1.28;font-weight:790;
+  letter-spacing:-.025em;color:#17465f;margin:0;
+}
+.calmLead{
+  font-size:clamp(12px,3.4vw,14px);line-height:1.4;
+  color:#487186;margin:0;
+}
+.calmPhoto{
+  width:100%;max-width:100%;height:clamp(103px,17dvh,150px);
+  overflow:hidden;border-radius:18px;position:relative;
+  background:linear-gradient(100deg,#e2f9f8,#edf9f6);
+  border:1px solid #bcdfe0;box-shadow:0 7px 17px #18657b17;
+}
+.calmPhoto img{
+  width:100%;height:100%;display:block;object-fit:cover;
+  object-position:center 48%;
+}
+.section[data-day-one-calm="true"] .tileChoices{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.section[data-day-one-calm="true"] .tileChoices button{
+  min-height:49px!important;border-radius:13px!important;
+  padding:8px 9px!important;grid-template-columns:23px minmax(0,1fr) 16px;
+  gap:7px!important;box-shadow:none;
+}
+.section[data-day-one-calm="true"] .tileChoices .tileIcon{
+  width:23px;height:23px;border-radius:8px;
+}
+.section[data-day-one-calm="true"] .tileChoices .tileIcon svg{width:14px;height:14px}
+.section[data-day-one-calm="true"] .tileCopy{gap:0}
+.section[data-day-one-calm="true"] .tileCopy strong{font-size:clamp(11px,3vw,13px);line-height:1.2}
+.section[data-day-one-calm="true"] .tileChoices button:last-child:nth-child(odd){
+  grid-column:1/-1;min-height:43px!important;
+}
+.section[data-day-one-calm="true"] .selectedNotice,
+.section[data-day-one-calm="true"] .calmResponse{
+  display:flex;align-items:center;gap:7px;padding:8px 10px;
+  margin:0;color:#257780;background:#eafbfa;border:1px solid #c9e9e6;
+  border-radius:10px;font-size:12px;line-height:1.3;
+}
+.calmMore{border:1px solid #d4eae9;background:#fafffe;
+  border-radius:12px;padding:0;overflow:visible}
+.calmMore summary{display:flex;align-items:center;gap:6px;
+  padding:8px 10px;list-style:none;color:#507b86;font-size:11px;
+  font-weight:690;cursor:pointer;min-height:34px}
+.calmMore summary::-webkit-details-marker{display:none}
+.calmMore summary svg:last-child{margin-left:auto}
+.calmMore>p{margin:2px 10px 9px;color:#64818e;font-size:11px;line-height:1.4}
+.calmRest{margin:4px 10px 10px;min-height:40px;padding:8px 13px;
+  border-radius:11px;border:1px solid #afd8dc;color:#267384;
+  background:#eaf8f7;font-size:12px;font-weight:750;cursor:pointer}
+.calmMore .compactChoices{margin:3px 8px 9px}
+.calmMore .compactChoices button{min-height:43px!important}
+@media(max-height:690px){
+  .section[data-day-one-calm="true"]{gap:6px}
+  .calmPhoto{height:clamp(76px,13dvh,111px)}
+  .section[data-day-one-calm="true"] .tileChoices button{min-height:42px!important}
+  .section[data-day-one-calm="true"] .tileChoices button:last-child:nth-child(odd){min-height:38px!important}
+  .calmHeadline{font-size:18px}
+  .calmLead{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .section[data-day-one-calm="true"] *{transition:none!important}
+}
+
+/* Subsequent original Day-One screens: do not let large multi-choice tiles
+   crowd out the actual guided practice on an iPhone. Keep controls legible. */
+@media(max-width:700px){
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]){gap:clamp(7px,1.3dvh,11px)}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .overline{display:none}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .headline{
+    font-size:clamp(16px,4.1vw,19px);line-height:1.31;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .hint{
+    font-size:clamp(11px,2.9vw,12px);line-height:1.38;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices{
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices button{
+    min-height:59px!important;grid-template-columns:28px minmax(0,1fr) 14px;
+    padding:9px 9px!important;gap:7px!important;
+    border-radius:13px!important;box-shadow:none;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices button:last-child:nth-child(odd){
+    grid-column:1/-1;min-height:47px!important;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices .tileIcon{
+    width:28px;height:28px;border-radius:9px;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices .tileIcon svg{width:15px;height:15px}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileCopy strong{
+    font-size:clamp(11px,2.9vw,12px);line-height:1.22;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileCopy small{
+    font-size:10px;line-height:1.24;color:#6c8a95;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper{padding:12px;gap:9px}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper>strong{font-size:17px;line-height:1.3}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper>p{
+    font-size:13px;line-height:1.43;min-height:0;
+  }
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .swatchPanel,
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .qualityPanel{padding:9px;gap:6px}
+}

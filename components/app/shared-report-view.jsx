@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
 import { ReportInvitationGate } from '@/components/app/report-invitation-gate'
+import { ReportGoogleSignInPrompt } from '@/components/app/report-google-signin-prompt'
 
 const COPY = {
   en: {
@@ -55,6 +56,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [viewing, setViewing] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -114,6 +116,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
   return (
     <ReportInvitationGate
       locale={locale}
+      onViewed={() => setViewing(true)}
       kind="report"
       saveAction={grant?.saveAllowed && appAvailable ? (
         <>
@@ -141,6 +144,14 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
           {error && <p role="alert" className="client-entry-error">{error}</p>}
         </div>
       </section>
+      <ReportGoogleSignInPrompt
+        locale={locale}
+        viewing={viewing}
+        enabled={Boolean(grant?.saveAllowed && appAvailable)}
+        onGoogle={save}
+        busy={busy}
+        error={error}
+      />
     </ReportInvitationGate>
   )
 }

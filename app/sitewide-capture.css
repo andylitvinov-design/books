@@ -2,3 +2,6 @@
 body:has([data-consultation-cta]) [data-sitewide-capture] { display: none; }
 /* Reiki courses have their own compact, intent-aware capture; do not repeat the generic Academy banner. */
 body:has([data-reiki-choice-capture]) [data-sitewide-capture] { display: none; }
+
+/* The dedicated free-entry template places its own lead form last. */
+body:has([data-free-entry-landing]) [data-sitewide-capture] { display:none; }

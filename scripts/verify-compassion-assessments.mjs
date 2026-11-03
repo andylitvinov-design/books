@@ -1,3 +1,9 @@
+import { observeReload } from './helpers/reload-diagnostics.mjs'
+import { advanceSavedGuidedQuestion } from './helpers/guided-progress-verifier.mjs'
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -38,19 +44,22 @@ async function fill(page,d,mode,guest,locale){
   const saved=page.waitForResponse(r=>r.url().includes('/runs/')&&r.url().endsWith('/save')&&r.request().method()==='POST')
   await buttons.nth(2).click()
   assert.ok((await saved).ok())
-  if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
+  if(mode==='guided'&&i<d.questions.length-1)await advanceSavedGuidedQuestion(page,expect,{locale,progress:i+1,guest})
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.key==='scs-sf'?1:5)
- for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)')
- await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
- if(d.key==='scs-sf')await expect(report).toContainText(locale==='ru'?'ненадёжности':'unreliable')
- else await expect(report).toContainText(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference')
+ const reportText=await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
+ assert.ok(reportText.includes(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)'))
+ assert.ok(reportText.includes(locale==='ru'?'английский оригинал':'English original'))
+ if(d.key==='scs-sf')assert.ok(reportText.includes(locale==='ru'?'ненадёжности':'unreliable'))
+ else assert.ok(reportText.includes(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference'))
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})
 }
@@ -61,26 +70,34 @@ try{
  page.on('pageerror',e=>errors.push(e.message))
  await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  for(const [i,d] of defs.entries()){
   const locale=i?'ru':'en',mode=i?'guided':'quick'
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
   await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
-  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await assertQuestionnaireMode(page,expect,{mode,guest:false,definition:d})
   await fill(page,d,mode,false,locale)
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(i?5:1).fill(3))
+  await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
-  await page.reload()
-  await expect(page.locator('[data-personal-result-report]')).toBeVisible()
+  const reloadDiagnostics = observeReload(page, { origin })
+  try {
+    await page.reload()
+    await expect(page.locator('[data-personal-result-report]')).toBeVisible()
+  } finally {
+    const evidence = reloadDiagnostics.stop()
+    await writeFile(output + '/reload-' + i + '.json', JSON.stringify(evidence, null, 2)).catch(() => {})
+  }
   passed(d.key+' account '+locale+' '+mode+': save, original instructions/items, score, report and reload')
  }
  // Repeat SCS-SF through the real API to exercise compatible history without another full UI battery.
@@ -98,6 +115,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
@@ -106,18 +125,18 @@ try{
   passed(locale+' PDF download includes persisted compassion assessment report model')
  }
  for(const [i,d] of defs.entries()){
-  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844}})
+  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
-  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
-  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await enterGuestQuestionnaireMode(page,expect,{mode,definition:d})
   await fill(page,d,mode,true,locale)
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(i?5:1).fill(3))
   assert.equal(result.instrumentLocale,'en');assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await guest.close()
  }
  assert.deepEqual(errors,[])

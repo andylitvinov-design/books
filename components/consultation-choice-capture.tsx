@@ -2,10 +2,12 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, FileText, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Check, FileText, HeartHandshake, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import styles from "./consultation-choice-capture.module.css";
 
 type Variant = "free" | "service" | "personal" | "reading";
@@ -20,7 +22,7 @@ const copy = {
   en: {
     eyebrow: "PERSONAL CONSULTATIONS · WITH ANDREY",
     freeTitle: "Start with a free drawing assessment",
-    freeLead: "Choose a topic, complete a coaching form and send a handwritten drawing. I'll reply with a written assessment.",
+    freeLead: "Choose a topic and prepare your questionnaire privately. Keep your drawing on your device until a secure handoff is agreed for the written review.",
     personalTitle: "A free drawing assessment of your situation",
     personalLead: "Choose a topic and complete the coaching form and hand drawing. I'll send a personal written report. Live sessions are paid separately.",
     readingTitle: "Explore your situation through a drawing",
@@ -58,8 +60,8 @@ const copy = {
     intentField: "What interests me",
     freeRequest: "I would like the free coaching-form and handwritten-drawing assessment with a written report.",
     serviceRequest: "Hello Andrey!",
-    messageNote: "WhatsApp opens a prepared paid-session request. Nothing is sent until you press Send.",
-    freeNote: "Next: fill out the coaching form, draw on paper and send both via WhatsApp. This is not a free call.",
+    messageNote: "Choose WhatsApp or Telegram for your paid-session request. Nothing is sent until you press Send.",
+    freeNote: "Do not send private answers, drawings or test results through messengers. Use the private questionnaire and agree a secure handoff. This is not a free call.",
     writtenReport: "Personal written report",
     paidHint: "Paid sessions: €50 / 30 min · €100 / 60 min",
     serviceNote: "This is an enquiry, not a confirmed booking or payment. Rates: €50 / 30 min or €100 / 60 min.",
@@ -72,7 +74,7 @@ const copy = {
   ru: {
     eyebrow: "ЛИЧНЫЕ КОНСУЛЬТАЦИИ · С АНДРЕЕМ",
     freeTitle: "Бесплатная диагностика по рисунку",
-    freeLead: "Выберите тему, заполните коучинг-форму и отправьте рисунок ручкой. Я пришлю письменный отчёт.",
+    freeLead: "Выберите тему и подготовьте анкету приватно. Рисунок оставьте на устройстве до согласования защищённой передачи для письменного разбора.",
     personalTitle: "Бесплатная диагностика по рисунку",
     personalLead: "Выберите тему, заполните анкету и сделайте рисунок. Вы получите письменный разбор. Живые консультации оплачиваются отдельно.",
     readingTitle: "Исследуйте ситуацию через рисунок",
@@ -110,8 +112,8 @@ const copy = {
     intentField: "Что меня интересует",
     freeRequest: "Хочу бесплатную диагностику по коучинг-форме и рисунку с письменным отчётом.",
     serviceRequest: "Здравствуйте, Андрей!",
-    messageNote: "WhatsApp откроет запрос на платную сессию. Он отправится только после вашего подтверждения.",
-    freeNote: "Далее: заполните коучинг-форму, нарисуйте на бумаге и отправьте материалы через WhatsApp. Это не бесплатный созвон.",
+    messageNote: "Выберите WhatsApp или Telegram для платной сессии. Сообщение отправится только после вашего подтверждения.",
+    freeNote: "Не отправляйте личные ответы, рисунки и результаты тестов в мессенджеры. Используйте приватную анкету и согласуйте защищённую передачу. Это не бесплатный созвон.",
     writtenReport: "Персональный письменный отчёт",
     paidHint: "Платные сессии: €50 / 30 мин · €100 / 60 мин",
     serviceNote: "Это запрос, а не запись или оплата. Стоимость: €50 за 30 минут или €100 за 60 минут.",
@@ -124,7 +126,7 @@ const copy = {
   es: {
     eyebrow: "CONSULTAS PERSONALES · CON ANDREY",
     freeTitle: "Evaluación gratuita mediante dibujo",
-    freeLead: "Elige un tema, completa el formulario de coaching y envía un dibujo a mano. Recibirás un informe escrito.",
+    freeLead: "Elige un tema y prepara tu formulario en privado. Conserva el dibujo en tu dispositivo hasta acordar una entrega segura para la revisión escrita.",
     personalTitle: "Evaluación gratuita de tu situación mediante dibujo",
     personalLead: "Elige un tema, completa el formulario y dibuja a mano. Recibirás un informe escrito; las sesiones en directo son de pago.",
     readingTitle: "Explora tu situación mediante un dibujo",
@@ -162,8 +164,8 @@ const copy = {
     intentField: "Qué me interesa",
     freeRequest: "Solicito evaluación gratuita del formulario de coaching y dibujo a mano con informe escrito.",
     serviceRequest: "Hola Andrey.",
-    messageNote: "WhatsApp prepara el mensaje de reserva de pago. Solo se envía cuando confirmas Enviar.",
-    freeNote: "Siguiente: rellena el formulario de coaching, dibuja en papel y envía ambos por WhatsApp. No es una llamada gratuita.",
+    messageNote: "Elige WhatsApp o Telegram para la consulta de pago. Solo se envía cuando confirmas Enviar.",
+    freeNote: "No envíes respuestas privadas, dibujos ni resultados por mensajería. Usa el formulario privado y acuerda una entrega segura. No es una llamada gratuita.",
     writtenReport: "Informe escrito personal",
     paidHint: "Sesiones de pago: €50 / 30 min · €100 / 60 min",
     serviceNote: "Es una consulta, no una reserva ni un pago. Tarifas: €50 / 30 minutos o €100 / 60 minutos.",
@@ -185,12 +187,18 @@ export function ConsultationChoiceCapture({
   service,
   id,
   sitewide = false,
+  wiseEnabled = false,
+  paypalPersonalEnabled = false,
+  onSiteContact = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
   service?: string;
   id?: string;
   sitewide?: boolean;
+  wiseEnabled?: boolean;
+  paypalPersonalEnabled?: boolean;
+  onSiteContact?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -211,6 +219,8 @@ export function ConsultationChoiceCapture({
     : variant === "personal" ? t.personalLead : t.freeLead;
 
   const isPaidRequest = isService && serviceChoice !== "free";
+  const wiseProductId = serviceChoice === "session" ? "personal-session-60" : "express-consultation-30";
+  const zenInquiryUrl = isPaidRequest ? buildZenTransferInquiry([wiseProductId], locale) : null;
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation"),
@@ -263,20 +273,68 @@ export function ConsultationChoiceCapture({
             </button>
           ))}
       </div>
-      <AcquisitionEventLink
-        prefetch={false}
-        className={styles.action}
-        href={ctaHref}
-        target={isPaidRequest ? "_blank" : undefined}
-        rel={isPaidRequest ? "noopener noreferrer" : undefined}
-        event="service_request_start"
-        analyticsEvent={isPaidRequest ? "whatsapp_handoff_click" : "free_situation_assessment_click"}
-        attributes={{ ...(isPaidRequest ? { "data-contact-channel": "whatsapp" } : {}), "data-consultation-action": isService ? serviceChoice : topic }}
-      >
-        {isPaidRequest ? <MessageCircle size={19} aria-hidden="true" /> : <FileText size={19} aria-hidden="true" />}
-        <span>{cta}</span>
-        <ArrowUpRight size={20} aria-hidden="true" />
-      </AcquisitionEventLink>
+      {isPaidRequest ? (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={whatsappUrl}
+          publicServiceTitle={t.serviceOptions[serviceChoice]}
+          className={styles.action}
+          event="service_request_start"
+          attributes={{ "data-consultation-action": serviceChoice }}
+        />
+      ) : (
+        <AcquisitionEventLink
+          prefetch={false}
+          className={styles.action}
+          href={ctaHref}
+          event="service_request_start"
+          analyticsEvent="free_situation_assessment_click"
+          attributes={{ "data-consultation-action": isService ? serviceChoice : topic }}
+        >
+          <FileText size={19} aria-hidden="true" />
+          <span>{cta}</span>
+          <ArrowUpRight size={20} aria-hidden="true" />
+        </AcquisitionEventLink>
+      )}
+      {isPaidRequest && wiseEnabled ? (
+        <div className={styles.wisePayment} data-wise-payment-link>
+          <a href={"/api/payments/wise/" + wiseProductId} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? `После согласования времени проверьте получателя и сумму ${serviceChoice === "session" ? "€100" : "€50"} в Wise. Если используется WiseTag, нужна учётная запись Wise и сумму надо ввести вручную. Перевод не подтверждает запись автоматически.`
+            : locale === "es"
+              ? `Tras acordar la hora, comprueba el destinatario y ${serviceChoice === "session" ? "100 €" : "50 €"} en Wise. Un WiseTag requiere una cuenta Wise y el importe se introduce manualmente. La reserva se confirma aparte.`
+              : `After agreeing a time, check the recipient and ${serviceChoice === "session" ? "€100" : "€50"} in Wise. A WiseTag requires a Wise account and you must enter the amount yourself. Booking is confirmed separately.`}</small>
+        </div>
+      ) : null}
+      {isPaidRequest && paypalPersonalEnabled ? (
+        <div className={styles.wisePayment} data-paypal-personal-offer>
+          <a href={"/api/payments/paypal/" + wiseProductId} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "После согласования времени. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov и сумму. Подтверждение оплаты вручную."
+            : locale === "es"
+              ? "Después de acordar la hora. Elige Productos y servicios y comprueba que pagas a Andrii Litvinov. Verificación manual."
+              : "After confirming the time. Select Goods & Services and verify recipient Andrii Litvinov. Payment is verified manually."}</small>
+        </div>
+      ) : null}
+      {zenInquiryUrl ? (
+        <div className={styles.wisePayment} data-zen-manual-request>
+          <a href={zenInquiryUrl} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "Откроется только запрос в WhatsApp с суммой выбранной услуги. Это не оплата: сначала подтвердите доступность ZEN и реквизиты получателя."
+            : locale === "es"
+              ? "Solo se abre una consulta por WhatsApp con el importe. No es un pago; primero confirma si ZEN está disponible y los datos del destinatario."
+              : "Opens a WhatsApp enquiry with the fixed amount, not a payment. Verify ZEN recipient eligibility and transfer instructions first."}</small>
+        </div>
+      ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>
@@ -286,9 +344,16 @@ export function ConsultationChoiceCapture({
         <div className={styles.secondary}>
           {isPaidRequest ? <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}><ShieldCheck size={14} aria-hidden="true" />{t.otherPath}</Link>
             : !isService ? <Link prefetch={false} href={"/" + locale + "/services"}><ShieldCheck size={14} aria-hidden="true" />{t.paidHint}</Link> : null}
-          <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
-            <Send size={14} aria-hidden="true" />{t.telegram}
-          </AcquisitionEventLink>
+          {onSiteContact ? (
+            <Link prefetch={false} href={"/" + locale + "/contact"} data-contact-channel="site">
+              <Send size={14} aria-hidden="true" />
+              {locale === "ru" ? "Связаться на Holistic House" : locale === "es" ? "Contactar en Holistic House" : "Contact on Holistic House"}
+            </Link>
+          ) : (
+            <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
+              <Send size={14} aria-hidden="true" />{t.telegram}
+            </AcquisitionEventLink>
+          )}
         </div>
       </div>
       <p className={styles.disclaimer}>{isPaidRequest ? t.serviceNote : t.safeguard}</p>

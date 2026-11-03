@@ -120,6 +120,14 @@ Staphysagria is a remedy that helps deal with suppressed anger, resentment, feel
 
 It teaches us to express our feelings, protect our boundaries, and restore our inner balance and dignity.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Shame and humiliation lead you to hide your anger and give up defending your boundaries.
+
+After (desired state): Self-respect and the right to express your feelings, communicate your boundaries and defend them.
+
 ## Additional materials and observations
 
 ### message283 (08.01.2025 21:06:55 UTC-05:00)

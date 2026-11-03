@@ -58,12 +58,11 @@ test('chosen test and topic IDs survive a short-lived consent-gated course hando
   assert.deepEqual(courseTagsForExplorerFocus(['__unknown','resources','function']),['resources','attention'])
 })
 
-test('responsive primary action, automatic problem fill and personal course switch remain wired', async () => {
+test('responsive primary action, automatic problem fill and direct course handoff remain wired', async () => {
   const chooser=await readFile('components/topic-journey-selector.tsx','utf8')
   const chooserStyle=await readFile('components/topic-journey-selector.module.css','utf8')
   const route=await readFile('app/[locale]/client/tests/page.tsx','utf8')
   const picker=await readFile('components/app/simple-test-picker.jsx','utf8')
-  const pickerStyle=await readFile('components/app/simple-test-picker.module.css','utf8')
   const explorer=await readFile('components/app/test-explorer.jsx','utf8')
   const publicExplorer=await readFile('components/app/public-test-explorer.jsx','utf8')
   const myCourse=await readFile('components/app/my-course.jsx','utf8')
@@ -81,9 +80,9 @@ test('responsive primary action, automatic problem fill and personal course swit
   assert.match(publicExplorer,/COURSE_ENTRY_INTENT_KEY/)
   assert.match(publicExplorer,/onStartCourse=\{launchCourse\}/)
   assert.match(explorer,/onStartCourse=\{onStartCourse \? \(\) => onStartCourse\(/)
-  assert.match(picker,/data-test-course-switch/)
+  assert.doesNotMatch(picker,/data-test-course-switch|data-guest-start-notice/) 
+  assert.match(picker,/const journeyMode = initialMode === 'course' && onStartCourse \? 'course' : 'tests'/)
   assert.match(picker,/journeyMode === 'course' \? onStartCourse : onStart/)
-  assert.match(pickerStyle,/\.modeSwitch\{/)
   assert.match(myCourse,/consent: true/)
   assert.match(myCourse,/courseTagsForExplorerFocus/)
   assert.match(steps,/readCourseEntryIntent/)

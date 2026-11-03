@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ru: "/ru/library/distance-homeopathy",
         en: "/en/library/distance-homeopathy",
         es: "/es/library/distance-homeopathy",
+        "x-default": "/en/library/distance-homeopathy",
       },
     },
   };

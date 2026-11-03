@@ -19,7 +19,7 @@ async function api(path, body) {
   return value
 }
 
-export function SavePrivateDocumentControl({ selector, documentId = null, locale = 'en', appAvailable = false }) {
+export function SavePrivateDocumentControl({ selector, documentId = null, locale = 'en', appAvailable = false, compact = false }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const ru = locale === 'ru'
@@ -60,21 +60,21 @@ export function SavePrivateDocumentControl({ selector, documentId = null, locale
   }
 
   return (
-    <div className="prescription-save-to-cabinet">
+    <div className={compact ? 'prescription-save-to-cabinet prescription-save-to-cabinet--compact' : 'prescription-save-to-cabinet'}>
       <button type="button" onClick={save} disabled={busy}>
         {busy
           ? ru
             ? 'Открываем Google…'
             : 'Opening Google…'
-          : ru
-            ? 'Сохранить в мой кабинет через Google'
-            : 'Save to my Cabinet with Google'}
+          : compact
+            ? (ru ? 'Войти в мой кабинет и сохранить отчёт' : 'Sign in to my Cabinet and save report')
+            : (ru ? 'Сохранить в мой кабинет через Google' : 'Save to my Cabinet with Google')}
       </button>
-      <span>
+      {!compact && <span>
         {ru
           ? 'Войдите или зарегистрируйтесь через Google — сохранится только этот документ.'
           : 'Sign in or register with Google — only this document will be saved.'}
-      </span>
+      </span>}
       {error && <span role="alert">{error}</span>}
     </div>
   )

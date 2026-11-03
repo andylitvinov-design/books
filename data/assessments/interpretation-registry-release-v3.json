@@ -1,0 +1,10 @@
+{
+  "status": "approved",
+  "sourceCommit": "484a9a1c9d4b8f68639930ef6e6b19348889ffa8",
+  "interpretationVersion": "2026-10-17.v3",
+  "rulesEngineVersion": "2026-10-17.v13",
+  "seedPath": "supabase/seeds/assessment-interpretations-2026-10-17.v3.sql",
+  "recordCount": 460,
+  "seedSha256": "sha256:fc13ea38c6a117b5491d840ed464ce19e0f0357a1a5ffd155e8f7d3a9372cd81",
+  "encoding": "canonical-json-sentence-fragments.v1"
+}

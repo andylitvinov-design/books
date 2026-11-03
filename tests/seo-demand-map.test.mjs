@@ -42,3 +42,19 @@ test("high-value public assessment and Yggdrasil level 1 URLs have explicit site
   }
   assert.ok(![...sitemapPaths].some((path) => path.includes("/client")));
 });
+
+test("Tantra free Level 1 has one truthful, separately owned EN/RU/ES search cluster", () => {
+  const family = map.keywords.filter((item) => item.cluster_id === "R07");
+  assert.deepEqual(family.map((item) => item.locale).sort(), ["en", "es", "ru"]);
+  const priorityPaths = new Set(getPrioritySitemapEntries("https://holistichouse.vercel.app").map((item) => new URL(item.url).pathname));
+  for (const item of family) {
+    assert.equal(item.primary_path, "/" + item.locale + "/academy/reiki/tantra-reiki/free-initiation");
+    assert.equal(item.seo_priority, "P0");
+    assert.equal(item.ads_gate, "hold", "Tantra ad policy review is still required");
+    assert.equal(item.source, "editorial_seed_unvalidated");
+    assert.ok(priorityPaths.has(item.primary_path), item.primary_path);
+    for (const metric of Object.values(item.measured)) assert.equal(metric, null);
+  }
+  assert.equal(map.keywords.find((item) => item.cluster_id === "R04" && item.locale === "en").primary_path,
+    "/en/academy/reiki/tantra-reiki", "Keep the nine-level Tantra programme separate from free Level 1");
+});

@@ -38,3 +38,15 @@ Campaigns in the JSON have `PAUSED` state, **null budget**, location presence-on
 - [ ] No production launch claims without deployed revision and actual Ads evidence.
 
 References: https://support.google.com/adspolicy/answer/176031 ; https://support.google.com/adspolicy/answer/16701855 ; https://www.ontario.ca/laws/statute/07h10
+
+---
+
+## 2026-10-20 — Verified Google Ads staging
+
+HYPD Google Ads account list: EMPTY. No live Customer ID, campaign, approved spend, or Google Ads conversion. HYPD GA4 can read Holistic House property properties/558442343. This property identifier is NOT a G-... web Measurement ID; the latter remains unverified. PUBLIC_ANALYTICS_AVAILABLE=false remains in code. No Google/Meta ad tag was detected in the live public landing HTML.
+
+HTTP 200 / canonical checked: EN/RU/ES /services/free-situation-review; EN /services/systemic-constellations; EN /academy/reiki/yggdrasil; EN /toronto. These checks do not verify a human messenger Send, verified received lead, ad policy approval or successful booking.
+
+Paid Google draft has a proposed first-party landing path /en/services/free-situation-review with source=google, medium=cpc, a neutral public-safe campaign code and creative=search_a. It remains entirely paused/unconnected. New paid-ad attribution is a human-readable source label in a voluntary messenger draft, not a GA4 event or an advertiser conversion.
+
+NEXT: connect a verified Holistic House Google Ads Customer ID with actual CAD currency and Toronto time zone, check actual keyword volumes/costs, conduct regulated-title and policy review, prove real receiving of leads, verify consent and conversions. Do NOT import/enabled campaigns, buy subscriptions, retarget sensitive data or spend before separate owner budget approval. Official Ads account: https://ads.google.com/. Google health targeting policy: https://support.google.com/adspolicy/answer/16701855

@@ -13,6 +13,7 @@
   padding: 16px 0 60px;
   font-size: clamp(16.5px, 1.45vw, 18px);
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {

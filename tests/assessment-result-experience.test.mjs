@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -16,7 +17,7 @@ const answersFor = (def, value = 'min') => Object.fromEntries(def.questions.map(
 test('every runnable, versioned assessment produces EN/RU score-tied advice without fabricated diagnostic categories', () => {
   assert.ok(tests.length >= 80, 'All current runnable definitions must be covered')
   for (const def of tests) {
-    const scored = scoreAssessment(def, answersFor(def))
+    const scored = scoreAssessment(def, answersFor(def), syntheticTraumaContext(def))
     assert.ok(scored.dimensions.length > 0, def.key)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(scored, locale)
@@ -26,14 +27,15 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
       for (const section of report.sections) {
         assert.ok(section.title.length > 2, def.key)
         assert.ok(section.meaning.length > 40, def.key)
-        assert.ok(section.steps.length >= 2, def.key)
+        assert.ok(def.administration ? section.steps.length === 0 : section.steps.length >= 2, def.key)
         assert.ok(section.steps.every(step => step.length > 40), def.key)
         assert.ok(section.followUp.length > 30, def.key)
       }
       if (def.key === 'asrs-6') {
         assert.equal(report.sections[0].bandBasis, 'screening')
         assert.match(report.note, locale === 'ru' ? /не шкала тяжести/ : /not a severity scale/)
-      } else assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
+      } else if (def.administration) assert.match(report.note, locale === 'ru' ? /не устанавливают диагноз/ : /do not establish a diagnosis/)
+      else assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
     }
   }
 })
@@ -41,35 +43,37 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
 test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 number', () => {
   const def = tests.find(item => item.key === 'cbi-personal')
   assert.ok(def)
-  const low = buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'en')
-  const high = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
+  const low = buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'en')
+  const high = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max'), syntheticTraumaContext(def)), 'en')
   assert.equal(high.sections[0].domain, 'burnout')
   assert.match(high.sections[0].title, /Exhaustion/)
   assert.match(high.sections[0].steps.join(' '), /7 days/)
-  assert.match(high.sections[0].meaning, /upper part/)
-  assert.match(low.sections[0].meaning, /lower part/)
-  assert.match(low.sections[0].steps[0], /maintain your balance/)
-  assert.match(high.sections[0].steps[0], /For 7 days/)
+  assert.match(high.sections[0].meaning, /100 \(0–100\).*more reported exhaustion/)
+  assert.match(low.sections[0].meaning, /0 \(0–100\)/)
+  assert.match(low.sections[0].steps[0], /lowest possible response value/)
+  assert.match(high.sections[0].steps[0], /highest possible response value/)
+  assert.doesNotMatch(high.sections[0].meaning, /upper part|clinical severity/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
-  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
+  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
 })
 
-test('high resource measurements receive maintenance rather than deficit advice', () => {
+test('resource maximum is an explicit response endpoint without a fabricated severity category', () => {
   const def = tests.find(item => item.key === 'hh-role-freedom')
   assert.ok(def)
-  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
-  assert.ok(report.sections.some(section => /source of support or strength/.test(section.steps[0])))
+  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max'), syntheticTraumaContext(def)), 'en')
+  assert.ok(report.sections.some(section => /highest possible response value/.test(section.steps[0])))
+  assert.ok(report.sections.every(section => !/deficien|clinical severity/.test(section.steps.join(' '))))
 })
 
 test('neutral personality scales are not interpreted as a clinical severity or universal good/bad score', () => {
   const def = tests.find(item => item.key === 'mini-ipip-20')
-  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'en')
+  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'en')
   assert.ok(report.sections.length >= 4)
   assert.ok(report.sections.every(item => !/upper part of this reported-difficulty scale/.test(item.meaning)))
   assert.match(report.note, /not a clinical cutoff/)
 })
 
-test('account and guest Quick/Guided flows render the same two explicit finish actions', () => {
+test('account runner keeps two actions, guest runner shows scales first with no premature next action', () => {
   const controls = source('components/app/test-finish-actions.jsx')
   const account = source('components/app/app-workspace.jsx')
   const guest = source('components/app/cabinet-landing.jsx')
@@ -80,15 +84,19 @@ test('account and guest Quick/Guided flows render the same two explicit finish a
   for (const ui of [account, guest]) {
     assert.match(ui, /<TestFinishActions/)
     assert.match(ui, /onReport=\{\(\) =>/)
-    assert.match(ui, /onNext=\{\(\) =>/)
-    assert.match(ui, /<PersonalResultReport result=/)
   }
-  assert.match(account, /onComplete\(result, destination\)/)
+  assert.match(account, /onNext=\{\(\) =>/)
+  assert.match(account, /<PersonalResultReport result=/)
+  assert.match(guest, /guestScaleOnly/)
+  assert.match(guest, /<GuestScaleInterpretation result=\{guestResult\}/)
+  assert.doesNotMatch(guest, /onNext=\{\(\) =>/)
+  assert.match(controls, /See my scores and scales/)
+  assert.match(account, /onComplete\(result, pending\.destination\)/)
   assert.match(account, /root \+ '\/results\/' \+ encodeURIComponent\(result\.id\)/)
   assert.match(account, /advanced\.definitionIds\?\.\[advanced\.currentIndex\]/)
   assert.match(account, /await appFetch\('runs', \{/)
   assert.match(guest, /setPhase\('result'\)/)
-  assert.match(guest, /await startRun\(nextDefinition\)/)
+  assert.match(guest, /await startRun\(nextDefinition, advanced\.id\)/)
   assert.match(guest, /setPhase\('summary'\)/)
   assert.match(guest, /saving a result permanently/i.test(controls) ? /temporary/ : /setGuestResult\(result\)/)
 })
@@ -98,8 +106,9 @@ test('both report surfaces use persisted scored dimensions; guest Google save is
   const guest = source('components/app/cabinet-landing.jsx')
   assert.match(account, /appFetch\('results\/' \+ id\)/)
   assert.match(account, /<PersonalResultReport result=\{result\}/)
-  assert.match(guest, /guest\/runs\/' \+ currentRun\.id \+ '\/submit'/)
-  assert.match(guest, /<PersonalResultReport result=\{guestResult\}/)
+  assert.match(guest, /guest\/runs\/' \+ pending\.run\.id \+ '\/submit'/)
+  assert.match(guest, /<GuestScaleInterpretation result=\{guestResult\}/)
+  assert.doesNotMatch(guest, /<PersonalResultReport result=\{guestResult\}/)
   assert.match(guest, /sourceKind: 'guest_result'/)
   assert.match(guest, /onClick=\{saveToCabinet\}/)
 })
@@ -130,10 +139,11 @@ test('full report appears before the optional raw score panel; no overall unrela
 test('PDF report includes personal interpretation and next steps for each individual assessment', () => {
   const building = source('lib/profile/client-report.js')
   const rendering = source('lib/profile/client-report-pdf.js')
-  assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /const interpretation = buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /conclusion:[^\n]+,\s*interpretation,/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
-  assert.match(rendering, /section\.steps\.slice\(0,2\)/)
+  assert.match(rendering, /for \(const step of section\.steps \|\| \[\]\)/)
 })
 test('each per-test report explains purpose and has human-readable labels rather than machine keys', () => {
   const component = source('components/app/personal-result-report.jsx')

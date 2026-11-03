@@ -122,6 +122,14 @@ LYCOPODIUM helps transition from weakness and doubts to the awareness of one's s
 
 to oneself.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: A show of confidence hides fear of failure, responsibility and being exposed.
+
+After (desired state): A calm sense of your own worth, clear expression of your wishes and a willingness to take responsibility for your decisions.
+
 ## Additional materials and observations
 
 ### message1071 (02.10.2026 21:52 Telegram public view)

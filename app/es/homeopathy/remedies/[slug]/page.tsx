@@ -6,12 +6,14 @@ import { RemedyClientActions } from '@/components/remedy-client-actions';
 import { SpanishRemedyContent } from '@/components/spanish-remedy-content';
 import { getSpanishRemedy, getSpanishRemedySlugs } from '@/data/remedies-es';
 import { spanishMetadata } from '@/lib/spanish-metadata';
+import { remedySeoDescription } from '@/lib/seo-descriptions';
 type Props = { params: Promise<{ slug: string }> };
+export const revalidate = 3600;
 export const dynamicParams = false;
 export function generateStaticParams() { return getSpanishRemedySlugs().map(slug => ({ slug })); }
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params; const remedy = getSpanishRemedy(slug);
-  return remedy ? spanishMetadata(`/es/homeopathy/remedies/${slug}`, `${remedy.canonical_latin_name} — Remedios`, remedy.description.replace(/[#*]/g, '').slice(0, 155)) : { title: 'Remedio no encontrado' };
+  return remedy ? spanishMetadata(`/es/homeopathy/remedies/${slug}`, `${remedy.canonical_latin_name} — Remedios`, remedySeoDescription(remedy.canonical_latin_name, remedy.description, 'es')) : { title: 'Remedio no encontrado' };
 }
 export default async function SpanishRemedyPage({ params }: Props) {
   const { slug } = await params; const remedy = getSpanishRemedy(slug); if (!remedy) notFound();
@@ -27,9 +29,10 @@ export default async function SpanishRemedyPage({ params }: Props) {
     {state && outcome && <p className="remedy-essence"><span>Esencia</span>{state} → {outcome}</p>}
     {remedy.primary_image && <figure className="remedy-primary-image">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={remedy.primary_image} alt={alt} decoding="async" />
+      <img src={remedy.primary_image} alt={alt} width={800} height={800}
+         fetchPriority="high" loading="eager" decoding="async" />
     </figure>}
-    <SpanishRemedyContent description={remedy.description} />
+    <SpanishRemedyContent description={remedy.description} slug={slug} />
     <details className="remedy-source-reference"><summary>Fuentes y traducción</summary><div><strong>{remedy.source_author}</strong><p>La traducción conserva el contenido del archivo publicado y sus referencias. Consulta las versiones originales para comprobar cualquier término o matiz.</p><a href={`/en/homeopathy/remedies/${slug}`} target="_blank" rel="noopener noreferrer">Abrir versión de origen en inglés ↗</a><a href={`/ru/homeopathy/remedies/${slug}`} target="_blank" rel="noopener noreferrer">Abrir original en ruso ↗</a>{remedy.primary_source_url && <a href={remedy.primary_source_url} target="_blank" rel="noopener noreferrer">Fuente original en Telegram ↗</a>}<span>Referencia: {remedy.primary_source_message || remedy.source_heading}</span>{remedy.source_date && <span>Fecha de la fuente: {remedy.source_date}</span>}</div></details>
     {supporting.length > 0 && <section className="remedy-supporting-gallery" aria-label="Imágenes adicionales de la fuente"><p>Imágenes adicionales de los mensajes originales relacionados</p><div>{supporting.map((image, index) => (
       // eslint-disable-next-line @next/next/no-img-element

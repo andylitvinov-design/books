@@ -19,20 +19,31 @@ const MSG={
     saved:'Live Activity linked to your course',removed:'Live Activity turned off',
     error:'Unable to update the card. Check your iPhone permissions.'}
 }
-export default function LiveActivityControl({locale='en',serverReady=false}){
+export default function LiveActivityControl({locale='en',serverReady=false,accountId}){
   const c=MSG[locale]||MSG.en
   const [native,setNative]=useState(false),[available,setAvailable]=useState(false),
     [cycle,setCycle]=useState(null),[running,setRunning]=useState(false),
     [busy,setBusy]=useState(false),[message,setMessage]=useState('')
-  const plugin=useRef(null),listener=useRef(null)
+  const plugin=useRef(null),owner=useRef(null),busyRef=useRef(false)
+  const currentAccount=useRef(accountId);currentAccount.current=accountId
+  const api=useCallback(async(path,body)=>{
+    const session=owner.current
+    if(!session||session.accountId!==currentAccount.current)throw new Error('ACCOUNT_CHANGED')
+    const result=await appFetch(path,body,undefined,{accountId:session.accountId,signal:session.controller.signal})
+    if(owner.current!==session||session.accountId!==currentAccount.current)throw new Error('ACCOUNT_CHANGED')
+    return result
+  },[])
+
   const refresh=useCallback(async()=>{
-    if(!plugin.current)return
+    if(!plugin.current||!owner.current)return
+    const session=owner.current
     try{
-      const state=await appFetch('course/today?locale='+locale)
+      const state=await api('course/today?locale='+locale)
       const progress=state?.cycle
       if(!progress?.id){setCycle(null);setRunning(false);return}
       setCycle({...progress,completedToday:Boolean(state.currentSession)})
       const list=await plugin.current.list()
+      if(owner.current!==session)return
       const mine=list.activities?.find(x=>x.cycleId===progress.id)
       setRunning(Boolean(mine))
       if(mine){
@@ -40,16 +51,19 @@ export default function LiveActivityControl({locale='en',serverReady=false}){
           day:Math.max(1,Math.min(14,progress.day)),
           completedToday:Boolean(state.currentSession),
           finished:progress.status!=='active'||progress.afterCycle})
+        if(owner.current!==session)return
         if(mine.token&&progress.status==='active'&&!progress.afterCycle&&serverReady){
-          await appFetch('notifications/live-token',{
+          await api('notifications/live-token',{
             cycleId:progress.id,activityId:mine.activityId,pushToken:mine.token,locale})
         }
       }
     }catch{/* Never surface sensitive course details on a Lock Screen. */}
-  },[locale,serverReady])
+  },[locale,serverReady,api])
   useEffect(()=>{
     if(!isNativePsiAlchemy())return
     let alive=true
+    const session={accountId,controller:new AbortController(),listener:null};owner.current=session
+    busyRef.current=false;setBusy(false)
     async function initialize(){
       const {registerPlugin,Capacitor}=await import('@capacitor/core')
       if(!Capacitor.isNativePlatform()||Capacitor.getPlatform()!=='ios')return
@@ -57,44 +71,52 @@ export default function LiveActivityControl({locale='en',serverReady=false}){
       const response=await bridge.availability()
       if(!alive)return
       plugin.current=bridge;setNative(true);setAvailable(Boolean(response.available))
-      listener.current=await bridge.addListener('token',async event=>{
-        if(!serverReady)return
+      const handle=await bridge.addListener('token',async event=>{
+        if(!alive||owner.current!==session||!serverReady)return
         try{
-          await appFetch('notifications/live-token',{
+          await api('notifications/live-token',{
             cycleId:event.cycleId,activityId:event.activityId,
             pushToken:event.token,locale})
         }catch{/* Token upload can be retried on the next authenticated visit. */}
       })
+      if(!alive||owner.current!==session){void handle?.remove();return}
+      session.listener=handle
       await refresh()
     }
     initialize().catch(()=>{})
     const changed=()=>{void refresh()}
     window.addEventListener('hh-course-changed',changed)
-    return()=>{alive=false;window.removeEventListener('hh-course-changed',changed);
-      void listener.current?.remove();plugin.current=null}
-  },[locale,serverReady,refresh])
+    return()=>{alive=false;session.controller.abort();if(owner.current===session)owner.current=null;window.removeEventListener('hh-course-changed',changed);
+      void session.listener?.remove();plugin.current=null}
+  },[accountId,locale,serverReady,refresh,api])
   async function activate(){
-    if(!plugin.current||!cycle||!serverReady||!available)return
+    if(busyRef.current||!owner.current||!plugin.current||!cycle||!serverReady||!available)return
+    const session=owner.current;busyRef.current=true
     setBusy(true);setMessage('')
     try{
       const result=await plugin.current.start({
         cycleId:cycle.id,day:Math.max(1,Math.min(14,cycle.day)),
         locale,completedToday:cycle.completedToday})
+      if(owner.current!==session)return
       const details=await plugin.current.list()
+      if(owner.current!==session)return
       const item=details.activities?.find(x=>x.activityId===result.activityId)
-      if(item?.token)await appFetch('notifications/live-token',{
+      if(item?.token)await api('notifications/live-token',{
         cycleId:cycle.id,activityId:result.activityId,pushToken:item.token,locale})
-      setRunning(true);setMessage(c.saved)
-    }catch{setMessage(c.error)}finally{setBusy(false)}
+      if(owner.current===session){setRunning(true);setMessage(c.saved)}
+    }catch{if(owner.current===session)setMessage(c.error)}finally{if(owner.current===session){busyRef.current=false;setBusy(false)}}
   }
   async function stop(){
-    if(!plugin.current)return
+    if(busyRef.current||!plugin.current||!owner.current)return
+    const session=owner.current;busyRef.current=true
     setBusy(true);setMessage('')
     try{
-      await appFetch('notifications/live-stop',{activityId:null})
+      await api('notifications/live-stop',{activityId:null})
+      if(owner.current!==session)return
       await plugin.current.stop({})
+      if(owner.current!==session)return
       setRunning(false);setMessage(c.removed)
-    }catch{setMessage(c.error)}finally{setBusy(false)}
+    }catch{if(owner.current===session)setMessage(c.error)}finally{if(owner.current===session){busyRef.current=false;setBusy(false)}}
   }
   if(!native)return null
   return <section aria-label={c.title} style={{

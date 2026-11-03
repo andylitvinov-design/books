@@ -576,3 +576,171 @@
  .todayReward{padding:9px 10px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.momentPeek>summary svg{transition:none}}
+
+
+/* Oct 14 course Today layout correction: the visual occupies its own column.
+   The CTA and progress never cover the illustration or the lesson title. */
+.shell[data-course-view=today] .questHero{
+  min-height:0!important;
+  background:linear-gradient(140deg,#ffffff 2%,#edfbfd 56%,#e4f7f5 100%)!important;
+  border-radius:22px!important;
+}
+.shell[data-course-view=today] .heroPhoto{
+  inset:0!important;width:100%!important;
+  background:linear-gradient(100deg,#faffffea,#f2fcf9ab),url('/images/holistic-house/hero-olive-incense.webp') center/cover no-repeat!important;
+  opacity:.21!important;pointer-events:none;
+}
+.shell[data-course-view=today] .heroInner{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  align-content:start!important;align-items:stretch!important;
+  min-height:0!important;gap:14px!important;
+  padding:clamp(17px,3vw,25px)!important;
+}
+.shell[data-course-view=today] .questTopline{
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:8px;min-width:0;
+}
+.shell[data-course-view=today] .todayCore{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,38%);
+  align-items:center;gap:15px;min-width:0;min-height:175px;
+}
+.todayStory{display:grid;align-content:center;gap:10px;min-width:0}
+.shell[data-course-view=today] .todayStory h2{
+  max-width:100%!important;margin:0!important;
+  font-size:clamp(25px,3.8vw,34px)!important;
+  line-height:1.17!important;overflow-wrap:break-word;
+}
+.shell[data-course-view=today] .todayStory .heroPurpose{
+  max-width:100%!important;margin:0!important;
+  font-size:13px!important;line-height:1.52!important;
+  display:-webkit-box!important;-webkit-box-orient:vertical;
+  -webkit-line-clamp:3!important;line-clamp:3!important;overflow:hidden;
+}
+.todayVisual{
+  position:relative;isolation:isolate;justify-self:end;
+  width:100%;max-width:205px;aspect-ratio:1/1.03;
+  overflow:hidden;border:1px solid #d5f0ef;
+  border-radius:22px;
+  background:radial-gradient(circle at 64% 29%,#fffced 0%,#e4fcf9 57%,#c8ebed 100%);
+}
+.todayVisual::after{
+  content:"";position:absolute;inset:auto 8% 3%;height:17%;
+  border-radius:50%;background:#5cc4c11b;filter:blur(9px);z-index:-1
+}
+.shell[data-course-view=today] .todayVisual .heroPerson{
+  position:absolute!important;inset:auto 0 0 0!important;
+  width:100%!important;max-width:none!important;height:100%!important;
+  object-fit:contain!important;object-position:center bottom!important;
+  opacity:1!important;filter:drop-shadow(0 7px 11px #2a929021);
+}
+.shell[data-course-view=today] button.todayPrimary{
+  position:relative;z-index:1;
+  margin:0!important;min-height:53px!important;max-width:none!important;
+  border-bottom:3px solid #06788a!important;border-radius:14px!important;
+  background:linear-gradient(100deg,#11b6c4,#078fa8)!important;
+  box-shadow:0 7px 19px #078fa627!important;
+}
+.shell[data-course-view=today] .heroProgress{
+  margin:0!important;padding:10px 0 0!important;
+  gap:7px 12px;border-top:1px solid #c9e7e7!important;
+}
+.shell[data-course-view=today] .heroProgress progress{margin:0;height:7px!important}
+.todayGreeting{padding:5px 2px 2px}
+.todayGreeting h1{line-height:1.12;letter-spacing:-.035em}
+.viewSwitch{border-radius:14px;padding:3px;gap:3px;max-width:670px}
+.viewSwitch button{min-height:42px;border-radius:11px!important}
+@media(max-width:620px){
+  .shell[data-course-view=today] .questHero{min-height:0!important;border-radius:20px!important}
+  .shell[data-course-view=today] .heroInner{min-height:0!important;padding:16px!important;gap:12px!important}
+  .shell[data-course-view=today] .todayCore{grid-template-columns:minmax(0,1fr) 40%;gap:9px;min-height:168px}
+  .todayStory{gap:8px}
+  .shell[data-course-view=today] .todayStory h2{font-size:clamp(23px,6.3vw,28px)!important;line-height:1.14!important}
+  .shell[data-course-view=today] .todayStory .heroPurpose{font-size:12px!important;line-height:1.45!important}
+  .todayVisual{max-width:168px;aspect-ratio:1/1.18;border-radius:17px}
+  .shell[data-course-view=today] button.todayPrimary{min-height:51px!important;font-size:14px!important}
+  .shell[data-course-view=today] .heroProgress{margin:0!important}
+  .todayGreeting h1{font-size:27px}
+  .viewSwitch button{font-size:12px!important;padding:7px 4px!important}
+}
+@media(max-width:360px){
+  .shell[data-course-view=today] .heroInner{padding:14px 12px!important;gap:11px!important}
+  .shell[data-course-view=today] .todayCore{grid-template-columns:minmax(0,1fr) 38%;gap:7px;min-height:158px}
+  .shell[data-course-view=today] .todayStory h2{font-size:22px!important}
+  .shell[data-course-view=today] .todayStory .heroPurpose{font-size:11px!important}
+  .todayVisual{aspect-ratio:1/1.26;border-radius:14px}
+  .viewSwitch button{font-size:11px!important}
+}
+
+
+/* Focus v2.1: Today card reuses the same approved coastal artwork as each lesson.
+   Text stays in its separate column: no overlap at narrow mobile widths. */
+.shell[data-course-view=today] .todayVisual{
+  background:linear-gradient(160deg,#ecfdf9,#ceeef0);
+  border-color:#bde6e7;
+  box-shadow:0 7px 19px #0f819017;
+}
+.shell[data-course-view=today] .todayVisual .heroPerson{
+  object-fit:cover!important;object-position:52% 50%!important;
+  filter:none!important;
+}
+.shell[data-course-view=today] .questHero{
+  background:linear-gradient(135deg,#fafdff,#e9f8fa 58%,#e5f7f4)!important;
+}
+.shell[data-course-view=today] button.todayPrimary{
+  border-radius:17px!important;
+  background:linear-gradient(105deg,#11b9c4,#078fa8)!important;
+}
+@media(max-width:360px){
+  .shell[data-course-view=today] .todayVisual .heroPerson{
+    object-position:50% 50%!important;
+  }
+}
+
+
+/* The old incense hero is intentionally not fetched behind scenic lesson art. */
+.shell[data-course-view=today] .heroPhoto{
+  background:linear-gradient(140deg,#e8f8fa,#f5fff8)!important;
+  opacity:.22!important;
+}
+
+
+/* Outcome-aligned Anti-Stress course: honest educational evidence, not a health score. */
+.antiStressSkills { max-width:1100px; margin:17px auto 24px; padding:22px;
+  background:linear-gradient(128deg,#1a3554,#243e5b); border-radius:20px; color:white; }
+.antiStressSkills h3 { margin:0 0 8px; font-size:21px; line-height:1.28; color:#fff; }
+.antiStressSkills > p { margin:0 0 17px; max-width:800px; color:#d2e2ea; font-size:12px; line-height:1.5; }
+.antiStressSkills ol { padding:0; margin:0; list-style:none; display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.antiStressSkills li { display:grid; grid-template-columns:29px minmax(0,1fr); gap:3px 10px;
+  padding:12px; background:#ffffff0e; border:1px solid #ffffff25; border-radius:11px; }
+.antiStressSkillNumber { grid-row:span 2; display:grid; place-items:center; width:29px; height:29px;
+  color:#f2bace; font-size:11px; font-weight:800; }
+.antiStressSkills strong { min-width:0; font-size:13px; font-weight:650; color:#fff; }
+.antiStressSkills small { color:#bfdae4; font-size:11px; line-height:1.35; }
+@media(max-width:700px) { .antiStressSkills { margin:11px 0 17px; padding:17px 13px; border-radius:16px; }
+ .antiStressSkills ol { grid-template-columns:minmax(0,1fr); gap:7px; }
+ .antiStressSkills h3 { font-size:18px; } }
+
+/* Opt-in full Anti-Stress daily scheme in private course path. */
+.antiStressDailyScheme{margin:17px auto 25px;max-width:1100px;border-radius:18px;border:1px solid #c2d0e0;background:#fff;overflow:hidden}
+.antiStressDailyScheme>summary{cursor:pointer;padding:17px 19px;color:#173852;font-size:14px;font-weight:800;background:#eaf1f8}
+.antiStressDailyScheme>summary:focus-visible{outline:3px solid #904a67;outline-offset:-3px}
+.antiStressDailyScheme>[data-course-14-day-overview]{border:0;border-radius:0}
+@media(max-width:700px){.antiStressDailyScheme{margin:11px 0}.antiStressDailyScheme>summary{padding:13px;font-size:12px}}
+
+/* Optional after-week-one questionnaire, never embedded in a lesson. */
+.weeklyCheckpoint{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+  margin:14px 0;border-radius:17px;border:1px solid #c2d6e6;background:#eff5fb;
+  padding:18px 20px;color:#1d3852}
+.weeklyCheckpoint>div{flex:1 1 260px;min-width:0}
+.weeklyCheckpoint strong{display:block;font-size:16px;line-height:1.4}
+.weeklyCheckpoint p{font-size:12px;line-height:1.5;margin:6px 0 9px;color:#4c677c}
+.weeklyCheckpoint small{display:block;font-size:11px;color:#56738b;margin-top:3px}
+.weeklyStart{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  color:#fff;background:#813750;padding:11px 15px;border-radius:10px;border:0;font-size:12px;font-weight:800;cursor:pointer}
+.weeklyStart:hover{background:#9a4260}
+.weeklyStart:focus-visible{outline:3px solid #b77b99;outline-offset:3px}
+.weeklyStart:disabled{opacity:.6;cursor:wait}
+.weeklyDone{display:inline-flex;align-items:center;gap:7px;color:#1f725c;font-size:12px;font-weight:700}
+@media(max-width:700px){.weeklyCheckpoint{padding:14px 13px;gap:12px}
+.weeklyStart{width:100%}}

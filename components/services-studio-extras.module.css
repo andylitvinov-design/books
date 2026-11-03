@@ -1,0 +1,47 @@
+.intro{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:44px auto 0;color:#204654}
+.sectionTitle{max-width:760px;margin:0 0 16px}
+.sectionTitle>p{margin:0 0 9px;color:#138085;font:800 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.13em}
+.sectionTitle h2{margin:0;color:#173d4c;font:400 clamp(29px,3.4vw,42px)/1.15 Georgia,"Times New Roman",serif}
+.sectionTitle>span{display:block;margin-top:8px;color:#547078;font:14px/1.5 Arial,Helvetica,sans-serif}
+.introGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:14px}
+.introGrid :global([data-services-about-entry]){box-sizing:border-box;width:100%;max-width:none;margin:0;min-width:0;height:100%}
+.introVideo{display:grid;align-items:center;min-width:0;overflow:hidden;border:1px solid #d1e5e4;border-radius:20px;padding:13px;background:linear-gradient(140deg,#f6fdfc,#e9f5f5)}
+.introVideo :global(.site-video-block){width:100%;margin:0}
+.introVideo :global(.site-video-player){width:100%;border-radius:15px;overflow:hidden}
+.methods{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:24px auto 0;border:1px solid #d5e6e6;border-radius:19px;background:#f7fbfa;overflow:hidden;color:#174655}
+.methods>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:19px 22px;min-height:68px;list-style:none;cursor:pointer}
+.methods>summary::-webkit-details-marker{display:none}
+.methods>summary>span{display:grid;gap:4px}
+.methods>summary strong{font:400 clamp(20px,2.2vw,27px)/1.2 Georgia,"Times New Roman",serif}
+.methods>summary small{color:#53717a;font:12px/1.5 Arial,Helvetica,sans-serif}
+.methods>summary>svg{flex:none;color:#157b80}
+.methods[open]>summary>svg{transform:rotate(180deg)}
+.methodsContent{padding:0 18px 20px}
+.methodGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start}
+.methodGrid>article{min-width:0;border:1px solid #d9e5e3;border-radius:16px;background:#fff;padding:13px}
+.methodGrid h3{margin:0 0 11px;color:#225060;font:400 22px/1.2 Georgia,"Times New Roman",serif}
+.methodGrid :global(.site-video-player){max-width:100%;border-radius:13px}
+.archive{margin:17px 0 0;padding:0 12px;border:1px solid #d5e4e4;border-radius:13px;background:#fff}
+.archive>summary{display:flex;align-items:center;gap:8px;min-height:44px;color:#1f6773;cursor:pointer;font:700 12px/1.5 Arial,Helvetica,sans-serif}
+.archive .methodGrid{padding:0 0 12px}
+.methods :is(summary,a,button):focus-visible,.directory a:focus-visible{outline:3px solid #dcac77;outline-offset:2px}
+.directory{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:30px auto 0;padding:22px 25px;border:1px solid #d7e5e4;border-radius:18px;background:linear-gradient(130deg,#effaf9,#fffdf8);display:flex;justify-content:space-between;align-items:center;gap:18px 36px}
+.directory h2{margin:0 0 7px;color:#1a4f5d;font:400 clamp(21px,2.2vw,27px)/1.2 Georgia,"Times New Roman",serif}
+.directory p{margin:0;max-width:730px;color:#547077;font:12px/1.55 Arial,Helvetica,sans-serif}
+.directoryActions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px}
+.browse{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;border-radius:10px;background:#127581;padding:9px 15px;color:#fff!important;text-decoration:none;white-space:nowrap;font:800 12px/1.35 Arial,Helvetica,sans-serif}
+.browse:hover{background:#0e5d67}
+.masters,.payments{display:inline-flex;align-items:center;min-height:41px;color:#1c6974;font:700 11px/1.3 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:940px){.introGrid{grid-template-columns:1fr}.directory{display:block}.directoryActions{justify-content:flex-start;margin-top:13px}}
+@media(max-width:680px){
+ .intro,.methods,.directory{width:calc(100% - 24px)}
+ .intro{margin-top:27px}.sectionTitle{margin-bottom:11px}.sectionTitle h2{font-size:29px}.sectionTitle>span{font-size:12px}
+ .introGrid{gap:9px}.introVideo{padding:8px;border-radius:15px}
+ .methods{margin-top:16px;border-radius:15px}
+ .methods>summary{padding:13px 15px;min-height:59px}.methods>summary strong{font-size:21px}.methods>summary small{font-size:11px}
+ .methodsContent{padding:0 11px 13px}.methodGrid{grid-template-columns:1fr;gap:10px}
+ .methodGrid>article{padding:10px}.methodGrid h3{font-size:19px}
+ .directory{margin-top:20px;padding:16px;border-radius:15px}
+ .directory h2{font-size:22px}.directoryActions{display:grid;justify-content:stretch}
+ .browse{width:100%;white-space:normal}.masters,.payments{min-height:36px}
+}

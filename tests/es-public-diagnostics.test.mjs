@@ -1,0 +1,145 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import { createHash } from 'node:crypto';
+import { publicRoute, createPublicDiagnostics, installPublicLifecycle } from '../scripts/es-public-diagnostics.mjs';
+const origin='https://127.0.0.1:3443';
+test('public routes emit only path and RSC flag; private, external and credentials excluded',()=>{
+ assert.deepEqual(publicRoute('/es/masters?_rsc=secret&token=secret#secret',origin),{path:'/es/masters',rsc:true});
+ for(const path of ['/es/client','/en/app','/api/client/secret','/es/unknown','https://outside.test/es','https://user:secret@127.0.0.1:3443/es']) assert.equal(publicRoute(path,origin),null);
+ assert.equal(publicRoute('/es','file://127.0.0.1'),null);
+});
+test('bounded metadata ignores arbitrary values and private stage paths',()=>{
+ const d=createPublicDiagnostics(origin,2);
+ d.record('request-start','/es?_rsc=secret',{stage:'webkit 1365 /es/client',request:1,body:'secret',headers:{secret:1},status:200});
+ d.record('pageerror','/es',{error:'other',stage:'webkit 1365 remembered language'});
+ d.record('pageerror','/es',{stage:'webkit 1365 search'});
+ d.record('pageerror','/es',{stage:'webkit 1365 search'});
+ assert.equal(d.events.length,3);assert.equal(d.events[0].stage,'unlisted');assert.equal(d.events[1].stage,'remembered language');
+ assert.ok(!JSON.stringify(d.events).includes('secret'));assert.ok(!JSON.stringify(d.events).includes('/es/client'));
+});
+test('request lifecycle retains IDs, responses and failures without changing event objects',()=>{
+ const p=new EventEmitter();p.url=()=>origin+'/es';p.mainFrame=()=>null;
+ const d=createPublicDiagnostics(origin);d.observePage(p,()=> 'webkit 1365 search');
+ const r={url:()=>origin+'/es/masters?_rsc=secret'};
+ p.emit('request',r);p.emit('response',{url:r.url,request:()=>r,status:()=>200});p.emit('requestfailed',r);
+ p.emit('pageerror',new Error('secret due to access control checks.'));
+ assert.deepEqual(d.events.map(e=>e.kind),['request-start','response','request-failed','pageerror']);
+ assert.equal(d.events[0].request,d.events[2].request);assert.equal(d.events[1].status,200);assert.equal(d.events[3].error,'access-control');assert.ok(!JSON.stringify(d.events).includes('secret'));
+ assert.doesNotThrow(()=>p.emit('request',{url(){throw Error('observer');}}));
+});
+test('proxy observes outcomes without handling errors or writing responses',()=>{
+ const d=createPublicDiagnostics(origin); const incoming={url:'/es?_rsc=secret'};
+ const outgoing=new EventEmitter();outgoing.statusCode=200;const upstream=new EventEmitter();
+ d.observeProxy(incoming,outgoing,upstream);upstream.emit('response',{statusCode:200});outgoing.emit('finish');outgoing.emit('close');upstream.emit('error',new Error('secret'));
+ assert.deepEqual(d.events.map(e=>e.kind),['proxy-start','proxy-response','proxy-finish','proxy-close','proxy-error']);
+ assert.equal(new Set(d.events.map(e=>e.request)).size,1);assert.ok(!JSON.stringify(d.events).includes('secret'));
+});
+test('browser lifecycle does not replace fetch/history or cancel errors',async()=>{
+ const handlers={}; const records=[];const fetch=()=>Promise.resolve();const history={};
+ const window={fetch,history,__esPublicEvidence:async e=>records.push(e),addEventListener:(k,f)=>handlers[k]=f};
+ vm.runInNewContext(`(${installPublicLifecycle})()`,{window,location:{origin,pathname:'/es'},Math,Date});
+ handlers.pagehide();handlers.error();handlers.unhandledrejection();
+ assert.equal(window.fetch,fetch);assert.equal(window.history,history);assert.equal(records.length,4);assert.equal(new Set(records.map(e=>e.document)).size,1);
+ window.__esPublicEvidence=()=>{throw Error('unavailable');};assert.doesNotThrow(()=>handlers.load());
+});
+test('integration retains fatal gate, original checks and navigation sequence exactly',()=>{
+ let source=readFileSync(new URL('../scripts/verify-es-public-site.mjs',import.meta.url),'utf8');
+ assert.match(source,/page\.on\('pageerror', error => errors\.push\(error\.message\)\)/);
+ assert.match(source,/assert\.deepEqual\(errors,\[\]\)/);
+ assert.ok(!source.includes('errors.filter'));assert.ok(!source.includes('errors.length ='));
+ // Pin the exact reviewed browser-readiness change, then compare every remaining
+ // real navigation and fatal assertion with the previously frozen baseline.
+ const reviewedFix = [
+   '        // The Next.js client may keep analytics and prefetch requests active.',
+   '        // Waiting for networkidle can deadlock even after the document loaded.',
+   '        // Wait for document load, then verify real routes and page errors below.',
+   "        const settle = () => page.waitForLoadState('load', {timeout:30000});",
+ ].join('\n');
+ const previousPreamble = [
+   '        // Do not abort in-flight Next link prefetches with the next hard goto.',
+   '        // All page errors still fail; no CORS or JavaScript errors are filtered.',
+   "        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});",
+ ].join('\n');
+ assert.ok(source.includes(reviewedFix), 'exact reviewed load-event navigation change');
+ source=source.replace(reviewedFix,previousPreamble);
+ const start=source.indexOf('        // Do not abort');const end=source.indexOf('        results.push',start);
+ assert.ok(start>=0&&end>start,'frozen original browser acceptance block');
+ const block=source.slice(start,end);
+ const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
+ assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
+ // Preserve the original frozen action sequence except for the two approved
+ // portrait redirects and the new exact canonical-course catalog assertion.
+ const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
+ assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
+ // The current production entry is a real dialog, with an explicit error branch,
+ // a consent-safe profile link and an actual guest screen. Freeze this complete
+ // browser-action block, not the retired My House dropdown.
+ for(const marker of [
+   "        const accountCabinet = page.locator('.site-navigation .site-cabinet-entry');",
+   "        await expect(accountCabinet).toHaveAttribute('aria-haspopup','dialog');",
+   "        await click(accountCabinet);",
+   "        const accountDialog = page.locator('#home-personal-space-dialog');",
+   "        await expect(accountDialog).toBeVisible();",
+   "        await expect(accountLink).toHaveAttribute('href', entry.href);",
+   "        await click(accountLink);",
+   "        const guestOverview = page.locator('main.hh-app [data-cabinet-guest-overview=\"true\"]');",
+   "        await expect(guestOverview).toBeVisible();",
+ ]) assert.equal(block.split(marker).length-1,marker.includes('await expect(guestOverview).toBeVisible()') ? 2 : 1,
+   'Required real dialog-to-profile browser action: '+marker);
+ assert.equal(createHash('sha256').update(block).digest('hex'),'7f193678b75cc05492cfc49132fde40e9aabcf0f0a8b85602fd7590f9d92c466',
+   'Frozen current production browser actions, consent, errors, navigation and locale coverage');
+
+});
+
+test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{
+ const d=createPublicDiagnostics(origin,1);
+ for(const engine of ['chromium','webkit']) for(const width of [390,1365]) {
+  d.record('request-start','/es',{stage:`${engine} ${width} search`,source:'/es/services?secret=value'});
+  d.record('request-start','/es',{stage:`${engine} ${width} search`});
+ }
+ d.record('secret-malicious-kind','/es');
+ assert.equal(d.events.length,4);assert.equal(Object.values(d.dropped).reduce((a,b)=>a+b,0),4);
+ assert.equal(d.events[3].engine,'webkit');assert.equal(d.events[3].width,1365);assert.equal(d.events[3].observedFramePath,'/es/services');
+ const p=createPublicDiagnostics(origin);p.record('request-start','/es',{source:'/es/client?id=secret'});assert.ok(!('observedFramePath' in p.events[0]));
+ assert.ok(!JSON.stringify(d.events).includes('secret'));
+});
+
+test('proxy and ordinary requests cannot exhaust error or lifecycle evidence',()=>{
+ const d=createPublicDiagnostics(origin,1);const fields={stage:'webkit 1365 search'};
+ for(const kind of ['proxy-start','proxy-finish','request-start','request-finished','pageerror','pagehide']) d.record(kind,'/es',fields);
+ assert.deepEqual(d.events.map(e=>e.kind),['proxy-start','request-start','pageerror','pagehide']);
+ assert.equal(d.dropped['webkit-1365:proxy'],1);assert.equal(d.dropped['webkit-1365:requests'],1);
+});
+
+test('private observer location retains redacted error and lifecycle evidence but no requests',()=>{
+ const d=createPublicDiagnostics(origin);const fields={stage:'webkit 1365 /es/client',document:123};
+ for(const kind of ['request-start','pageerror','pagehide','error']) d.record(kind,'/es/client/private-id?token=secret',fields);
+ assert.deepEqual(d.events.map(e=>e.kind),['pageerror','pagehide','error']);
+ assert.ok(d.events.every(e=>e.path===null && e.document===123));
+ assert.ok(!/client|private-id|token|secret/.test(JSON.stringify(d.events)));
+ d.record('pageerror','https://outside.test/es',fields);assert.equal(d.events.length,3);
+});
+
+test('diagnostic write failure cannot prevent original proxy and app cleanup',()=>{
+ const source=readFileSync(new URL('../scripts/verify-es-public-site.mjs',import.meta.url),'utf8');
+ const cleanup=source.slice(source.lastIndexOf('  try {saveDiagnostics();}'));
+ const calls=[];const failure=new Error('disk unavailable');
+ const run=new Function('saveDiagnostics','proxy','app',cleanup.slice(0,cleanup.lastIndexOf('}')));
+ assert.throws(()=>run(()=>{throw failure;},{closeAllConnections(){calls.push('connections');},close(){calls.push('proxy');}},{kill(signal){calls.push(signal);}}),error=>error===failure);
+ assert.deepEqual(calls,['connections','proxy','SIGTERM']);
+});
+
+for (const locale of ['en', 'ru', 'es']) test(locale + ' canonical course diagnostics retain sanitized lifecycle and request evidence', () => {
+ const path='/' + locale + '/academy/free-ai-courses';
+ assert.deepEqual(publicRoute(path+'?_rsc=secret&token=secret#secret',origin),{path,rsc:true});
+ const d=createPublicDiagnostics(origin);
+ for(const kind of ['request-start','response','request-failed','proxy-response','frame-navigation','pageerror'])d.record(kind,path+'?secret=hidden',{stage:'webkit 390 '+path,status:200,error:'other'});
+ assert.equal(d.events.length,6);
+ assert.ok(d.events.every(event=>event.path===path && event.stage===path));
+ assert.ok(!/secret|hidden/.test(JSON.stringify(d.events)));
+ for(const suffix of ['/private-id','/progress','/course-a'])assert.equal(publicRoute(path+suffix,origin),null);
+ for(const privatePath of ['/'+locale+'/client/tests','/'+locale+'/app/course'])assert.equal(publicRoute(privatePath,origin),null);
+});

@@ -1,0 +1,315 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowUpRight, BadgeCheck, MessageCircle, ShieldCheck } from "lucide-react";
+import { PublicSiteHeader } from "@/components/public-site-header";
+import { getCommerceConfig } from "@/lib/commerce/config";
+import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
+import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
+import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
+import { configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad40, configuredStandaloneSquareSessionCad50, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
+import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
+import { configuredPayPalHostedLinks, buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
+import styles from "./payments.module.css";
+
+type PageProps = { params: Promise<{ locale: string }> };
+const copy = {
+  en: {
+    back: "Services", tag: "PAYMENT OPTIONS · ONE-TIME SERVICES",
+    title: "Pay for your personal session",
+    lead: "Choose a fixed-price consultation. Please agree a suitable session time with Andrey before making a payment.",
+    payee: "PayPal recipient", method: "Payment type", methodValue: "Goods & Services (not Friends & Family)",
+    verify: "Check the recipient, the exact amount and EUR currency on PayPal before sending money.",
+    choose: "Select a session", pay: "PayPal.Me · manual confirmation", hostedPay: "Pay on PayPal · fixed EUR total", hostedInfo: "This opens PayPal checkout. Check the merchant and exact EUR total. Payment must still be verified after transfer.", autoPay: "Secure checkout · automatic confirmation", after: "I have paid · send transaction ID",
+    process: "After paying, send the PayPal transaction ID through WhatsApp for manual verification and to arrange your session.",
+    disclaimer: "PayPal.Me requires the payer to have a PayPal account; a linked card may be used after sign-in, but this is not guest card checkout. The website cannot automatically verify a personal PayPal payment. We confirm the appointment only after verifying the received funds.",
+    help: "Ask about availability first", contact: "Contact on WhatsApp",
+    instructions: "If PayPal does not offer Goods & Services, don't send a personal Friends & Family transfer for a service. Contact us instead.",
+    zenTitle: "Prefer ZEN.COM?",
+    zenIntro: "Ask whether you can pay by EUR bank transfer. No payment is collected here; we first confirm the appointment and verified recipient details.",
+    zenRequest: "Ask for ZEN.COM transfer details",
+    otherPayment: "View full cart", extraMethods: "More payment options",
+    interacTitle: "In Canada without PayPal?", interacIntro: "You can request an Interac e-Transfer. First we confirm a CAD amount, recipient and appointment time. No transfer happens when you click.",
+    interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareInfo: "Square Canada charges a separately approved CAD total, not the EUR reference. Check the seller and CAD total before paying. We verify receipt manually; payment does not book a session.", squareApiInfo: "Secure Square checkout charges the displayed CAD total. We verify the received payment directly with Square; your appointment time is arranged separately.", squareReceipt: "Paid with Square? Send transaction ID", combinedSquare: "Pay both by Square",
+    combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
+    combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
+    squareSessionTitle: "Square · separate CAD session payment",
+    squareSessionNote: "Only use this CA$50 link if Andrey has personally agreed that exact CAD amount for your session. It is not the €50 consultation price or a currency conversion. Verify Holistic House and the final CA$50 total in Square. No automatic booking or payment verification.",
+    squareSessionPay: "Pay CA$50 with Square", squareSessionReceipt: "Already paid? Send Square transaction ID",
+    squareSession40Note: "Only use this CA$40 link if Andrey personally agreed this exact CAD amount for Session 40. It is not the €50 consultation price or a currency conversion. Verify Holistic House and the final CA$40 total on Square. No automatic booking or payment verification.",
+    squareSession40Pay: "Pay CA$40 with Square", squareSession40Receipt: "Paid CA$40? Send Square transaction ID",
+  },
+  ru: {
+    back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
+    title: "Оплата личной консультации",
+    lead: "Выберите консультацию с фиксированной стоимостью. Перед оплатой согласуйте с Андреем удобное время сеанса.",
+    payee: "Получатель в PayPal", method: "Тип платежа", methodValue: "Товары и услуги (не друзьям и семье)",
+    verify: "Перед отправкой денег проверьте получателя, точную сумму и валюту EUR в PayPal.",
+    choose: "Выберите формат", pay: "PayPal.Me · ручная проверка", hostedPay: "Оплатить через PayPal · точная сумма", hostedInfo: "Откроется защищённая оплата PayPal. Проверьте получателя и сумму в EUR. Поступление подтверждается после сверки транзакции.", autoPay: "Оплатить · автоматическое подтверждение", after: "Я оплатил(а) · отправить ID транзакции",
+    process: "После оплаты отправьте ID транзакции PayPal через WhatsApp. Мы вручную проверим поступление и согласуем сеанс.",
+    disclaimer: "Для оплаты через PayPal.Me требуется аккаунт PayPal. Можно выбрать привязанную карту, но это не гостевая оплата картой. Сайт не проверяет поступление автоматически: сеанс подтверждается только после ручной проверки платежа.",
+    help: "Сначала уточнить время", contact: "Написать в WhatsApp",
+    instructions: "Если PayPal не предлагает «Товары и услуги», не переводите оплату за услугу как «Друзьям и семье». Свяжитесь с нами.",
+    zenTitle: "Предпочитаете ZEN.COM?",
+    zenIntro: "Узнайте, можно ли оплатить переводом EUR. Здесь деньги не списываются: сначала согласуем время и проверим реквизиты получателя.",
+    zenRequest: "Запросить реквизиты ZEN.COM",
+    otherPayment: "Открыть полную корзину", extraMethods: "Другие варианты",
+    interacTitle: "В Канаде без PayPal?", interacIntro: "Можно запросить перевод Interac e-Transfer. Сначала согласуем сумму в CAD, получателя и время сеанса. При нажатии деньги не списываются.",
+    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareInfo: "Square Canada списывает отдельно утверждённую сумму CAD, а не указанную цену EUR. Проверьте продавца и сумму CAD. Поступление проверяется вручную; оплата не бронирует сеанс.", squareApiInfo: "Безопасная оплата в Square списывает указанную сумму CAD. Поступление проверяется напрямую через Square; время консультации согласуем отдельно.", squareReceipt: "Оплатили через Square? Отправить ID", combinedSquare: "Оплатить обе услуги через Square",
+    combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
+    combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
+    squareSessionTitle: "Square · отдельная оплата сеанса в CAD",
+    squareSessionNote: "Используйте ссылку на CA$50 только если Андрей лично согласовал именно эту сумму CAD за ваш сеанс. Это не цена консультации €50 и не конвертация валюты. Проверьте Holistic House и итог CA$50 в Square. Оплата и бронирование не подтверждаются автоматически.",
+    squareSessionPay: "Оплатить CA$50 через Square", squareSessionReceipt: "Уже оплатили? Отправить ID Square",
+    squareSession40Note: "Используйте ссылку CA$40 только если Андрей лично согласовал именно эту сумму CAD за Session 40. Это не цена консультации €50 и не конвертация валюты. Проверьте Holistic House и итог CA$40 в Square. Оплата и бронирование не подтверждаются автоматически.",
+    squareSession40Pay: "Оплатить CA$40 через Square", squareSession40Receipt: "Оплатили CA$40? Отправить ID Square",
+  },
+  es: {
+    back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
+    title: "Paga tu consulta personal",
+    lead: "Elige una consulta de precio fijo. Acuerda la fecha y hora con Andrey antes de enviar el pago.",
+    payee: "Destinatario de PayPal", method: "Tipo de pago", methodValue: "Productos y servicios (no amigos y familiares)",
+    verify: "Comprueba el destinatario, importe exacto y moneda EUR en PayPal antes de pagar.",
+    choose: "Elige una sesión", pay: "PayPal.Me · verificación manual", hostedPay: "Pagar en PayPal · precio fijo en EUR", hostedInfo: "Se abre el pago seguro de PayPal. Comprueba el destinatario y el total en EUR. El pago se verifica después de recibirlo.", autoPay: "Pago seguro · confirmación automática", after: "Ya pagué · enviar ID de transacción",
+    process: "Después de pagar, envía el ID de transacción de PayPal por WhatsApp para la verificación manual y acordar tu sesión.",
+    disclaimer: "PayPal.Me requiere una cuenta PayPal; puedes usar una tarjeta vinculada después de iniciar sesión, pero no es un pago con tarjeta como invitado. La web no confirma pagos automáticamente; verificamos los fondos antes de reservar la cita.",
+    help: "Primero consultar disponibilidad", contact: "Contactar por WhatsApp",
+    instructions: "Si PayPal no ofrece Productos y servicios, no pagues mediante Amigos y familiares por una consulta. Contáctanos.",
+    zenTitle: "¿Prefieres ZEN.COM?",
+    zenIntro: "Consulta si puedes pagar mediante transferencia en EUR. Aquí no se cobra: primero confirmamos la cita y los datos del destinatario.",
+    zenRequest: "Solicitar datos para ZEN.COM",
+    otherPayment: "Abrir el carrito", extraMethods: "Más opciones",
+    interacTitle: "¿En Canadá sin PayPal?", interacIntro: "Puedes solicitar Interac e-Transfer. Primero confirmamos el importe en CAD, destinatario y cita. Hacer clic no envía dinero.",
+    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareInfo: "Square Canada cobra el importe CAD aprobado por separado, no el precio de referencia en EUR. Comprueba el vendedor y el total CAD. Verificamos el pago manualmente; no reserva una cita.", squareApiInfo: "El pago seguro de Square cobra el importe CAD mostrado. Verificamos el pago directamente con Square; la hora de la sesión se acuerda aparte.", squareReceipt: "¿Pagaste con Square? Enviar ID", combinedSquare: "Pagar ambas con Square",
+    combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
+    combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
+    squareSessionTitle: "Square · pago de sesión independiente en CAD",
+    squareSessionNote: "Usa este enlace de CA$50 solo si Andrey acordó personalmente ese importe CAD para tu sesión. No equivale a la consulta de €50 ni es una conversión de moneda. Comprueba Holistic House y el total CA$50 en Square. No confirma automáticamente el pago ni la cita.",
+    squareSessionPay: "Pagar CA$50 con Square", squareSessionReceipt: "¿Ya pagaste? Enviar ID de Square",
+    squareSession40Note: "Usa el enlace CA$40 solo si Andrey acordó personalmente ese importe CAD para Session 40. No equivale a la consulta de €50 ni es una conversión de moneda. Comprueba Holistic House y el total CA$40 en Square. El pago y la cita no se confirman automáticamente.",
+    squareSession40Pay: "Pagar CA$40 con Square", squareSession40Receipt: "¿Pagaste CA$40? Envía el ID de Square",
+  },
+} as const;
+
+const localeAllowed = (value: string): value is ServiceLocale =>
+  value === "en" || value === "ru" || value === "es";
+
+function receiptUrl(locale: ServiceLocale, service: string, euros: number) {
+  const text = locale === "ru"
+    ? `Здравствуйте! Я отправил(а) оплату €${euros} через PayPal.Me за услугу «${service}». ID транзакции PayPal: [впишите ID]. Проверьте поступление и подтвердите время встречи.`
+    : locale === "es"
+      ? `Hola. Envié €${euros} por PayPal.Me por ${service}. ID de transacción de PayPal: [añade el ID]. Por favor, verifica la recepción y confirma la sesión.`
+      : `Hello! I sent €${euros} via PayPal.Me for ${service}. PayPal transaction ID: [insert ID]. Please verify receipt and confirm my session time.`;
+  return "https://wa.me/14376066502?text=" + encodeURIComponent(text);
+}
+
+function squareReceiptUrl(locale: ServiceLocale, service: string, cadMinor: number) {
+  const amount = formatSquareCadAmount(cadMinor, locale);
+  const message = locale === "ru"
+    ? `Здравствуйте! Прошу проверить оплату ${amount} через Square за услугу «${service}». ID Square: [введите ID]. Проверьте поступление и подтвердите время сеанса.`
+    : locale === "es"
+      ? `Hola. Comprueba mi pago de ${amount} por Square para ${service}. ID de Square: [añade el ID]. Confirma la recepción y la hora de la sesión.`
+      : `Hello! Please verify my Square payment of ${amount} for ${service}. Square transaction ID: [insert ID]. Confirm receipt and session time.`;
+  return "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+}
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!localeAllowed(locale)) return { title: "Not found", robots: { index: false } };
+  return {
+    title: copy[locale].title + " — Holistic House",
+    description: copy[locale].lead,
+    robots: { index: false, follow: true },
+  };
+}
+
+export default async function PersonalPaymentsPage({ params }: PageProps) {
+  const { locale } = await params;
+  if (!localeAllowed(locale)) notFound();
+  const t = copy[locale];
+  const commerce = getCommerceConfig();
+  const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
+  const enabled = personalPayPalEnabled();
+  const products = publicServiceCatalog(locale);
+  const squareLinks = configuredSquarePaymentLinks();
+  const standaloneSquareSession40 = configuredStandaloneSquareSessionCad40();
+  const standaloneSquareSession = configuredStandaloneSquareSessionCad50();
+  const squareApiEnabled = getSquareGatewayConfig().enabled;
+  const hostedPayPalLinks = configuredPayPalHostedLinks();
+  const combinedIds = products.map(product => product.id);
+  const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
+  const combinedHostedUrl = products.length === 2 ? buildPayPalHostedCartUrl(combinedIds, hostedPayPalLinks) : null;
+  const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
+  const combinedSquarePayment = products.length === 2 ? buildSquarePaymentForServices(combinedIds, squareLinks) : null;
+  const combinedAvailable = products.length === 2 && (squareApiEnabled || Boolean(combinedSquarePayment) || verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
+  return (
+    <main className="services-shell services-shell--studio" lang={locale}>
+      <PublicSiteHeader locale={locale} />
+      <section className={styles.shell} aria-labelledby="personal-payment-title">
+        <div className={styles.intro}>
+          <Link className={styles.back} href={`/${locale}/services`}>← {t.back}</Link>
+          <p className={styles.eyebrow}>{t.tag}</p>
+          <h1 id="personal-payment-title">{t.title}</h1>
+          <p>{t.lead}</p>
+        </div>
+        {(squareApiEnabled || Object.keys(squareLinks).length > 0) ? <div className={styles.notice} data-square-cad-disclosure>
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div className={styles.noticeText}><strong>Square · CAD</strong><small>{squareApiEnabled ? t.squareApiInfo : t.squareInfo}</small></div>
+        </div> : null}
+        {(enabled || verifiedPayPalCheckout || Object.keys(hostedPayPalLinks).length > 0) ? <div className={styles.notice} data-paypal-eur-disclosure>
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div className={styles.noticeText}>
+            <strong>{t.payee}: {PERSONAL_PAYPAL_PAYEE}</strong>
+            <span>{t.method}: {t.methodValue}</span>
+            <small>{t.verify}</small>
+          </div>
+        </div> : null}
+        <div className={styles.zenNotice} data-interac-manual-inquiry>
+          <strong>{t.interacTitle}</strong><p>{t.interacIntro}</p>
+        </div>
+        {standaloneSquareSession40 ? <section className={styles.combined} data-square-cad40-session-payment>
+          <div>
+            <strong>{t.squareSessionTitle} · {formatSquareCadAmount(standaloneSquareSession40.amountMinor, locale)}</strong>
+            <p>{t.squareSession40Note}</p>
+          </div>
+          <div className={styles.combinedActions}>
+            <a href={standaloneSquareSession40.url} className={styles.payButton}
+              target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-square-cad40-session-checkout>
+              {t.squareSession40Pay} <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <a href={squareReceiptUrl(locale, "Session 40 (separately agreed CAD amount)", standaloneSquareSession40.amountMinor)}
+              className={styles.receiptButton} target="_blank" rel="noopener noreferrer"
+              data-square-cad40-session-receipt>
+              <MessageCircle size={17} aria-hidden="true" />{t.squareSession40Receipt}
+            </a>
+          </div>
+        </section> : null}
+        {standaloneSquareSession ? <section className={styles.combined} data-square-cad50-session-payment>
+          <div>
+            <strong>{t.squareSessionTitle} · {formatSquareCadAmount(standaloneSquareSession.amountMinor, locale)}</strong>
+            <p>{t.squareSessionNote}</p>
+          </div>
+          <div className={styles.combinedActions}>
+            <a href={standaloneSquareSession.url} className={styles.payButton}
+              target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-square-cad50-session-checkout>
+              {t.squareSessionPay} <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <a href={squareReceiptUrl(locale, "Session (separately agreed CAD amount)", standaloneSquareSession.amountMinor)}
+              className={styles.receiptButton} target="_blank" rel="noopener noreferrer"
+              data-square-cad50-session-receipt>
+              <MessageCircle size={17} aria-hidden="true" />{t.squareSessionReceipt}
+            </a>
+          </div>
+        </section> : null}
+        <h2 className={styles.heading}>{t.choose}</h2>
+        <div className={styles.cards}>
+          {products.map((product) => {
+            const euros = product.amountMinor / 100;
+            const zenInquiryUrl = buildZenTransferInquiry([product.id], locale);
+            const interacInquiryUrl = buildInteracTransferInquiry([product.id], locale);
+            const squarePayment = buildSquarePaymentForServices([product.id], squareLinks);
+            const hostedPayPalUrl = buildPayPalHostedCartUrl([product.id], hostedPayPalLinks);
+            return <article key={product.id} className={styles.card} data-paypal-personal-service={product.id}>
+              <div className={styles.productHead}>
+                <span className={styles.duration}>{product.durationMinutes} min</span>
+                <span className={styles.price}>€{euros}</span>
+              </div>
+              <h3>{product.title}</h3>
+              <p>{product.description}</p>
+              {squareApiEnabled ? <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)}
+                className={styles.payButton} data-square-api-cart-link={product.id}>
+                {t.squareAction} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link> : null}
+              {!squareApiEnabled && squarePayment ? <a href={squarePayment.url} className={styles.payButton}
+                target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
+                {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
+              </a> : null}
+              {verifiedPayPalCheckout ? <Link
+                href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
+                className={squareApiEnabled || squarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-checkout={product.id}>
+                {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link> : !hostedPayPalUrl ? null :
+                <a className={squarePayment ? styles.zenButton : styles.payButton} href={hostedPayPalUrl} target="_blank"
+                  rel="noopener noreferrer" data-paypal-hosted-link={product.id}>
+                  {t.hostedPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+                </a>}
+              {enabled ? <a href={`/api/payments/paypal/${product.id}`}
+                  className={squarePayment || verifiedPayPalCheckout || hostedPayPalUrl ? styles.zenButton : styles.payButton}
+                  target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
+                {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+              </a> : verifiedPayPalCheckout || hostedPayPalUrl ? null : <p className={styles.unavailable}>{t.help}</p>}
+              {interacInquiryUrl ? <a href={interacInquiryUrl} className={styles.zenButton}
+                target="_blank" rel="noopener noreferrer" data-interac-direct-inquiry={product.id}>
+                {t.interacRequest} <MessageCircle size={17} aria-hidden="true" />
+              </a> : null}
+              <details className={styles.otherDetails} data-zen-manual-inquiry>
+                <summary>{t.extraMethods}</summary>
+                <div className={styles.otherActions}>
+                  <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)}
+                    className={styles.zenButton} data-other-payment-methods>
+                    {t.otherPayment} <ArrowUpRight size={17} aria-hidden="true" />
+                  </Link>
+                  {zenInquiryUrl ? <a href={zenInquiryUrl} className={styles.zenButton}
+                    target="_blank" rel="noopener noreferrer" data-zen-transfer-inquiry={product.id}>
+                    {t.zenRequest} <MessageCircle size={17} aria-hidden="true" />
+                  </a> : null}
+                  <p>{t.zenIntro}</p>
+                </div>
+              </details>
+              {squarePayment ? <a href={squareReceiptUrl(locale, product.title, squarePayment.amountMinor)}
+                className={styles.receiptButton} target="_blank" rel="noopener noreferrer" data-square-manual-confirmation={product.id}>
+                <MessageCircle size={17} aria-hidden="true" /> {t.squareReceipt}
+              </a> : null}
+              {(enabled || verifiedPayPalCheckout || hostedPayPalUrl) ? <a href={receiptUrl(locale, product.title, euros)}
+                className={styles.receiptButton} target="_blank" rel="noopener noreferrer" data-paypal-manual-confirmation>
+                <MessageCircle size={17} aria-hidden="true" /> {t.after}
+              </a> : null}
+            </article>;
+          })}
+        </div>
+        {combinedAvailable ? <div className={styles.combined} data-paypal-combined-cart>
+          <div>
+            <strong>{t.combinedTitle} · €{combinedEuros}</strong>
+            <p>{t.combinedIntro}</p>
+          </div>
+          <div className={styles.combinedActions}>
+            {squareApiEnabled ? <Link href={"/" + locale + "/cart?items=" + combinedIds.join(",")}
+              className={styles.payButton} data-square-api-combined-link>
+              {t.combinedSquare} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link> : null}
+            {!squareApiEnabled && combinedSquarePayment ? <a href={combinedSquarePayment.url} className={styles.payButton}
+              target="_blank" rel="noopener noreferrer" data-square-combined-link>
+              {t.combinedSquare} · {formatSquareCadAmount(combinedSquarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
+            </a> : null}
+            {verifiedPayPalCheckout ? <Link href={`/${locale}/services/checkout?items=${combinedIds.join(",")}`}
+              className={squareApiEnabled || combinedSquarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-combined>
+              {t.autoPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link> : combinedHostedUrl ? <a href={combinedHostedUrl}
+              className={styles.payButton} target="_blank" rel="noopener noreferrer" data-paypal-hosted-combined>
+              {t.hostedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </a> : null}
+            {combinedPayPalUrl ? <a href={combinedPayPalUrl}
+              className={verifiedPayPalCheckout || combinedHostedUrl ? styles.zenButton : styles.payButton}
+              target="_blank" rel="noopener noreferrer" data-paypal-combined-link>
+              {t.combinedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </a> : null}
+            <Link className={styles.zenButton} href={"/" + locale + "/cart?items=" + combinedIds.join(",")} data-combined-cart-link>
+              {t.combinedCart} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
+        </div> : null}
+        <div className={styles.final}>
+          <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{squareApiEnabled ? t.squareApiInfo : Object.keys(squareLinks).length ? t.squareInfo : t.process}</p></div>
+          <p className={styles.warning}>{t.instructions}</p>
+          <p className={styles.disclaimer}>{t.disclaimer}</p>
+          {Object.keys(hostedPayPalLinks).length ? <p className={styles.disclaimer}>{t.hostedInfo}</p> : null}
+          <a className={styles.contact} href="https://wa.me/14376066502" target="_blank" rel="noopener noreferrer">{t.contact} →</a>
+        </div>
+      </section>
+    </main>
+  );
+}

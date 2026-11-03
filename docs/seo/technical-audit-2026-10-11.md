@@ -1,5 +1,8 @@
 # Technical SEO audit — 11 October 2026
 
+> **Historical snapshot (11 Oct 2026).** For current strategy, priorities, 15 EN/RU/ES curated URLs, the Free Tantra SEO release and verified status, use [Holistic House SEO Master Plan v3](./holistic-house-seo-master-plan.md) and [#306](https://github.com/andylitvinov-design/books/issues/306). Previous 12-URL counts and pre-release blockers below describe the original checkpoint, not today's production.
+
+
 Scope: the public Holistic House routes changed or protected by Issue #306 / PR #309. This is a source-and-test audit; it does not turn an inaccessible protected preview into live evidence.
 
 | Area | Evidence | Result / action |

@@ -20,7 +20,7 @@ test('adaptive A4 core uses original signature inline, not a nearly empty second
   const pdf = buildPrescriptionPdf(base, 'en', origin)
   assert.equal(countPages(pdf), 1, 'short client recommendation should fit on one A4')
   const txt = source(pdf)
-  assert.match(txt, /q 120 0 0 47 83 /)
+  assert.match(txt, /q 207 0 0 81\.5 83 /, 'wide original-ink signature is part of the white report body')
   assert.equal((txt.match(/\/Signature Do Q/g) ?? []).length, 1)
   assert.match(txt, /Synthetic Example/)
   assert.doesNotMatch(txt, /PRIVATE|internalNotes|undefined/)
@@ -102,7 +102,12 @@ test('realistic RU example keeps the practitioner signature with the core report
     const drawnText = (pages[signaturePage].match(/BT \/F/g) ?? []).length
     assert.ok(drawnText >= 12, 'second page contains meaningful authored text, not only a signature')
   }
-  assert.ok(pages.slice(signaturePage + 1).some(page => /\/RemedyPhoto1 Do Q/.test(page)), 'full approved appendix follows the signed core')
+  const signedPage = pages[signaturePage]
+  const afterSignature = signedPage.slice(signedPage.indexOf('/Signature Do Q') + '/Signature Do Q'.length)
+  const appendixStartsBelowSignature = /\/RemedyPhoto1 Do Q/.test(afterSignature)
+  const appendixOnLaterPage = pages.slice(signaturePage + 1).some(page => /\/RemedyPhoto1 Do Q/.test(page))
+  assert.ok(appendixStartsBelowSignature || appendixOnLaterPage,
+    'complete approved appendix follows the signature, on the same page when space allows')
 })
 
 

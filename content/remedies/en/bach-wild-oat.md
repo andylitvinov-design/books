@@ -142,6 +142,12 @@ The field becomes alive,
 
 but already gathered and directed.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: There are many possibilities, but no clear direction: it is hard to know where to put your efforts, and choosing the wrong path feels frightening.
+
+After (desired state): Greater clarity about your own desires and readiness to choose a direction, so you can begin to follow your own path.
+
 ## RITUAL
 
 - take 2–5 drops of WILD OAT under the tongue

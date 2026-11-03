@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, ChevronRight } from "lucide-react";
@@ -33,7 +34,7 @@ export function CatalogShowcase({
           <Link className="catalog-showcase-index-card" href={item.indexHref ?? item.href} key={item.id}>
             {item.image ? (
               <span className="catalog-showcase-index-photo" aria-hidden="true">
-                <Image alt="" fill sizes="(max-width: 720px) 76px, 128px" src={item.image} />
+                <Image alt="" fill sizes="(max-width: 720px) 76px, 128px" src={cardArtworkUrl(item.image)} unoptimized={hasCardArtwork(item.image)} />
               </span>
             ) : null}
             <span className="catalog-showcase-index-copy">
@@ -54,7 +55,8 @@ export function CatalogShowcase({
                   className="catalog-showcase-media-image"
                   fill
                   sizes="(max-width: 720px) 100vw, 52vw"
-                  src={item.image}
+                  src={cardArtworkUrl(item.image, "feature")}
+                  unoptimized={hasCardArtwork(item.image)}
                 />
               ) : null}
               {item.media ? <div className="catalog-showcase-media-live">{item.media}</div> : null}

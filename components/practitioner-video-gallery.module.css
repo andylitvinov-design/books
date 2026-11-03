@@ -1,0 +1,43 @@
+.section{max-width:1180px;margin:0 auto 2.75rem;padding:0 clamp(12px,3vw,28px);min-width:0}
+.header{margin:0 0 1rem}
+.header h2{margin:.25rem 0;font-size:clamp(1.4rem,3vw,2rem);line-height:1.2;color:#14304a}
+.header>p:last-child{margin:.35rem 0;color:#5b6d7d;font-size:.94rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px}
+.card{min-width:0;overflow:hidden;border:1px solid #dae6e9;border-radius:18px;background:#fff;box-shadow:0 12px 30px #102d4412}
+.screen{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(140deg,#103e50,#1a5b61 60%,#7a4057)}
+.screen iframe{display:block;width:100%;height:100%;border:0}
+.poster{display:flex;flex-direction:column;gap:12px;justify-content:center;align-items:center;width:100%;height:100%;border:0;background-color:transparent;background-size:cover;background-position:center;color:#fff;cursor:pointer;font:inherit;font-size:.9rem;font-weight:700}
+.poster:focus-visible{outline:3px solid #bb5670;outline-offset:-5px}
+.play{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;border:2px solid #ffebc7;background:#132f45d9;color:#fff;font-size:23px;transition:transform .2s}
+.poster:hover .play{transform:scale(1.08)}
+.copy{padding:14px 16px 18px;min-width:0;overflow-wrap:anywhere}
+.language{display:inline-flex;padding:3px 8px;background:#e5f3f3;border-radius:30px;font-size:.68rem;letter-spacing:.08em;font-weight:800;color:#17636b}
+.copy h3{font-size:1.08rem;line-height:1.32;color:#16354b;margin:9px 0 6px}
+.copy p{font-size:.9rem;line-height:1.5;color:#577081;margin:0 0 12px}
+.copy a{color:#8c2448;font-weight:750;font-size:.88rem;text-decoration:none}
+.copy a:hover,.copy a:focus-visible{text-decoration:underline}
+@media(max-width:620px){.section{margin-bottom:2rem}.grid{grid-template-columns:minmax(0,1fr);gap:12px}.copy{padding:12px 14px 15px}.copy h3{font-size:1rem}}
+
+/* Full poster can navigate to the original public YouTube source. */
+.poster{text-decoration:none}
+.poster:hover{text-decoration:none}
+
+/* Master profile: short video reel of only approved public links, played on demand. */
+.compact{max-width:none;margin:5px 0 18px;padding:0}
+.compact .header{margin:0 0 12px}
+.compact .header h2{font:500 clamp(23px,2.5vw,30px)/1.2 Georgia,serif;color:#48342a}
+.compact .header>p:last-child{display:none}
+.compact .grid{display:flex;align-items:stretch;gap:12px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 2px 12px}
+.compact .grid::-webkit-scrollbar{display:none}
+.compact .card{flex:0 0 clamp(205px,24vw,270px);display:flex;flex-direction:column;border-radius:17px;border-color:#e2ddcd;background:#fffdf7;scroll-snap-align:start;box-shadow:0 6px 19px #21372813}
+.compact .screen{aspect-ratio:16/9;background:#145947}
+.compact .poster{background-position:center;color:#fff;font-size:0;gap:4px}
+.compact .play{width:43px;height:43px;font-size:17px;background:#17423ddf;border-color:#fcf8e4}
+.compact .copy{padding:11px 12px 13px}
+.compact .copy h3{margin:6px 0 4px;font:600 16px/1.22 Georgia,serif;color:#48352b}
+.compact .copy p{display:none}
+.compact .copy a{font-size:11px;color:#0e7553}
+.compact .language{padding:3px 7px;background:#e6f3eb;color:#11704f}
+@media(max-width:650px){.compact .grid{gap:10px}.compact .card{flex-basis:min(69vw,250px)}}
+@media(max-width:360px){.compact .card{flex-basis:225px}}
+@media(prefers-reduced-motion:reduce){.compact .grid{scroll-behavior:auto}.compact .play{transition:none}}

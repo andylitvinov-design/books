@@ -1,4 +1,7 @@
+import { BACH_V2_DEFINITIONS } from '../data/assessments/bach-flower-v2.js'
+import { HH_SPLIT_V2_DEFINITIONS } from '../data/assessments/hh-split-reflections-v2.js'
 import test, { before, after } from 'node:test'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
@@ -19,15 +22,19 @@ const { appHousekeepingStatus, runAppHousekeeping } = maintenance
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
+import { verifySnapshotDimensionIdentity } from './helpers/snapshot-dimension-identity-db.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { createArticleRepository } from '../lib/practitioners/article-repository.js'
 import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
 import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
+import { seal } from '../lib/app/crypto.js'
+import { createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession } from '../lib/app/client-session-save-flow.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -116,6 +123,14 @@ before(async () => {
   }
 })
 after(closeDatabase)
+test('snapshot SQL uses exact definition-scale identity and retains source security', async t => {
+  const db = await adminClient()
+  try {
+    await verifySnapshotDimensionIdentity(db, t)
+  } finally {
+    await db.end()
+  }
+})
 test('actual grants: own reads allowed; account status and identity updates denied', async () => {
   assert.equal(
     (await rawAs(a, 'authenticated', (db) => db.query('select id from app.accounts'))).rows.length,
@@ -627,6 +642,154 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('selected public master alias: real owner transaction, collision, RLS and old URL permanence',async()=>{
+  const before=await practiceRepo.getMyPractice(a)
+  const originalSlug=before.practitioner.slug
+  const first='qa-master-a'
+  const second='qa-master-a-renamed'
+  assert.deepEqual(await practiceRepo.checkPublicAlias(a,first),{
+    alias:first,available:true,mine:false,
+  })
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:first}),{
+    alias:first,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,first)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+  await assert.rejects(()=>practiceRepo.savePublicAlias(b,{alias:first}),e=>e?.code==='ALIAS_TAKEN')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'admin'}),e=>e?.code==='ALIAS_RESERVED')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'bad--alias'}),e=>e?.code==='INVALID_ALIAS')
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query(
+    'select alias from app.practitioner_profile_aliases'
+  )),e=>e?.code==='42501')
+  const unauthorized=await rawAs(b,'hh_app_backend',db=>db.query(
+    'update app.practitioner_profile_aliases set is_primary=false where alias=$1',[first],
+  ))
+  assert.equal(unauthorized.rowCount,0,'Other masters cannot change this URL even with the backend SQL role')
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:second}),{
+    alias:second,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,second)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug,
+    'Previously shared/printed link must keep working')
+  assert.equal(await practiceRepo.resolvePublicAlias(second),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(a,first)).mine,true)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+})
+
+test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
+ const articleRepo=createArticleRepository(config)
+ const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})
+ assert.equal(folder.name,'Synthetic QA Remedy Cards')
+ await assert.rejects(()=>articleRepo.createFolder(a,{name:' synthetic qa remedy cards '}),{code:'FOLDER_EXISTS'})
+ const article=await articleRepo.save(a,null,{
+  draft:{
+   locale:'ru',title:'Synthetic QA article',
+   excerpt:'Synthetic article for checking owner-only folders and private publication.',
+   body:'## Описание\n\n'+('Тестовый безопасный материал для проверки структуры. ').repeat(7),
+   coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:['Тест','Test'],
+  },
+  folderId:folder.id,
+ })
+ assert.equal(article.folderId,folder.id)
+ assert.deepEqual(article.draft.tags,['Тест','Test'])
+ const mine=await articleRepo.library(a)
+ assert.ok(mine.folders.some(x=>x.id===folder.id))
+ assert.ok(mine.items.some(x=>x.id===article.id))
+ const others=await articleRepo.library(b)
+ assert.equal(others.items.some(x=>x.id===article.id),false)
+ assert.equal(others.folders.some(x=>x.id===folder.id),false)
+ await assert.rejects(()=>articleRepo.renameFolder(b,folder.id,{name:'Not yours',expectedRevision:0}),
+   e=>['REVISION_CONFLICT','PRACTITIONER_REQUIRED'].includes(e.code))
+ const renamed=await articleRepo.renameFolder(a,folder.id,{name:'Renamed QA folder',expectedRevision:folder.revision})
+ assert.equal(renamed.name,'Renamed QA folder')
+ assert.equal(renamed.revision,1)
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ await articleRepo.removeFolder(a,renamed.id)
+ const after=(await articleRepo.library(a)).items.find(x=>x.id===article.id)
+ assert.equal(after.folderId,null,'folder deletion must keep its linked article in Unfiled')
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ const submitted=await articleRepo.submit(a,article.id,{expectedRevision:after.revision})
+ assert.equal(submitted.status,'submitted')
+ const approved=await articleRepo.moderate(article.id,{action:'approve'})
+ assert.equal(approved.status,'published')
+ const publicArticle=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publicArticle.published.title,'Synthetic QA article')
+ assert.equal(Object.hasOwn(publicArticle,'draft'),false)
+ assert.equal(Object.hasOwn(publicArticle,'folderId'),false)
+ assert.equal(Object.hasOwn(publicArticle,'reviewNote'),false)
+ const publicList=(await articleRepo.publicList('ru')).find(x=>x.id===article.id)
+ assert.ok(publicList)
+ assert.equal(Object.hasOwn(publicList,'draft'),false)
+ const changed=await articleRepo.save(a,article.id,{
+  expectedRevision:approved.revision,
+  folderId:null,
+  draft:{...approved.draft,body:approved.draft.body+'\n\nPRIVATE_PENDING_CHANGES'},
+ })
+ assert.notEqual(changed.draft.body,approved.published.body)
+ const publishedAgain=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publishedAgain.published.body,approved.published.body)
+ assert.equal(Object.hasOwn(publishedAgain,'draft'),false)
+ await articleRepo.archive(a,article.id,{expectedRevision:changed.revision})
+ await assert.rejects(()=>articleRepo.publicArticle('ru',article.slug),{code:'NOT_FOUND'})
+})
+
+test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
+  const owned=(await practiceRepo.getMyPractice(a)).services.find(s=>s.status==='published')
+  assert.ok(owned,'Fixture must contain published service for Practitioner A')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'impression')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'order')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'whatsapp')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'telegram')
+  await assert.rejects(
+    () => practiceRepo.recordPublicServiceEvent(randomUUID(),'order'),
+    error => error?.code === 'NOT_FOUND',
+  )
+
+  const admin=await adminClient()
+  try {
+    await admin.query(`
+      insert into app_private.service_funnel_daily (service_id,day,impressions,order_clicks,whatsapp_clicks,telegram_clicks)
+      values ($1,(now() at time zone 'America/Toronto')::date-1,9,4,2,1)
+    `,[owned.id])
+  } finally { await admin.end() }
+  const own=(await practiceRepo.getMyPractice(a)).serviceAnalytics
+  const item=own.services.find(s=>s.id===owned.id)
+  assert.deepEqual(item.yesterday,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.deepEqual(item.week,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.equal((await practiceRepo.getMyPractice(b)).serviceAnalytics.services.some(s=>s.id===owned.id),false)
+  await assert.rejects(
+    () => rawAs(a,'authenticated',db=>db.query('select * from app_private.service_funnel_daily')),
+    error => error?.code === '42501',
+  )
+})
+
+test('isolated service photos fixture matches the observed existing JSON-array contract', async () => {
+  const owned = (await practiceRepo.getMyPractice(a)).services.find(service => service.status === 'published')
+  assert.ok(owned, 'Use the existing synthetic published-service fixture')
+  assert.deepEqual(owned.photos, [], 'The existing column defaults to an empty JSON array')
+  const db = await adminClient()
+  try {
+    await db.query('begin')
+    const photos = Array.from({ length: 5 }, (_, index) => `https://example.invalid/synthetic-photo-${index}.jpg`)
+    const result = await db.query('update app.service_offerings set photos=$1::jsonb where id=$2 returning photos', [JSON.stringify(photos), owned.id])
+    assert.deepEqual(result.rows[0].photos, photos)
+    for (const [invalid, code] of [[{}, '23514'], [Array(6).fill('synthetic'), '23514'], [null, '23502']]) {
+      await db.query('savepoint invalid_photos')
+      await assert.rejects(
+        db.query('update app.service_offerings set photos=$1::jsonb where id=$2', [invalid === null ? null : JSON.stringify(invalid), owned.id]),
+        error => error.code === code,
+      )
+      await db.query('rollback to savepoint invalid_photos')
+      assert.deepEqual((await db.query('select photos from app.service_offerings where id=$1', [owned.id])).rows[0].photos, photos)
+    }
+  } finally {
+    await db.query('rollback')
+    await db.end()
+  }
+  assert.deepEqual((await practiceRepo.getMyPractice(a)).services.find(service => service.id === owned.id).photos, [])
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
@@ -1092,6 +1255,32 @@ function minimumMonitoringAnswers(definition) {
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
   assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {
@@ -1103,11 +1292,31 @@ test('every published monitoring test completes through the repository and retur
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
     })
+    const context = syntheticTraumaContext(definition)
+    let ready = run
+    if (Object.keys(context).length) {
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context: {},
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context,
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      ready = await repo.saveRun(a, run.id, {
+        answers: {}, context, progress: 0, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      })
+      assert.deepEqual(ready.context, context)
+      assert.deepEqual(ready.answers, {})
+    }
     const saved = await repo.saveRun(a, run.id, {
       answers: minimumMonitoringAnswers(definition),
-      context: {},
+      context,
       progress: definition.questions.length,
-      expectedRevision: run.revision,
+      expectedRevision: ready.revision,
       operationId: randomUUID(),
     })
     const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
@@ -1521,6 +1730,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
 // session insert for the non-primary selected scale. This suite is loopback-only.
 test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
   const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { buildCourseSlides } = await import('../lib/inner-growth/course-slide-sequence.js')
   const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
   const dailyRepo = createDailyCourseRepository(config)
   for (const locale of ['en','ru']) {
@@ -1547,8 +1757,9 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
       const originalLessonId = value.lesson.id
-      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID(),visitedSlideKeys:[]},locale),{code:'COURSE_SLIDES_INCOMPLETE'})
       const firstSaved = await dailyRepo.command(who,'session',first,locale)
       assert.equal(firstSaved.cycle.day,1)
       assert.ok(firstSaved.currentSession.completedAt)
@@ -1563,7 +1774,7 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
-      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
       const secondSaved = await dailyRepo.command(who,'session',second,locale)
       assert.equal(secondSaved.cycle.day,2)
@@ -1709,15 +1920,31 @@ test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and al
 test('push subscriptions and preferences are account-owned, RLS-protected and removable', async () => {
   const {createECDH,randomBytes} = await import('node:crypto')
   const {createNotificationRepository} = await import('../lib/app/notification-repository.js')
+  const {pushConfig} = await import('../lib/app/web-push.js')
+  // OpenSSL may omit leading zero bytes from a valid synthetic scalar.
+  const fixedPrivateKey = key => {
+    const scalar=key.getPrivateKey(),padded=Buffer.alloc(32)
+    scalar.copy(padded,padded.length-scalar.length)
+    return padded.toString('base64url')
+  }
+  const short=createECDH('prime256v1');short.setPrivateKey(Buffer.from([1]))
+  const shortEnv={HH_PUSH_PUBLIC_KEY:short.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:short.getPrivateKey().toString('base64url'),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  assert.equal(short.getPrivateKey().length,1,'deterministic leading-zero regression fixture')
+  assert.equal(pushConfig(shortEnv).supported,false,'production still rejects non-32-byte encoding')
+  assert.equal(pushConfig({...shortEnv,HH_PUSH_PRIVATE_KEY:fixedPrivateKey(short)}).supported,true)
   const vapid=createECDH('prime256v1');vapid.generateKeys()
   const env={HH_PUSH_PUBLIC_KEY:vapid.getPublicKey().toString('base64url'),
-    HH_PUSH_PRIVATE_KEY:vapid.getPrivateKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:fixedPrivateKey(vapid),
     HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
   const push=createNotificationRepository(config,env)
   const key=createECDH('prime256v1');key.generateKeys()
   const subscription={endpoint:'https://web.push.apple.com/synthetic-test-'+randomUUID(),keys:{
     p256dh:key.getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}}
-  assert.equal((await push.state(a)).enabled,false)
+  const initial=await push.state(a)
+  assert.equal(initial.ready,true,'synthetic VAPID fixture must be valid')
+  assert.equal(initial.enabled,false)
   const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
   assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
   const changed=await push.preferences(a,{enabled:true,courseReminders:false,
@@ -1731,4 +1958,386 @@ test('push subscriptions and preferences are account-owned, RLS-protected and re
     error=>error.code==='DEVICE_ALREADY_REGISTERED')
   const removed=await push.unsubscribe(a,{endpoint:null})
   assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
+})
+
+
+// End-to-end restricted-role OPORA handoff: a real synthetic Weekly Pulse
+// result, encrypted module choice, growth-course transaction and Day 1 read.
+// This runs only against the isolated Postgres CI fixture, never production.
+test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved testing', async () => {
+  const {createGrowthCourseRepository} = await import('../lib/app/growth-course.js')
+  const {createDailyCourseRepository} = await import('../lib/app/growth-daily.js')
+  const {courseMeasuredProfile} = await import('../lib/inner-growth/course-strategy.js')
+  const {ANTISTRESS_MODULE_FINDER_ITEMS} = await import('../lib/inner-growth/antistress-module-router.js')
+  const who=actor(randomUUID(),randomUUID())
+  const growth=createGrowthCourseRepository(config)
+  const daily=createDailyCourseRepository(config)
+  const db=await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-opora@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+    await repo.ensureAccount(who)
+    await repo.onboarding(who,{
+      adult:true,necessary:true,marketing:false,displayName:'Synthetic OPORA learner',
+      uiLocale:'en',timezone:'UTC',goal:'explore',
+    })
+    let course=await growth.command(who,{action:'start',consent:true})
+    course=await growth.command(who,{
+      action:'intake',expectedRevision:course.course.revision,
+      concerns:'Synthetic stress during ordinary activities',
+      focusTags:['stress','mood','energy'],
+    })
+    assert.equal(course.course.stage,2)
+    const run=await repo.startRun(who,{
+      definitionKey:weekly.key,definitionVersion:weekly.version,
+      instrumentLocale:weekly.instrumentLocale,operationId:randomUUID(),
+    })
+    const saved=await repo.saveRun(who,run.id,{
+      answers:answer(weekly,5),context:{},progress:weekly.questions.length,
+      expectedRevision:run.revision,operationId:randomUUID(),
+    })
+    const completed=await repo.submitRun(who,run.id,{expectedRevision:saved.revision})
+    const profile=courseMeasuredProfile({
+      results:[completed],testKeys:['hh-weekly-pulse'],locale:'en',
+    })
+    const selected=profile.eligible.slice(0,Math.min(3,profile.eligible.length)).map(x=>x.id)
+    assert.ok(selected.length>0,'Synthetic Weekly Pulse has current measured practice scales')
+    // Earlier stages are exercised by the existing plan tests; advance the
+    // synthetic course to the real module decision with its completed test.
+    await db.query(`update app_private.growth_courses
+      set stage=3,test_keys=ARRAY['hh-weekly-pulse']::text[],revision=revision+1,updated_at=now()
+      where account_id=$1`,[who.id])
+    course=await growth.read(who)
+    assert.equal(course.course.stage,3)
+    assert.equal(course.assessments.selectedTests[0].completed,true)
+    const request={
+      action:'choose-goals',expectedRevision:course.course.revision,
+      scaleKeys:selected,consent:true,durationDays:14,
+      moduleId:'AS5',moduleGoal:'undecided',
+      moduleAnswers:Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>[x.id,null])),
+      problemLabel:'Synthetic daily stress observation',intention:'',timeZone:'UTC',
+    }
+    const started=await growth.command(who,request)
+    assert.equal(started.course.stage,4)
+    assert.equal(started.course.moduleChoice.id,'AS5')
+    assert.equal(started.assessments.selectedTests[0].completed,true)
+    const today=await daily.read(who,'en')
+    assert.equal(today.cycle.moduleId,'AS5')
+    assert.equal(today.cycle.day,1)
+    assert.equal(today.cycle.preferences.length,'standard')
+    assert.equal(today.cycle.preferences.imagery,'optional')
+    assert.equal(today.cycle.preferences.checkinFrequency,'daily')
+    assert.equal(today.roadmap.length,14)
+    assert.ok(today.lesson?.id)
+    await assert.rejects(growth.command(who,request),{code:'REVISION_CONFLICT'})
+    const cycleCount=await db.query('select count(*)::int as n from app_private.growth_cycles where account_id=$1',[who.id])
+    const resultCount=await db.query('select count(*)::int as n from app.assessment_results where account_id=$1',[who.id])
+    assert.equal(cycleCount.rows[0].n,1)
+    assert.equal(resultCount.rows[0].n,1)
+  } finally {
+    await db.end()
+  }
+})
+
+
+test('private session share grants enforce per-consultation ownership under real Postgres roles', async()=>{
+  // Synthetic A/B test uses the exact deployed migration; never a production DB.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    await db.query('create schema if not exists storage')
+    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
+    // The private PDF extension is additive and does not grant browser DB access.
+    const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
+    await db.query(pdfExtension)
+    const permittedMime=(await db.query("select allowed_mime_types from storage.buckets where id='hh-client-private-media'")).rows[0].allowed_mime_types
+    assert.ok(permittedMime.includes('application/pdf'))
+    const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]
+    assert.ok(bucket)
+    assert.equal(bucket.public,false)
+    assert.equal(Number(bucket.file_size_limit),50_000_000)
+    const clientA=randomUUID(),clientB=randomUUID(),sessionA=randomUUID(),sessionB=randomUUID()
+    const pdfConstraint=(await db.query("select pg_get_constraintdef(c.oid) as definition from pg_constraint c where c.conname='client_delivery_assets_asset_kind_check'")).rows[0].definition
+    assert.match(pdfConstraint,/pdf/)
+
+    for(const [id,clientId] of [[sessionA,clientA],[sessionB,clientB]]){
+      await db.query("insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic-encrypted-fixture','draft')",[id,clientId])
+    }
+    const grant=randomUUID()
+    await db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[grant,sessionA,clientA,'aaaaaaaaaaaaaaaaaaaaaa','a'.repeat(64)])
+    // A grant for Session B cannot be spoofed as Client A, even with Session B's UUID.
+    await assert.rejects(db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[randomUUID(),sessionB,clientA,'bbbbbbbbbbbbbbbbbbbbbb','b'.repeat(64)]),e=>e.code==='23503')
+    await assert.rejects(db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status) values($1,$2,$3,'audio','practitioner','synthetic-path','audio/mp4',1024,'pending')",[randomUUID(),clientB,sessionA]),e=>e.code==='23503')
+    for(const table of ['client_delivery_sessions','client_delivery_assets','client_session_share_grants','client_session_viewer_sessions']){
+      await assert.rejects(rawAs(a,'authenticated',database=>database.query('select * from app_private.'+table)),e=>e.code==='42501')
+      assert.equal((await db.query('select relrowsecurity from pg_class where oid=$1::regclass',['app_private.'+table])).rows[0].relrowsecurity,true)
+    }
+    const permitted=await rawAs(a,'hh_app_backend',database=>database.query('select count(*)::int as total from app_private.client_delivery_sessions'))
+    assert.equal(permitted.rows[0].total,2)
+    // Two isolated connections exercise both winners of finalization vs cleanup.
+    // Only pending, never-ready rows may be claimed; published/ready keys survive.
+    const finishing=await adminClient(),cleaning=await adminClient()
+    const assetA=randomUUID(),assetB=randomUUID()
+    const claim="update app_private.client_delivery_assets set status='removed' where id in (select id from app_private.client_delivery_assets where legacy_client_id=$1 and session_id=$2 and ready_at is null and status in ('pending','removed') and created_at < now()-interval '24 hours' order by created_at limit 30 for update skip locked) and ready_at is null and status in ('pending','removed') returning object_key"
+    try {
+      for(const id of [assetA,assetB])await db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status,created_at) values($1,$2,$3,'audio','client',$4,'audio/mp4',512,'pending',now()-interval '2 days')",[id,clientA,sessionA,'synthetic-race-'+id])
+      await finishing.query('begin');await finishing.query('set local role hh_app_backend')
+      await finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending'",[assetA])
+      await cleaning.query('begin');await cleaning.query('set local role hh_app_backend')
+      await cleaning.query("set local statement_timeout='2s'")
+      const claimed=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(claimed.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      // A concurrent finalizer can no longer turn the claimed row ready.
+      const rejectedFinish=finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending' returning id",[assetB])
+      await cleaning.query('commit')
+      assert.equal((await rejectedFinish).rowCount,0)
+      await finishing.query('commit')
+      const retryClaim=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(retryClaim.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      assert.equal((await db.query('select status from app_private.client_delivery_assets where id=$1',[assetA])).rows[0].status,'ready')
+    } finally {
+      await cleaning.query('rollback');await finishing.query('rollback')
+      await finishing.end();await cleaning.end()
+    }
+
+  }finally{await db.end()}
+})
+
+
+
+test('an explicitly selected Session is saved to exactly one Google Account, with pinned version and no Client binding', async()=>{
+  const {readFile}=await import('node:fs/promises')
+  const admin=await adminClient()
+  const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
+  const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
+  try{
+    const accountB=actor(randomUUID(),randomUUID())
+    await admin.query('insert into auth.users(id,email) values($1,$2)',[accountB.id,'test-'+randomUUID()+'@example.invalid'])
+    await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[accountB.claims.session_id,accountB.id])
+    await repo.ensureAccount(accountB)
+    await repo.onboarding(accountB,{adult:true,necessary:true,marketing:false,displayName:'Second Account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
+    await admin.query(sql)
+    const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
+      reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
+    await admin.query(
+      "insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,published_payload,status,draft_revision,published_revision) values($1,$2,'2026-10-15','synthetic-owner-draft',$3,'published',1,1)",
+      [sessionId,clientId,payload(1)]
+    )
+    await admin.query(
+      "insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,access_version,expires_at) values($1,$2,$3,$4,$5,1,now()+interval '30 days')",
+      [grantId,sessionId,clientId,selector,'a'.repeat(64)]
+    )
+    const intent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    assert.equal(intent.sourceKind,'client_session')
+    const proof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[intent.id])).rows[0].browser_secret_hash
+    // The user explicitly confirms the destination Account after sign-in.
+    const resource=await commitSessionSaveIntent(config,store,a,intent.id,proof)
+    assert.ok(resource.id)
+    assert.equal((await commitSessionSaveIntent(config,store,a,intent.id,proof)).id,resource.id)
+    const saved=await readSavedSession(config,store,a,resource.id)
+    assert.equal(saved.session.title,'Private session v1')
+    assert.equal(saved.session.clientId,undefined)
+    await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+    const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
+    assert.equal(bind.length,0)
+    const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
+      [sessionId,payload(2)])
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
+    const newIntent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const newProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[newIntent.id])).rows[0].browser_secret_hash
+    assert.equal((await commitSessionSaveIntent(config,store,a,newIntent.id,newProof)).id,resource.id)
+    assert.equal((await readSavedSession(config,store,a,resource.id)).session.title,'Private session v2')
+    const oldFlag=process.env.HH_CLIENT_DELIVERY_ENABLED
+    try{
+      process.env.HH_CLIENT_DELIVERY_ENABLED='true'
+      assert.equal((await repo.bootstrap(a)).savedSessions.filter(row=>row.id===resource.id).length,1)
+    }finally{if(oldFlag===undefined)delete process.env.HH_CLIENT_DELIVERY_ENABLED
+      else process.env.HH_CLIENT_DELIVERY_ENABLED=oldFlag}
+    await removeSavedSession(config,a,resource.id)
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+  }finally{await admin.end()}
+})
+
+test('saved session table is account-scoped and the raw recipient cannot write',async()=>{
+  const rows=await rawAs(a,'authenticated',db=>db.query('select id from app.saved_sessions'))
+  assert.ok(Array.isArray(rows.rows))
+  await assert.rejects(rawAs(b,'authenticated',db=>db.query('insert into app.saved_sessions(account_id,source_session_id,legacy_client_id,source_revision,source_hash,occurred_on) values($1,$2,$3,1,$4,current_date)',
+    [B,randomUUID(),randomUUID(),'sha256:'+'a'.repeat(64)])),e=>e.code==='42501')
+})
+
+// Six immutable EN/RU split editions: synthetic loopback DB only.
+test('split and Bach v2 fixtures retain exact technical fields and all eight historical v1 definitions', async () => {
+  const db = await adminClient()
+  try {
+    for (const definition of [...HH_SPLIT_V2_DEFINITIONS, ...BACH_V2_DEFINITIONS]) {
+      for (const def of [definition, getAssessmentDefinition(definition.key, 'v1', definition.instrumentLocale)]) {
+        const row = (await db.query('select * from app.assessment_versions where id=$1', [def.id])).rows[0]
+        assert.ok(row)
+        assert.deepEqual(row.definition, def)
+        assert.deepEqual(row.questions, def.questions)
+        assert.equal(row.definition_key, def.key)
+        assert.equal(row.definition_version, def.version)
+        assert.equal(row.instrument_locale, def.instrumentLocale)
+        assert.equal(row.translation_version, def.translationVersion)
+        assert.equal(row.scoring_key, def.scoringKey)
+        assert.equal(row.scoring_version, def.scoringVersion)
+        assert.deepEqual(row.result_schema, { version: def.resultVersion })
+        assert.equal(row.timeframe, def.timeframe)
+        assert.deepEqual(row.source_metadata, def.source)
+        assert.equal(row.content_hash, def.contentHash)
+        assert.equal(row.status, 'published')
+        if (def.version === 'v2') assert.deepEqual(row.answer_schema, { type: 'integer', minimum: 0, maximum: def.key === 'hh-bach-flower-profile' ? 5 : 4 })
+      }
+    }
+  } finally { await db.end() }
+})
+
+test('account split v2 EN/RU start-save-submit-readback preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Split', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 2)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 1)
+    assert.equal(before.dimensions[0].value, 2)
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    const responses = Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 2 : 4]))
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.equal(run.definitionVersion, 'v2')
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [2, 4])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest split v2 EN/RU start-save-submit-readback retains two dimensions and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    run = await guestRepo.saveRun(owner, run.id, { answers: Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 4 : 0])), context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [4, 0])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
+})
+
+const bachV2SyntheticAnswers = def => Object.fromEntries(def.questions.map(q =>
+  [q.id, q.id === 'bach.situation.36' ? 5 : q.id === 'bach.control.03' ? 4 : 0]))
+function assertBachV2SyntheticDimensions(result) {
+  assert.equal(result.dimensions.length, 38)
+  // Independent legacy arithmetic: situation 5 + peak bonus 2 = 7;
+  // control 4 × 1.5 + peak bonus 1 + control-presence bonus 1.5 = 8.5.
+  assert.equal(result.dimensions.find(d => d.key === 'bach.beech').value, 7)
+  assert.equal(result.dimensions.find(d => d.key === 'bach.agrimony').value, 8.5)
+  assert.ok(result.dimensions.filter(d => !['bach.beech', 'bach.agrimony'].includes(d.key)).every(d => d.value === 0))
+  assert.ok(result.dimensions.every(d => d.direction === 'non-normative'))
+}
+
+test('account Bach v2 EN/RU lifecycle preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Bach', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of BACH_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 0)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 38)
+    assert.ok(before.dimensions.every(d => d.value === 0))
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const responses = bachV2SyntheticAnswers(def)
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of BACH_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    run = await guestRepo.saveRun(owner, run.id, { answers: bachV2SyntheticAnswers(def), context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
 })

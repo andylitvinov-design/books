@@ -1,0 +1,37 @@
+# ОПОРА AS-5.3 · 14 ключевых афоризмов RU / EN
+
+**Дата:** 17 октября 2026. **Статус:** оригинальные редакционные формулировки для будущей версии 15-слайдового курса, **не опубликовано как новое UI**.  
+**Слайд 5 каждого урока** = установка + голосование + бережная реакция + необязательная нейтральная альтернатива. Афоризм **не является внушением, диагнозом или обязательным утверждением**, с ним можно не согласиться.
+
+**Три кнопки голосования RU:** «Да, откликается» / «Пока сомневаюсь» / «Не согласен(на)». Четвёртого ответа нет.  
+**EN (three choices):** “This resonates” / “Not sure yet” / “I disagree”. No “Skip” response choice.  
+**RU-реакции:** согласие — «Можем попробовать эту мысль на примере»; сомнение — «Не обязательно верить, достаточно рассмотреть действие»; несогласие — «Спасибо, можно использовать более нейтральную фразу». Если ответа нет и человек нажал «Далее», просто продолжить без записи мнения (null).  
+**EN-feedback:** agree — “We can try this idea in a small exercise”; unsure — “You need not believe the phrase to try a small step”; disagree — “Your view is welcome. We can use a more neutral phrase”. No answer → continue without storing a vote.
+
+| День | ID | Афоризм RU | Aphorism EN | Нейтральная альтернатива RU | Neutral option EN | Что именно проверяется действием |
+|---:|---|---|---|---|---|---|
+| 1 | S1 | Когда я замечаю спешку раньше, у меня появляется возможность выбрать паузу. | Noticing my hurry early can give me a chance to pause. | Мне не обязательно замечать всё сразу. Я могу начать с одного сигнала. | I do not need to notice everything. One signal is enough to begin. | узнать ранний сигнал на нейтральном примере |
+| 2 | S2 | Мне достаточно одной реальной детали вокруг, чтобы попробовать вернуться в настоящее. | One ordinary detail around me can help me return my attention to the present. | Я могу просто посмотреть вокруг и ничего не менять в своём состоянии. | I can simply look around without trying to change how I feel. | найти реальный цвет или форму |
+| 3 | S3 | Я могу уменьшить усилие и выбрать тот способ паузы, который мне подходит. | I can ease my effort and choose the kind of pause that suits me. | Даже без движения я могу сделать паузу и посмотреть на нейтральный предмет. | I can take a pause without moving, simply by looking at an ordinary object. | сравнить микродвижение, внешнюю опору и отдых |
+| 4 | S4 | Я могу назвать чувство и всё равно выбирать, что делать дальше. | I can name a feeling and still choose what I do next. | Мне не нужно переживать сильные чувства ради упражнения. | I do not need to experience intense feelings to try this exercise. | назвать мягкое чувство вымышленного персонажа |
+| 5 | S5 | Не каждой тревожной мысли нужно верить или сразу следовать. | I do not have to believe or follow every worrying thought. | Я могу просто заметить: «Это мысль». Мне не нужно себя переубеждать. | I can simply notice: “This is a thought.” I do not have to argue with it. | отделить факт от догадки |
+| 6 | S6 | Я могу уважать другого человека и при этом беречь своё время и силы. | I can respect others while making room for my time and energy. | Я могу только подготовить фразу; реальный разговор необязателен. | I can prepare a phrase without having to say it to anyone. | составить короткую границу |
+| 7 | S7 | Мне достаточно одного маленького доступного шага, чтобы начать поддерживать себя. | One realistic small step can be enough to begin supporting myself. | Мой план может быть совсем коротким, а отдых — подходящим вариантом. | My plan can be short, and rest can be a suitable option. | собрать сигнал, опору и резерв |
+| 8 | S1 | Чем раньше я замечаю свою спешку, тем больше возможных маленьких решений. | Noticing my hurry sooner may leave me more small choices. | Мне достаточно попробовать заметить одно изменение, с подсказкой или без. | I can try to notice one change, with a hint or without. | повторить навык на новой ситуации |
+| 9 | S2 | Я могу возвращать внимание к реальной детали, даже если мысли продолжают приходить. | I can return my attention to something real even when thoughts keep coming. | Мне не нужно побеждать отвлечение. Можно заметить один предмет. | I do not need to defeat distraction. I can notice one object. | самостоятельно выбрать внешний ориентир |
+| 10 | S3 | Разным дням нужна разная поддержка: иногда пауза, иногда уменьшение требований. | Different days may call for different support: sometimes rest, sometimes fewer demands. | Если непонятно, что мне нужно, можно выбрать нейтральную паузу. | If I am unsure what I need, I can choose a neutral pause. | отличить чрезмерную нагрузку от усталости на примерах |
+| 11 | S4 | Чувство может быть рядом со мной, но оно не обязано управлять каждым моим шагом. | A feeling can be present without deciding every step I take. | Можно назвать чувство персонажа или просто посмотреть на предмет. | I can name a character's feeling or simply look at an object. | сочетать эмоциональную маркировку с внешней опорой |
+| 12 | S5 | Я могу заметить тревожную мысль и всё-таки сделать небольшой выбор по своим ценностям. | I can notice a worrying thought and still take a small values-based step. | Даже если мысль не исчезла, можно отложить решение или сделать паузу. | Even if the thought stays, I can postpone a decision or pause. | отделить мысль и выбрать ценностное действие |
+| 13 | S6 | Я могу повторить свою границу спокойно, даже если меня попросили ещё раз. | I can restate a boundary calmly if someone asks again. | Можно мысленно прочитать фразу, не вступая в реальный разговор. | I can read the phrase silently without having a real conversation. | отрепетировать повторное уважительное «нет» |
+| 14 | S7 | Мне не нужно применять всё сразу: один подходящий шаг и запасной вариант уже полезны. | I do not need to use every skill at once; one suitable step and a backup may be enough. | Мой план может быть простым, а неизвестное можно оставить неизвестным. | My plan can stay simple; I can leave some things undecided. | собрать минимальный самостоятельный план |
+
+## Применение редактором и продуктом
+
+- Показывать фразу оригинальным коротким текстом: не превращать её в длинную лекцию, диагноз или обещание терапевтического эффекта.
+- Под афоризмом дать **одну строку о следующем конкретном действии** (последняя колонка).
+- Для `disagree` по желанию раскрывать конкретную альтернативу RU/EN, но **не требовать повторного голосования**. Для трёх вариантов голосования запрещено добавлять отдельный ответ «Пропустить»; «Далее» и «Закончить» — общая навигация.
+- Сохранять только явный ответ `agree|unsure|disagree|skip` в owner-scoped сессии **после интеграции валидатора новой версии**. Никогда не приравнивать `disagree` к сопротивлению, тревожности, низкой мотивации.
+- Для EN site default копирайт и смысл проходят двуязычную редакционную проверку на устройстве, а не автоматический непроверенный перевод.
+- Прямые тексты каждого экрана и варианты обратной связи — [210 сценариев RU](HOLISTIC_HOUSE_OPORA_AS53_GUIDED_210_SLIDES_RU_2026-10-17.md); методические правила — [AS-5.3](HOLISTIC_HOUSE_OPORA_TRAUMA_INFORMED_SLIDE_AUTHORING_STANDARD_AS53_2026-10-17.md).
+
+**Содержательные первоисточники общего метода:** WHO *Doing What Matters in Times of Stress* (2020); SAMHSA trauma-informed principles (safety, voice, choice). Эти авторские формулировки не являются цитатами WHO или доказанной клинической методикой.

@@ -27,17 +27,17 @@ test("real festival photos are restored to levels and visual gallery, not mislab
   const stageIds = [...stagePart.matchAll(/tantraReikiArchive\.images\.ru\[(\d+)\]/g)].map((x)=>Number(x[1]));
   assert.equal(stageIds.length, 9);
   assert.equal(new Set(stageIds).size, 9);
-  assert.deepEqual(stageIds.slice(0, 6), [17,18,19,20,21,22]);
+  assert.deepEqual(stageIds.slice(0, 6), [17,19,18,21,20,22], "Stages 2↔3 and 4↔5 exchange only their archived photographs");
   for (const index of stageIds) assert.doesNotMatch(images[index], /Screenshot_/);
   for (const index of [0,10,11]) assert.match(festival, new RegExp("images\\.ru\\[" + index + "\\]"));
   assert.doesNotMatch(reviews, /reviewImages|tantra-review-archive|tantra-review-gallery/);
   assert.match(festival, /className="tantra-festival-moments__gallery"/);
 });
 
-test("only the three secondary level sections collapse, never the original author story", async () => {
+test("first level story and attunements are visible, later levels need an explicit click", async () => {
   const journey = await read("components/tantra-reiki-journey.tsx");
   const author = journey.indexOf('<div className="tantra-journey__author-text"');
-  const expandable = journey.indexOf('<details className="tantra-journey__extras">');
+  const expandable = journey.indexOf('<details className="tantra-journey__extras" open={i === 0}>');
   const actions = journey.indexOf('<div className="tantra-journey__actions">');
   assert.ok(author > 0 && author < expandable && expandable < actions);
   const end = journey.indexOf("</details>", expandable);
@@ -49,7 +49,10 @@ test("only the three secondary level sections collapse, never the original autho
   assert.ok(journey.indexOf('className="tantra-journey__practice tantra-journey__practice--restored"') < expandable);
   assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(details, /<summary>/);
-  assert.doesNotMatch(journey, /<details className="tantra-journey__extras" open/);
+  assert.match(journey, /<details className="tantra-journey__extras" open=\{i === 0\}>/);
+  assert.match(journey, /if \(n === 1\) return article;/);
+  assert.match(journey, /<details className="tantra-journey__collapsed"/);
+  assert.match(journey, /stages.map\(\(stage, i\) =>/);
 });
 
 test("correct Level 1 meditation remains separate and immediately precedes testimonials", async () => {
@@ -65,7 +68,9 @@ test("correct Level 1 meditation remains separate and immediately precedes testi
   assert.match(meditations, /Tantra Reiki · Level 1 Guided Meditation/);
   assert.match(meditations, /Follow Andrey’s Level 1 video practice/);
   assert.match(meditations, /!isTantraVideo \? <p>\{item\.description\}<\/p> : null/);
-  assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
+  assert.match(reviews, /<TantraLearnerReviewCards locale=\{locale\} headingId="tantra-testimonials-heading" \/>/);
+  const learnerCards = await read("components/tantra-learner-review-cards.tsx");
+  assert.match(learnerCards, /tantraVoices\.map\(\(review, index\) =>/);
   const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
   assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
   assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);

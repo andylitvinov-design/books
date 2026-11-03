@@ -38,7 +38,8 @@ test("Historic content is modularized while participant videos remain dedicated 
   assert.equal((videoReviews.match(/<AcademyVideoPlayer\b/g) ?? []).length, 1);
   assert.match(videoReviews, /<source src=\{video\.src\} type=\{video\.type\}/);
   assert.match(videoReviews, /youtubeId="qM_nFUkYJ1k"/);
-  assert.match(review, /locale === "ru"/);
+  assert.match(review, /<TantraLearnerReviewCards locale=\{locale\}/);
+  assert.match(review, /locale !== "en"/);
   assert.match(page, /sourceImages\.map/);
 });
 

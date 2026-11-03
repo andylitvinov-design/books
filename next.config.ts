@@ -9,23 +9,73 @@ const reportPdfAssets = [
   "./public/media/remedies/**/*",
 ];
 
+// MediaRecorder uses getUserMedia() only inside authenticated practitioner
+// editors. All public pages and client report readers remain blocked.
+const practitionerRecordingSources = [
+  "/admin/consultations/:id/edit",
+  "/admin/documents/:id",
+  "/admin/prescriptions/:id",
+  "/admin/clients/:id/assessments/:assessmentId/edit",
+  "/admin/clients/:id/sessions/:path*",
+];
+
+// Only the LIVE host can ask the user for microphone permission.
+const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ffmpeg-static uses __dirname to locate its downloaded native executable.
+  // Keep the package external to Next webpack so its binary path remains valid.
+  serverExternalPackages: ["ffmpeg-static"],
+  // The idle Next badge covers fixed mobile navigation in isolated browser CI.
+  // This supported option preserves compile/runtime error badges and overlays.
+  devIndicators: process.env.CI === "true" &&
+    process.env.HH_APP_TEST_RUNTIME === "isolated" &&
+    process.env.NODE_ENV === "development" && !process.env.VERCEL
+    ? false : undefined,
   poweredByHeader: false,
   // Keep optimization for existing book/media redirect paths.
   // Verified static course photographs and the hot-path portrait opt out locally.
-  images: { remotePatterns: [
+  // Bound the number of public image variants to contain future Vercel
+  // transformation usage. Keep Next optimization available for book readers.
+  // Already-optimized portraits, courses and posters opt out at call sites.
+  images: {
+    deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
+    imageSizes: [32, 64, 96, 160, 256, 384],
+    formats: ["image/webp"],
+    // Prevent arbitrary quality parameters from multiplying billed variants.
+    // The site uses the Next.js default (75) for transformed book covers.
+    qualities: [75],
+    // This corpus is mostly immutable-by-path book/media assets. Cache resized
+    // originals for 31 days instead of regenerating billed MISS/STALE variants
+    // every 24 hours. For changed source bytes, change the image URL/path too.
+    // User-uploaded master/service photos already bypass Next's optimizer.
+    minimumCacheTTL: 2678400,
+    remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
     // The site owns the original course photographs; proxy them same-origin
     // so iOS Safari does not have to hotlink PsiTrends directly.
     { protocol: "https", hostname: "psitrends.com", pathname: "/images/**" },
     { protocol: "https", hostname: "www.psitrends.com", pathname: "/images/**" },
-  ] },
+    ],
+  },
   async headers() {
     return [
+      // Responsive Andy portrait variants include their content hash in the name.
+      // Immutable caching saves repeated bytes without Vercel image transforms.
+      {
+        source: "/images/holistic-house/portrait-static/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      // Build-generated public artwork is content-addressed and never requests
+      // paid Vercel /_next/image transformations. Not applied to client files.
+      {
+        source: "/images/holistic-house/static-card-media/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
-      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/holistic-house/portrait-static/:path*", "/images/reiki-originals/:path*"].map((source) => ({
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
       })),
@@ -38,12 +88,36 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // The global policy blocks camera/mic. Last matching rule overrides it
+      // only for the practitioner editors that actually offer recording.
+      ...practitionerRecordingSources.map((source) => ({
+        source,
+        headers: [
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+        ],
+      })),
+      ...liveAudioHostSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
+      // Record the owner's course narration directly on iPhone Safari. Only
+      // these two PIN-protected editing pages need a microphone, not a camera.
+      // All public pages, material indexes and JSON upload APIs stay denied.
+      ...["/admin/materials/coaching/egyptian", "/admin/materials/coaching/greek"].map((source) => ({
+        source,
+        headers: [
+          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+        ],
+      })),
     ];
   },
   async redirects() {
     return [
-      // The canonical English homepage is /; /en must not fall through to a 404.
-      { source: "/en", destination: "/?lang=en", permanent: true },
+      // English has one canonical root. Russian is served at its own /ru URL.
+      { source: "/en", destination: "/", permanent: true },
+      // Old campaign/CTA links should always reach the public tool or cabinet.
+      { source: "/:locale(en|ru|es)/cabinet", destination: "/:locale/client", permanent: true },
+      { source: "/:locale(en|ru|es)/review", destination: "/:locale/services/free-situation-review", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
       { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
       { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },
@@ -54,7 +128,7 @@ const nextConfig: NextConfig = {
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
     // Public-only artwork is served statically, never read by document PDFs.
-    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*"],
+    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
       "./source-books/book-1-alchemy-soul/media/**/*",
       "./source-books/book-2-dao-books/photos/**/*",
@@ -62,6 +136,40 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // The /sitemap.xml metadata route reads remedy files through fs at runtime.
+    // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
+    // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    // Sharp 0.35 loads libvips from an optional native package. Next tracing
+    // otherwise bundles the .node file without libvips-cpp.so into the Function.
+    // Include only for this small private upload route, never all routes.
+    // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
+    // Only this Function traces the pinned FFmpeg binary (no external render API).
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // Owner-private Dot /audio → /video uses its existing signed webhook.
+    // The same pinned FFmpeg binary must be available in this function too.
+    "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // This route also re-encodes personal drawings/photos with Sharp. Vercel's
+    // file tracer may omit native libvips from a dynamically imported module.
+    // Scope native assets to this PRIVATE upload Function, not all app routes.
+    "/api/free-express/media": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
+    // Scope these to the PDF API route instead of copying them into all Functions.
+    "/api/academy/reiki-guide": [
+      "./data/academy/tantra-reiki-full.generated.json",
+      "./data/academy/tantra-reiki-ru-en.generated.json",
+    ],
+    "/sitemap.xml": [
+      "./data/spanish-remedies.json",
+      "./content/remedies/en/*.md",
+      "./content/remedies/ru/*.md",
+    ],
     "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
     "/api/client/[selector]/documents/[id]/pdf": reportPdfAssets,
     "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png", "./content/remedies/**/*.md"],
@@ -69,12 +177,14 @@ const nextConfig: NextConfig = {
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     // Tracing keys are route globs, not literal Next.js dynamic-segment names.
     // Readers load these existing HTML files dynamically at request time.
-    "/books/*": [
+    ...["/books/*", "/[locale]/books/*"].map((route) => [route, [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
-    ],
+    ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
+      all[route] = [...files]; return all;
+    }, {}),
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
     "/api/prescriptions/[selector]/pdf": reportPdfAssets,
     "/document-preview/[kind]/pdf": reportPdfAssets,

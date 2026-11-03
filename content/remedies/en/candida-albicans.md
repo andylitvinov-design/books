@@ -51,3 +51,11 @@ An interesting remedy I have begun working with: CANDIDA ALBICANS.
 In my framework, it is associated with the informational pattern of candida, a fungus that can grow on mucous membranes and cause infections.
 
 In constellation work I use it symbolically as a marker of the weakest place in the system — the place that may need attention first.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The experience of humiliation centers on a particularly vulnerable part of your relationship with yourself.
+
+After (desired state): A willingness to notice this vulnerability and direct attention to the experience of humiliation.

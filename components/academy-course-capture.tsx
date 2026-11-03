@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Check, GraduationCap, Send } from "lucide-react";
+import { ArrowRight, Check, GraduationCap } from "lucide-react";
 
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./academy-course-capture.module.css";
@@ -17,7 +18,7 @@ const courses: Record<CourseId, { title: string; path: string; image: string }> 
   tantra: {
     title: "Tantra Reiki",
     path: "tantra-reiki",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
   },
   kundalini: {
     title: "Kundalini Reiki",
@@ -59,7 +60,7 @@ const copy: Record<PublicLocale, {
     action: "Request to join",
     details: "Explore the selected course",
     telegram: "Or ask on Telegram",
-    note: "WhatsApp opens with your chosen course. No message is sent until you press Send; enrolment is confirmed personally.",
+    note: "Choose WhatsApp or Telegram. No message is sent until you press Send; enrolment is confirmed personally.",
     reply: "Personal reply",
     noObligation: "No obligation",
   },
@@ -77,7 +78,7 @@ const copy: Record<PublicLocale, {
     action: "Записаться на",
     details: "Подробнее о выбранном курсе",
     telegram: "Или написать в Telegram",
-    note: "Откроется WhatsApp с названием выбранного курса. Сообщение отправляется только вами, запись подтверждается лично.",
+    note: "Выберите WhatsApp или Telegram: заявка будет содержать название курса. Сообщение отправляется только вами, запись подтверждается лично.",
     reply: "Личный ответ",
     noObligation: "Без обязательств",
   },
@@ -95,7 +96,7 @@ const copy: Record<PublicLocale, {
     action: "Solicitar inscripción en",
     details: "Conocer el curso elegido",
     telegram: "O preguntar en Telegram",
-    note: "WhatsApp se abre con el curso elegido. El mensaje solo se envía cuando pulsas Enviar; la inscripción se confirma personalmente.",
+    note: "Elige WhatsApp o Telegram. El mensaje incluirá el curso elegido y solo se envía al pulsar Enviar; la inscripción se confirma personalmente.",
     reply: "Respuesta personal",
     noObligation: "Sin compromiso",
   },
@@ -141,7 +142,7 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
               key={id}
               onClick={() => setSelected(id)}
             >
-              <span className={styles.photo}><Image src={item.image} alt="" fill sizes="64px" /></span>
+              <span className={styles.photo}><Image src={cardArtworkUrl(item.image)} unoptimized={hasCardArtwork(item.image)} alt="" fill sizes="64px" /></span>
               <span className={styles.choiceCopy}>
                 <strong>{item.title}</strong>
                 <small>{c.descriptions[id]}</small>
@@ -152,18 +153,14 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
         })}
       </div>
 
-      <AcquisitionEventLink
-        prefetch={false}
+      <ContactChannelChooser
+        stayAfterSave
+        locale={locale}
+        whatsappUrl={enquiryUrl}
         className={styles.action}
-        href={enquiryUrl}
         event="academy_course_enquiry_click"
-        target="_blank"
-        rel="noopener noreferrer"
-        attributes={{ "data-contact-channel": "whatsapp", "data-academy-course": selected }}
-      >
-        <span>{c.action} {course.title}</span>
-        <ArrowUpRight aria-hidden="true" size={20} />
-      </AcquisitionEventLink>
+        attributes={{ "data-academy-course": selected }}
+      />
       <p className={styles.note}>{c.note}</p>
 
       <div className={styles.footer}>
@@ -173,9 +170,6 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
         </div>
         <div className={styles.links}>
           <Link prefetch={false} href={coursePath}>{c.details} <ArrowRight size={15} aria-hidden="true" /></Link>
-          <AcquisitionEventLink prefetch={false} event="contact_click" href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer" attributes={{ "data-contact-channel": "telegram" }}>
-            <Send size={15} aria-hidden="true" /> {c.telegram}
-          </AcquisitionEventLink>
         </div>
       </div>
     </section>

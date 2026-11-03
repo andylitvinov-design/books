@@ -166,6 +166,12 @@ It warms the space,
 
 and gradually life returns.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: After a difficult experience, it feels cold and empty inside, as though time has stopped.
+
+After (desired state): Gentle acceptance of your feelings and the possibility of noticing warmth, connection with yourself and comfort again.
+
 ## RITUAL
 
 • take 2–5 drops of STAR OF BETHLEHEM under the tongue

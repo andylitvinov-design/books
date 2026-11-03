@@ -1,0 +1,81 @@
+.page{min-height:100vh;background:linear-gradient(180deg,#f5f0e6 0%,#fbf8f2 65%,#f4f0e8 100%);color:#203f43}
+.page *{box-sizing:border-box}
+.content{width:min(1140px,100%);margin:0 auto;padding:clamp(14px,3vw,30px) clamp(14px,3vw,30px) 62px}
+.hero{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(190px,.72fr);gap:clamp(14px,2.5vw,28px);overflow:hidden;align-items:stretch;border:1px solid #c6ded6;border-radius:25px;background:#fefdfa;box-shadow:0 12px 32px rgba(20,76,71,.055)}
+.heroCopy{display:flex;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;padding:clamp(22px,3.6vw,45px) 0 clamp(22px,3.6vw,45px) clamp(20px,3.6vw,45px)}
+.eyebrow{margin:0 0 10px;color:#2b8a7d;font:750 11px/1.35 system-ui,sans-serif;letter-spacing:.135em;text-transform:uppercase}
+.hero h1{max-width:640px;margin:0;color:#173d44;font:400 clamp(32px,4.25vw,53px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.035em;text-wrap:balance}
+.lead{max-width:590px;margin:14px 0 20px;color:#65716d;font:400 clamp(14px,1.6vw,17px)/1.6 system-ui,sans-serif}
+.heroAction{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:9px 15px;border:1px solid #a6d3ce;border-radius:12px;background:#def2ed;color:#155b5e;font:750 13px/1.35 system-ui,sans-serif;text-decoration:none}
+.heroAction:hover{background:#ccebe4}
+.portrait{position:relative;min-height:278px;overflow:hidden;background:#e4e9df}
+.portrait img{object-fit:cover;object-position:center 18%}
+.options{padding-top:28px;scroll-margin-top:24px}
+.options>h2{margin:0 0 14px;color:#174c50;font:400 clamp(24px,2.8vw,33px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+.offers{display:grid;gap:11px}
+.offer{display:grid;grid-template-columns:clamp(128px,18vw,182px) minmax(0,1fr);gap:clamp(12px,2.2vw,22px);min-width:0;padding:12px;border:1px solid #e0e1d8;border-radius:18px;background:#fffefa;box-shadow:0 4px 18px rgba(23,61,68,.035)}
+.offerPhoto{position:relative;min-height:180px;overflow:hidden;border-radius:12px;background:#dde7dd}
+.offerPhoto img{object-fit:cover;object-position:center}
+.offerDetails{display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:7px 12px 6px 0}
+.offerLabel{color:#317d76;font:750 10px/1.4 system-ui,sans-serif;letter-spacing:.085em;text-transform:uppercase}
+.offer h3{margin:7px 0 8px;color:#1d4749;font:400 clamp(20px,2.2vw,28px)/1.17 Georgia,"Times New Roman",serif;letter-spacing:-.023em}
+.offerDetails>p{max-width:680px;margin:0 0 10px;color:#606d69;font:400 14px/1.57 system-ui,sans-serif}
+.offerResult{display:inline-flex;align-items:flex-start;gap:6px;margin:0 0 11px;color:#54766c;font:550 12px/1.45 system-ui,sans-serif}
+.offerResult svg{flex:none;margin-top:1px}
+.offerAction{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:43px;max-width:100%;margin-top:auto;padding:9px 13px;border:1px solid #bdded8;border-radius:10px;background:#e7f5f1;color:#086977;font:740 13px/1.35 system-ui,sans-serif;text-decoration:none}
+.offerAction:hover{background:#d1eee7}
+.offerAction svg{flex-shrink:0}
+.introduction{display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:18px;margin-top:22px;padding:20px 22px;border:1px solid #e4d5c5;border-radius:20px;background:linear-gradient(125deg,#fff7ed,#f9f3e9)}
+.introductionIcon{display:grid;place-items:center;align-self:start;width:52px;height:52px;border-radius:15px;background:#f0e7d7;color:#8e583d}
+.introductionCopy{min-width:0}
+.introductionCopy .eyebrow{margin-bottom:6px;color:#987050}
+.introduction h2{margin:0 0 8px;color:#624b3b;font:400 clamp(21px,2.3vw,28px)/1.14 Georgia,"Times New Roman",serif}
+.introductionCopy>p:last-child{margin:0;color:#796e64;font:400 13px/1.58 system-ui,sans-serif}
+.introductionAction{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;max-width:255px;padding:11px 14px;border-radius:12px;background:#0c6470;color:#fff;font:750 13px/1.35 system-ui,sans-serif;text-decoration:none}
+.introductionAction:hover{background:#084f59}
+.introductionAction svg{flex-shrink:0}
+.safety{display:flex;align-items:flex-start;gap:10px;max-width:960px;margin:19px 4px 12px;color:#68736e;font:400 12px/1.6 system-ui,sans-serif}
+.safety svg{flex:none;margin-top:1px;color:#48847c}
+.back{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:4px;color:#296b70;font:700 12px/1.5 system-ui,sans-serif;text-decoration:underline;text-underline-offset:4px}
+.page a:focus-visible{outline:3px solid #178c95;outline-offset:3px}
+@media(max-width:760px){
+.content{padding:13px 13px 50px}
+.hero{grid-template-columns:minmax(0,1fr) minmax(96px,28%);gap:9px;border-radius:18px}
+.heroCopy{padding:19px 0 18px 16px}
+.hero h1{font-size:clamp(25px,6vw,34px);line-height:1.13}
+.hero .eyebrow{font-size:9px;margin-bottom:8px;letter-spacing:.095em}
+.lead{font-size:12px;line-height:1.5;margin:9px 0 12px}
+.heroAction{padding:7px 10px;min-height:42px;font-size:11px;gap:6px}
+.heroAction svg{flex-shrink:0;width:16px}
+.portrait{min-height:240px}
+.portrait img{object-position:52% 20%}
+.options{padding-top:20px}
+.options>h2{font-size:24px;margin-bottom:11px}
+.offer{grid-template-columns:112px minmax(0,1fr);gap:12px;border-radius:15px;padding:10px}
+.offerPhoto{min-height:168px;border-radius:10px}
+.offerDetails{padding:3px 0}
+.offerLabel{font-size:9px;letter-spacing:.04em}
+.offer h3{font-size:20px;margin:6px 0}
+.offerDetails>p{font-size:12px;line-height:1.48;margin-bottom:8px}
+.offerResult{font-size:11px;margin-bottom:8px}
+.offerAction{min-height:42px;padding:8px 10px;font-size:12px}
+.introduction{grid-template-columns:42px minmax(0,1fr);gap:12px;margin-top:16px;padding:15px;border-radius:16px}
+.introductionIcon{width:42px;height:42px;border-radius:12px}
+.introductionIcon svg{width:21px}
+.introduction h2{font-size:23px}
+.introductionAction{grid-column:1/-1;width:100%;max-width:none}
+.safety{font-size:11px}
+}
+@media(max-width:390px){
+.hero{grid-template-columns:minmax(0,1fr) 90px}
+.hero h1{font-size:25px}
+.heroAction{font-size:10px}
+.portrait{min-height:230px}
+.offer{grid-template-columns:88px minmax(0,1fr);gap:9px}
+.offerPhoto{min-height:160px}
+.offer h3{font-size:18px}
+.offerDetails>p{font-size:11.5px}
+.offerResult{font-size:10.5px}
+.offerAction{font-size:11px;padding-inline:8px}
+}
+@media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important}}

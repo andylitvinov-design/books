@@ -7,6 +7,8 @@ import { chromium, webkit, expect } from '@playwright/test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
+import { assessmentResultOverview } from '../../lib/assessments/result-overview.js'
+import { assessmentEvidenceStatus } from '../../lib/assessments/assessment-evidence-status.js'
 
 // Synthetic rendered-component acceptance only: no account, API, navigation or writes.
 const require = createRequire(import.meta.url)
@@ -30,6 +32,8 @@ const { CompactAssessmentReport } = loadComponent('components/app/compact-assess
   './assessment-gauge': { ScoreGauge: () => null, ScoreTrend: () => null },
   '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },
   '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },
+  '@/lib/assessments/result-overview': { assessmentResultOverview },
+  '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
   './compact-assessment-report.module.css': styles('report_'),
 })
 // These two local stylesheets use plain class selectors; prefix them just as CSS modules do.
@@ -76,7 +80,7 @@ try {
         const summary = banner.locator('summary')
         const details = banner.locator('details')
         await expect(summary).toHaveText(locale === 'ru' ? 'Подробнее о курсе' : 'More about the course')
-        await expect(start).toHaveAttribute('href', '/' + locale + '/app/course')
+        await expect(start).toHaveAttribute('href', '/' + locale + '/app/course?program=stress')
         await expect(details).not.toHaveAttribute('open')
         await expect(details.locator('div')).toBeHidden()
         const assertBounds = async state => {

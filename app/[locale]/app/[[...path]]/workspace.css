@@ -334,7 +334,7 @@
   gap: 7px;
   font-size: 15px;
 }
-.hh-app input:not([type='checkbox']),
+.hh-app input:not([type='checkbox']):not([type='radio']),
 .hh-app select,
 .hh-app textarea {
   min-height: 46px;
@@ -1435,7 +1435,7 @@
 @media(max-width:760px){
   .hh-app{padding-bottom:calc(116px + env(safe-area-inset-bottom))}
   .hh-mobile-app-nav{
-    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;
     z-index:45;inset:auto 0 0;gap:4px;align-items:stretch;
     padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));
     border-top:1px solid #e0d9ce;background:rgba(255,252,247,.97);
@@ -1607,7 +1607,7 @@
 }
 
 
-/* Five equal touch targets including Personal Analysis; never wrap onto a second row. */
+/* Equal touch targets for five mobile destinations; never wrap onto a second row. */
 @media(max-width:760px){
   .hh-app .hh-mobile-app-nav {
     grid-template-columns:repeat(5,minmax(0,1fr));
@@ -1679,21 +1679,101 @@
 .hh-result-page .hh-result-intro{font-size:15px}
 @media(max-width:600px){.hh-result-raw-details{padding:0 10px}.hh-result-raw-details>summary{font-size:13px}}
 
-/* My Course: six compact equal targets, keep existing five and add the course at the end. */
+/* Five accessible primary Cabinet shortcuts fit on a 320px iPhone. */
 @media(max-width:760px){
-  .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(5,minmax(0,1fr)); }
   .hh-app .hh-mobile-app-nav a { font-size:10px; padding-inline:0; min-width:0; }
   .hh-app .hh-mobile-app-nav a svg { width:19px;height:19px; }
 }
 
-/* The signed-in Cabinet has five primary mobile destinations, not six.
-   Public-site six-way navigation is a separate surface and is unchanged. */
-@media(max-width:820px){
+/* Use the same 760px breakpoint as the desktop-menu hide and fixed mobile bar. */
+@media(max-width:760px){
   .hh-app .hh-mobile-app-nav{
     display:grid;
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
   }
-  .hh-app .hh-mobile-app-nav a{min-width:0;font-size:clamp(10px,2.65vw,12px);gap:3px}
+  .hh-app .hh-mobile-app-nav a{min-width:0;font-size:clamp(9px,2.4vw,11px);gap:3px}
+  .hh-app .hh-mobile-app-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hh-app .hh-mobile-app-nav a.hh-mobile-app-nav-home{color:#7b5239;border-left:1px solid #ece1d6}
   .hh-app .hh-mobile-app-nav a[aria-current='page']{background:#e8f2eb;color:#236d5e}
   .hh-app .hh-mobile-app-nav a svg{color:inherit}
+}
+
+
+/* Cabinet Account: the five primary links mirror both horizontal navigation bars. */
+.hh-app .hh-account-menu > div {
+  max-height: min(66dvh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.hh-app .hh-account-menu > div > a[aria-current='page'] {
+  background: #f0e9df;
+  border-radius: 9px;
+  color: #5c352a;
+  font-weight: 750;
+}
+.hh-app .hh-account-menu-secondary {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid #e6dbcc;
+}
+.hh-app .hh-account-menu .hh-account-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  min-height: 44px;
+  color: #756357;
+  font-weight: 600;
+}
+.hh-app .hh-account-menu .hh-account-more > summary::after {
+  content: '⌄';
+  margin-left: 12px;
+  color: #9a7965;
+}
+.hh-app .hh-account-menu .hh-account-more[open] > summary::after {
+  content: '⌃';
+}
+.hh-app .hh-account-menu .hh-account-more > a {
+  padding-left: 20px;
+  color: #68574c;
+}
+.hh-app .hh-account-menu > div a:focus-visible,
+.hh-app .hh-account-menu > div summary:focus-visible {
+  outline: 2px solid #a17352;
+  outline-offset: -2px;
+  border-radius: 9px;
+}
+
+/* Report-specific print cleanup lives in global workspace CSS, never in a
+   CSS Module, which forbids selectors with no local class. */
+@media print {
+  .hh-app:has(#hh-business-printable-report) .hh-header,
+  .hh-app:has(#hh-business-printable-report) .hh-nav,
+  .hh-app:has(#hh-business-printable-report) .hh-account-menu {
+    display: none !important;
+  }
+  .hh-app:has(#hh-business-printable-report) {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+}
+
+/* iPhone Safari can paint its native bottom toolbar over CSS fixed bottom:0.
+   Keep ONE shared private dock on the actually visible edge, with no arbitrary
+   80-120px body translation and no second floating navigation panel. */
+@media(max-width:760px){
+  .hh-app:has(.hh-mobile-app-nav){
+    --hh-app-dock-usable-inset:max(0px,var(--hh-app-visual-bottom-inset,0px),calc(100vh - 100dvh));
+    padding-bottom:max(
+      calc(116px + env(safe-area-inset-bottom)),
+      calc(var(--hh-app-mobile-nav-height,84px) + var(--hh-app-dock-usable-inset) + 20px)
+    );
+  }
+  .hh-app .hh-mobile-app-nav{
+    bottom:var(--hh-app-dock-usable-inset);
+  }
+  .hh-app .hh-mobile-app-nav[data-editor-focused]{
+    display:none!important;
+  }
 }

@@ -364,3 +364,11 @@
 
 **Source of scoring / registry:** `data/assessments/`, `lib/assessments/scoring.js`, `lib/assessments/interpretation-registry.js` (rules 2026-10-11.v3).
 
+
+## Версии анкеты / Questionnaire versions
+
+v2 (2026-10-16) сохраняет 115 пунктов, связи с 38 темами и прежнюю арифметику. Пункт Beech в обоих языках теперь прямо описывает чрезмерную критичность, раздражительность или нетерпимость к различиям. Русский контрольный пункт Agrimony уточняет сокрытие собственных трудностей за внешней гармонией. Это редакторская доработка авторской анкеты, а не восстановление подтверждённого английского оригинала. Историческая v1 остаётся доступной без изменений; значения v1 и v2 не объединяются в общий ряд динамики.
+
+v2 (2026-10-16) retains 115 items, the 38 theme mappings and existing arithmetic. The Beech item in both languages now describes excessive criticism, irritability or intolerance of differences. The Russian Agrimony control item explicitly includes concealed difficulties behind apparent harmony. This is an editorial revision of the owner-authored questionnaire, not restoration of a verified English original. Historical v1 remains unchanged; v1 and v2 scores must not be combined into one trend.
+
+Обе версии — невалидированная саморефлексия; изменения не доказывают диагностическую точность, эквивалентность переводов или эффективность эссенций. / Both versions are nonvalidated self-reflection; these changes establish neither diagnostic accuracy, translation equivalence nor flower-essence efficacy.

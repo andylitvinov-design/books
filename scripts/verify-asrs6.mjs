@@ -1,3 +1,6 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
 // Requires the approved isolated database, app and provider protocol double.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -22,13 +25,15 @@ const mixed = [2, 2, 2, 3, 0, 0] // Classic count 4; continuous sum 9 is not use
 const passed = label => { checks.push(label); console.log('PASS ' + label) }
 let page
 
-async function isolatedContext(fixtureIp = '192.0.2.61') {
+async function isolatedContext(fixtureIp = '192.0.2.61', guestProbe = false) {
   // RFC 5737 TEST-NET-1 fixtures, sent only to the asserted loopback app.
   // Keep this suite independent from the other suites' 12/IP/hour budget.
   // The application limiter and its headers contract remain unchanged.
   assert.ok(['192.0.2.61', '192.0.2.62', '192.0.2.63'].includes(fixtureIp))
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 }, timezoneId: 'UTC',
+    // Only the guest result probe deliberately intercepts its save-intent POST.
+    serviceWorkers: guestProbe ? 'block' : 'allow',
     extraHTTPHeaders: { 'X-Forwarded-For': fixtureIp },
   })
   // Keep all browser traffic on loopback, including the synthetic auth provider.
@@ -56,11 +61,6 @@ async function api(context, path, body) {
   const value = await response.json()
   assert.ok(response.ok(), path + ': ' + JSON.stringify(value))
   return value
-}
-async function selectMode(target, mode) {
-  const choices = target.locator('.hh-test-mode-grid button')
-  await expect(choices).toHaveCount(2)
-  await choices.nth(mode === 'quick' ? 0 : 1).click()
 }
 async function sourceNotice(target, definition, guest, locale) {
   const instructions = target.locator((guest ? '.cabinet-test-note' : '.hh-runner-instructions') + '[lang="' + definition.instrumentLocale + '"]')
@@ -112,7 +112,7 @@ function collectCourseLinkContext(links) {
 // A generic optional banner is separate from ASRS score-derived guidance.
 function assertCourseLinkBoundary(links, locale) {
   assert.equal(links.length, 1, 'ASRS reports permit only the single optional banner course link')
-  assert.equal(links[0].href, '/' + locale + '/app/course', 'The optional course link must use the report language')
+  assert.equal(links[0].href, '/' + locale + '/app/course?program=stress', 'The optional course link must use the report language and the reviewed Anti-Stress programme')
   assert.equal(links[0].insideBanner, true, 'No ASRS score-derived course recommendation is permitted')
   assert.equal(links[0].insideScore, false, 'The generic course banner must remain outside scored articles')
 }
@@ -122,14 +122,31 @@ async function assertReport(target, definition, locale, expected) {
   await expect(report.locator('article')).toHaveCount(1)
   const count = report.locator('[data-assessment-gauge="screening-count"]')
   await expect(count).toHaveCount(1)
-  await expect(count.locator('strong')).toHaveText(expected + ' / 6')
+  await expect(count.locator(':scope > strong')).toHaveText(expected + ' / 6')
   await expect(count.locator('svg')).toHaveCount(0)
   await expect(report.locator('[role="progressbar"]')).toHaveCount(0)
   await expect(report.locator('[data-assessment-gauge="difficulty"], [data-assessment-gauge="resource"]')).toHaveCount(0)
   assert.doesNotMatch(await count.innerText(), /%/)
-  await expect(count).toContainText(locale === 'ru'
+  await expect(count.locator(':scope > figcaption')).toHaveText((locale === 'ru'
     ? expected >= 4 ? 'На уровне или выше скринингового порога' : 'Ниже скринингового порога'
-    : expected >= 4 ? 'At or above screening threshold' : 'Below screening threshold')
+    : expected >= 4 ? 'At or above screening threshold' : 'Below screening threshold') + ' (4)')
+  const labels = locale === 'ru'
+    ? ['Ниже скринингового порога', 'На уровне или выше скринингового порога']
+    : ['Below the screening threshold', 'At or above the screening threshold']
+  const bands = report.locator('[data-all-score-ranges] > li')
+  await expect(bands).toHaveCount(2)
+  const publishedBands = await bands.evaluateAll(nodes => nodes.map(node => ({
+    range: node.querySelector('b')?.textContent,
+    label: node.querySelector('span')?.textContent.trim(),
+    current: node.getAttribute('aria-current') === 'true',
+  })))
+  assert.deepEqual(publishedBands, ['0–3', '4–6'].map((range, index) => ({
+    range, label: labels[index], current: index === Number(expected >= 4),
+  })), 'Published ASRS bands retain exact source bounds, labels and current range')
+  for (const band of await bands.all()) await expect(band).toBeVisible()
+  const currentBand = report.locator('[data-all-score-ranges] > li[aria-current="true"]')
+  await expect(currentBand).toHaveCount(1)
+  await expect(currentBand.locator('b')).toHaveText(expected >= 4 ? '4–6' : '0–3')
   for (const detail of await report.locator('details').all()) {
     if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
   }
@@ -144,7 +161,7 @@ async function assertReport(target, definition, locale, expected) {
   const banner = report.locator('[data-free-course-banner]')
   await expect(banner).toHaveCount(1)
   await expect(banner).toBeVisible()
-  await expect(banner.locator('a[href="/' + locale + '/app/course"]')).toBeVisible()
+  await expect(banner.locator('a[href="/' + locale + '/app/course?program=stress"]')).toBeVisible()
   await expect(banner.locator('details')).toHaveAttribute('open', '')
   await expect(banner).toContainText(locale === 'ru' ? 'Следующий шаг — по желанию' : 'An optional next step')
   await expect(banner).toContainText(locale === 'ru' ? 'требуют вашего согласия' : 'requires your consent')
@@ -163,12 +180,12 @@ async function fill(target, definition, mode, guest, locale, values) {
     const saved = target.waitForResponse(response => response.url().includes('/runs/') && response.url().endsWith('/save') && response.request().method() === 'POST')
     await buttons.nth(values[index]).click()
     assert.ok((await saved).ok())
-    if (index < 5) await expect(target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
+    if (index < 5) await expect(target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
     // A saved zero must remain distinct from an unanswered question after reload.
     if (mode === 'quick' && index === 2) {
       await target.waitForLoadState('networkidle')
       await target.reload()
-      if (guest) await selectMode(target, 'quick')
+      await assertQuestionnaireMode(target, expect, { mode: 'quick', guest, definition })
       assert.equal(await sourceNotice(target, definition, guest, locale), initialDate)
       for (let prior = 0; prior <= index; prior++) await expect(target.locator(quick).nth(prior).locator(guest ? '.cabinet-answer-list button' : '.hh-scale button').nth(values[prior])).toHaveAttribute('aria-pressed', 'true')
       await expect(target.locator(quick).nth(3).locator('[aria-pressed="true"]')).toHaveCount(0)
@@ -176,7 +193,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     }
     if (mode === 'guided' && index < 5) await target.getByRole('button', { name: locale === 'ru' ? 'Далее' : 'Next', exact: true }).click()
   }
-  const finish = target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
+  const finish = target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
   await expect(finish).toBeEnabled()
   await finish.click()
 }
@@ -211,28 +228,31 @@ try {
   const account = await isolatedContext()
   page = await account.newPage(); observe(page)
   await navigate(page, origin + '/en/app')
-  await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
+  await page.getByRole('button', { name: 'Open my Cabinet with Google', exact: true }).click()
   const onboarding = page.getByRole('heading', { name: 'Create my private space', exact: true })
-  await expect(onboarding.or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({ timeout: 60000 })
+  await expect(onboarding.or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await onboarding.isVisible()) {
     await page.getByLabel('I am 18 or older.').check()
     await page.getByLabel('I agree to private processing', { exact: false }).check()
     await page.getByRole('button', { name: 'Create my private space', exact: true }).click()
   }
-  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+  await assertCabinetPortrait(page, expect, { origin })
+  await openCabinetMyTests(page, expect, { origin })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
     const run = await api(account, 'runs', { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale, operationId: randomUUID() })
     await navigate(page, origin + '/' + locale + '/app/runs/' + run.id + '?mode=' + mode)
-    if (mode === 'guided') await selectMode(page, mode)
+    await assertQuestionnaireMode(page, expect, { mode, guest: false, definition })
     await fill(page, definition, mode, false, locale, values)
     await assertReport(page, definition, locale, expected)
     const stored = (await api(account, 'bootstrap')).results.find(result => result.runId === run.id)
     assertStored(stored, definition, expected)
+    await assertAccountScaleReport(page, expect, stored, locale)
     // Check a persisted RU result with an EN report too; validation must follow its source language.
     const reportLocale = locale === 'ru' ? 'en' : locale
     await navigate(page, origin + '/' + reportLocale + '/app/results/' + stored.id)
     await assertReport(page, definition, reportLocale, expected)
+    await assertAccountScaleReport(page, expect, stored, reportLocale)
     await page.screenshot({ path: output + '/account-' + locale + '-' + mode + '.png', fullPage: true })
     passed('account ' + locale + ' ' + mode + ': exact source, five anchors, shading, saved count, provenance and reopened report')
   }
@@ -246,20 +266,21 @@ try {
   await account.close()
 
   // One consented guest session for four journeys, within the unchanged IP/session limits.
-  const guest = await isolatedContext(), resultIds = new Set()
+  const guest = await isolatedContext(undefined, true), resultIds = new Set()
   await api(guest, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
     const plan = await api(guest, 'guest/test-plans', { items: [{ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale }], operationId: randomUUID() })
     page = await guest.newPage(); observe(page)
     await navigate(page, origin + '/' + locale + '/client?plan=' + plan.id)
-    await selectMode(page, mode)
+    await enterGuestQuestionnaireMode(page, expect, { mode, definition })
     await fill(page, definition, mode, true, locale, values)
-    await assertReport(page, definition, locale, expected)
+    await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({ timeout: 20000 })
     const stored = (await api(guest, 'guest/bootstrap')).results.find(result => result.definitionId === definition.id && !resultIds.has(result.id))
     assertStored(stored, definition, expected); resultIds.add(stored.id)
+    await assertGuestScaleResult(page, expect, stored, locale)
     await page.screenshot({ path: output + '/guest-' + locale + '-' + mode + '.png', fullPage: true })
-    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count and report')
+    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count, exact scales and item-scoped optional analysis')
     await page.close()
   }
   assert.equal(resultIds.size, 4)

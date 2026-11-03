@@ -1,0 +1,17 @@
+{
+  "name": "Holistic House — YouTube Uploader",
+  "short_name": "HH Upload",
+  "description": "Upload educational videos from the phone directly to YouTube",
+  "start_url": "/admin/youtube-upload",
+  "scope": "/admin/youtube-upload",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#173558",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

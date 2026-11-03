@@ -116,3 +116,11 @@ You were born, which means you have the right to exist.
 You are part of humanity.
 
 And even if you didn’t receive love then — you can nourish yourself with it now.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: A sense of not belonging: I feel like a stranger among other people and want to hide.
+
+After (desired state): The right to exist and belong, and a willingness to gradually open up to warm connection.

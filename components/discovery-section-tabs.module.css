@@ -1,0 +1,41 @@
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  flex: 0 1 auto;
+  width: min(455px, 70%);
+  padding: 3px;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 37%);
+  border-radius: 100px;
+  background: rgb(255 255 255 / 9%);
+}
+.tabs a {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  min-height: 39px;
+  padding: 6px 6px;
+  border-radius: 100px;
+  color: #f2eff5;
+  font: 750 clamp(10px, 1.1vw, 13px)/1.2 system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tabs a[aria-current="page"] {
+  color: #223955;
+  background: #fff9f3;
+  box-shadow: 0 2px 6px rgb(12 22 45 / 12%);
+}
+.tabs a:hover:not([aria-current="page"]) { background: rgb(255 255 255 / 16%); }
+.tabs a:focus-visible { outline: 3px solid #f3b4c9; outline-offset: 2px; }
+@media(max-width:620px) {
+  .tabs { width: 71%; padding: 3px; gap: 1px; }
+  .tabs a { min-height: 39px; padding: 6px 2px; font-size: clamp(9px, 2.4vw, 11px); }
+}
+@media(max-width:400px) {
+  /* Long translated labels get the entire next row on narrow devices. */
+  .tabs { flex: 0 0 100%; width: 100%; }
+  .tabs a { font-size: 11px; min-height: 40px; }
+}

@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -15,7 +16,9 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,135)
+  // New source-cleared scales are additive; coverage must not freeze at the
+  // previous 145-source snapshot or silently omit the five new 2026 forms.
+  assert.ok(active.length>=150)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
@@ -32,7 +35,7 @@ test('every active test has a bilingual short purpose/origin/evidence paragraph 
         assert.ok(['screen','research','traits'].includes(about.status),item.key)
         assert.doesNotMatch(about.originAndEvidence,/original holistic house educational reflection/i)
       }
-      const scored=scoreAssessment(def,allAnswers(def))
+      const scored=scoreAssessment(def,allAnswers(def), syntheticTraumaContext(def))
       const report=buildAssessmentResultReport(scored,locale)
       assert.ok(report.methodology?.length>65,item.key+':'+locale+' report')
       assert.equal(report.methodology,assessmentMethodology({key:item.key,catalog:item,locale}).text)
@@ -54,10 +57,10 @@ test('MHC-SF explanation preserves accepted source, language and non-diagnostic 
   }
 })
 
-test('all 154 research-only references have concise bilingual field, verified rights and no public start',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
+test('all 168 research-only references have concise bilingual field, verified rights and no public start',()=>{
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,168)
   const unique=new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key))
-  assert.equal(unique.size,154)
+  assert.equal(unique.size,168)
   for(const locale of ['en','ru']){
     const entries=buildExplorerEntries({locale,audience:'guest'})
     for(const row of MIND_BODY_MONITOR_REGISTRY){

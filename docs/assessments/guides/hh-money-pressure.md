@@ -1,33 +1,39 @@
 # Давление денег / Money Pressure
 
-**Instrument ID:** `hh-money-pressure` · **Version:** `v1` · **Status:** HH-observation · **Questions:** 6 · **Time:** ~2 min
+**Instrument ID:** `hh-money-pressure` · **Version:** `v2` · **Status:** Original nonvalidated reflection · **Questions:** 6
 
 ## Что исследует тест / What this test explores
 
-**RU:** Оригинальная лёгкая саморефлексия Holistic House. Не клинический тест.
+EN: Difficulty and coping/context are separate descriptive observations. No overall total, clinical cutoffs, norms, diagnostic conclusions or demonstrated psychometric validity are supplied. Both language versions are original Holistic House self-reflection, not validated adaptations.
 
-**EN:** Original Holistic House playful self-reflection. Not a clinical test.
-
-**Important:** Баллы описывают ответы, а не устанавливают диагноз. Скрининговые пороги используются только там, где подтверждены источником. / Scores describe answers, not diagnoses. Screening thresholds are used only where supported by sources.
+RU: Трудности и совладание/контекст представлены раздельными описательными наблюдениями. Общего итога, клинических порогов, норм, диагностических выводов и подтверждённой психометрической валидности нет. Обе языковые версии — авторская саморефлексия Holistic House, не валидированные адаптации.
 
 ## Шкалы, наблюдение и добровольная работа / Scales, monitoring and optional practice
 
-Ни одна шкала сама по себе не является «дефектом», который нужно исправить. Выбирайте навык, а не обязательную цель по баллам. / A scale is not a defect to fix; choose an optional skill, not a mandatory target score.
+### Трудности, связанные с деньгами / Money-related difficulty
 
-### Давление денег — основной показатель / Money Pressure — main score
+- **Scale ID:** `state.money_pressure.difficulty`
+- **Items / пункты:** 01, 02, 03
+- **Calculation / расчёт:** arithmetic mean / среднее арифметическое; 0–4; no reversals / без разворотов
+- **Direction / направление:** `lower-reported-difficulty`
+- **Что можно попробовать / one practical step:** Отметьте трудные денежные ситуации; опишите практические факты отдельно от тревог. / Notice which money-related situations feel difficult; describe practical facts separately from worries.
 
-- **Scale ID:** `summary`
-- **Категория / area:** Нагрузка и стресс / Stress load
-- **Что наблюдать / what to notice:** Отмечайте, когда нагрузка сильнее и как она влияет на день. / Notice when demands feel heavier and how they affect your day.
-- **Что можно попробовать / one practical step:** Разделите финансовые задачи, на которые можно влиять, и беспокойство вне непосредственного контроля. / Distinguish controllable financial tasks from worries outside your immediate influence.
-- **Как читать значение / interpreting the score:** Описательное положение в шкале, без придуманной нормы или клинического порога. / Descriptive position in this scale; no invented norms or clinical thresholds.
-- **Добровольное направление / optional skill:** Восстановление и посильный темп / Recovery and a manageable pace
+### Доступное совладание с денежными трудностями / Available money-related coping
 
-## После теста / After the test
+- **Scale ID:** `resources.money_pressure.coping`
+- **Items / пункты:** 04, 05, 06
+- **Calculation / расчёт:** arithmetic mean / среднее арифметическое; 0–4; no reversals / без разворотов
+- **Direction / направление:** `higher-reported-resource`
+- **Что можно попробовать / one practical step:** Отметьте, какие из трёх способов совладания доступны, а какие менее доступны. Ответы не измеряют доход, активы или финансовую компетентность. / Notice which of the three coping responses is available and which is harder to access. These answers do not measure income, assets or financial competence.
 
-**RU:** Получите индивидуальное объяснение каждой шкалы, безопасные рекомендации и при необходимости предложение обсудить результат со специалистом. Для динамики сравнивайте только одинаковые версии опросника и совместимые условия. Никакого обязательного курса или назначения.
+## Completeness, provenance and history / Полнота, происхождение и история
 
-**EN:** Your saved report explains each scored scale and gives non-prescriptive practical options. Compare only compatible instrument versions and measurement windows. There is no automatic therapy enrollment or prescription.
+All six integer responses 0–4 are required. Zero is a valid answer; missing, fractional and out-of-range responses are rejected. No imputation or prorating. Difficulty and resource/context are never added, subtracted, or averaged together. A one-item observation is not a validated subscale.
 
-**Source of scoring / registry:** `data/assessments/`, `lib/assessments/scoring.js`, `lib/assessments/interpretation-registry.js` (rules 2026-10-11.v3).
+Необходимы все шесть целочисленных ответов 0–4. Ноль — допустимый ответ; пропуски, дробные ответы и значения вне диапазона отклоняются. Заполнения пропусков нет. Трудность и ресурс/контекст не складываются, не вычитаются и не усредняются вместе. Наблюдение по одному пункту — не валидированная подшкала.
 
+Historical v1 remains registered with its exact original arithmetic, identities and hashes. Its mixed total is not comparable to either new dimension and remains excluded from automatic course priorities. Existing chosen v1 course IDs still resolve to their historical guides. Only exact same-version, same-language compatible measurements may form trends.
+
+Историческая v1 остаётся зарегистрированной с прежними расчётом, идентификаторами и хешами. Её смешанный итог не сопоставим ни с одной новой шкалой и исключён из автоматических приоритетов курса. Сохранённые выборы v1 продолжают ссылаться на прежние пояснения. Динамика допустима только для совместимых измерений той же версии и языка.
+
+Source: original immutable v1 text in expanded-battery-v2-fun-b/d.js; owner-approved split design dated 2026-10-16. Rights review and insert-only registry readback are separate release gates; this document does not certify ownership or licensing. Scoring engine: configured:v1, content/result version: v2.

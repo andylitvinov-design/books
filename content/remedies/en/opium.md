@@ -84,6 +84,14 @@ For centuries, they have been used for weakness and exhaustion.
 
 Archetype: Escapist from reality.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Detachment and a desire to hide from emotional experiences, like someone fleeing reality.
+
+After (desired state): Clearer contact with yourself and the present, with attention to your own feelings and actions.
+
 Let me remind you,
 
 1. Homeopathic remedies contain only a small fraction of the substance and act more like an antidote.

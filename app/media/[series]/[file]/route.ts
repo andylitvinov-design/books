@@ -1,4 +1,4 @@
-import { getMediaAsset, mediaSourceUrlFor, VERIFIED_FALLBACK_MEDIA_COMMIT } from "@/data/media";
+import { getMediaAsset, getRemoteMediaResponse, mediaSourceUrlFor, VERIFIED_FALLBACK_MEDIA_COMMIT } from "@/data/media";
 
 export const runtime = "nodejs";
 
@@ -10,18 +10,16 @@ export async function GET(_request: Request, { params }: RouteProps) {
   const { series, file } = await params;
 
   if (process.env.VERCEL === "1") {
-    // Raw GitHub keeps the existing /media/* URLs intact without embedding
-    // the entire original media corpus in every serverless function bundle.
-    // Pin to this deployment's commit so Preview media matches Preview code.
+    // Deliver pinned public originals under the same origin: browser redirects
+    // to raw GitHub violate reader CSP. Keep the original corpus out of bundles.
     const revision = process.env.VERCEL_GIT_COMMIT_SHA || VERIFIED_FALLBACK_MEDIA_COMMIT;
+    if (series === "maya") return getRemoteMediaResponse(series, file, revision);
+    // Preserve other series until large-original delivery is verified separately.
     const sourceUrl = mediaSourceUrlFor(series, file, revision);
     if (!sourceUrl) return new Response("Not found", { status: 404 });
     return new Response(null, {
       status: 307,
-      headers: {
-        Location: sourceUrl,
-        "Cache-Control": "public, max-age=3600",
-      },
+      headers: { Location: sourceUrl, "Cache-Control": "public, max-age=3600" },
     });
   }
 

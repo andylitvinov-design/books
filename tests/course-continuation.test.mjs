@@ -9,9 +9,9 @@ import {COURSE_CONTENT_V3} from '../lib/inner-growth/course-v3.js'
 import {COURSE_CONTENT_V4} from '../lib/inner-growth/course-v4.js'
 import {COURSE_CONTENT_VERSION,lessonFor} from '../lib/inner-growth/lesson-library.js'
 let sequence=0
-async function fixture({legacy=false,locale='en',version=COURSE_CONTENT_V3,sameDayFinal=false,missingFinal=false}={}){
+async function fixture({legacy=false,locale='en',version=COURSE_CONTENT_V3,courseStatus='completed',otherActive=0,tier='free',multiCourseEnabled=false,failActivation=false,sameDayFinal=false,missingFinal=false}={}){
 const actor={id:'11111111-1111-4111-8111-111111111111'}
-const course={id:'22222222-2222-4222-8222-222222222222',stage:4,goals:['calm_regulation','energy_agency','connection_boundaries'],scale_keys:['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.recovery','hh-weekly-pulse::weekly.connection']}
+const course={id:'22222222-2222-4222-8222-222222222222',account_id:actor.id,status:courseStatus,stage:4,goals:['calm_regulation','energy_agency','connection_boundaries'],scale_keys:['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.recovery','hh-weekly-pulse::weekly.connection']}
 if(legacy)course.scale_keys=[]
 const originalScales=[...course.scale_keys]
 const currentDate=localDateKey(Date.now(),'UTC')
@@ -22,8 +22,13 @@ let target={id:'44444444-4444-4444-8444-444444444444',problem_label_ciphertext:'
 const queries=[]
 const db={async query(sql,args=[]){
  queries.push(sql)
+ if(sql==='select status,onboarding_state from app.accounts where id=$1 for update')return {rows:args[0]===actor.id?[{status:'active',onboarding_state:'active'}]:[]}
+ if(sql==='select * from app_private.course_access($1)'){assert.equal(args[0],'sandbox');return {rows:[{tier,active_course_limit:['advanced','premium'].includes(tier)?5:1,active_course_count:otherActive+(course.status==='active'&&(course.stage<4||cycle.status==='active')?1:0)}]}}
+ if(sql.startsWith('select count(*)::integer as count from app_private.growth_courses')){assert.equal(args[0],actor.id);return {rows:[{count:otherActive+(course.status==='active'?1:0)}]}}
+ if(sql.startsWith('select status from app_private.growth_cycles where account_id=')){assert.equal(args[0],actor.id);assert.equal(args[1],course.id);return {rows:[{status:cycle.status}]}}
+ if(sql.startsWith("update app_private.growth_courses set status='active',")){assert.equal(args[0],course.id);assert.equal(args[1],actor.id);if(failActivation)throw new Error('SYNTHETIC_ACTIVATION_FAILURE');course.status='active';return {rows:[]}}
  if(sql.startsWith('select status,onboarding_state,timezone'))return {rows:[{status:'active',onboarding_state:'active',timezone:'UTC'}]}
- if(sql.startsWith('select * from app_private.growth_courses'))return {rows:[course]}
+ if(sql.startsWith('select * from app_private.growth_courses')){assert.equal(args[0],actor.id);return {rows:args[1]&&args[1]!==course.id?[]:[course]}}
  if(sql.startsWith('select * from app_private.growth_cycles'))return {rows:[cycle]}
  if(sql.startsWith('update app_private.growth_courses set goals=')){course.goals=[args[1],...course.goals.filter(g=>g!==args[1])];if(args.length===3)course.scale_keys=args[2];return {rows:[]}}
  if(sql.startsWith("update app_private.growth_cycles set status='archived'")){cycle.status='archived';return {rows:[]}}
@@ -37,7 +42,10 @@ const db={async query(sql,args=[]){
  throw new Error('Unhandled synthetic query: '+sql)
 }}
 const key='__courseSyntheticTransaction'+(++sequence)
-globalThis[key]=(_config,_actor,fn)=>fn(db)
+globalThis[key]=async(_config,_actor,fn)=>{
+ const before=structuredClone({course,cycle,target})
+ try{return await fn(db)}catch(error){Object.assign(course,before.course);cycle=before.cycle;target=before.target;throw error}
+}
 let source=readFileSync(new URL('../lib/app/growth-daily.js',import.meta.url),'utf8')
 source=source.replace("import 'server-only'",'')
  .replace("import { transaction } from './database.js'",'const transaction=globalThis['+JSON.stringify(key)+']')
@@ -46,7 +54,7 @@ source=source.replace("import 'server-only'",'')
 const {createDailyCourseRepository}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'))
 delete globalThis[key]
 
-return {actor,course,originalScales,originalCycle,queries,getCycle:()=>cycle,service:createDailyCourseRepository({}),locale}
+return {actor,course,originalScales,originalCycle,queries,getCycle:()=>cycle,service:createDailyCourseRepository({multiCourseEnabled,billingEnvironment:'sandbox'}),locale}
 }
 
 test('new measured cycle honors a changed approved primary direction, preserving the full chosen set and old version',async()=>{
@@ -146,4 +154,111 @@ test('continuation UI is server-limited, explains the measured-choice boundary a
  assert.match(ui,/направление среди подтверждённых шкал/)
  assert.equal((ui.match(/completedLabel=\{t.doneDay\}/g)||[]).length,2)
  assert.doesNotMatch(ui,/aria-label="Completed"/)
+})
+
+
+test('continuation retains owner lock and explicit selected-course isolation',async()=>{
+ const f=await fixture()
+ const body={courseId:f.course.id,problemLabel:'Synthetic chosen direction',goal:'connection_boundaries',timeZone:'UTC'}
+ const result=await f.service.command(f.actor,'new-cycle',body)
+ assert.equal(result.courseId,f.course.id)
+ assert.equal(result.cycle.primaryGoal,'connection_boundaries')
+ assert.equal(f.queries[0],'select status,onboarding_state from app.accounts where id=$1 for update')
+ assert.ok(f.queries.some(sql=>sql.startsWith('select count(*)::integer as count')))
+ const writes=f.queries.filter(sql=>/^(insert|update|delete)/.test(sql)).length
+ await assert.rejects(()=>f.service.command({id:'55555555-5555-4555-8555-555555555555'},'new-cycle',body),/ACCOUNT_UNAVAILABLE/)
+ await assert.rejects(()=>f.service.command(f.actor,'new-cycle',{...body,courseId:'66666666-6666-4666-8666-666666666666'}),/COURSE_NOT_FOUND/)
+ assert.equal(f.queries.filter(sql=>/^(insert|update|delete)/.test(sql)).length,writes)
+})
+
+
+test('continuation reuses the last occupied legacy slot without permitting an extra active course',async()=>{
+ const f=await fixture({legacy:true,courseStatus:'active'})
+ const result=await f.service.command(f.actor,'new-cycle',{courseId:f.course.id,problemLabel:'Synthetic legacy continuation',goal:'attention_clarity'})
+ assert.equal(result.access.activeCourseCount,1)
+ assert.equal(result.cycle.primaryGoal,'attention_clarity')
+ const blocked=await fixture({legacy:true,courseStatus:'active',otherActive:1})
+ await assert.rejects(()=>blocked.service.command(blocked.actor,'new-cycle',{courseId:blocked.course.id,problemLabel:'Synthetic blocked continuation',goal:'attention_clarity'}),/COURSE_ACTIVE_LIMIT/)
+ assert.deepEqual(blocked.getCycle(),blocked.originalCycle)
+})
+
+test('new measured cycle claims one free slot in each EUR tier and rolls back when full',async()=>{
+ for(const tier of ['free','start','advanced','premium']){
+  const limit=['advanced','premium'].includes(tier)?5:1
+  const f=await fixture({tier,multiCourseEnabled:true,otherActive:limit-1})
+  const body={courseId:f.course.id,cycleId:f.originalCycle.id,problemLabel:'Synthetic next direction',goal:'connection_boundaries'}
+  const result=await f.service.command(f.actor,'new-cycle',body)
+  assert.equal(result.access.activeCourseCount,limit)
+  assert.equal(result.cycle.primaryGoal,'connection_boundaries')
+  assert.equal(f.course.status,'active')
+  const createIndex=f.queries.findIndex(sql=>sql.startsWith('insert into app_private.growth_cycles'))
+  const activateIndex=f.queries.findIndex(sql=>sql.startsWith("update app_private.growth_courses set status='active',"))
+  assert.ok(createIndex>=0&&activateIndex>createIndex,'activation must not cause its own quota check to count twice')
+  const blocked=await fixture({tier,multiCourseEnabled:true,otherActive:limit})
+  await assert.rejects(()=>blocked.service.command(blocked.actor,'new-cycle',{...body,cycleId:blocked.originalCycle.id}),/COURSE_ACTIVE_LIMIT/)
+  assert.deepEqual(blocked.getCycle(),blocked.originalCycle)
+  assert.deepEqual(blocked.course.scale_keys,blocked.originalScales)
+  assert.equal(blocked.course.status,'completed')
+ }
+})
+
+
+test('inactive paused continuation needs capacity and activation failure restores the prior cycle',async()=>{
+ for(const courseStatus of ['completed','paused']){
+  const full=await fixture({courseStatus,multiCourseEnabled:true,otherActive:1})
+  const input={courseId:full.course.id,cycleId:full.originalCycle.id,problemLabel:'Synthetic paused continuation',goal:'connection_boundaries'}
+  await assert.rejects(()=>full.service.command(full.actor,'new-cycle',input),/COURSE_ACTIVE_LIMIT/)
+  assert.equal(full.course.status,courseStatus)
+  assert.deepEqual(full.getCycle(),full.originalCycle)
+  assert.deepEqual(full.course.scale_keys,full.originalScales)
+  const failed=await fixture({courseStatus,multiCourseEnabled:true,failActivation:true})
+  await assert.rejects(()=>failed.service.command(failed.actor,'new-cycle',input),/SYNTHETIC_ACTIVATION_FAILURE/)
+  assert.ok(failed.queries.some(sql=>sql.startsWith('insert into app_private.growth_cycles')))
+  assert.equal(failed.course.status,courseStatus)
+  assert.deepEqual(failed.getCycle(),failed.originalCycle)
+  assert.deepEqual(failed.course.scale_keys,failed.originalScales)
+ }
+})
+
+
+test('multi-course completed active rows require capacity because SQL excludes their old cycles',async()=>{
+ for(const tier of ['free','start','advanced','premium']){
+  const limit=['advanced','premium'].includes(tier)?5:1
+  for(const otherActive of [limit,limit+1]){
+   const f=await fixture({tier,courseStatus:'active',multiCourseEnabled:true,otherActive})
+   await assert.rejects(()=>f.service.command(f.actor,'new-cycle',{courseId:f.course.id,cycleId:f.originalCycle.id,problemLabel:'Synthetic quota boundary',goal:'connection_boundaries'}),/COURSE_ACTIVE_LIMIT/)
+   assert.deepEqual(f.getCycle(),f.originalCycle)
+   assert.deepEqual(f.course.scale_keys,f.originalScales)
+   assert.ok(!f.queries.some(sql=>sql.startsWith('insert into app_private.growth_cycles')))
+  }
+ }
+})
+
+test('billing finished-course fixture supplies contiguous past-day lessons for active and paused cycles', async () => {
+  const source=readFileSync(new URL('./helpers/subscription-tiers-db.mjs',import.meta.url),'utf8')
+  const body=source.slice(source.indexOf('  async function finishedCourse('),source.indexOf('  async function courseSnapshot('))
+  const {courseLessonProgress}=await import('../lib/inner-growth/course-progress.js')
+  for(const status of ['active','paused','completed']) {
+    const inserts=[]
+    const asCourse=async (_owner,fn)=>fn({query:async(sql,args)=>{inserts.push({sql,args});return {rows:[]}}})
+    const build=new Function('asCourse','randomUUID','lessonFor','COURSE_CONTENT_V3','seal','courseConfig',body+'; return finishedCourse')
+    const finished=build(asCourse,()=>`synthetic-${++sequence}`,lessonFor,COURSE_CONTENT_V3,()=> 'synthetic',{})
+    await finished({id:'synthetic-owner'},{status,cycleStatus:status})
+    const rows=inserts.filter(row=>row.sql.includes('insert into app_private.growth_sessions'))
+    assert.deepEqual(rows.map(row=>row.args[2]),Array.from({length:14},(_,i)=>i+1))
+    const today='2026-10-14'
+    const sessions=rows.map(({sql,args})=>{
+      assert.match(sql,/values\(\$1,\$2,\$3::integer,/ )
+      assert.match(sql,/date-\(15-\$3::integer\)/)
+      assert.match(sql,/make_interval\(days => 15-\$3::integer\)/)
+      const day=args[2],date=addCalendarDays(today,day-15)
+      assert.equal(args[3],lessonFor('calm_regulation',day,'en','standard',COURSE_CONTENT_V3).id)
+      return {dayNumber:day,localDate:date,completedAt:date+'T12:00:00Z'}
+    })
+    const progress=courseLessonProgress({sessions,now:Date.parse(today+'T16:00:00Z'),completed:status==='completed'})
+    assert.equal(progress.day,14)
+    assert.equal(progress.isAfterCycle,true)
+    assert.equal(progress.completedToday,false)
+    assert.equal(sessions.at(-1).localDate,'2026-10-13')
+  }
 })

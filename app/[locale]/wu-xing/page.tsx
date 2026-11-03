@@ -263,7 +263,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: text.description,
     alternates: {
       canonical: `/${locale}/wu-xing`,
-      languages: { en: "/en/wu-xing", ru: "/ru/wu-xing", es: "/es/wu-xing" },
+      languages: { en: "/en/wu-xing", ru: "/ru/wu-xing", es: "/es/wu-xing", "x-default": "/en/wu-xing" },
     },
   };
 }

@@ -1,3 +1,7 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -63,18 +67,21 @@ async function fill(page,d,mode,guest,locale,responseValues){
   }
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(4)
- for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)')
- await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
- await expect(report).toContainText(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness')
- await expect(report).toContainText('Corey L. M. Keyes')
- await expect(report).toContainText('PHAC (2017)')
+ const reportText=await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
+ assert.ok(reportText.includes(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)'))
+ assert.ok(reportText.includes(locale==='ru'?'английский оригинал':'English original'))
+ assert.ok(reportText.includes(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness'))
+ assert.ok(reportText.includes('Corey L. M. Keyes'))
+ assert.ok(reportText.includes('PHAC (2017)'))
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})
 }
@@ -84,24 +91,26 @@ try{
  page=await account.newPage()
  observePage(page,'account')
  await navigate(page,origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await page.getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  for(const [i,d] of [defs[0],defs[0]].entries()){
   const locale=i?'ru':'en',mode=i?'guided':'quick'
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
   await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
-  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await assertQuestionnaireMode(page,expect,{mode,guest:false,definition:d})
   await fill(page,d,mode,false,locale,i?mixed:Array(14).fill(0))
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),i?[31,3,13,15]:[0,0,0,0])
+  await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
@@ -143,6 +152,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
@@ -152,22 +163,22 @@ try{
  }
  // Both language/mode journeys use one consented guest and retain separate saved results.
  // The complete browser matrix stays within the unchanged 12 sessions/IP/hour limit.
- const guest=await browser.newContext({viewport:{width:390,height:844}}), guestResultIds=new Set()
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}), guestResultIds=new Set()
  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  for(const [i,d] of [defs[0],defs[0]].entries()){
   const locale=i?'en':'ru',mode=i?'guided':'quick'
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
-  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
-  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await enterGuestQuestionnaireMode(page,expect,{mode,definition:d})
   await fill(page,d,mode,true,locale,i?mixed:Array(14).fill(5))
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key&&!guestResultIds.has(r.id))
   assert.ok(result,'each MHC-SF journey persists a new result')
   guestResultIds.add(result.id)
   assert.deepEqual(result.dimensions.map(x=>x.value),i?[31,3,13,15]:[70,15,25,30])
   assert.equal(result.instrumentLocale,'en');assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await page.close()
  }
  const guestResults=(await api(guest,'guest/bootstrap')).results.filter(r=>r.definitionKey==='mhc-sf')

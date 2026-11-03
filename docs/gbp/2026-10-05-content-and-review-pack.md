@@ -8,21 +8,20 @@ Use only in the owner-authenticated Google Business Profile UI after confirming 
 
 The QR asset is [holistic-house-review-qr.svg](../../public/gbp/holistic-house-review-qr.svg). Before printing or sending it, open the QR on a phone and confirm that it still opens the Holistic House Google review composer.
 
-### Neutral request
+### SAFETY HOLD — Do not solicit clinical client reviews
 
-> Thank you for meeting with me. If you feel comfortable sharing an honest account of your experience, you can leave a Google review here: https://g.page/r/CT0jS16IuG4wEBM/review. There is no expectation either way, and please do not include anything private that you would prefer to keep confidential.
+**Updated 2026-10-18 (GBP v3).** This historical review QR and destination are **not an authorization to ask clients for reviews**. The earlier neutral-request, WhatsApp and email scripts have been withdrawn from active use until a documented, service-specific regulatory and ethical clearance exists.
 
-### WhatsApp version
+CRPO Professional Practice Standard 6.2.2 prohibits **registrants** from requesting or soliciting testimonials or using them in advertising. "Review" includes third-party ratings and Google reviews in the definition. The current practitioner's registration and applicable professional rules must be verified; do not infer registration or exemption. Until then:
+- No automated review request, follow-up email, client-cabinet prompt, physical QR handout or selective review solicitation for psychotherapy / mental-health-related services.
+- No "5/10/20 reviews" acquisition quota, staff bonus or incentive. Never gate requests to satisfied customers.
+- Do not publish client testimonials as therapeutic performance proof without an independent legal/ethics review.
+- Unsolicited public feedback may be handled with a brief privacy-safe reply that neither reveals an appointment nor confirms a client relationship.
 
-> Thank you again for today. If you would like to share an honest public review, this is the direct Google link: https://g.page/r/CT0jS16IuG4wEBM/review. No pressure at all — please only share what feels comfortable and avoid private details.
+**Alternative trust assets:** verified practitioner bio/training (no unauthorized protected titles), authentic practitioner and space photographs subject to location eligibility, current service process and practical FAQ, clear free-versus-paid terms, opt-in communications and credible educational materials.
 
-### Email version
-
-Subject: Optional Google review
-
-> Thank you for your time and trust. If you would like to leave an honest Google review, you may use this link: https://g.page/r/CT0jS16IuG4wEBM/review. This is entirely optional. Please do not include private, sensitive, health-related or identifying details that you do not want publicly visible.
-
-Never offer a discount, incentive, or benefit; never ask for a rating, keywords, or a review only from satisfied clients; never bulk-message historical clients without a separate contact basis. Milestones are 0 → 5 → 10 → 20 genuine reviews, not a quota for any individual.
+Source: https://crpo.ca/wp-content/uploads/2026/01/CRPO-Standards-Jan124-Revised-Dec1125.pdf (Standard 6.2)
+Google review policy: https://support.google.com/contributionpolicy/answer/7400114
 
 ### Reply guide
 

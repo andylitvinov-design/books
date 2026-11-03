@@ -90,7 +90,7 @@ test('public and signed-in routes share the complete Test Explorer rather than a
     readFile('components/app/test-explorer.jsx', 'utf8'),
     readFile('components/app/public-test-explorer.jsx', 'utf8'),
   ])
-  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded \/>/)
+  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.match(explorer, /const matchCount =/)
   assert.doesNotMatch(landing, /\.slice\(0, 3\)/)
   assert.doesNotMatch(landing, /cabinet-test-recommender/)
@@ -100,21 +100,21 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
   for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free monitoring']) assert.match(explorer, new RegExp(token))
-  assert.match(publicExplorer, /auth\/start/)
-  assert.match(publicExplorer, /makeTestSelectionIntent/)
-  assert.doesNotMatch(publicExplorer, /localStorage/)
+  assert.match(publicExplorer, /guestStartable\(entries\)/)
+  assert.match(publicExplorer, /onGuestStart\(entries\)/)
+  assert.doesNotMatch(publicExplorer, /auth\/start|localStorage/)
   assert.match(publicExplorer, /sessionStorage\.setItem/)
 })
 
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 135)
-  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 67)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 68)
-  assert.equal(active.filter((item) => item.testLength === 'short').length, 58)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 63)
-  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 14)
+  assert.equal(active.length, 145)
+  assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 73)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 72)
+  assert.equal(active.filter((item) => item.testLength === 'short').length, 59)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 65)
+  assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 21)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
 })
@@ -136,7 +136,7 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10',
+    ['pcl-5','itq-adult','cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10',
       'ipip-aspect-volatility-10','ipip-aspect-withdrawal-10','ipip-aspect-compassion-10',
       'ipip-aspect-industriousness-10','ipip-aspect-orderliness-10','ipip-aspect-intellect-10','ipip-aspect-openness-10','ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].sort(),
   )
@@ -228,7 +228,7 @@ test('advanced controls are included on the embedded client page and in shared e
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
   ])
-  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
   for (const token of ['TEST_EXPLORER_DETAIL_TOPICS', 'TEST_EXPLORER_AXES', 'detailCounts', 'setMaxMinutes', 'setLanguage', 'setTracking', 'coverageForFilters', 'const matchCount =']) {
     assert.ok(source.includes(token), token)
   }

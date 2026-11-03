@@ -124,6 +124,12 @@ The depth of emotions is not a weakness, but a strength, and allowing yourself t
 
 - acknowledge that every loss gives new opportunities and let go of the past, opening up to new connections.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Sadness and the need for closeness are hidden behind an “everything is fine” mask and fear of rejection.
+
+After (desired state): Respect for the depth of your feelings, and a willingness to express them and accept support.
+
 ## ALCHEMY
 
 - Albedo: purification of emotions,

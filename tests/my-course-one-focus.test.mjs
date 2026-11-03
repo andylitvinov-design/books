@@ -42,7 +42,8 @@ test('route, detailed reading, self monitoring and pause stay reachable but off 
   assert.match(today,/isFinished/)
   assert.match(quest,/const \[selected, setSelected\] = useState\(null\)/)
   assert.match(quest,/setSelected\(null\)/)
-  assert.match(course, /\{stage !== 4 && <footer/)
+  assert.match(course, /\{stage !== 4 && !stressWelcome && !compactBaselineNav && <footer/)
+  assert.match(course, /data-opora-baseline-compact-nav/)
   assert.match(theme,/\.hh-app:has\(\[data-my-course\]\) > \.hh-footer\{display:none!important\}/)
 })
 
@@ -50,7 +51,7 @@ test('notification setup stays in Settings, not under the daily task',()=>{
   assert.match(workspace,/page === 'course' && <MyCourse data=\{data\} locale=\{locale\} \/>/)
   assert.doesNotMatch(workspace,/page === 'course' && <><MyCourse/)
   assert.match(workspace,/page === 'settings' && \(/)
-  assert.match(workspace,/<NotificationSettings locale=\{locale\} \/>/)
+  assert.match(workspace,/<NotificationSettings key=\{"push:" \+ data\.account\.id\} accountId=\{data\.account\.id\} locale=\{locale\} \/>/)
   assert.doesNotMatch(workspace,/NotificationSettings locale=\{locale\} compact/)
 })
 
@@ -62,5 +63,6 @@ test('navigation is controlled, accessible and mobile-first, with no new storage
   assert.match(css,/@media\(max-width:620px\)/)
   assert.match(css,/@media\(max-width:360px\)/)
   assert.doesNotMatch(today,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
-  assert.match(today,/onSession=\{body=>submit\('session',body\)\}/)
+  assert.match(today,/reviewOnly=\{Boolean\(reviewLesson\)\}/)
+  assert.match(today,/onSession=\{body=>reviewLesson\?null:submit\('session',body,undefined,'inline'\)\}/)
 })
