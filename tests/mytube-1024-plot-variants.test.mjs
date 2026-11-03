@@ -89,8 +89,8 @@ test("client presents scenario then lazy plots, resets on upstream change, and n
   assert.match(director, /aria-pressed=\{selectedPlotId===plot.id\}/);
   assert.match(director, /data-mytube-selected-plot-outline/);
   assert.match(director, /data-mytube-plot-media-disclaimer/);
-  assert.match(director, /setSelectedScenarioId\(scenarioId\);setSelectedPlotId\("")/);
-  assert.match(director, /setSelectedScenarioId\("");setSelectedPlotId\("")/);
+  assert.ok(director.includes('setSelectedScenarioId(scenarioId);setSelectedPlotId("");'));
+  assert.ok(director.includes('setSelectedScenarioId("");setSelectedPlotId("");'));
   assert.match(director, /timelineForTopic\(selectedTopicId,selectedScenarioId,recommended\)/);
   assert.doesNotMatch(director, /onApply\([^)]*selectedPlotId/);
   assert.match(loader, /import\("\.\.\/\.\.\/data\/video-catalog\/mytube-plots-goals-money-v1\.json"/);
