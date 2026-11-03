@@ -54,7 +54,7 @@ async function inspect(browserType,locale,width){
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
-  const area=categories.locator('[data-mytube-category="energy-confidence"]');
+  const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
