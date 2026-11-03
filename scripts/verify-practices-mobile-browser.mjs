@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import {mkdirSync} from "node:fs";
-import {chromium,webkit} from "@playwright/test";
+import {chromium,webkit,expect} from "@playwright/test";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 const ORIGIN=new URL(BASE).origin;
@@ -122,6 +122,11 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await consentLabel.count(),1,"one genuine opt-in label");
         await consentLabel.click();
         const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
+        // React can commit the native WebKit label click after Playwright's
+        // click promise resolves. Wait for the real checkbox AND submit state;
+        // never force, check() or synthesize user consent in test code.
+        await expect(consentBox).toBeChecked({timeout:12000});
+        await expect(send).toBeEnabled({timeout:12000});
         assert.equal(await consentBox.isChecked(),true,
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
