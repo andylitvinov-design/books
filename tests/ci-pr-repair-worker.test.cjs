@@ -737,15 +737,17 @@ test('trusted failed Core/TypeScript source routes directly to Code Repair',asyn
  assert.match(f.log.commentBodies[0],/verified Core\/TypeScript code repair/);
 });
 
-test('direct Code Repair with missing API key never claims a published source SHA',async()=>{
+test('Core task reaches manual review only after deterministic repair has no verified patch',async()=>{
  const f=fixture();
  const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
-  claimResult:'success',strategy:'code',fixResult:'skipped',
+  claimResult:'success',strategy:'code',fixResult:'success',
+  candidateStatus:'manual_required',candidateDetail:'NO_AUTOFIXABLE_ESLINT_CHANGE',
   codeAvailable:false,codeResult:'skipped',publishResult:'skipped'});
  assert.equal(r.state,'MANUAL');
  assert.equal(r.strategy,'code');
  assert.equal(r.reason_code,'FREE_AI_EXECUTOR_NOT_CONFIGURED');
+ assert.equal(r.detail_code,'NO_AUTOFIXABLE_ESLINT_CHANGE');
  assert.equal(r.source_published,false);
  assert.equal(f.log.commit,0);
 });
@@ -764,13 +766,18 @@ test('direct code publisher requires verified parent commit on current PR HEAD',
  assert.equal(r.new_sha,newSha);
 });
 
-test('direct Core failures fail closed until a zero-cost AI executor is approved',()=>{
+test('direct Core failures run deterministic repair before remaining manual without free AI',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const fix=wf.split('  fix:\n')[1].split('  code_fix:\n')[0];
  assert.match(wf,/needs\.claim\.outputs\.strategy == 'code'/);
- assert.match(wf,/core\.setOutput\('code_available','false'\)/);
+ assert.match(fix,/if: needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
+ assert.match(fix,/Apply trusted TypeScript type-only import codemods/);
+ assert.match(fix,/Verify deterministic Core repair with TypeScript/);
+ assert.match(fix,/npx tsc --noEmit --incremental false/);
+ assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
+ assert.ok(wf.includes("core.setOutput('code_available','false')"));
  assert.match(wf,/  code_fix:\n[\s\S]*?if: false/);
- assert.match(wf,/needs\.claim\.outputs\.strategy == 'lint' \|\| needs\.claim\.outputs\.strategy == 'code'/);
- assert.match(wf,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  assert.doesNotMatch(wf,/force: true/);
 });
