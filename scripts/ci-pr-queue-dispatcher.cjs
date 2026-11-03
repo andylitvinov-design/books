@@ -271,7 +271,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
   if(status!=='FREE'){
-   if(task.lane==='ci'&&status==='CI_WAKE_AWAITING_CORE'){
+   if(task.lane==='ci'&&['CI_WAKE_AWAITING_CORE','CI_WAKE_OUTCOME_RECORDED'].includes(status)){
     // A historical metadata wake cannot claim a successful Core check.
     // Verify a genuine PR-associated exact-HEAD run before retiring a label;
     // otherwise record a bounded, visible manual hold without re-waking.
