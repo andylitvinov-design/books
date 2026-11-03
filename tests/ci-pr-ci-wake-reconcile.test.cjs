@@ -22,6 +22,7 @@ function coreRun(changes={}){
   pull_requests:[{number:2169,head:{sha:SHA},base:{ref:task.base_ref}}],...changes};
 }
 function fixture({history={total_count:0,workflow_runs:[]},comments=[signed()],live=pr,
+ mergeParents=[{sha:'c'.repeat(40)},{sha:SHA}],
  jobs=[{id:125,name:'core-lint-types-build',status:'completed',conclusion:'failure',
     started_at:new Date(NOW-9*60000).toISOString(),
     runner_name:'GitHub Actions 125'}]}={}){
@@ -34,7 +35,11 @@ function fixture({history={total_count:0,workflow_runs:[]},comments=[signed()],l
   issues:{createComment:async arg=>{calls.comment.push(arg);return {data:{id:11}};},
    addLabels:async arg=>{calls.labels.push(arg);return {data:{}};},
    removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}}
- },request:async(route,args)=>{calls.history.push({route,args});return {data:history};}};
+ },request:async(route,args)=>{
+  calls.history.push({route,args});
+  if(route.includes('/git/commits/'))return {data:{parents:mergeParents}};
+  return {data:history};
+ }};
  const limited=async(_,fn)=>fn();
  const run=(opts={})=>reconcileCiWake({task,comments,now:NOW,dryRun:false,
    github,owner:'andylitvinov-design',repo:'books',limited,...opts});
@@ -56,6 +61,15 @@ test('authenticated exact-head PR Core event is proven despite synthetic merge S
  assert.equal(f.calls.removed.length,1);
  assert.equal(f.calls.labels.length,0);
  assert.match(f.calls.comment[0].body,/"state":"CI_CORE_CONFIRMED"/);
+});
+test('synthetic Core commit is rejected when current source is not its second parent',async()=>{
+ const linked=coreRun();
+ const f=fixture({history:{total_count:1,workflow_runs:[linked]},
+   mergeParents:[{sha:SHA},{sha:'c'.repeat(40)}]});
+ const r=await f.run();
+ assert.equal(r.state,'CORE_SYNTHETIC_PARENT_UNVERIFIED');
+ assert.equal(f.calls.removed.length,0);
+ assert.equal(f.calls.comment.length,0);
 });
 test('same source branch, PR number only, or synthetic merge SHA cannot prove Core association',async()=>{
  for(const wrong of [
