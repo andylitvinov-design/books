@@ -141,7 +141,8 @@ test('native explicit play observer never controls playback and media identity i
   assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);
  }
  assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|\.load\(|setTimeout\(|setInterval\(/);
- assert.equal((source.match(/currentTime\s*=/g)||[]).length,1,'Only the explicit reconstruction seek may assign time');
+ assert.equal((source.match(/currentTime\s*=/g)||[]).length,2,'Only paused same-source reconstruction and one explicit native resume may seek');
+ assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);
  assert.match(source,/video\.currentTime = saved\.time/);
 });
 
@@ -235,4 +236,40 @@ test('native seek rejection is contained once without retry or control side effe
  f.media.pause=()=>assert.fail('Recovery cannot pause user controls');
  assert.doesNotThrow(()=>f.reconstruct());assert.equal(attempts,1);assert.equal(f.media.paused,true);
  assert.doesNotThrow(()=>f.reconstruct());f.reopen();assert.equal(attempts,1);assert.deepEqual(f.writes,[]);
+});
+
+test('reopened native WebKit source only nudges when explicit user play reaches decoded readiness',()=>{
+  const f=recoveryFixture({readyState:1});
+  f.close();f.reopen();
+  assert.deepEqual(f.writes,[],'Opening alone must not seek');
+  f.media.paused=false;
+  f.handlers.onPlay(f.event);
+  assert.deepEqual(f.writes,[],'No seek before real decoder readiness');
+  f.media.readyState=4;
+  f.handlers.onPlaying(f.event);
+  assert.equal(f.writes.length,1);
+  assert.ok(Math.abs(f.writes[0]-(5.391310898+0.04))<0.000001);
+  f.handlers.onPlaying(f.event);
+  assert.equal(f.writes.length,1,'No second resync from repeated playing event');
+});
+test('native play resumes a stale backend only for verified same-video source and never overrides user controls',()=>{
+  for(const edit of [
+    f=>{f.media.currentSrc=videos[1].src},
+    f=>{f.media.seeking=true},
+    f=>{f.media.ended=true},
+    f=>{f.media.duration=3},
+    f=>{f.setPosition(11)},
+    f=>{f.handlers.onPointerDown(f.event)},
+    f=>{f.handlers.onKeyDown(f.event)}
+  ]){
+    const f=recoveryFixture({readyState:4});f.close();f.reopen();
+    edit(f);f.media.paused=false;f.handlers.onPlay(f.event);
+    assert.deepEqual(f.writes,[],'No playback mutation for new source, user seek/input or invalid duration');
+  }
+});
+test('native play may restore same-source position after WebKit silently rewinds its backend',()=>{
+  const f=recoveryFixture({readyState:4});f.close();f.reopen();
+  f.setPosition(1.5);f.media.paused=false;f.handlers.onPlay(f.event);
+  assert.equal(f.writes.length,1);
+  assert.ok(Math.abs(f.writes[0]-(5.391310898+0.04))<0.000001);
 });

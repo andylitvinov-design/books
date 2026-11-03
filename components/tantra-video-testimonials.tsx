@@ -34,8 +34,35 @@ export function TantraVideoTestimonials(props: Props) {
       retained.current.set(video, { source: video.currentSrc, time: video.currentTime, reconstructing: false });
     }
   }
+  function onNativePlay(event: SyntheticEvent<HTMLVideoElement>) {
+    const video = event.currentTarget;
+    const saved = retained.current.get(video);
+    if (!saved) return;
+    // After a user-requested resume, WebKit/GStreamer may report playing while
+    // its decoder has fallen behind the exact position saved at disclosure close.
+    // Do nothing while paused: opening the disclosure must never seek or play.
+    // A new user seek/input (below) always deletes the saved state first.
+    if (video.paused || video.seeking || video.ended ||
+        video.currentSrc !== saved.source || !Number.isFinite(saved.time) ||
+        saved.time <= 0 || !Number.isFinite(video.duration) ||
+        saved.time + 0.06 >= video.duration) {
+      retained.current.delete(video);
+      return;
+    }
+    if (!(video.readyState >= 2)) return; // onPlaying gets a later chance
+    retained.current.delete(video); // at most one bounded nudge per close
+    if (!Number.isFinite(video.currentTime) ||
+        video.currentTime > saved.time + 0.08) return;
+    try {
+      // Resync only the real same-source native decoder; never issue play(),
+      // reload, a network request, or a cross-video position transfer.
+      video.currentTime = saved.time + 0.04;
+    } catch {
+      // A refused native seek does not override user controls or retry.
+    }
+  }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
-    // Observation only: a newer user play/seek or control interaction always wins.
+    // Native user seeking, pointer and keyboard controls always win.
     retained.current.delete(event.currentTarget);
   }
   function onNativeLoadStart(event: SyntheticEvent<HTMLVideoElement>) {
@@ -95,7 +122,7 @@ export function TantraVideoTestimonials(props: Props) {
           <figure className="tantra-review-video" key={video.src}>
             <video controls playsInline preload="none" poster={video.poster ?? undefined}
               onLoadStart={onNativeLoadStart} onLoadedMetadata={onNativeMetadata}
-              onPlay={discardRecovery} onSeeking={discardRecovery}
+              onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
               onPointerDown={discardRecovery} onKeyDown={discardRecovery}>
               <source src={video.src} type={video.type} />
             </video>
