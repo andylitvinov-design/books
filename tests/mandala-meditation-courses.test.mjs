@@ -98,8 +98,14 @@ test("WebKit duplicate blur must not erase an already approved local meditation"
     "duplicate WebKit input events cannot revoke a just-generated script");
   assert.match(context,/committedDifficultyRef\.current=next;/,
     "a new typed value becomes the latest committed input before invalidation");
-  assert.match(context,/setKeyDifficulty\(next\);resetGeneratedMeditation\(\);/,
-    "real changes must still invalidate old guided narration");
+  assert.match(context,/setKeyDifficulty\(next\);/,
+    "real text edits must update the controlled input");
+  assert.doesNotMatch(context,/setKeyDifficulty\(next\);\s*resetGeneratedMeditation\(\)/,
+    "a late Safari textarea event cannot undo a newer Generate click");
+  assert.match(studio,/const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;/,
+    "old generated narration remains hidden after a real focus edit");
+  assert.match(studio,/includedSignatureRef\.current!==journeySignature[\s\S]*?onOmitMeditation\?\.\(\)/,
+    "an edited focus still revokes previously attached audio");
   assert.match(studio,/data-guided-signature-match=\{approvedSignature===journeySignature\?"true":"false"\}/,
     "the exact signature remains observable for real WebKit failure diagnostics");
 });

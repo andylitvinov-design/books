@@ -338,11 +338,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       includedSignatureRef.current=null;
       onOmitMeditation?.();
     }
-    // Never clear generated results in a passive effect: WebKit may flush this
-    // old focus-change effect *after* the user's next Generate click.
-    // currentMeditation/currentProgramme already compare exact signatures and
-    // hide stale results synchronously, while all explicit input handlers
-    // revoke stale narration and clear both approvals immediately.
+    // The currentMeditation/currentProgramme signature gates hide stale results
+    // synchronously. Revoke any separately attached narration here; do NOT
+    // clear the approval in a passive effect, because WebKit can flush delayed
+    // textarea events after the user's Generate click.
   },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
@@ -502,11 +501,12 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
           disabled={disabled} onChange={event=>{
             const next=event.currentTarget.value;
-            // WebKit may send a duplicate change/blur after the Generate click.
-            // A no-op must not revoke a newly approved exact-signature script.
+            // Safari may deliver a delayed input/blur after Generate.
+            // Exact-signature render gates immediately hide stale output when
+            // the text really changes, without clearing a newer approval.
             if(next===committedDifficultyRef.current)return;
             committedDifficultyRef.current=next;
-            setKeyDifficulty(next);resetGeneratedMeditation();
+            setKeyDifficulty(next);
           }}/>
       </label></div>
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
