@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
-const {safePath,scopeFromEnv,sanitizeDiagnostic,extractReply,buildCandidate}=
+const {safePath,scopeFromEnv,sanitizeDiagnostic,extractReply,buildCandidate,hasDeniedEffectiveTools}=
  require('../scripts/ci-pr-free-ai-code-candidate.cjs');
 const sha='a'.repeat(40),pr={sha,files:['components/public-card.tsx']};
 const src=[{path:pr.files[0],original_sha:'b'.repeat(40),content:'export const x = 1;\n'}];
@@ -32,6 +32,16 @@ test('candidate builder accepts only changed existing scoped source and exact or
   {files:[{path:'components/public-card.tsx',content:'export const x = 1;\n'}]},
   {files:[{path:'components/public-card.tsx',content:'ok'},{path:'components/public-card.tsx',content:'ok'}]}])
   assert.throws(()=>buildCandidate(r,pr,src),/FREE_AI_/);
+});
+
+test('model effective permissions must be deny-all with no inherited tool allow',()=>{
+ const deny={action:'*',resource:'*',effect:'deny'};
+ const actual=[{name:'hh-free-repair-text',permissions:[deny]}];
+ assert.equal(hasDeniedEffectiveTools(JSON.stringify(actual)),true);
+ assert.equal(hasDeniedEffectiveTools(JSON.stringify([{...actual[0],permissions:[
+  deny,{action:'shell',resource:'*',effect:'allow'}]}])),false);
+ assert.equal(hasDeniedEffectiveTools('[]'),false);
+ assert.equal(hasDeniedEffectiveTools('invalid'),false);
 });
 test('provider diagnostic scrubs credential-shaped values and sensitive lines',()=>{
  const out=sanitizeDiagnostic('Bearer abcdef123456\nsecret: token is test\nsk-verylongstring0000');
