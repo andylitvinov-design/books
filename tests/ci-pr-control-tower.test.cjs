@@ -274,14 +274,16 @@ test('source repair is allowed during ordinary CI overload but CI bootstrap is n
  assert.equal(r.dispatchAccepted,1);assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
  assert.equal(r.blocked.CI_QUEUE_BUSY,1);
 });
-test('separate Repair PRs do not deduplicate each other and stacked parents remain blocked',async()=>{
+test('separate Repair PRs do not deduplicate each other and stacked parents proceed safely',async()=>{
  const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,2);
  const child=pr(3,'repair',{base:{ref:'branch-1'}});
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
- assert.equal(y.dispatchAccepted,0);
+ assert.equal(y.dispatchAccepted,1);
+  assert.equal(x.calls.dispatched[0].inputs.pr_number,'1');
+  assert.ok(x.calls.reserved.every(item=>item.issue_number===1));
 });
 test('resolved conflict label is cleared after two consistent SHA/base reads',async()=>{
  const baseSha='b'.repeat(40),clean=pr(92,'conflict',{
@@ -693,8 +695,8 @@ test('exact-HEAD conflict receipt is idempotent and does not block a source work
  assert.equal(f.calls.dispatched.length,1);
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'89');
  const same=fixture([dirty],{comments:{88:[{
-  body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
- }]}});
+   ...proof(),body:'<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->'
+  }]}});
  const second=await run({github:same.github,core:core(),context,now:NOW,
   capacityFn:same.capacityFn});
  assert.equal(second.manualConflictHandoffs,0);
