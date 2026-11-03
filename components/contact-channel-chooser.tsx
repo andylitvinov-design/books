@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
@@ -227,7 +227,9 @@ export function ContactChannelChooser({
     }).toString() : "");
   }, [pathname]);
 
-  useEffect(() => {
+  // Reconcile a changed selected offer before Safari can paint/tap the new
+  // trigger. A delayed passive reset could close a form the user just opened.
+  useLayoutEffect(() => {
     if (compactPhone) {
       // A changed option must create a fresh enquiry, but keep an entered phone
       // so switching between free/personal choices never requires retyping it.

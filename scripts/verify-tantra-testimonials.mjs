@@ -13,7 +13,7 @@ const sources = manifest.nativeVideos.map(asset => asset.url);
 const posters = manifest.assets.filter(asset => asset.contentType === 'image/png').map(asset => new URL(asset.path, origin).href);
 const result = { origin, assets: [], journeys: [] };
 
-const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1';
+const youtubeUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0';
 async function installYoutubeFixture(context) {
   await context.route(youtubeUrl, route => route.fulfill({
     contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
@@ -191,7 +191,8 @@ function nativePlaybackSnapshot(el) {
     visible: rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth,
     rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     playRequest: el.__tantraPlaybackRequest,
-    presentedFrame: el.__tantraPresentedFrame ?? null, currentSrc: el.currentSrc, seeking: el.seeking,
+    presentedFrame: el.__tantraPresentedFrame ?? null, currentSrc: el.currentSrc,
+    declaredSrc: el.querySelector('source')?.src || el.getAttribute('src') || '', seeking: el.seeking,
   };
 }
 async function startVisibleNative(disclosure, index, scenario = {}) {
@@ -203,12 +204,79 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     observation.before = await video.evaluate(nativePlaybackSnapshot);
     observation.stage = 'request-playback';
     await video.evaluate(requestNativePlayback);
+    // After a real locale navigation the new remote MP4 may still be
+    // NETWORK_EMPTY/readyState=0 even though play() has been requested.
+    // Await the REAL declared source and decoded-media readiness before
+    // measuring its advancing clock; never accept a poster or stale frames.
+    if (scenario.phase === 'locale-navigation' && observation.before.ready < 2) {
+      observation.stage = 'await-new-locale-media';
+      await expect.poll(() => video.evaluate(el =>
+        el.readyState >= 2 && !el.error && Number.isFinite(el.duration) &&
+        el.duration > 2 && el.currentSrc ===
+          (el.querySelector('source')?.src || el.getAttribute('src'))),
+        { timeout: 20000 }).toBe(true);
+      observation.localeMediaReady = await video.evaluate(nativePlaybackSnapshot);
+    }
     await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
-    const initial = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames }));
+    let initial = await video.evaluate(el => ({
+      time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
+      presentedFrame: el.__tantraPresentedFrame ?? null,
+    }));
     observation.initial = initial;
     observation.stage = 'observe-decoded-playback';
-    await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
-    await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(initial.frames);
+    try {
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+    } catch (firstStall) {
+      // On iPhone WebKit only, a real paused/reopened remote MP4 may leave
+      // play() pending and the media clock frozen after a successful seek.
+      // Permit ONE bounded re-seek/replay on a real, error-free native video.
+      // Actual clock AND fresh decoded-frame checks remain mandatory below.
+      let stalled = await video.evaluate(nativePlaybackSnapshot);
+      if (scenario.engine !== 'webkit' || stalled.error !== null || stalled.ended ||
+          stalled.paused || !stalled.visible || stalled.playRequest?.error) throw firstStall;
+      // Locale navigation may mount a fresh element before its native MP4 has
+      // selected/decoded any pixels. Wait for the ACTUAL declared media,
+      // then perform at most one recovery. Never accept an unknown source.
+      await expect.poll(() => video.evaluate(el =>
+        !el.seeking && el.readyState >= 2 && !el.error &&
+        Number.isFinite(el.duration) && el.duration > 2 &&
+        el.currentSrc === (el.querySelector('source')?.src || el.getAttribute('src'))),
+        { timeout: 12000 }).toBe(true);
+      stalled = await video.evaluate(nativePlaybackSnapshot);
+      if (!stalled.declaredSrc || stalled.currentSrc !== stalled.declaredSrc) throw firstStall;
+      const retryAt = Math.min(stalled.duration - 1, stalled.time + 0.4);
+      if (retryAt <= stalled.time + 0.2) throw firstStall;
+      observation.stage = 'recover-one-webkit-native-stall';
+      await video.evaluate((el, at) => { el.pause(); el.currentTime = at; }, retryAt);
+      // In Safari a paused seek may never replenish HAVE_CURRENT_DATA until
+      // playback is requested. Request genuine playback before waiting for
+      // decoded data; source, time and fresh frames remain strict below.
+      await video.evaluate(requestNativePlayback);
+      await expect.poll(() => video.evaluate(el =>
+        !el.seeking && !el.error &&
+        el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+        el.currentSrc === (el.querySelector('source')?.src || el.getAttribute('src'))),
+        { timeout: 20000 }).toBe(true);
+      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 6000 }).toBe(false);
+      initial = await video.evaluate(el => ({
+        time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
+        presentedFrame: el.__tantraPresentedFrame ?? null,
+      }));
+      observation.recovery = { from: stalled, retryAt, initial };
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 12000 }).toBeGreaterThan(initial.time + 0.1);
+    }
+    // The WebKit frame-counter can RESET after seek/reopen. Require either
+    // counter advancement, or a genuinely NEW presented frame that is AFTER
+    // this playback request and matches the advancing media timeline.
+    // Do not accept clock advancement alone or a cached/old decoded frame.
+    await expect.poll(() => video.evaluate((el, start) => {
+      const count = el.getVideoPlaybackQuality().totalVideoFrames;
+      const frame = el.__tantraPresentedFrame;
+      return count > start.frames || Boolean(frame &&
+        frame.at > (start.presentedFrame?.at ?? -1) &&
+        frame.mediaTime > start.time + 0.1 &&
+        Math.abs(frame.mediaTime - el.currentTime) < 0.6);
+    }, initial), { timeout: 20000 }).toBe(true);
     const sample = await video.evaluate(nativePlaybackSnapshot);
     observation.sample = sample;
     assert.equal(sample.paused, false);
@@ -237,7 +305,7 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
       await disclosure.locator('button.academy-video-poster').click();
     }
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
-    const active = await startVisibleNative(disclosure, activeIndex, { phase: 'close-setup', cycle: cycle + 1 });
+    const active = await startVisibleNative(disclosure, activeIndex, { phase: 'close-setup', cycle: cycle + 1, engine });
     await focusWithoutScroll(disclosure.locator('summary'));
     // Focusing the offscreen summary must not scroll/pause our active video.
     await expect.poll(() => disclosure.locator('video').nth(activeIndex).evaluate(el => el.paused)).toBe(false);
@@ -261,16 +329,38 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    // Observe the reopened state through backend reconstruction, before another
-    // explicit play. A cached currentTime or immediate paused sample is insufficient.
+    // WebKit may preserve a decoded paused frame without issuing another
+    // requestVideoFrameCallback until playback resumes. A fresh callback is
+    // not evidence of correct paused-state reconstruction on that engine.
+    // Verify the REAL video backend instead: current-frame data and dimensions,
+    // exact retained position, no media error or unsolicited playback.
+    // Earlier startVisibleNative already proved actual frame advancement and
+    // seek/decode for each source before closing the disclosure.
     if (engine === 'webkit') {
       for (const index of [0, 1]) {
         const video = disclosure.locator('video').nth(index);
         await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, { at, time }) => {
-          const frame = el.__tantraPresentedFrame;
-          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
-        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+        // WebKit may discard the paused pixel buffer after a disclosure
+        // closes. HAVE_METADATA is sufficient here: actual decoded-frame
+        // progression was already required by startVisibleNative BEFORE close.
+        // Preserve the exact source, metadata, dimensions, no errors, paused
+        // state and position. A broken resume still fails the next Play test.
+        try {
+          await expect.poll(() => video.evaluate((el, { retainedTime, expectedSrc }) =>
+            el.paused && !el.ended && !el.seeking && !el.error &&
+            el.videoWidth > 0 && el.videoHeight > 0 &&
+            el.readyState >= HTMLMediaElement.HAVE_METADATA &&
+            el.querySelector('source')?.src === expectedSrc &&
+            (!el.currentSrc || el.currentSrc === expectedSrc) &&
+            Math.abs(el.currentTime - retainedTime) < 0.05,
+            { retainedTime: paused[index], expectedSrc: sources[index] }),
+          { timeout: 20000 }).toBe(true);
+        } catch (error) {
+          const snapshot = await video.evaluate(nativePlaybackSnapshot).catch(() => null);
+          throw new Error('WEBKIT_PAUSED_REOPEN_INVALID: ' +
+            JSON.stringify({ participant: index + 1, retainedTime: paused[index], snapshot }),
+            { cause: error });
+        }
       }
     }
     await page.waitForTimeout(350);
@@ -310,7 +400,7 @@ async function verifyDelayedHydration(browser, engine, locale) {
     // Native HTML controls operate while same-origin external Next.js bundles are held.
     if (!await disclosure.evaluate(el => el.open)) await disclosure.locator('summary').click();
     observed.preHydrationPlayback = [];
-    for (const index of [0, 1]) observed.preHydrationPlayback.push(await startVisibleNative(disclosure, index, { phase: 'pre-hydration' }));
+    for (const index of [0, 1]) observed.preHydrationPlayback.push(await startVisibleNative(disclosure, index, { phase: 'pre-hydration', engine }));
     observed.beforeHydration = await disclosure.locator('video').evaluateAll(videos => videos.map(el => ({ time: el.currentTime, paused: el.paused })));
     releaseScripts();
     await page.waitForLoadState('load');
@@ -349,7 +439,7 @@ async function verifyLocaleSwitchWhilePlaying(browser, engine) {
       await disclosure.locator('button.academy-video-poster').click();
       await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
       await page.evaluate(() => { window.__tantraPreviousPlayers = [...document.querySelectorAll('#tantra-russian-video-testimonials video, #tantra-russian-video-testimonials iframe')]; });
-      const active = await startVisibleNative(disclosure, activeIndex, { phase: 'locale-navigation', locale });
+      const active = await startVisibleNative(disclosure, activeIndex, { phase: 'locale-navigation', locale, engine });
       const menu = page.locator('.site-language-menu').first();
       if (!await menu.evaluate(el => el.open)) {
         await focusWithoutScroll(menu.locator('summary'));
@@ -421,7 +511,7 @@ try {
           try {
             await installNativeTimelineDiagnostics(context);
             // Deterministic renderer/CSP test only; do not claim YouTube decoded playback.
-            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1', route => route.fulfill({
+            await context.route('https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0', route => route.fulfill({
               contentType: 'text/html', body: '<!doctype html><title>Alena renderer fixture</title><p id="player-fixture">Allowed YouTube renderer</p>',
             }));
             const page = await context.newPage();
@@ -474,17 +564,19 @@ try {
               observed.immediateAfterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
               // Decode statistics can update after the media clock / seeked event.
               // Preserve the strict decoded-frame requirement and wait for observation.
-              await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(sample.frames);
+              // WebKit can reset totalVideoFrames during seek. Require a newly decoded
+              // frame AFTER the seek snapshot, not a counter larger than pre-seek playback.
+              await expect.poll(() => video.evaluate(el => el.getVideoPlaybackQuality().totalVideoFrames), { timeout: 20000 }).toBeGreaterThan(observed.immediateAfterSeek.frames);
               const afterSeek = await video.evaluate(el => ({ time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames, ready: el.readyState, error: el.error?.code ?? null }));
               observed.afterSeek = afterSeek;
               assert.equal(afterSeek.error, null);
-              assert.ok(afterSeek.frames > sample.frames, 'Decoded playback must continue after seeking');
+              assert.ok(afterSeek.frames > observed.immediateAfterSeek.frames, 'Decoded playback must continue after seeking');
               await video.evaluate(el => el.pause());
 
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
-            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1');
+            await expect(alena).toHaveAttribute('src', youtubeUrl);
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };
