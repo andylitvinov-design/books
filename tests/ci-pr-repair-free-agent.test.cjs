@@ -116,6 +116,11 @@ test('isolated model environment excludes runner tokens',()=>{
   const env=isolatedEnvironment(p);
   for(const key of ['GITHUB_TOKEN','GH_TOKEN','HH_AUTOMERGE_TOKEN','OPENAI_API_KEY',
     'VERCEL_TOKEN','SUPABASE_SERVICE_ROLE_KEY'])assert.equal(env[key],undefined);
+  assert.equal(env.OPENCODE_API_KEY,undefined);
+  const opted=isolatedEnvironment(p);
+  process.env.HH_OPENCODE_FREE_TIER_API_KEY='dedicated-free-tier-token';
+  try{assert.equal(isolatedEnvironment(p).OPENCODE_API_KEY,'dedicated-free-tier-token');}
+  finally{delete process.env.HH_OPENCODE_FREE_TIER_API_KEY;}
   const cfg=JSON.parse(fs.readFileSync(path.join(p,'config','opencode','opencode.json'),'utf8'));
   assert.deepEqual(cfg.permissions,[{action:'*',resource:'*',effect:'deny'}]);
  }finally{fs.rmSync(p,{force:true,recursive:true});}
