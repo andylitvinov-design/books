@@ -89,7 +89,10 @@ export async function POST(request) {
         provider='openrouter-free'
       }catch(error){freeFailure=error}
     }
-    if(!wav && backupKey) {
+    // Public phrase/sample modes are FREE-ONLY even if an operator later
+    // enables a paid custom-voice backup for authenticated sessions.
+    // Never charge the owner implicitly for visitor narration attempts.
+    if(!wav && backupKey && validated.mode==='custom') {
       // Hard daily cap: 20 requests x 650 chars x $15/M chars ~ $0.20/day.
       // No paid retry; visitors never pay, operator must set OpenRouter key spend limits.
       await consumeRate(config,{op:'voice-studio-openrouter-paid-day'},20,86400)
