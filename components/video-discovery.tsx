@@ -216,7 +216,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         <h2><Sparkles size={23} aria-hidden="true"/>{t.title}</h2>
         <p>{t.lead}</p>
       </div>
-      {variant==="mytube"?<div className={styles.areaSection} data-mytube-taxonomy="v2">
+      <div className={styles.areaSection} data-mytube-taxonomy="v2">
         <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
         <div className={styles.lifeAreas} role="group" aria-label={t.mytubeCategoryTitle}>
           <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
