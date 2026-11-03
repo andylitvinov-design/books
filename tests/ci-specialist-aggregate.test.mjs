@@ -58,6 +58,7 @@ test('approved first-attempt concurrency only is advisory, not changed browser o
   assert.deepEqual([...inspect(rows('app/api/payments/route.js'))],[]);
   assert.deepEqual([...inspect(rows('scripts/unreviewed-browser-helper.mjs'))],[]);
   assert.deepEqual([...inspect(rows('scripts/helpers/contact-channel-verifier.mjs'),'.github/workflows/release-reaudit.yml')],[]);
+  assert.deepEqual([...inspect(rows('scripts/helpers/contact-channel-verifier.mjs'),'.github/workflows/assessment-range-mobile-browser.yml')],['.github/workflows/assessment-range-mobile-browser.yml']);
   assert.deepEqual([...concurrencyOnlyAdvisory({
     base:new Map([[file,before]]),
     current:new Map([[file,after.replace('runs-on: ubuntu-latest','runs-on: self-hosted')]]),
