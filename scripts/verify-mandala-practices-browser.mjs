@@ -5,6 +5,7 @@
  * This is complementary to the separate real encoded-media browser suite.
  */
 import assert from "node:assert/strict";
+import {expect} from "@playwright/test";
 import {mkdirSync} from "node:fs";
 import {join} from "node:path";
 
