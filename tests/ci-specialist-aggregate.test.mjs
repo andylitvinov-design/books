@@ -153,10 +153,15 @@ test('immutable run SHA survives GitHub rewriting associated PR head on subseque
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
 });
 
-test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
-  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})]});
-  assert.deepEqual(state.pushFailures,['300:failure']);
+test('failed push on a matching SHA is advisory, not an unverified PR failure',()=>{
+  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[
+    run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})
+  ]});
+  assert.deepEqual(state.pushFailures,[]);
+  assert.deepEqual(state.pushAdvisory,['300:failure']);
   assert.equal(state.passed.length,1);
+  assert.deepEqual(state.failed,[]);
+  assert.deepEqual(state.orphanFailures,[]);
 });
 
 test('general conditional jobs may skip only when BASE explicitly makes them optional',()=>{
