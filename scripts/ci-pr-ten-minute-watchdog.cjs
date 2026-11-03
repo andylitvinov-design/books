@@ -234,6 +234,23 @@ function classifyCoreFailureJobs(jobs) {
     const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
     return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
   })) return 'CI_INFRA_OR_ENVIRONMENT';
+  // Core co-locates CI contract tests with product lint/TypeScript. A failed
+  // contract test in the Core job is CI policy failure, NOT product source code.
+  // Trust only these exact job-step names, not arbitrary message fragments.
+  // Unknown failures and mixed contract/product failures still fail closed.
+  const ciContractSteps=new Set([
+    'Verify Source Preflight unit contracts',
+    'Assert fast-lane workflow contracts',
+    'Verify deterministic ESLint repair worker contract',
+    'Verify specialist ownership and Messenger isolation on CI-policy changes',
+  ]);
+  const onlyContractBuild=failed.every(job=>
+    job.name==='core-lint-types-build' || job.name==='hh-specialist' ||
+    gateOnly.has(job.name));
+  const buildFailures=(build?.steps||[]).filter(step=>step.conclusion==='failure');
+  if(build?.conclusion==='failure' && onlyContractBuild &&
+     buildFailures.length && buildFailures.every(step=>ciContractSteps.has(step.name)))
+    return 'CI_CONTRACT_OR_POLICY';
   // A red Specialist/aggregate without a completed source job is insufficient
   // evidence for privileged source repair.
   if(failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
@@ -259,6 +276,9 @@ const INHERITED_CORE_CHECKS=new Set([
   'hh-core-verified','hh-specialist','hh-specialists-verified',
   'release-ready','hh-merge-check','classify-change','core-lint-types-build'
 ]);
+// A failed Sweep Guard unit check is a CI policy failure, not product QA.
+// This applies only to repair classification, never to required CI gating.
+const CI_POLICY_CHECKS=new Set(['guard-unit']);
 // A red aggregate alone can mean skipped macOS/optional QA or a changed
 // production base, NOT a broken product. Require independent same-HEAD
 // failed GitHub Actions evidence before sending work to Product Repair.
@@ -272,7 +292,8 @@ function classifyIndependentSpecialistChecks(checks) {
     return 'UNKNOWN';
   if([...latest.values()].some(check=>
       check.conclusion==='failure' && check.app?.id===15368 &&
-      !INHERITED_CORE_CHECKS.has(check.name)))
+      !INHERITED_CORE_CHECKS.has(check.name) &&
+      !CI_POLICY_CHECKS.has(check.name)))
     return 'PRODUCT_FAILURE';
   return 'POLICY_OR_SKIPPED';
 }
@@ -577,6 +598,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     specialistPolicyHolds:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
     policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,infraOrEnvironment:0,
+    ciContractFailures:0,staleSourceLabelsRetired:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     verifiedCiHintsCleared:0,wouldClearVerifiedCiHints:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
@@ -995,6 +1017,33 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
         }
         log('#'+pr.number+' Core preflight/routing failure; no speculative source Repair');
+      } else if(root==='CI_CONTRACT_OR_POLICY') {
+        summary.ciContractFailures++;
+        // Preserve a red required Core check and hand off to CI policy review.
+        // Never reserve a product Repair Worker for a verified CI-contract-only step.
+        if(summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
+          if(await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
+            'CI-only contract failed in Core; fix CI policy, not product source',
+            'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+        }
+        // Historical source labels are hints, not privileges. Retire one only
+        // after exact-HEAD live readback confirms the replacement policy label.
+        if(hasLabel(live,REPAIR_LABEL) && !dryRun && !budget.exhausted) {
+          try {
+            const current=(await limited('ci-contract-relabel-recheck',()=>
+              github.rest.pulls.get({owner,repo,pull_number:live.number}))).data;
+            if(current?.state==='open' && !current.draft &&
+               current.base?.ref===PROD && current.head?.sha===live.head.sha &&
+               hasLabel(current,REPAIR_LABEL) && hasLabel(current,RELEASE_GATE_LABEL)) {
+              await limited('retire-ci-contract-source-hint',()=>
+                github.rest.issues.removeLabel({owner,repo,issue_number:live.number,name:REPAIR_LABEL}));
+              summary.staleSourceLabelsRetired++;
+            }
+          } catch(error) {
+            log('#'+pr.number+' CI-contract source-hint cleanup deferred: '+error.message);
+          }
+        }
+        log('#'+pr.number+' CI contract failure; no speculative source repair');
       } else if(root==='CI_INFRA_OR_ENVIRONMENT') {
         summary.infraOrEnvironment++;
         log('#'+pr.number+' setup or infrastructure failure; no speculative source repair');
