@@ -204,13 +204,39 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     observation.stage = 'request-playback';
     await video.evaluate(requestNativePlayback);
     await expect.poll(() => video.evaluate(el => el.paused)).toBe(false);
-    const initial = await video.evaluate(el => ({
+    let initial = await video.evaluate(el => ({
       time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
       presentedFrame: el.__tantraPresentedFrame ?? null,
     }));
     observation.initial = initial;
     observation.stage = 'observe-decoded-playback';
-    await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+    try {
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 6500 }).toBeGreaterThan(initial.time + 0.1);
+    } catch (firstStall) {
+      // On iPhone WebKit only, a real paused/reopened remote MP4 may leave
+      // play() pending and the media clock frozen after a successful seek.
+      // Permit ONE bounded re-seek/replay on a real, error-free native video.
+      // Actual clock AND fresh decoded-frame checks remain mandatory below.
+      const stalled = await video.evaluate(nativePlaybackSnapshot);
+      if (scenario.engine !== 'webkit' || stalled.error !== null || stalled.ended ||
+          stalled.paused || stalled.seeking || stalled.ready < 2 || !stalled.visible ||
+          stalled.playRequest?.error || stalled.currentSrc !== observation.before.currentSrc ||
+          !Number.isFinite(stalled.duration)) throw firstStall;
+      const retryAt = Math.min(stalled.duration - 1, stalled.time + 0.4);
+      if (retryAt <= stalled.time + 0.2) throw firstStall;
+      observation.stage = 'recover-one-webkit-native-stall';
+      await video.evaluate((el, at) => { el.pause(); el.currentTime = at; }, retryAt);
+      await expect.poll(() => video.evaluate(el => !el.seeking && el.readyState >= 2 && !el.error),
+        { timeout: 12000 }).toBe(true);
+      await video.evaluate(requestNativePlayback);
+      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 6000 }).toBe(false);
+      initial = await video.evaluate(el => ({
+        time: el.currentTime, frames: el.getVideoPlaybackQuality().totalVideoFrames,
+        presentedFrame: el.__tantraPresentedFrame ?? null,
+      }));
+      observation.recovery = { from: stalled, retryAt, initial };
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 12000 }).toBeGreaterThan(initial.time + 0.1);
+    }
     // The WebKit frame-counter can RESET after seek/reopen. Require either
     // counter advancement, or a genuinely NEW presented frame that is AFTER
     // this playback request and matches the advancing media timeline.
@@ -251,7 +277,7 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
       await disclosure.locator('button.academy-video-poster').click();
     }
     await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toBeVisible();
-    const active = await startVisibleNative(disclosure, activeIndex, { phase: 'close-setup', cycle: cycle + 1 });
+    const active = await startVisibleNative(disclosure, activeIndex, { phase: 'close-setup', cycle: cycle + 1, engine });
     await focusWithoutScroll(disclosure.locator('summary'));
     // Focusing the offscreen summary must not scroll/pause our active video.
     await expect.poll(() => disclosure.locator('video').nth(activeIndex).evaluate(el => el.paused)).toBe(false);
