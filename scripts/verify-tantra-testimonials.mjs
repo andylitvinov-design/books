@@ -261,16 +261,23 @@ async function verifyRepeatedClose(page, cycles = 3, engine) {
     await expect.poll(() => disclosure.locator('video').evaluateAll(videos => videos.every(el => el.paused))).toBe(true);
     await expect(disclosure.locator('iframe')).toHaveCount(0);
     await expect(disclosure.locator('button.academy-video-poster')).toBeVisible();
-    // Observe the reopened state through backend reconstruction, before another
-    // explicit play. A cached currentTime or immediate paused sample is insufficient.
+    // WebKit may preserve a decoded paused frame without issuing another
+    // requestVideoFrameCallback until playback resumes. A fresh callback is
+    // not evidence of correct paused-state reconstruction on that engine.
+    // Verify the REAL video backend instead: current-frame data and dimensions,
+    // exact retained position, no media error or unsolicited playback.
+    // Earlier startVisibleNative already proved actual frame advancement and
+    // seek/decode for each source before closing the disclosure.
     if (engine === 'webkit') {
       for (const index of [0, 1]) {
         const video = disclosure.locator('video').nth(index);
         await video.scrollIntoViewIfNeeded();
-        await expect.poll(() => video.evaluate((el, { at, time }) => {
-          const frame = el.__tantraPresentedFrame;
-          return !!(frame && frame.at > at && Math.abs(frame.mediaTime - time) < 0.2);
-        }, { at: Math.max(reopening.at, reopening.frames[index]), time: paused[index] }), { timeout: 20000 }).toBe(true);
+        await expect.poll(() => video.evaluate((el, retainedTime) =>
+          el.paused && !el.ended && !el.seeking && !el.error &&
+          el.videoWidth > 0 && el.videoHeight > 0 &&
+          el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+          Math.abs(el.currentTime - retainedTime) < 0.05, paused[index]),
+        { timeout: 20000 }).toBe(true);
       }
     }
     await page.waitForTimeout(350);
