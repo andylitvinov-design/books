@@ -58,3 +58,51 @@
 .panel .controls label:first-child{grid-column:auto}
 .panel .controls select{font-size:clamp(14px,3.7vw,16px)}
 .panel :is(.genderTabs button,.voiceCardSelect,.sampleButton):focus-visible{outline:3px solid #d9a54e;outline-offset:2px}
+
+
+/* Owner approved 03-Nov: three speech profiles per gender, and an independent
+   browser-local multi-track recorder. No audio presets in the Phrases layout. */
+.transcriptDisclosure,.voiceAdvanced{margin:7px 0 9px;border:1px solid #e4e9df;border-radius:13px;background:#fffdf8}
+.transcriptDisclosure>summary,.voiceAdvanced>summary{display:flex;align-items:center;min-height:44px;padding:9px 12px;color:#386953;font-size:clamp(13px,3.5vw,15px);font-weight:750;cursor:pointer}
+.transcriptDisclosure .transcript{margin:3px 8px 9px}
+.voiceAdvanced>.controls,.voiceAdvanced>.levels,.voiceAdvanced>.hint{margin:9px 10px}
+.voiceAdvanced>.hint{display:block}
+.presetVoiceGroup[hidden],.localTracks[hidden]{display:none!important}
+.presetVoiceGroup{min-width:0}
+.panel .genderTabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.panel .genderTabs button{min-width:0;min-height:49px;padding:8px 3px;font-size:clamp(11px,3.2vw,15px);border-radius:999px}
+.panel .genderTabs button[aria-pressed="true"]{background:linear-gradient(125deg,#079e79,#04684e);border-color:#078869;color:white}
+.panel .voiceCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+.panel .voiceCard{display:flex;flex-direction:column;gap:5px;min-width:0}
+.panel .voiceCardSelect{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:7px;min-height:74px;padding:9px 7px}
+.panel .voiceCardSelect strong{font-size:clamp(13px,3.45vw,16px)}
+.panel .voiceCardSelect small{font-size:clamp(11px,2.85vw,13px)}
+.panel .voiceCardSelect>span:last-child{position:absolute;right:8px;top:7px;font-size:16px;width:18px;height:18px}
+.panel .voiceCardSelect{position:relative}
+.panel .sampleButton{flex-direction:row;gap:4px;width:100%;min-width:0;min-height:44px;padding:6px;font-size:clamp(11px,2.85vw,13px)}
+.panel .sampleButton svg{flex:none}
+.localTracks{min-width:0;padding:10px 0 2px;color:#17483d}
+.localTop{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.localTop>button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:10px 16px;border:1px solid #97cbb9;border-radius:16px;background:linear-gradient(110deg,#e1f5eb,#f8fcf6);color:#075f46;font-size:clamp(15px,3.8vw,17px);font-weight:800}
+.localTop>button[aria-pressed="true"]{background:#fff3e9;color:#a33a25;border-color:#ebbba7}
+.localTop>button:disabled{opacity:.6}
+.localTop small{flex:1;color:#68817b;font-size:13px}
+.localHint{margin:9px 1px!important;color:#5b706a;font-size:clamp(13px,3.35vw,14px);line-height:1.4}
+.localEmpty{margin:8px 0!important;padding:13px;border-radius:12px;background:#eff8f1;color:#406959;font-size:15px}
+.localList{display:grid;gap:9px;margin-top:10px}
+.localItem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;min-width:0;padding:11px;border:1px solid #c9e5d7;border-radius:14px;background:#f8fcf8}
+.localItemTitle{display:flex;align-items:center;gap:8px;min-width:0}
+.localItemTitle strong{font-size:16px}
+.localItemTitle small{font-size:12px;color:#668176}
+.localItem audio{display:block;width:100%;min-width:0;grid-column:1/-1}
+.localActions{display:flex;gap:6px;grid-column:1/-1;flex-wrap:wrap}
+.localActions button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1 1 120px;min-height:44px;padding:7px 12px;border:1px solid #d6e3d6;border-radius:12px;background:#fff;color:#275545;font-size:14px;font-weight:750}
+.localActions button:first-child{background:#e0f5ea;border-color:#91cbb4;color:#07674f}
+.localActions button[aria-pressed="true"]{background:#087f64;color:white}
+.localActions button:disabled{opacity:.55}
+.localNotice{margin:9px 0!important;color:#226e55;font-size:14px;line-height:1.4}
+@media(max-width:360px){
+  .panel .voiceCards{display:grid;grid-auto-flow:column;grid-auto-columns:145px;grid-template-columns:none;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:5px}
+  .panel .voiceCard{scroll-snap-align:start}
+  .panel .genderTabs button{font-size:11px}
+}
