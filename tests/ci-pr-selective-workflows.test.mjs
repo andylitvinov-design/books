@@ -35,7 +35,6 @@ const ownerWorkflows = [
   "hh-direct-video-notes.yml",
   "hh-static-image-cost-guard.yml",
   "hh-salesbot-remaster-feature.yml",
-  "hh-profile-axis-matching.yml",
   "practice-visual-browser.yml",
   "practice-google-browser.yml"
 ];

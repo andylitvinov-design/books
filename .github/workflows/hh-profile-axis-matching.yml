@@ -99,7 +99,7 @@ on:
       - 'tests/holistic-agent-consented-profile.test.mjs'
       - 'tests/holistic-agent-program-preview.test.mjs'
       - 'app/api/holistic-agent/program/route.js'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - '.github/workflows/hh-profile-axis-matching.yml'
       - 'components/app/test-explorer-visual.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
