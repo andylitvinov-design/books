@@ -248,7 +248,7 @@ test('a worker handoff confirms CI only after matching PR SHA and started Core j
   const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
     now,fetcher,timeout:()=>undefined})
   assert.equal(value.status,200)
-  assert.equal(value.body.status,'worker_runner_verified')
+  assert.equal(value.body.status,'ci_runner_verified')
   assert.equal(value.body.taskDeliveryVerified,true)
   assert.equal(value.body.ciStartedVerified,true)
   assert.equal(value.body.workerEvidence[0].pr_number,551)
@@ -281,7 +281,8 @@ test('dispatch accepted without run ID, pending runner and uncertain history fai
           id:600,workflow_id:403593743,event:'workflow_dispatch',
           head_branch:'codex/bootstrap-books',status:'queued',
           created_at:'2026-11-03T19:59:00Z'})}
-      if(url.endsWith('/runs/600/jobs?per_page=50'))return history(0,[])
+      if(url.endsWith('/runs/600/jobs?per_page=50'))return {status:200,
+        headers:{get:()=> '4800'},json:async()=>({total_count:0,jobs:[]})}
       throw Error('Unexpected '+url)
     }})
   assert.equal(queued.status,202)
