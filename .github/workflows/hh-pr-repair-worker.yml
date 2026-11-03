@@ -168,6 +168,10 @@ jobs:
           REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
         run: node .hh-trusted/scripts/ci-pr-repair-deterministic.cjs
+      - name: Verify deterministic Core repair with TypeScript
+        if: needs.claim.outputs.strategy == 'code'
+        timeout-minutes: 5
+        run: npx tsc --noEmit --incremental false
       - id: build_candidate
         name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
