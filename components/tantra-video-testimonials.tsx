@@ -86,6 +86,29 @@ export function TantraVideoTestimonials(props: Props) {
     };
     try { video.requestVideoFrameCallback(onFrame); }
     catch { retained.current.delete(video); }
+    // The WebKit backend can signal playing yet present NO next frame or
+    // advance its clock after the disclosure resumes. A frame callback alone
+    // cannot recover that deadlock because it never fires. After a real user
+    // play (never on disclosure open), use a bounded frame-clock observation.
+    // Only a genuinely stalled, same-source, still-playing decoder is nudged
+    // once towards the previous GOP; real frames, seeking and close cancel it.
+    const windowView=video.ownerDocument?.defaultView;
+    if(windowView && typeof windowView.requestAnimationFrame==="function") {
+      const startedTime=video.currentTime;
+      let startAt:number|null=null;
+      const observeClock=(now:number)=>{
+        if(retained.current.get(video)!==saved || (saved.generation??0)!==generation ||
+          video.paused || video.seeking || video.ended || video.isConnected===false ||
+          video.currentSrc!==saved.source)return;
+        if(startAt===null)startAt=now;
+        if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
+        if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
+        retained.current.delete(video); // exactly one recovery, never a loop
+        try { video.currentTime=Math.max(0,saved.time-1.25); }
+        catch { /* Native controls remain available if seek is refused. */ }
+      };
+      windowView.requestAnimationFrame(observeClock);
+    }
   }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
     // Real user native seeking always overrides a pending frame recovery.
