@@ -1,0 +1,833 @@
+{
+  "schemaVersion": "mytube-topic-plots-v1",
+  "categoryId": "new-v3-topics",
+  "status": "editorial_storyboards_unbound",
+  "topics": {
+    "personal-growth": [
+      {
+        "id": "personal-growth-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Дневник развития",
+          "en": "Growth journal",
+          "es": "Diario de desarrollo"
+        },
+        "shots": {
+          "ru": [
+            "Перечитывает старые записи",
+            "Находит освоенный навык",
+            "Записывает новый вопрос",
+            "Планирует время на изучение"
+          ],
+          "en": [
+            "Old notes are reread",
+            "An acquired skill appears",
+            "A new question is noted",
+            "Time for learning is reserved"
+          ],
+          "es": [
+            "Se leen notas antiguas",
+            "Se ve una habilidad adquirida",
+            "Se escribe una pregunta nueva",
+            "Se reserva tiempo para aprender"
+          ]
+        }
+      },
+      {
+        "id": "personal-growth-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Кольца дерева",
+          "en": "Tree rings",
+          "es": "Anillos del árbol"
+        },
+        "shots": {
+          "ru": [
+            "На срезе видны кольца",
+            "Каждый сезон оставил след",
+            "Растёт новое кольцо",
+            "Садовник заботится о корнях"
+          ],
+          "en": [
+            "Growth rings are visible",
+            "Every season leaves a trace",
+            "A new ring slowly forms",
+            "The roots receive care"
+          ],
+          "es": [
+            "Se ven anillos de crecimiento",
+            "Cada estación dejó huella",
+            "Surge un anillo nuevo",
+            "Se cuidan las raíces"
+          ]
+        }
+      },
+      {
+        "id": "personal-growth-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Мастерская новых умений",
+          "en": "Workshop of new skills",
+          "es": "Taller de habilidades"
+        },
+        "shots": {
+          "ru": [
+            "Ученик видит незнакомый инструмент",
+            "Пробует без идеальности",
+            "Получает обратную связь",
+            "Возвращается к следующей пробе"
+          ],
+          "en": [
+            "A learner sees a strange tool",
+            "They try it imperfectly",
+            "Useful feedback arrives",
+            "Another attempt becomes possible"
+          ],
+          "es": [
+            "Se observa una herramienta nueva",
+            "Se prueba sin perfección",
+            "Llega una opinión útil",
+            "Se intenta de nuevo"
+          ]
+        }
+      },
+      {
+        "id": "personal-growth-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Вопрос на неделю",
+          "en": "One weekly question",
+          "es": "Una pregunta semanal"
+        },
+        "shots": {
+          "ru": [
+            "Хочется изменить всё сразу",
+            "Выбирается одна область роста",
+            "В быту замечаются примеры",
+            "В дневнике появляется вывод"
+          ],
+          "en": [
+            "Everything seems to need changing",
+            "One growth area is chosen",
+            "Daily examples are observed",
+            "One conclusion is written"
+          ],
+          "es": [
+            "Se quiere cambiar todo",
+            "Se elige un área de crecimiento",
+            "Se observan ejemplos diarios",
+            "Se escribe una conclusión"
+          ]
+        }
+      }
+    ],
+    "goal-setting": [
+      {
+        "id": "goal-setting-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Один ориентир",
+          "en": "One clear target",
+          "es": "Una meta clara"
+        },
+        "shots": {
+          "ru": [
+            "Доска заполнена пожеланиями",
+            "Выбирается важнейшее",
+            "Определяется видимый результат",
+            "Назначается дата пересмотра"
+          ],
+          "en": [
+            "A board holds many wishes",
+            "One is chosen",
+            "A visible outcome is described",
+            "A review date is selected"
+          ],
+          "es": [
+            "La pizarra tiene deseos",
+            "Se elige el más importante",
+            "Se define resultado observable",
+            "Se fija revisión"
+          ]
+        }
+      },
+      {
+        "id": "goal-setting-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Гора и лагерь",
+          "en": "Mountain base camp",
+          "es": "Campamento de montaña"
+        },
+        "shots": {
+          "ru": [
+            "Вершина видна вдали",
+            "Путник выбирает базовый лагерь",
+            "Проверяет погоду и силы",
+            "Планирует ближайший участок"
+          ],
+          "en": [
+            "A summit appears far away",
+            "A base camp is chosen",
+            "Weather and capacity are checked",
+            "The first section is planned"
+          ],
+          "es": [
+            "Se ve una cima lejana",
+            "Se elige campamento",
+            "Se revisa clima y fuerzas",
+            "Se planea tramo cercano"
+          ]
+        }
+      },
+      {
+        "id": "goal-setting-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Мишень без спешки",
+          "en": "Target without hurry",
+          "es": "Diana sin prisa"
+        },
+        "shots": {
+          "ru": [
+            "На стене слишком много мишеней",
+            "Остаётся одна",
+            "В центре отмечен конкретный результат",
+            "Стрелу не обязательно выпускать сегодня"
+          ],
+          "en": [
+            "Many targets fill the wall",
+            "Only one remains",
+            "A concrete result marks its center",
+            "The arrow need not fly today"
+          ],
+          "es": [
+            "Hay demasiadas dianas",
+            "Queda una",
+            "El centro marca resultado concreto",
+            "No hay que lanzar hoy"
+          ]
+        }
+      },
+      {
+        "id": "goal-setting-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Три признака цели",
+          "en": "Three signs of a goal",
+          "es": "Tres señales de una meta"
+        },
+        "shots": {
+          "ru": [
+            "Желание звучит расплывчато",
+            "Человек записывает зачем оно нужно",
+            "Выбирает признак прогресса",
+            "Определяет посильное начало"
+          ],
+          "en": [
+            "A wish feels vague",
+            "Its personal reason is written",
+            "A progress sign is chosen",
+            "A manageable start is set"
+          ],
+          "es": [
+            "El deseo es vago",
+            "Se anota su sentido",
+            "Se elige señal de progreso",
+            "Se define inicio posible"
+          ]
+        }
+      }
+    ],
+    "business-decisions": [
+      {
+        "id": "business-decisions-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Два предложения",
+          "en": "Two business offers",
+          "es": "Dos ofertas"
+        },
+        "shots": {
+          "ru": [
+            "На столе договоры поставщиков",
+            "Сравниваются цены и сроки",
+            "Проверяется главный риск",
+            "Выбирается проба или пауза"
+          ],
+          "en": [
+            "Supplier proposals are on the desk",
+            "Price and timing are compared",
+            "A key risk is checked",
+            "A pilot or pause is chosen"
+          ],
+          "es": [
+            "Hay contratos en la mesa",
+            "Se comparan precio y plazo",
+            "Se revisa riesgo principal",
+            "Se decide prueba o pausa"
+          ]
+        }
+      },
+      {
+        "id": "business-decisions-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Развилка команды",
+          "en": "The team's fork",
+          "es": "Cruce del equipo"
+        },
+        "shots": {
+          "ru": [
+            "Команда видит два маршрута",
+            "Участники называют ограничения",
+            "Отмечается общий приоритет",
+            "Выбирается обратимый этап"
+          ],
+          "en": [
+            "Two routes lie before a team",
+            "Constraints are shared",
+            "A common priority is marked",
+            "A reversible stage is chosen"
+          ],
+          "es": [
+            "Hay dos rutas posibles",
+            "Se expresan límites",
+            "Se marca prioridad común",
+            "Se elige etapa reversible"
+          ]
+        }
+      },
+      {
+        "id": "business-decisions-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Весы риска",
+          "en": "Risk scales",
+          "es": "Balanza de riesgo"
+        },
+        "shots": {
+          "ru": [
+            "Одна чаша полна выгод",
+            "Другая показывает затраты",
+            "Третья обозначает неопределённость",
+            "Появляются условия принятия решения"
+          ],
+          "en": [
+            "One pan holds benefits",
+            "The other holds costs",
+            "A third shows uncertainty",
+            "Decision conditions are written"
+          ],
+          "es": [
+            "Un plato muestra ventajas",
+            "Otro muestra costes",
+            "Un tercero incertidumbre",
+            "Se definen condiciones"
+          ]
+        }
+      },
+      {
+        "id": "business-decisions-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Малый пилот",
+          "en": "A small pilot",
+          "es": "Piloto pequeño"
+        },
+        "shots": {
+          "ru": [
+            "Решение требует больших ресурсов",
+            "Команда выбирает небольшую проверку",
+            "Заранее определяет критерий остановки",
+            "Сверяет данные перед масштабированием"
+          ],
+          "en": [
+            "The decision requires many resources",
+            "A limited test is designed",
+            "A stopping rule is set",
+            "Results guide scaling"
+          ],
+          "es": [
+            "La decisión exige recursos",
+            "Se diseña prueba limitada",
+            "Se fija cuándo detenerse",
+            "Los datos guían el avance"
+          ]
+        }
+      }
+    ],
+    "healthy-habits": [
+      {
+        "id": "healthy-habits-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Вода на столе",
+          "en": "Water by the desk",
+          "es": "Agua en la mesa"
+        },
+        "shots": {
+          "ru": [
+            "Рабочий день идёт без пауз",
+            "Человек замечает жажду",
+            "Ставит воду рядом",
+            "Проверяет удобство подсказки"
+          ],
+          "en": [
+            "The day passes without breaks",
+            "Thirst is noticed",
+            "Water is placed nearby",
+            "The cue is tested"
+          ],
+          "es": [
+            "Pasa el día sin pausas",
+            "Se nota sed",
+            "Se deja agua a mano",
+            "Se prueba el hábito"
+          ]
+        }
+      },
+      {
+        "id": "healthy-habits-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Росток привычки",
+          "en": "A habit seedling",
+          "es": "Brote de hábito"
+        },
+        "shots": {
+          "ru": [
+            "Из земли появляется росток",
+            "Садовник поливает понемногу",
+            "Проходит пасмурный день",
+            "Забота продолжается без вины"
+          ],
+          "en": [
+            "A shoot emerges",
+            "The gardener waters gently",
+            "A cloudy day passes",
+            "Care resumes without blame"
+          ],
+          "es": [
+            "Surge un brote",
+            "Se riega poco a poco",
+            "Pasa un día nublado",
+            "Se retoma sin culpa"
+          ]
+        }
+      },
+      {
+        "id": "healthy-habits-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Мастерская ритма",
+          "en": "The rhythm workshop",
+          "es": "Taller de ritmo"
+        },
+        "shots": {
+          "ru": [
+            "Инструменты лежат далеко",
+            "Один переносят ближе",
+            "Действие легко повторяется",
+            "Возникает устойчивый ритм"
+          ],
+          "en": [
+            "Tools are far away",
+            "One is moved closer",
+            "Repeating becomes easier",
+            "A steady rhythm emerges"
+          ],
+          "es": [
+            "Las herramientas están lejos",
+            "Una se acerca",
+            "Repetir se vuelve fácil",
+            "Surge ritmo estable"
+          ]
+        }
+      },
+      {
+        "id": "healthy-habits-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Якорь привычки",
+          "en": "A habit anchor",
+          "es": "Ancla de hábito"
+        },
+        "shots": {
+          "ru": [
+            "Человек выбирает маленькое изменение",
+            "Привязывает его к утреннему делу",
+            "Пробует несколько дней",
+            "Меняет схему если неудобно"
+          ],
+          "en": [
+            "A small change is selected",
+            "It follows a morning routine",
+            "It is tried for several days",
+            "The plan adapts if needed"
+          ],
+          "es": [
+            "Se elige cambio pequeño",
+            "Se añade a rutina matinal",
+            "Se prueba varios días",
+            "Se ajusta si molesta"
+          ]
+        }
+      }
+    ],
+    "mental-clarity": [
+      {
+        "id": "mental-clarity-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Чистая доска",
+          "en": "The clear whiteboard",
+          "es": "Pizarra clara"
+        },
+        "shots": {
+          "ru": [
+            "На доске слишком много вопросов",
+            "Похожие идеи объединяются",
+            "Остаётся один вопрос",
+            "Неизвестные факты отмечаются честно"
+          ],
+          "en": [
+            "Questions crowd the board",
+            "Similar ideas are grouped",
+            "One question remains",
+            "Unknown facts are marked honestly"
+          ],
+          "es": [
+            "Hay preguntas de sobra",
+            "Se agrupan ideas",
+            "Queda una cuestión",
+            "Se anotan datos desconocidos"
+          ]
+        }
+      },
+      {
+        "id": "mental-clarity-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Прозрачный ручей",
+          "en": "The clear stream",
+          "es": "Arroyo claro"
+        },
+        "shots": {
+          "ru": [
+            "Дождь взбаламутил воду",
+            "Течение становится медленнее",
+            "На дне видны камни",
+            "Появляется место для перехода"
+          ],
+          "en": [
+            "Rain clouds the water",
+            "Its flow slows",
+            "Stones appear below",
+            "A crossing becomes visible"
+          ],
+          "es": [
+            "La lluvia enturbia el agua",
+            "El caudal se calma",
+            "Se ven piedras",
+            "Aparece un paso"
+          ]
+        }
+      },
+      {
+        "id": "mental-clarity-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Стекло без заметок",
+          "en": "A window without clutter",
+          "es": "Ventana despejada"
+        },
+        "shots": {
+          "ru": [
+            "Окно закрыто бумажками",
+            "Лишние снимают одну за другой",
+            "Появляется реальный пейзаж",
+            "Остаётся одна нужная запись"
+          ],
+          "en": [
+            "Notes cover a window",
+            "Extra notes are removed",
+            "The landscape comes into view",
+            "One useful note remains"
+          ],
+          "es": [
+            "Las notas cubren el cristal",
+            "Se quitan las innecesarias",
+            "Aparece el paisaje",
+            "Queda una nota útil"
+          ]
+        }
+      },
+      {
+        "id": "mental-clarity-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Один вопрос",
+          "en": "One question",
+          "es": "Una pregunta"
+        },
+        "shots": {
+          "ru": [
+            "Мысли требуют решить всё",
+            "Записывается одна задача",
+            "Проверяются два факта",
+            "Пауза предшествует выводу"
+          ],
+          "en": [
+            "Thoughts demand every answer",
+            "One task is written",
+            "Two facts are checked",
+            "A pause precedes judgment"
+          ],
+          "es": [
+            "Se quiere resolver todo",
+            "Se escribe una tarea",
+            "Se revisan dos hechos",
+            "Se pausa antes de concluir"
+          ]
+        }
+      }
+    ],
+    "calm-presence": [
+      {
+        "id": "calm-presence-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Трудное собрание",
+          "en": "The difficult meeting",
+          "es": "Reunión difícil"
+        },
+        "shots": {
+          "ru": [
+            "Разговор внезапно ускоряется",
+            "Человек замечает опору стула",
+            "Сначала выслушивает",
+            "Отвечает одной ясной фразой"
+          ],
+          "en": [
+            "Conversation speeds up",
+            "The chair provides support",
+            "Listening comes first",
+            "One clear reply follows"
+          ],
+          "es": [
+            "La charla se acelera",
+            "Se nota apoyo de silla",
+            "Primero se escucha",
+            "Se responde con claridad"
+          ]
+        }
+      },
+      {
+        "id": "calm-presence-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Дерево на ветру",
+          "en": "A tree in the wind",
+          "es": "Árbol al viento"
+        },
+        "shots": {
+          "ru": [
+            "Ветер качает ветви",
+            "Ствол остаётся устойчивым",
+            "Листья свободно движутся",
+            "Дерево не борется с ветром"
+          ],
+          "en": [
+            "Wind moves the branches",
+            "The trunk remains rooted",
+            "Leaves move freely",
+            "The tree need not fight"
+          ],
+          "es": [
+            "El viento mueve ramas",
+            "El tronco permanece firme",
+            "Las hojas se mueven",
+            "El árbol no lucha"
+          ]
+        }
+      },
+      {
+        "id": "calm-presence-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Круг света",
+          "en": "The light circle",
+          "es": "Círculo de luz"
+        },
+        "shots": {
+          "ru": [
+            "В шумной комнате появляется светлый круг",
+            "Видны его границы",
+            "Звуки остаются вокруг",
+            "Человек сам выбирает расстояние"
+          ],
+          "en": [
+            "A circle of light appears in noise",
+            "Its edges are visible",
+            "Sounds remain nearby",
+            "Distance is freely chosen"
+          ],
+          "es": [
+            "Hay un círculo entre ruido",
+            "Se ven sus límites",
+            "Los sonidos siguen",
+            "Se elige distancia"
+          ]
+        }
+      },
+      {
+        "id": "calm-presence-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Секунда перед ответом",
+          "en": "A second before answering",
+          "es": "Un segundo antes"
+        },
+        "shots": {
+          "ru": [
+            "Неожиданный вопрос вызывает спешку",
+            "Человек делает паузу",
+            "Просит уточнение при необходимости",
+            "Говорит в своём темпе"
+          ],
+          "en": [
+            "A question creates pressure",
+            "A pause is allowed",
+            "Clarification can be requested",
+            "The answer comes at a personal pace"
+          ],
+          "es": [
+            "La pregunta sorprende",
+            "Se permite pausa",
+            "Se pide aclaración",
+            "Se contesta a ritmo propio"
+          ]
+        }
+      }
+    ],
+    "anxiety-no-reason": [
+      {
+        "id": "anxiety-no-reason-p1",
+        "kind": "everyday",
+        "title": {
+          "ru": "Непонятное утро",
+          "en": "An unexplained morning",
+          "es": "Mañana sin causa clara"
+        },
+        "shots": {
+          "ru": [
+            "Тревога появилась без повода",
+            "Не приходится искать объяснение силой",
+            "Замечается окружающая опора",
+            "Выбирается маленькое действие"
+          ],
+          "en": [
+            "Anxiety arrives without a clear cause",
+            "No explanation is forced",
+            "Nearby supports are noticed",
+            "One small action is chosen"
+          ],
+          "es": [
+            "Llega ansiedad sin motivo",
+            "No se fuerza explicación",
+            "Se nota apoyo cercano",
+            "Se elige paso pequeño"
+          ]
+        }
+      },
+      {
+        "id": "anxiety-no-reason-p2",
+        "kind": "nature",
+        "title": {
+          "ru": "Поле в тумане",
+          "en": "The foggy field",
+          "es": "Campo con niebla"
+        },
+        "shots": {
+          "ru": [
+            "Плотный туман закрывает поле",
+            "Путник не видит всю дорогу",
+            "Замечает ближайшую опору",
+            "Может ждать или двигаться медленно"
+          ],
+          "en": [
+            "Thick fog covers the field",
+            "The whole path is hidden",
+            "Nearby ground is noticed",
+            "Waiting or slow walking is allowed"
+          ],
+          "es": [
+            "La niebla tapa el campo",
+            "No se ve todo el camino",
+            "Se reconoce suelo cercano",
+            "Se puede esperar"
+          ]
+        }
+      },
+      {
+        "id": "anxiety-no-reason-p3",
+        "kind": "symbolic",
+        "title": {
+          "ru": "Радио без станции",
+          "en": "The untuned radio",
+          "es": "Radio sin emisora"
+        },
+        "shots": {
+          "ru": [
+            "Радио шипит без сообщения",
+            "Человек перестаёт угадывать угрозу",
+            "Слышит реальные звуки комнаты",
+            "Уменьшает громкость"
+          ],
+          "en": [
+            "A radio hisses without a message",
+            "No hidden threat is invented",
+            "Real room sounds are heard",
+            "The volume is reduced"
+          ],
+          "es": [
+            "La radio hace ruido",
+            "No se inventa una amenaza",
+            "Se oyen sonidos reales",
+            "Se baja el volumen"
+          ]
+        }
+      },
+      {
+        "id": "anxiety-no-reason-p4",
+        "kind": "practice",
+        "title": {
+          "ru": "Дневник тревоги",
+          "en": "An anxiety diary",
+          "es": "Diario de ansiedad"
+        },
+        "shots": {
+          "ru": [
+            "Беспокойство повторяется неожиданно",
+            "Отмечается время и сила",
+            "Наблюдается сон и нагрузка",
+            "Стойкие симптомы обсуждаются со специалистом"
+          ],
+          "en": [
+            "Unease returns unexpectedly",
+            "Time and intensity are noted",
+            "Sleep and demands are observed",
+            "Persistent symptoms warrant professional input"
+          ],
+          "es": [
+            "La inquietud vuelve",
+            "Se anota hora e intensidad",
+            "Se observa descanso y carga",
+            "Si persiste se consulta"
+          ]
+        }
+      }
+    ]
+  }
+}
