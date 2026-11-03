@@ -53,3 +53,17 @@ test("three lanes share one exporter and user edits invalidate stale Blob",()=>{
   assert.match(audio,/deferStart/);
   assert.match(safari,/source\.start\(startSeconds\)/);
 });
+
+test("iPhone scrub repaints decoded frames and delayed audio starts on the user gesture",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const component=readFileSync(new URL("../components/mandala-multitrack-timeline.tsx",import.meta.url),"utf8");
+  const safari=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
+  assert.match(studio,/const scrubFrame=freeFilmVideoAt\(previewSeekSeconds,false\)/);
+  assert.match(studio,/if\(!usingFreeFilmCompilation\|\|scrubFrame\)/);
+  assert.match(studio,/onSeeked=\{\(\)=>\{if\(!previewPlaying\)setPreviewFrameRevision/);
+  assert.match(studio,/players\.forEach\(player=>void player\.play\(\)\.catch/);
+  assert.match(studio,/player\.volume=delayed\?0:masterVolume/);
+  assert.doesNotMatch(studio,/session\.timer=window\.setTimeout\(play/);
+  assert.match(component,/if\(kind==="ruler"\)onSeek\(position/);
+  assert.match(safari,/const available=seconds-startSeconds/);
+});

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import {useRef,useState} from "react";
@@ -91,6 +92,7 @@ export function MandalaMultiTrackTimeline({
   const begin=(event:ReactPointerEvent<HTMLElement>,kind:Drag["kind"],startSeconds:number,id?:string,index?:number)=>{
     if(disabled||event.button!==0)return;
     drag.current={kind,id,index,startX:event.clientX,startSeconds,moved:false};
+    if(kind==="ruler")onSeek(position(event.clientX,event.currentTarget));
     event.currentTarget.setPointerCapture(event.pointerId);
     if(kind==="text"&&id)setSelectedText(id);
     if(kind==="video"&&index!==undefined)setSelectedShot(index);
