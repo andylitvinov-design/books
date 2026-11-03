@@ -143,6 +143,8 @@ export function MandalaAutoVideoDirector({
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const [selectedGoalIds,setSelectedGoalIds]=useState<string[]>([]);
+ const [subcategoriesOpen,setSubcategoriesOpen]=useState(false);
  const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>("strength");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
@@ -205,37 +207,40 @@ export function MandalaAutoVideoDirector({
  const alternatives=proposal?[proposal.presetId,...proposal.alternativePresetIds]
    .filter((id):id is string=>Boolean(id)): [];
  const choose=()=>{
-   setSelectedGoalId(null);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
    setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
    const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
-   if(!item)return;
-   onInvalidate?.();
-   // All six suggestions write to the ONE shared wish and update real scene theme.
-   const nextGoal=popularTopicCopy[locale][goalId as keyof typeof popularTopicCopy.ru]||item.labels[locale];
-   // The main four-card objective stays selected while the user refines a
-   // topic. A topic may target a more specific underlying licensed theme.
-   const nextTheme=item.theme as VideoTheme;
-   onGoalChange(nextGoal);
-   onCategoryChange?.(nextTheme);
-   setProposalContext({goal:nextGoal,theme:nextTheme});
-   setSelectedGoalId(goalId);
+   if(!item||disabled)return;
+   const nextIds=selectedGoalIds.includes(goalId)
+     ?selectedGoalIds.filter(id=>id!==goalId)
+     :selectedGoalIds.length<2?[...selectedGoalIds,goalId]:selectedGoalIds;
+   if(nextIds.length===selectedGoalIds.length&&nextIds.every((id,index)=>id===selectedGoalIds[index]))return;
+   const nextGoal=nextIds.map(id=>
+     popularTopicCopy[locale][id as keyof typeof popularTopicCopy.ru]||
+     AUTO_VIDEO_GOALS.find(entry=>entry.id===id)?.labels[locale]||id
+   ).join(" · ");
+   const selectedTheme=(videoGoalCategories.find(category=>category.id===selectedCategoryId)?.theme||theme) as VideoTheme;
+   onInvalidate?.();onGoalChange(nextGoal);
+   setSelectedGoalIds(nextIds);setSelectedGoalId(nextIds[0]||null);
+   setProposalContext({goal:nextGoal,theme:selectedTheme});
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
-   setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,
-     fallbackTheme:nextTheme,presets,scenes}));
+   setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
+     fallbackTheme:selectedTheme,presets,scenes}));
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
    if(disabled)return;
-   onInvalidate?.();
-   onCategoryChange?.(nextTheme);
-   setSelectedCategoryId(categoryId);
-   setSelectedGoalId(null);setOverrideId(null);setSeconds(null);
+   const nextGoal=selectedGoalIds.length?"":goal;
+   onInvalidate?.();onCategoryChange?.(nextTheme);
+   if(nextGoal!==goal)onGoalChange(nextGoal);
+   setSelectedCategoryId(categoryId);setSubcategoriesOpen(true);
+   setSelectedGoalId(null);setSelectedGoalIds([]);setOverrideId(null);setSeconds(null);
    setTimelineEdits(null);setConfirmedTimelineKey(null);
-   setProposalContext({goal,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes}));
  };
  const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
@@ -243,8 +248,9 @@ export function MandalaAutoVideoDirector({
      item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
      item.id==="calm"?Moon:Star;
    return <button key={item.id} type="button" data-auto-video-goal={item.id}
-       aria-pressed={selectedGoalId===item.id}
-       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
+       aria-pressed={selectedGoalIds.includes(item.id)}
+       disabled={disabled||(!selectedGoalIds.includes(item.id)&&selectedGoalIds.length>=2)}
+       onClick={()=>chooseReadyGoal(item.id)}>
        <Icon size={18} aria-hidden="true"/><span>{
          popularTopicCopy[locale][item.id as keyof typeof popularTopicCopy.ru]||item.labels[locale]
        }</span>
@@ -257,14 +263,23 @@ export function MandalaAutoVideoDirector({
        data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
        aria-pressed={selectedCategoryId===item.id} disabled={disabled}
        onClick={()=>chooseCategory(item.theme,item.id)}>
-       {scenePoster(item.poster)?<img src={scenePoster(item.poster)!}
-         className={css.categoryPoster} alt="" loading="lazy"/>:null}
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
        <strong>{item.label[locale]}</strong>
        {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
          <Check size={15} strokeWidth={3}/></span>:null}
      </button>)}
    </div>
+   {subcategoriesOpen?<div className={css.subcategories} data-auto-video-subcategories>
+     <p className={css.popularHeading}>{locale==="ru"?"Подкатегории · выберите до двух":
+       locale==="es"?"Subcategorías · elige hasta dos":"Subcategories · choose up to two"}</p>
+     <div className={css.topicChoices} role="group" aria-label={
+       locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
+       {popularTopicOrder[selectedCategoryId].map(id=>{
+         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
+         return item?renderTopic(item):null;
+       })}
+     </div>
+   </div>:null}
  </div>;
  const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
    <div className={css.topicHead}>
@@ -283,31 +298,6 @@ export function MandalaAutoVideoDirector({
        <ArrowRight size={16} aria-hidden="true"/>
      </button>
    </div>
-   <label className={css.topicInput}>
-     <span className={css.srOnly}>{t.input}</span>
-     <input type="text" data-auto-video-input value={goal}
-       maxLength={160} disabled={disabled} placeholder={t.placeholder}
-       onChange={event=>{
-         const value=event.currentTarget.value;
-         onInvalidate?.();onGoalChange(value);
-         setProposalContext({goal:value,theme});
-         setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);
-         setTimelineEdits(null);setConfirmedTimelineKey(null);
-       }}/>
-   </label>
-   <p className={css.popularHeading}>
-     {locale==="ru"?"Популярные темы — выберите или напишите свою":
-       locale==="es"?"Temas populares: elige o escribe el tuyo":
-       "Popular topics — choose one or write your own"}
-   </p>
-   <div className={css.topicChoices} role="group" aria-label={
-      locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular topics"}>
-     {popularTopicOrder[selectedCategoryId].map(id=>{
-       const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
-       return item?renderTopic(item):null;
-     })}
-   </div>
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
      <label htmlFor="auto-video-refine">{t.refine}</label>
      <textarea id="auto-video-refine" rows={2} maxLength={120}
@@ -321,6 +311,19 @@ export function MandalaAutoVideoDirector({
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
+   <label className={css.topicInput}>
+     <span className={css.srOnly}>{t.input}</span>
+     <input type="text" data-auto-video-input value={goal}
+       maxLength={160} disabled={disabled} placeholder={t.placeholder}
+       onChange={event=>{
+         const value=event.currentTarget.value;
+         onInvalidate?.();onGoalChange(value);
+         setProposalContext({goal:value,theme});
+         setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
+         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
+         setTimelineEdits(null);setConfirmedTimelineKey(null);
+       }}/>
+   </label>
  </div>;
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
