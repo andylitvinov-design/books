@@ -110,8 +110,8 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
     pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{
       listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?32:18}}),
-      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'Build',conclusion:'failure',
-        steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
+      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',
+        steps:[{name:'TypeScript check',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
@@ -1128,11 +1128,14 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
       labeled++;return {data:[]}}
   }}};
   const limited=async(_,fn)=>fn(), log=()=>{};
+  // A retry may reuse only a signed receipt with a verified source job.
+  const failedSource=[{name:'core-lint-types-build',conclusion:'failure',
+    steps:[{name:'TypeScript check',conclusion:'failure'}]}];
   assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
-    {id:33,run_attempt:1},[],false,log,limited),false);
+    {id:33,run_attempt:1},failedSource,false,log,limited),false);
   fail=false;
   assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
-    {id:33,run_attempt:1},[],false,log,limited),true);
+    {id:33,run_attempt:1},failedSource,false,log,limited),true);
   assert.equal(written,1);assert.equal(labeled,1);
 });
 
@@ -1247,7 +1250,10 @@ test('interrupted Core recovery allocates a runner only to eligible first-attemp
  const source=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  const job=source.split('  recover-interrupted-core:')[1].split('    runs-on:')[0];
  assert.match(job,/github\.event\.workflow_run\.run_attempt == 1/);
- for(const result of ['cancelled','timed_out','startup_failure','failure']) assert.ok(job.includes(result));
+ const actual=job.match(/contains\(fromJSON\('([^']+)'\), github\.event\.workflow_run\.conclusion\)/);
+ assert.ok(actual,'first-attempt recovery must enumerate allowed conclusions');
+ assert.deepEqual(JSON.parse(actual[1]),['timed_out','startup_failure'],
+   'never re-run source failures or owner-cancelled work as infrastructure interruptions');
  assert.match(job,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
  assert.match(job,/github\.event\.workflow_run\.status == 'completed'/);
 });
