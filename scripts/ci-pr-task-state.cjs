@@ -221,7 +221,7 @@ function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
- if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','CI_WAKE_REQUESTED','FAILED',
+ if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','FAILED',
   'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
  if(matches.some(x=>['CI_CORE_CONFIRMED','CI_WAKE_UNDELIVERED'].includes(x.state)))
   return 'CI_WAKE_OUTCOME_RECORDED';
