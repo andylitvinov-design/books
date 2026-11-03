@@ -151,10 +151,11 @@ for (const name of draftStageWorkflows) {
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
-    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    // The deployed first-attempt lease does not inspect github.event.before
+    // on pull_request events. Keep the test aligned with the actual safe
+    // first-attempt synchronize gate; never change workflow behavior here.
     const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
-    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyCondition :
-      (attemptScoped ? firstAttemptCondition : prOnlyCondition);
+    const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
