@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
+import { UnifiedMobileDock } from "@/components/unified-mobile-dock";
 import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
 import { SitewideLeadCapture } from "@/components/sitewide-lead-capture";
 import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
@@ -15,6 +16,7 @@ import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
 import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
 import "./holistic-light-tokens.css";
+import "./unified-mobile-dock.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
 import "./reader-responsive.css";
@@ -76,7 +78,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /></body>
     </html>
   );
 }
