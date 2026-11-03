@@ -1001,6 +1001,13 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-specialist'),
     fail('hh-merge-check')]),'SPECIALIST_FAILED',
     'specialist failure must not reserve ESLint-only Repair Worker');
+  // Real November unified Core has NO standalone classify-change job.
+  const actualUnified=[success('core-lint-types-build')];
+  assert.equal(classifyCoreFailureJobs([...actualUnified,fail('hh-specialist'),
+    fail('hh-merge-check')]),'SPECIALIST_FAILED',
+    'a green co-located Core does not become product Source Repair when Specialist fails');
+  assert.equal(classifyCoreFailureJobs([...actualUnified,fail('hh-merge-check')]),
+    'RELEASE_GATE_ONLY','modern Core gate-only failure must stay out of Source Repair');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
     'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
   assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),

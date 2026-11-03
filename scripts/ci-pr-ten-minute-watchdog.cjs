@@ -200,9 +200,12 @@ function classifyCoreFailureJobs(jobs) {
   // Only the unified hh-merge-check explicitly identifies the modern
   // workflow. Old release-ready without hh-core-verified is INCOMPLETE, not
   // policy-green. A red present legacy Core must still fail closed.
-  const coreVerified=core?.conclusion==='success' ||
-    (core===undefined&&byName.has('hh-merge-check'));
-  const sourceGreen=scope?.conclusion==='success' &&
+  // Unified Core folded the old classify-change job into core-lint-types-build.
+  // Its absence is NOT evidence that successful co-located Core source checks
+  // failed; the modern hh-merge-check identifies this job layout explicitly.
+  const unified=core===undefined&&byName.has('hh-merge-check');
+  const coreVerified=core?.conclusion==='success' || unified;
+  const sourceGreen=(scope?.conclusion==='success' || (scope===undefined&&unified)) &&
     (build?.conclusion==='success' || build?.conclusion==='skipped') &&
     coreVerified;
   // Do not consume a deterministic ESLint source-writing slot for a verified
