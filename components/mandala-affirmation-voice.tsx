@@ -9,19 +9,20 @@ import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
 import type { NatureBed } from "@/lib/mandala/voice-audio-mix";
 import css from "./mandala-affirmation-voice.module.css";
+import { MandalaLocalVoiceTracks } from "./mandala-local-voice-tracks";
 
 type SpeechLanguage="ru"|"en"|"es";
 type Bed="none"|NatureBed;
 export type AffirmationVoicePreferences={voiceId:string;language:SpeechLanguage;bed:Bed};
 export type AffirmationVoiceResult={
   file:File;spokenText:string;voiceId:string;language:SpeechLanguage;
-  speechSeconds:number;mixSeconds:number;bed:Bed;
+  speechSeconds:number;mixSeconds:number;bed:Bed;source?:"local";
 };
 const durationChoices=[10,20,30,60] as const;
 const copy={
   ru:{
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
-    voice:"Голос",female:"Женские голоса (3)",male:"Мужские голоса (3)",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
+    voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     sample:"Прослушать",sampleBusy:"Загрузка…",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
     consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
@@ -34,7 +35,7 @@ const copy={
   },
   en:{
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
-    voice:"Voice",female:"Female voices (3)",male:"Male voices (3)",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
+    voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     sample:"Listen",sampleBusy:"Loading…",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
     consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
@@ -47,7 +48,7 @@ const copy={
   },
   es:{
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
-    voice:"Voz",female:"Voces femeninas (3)",male:"Voces masculinas (3)",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
+    voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     sample:"Escuchar",sampleBusy:"Cargando…",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
     consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
@@ -78,12 +79,13 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,onAttach,onGenerating,onInvalidate,onPreferencesChange,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
+  onDetachLocal?:(file:File)=>void;
   onPreferencesChange:(prefs:AffirmationVoicePreferences)=>void;
 }) {
   const t=copy[locale];
@@ -91,7 +93,7 @@ export function MandalaAffirmationVoice({
   const speechText=enabled?affirmationNarrationText(lines):"";
   const [language,setLanguage]=useState<SpeechLanguage>(locale);
   const [voiceId,setVoiceId]=useState("maya");
-  const [voiceGender,setVoiceGender]=useState<"female"|"male">("female");
+  const [voiceGender,setVoiceGender]=useState<"female"|"male"|"own">("female");
   const [bed,setBed]=useState<Bed>("none");
   const [voiceLevel,setVoiceLevel]=useState(90);
   const [musicLevel,setMusicLevel]=useState(12);
@@ -315,41 +317,52 @@ export function MandalaAffirmationVoice({
       <AudioLines size={20} aria-hidden="true"/>
       <div><h4 id="video-affirmation-voice-title">{t.title}</h4><p>{t.lead}</p></div>
     </div>
-    {speechText?<div className={css.transcript}>
-      <small>{t.preview} · {t.review}</small>
-      <p data-video-affirmation-spoken-text>{speechText}</p>
-    </div>:<p className={css.hint} role="status">{t.enable}</p>}
+    {voiceGender!=="own" ? <details className={css.transcriptDisclosure}>
+      <summary>{t.preview} · {t.review}</summary>
+      {speechText?<div className={css.transcript}>
+        <p data-video-affirmation-spoken-text>{speechText}</p>
+      </div>:<p className={css.hint} role="status">{t.enable}</p>}
+    </details> : null}
     <div className={css.voiceChoices} data-video-affirmation-voice-select role="group" aria-label={t.voice}>
       <div className={css.genderTabs} role="group" aria-label={t.voice}>
-        {(["female","male"] as const).map(id=><button type="button" key={id}
+        {(["female","male","own"] as const).map(id=><button type="button" key={id}
           data-video-affirmation-gender={id} aria-pressed={voiceGender===id}
           disabled={busy||disabled} onClick={()=>{
-            resetSample();setVoiceGender(id);setVoiceId(id==="female"?"maya":"mark");setConsent(false);
-          }}>{id==="female"?t.female:t.male}</button>)}
+            resetSample();setVoiceGender(id);
+            if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
+            setConsent(false);
+          }}>{id==="female"?t.female:id==="male"?t.male:t.own}</button>)}
       </div>
-      <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
-        {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
-          <button type="button" className={css.voiceCardSelect}
-            data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
-            disabled={busy||disabled} onClick={()=>{resetSample();setVoiceId(v.id);setConsent(false);}}>
-            <span><strong>{v.name[locale]}</strong><small>{v.description[locale]}</small></span>
-            <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
-          </button>
-          <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
-            aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
-            onClick={()=>void previewSample(v.id)}>
-            {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
-            <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
-          </button>
-        </div>)}
+      <div className={css.presetVoiceGroup} hidden={voiceGender==="own"}>
+        <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
+          {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
+            <button type="button" className={css.voiceCardSelect}
+              data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
+              disabled={busy||disabled} onClick={()=>{resetSample();setVoiceId(v.id);setConsent(false);}}>
+              <span><strong>{v.name[locale]}</strong><small>{v.description[locale]}</small></span>
+              <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
+            </button>
+            <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
+              aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
+              onClick={()=>void previewSample(v.id)}>
+              {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
+              <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
+            </button>
+          </div>)}
+        </div>
+        {sampleUrl?<div className={css.samplePlayer} data-video-affirmation-sample-ready>
+          <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
+          <audio ref={sampleAudioRef} controls preload="metadata" src={sampleUrl}
+            aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}/>
+        </div>:null}
+        {sampleMessage?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleMessage}</small>:null}
       </div>
-      {sampleUrl?<div className={css.samplePlayer} data-video-affirmation-sample-ready>
-        <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
-        <audio ref={sampleAudioRef} controls preload="metadata" src={sampleUrl}
-          aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}/>
-      </div>:null}
-      {sampleMessage?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleMessage}</small>:null}
+      <MandalaLocalVoiceTracks locale={locale} hidden={voiceGender!=="own"}
+        disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
+    {voiceGender!=="own" ? <>
+    <details className={css.voiceAdvanced}>
+      <summary>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
@@ -381,6 +394,7 @@ export function MandalaAffirmationVoice({
       </label>
     </div>
     <small className={css.hint}>{levels.balanced}</small>
+    </details>
     <label className={css.consent}>
       <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
         disabled={busy||disabled||approvalPending||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
@@ -401,6 +415,7 @@ export function MandalaAffirmationVoice({
       </a>
       <p>{t.tip}</p>
     </div>:null}
+    </> : null}
     {message?<p className={css.message} role="status" aria-live="polite">{message}</p>:null}
   </section>;
 }
