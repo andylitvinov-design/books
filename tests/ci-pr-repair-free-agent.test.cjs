@@ -141,6 +141,30 @@ test('oversized UI files are excerpted below free-model source budget',()=>{
  assert.ok(result.content.length<original.length);
  assert.deepEqual(boundedSource('small'),{content:'small',bounded:false});
 });
+test('bounded free repair context includes the actual failing middle source',()=>{
+ const filler='const safePublicValue = 42;\n'.repeat(800);
+ const middle="const coachingQuestionnaireHref = '/coaching'; // broken CTA\n";
+ const source='FILE START\n'+filler+middle+filler+'FILE END\n';
+ const evidence={assertion:'assert.match(freeEntry,/coaching\\/intake/)'};
+ const focused=boundedSource(source,evidence);
+ assert.equal(focused.bounded,true);
+ assert.ok(Buffer.byteLength(focused.content,'utf8')<=18000);
+ assert.match(focused.content,/coachingQuestionnaireHref = '\/coaching'/);
+ assert.match(focused.content,/FILE START/);
+ assert.match(focused.content,/FILE END/);
+ assert.match(focused.content,/SOURCE LINES \d+-\d+/);
+ const unfocused=boundedSource(source);
+ assert.doesNotMatch(unfocused.content,/coachingQuestionnaireHref/);
+});
+test('unrelated or huge assertions cannot expand source/model budget',()=>{
+ const content='HEADER\n'+'nothing here\n'.repeat(4000)+'FOOTER\n';
+ for(const evidence of [null,{assertion:'assert.match(src,/totally-absent-keyword/)'}, {assertion:'x'.repeat(100000)}]){
+  const result=boundedSource(content,evidence);
+  assert.ok(Buffer.byteLength(result.content,'utf8')<=18000);
+  assert.equal(result.bounded,true);
+ }
+});
+
 test('untrusted scoped test probes never receive free/paid or GitHub credentials',()=>{
  const env=noSecretEnv({
   PATH:'/usr/bin',CI:'true',REPAIR_SHA:SHA,
