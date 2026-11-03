@@ -48,7 +48,7 @@ async function inspect(browserType,locale,width){
   // MyTube now uses the approved 4×4×4 editorial hierarchy, rather than the
   // retired general-library four life-area filter. Wait for hydration so Safari
   // cannot swallow the real first click on a server-rendered category.
-  const categories=page.locator('[data-mytube-categories] [data-mytube-category]');
+  const categories=page.locator('[data-mytube-categories] [data-mytube-category]:not([data-mytube-category="all"])');
   assert.equal(await categories.count(),4,id+" four unique directions");
   await page.waitForFunction(()=>{
     const button=document.querySelector("[data-mytube-category]");
@@ -58,33 +58,57 @@ async function inspect(browserType,locale,width){
   await area.click();
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
-  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]');
+  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
-  await page.locator('[data-mytube-subcategory="energy-fatigue"]').click();
-  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]');
+  await subcategories.first().click();
+  await page.waitForFunction(()=>{
+    const first=document.querySelector('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+    return first?.getAttribute("aria-pressed")==="true";
+  },null,{timeout:15000});
+  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
   await topics.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await topics.count(),4,id+" four distinct topics");
-  await area.click();
+  await page.locator('[data-mytube-category="all"]').click();
   await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
     null,{timeout:15000});
   const cards=page.locator('[data-video-layout="mytube"] article');
-  assert.ok(await cards.count()>0,id+" genuine published video cards");
-  const first=cards.first();
-  const title=(await first.locator("h2").innerText()).trim();
-  const search=page.locator("[data-mytube-search]");
-  await search.fill(title.slice(0,Math.min(6,title.length)));
-  assert.ok(await cards.count()>=1,id+" search");
-  await search.fill("");
-  const visual=await first.locator('[class*="visual"]').first().boundingBox();
-  assert.ok(visual&&Math.abs(visual.width/visual.height-16/9)<.23,id+" 16:9 poster");
-  assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0,id+" no autoplay or pre-consent embed");
-  await first.locator("button").first().click();
-  await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').first().waitFor({timeout:12000});
+  const publishedCount=await cards.count();
+  // A local CI server without approved database content must show an honest
+  // empty state. It must not invent public media just to satisfy browser QA.
+  if(process.env.HH_REQUIRE_APPROVED_PLAYBACK==="1")
+    assert.ok(publishedCount>0,id+" published-video fixture required by release QA");
+  let playerClick=false;
+  if(publishedCount===0){
+    assert.equal(await page.locator('[data-mytube-empty="true"]').count(),1,
+      id+" honest empty reviewed catalog");
+    assert.equal(await page.locator('[data-mytube-empty="true"]').isVisible(),true,
+      id+" visitor sees verified empty state");
+    assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0,
+      id+" no phantom/unapproved playback");
+    const search=page.locator("[data-mytube-search]");
+    await search.fill("source-backed-video");
+    assert.equal(await search.inputValue(),"source-backed-video");
+    assert.equal(await cards.count(),0,id+" empty source remains empty under search");
+    await search.fill("");
+  }else{
+    const first=cards.first();
+    const title=(await first.locator("h2").innerText()).trim();
+    const search=page.locator("[data-mytube-search]");
+    await search.fill(title.slice(0,Math.min(6,title.length)));
+    assert.ok(await cards.count()>=1,id+" search");
+    await search.fill("");
+    const visual=await first.locator('[class*="visual"]').first().boundingBox();
+    assert.ok(visual&&Math.abs(visual.width/visual.height-16/9)<.23,id+" 16:9 poster");
+    assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0,id+" no autoplay or pre-consent embed");
+    await first.locator("button").first().click();
+    await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').first().waitFor({timeout:12000});
+    playerClick=true;
+  }
   if(browserType===webkit&&locale==="ru"&&width===390)
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
-   overflow,publishedCards:await cards.count(),playerClick:true});
+    overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){

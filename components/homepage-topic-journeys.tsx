@@ -10,7 +10,7 @@ const directionMeta = [
   { id: 'goals-money', route: 'business', image: '/images/holistic-house/course-focus-mountain-boy.webp' },
   { id: 'love-relationships', route: 'love', image: '/images/holistic-house/video-posters/constellations-en-v1.webp' },
   { id: 'energy-confidence', route: 'energy', image: '/images/holistic-house/reiki-approved-sunrise-v3.webp' },
-  { id: 'stress-recovery', route: 'stress', image: '/images/holistic-house/hero-olive-incense.webp' },
+  { id: 'stress-anxiety', route: 'stress', image: '/images/holistic-house/hero-olive-incense.webp' },
 ] as const
 
 const copy = {
@@ -23,7 +23,7 @@ const copy = {
       'goals-money': { eyebrow: 'PURPOSE, GOALS & FINANCES', detail: 'Purpose, personal goals, money, business and career.' },
       'love-relationships': { eyebrow: 'LOVE & CONNECTION', detail: 'Loneliness, finding love, couple relationships and family closeness.' },
       'energy-confidence': { eyebrow: 'VITALITY & SELF-CONFIDENCE', detail: 'Body wellbeing, fatigue recovery, energy, confidence and calm.' },
-      'stress-recovery': { eyebrow: 'STRESS & MENTAL WELLBEING', detail: 'Stress, burnout, anxiety, psychological trauma, depression and apathy.' },
+      'stress-anxiety': { eyebrow: 'STRESS & MENTAL WELLBEING', detail: 'Stress, burnout, anxiety, psychological trauma, depression and apathy.' },
     },
   },
   ru: {
@@ -35,7 +35,7 @@ const copy = {
       'goals-money': { eyebrow: 'ПРЕДНАЗНАЧЕНИЕ, ЦЕЛИ И ФИНАНСЫ', detail: 'Предназначение, достижение целей, деньги, бизнес и карьера.' },
       'love-relationships': { eyebrow: 'ЛЮБОВЬ И БЛИЗОСТЬ', detail: 'Одиночество, поиск любви, отношения в паре, близость и семья.' },
       'energy-confidence': { eyebrow: 'ЖИЗНЕННЫЙ РЕСУРС И УВЕРЕННОСТЬ', detail: 'Тело и здоровье, усталость и восстановление, энергия, уверенность и спокойствие.' },
-      'stress-recovery': { eyebrow: 'СТРЕСС И ПСИХОЛОГИЧЕСКОЕ СОСТОЯНИЕ', detail: 'Стресс, выгорание, тревога, психологические травмы, депрессия и апатия.' },
+      'stress-anxiety': { eyebrow: 'СТРЕСС И ПСИХОЛОГИЧЕСКОЕ СОСТОЯНИЕ', detail: 'Стресс, выгорание, тревога, психологические травмы, депрессия и апатия.' },
     },
   },
   es: {
@@ -47,7 +47,7 @@ const copy = {
       'goals-money': { eyebrow: 'PROPÓSITO, METAS Y FINANZAS', detail: 'Propósito, metas personales, dinero, negocios y carrera.' },
       'love-relationships': { eyebrow: 'AMOR Y CONEXIÓN', detail: 'Soledad, encontrar el amor, relaciones de pareja y cercanía familiar.' },
       'energy-confidence': { eyebrow: 'VITALIDAD Y CONFIANZA', detail: 'Bienestar corporal, recuperación del cansancio, energía, confianza y calma.' },
-      'stress-recovery': { eyebrow: 'ESTRÉS Y BIENESTAR EMOCIONAL', detail: 'Estrés, agotamiento, ansiedad, trauma psicológico, depresión y apatía.' },
+      'stress-anxiety': { eyebrow: 'ESTRÉS Y BIENESTAR EMOCIONAL', detail: 'Estrés, agotamiento, ansiedad, trauma psicológico, depresión y apatía.' },
     },
   },
 } as const

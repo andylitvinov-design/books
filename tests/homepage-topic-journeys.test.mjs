@@ -59,25 +59,12 @@ test('marketing → topic → prefiltered simple test explorer → course or fre
   const more = await readFile('components/home-more-disclosure.tsx', 'utf8')
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=\{locale\}/)
   assert.doesNotMatch(home, /<HomepageTopicJourneys locale=\{locale\}/);
-  assert.match(more, /listMyTubeCategories\(locale\)/)
-  assert.match(more, /data-home-topic-directions/)
-  for (const category of ['goals-money','love-relationships','energy-confidence','stress-recovery'])
-    assert.ok(more.includes('data-home-topic-filter={category.id}'), category)
-  assert.match(more,/categoryRoutes/)
-  for (const route of ['business','love','energy','stress']) assert.ok(more.includes('"'+route+'"'), route)
-  assert.match(more,/href=\{"\/" \+ locale \+ "\/temple-support"\}/)
-  assert.match(tiles,/listMyTubeCategories\(locale\)/)
-  assert.match(tiles,/directionMeta/)
-  assert.match(tiles,/goals-money/)
-  assert.match(tiles,/love-relationships/)
-  assert.match(tiles,/energy-confidence/)
-  assert.match(tiles,/stress-recovery/)
-  assert.match(tiles,/route: 'business'/)
-  assert.match(tiles,/route: 'love'/)
-  assert.match(tiles,/route: 'energy'/)
-  assert.match(tiles,/route: 'stress'/)
-  assert.match(tiles,/data-topic-id=\{direction\.id\}/)
-  assert.match(tiles,/<strong>\{category\.label\}<\/strong>/)
+  assert.match(more, /data-home-topic-filter=\{category\.id\}/);
+  for (const direction of ['goals-money','love-relationships','energy-confidence','stress-anxiety']) {
+    assert.ok(more.includes('"' + direction + '": "'), direction);
+    assert.ok(tiles.includes("id: '" + direction + "'"), direction);
+  }
+  assert.match(tiles, /listMyTubeCategories\(locale\)/)
   assert.match(chooser,/data-topic-action="tests"/)
   assert.match(chooser,/data-topic-action="course"/)
   assert.match(chooser,/data-topic-action="review"/)

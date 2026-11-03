@@ -25,7 +25,7 @@ test("home reuses seven offers and no longer repeats reviews, method promos or d
   assert.match(filters, /ssr: false/);
   // The four canonical directions are rendered from data, not repeated as hardcoded chips.
   assert.match(filters, /data-home-topic-filter=\{category\.id\}/);
-  for (const id of ["goals-money","love-relationships","energy-confidence","stress-recovery"]) {
+  for (const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety"]) {
     assert.ok(filters.includes('"' + id + '": '), id);
   }
   for (const topic of ["temple","services","courses"]) {
@@ -41,7 +41,7 @@ test("filter chips link existing localized routes with compact, accessible styli
   // Dynamic localized links resolve through the exact legacy SEO landing routes.
   for (const [id,route] of Object.entries({
     "goals-money":"business","love-relationships":"love",
-    "energy-confidence":"energy","stress-recovery":"stress",
+    "energy-confidence":"energy","stress-anxiety":"stress",
   })) {
     assert.ok(jsx.includes('"' + id + '": "' + route + '"'), id + " => " + route);
   }

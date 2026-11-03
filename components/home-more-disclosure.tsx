@@ -50,7 +50,7 @@ const categoryRoutes = {
   "goals-money": "business",
   "love-relationships": "love",
   "energy-confidence": "energy",
-  "stress-recovery": "stress",
+  "stress-anxiety": "stress",
 } as const
 
 export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {

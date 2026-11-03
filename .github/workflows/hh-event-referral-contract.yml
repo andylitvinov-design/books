@@ -20,7 +20,7 @@ on:
       - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
       - 'tests/crm-event-channel-attribution.test.mjs'
       - '.github/workflows/hh-crm-event-channels.yml'
-      - '.github/workflows/hh-event-referral-contract.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: [codex/public-book-library]
     paths:

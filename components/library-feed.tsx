@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import type { MyTubeVideoTags } from "@/lib/mandala/mytube-video-tagging.mjs";
 import styles from "./library-feed.module.css";
 
 export type LibraryFeedItem = {
@@ -39,7 +40,7 @@ export type LibraryFeedItem = {
   directions?: string[];
   traditions?: string[];
   provenance?: string[];
-};
+} & Partial<MyTubeVideoTags>;
 
 const words = {
   en: {
@@ -83,7 +84,7 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
 
 export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false,
   preserveOrder = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
-  videoLayout = "default",
+  videoLayout = "default", mytubeFocus,
   saveText = "Save", unsaveText = "Unsave", dismissText = "Not for me",
 }: {
   locale: PublicLocale;
@@ -93,6 +94,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   timeline?: boolean;
   preserveOrder?: boolean;
   videoLayout?: "default" | "mytube";
+  mytubeFocus?: {categoryId?:string;subcategoryId?:string;topicId?:string;scenarioId?:string};
   savedVideoIds?: string[];
   onToggleSaved?: (id: string) => void;
   onDismissVideo?: (id: string) => void;
@@ -187,6 +189,13 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
           "https://i.ytimg.com/vi/" + encodeURIComponent(item.youtubeId) + "/hqdefault.jpg" : "");
         const date = dateLabel(item.publishedAt, locale);
         const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : copy.watch;
+        const matchingTopic=(item.mytubeRankings||[]).find(match=>
+          (!mytubeFocus?.categoryId||mytubeFocus.categoryId==="all"||match.categoryId===mytubeFocus.categoryId)&&
+          (!mytubeFocus?.subcategoryId||mytubeFocus.subcategoryId==="all"||match.subcategoryId===mytubeFocus.subcategoryId)&&
+          (!mytubeFocus?.topicId||mytubeFocus.topicId==="all"||match.topicId===mytubeFocus.topicId));
+        const matchingScenario=matchingTopic?.scenarios.find(s=>
+          s.scenarioId===mytubeFocus?.scenarioId);
+        const matchingScore=matchingScenario?.score??matchingTopic?.score;
         return <Fragment key={item.id}>
           {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
             <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
@@ -243,6 +252,14 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
               </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
+            {videoLayout==="mytube"&&matchingTopic&&<p className={styles.meta}
+              data-mytube-ranking={matchingTopic.topicId}
+              title={locale==="ru"?"Предварительная редакционная оценка, не проверенная вручную":
+                locale==="es"?"Evaluación editorial provisional, sin revisión humana":
+                  "Provisional editorial suitability score; not human verified"}>
+              <span>{matchingTopic.categoryLabel} · {matchingTopic.subcategoryLabel} · {matchingTopic.topicLabel}</span>
+              <strong>{locale==="ru"?"Совпадение":locale==="es"?"Coincidencia":"Match"}: {matchingScore}/100</strong>
+            </p>}
             <div className={styles.actions}>
               {canPlay ? (
                 <>
