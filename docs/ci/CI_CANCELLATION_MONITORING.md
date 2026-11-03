@@ -36,8 +36,10 @@ A moved *current* base alone is deliberately insufficient for BASE_MOVED.
 
 For each sampled terminal workflow, retrieve all GitHub jobs for the run.
 **Observed runner minutes** sum per-job (completed_at - started_at)/60,
-not (workflow.updated_at - workflow.created_at)/60. Queue-only jobs with
-null started_at, conclusion=cancelled, and null runner_name count **zero**.
+not (workflow.updated_at - workflow.created_at)/60, **only when** an assigned
+runner_id > 0 and nonempty runner_name prove actual runner allocation. GitHub
+sometimes fills started_at even for unassigned jobs. Jobs with runner_id 0/null
+and empty/null runner_name count **zero**, even if started_at exists.
 Any unverified, truncated, mismatched, or malformed job inventory has
 runner_minutes=null, **never zero**. Completed jobs preceding the cancellation
 may be counted because that run's result was abandoned; this is *potentially

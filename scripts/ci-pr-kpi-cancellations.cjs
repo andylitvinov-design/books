@@ -171,10 +171,17 @@ function summarizeCancellationWindow({source={},now=Date.now(),windowMs}){
     if(Number.isSafeInteger(job.run_attempt)&&Number.isSafeInteger(run.run_attempt)&&
        job.run_attempt!==run.run_attempt)continue;
     if(job.conclusion==='skipped')continue;
-    if(job.started_at===null||job.started_at===undefined){
-     if(job.conclusion==='cancelled'&&job.runner_name===null)continue;
-     cost=null;break;
-    }
+    // GitHub can populate started_at at enqueue time despite no runner.
+    // Zero/null runner id AND empty name is confirmed no assignment;
+    // any ambiguous runner metadata fails closed (unknown, never zero).
+    const notAssigned=(job.runner_id===0||job.runner_id===null)&&
+      (job.runner_name===''||job.runner_name===null);
+    if(notAssigned)continue;
+    const assigned=Number.isSafeInteger(job.runner_id)&&job.runner_id>0&&
+      typeof job.runner_name==='string'&&job.runner_name.trim().length>0;
+    if(!assigned){cost=null;break;}
+    if(Number.isSafeInteger(run.run_attempt)&&run.run_attempt>1&&
+       !Number.isSafeInteger(job.run_attempt)){cost=null;break;}
     const start=finiteTime(job.started_at),end=finiteTime(job.completed_at);
     if(job.status!=='completed'||start===null||end===null||end<start){cost=null;break;}
     cost+=(end-start)/60000;startedJobs++;

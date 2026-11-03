@@ -55,7 +55,7 @@ test('complete receipt records are distinct from complete task history',()=>{
 });
 
 test('six cancellation reasons and runner-cost sample are visible without claiming a verified total',()=>{
- const input=data(),job={id:21,run_id:7,status:'completed',conclusion:'cancelled',run_attempt:1,
+ const input=data(),job={id:21,run_id:7,status:'completed',conclusion:'cancelled',run_attempt:1,runner_id:101,runner_name:'GitHub Actions 101',
   started_at:new Date(NOW-15*60000).toISOString(),completed_at:new Date(NOW-10*60000).toISOString()};
  const canceled={id:7,status:'completed',conclusion:'cancelled',run_attempt:1,event:'pull_request',
   path:'.github/workflows/core.yml',created_at:new Date(NOW-20*60000).toISOString(),

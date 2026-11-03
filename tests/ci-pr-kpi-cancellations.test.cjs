@@ -44,10 +44,10 @@ test('runner-minute sample counts actual job execution, not workflow duration or
  const failed={...run(12,'failure',20,8),path:'.github/workflows/specialist.yml'};
  const source={candidateRunIds:[11,12],workflowRuns:[cancelled,failed],
   verifiedJobRunIds:[11,12],jobs:[
-   {id:1,run_id:11,run_attempt:1,conclusion:'cancelled',status:'completed',started_at:at(22),completed_at:at(15)},
+   {id:1,run_id:11,run_attempt:1,conclusion:'cancelled',status:'completed',runner_id:101,runner_name:'GitHub Actions 101',started_at:at(22),completed_at:at(15)},
    {id:2,run_id:11,run_attempt:1,conclusion:'cancelled',status:'completed',
-    started_at:null,completed_at:at(15),runner_name:null},
-   {id:3,run_id:12,run_attempt:1,conclusion:'failure',status:'completed',started_at:at(17),completed_at:at(12)}]};
+    started_at:null,completed_at:at(15),runner_id:0,runner_name:''},
+   {id:3,run_id:12,run_attempt:1,conclusion:'failure',status:'completed',runner_id:102,runner_name:'GitHub Actions 102',started_at:at(17),completed_at:at(12)}]};
  const s=summarizeCancellationWindow({source,now:NOW,windowMs:3600000});
  assert.equal(s.counts.SUSPICIOUS_CANCEL,1);
  assert.equal(s.counts.REAL_FAILURE,1);
@@ -62,7 +62,7 @@ test('runner-minute sample counts actual job execution, not workflow duration or
 test('missing job inventory is unknown, while verified queue-only cancellation costs zero runner minutes',()=>{
  const source={candidateRunIds:[11,12],workflowRuns:[run(11,'cancelled'),{...run(12,'cancelled'),path:'.github/workflows/specialist.yml'}],
   verifiedJobRunIds:[11],jobs:[{id:1,run_id:11,status:'completed',conclusion:'cancelled',
-   started_at:null,completed_at:at(14),runner_name:null}]};
+   started_at:null,completed_at:at(14),runner_id:0,runner_name:''}]};
  const s=summarizeCancellationWindow({source,now:NOW,windowMs:3600000});
  assert.equal(s.counts.SUSPICIOUS_CANCEL,2);
  assert.equal(s.verified_job_inventories,1);
@@ -70,6 +70,14 @@ test('missing job inventory is unknown, while verified queue-only cancellation c
  assert.equal(s.cancelled_before_runner,1);
  assert.equal(s.examples.find(x=>x.run_id===12).runner_minutes,null);
  assert.equal(s.cancelled_runner_minutes_observed,0);
+});
+test('GitHub queued cancellation with started_at but runner_id=0 never consumes runner-minutes',()=>{
+ const job={id:9,run_id:11,run_attempt:1,status:'completed',conclusion:'cancelled',
+  runner_id:0,runner_name:'',started_at:at(29),completed_at:at(10)};
+ const s=summarizeCancellationWindow({source:{workflowRuns:[run(11,'cancelled')],
+  candidateRunIds:[11],verifiedJobRunIds:[11],jobs:[job]},now:NOW,windowMs:3600000});
+ assert.equal(s.runner_minutes_observed.SUSPICIOUS_CANCEL,0);
+ assert.equal(s.cancelled_before_runner,1);
 });
 test('accounting includes cancelled runs only once even with successor inventory and excludes older window',()=>{
  const first=run(11,'cancelled',130,125),next=run(12,'success',120,110,B);
@@ -91,7 +99,7 @@ test('bounded collector records verified job inventories, prior state and real A
    listJobsForWorkflowRun:async args=>{
     reads++;return {headers:h,data:{total_count:args.run_id===11?1:0,
      jobs:args.run_id===11?[{id:100,run_id:11,run_attempt:1,conclusion:'cancelled',
-      status:'completed',started_at:at(20),completed_at:at(15)}]:[]}};
+      status:'completed',runner_id:103,runner_name:'GitHub Actions 103',started_at:at(20),completed_at:at(15)}]:[]}};
    }
   }},
   graphql:async()=>({rateLimit:{remaining:3900},repository:{p42:{number:42,merged:false,closedAt:null}}})
