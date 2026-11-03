@@ -8,7 +8,7 @@ const os=require('node:os');
 const cp=require('node:child_process');
 
 const MODEL='opencode/glm-5.3-flash-free';
-const MAX_FILES=8, MAX_SOURCE=18000, MAX_CONTEXT=58000, MAX_PATCH=35000;
+const MAX_FILES=8, MAX_SOURCE=18000, MAX_DISK_SOURCE=150000, MAX_CONTEXT=58000, MAX_PATCH=35000;
 const SOURCE=/^(?:app|components|lib|scripts)\/(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx)$/;
 const SENSITIVE=/(^|[\/_.-])(?:api|auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration|supabase|ci)(?=$|[\/_.-])/i;
 function safeSourcePath(file){
@@ -31,6 +31,84 @@ function run(command,args,{cwd=process.cwd(),env=process.env,timeout=120000}={})
  return {ok:r.status===0&&!r.error,output:String(r.stdout||'')+'\n'+String(r.stderr||''),
    stdout:String(r.stdout||''),status:r.status,error:r.error?.code||null};
 }
+
+function noSecretEnv(env=process.env){
+ const clean={...env};
+ for(const key of Object.keys(clean))
+   if(/(?:TOKEN|SECRET|PASSWORD|CREDENTIAL|API_KEY|AUTH|^OPENCODE_|^GITHUB_|^GH_)/i.test(key))
+     delete clean[key];
+ return clean;
+}
+// Locate the literal source variable on the failed assertion line, rather
+// than offering an arbitrary first-eight-file PR diff to the free model.
+function findFailureTarget(testFile,source,output,allowed){
+ const lines=String(source).split(/\r?\n/);
+ const basename=testFile.split('/').at(-1).replace(/\./g,'\\.');
+ const stacks=new RegExp(basename+':(\\d+):\\d+','g');
+ for(const stack of String(output).matchAll(stacks)){
+   const line=Number(stack[1]);
+   if(!Number.isSafeInteger(line)||line<1||line>lines.length)continue;
+   const assertion=lines[line-1].trim();
+   const arg=/\bassert\.(?:match|doesNotMatch|equal|deepEqual|ok)\(\s*([A-Za-z_$][\w$]*)/.exec(assertion);
+   if(!arg)continue;
+   const variable=arg[1];
+   const expression=new RegExp('\\b(?:const|let|var)\\s+'+variable+'\\s*=\\s*read\\(\\s*[\\x27\\x22]([^\\x27\\x22]+)[\\x27\\x22]\\s*\\)','g');
+   const before=lines.slice(0,line).join('\n');
+   let match,last=null;
+   while((match=expression.exec(before))!==null)
+     if(allowed.includes(match[1]))last=match[1];
+   if(last)return {file:last,test:testFile,line,assertion:assertion.slice(0,240)};
+ }
+ return null;
+}
+function narrowFailedSourceScope(root,scope){
+ const listing=run('git',['ls-files','-z','--','tests'],{cwd:root,timeout:10000});
+ if(!listing.ok)throw Error('FREE_AI_TEST_INDEX_UNAVAILABLE');
+ const tests=listing.stdout.split('\0').filter(x=>/^tests\/[\w./-]+\.test\.(?:mjs|cjs|js)$/.test(x));
+ const {selectTests}=require(path.resolve(root,'.hh-trusted/scripts/ci-pr-repair-test-scope.cjs'));
+ const covered=new Map();
+ for(const file of scope.files){
+   const matched=selectTests(root,[file],tests);
+   for(const testFile of matched||[]){
+     if(!covered.has(testFile))covered.set(testFile,new Set());
+     covered.get(testFile).add(file);
+   }
+ }
+ if(!covered.size)throw Error('FREE_AI_NO_BOUNDED_TEST_COVERAGE');
+ const ranked=new Map(),evidence=new Map();
+ const deadline=Date.now()+100000;
+ let probes=0;
+ for(const [testFile,files] of covered){
+   if(probes++>=20||Date.now()>=deadline)break;
+   const result=run(process.execPath,['--test','--test-reporter=tap',testFile],
+     {cwd:root,env:noSecretEnv(),timeout:Math.min(25000,Math.max(1000,deadline-Date.now()))});
+   if(result.ok||result.error)continue;
+   for(const file of files)ranked.set(file,(ranked.get(file)||0)+1);
+   const source=fs.readFileSync(path.resolve(root,testFile),'utf8');
+   const exact=findFailureTarget(testFile,source,result.output,scope.files);
+   if(exact){
+     ranked.set(exact.file,(ranked.get(exact.file)||0)+100);
+     evidence.set(exact.file,exact);
+   }
+ }
+ if(!ranked.size)throw Error('FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE');
+ const selected=[...ranked].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0];
+ const focused={sha:scope.sha,files:[selected],evidence:evidence.get(selected)||null};
+ console.log('HH_FREE_AI_NARROW_SCOPE '+JSON.stringify({
+   file:selected,source_candidates:scope.files.length,test_probes:probes,
+   evidence:focused.evidence?{test:focused.evidence.test,line:focused.evidence.line}:null}));
+ return focused;
+}
+function boundedSource(content){
+ if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
+ // Large UI files are common. Supply stable beginning/end excerpts (not a
+ // whole page); a proposed hunk must still match git apply on the real file.
+ let excerpt=content.slice(0,2700)+'\n/* [BOUNDED SOURCE EXCERPT: middle omitted] */\n'+content.slice(-13500);
+ while(Buffer.byteLength(excerpt,'utf8')>MAX_SOURCE)
+   excerpt=excerpt.slice(0,2700)+'\n/* [BOUNDED SOURCE EXCERPT: middle omitted] */\n'+excerpt.slice(-12000);
+ return {content:excerpt,bounded:true};
+}
+
 function checkScopeFiles(root,scope){
  if(run('git',['rev-parse','HEAD'],{cwd:root,timeout:10000}).stdout.trim()!==scope.sha)
    throw Error('FREE_AI_STALE_HEAD');
@@ -47,10 +125,11 @@ function checkScopeFiles(root,scope){
    }
    if(!fs.statSync(full).isFile())throw Error('FREE_AI_NOT_FILE');
    const content=fs.readFileSync(full,'utf8');
-   if(!content||Buffer.byteLength(content)>MAX_SOURCE||content.includes('\0'))
+   if(!content||Buffer.byteLength(content)>MAX_DISK_SOURCE||content.includes('\0'))
      throw Error('FREE_AI_SOURCE_TOO_LARGE');
-   total+=Buffer.byteLength(content);
-   return {file,content};
+   const excerpt=boundedSource(content);
+   total+=Buffer.byteLength(excerpt.content);
+   return {file,...excerpt};
  }).filter(x=>{
    if(total>MAX_CONTEXT)throw Error('FREE_AI_TOTAL_SOURCE_TOO_LARGE');
    return true;
@@ -64,16 +143,16 @@ function safeDiagnostic(value,limit=5500){
 }
 function collectDiagnostics(root,scope){
  const tests=run(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...scope.files],
-   {cwd:root,timeout:180000});
+   {cwd:root,timeout:180000,env:noSecretEnv()});
  // Verifier requires a real direct-import test for every changed source.
  // If none exists, do not spend even free inference quota on an unpublishable patch.
  if(/NO_VERIFIED_BOUNDED_RELATED_TESTS/.test(tests.output))
    throw Error('FREE_AI_NO_BOUNDED_TEST_COVERAGE');
  const lint=run(path.join(root,'node_modules/.bin/eslint'),
-   ['--max-warnings=0',...scope.files],{cwd:root,timeout:100000});
+   ['--max-warnings=0',...scope.files],{cwd:root,timeout:100000,env:noSecretEnv()});
  const typed=scope.files.some(x=>/\.(ts|tsx|jsx)$/.test(x));
  const types=typed?run(path.join(root,'node_modules/.bin/tsc'),
-   ['--noEmit','--incremental','false','--pretty','false'],{cwd:root,timeout:210000}):
+   ['--noEmit','--incremental','false','--pretty','false'],{cwd:root,timeout:210000,env:noSecretEnv()}):
    {ok:true,output:'not applicable'};
  if(tests.ok&&lint.ok&&types.ok)throw Error('FREE_AI_NO_LOCAL_FAILURE_REPRODUCED');
  return {tests:{ok:tests.ok,detail:safeDiagnostic(tests.output,4800)},
@@ -93,7 +172,8 @@ function promptFor(scope,sources,signals){
   'Exact HEAD: '+scope.sha,
   'Allowlisted source files: '+JSON.stringify(scope.files),
   'Reproduced diagnostics: '+JSON.stringify(signals),
-  ...sources.map(s=>'FILE '+s.file+' (full contents):\n'+s.content),
+  'Exact failing assertion source: '+JSON.stringify(scope.evidence||null),
+  ...sources.map(s=>'FILE '+s.file+(s.bounded?' (bounded beginning/end excerpts, NOT full source)':' (full contents)')+':\n'+s.content),
  ].join('\n\n');
 }
 function validateAgentAcl(stdout){
@@ -216,7 +296,7 @@ async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutM
 }
 
 async function propose(){
- const scope=sourceScope(),root=process.cwd();
+ const root=process.cwd(),scope=narrowFailedSourceScope(root,sourceScope());
  const sources=checkScopeFiles(root,scope);
  const signals=collectDiagnostics(root,scope);
  const prompt=promptFor(scope,sources,signals);
@@ -272,4 +352,5 @@ async function main(){
 }
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice};
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope};
