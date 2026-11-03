@@ -150,14 +150,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
+      const phraseSelector=page.locator("[data-video-affirmation-phrase]");
+      await phraseSelector.waitFor({state:"visible"});
+      assert.ok((await phraseSelector.locator("option").count())>=3,
+        "the visitor can choose one of their approved phrases or all");
+      await phraseSelector.selectOption("1");
+      await expect(phraseSelector).toHaveValue("1");
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
-      assert.ok(transcript.length>5,"should speak actual selected affirmations");
+      assert.ok(transcript.length>5&&transcript.length<=45,"only one approved phrase is spoken");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="male"]').click();
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
-      await chooser.locator('[data-video-affirmation-gender="female"]').click();
-      await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
+      await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
@@ -173,10 +180,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
       assert.equal(affirmationRequests.length,1);
       assert.equal(affirmationRequests[0].text,transcript);
-      assert.equal(affirmationRequests[0].voiceId,"maya");
+      assert.equal(affirmationRequests[0].voiceId,"leon");
       assert.equal(affirmationRequests[0].consent,true);
       assert.equal(affirmationRequests[0].language,locale);
-      const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
+      const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav";
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
