@@ -409,7 +409,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Нужно лучше планировать и завершать дела.",
+            "en": "You want to plan better and finish tasks.",
+            "es": "Quieres planificar mejor y terminar tus tareas."
+          }
         },
         {
           "id": "purpose-choice",
@@ -739,7 +744,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Ищете направление, призвание или решение о переменах.",
+            "en": "You are seeking direction, purpose or a life-change decision.",
+            "es": "Buscas dirección, propósito o decidir un cambio de vida."
+          }
         },
         {
           "id": "money-mindset",
@@ -1069,7 +1079,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Главный запрос связан с деньгами, убеждениями и доходом.",
+            "en": "Your main concern is money, beliefs and income.",
+            "es": "Tu preocupación principal es el dinero, las creencias y los ingresos."
+          }
         },
         {
           "id": "business-career",
@@ -1399,7 +1414,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Речь о собственном деле, карьере или руководстве.",
+            "en": "Your concern is business ownership, career or leadership.",
+            "es": "Tu tema es emprender, la carrera o el liderazgo."
+          }
         }
       ]
     },
@@ -1739,7 +1759,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Хотите встретить партнёра или начать отношения.",
+            "en": "You want to meet a partner or start a relationship.",
+            "es": "Quieres conocer a una pareja o iniciar una relación."
+          }
         },
         {
           "id": "couple-relationships",
@@ -2069,7 +2094,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Вы уже в паре и хотите улучшить отношения.",
+            "en": "You are already in a relationship and want to improve it.",
+            "es": "Ya tienes pareja y quieres mejorar la relación."
+          }
         },
         {
           "id": "loneliness-breakups",
@@ -2399,7 +2429,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Переживаете одиночество или завершение отношений.",
+            "en": "You are dealing with loneliness or a breakup.",
+            "es": "Estás viviendo soledad o una ruptura."
+          }
         },
         {
           "id": "intimacy-family",
@@ -2729,7 +2764,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Вас волнуют близость, привязанность или семейные отношения.",
+            "en": "Your concern is intimacy, attachment or family relationships.",
+            "es": "Tu preocupación es la intimidad, el apego o las relaciones familiares."
+          }
         }
       ]
     },
@@ -3069,7 +3109,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Хотите лучше чувствовать тело, дыхание и движение.",
+            "en": "You want better body awareness, breathing and movement.",
+            "es": "Quieres mejorar la conciencia corporal, la respiración y el movimiento."
+          }
         },
         {
           "id": "energy-fatigue",
@@ -3399,7 +3444,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Не хватает сил или беспокоит физическая либо умственная усталость.",
+            "en": "You lack energy or experience physical or mental fatigue.",
+            "es": "Te falta energía o sientes cansancio físico o mental."
+          }
         },
         {
           "id": "confidence-worth",
@@ -3729,7 +3779,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Хотите укрепить самооценку и уверенность в себе.",
+            "en": "You want to strengthen self-esteem and confidence.",
+            "es": "Quieres fortalecer tu autoestima y confianza."
+          }
         },
         {
           "id": "sleep-rest",
@@ -4059,7 +4114,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Главная трудность связана с засыпанием или качеством сна.",
+            "en": "Your main difficulty is falling asleep or sleep quality.",
+            "es": "Tu principal dificultad es dormirte o la calidad del sueño."
+          }
         }
       ]
     },
@@ -4399,7 +4459,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Чувствуете длительную перегрузку, рабочий стресс или выгорание.",
+            "en": "You feel prolonged overload, work stress or burnout.",
+            "es": "Sientes sobrecarga prolongada, estrés laboral o agotamiento."
+          }
         },
         {
           "id": "anxiety-panic",
@@ -4729,7 +4794,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Беспокоят тревога, паника или повторяющиеся мысли.",
+            "en": "You experience anxiety, panic or recurring thoughts.",
+            "es": "Experimentas ansiedad, pánico o pensamientos repetitivos."
+          }
         },
         {
           "id": "fears-phobias",
@@ -5062,7 +5132,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Есть конкретный объект или ситуация, которых вы боитесь.",
+            "en": "There is a specific object or situation that you fear.",
+            "es": "Hay un objeto o situación concreta que te provoca miedo."
+          }
         },
         {
           "id": "trauma-depression",
@@ -5395,7 +5470,12 @@
                 }
               ]
             }
-          ]
+          ],
+          "chooseWhen": {
+            "ru": "Ищете бережную поддержку при последствиях прошлого опыта или подавленности.",
+            "en": "You seek gentle support for past experiences or low mood.",
+            "es": "Buscas apoyo cuidadoso para experiencias pasadas o ánimo bajo."
+          }
         }
       ]
     }
