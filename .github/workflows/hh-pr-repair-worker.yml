@@ -60,6 +60,7 @@ jobs:
       - name: Check trusted repair worker syntax
         run: |
           node --check scripts/ci-pr-repair-worker.cjs
+          node --check scripts/ci-pr-runner-evidence.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
@@ -97,6 +98,20 @@ jobs:
               reservationRunId:String(context.payload.inputs?.reservation_run_id || ''),dryRun,
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
+            if(result.status==='claimed'&&!dryRun){
+              const {confirmRepairRunner}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-runner-evidence.cjs');
+              try{
+                const evidence=await confirmRepairRunner({github,context,
+                  number:result.number,expectedSha:result.sha,
+                  taskKey:String(context.payload.inputs?.task_key||'')});
+                core.info('HH_EXECUTION_REAL_RUNNER '+JSON.stringify(evidence));
+                if(evidence.status!=='RUNNER_CONFIRMED')
+                  core.warning('Metadata dispatch is NOT execution: '+evidence.reason);
+              }catch(error){
+                core.warning('RUNNER_PROOF_UNAVAILABLE: '+String(error.message||error).slice(0,160));
+              }
+            }
             core.setOutput('claim_reason',result.reason||'');
             core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
