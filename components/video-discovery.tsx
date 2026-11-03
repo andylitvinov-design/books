@@ -6,7 +6,7 @@ import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
 import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
-import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
@@ -16,7 +16,7 @@ const labels={
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
-    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
+    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
@@ -36,7 +36,7 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
-    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
+    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
@@ -56,7 +56,7 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
-    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
+    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
@@ -93,9 +93,11 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const [mytubeCategoryId,setMyTubeCategoryId]=useState("all");
   const [mytubeSubcategoryId,setMyTubeSubcategoryId]=useState("all");
   const [mytubeTopicId,setMyTubeTopicId]=useState("all");
+  const [mytubeScenarioId,setMyTubeScenarioId]=useState("all");
   const mytubeCategories=listMyTubeCategories(locale);
   const mytubeSubcategories=mytubeCategoryId==="all"?[]:listMyTubeSubcategories(mytubeCategoryId,locale);
   const mytubeTopics=mytubeCategoryId==="all"||mytubeSubcategoryId==="all"?[]:listMyTubeTopics(mytubeCategoryId,mytubeSubcategoryId,locale);
+  const mytubeScenarios=mytubeTopicId==="all"?[]:listMyTubeScenarios(mytubeTopicId,locale);
   const activeMyTubeSubcategory=mytubeCategoryId!=="all"&&mytubeSubcategoryId!=="all"?mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId):null;
   useEffect(()=>{
     try{
@@ -132,51 +134,65 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
 
-      if(mytubeCategoryId!=="all"||mytubeSubcategoryId!=="all"||mytubeTopicId!=="all"){
-        const taxonomyItem=item as LibraryFeedItem & {mytubeCategoryIds?:string[];mytubeSubcategoryIds?:string[];mytubeTopicIds?:string[]};
-        const tags=Array.isArray(item.topicTags)?item.topicTags:[];
-        const text=[item.title,item.description||"",item.seriesTitle||""].join(" ").toLocaleLowerCase(locale);
-        const categoryTags:Record<string,string[]> = {
-          "goals-money":["business","money","goals","meaning","work","personal_growth"],
-          "love-relationships":["relationships","love","connection","family"],
-          "energy-confidence":["energy","health","body","meaning","recovery","confidence"],
-          "stress-anxiety":["stress","health","emotions","recovery","anxiety","trauma"],
-        };
-        const subcategoryTags:Record<string,string[]> = {
-          "purpose-development":["meaning","goals","life","personal_growth"],
-          "goal-achievement":["goals","work","meaning"],
-          "money-abundance":["money","business"],
-          "business-career":["business","work"],
-          "loneliness-breakups":["relationships","love","connection"],
-          "finding-love":["relationships","love"],
-          "couple-relationships":["relationships","love","connection"],
-          "intimacy-family":["relationships","love","family","connection"],
-          "stress-fatigue":["energy","health","recovery","body"],
-          "body-health":["health","body","energy"],
-          "vital-energy":["energy","recovery"],
-          "confidence-calm":["confidence","meaning","goals","relationships"],
-          "stress-burnout":["stress","emotions","recovery","health"],
-          "anxiety-fears":["stress","emotions","health"],
-          "psychological-trauma":["emotions","relationships","meaning","health"],
-          "depression-apathy":["emotions","recovery","health"],
-        };
-        if(mytubeCategoryId!=="all"){
-          const explicit=Array.isArray(taxonomyItem.mytubeCategoryIds)?taxonomyItem.mytubeCategoryIds:[];
-          const allowed=categoryTags[mytubeCategoryId]||[];
-          if(!explicit.includes(mytubeCategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
+      if(mytubeCategoryId!=="all"||mytubeSubcategoryId!=="all"||mytubeTopicId!=="all"||mytubeScenarioId!=="all"){
+        const rankTags=item.mytubeRankings;
+        const categories=item.mytubeCategoryCandidates;
+        if(Array.isArray(rankTags)&&Array.isArray(categories)){
+          // Canonical ranked tags take precedence over coarse legacy words.
+          if(mytubeCategoryId!=="all"&&!categories.some(x=>x.categoryId===mytubeCategoryId&&x.score>=40))return false;
+          if(mytubeSubcategoryId!=="all"&&!rankTags.some(x=>x.subcategoryId===mytubeSubcategoryId&&x.score>=65))return false;
+          if(mytubeTopicId!=="all"&&!rankTags.some(x=>x.topicId===mytubeTopicId&&x.score>=65))return false;
+          if(mytubeScenarioId!=="all"&&!rankTags.some(x=>
+            x.topicId===mytubeTopicId&&x.scenarios.some(s=>s.scenarioId===mytubeScenarioId&&s.score>=65)))return false;
+        }else{
+          if(mytubeScenarioId!=="all")return false;
+        if(mytubeCategoryId!=="all"||mytubeSubcategoryId!=="all"||mytubeTopicId!=="all"){
+          const taxonomyItem=item as LibraryFeedItem & {mytubeCategoryIds?:string[];mytubeSubcategoryIds?:string[];mytubeTopicIds?:string[]};
+          const tags=Array.isArray(item.topicTags)?item.topicTags:[];
+          const text=[item.title,item.description||"",item.seriesTitle||""].join(" ").toLocaleLowerCase(locale);
+          const categoryTags:Record<string,string[]> = {
+            "goals-money":["business","money","goals","meaning","work","personal_growth"],
+            "love-relationships":["relationships","love","connection","family"],
+            "energy-confidence":["energy","health","body","meaning","recovery","confidence"],
+            "stress-anxiety":["stress","health","emotions","recovery","anxiety","trauma"],
+          };
+          const subcategoryTags:Record<string,string[]> = {
+            "purpose-development":["meaning","goals","life","personal_growth"],
+            "goal-achievement":["goals","work","meaning"],
+            "money-abundance":["money","business"],
+            "business-career":["business","work"],
+            "loneliness-breakups":["relationships","love","connection"],
+            "finding-love":["relationships","love"],
+            "couple-relationships":["relationships","love","connection"],
+            "intimacy-family":["relationships","love","family","connection"],
+            "stress-fatigue":["energy","health","recovery","body"],
+            "body-health":["health","body","energy"],
+            "vital-energy":["energy","recovery"],
+            "confidence-calm":["confidence","meaning","goals","relationships"],
+            "stress-burnout":["stress","emotions","recovery","health"],
+            "anxiety-fears":["stress","emotions","health"],
+            "psychological-trauma":["emotions","relationships","meaning","health"],
+            "depression-apathy":["emotions","recovery","health"],
+          };
+          if(mytubeCategoryId!=="all"){
+            const explicit=Array.isArray(taxonomyItem.mytubeCategoryIds)?taxonomyItem.mytubeCategoryIds:[];
+            const allowed=categoryTags[mytubeCategoryId]||[];
+            if(!explicit.includes(mytubeCategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
+          }
+          if(mytubeSubcategoryId!=="all"){
+            const explicit=Array.isArray(taxonomyItem.mytubeSubcategoryIds)?taxonomyItem.mytubeSubcategoryIds:[];
+            const allowed=subcategoryTags[mytubeSubcategoryId]||[];
+            if(!explicit.includes(mytubeSubcategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
+          }
+          if(mytubeTopicId!=="all"){
+            const explicit=Array.isArray(taxonomyItem.mytubeTopicIds)?taxonomyItem.mytubeTopicIds:[];
+            const found=getMyTubeTopic(mytubeTopicId);
+            const terms=found?[found.topic.label[locale],...found.topic.searchIntent[locale]]:[];
+            const legacyTags=found?.topic.legacyTags||[];
+            const tagMatch=tags.some(tag=>legacyTags.includes(tag));
+            if(!explicit.includes(mytubeTopicId)&&!tagMatch&&!terms.some(term=>text.includes(term.toLocaleLowerCase(locale))))return false;
+          }
         }
-        if(mytubeSubcategoryId!=="all"){
-          const explicit=Array.isArray(taxonomyItem.mytubeSubcategoryIds)?taxonomyItem.mytubeSubcategoryIds:[];
-          const allowed=subcategoryTags[mytubeSubcategoryId]||[];
-          if(!explicit.includes(mytubeSubcategoryId)&&!tags.some(tag=>allowed.includes(tag)))return false;
-        }
-        if(mytubeTopicId!=="all"){
-          const explicit=Array.isArray(taxonomyItem.mytubeTopicIds)?taxonomyItem.mytubeTopicIds:[];
-          const found=getMyTubeTopic(mytubeTopicId);
-          const terms=found?[found.topic.label[locale],...found.topic.searchIntent[locale]]:[];
-          const legacyTags=found?.topic.legacyTags||[];
-          const tagMatch=tags.some(tag=>legacyTags.includes(tag));
-          if(!explicit.includes(mytubeTopicId)&&!tagMatch&&!terms.some(term=>text.includes(term.toLocaleLowerCase(locale))))return false;
         }
       }
 
@@ -199,10 +215,23 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId]);
-  const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
-    goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
-  }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
+  },[videos,search,source,period,durationRange,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId]);
+  const ordered=useMemo(()=>{
+    const matches=rankDiscoveryVideos(sourceVideos,{
+      goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
+    });
+    if(variant!=="mytube"||[mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId].every(id=>id==="all"))return matches;
+    const score=(video:LibraryFeedItem)=>{
+      if(mytubeScenarioId!=="all")return Math.max(0,...(video.mytubeRankings||[]).flatMap(topic=>
+        topic.scenarios.filter(s=>s.scenarioId===mytubeScenarioId).map(s=>s.score)));
+      if(mytubeTopicId!=="all")return Math.max(0,...(video.mytubeRankings||[]).filter(t=>t.topicId===mytubeTopicId).map(t=>t.score));
+      if(mytubeSubcategoryId!=="all")return Math.max(0,...(video.mytubeRankings||[]).filter(t=>t.subcategoryId===mytubeSubcategoryId).map(t=>t.score));
+      return Math.max(0,...(video.mytubeCategoryCandidates||[]).filter(t=>t.categoryId===mytubeCategoryId).map(t=>t.score));
+    };
+    return matches.map((item,index)=>({item,index,score:score(item)}))
+      .sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.item);
+  },[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
+    variant,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId]);
   const index=VIDEO_GOALS.indexOf(goal);
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
     {variant==="mytube" && <label className={styles.topSearch}>
@@ -221,19 +250,19 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
         <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
           <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
-            onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");}}>{t.mytubeAny}</button>
+            onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAny}</button>
           {mytubeCategories.map(item=><button type="button" key={item.id} data-mytube-category={item.id}
             aria-pressed={mytubeCategoryId===item.id}
-            onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");}}>{item.label}</button>)}
+            onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
         </div>
         {mytubeCategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeSubcategoryTitle}</strong></div>
           <div className={styles.goals} data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
             <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
-              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");}}>{t.mytubeAllSubcategories}</button>
+              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAllSubcategories}</button>
             {mytubeSubcategories.map(item=><button type="button" key={item.id} data-mytube-subcategory={item.id}
               aria-pressed={mytubeSubcategoryId===item.id} title={item.chooseWhen}
-              onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");}}>{item.label}</button>)}
+              onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
           </div>
           {activeMyTubeSubcategory?<p className={styles.note} data-mytube-choice-hint>{activeMyTubeSubcategory.chooseWhen}</p>:null}
         </>:null}
@@ -241,9 +270,19 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           <div className={styles.groupHeading}><strong>{t.mytubeTopicTitle}</strong></div>
           <div className={styles.goals} data-mytube-topics role="group" aria-label={t.mytubeTopicTitle}>
             <button type="button" data-mytube-topic="all" aria-pressed={mytubeTopicId==="all"}
-              onClick={()=>setMyTubeTopicId("all")}>{t.mytubeAllTopics}</button>
+              onClick={()=>{setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAllTopics}</button>
             {mytubeTopics.map(item=><button type="button" key={item.id} data-mytube-topic={item.id}
-              aria-pressed={mytubeTopicId===item.id} onClick={()=>setMyTubeTopicId(item.id)}>{item.label}</button>)}
+              aria-pressed={mytubeTopicId===item.id} onClick={()=>{setMyTubeTopicId(item.id);setMyTubeScenarioId("all");}}>{item.label}</button>)}
+          </div>
+        </>:null}
+        {mytubeTopicId!=="all"?<>
+          <div className={styles.groupHeading}><strong>{t.mytubeScenarioTitle}</strong></div>
+          <div className={styles.goals} data-mytube-scenarios role="group" aria-label={t.mytubeScenarioTitle}>
+            <button type="button" data-mytube-scenario="all" aria-pressed={mytubeScenarioId==="all"}
+              onClick={()=>setMyTubeScenarioId("all")}>{t.mytubeAllScenarios}</button>
+            {mytubeScenarios.map(item=><button type="button" key={item.id} data-mytube-scenario={item.id}
+              aria-pressed={mytubeScenarioId===item.id} title={item.creativeBrief}
+              onClick={()=>setMyTubeScenarioId(item.id)}>{item.label}</button>)}
           </div>
         </>:null}
       </div>
@@ -318,7 +357,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         {savedIds.length>0&&<button type="button" onClick={reset}>{t.reset}</button>}
       </div>}
       {variant==="mytube" && <button type="button" className={styles.clearFilters}
-        onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setContentType("all");setDirection("all");
+        onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setContentType("all");setDirection("all");
           setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
           setDurationRange("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
