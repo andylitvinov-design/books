@@ -1,6 +1,6 @@
 "use client";
 
-import {Bookmark, RotateCcw, Sparkles} from "lucide-react";
+import {Bookmark, RotateCcw, Search, Sparkles} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
@@ -16,6 +16,10 @@ const labels={
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
     areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",
+    searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
+    sourceTitle:"Автор / источник",sourceAll:"Все источники",
+    periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
+    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",
     contentTitle:"Тип видео",directionTitle:"Направление",traditionTitle:"Традиция",
     types:["Мягкая медитация","Практика-подкачка","Объяснение","Урок курса"],
     directions:["Магическое","Храмовое","Психологическое","Рейки / энергия","Телесное"],
@@ -32,6 +36,10 @@ const labels={
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
     areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",
+    searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
+    sourceTitle:"Creator / source",sourceAll:"All sources",
+    periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
+    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",
     contentTitle:"Video type",directionTitle:"Approach",traditionTitle:"Tradition",
     types:["Soft meditation","Energy practice","Explanation","Course lesson"],
     directions:["Symbolic / magical","Temple practice","Psychological","Reiki / energy","Somatic"],
@@ -48,6 +56,10 @@ const labels={
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
     areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",
+    searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
+    sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
+    periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
+    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",
     contentTitle:"Tipo de vídeo",directionTitle:"Enfoque",traditionTitle:"Tradición",
     types:["Meditación suave","Práctica energética","Explicación","Lección de curso"],
     directions:["Simbólico / mágico","Práctica del templo","Psicológico","Reiki / energía","Somático"],
@@ -61,7 +73,7 @@ const labels={
   },
 } as const;
 const safeId=(x:unknown):x is string=>typeof x==="string"&&x.length>0&&x.length<=180;
-export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:LibraryFeedItem[]}){
+export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicLocale;videos:LibraryFeedItem[];variant?:"library"|"mytube"}){
   const t=labels[locale];
   const [area,setArea]=useState("all");
   const [goal,setGoal]=useState("all");
@@ -73,6 +85,10 @@ export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:Libra
   const [savedOnly,setSavedOnly]=useState(false);
   const [savedIds,setSavedIds]=useState<string[]>([]);
   const [hiddenIds,setHiddenIds]=useState<string[]>([]);
+  const [search,setSearch]=useState("");
+  const [source,setSource]=useState("all");
+  const [period,setPeriod]=useState("all");
+  const [durationRange,setDurationRange]=useState("all");
   useEffect(()=>{
     try{
       const value:unknown=JSON.parse(window.localStorage.getItem(STORAGE_KEY)||"[]");
@@ -96,11 +112,51 @@ export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:Libra
   };
   const allowedGoals=VIDEO_GOALS.filter(id=>id==="all"||id==="practices"||
     area==="all"||lifeAreasForIntent(id).includes(area));
-  const ordered=useMemo(()=>rankDiscoveryVideos(videos,{
+  const sources=useMemo(()=>[...new Set(videos
+    .map(item=>item.sourceLabel||item.author||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b,locale)),
+    [videos,locale]);
+  const durationsAvailable=videos.some(item=>Number.isFinite(item.durationVerifiedSeconds) &&
+    (item.durationVerifiedSeconds??0)>0);
+  const periodsAvailable=videos.some(item=>Boolean(item.publishedAt));
+  const sourceVideos=useMemo(()=>{
+    const needle=search.trim().toLocaleLowerCase(locale);
+    const cutoff=Date.now()-365*24*60*60*1000;
+    return videos.filter(item=>{
+      if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||""]
+          .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
+      if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
+      if(period!=="all"){
+        const date=item.publishedAt?Date.parse(item.publishedAt):NaN;
+        if(!Number.isFinite(date))return false;
+        const year=new Date(date).getUTCFullYear();
+        if(period==="past-year" && date<cutoff)return false;
+        if(period==="2020s" && (year<2020||year>=2030))return false;
+        if(period==="2010s" && (year<2010||year>=2020))return false;
+        if(period==="2000s" && (year<2000||year>=2010))return false;
+      }
+      if(durationRange!=="all"){
+        const seconds=item.durationVerifiedSeconds;
+        if(!Number.isFinite(seconds)||!seconds||seconds<=0)return false;
+        if(durationRange==="under4" && seconds>=240)return false;
+        if(durationRange==="4to20" && (seconds<240||seconds>1200))return false;
+        if(durationRange==="20to60" && (seconds<=1200||seconds>3600))return false;
+        if(durationRange==="over60" && seconds<=3600)return false;
+      }
+      return true;
+    });
+  },[videos,search,source,period,durationRange,locale]);
+  const ordered=useMemo(()=>rankDiscoveryVideos(sourceVideos,{
     goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
-  }),[videos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
+  }),[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort]);
   const index=VIDEO_GOALS.indexOf(goal);
-  return <div className={styles.wrapper} data-hh-video-discovery="v1">
+  return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
+    {variant==="mytube" && <label className={styles.topSearch}>
+      <Search size={21} aria-hidden="true"/>
+      <span className={styles.visuallyHidden}>{t.searchLabel}</span>
+      <input type="search" data-mytube-search maxLength={120} value={search}
+        placeholder={t.searchPlaceholder} onChange={event=>setSearch(event.target.value)}/>
+      {search && <button type="button" onClick={()=>setSearch("")} aria-label={t.resetFilters}>×</button>}
+    </label>}
     <section className={styles.panel} aria-label={t.title}>
       <div className={styles.intro}>
         <h2><Sparkles size={23} aria-hidden="true"/>{t.title}</h2>
@@ -169,6 +225,26 @@ export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:Libra
               {VIDEO_TRADITIONS.map((id,i)=><option key={id} value={id}>{t.traditions[i]}</option>)}
             </select>
           </label>}
+          {variant==="mytube" && sources.length>0 && <label>{t.sourceTitle}
+            <select data-mytube-source value={source} onChange={event=>setSource(event.target.value)}>
+              <option value="all">{t.sourceAll}</option>
+              {sources.map(value=><option key={value} value={value}>{value}</option>)}
+            </select>
+          </label>}
+          {variant==="mytube" && periodsAvailable && <label>{t.periodTitle}
+            <select data-mytube-period value={period} onChange={event=>setPeriod(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {["past-year","2020s","2010s","2000s"].map((id,i)=>
+                <option key={id} value={id}>{t.periodOptions[i]}</option>)}
+            </select>
+          </label>}
+          {variant==="mytube" && durationsAvailable && <label>{t.durationTitle}
+            <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {["under4","4to20","20to60","over60"].map((id,i)=>
+                <option key={id} value={id}>{t.durationOptions[i]}</option>)}
+            </select>
+          </label>}
         </div>
       </details>
       {(hiddenIds.length>0||savedIds.length>0)&&<div className={styles.reset}>
@@ -177,6 +253,12 @@ export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:Libra
         </button>}
         {savedIds.length>0&&<button type="button" onClick={reset}>{t.reset}</button>}
       </div>}
+      {variant==="mytube" && <button type="button" className={styles.clearFilters}
+        onClick={()=>{setArea("all");setGoal("all");setContentType("all");setDirection("all");
+          setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
+          setDurationRange("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
+        <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
+      </button>}
       <p className={styles.note}>{t.note}</p>
     </section>
     <div className={styles.results} aria-live="polite">
@@ -184,6 +266,7 @@ export function VideoDiscovery({locale,videos}:{locale:PublicLocale;videos:Libra
     </div>
     {ordered.length===0?<p className={styles.empty}>{t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
+        videoLayout={variant==="mytube"?"mytube":"default"}
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
         saveText={t.save} unsaveText={t.unsave} dismissText={t.dismiss}/>}
   </div>;

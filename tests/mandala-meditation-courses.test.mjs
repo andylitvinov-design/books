@@ -17,7 +17,8 @@ test("meditation-course workspace opens the existing working composer within the
   assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
     "the course composer belongs to the existing six-tab Video Studio");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/<MandalaPersonalMeditation coursePreview/);
+  assert.match(studio,/<MandalaPersonalMeditation\b[\s\S]*?\bcoursePreview\b[\s\S]*?onNarrationReady=/,
+    "the existing meditation composer receives the generated course preview and narration callback");
   assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="practices"/,
     "do not mount two visible personal meditation editors");
   assert.match(composer,/buildPersonalMeditationScript\(\{/);

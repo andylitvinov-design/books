@@ -93,6 +93,10 @@ export async function verifyGuidedPractices({browser,base,engine}){
         null,{timeout:15000});
       assert.equal(await voice.locator("[data-meditation-script]").count(),0,
         "skipped narration stays absent after the Personal Meditation CTA reopens editor");
+      // The details element opens synchronously, but React may still be
+      // committing the preceding user action on headed iPhone WebKit.
+      // Wait for the REAL rendered step state, never a timer or a second click.
+      await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
@@ -112,6 +116,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
             selectedState:q('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state")??null,
             selectedVector:q('[data-guided-focus-vector][aria-pressed="true"]')?.getAttribute("data-guided-focus-vector")??null,
             journeyStep:q('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            personalOpened:root?.getAttribute("data-guided-personal-opened")??null,
+            planRequested:root?.getAttribute("data-guided-plan-requested")??null,
+            planCurrent:root?.getAttribute("data-guided-plan-current")??null,
             meditationPresent:Boolean(q("[data-guided-meditation-result]")),
             pagePath:location.pathname,
           };
@@ -123,8 +130,28 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const enquiry=programme.locator("[data-meditation-course-order]");
       assert.equal(await enquiry.count(),1,"one consented course enquiry");
       await enquiry.click();
+      // Headed WebKit can resolve a click before React commits the disclosure.
+      // Verify both the control state and the mounted form; a missing form still
+      // fails the release gate rather than being treated as a successful click.
+      await page.waitForFunction(()=>{
+        const button=document.querySelector("[data-meditation-course-order]");
+        return button?.getAttribute("aria-expanded")==="true" &&
+          Boolean(document.querySelector("[data-meditation-course-contact]"));
+      },null,{timeout:15000});
       const form=programme.locator("[data-meditation-course-contact]");
-      await form.waitFor({state:"visible"});
+      try{
+        await form.waitFor({state:"visible",timeout:15000});
+      }catch(error){
+        const state=await programme.evaluate(root=>({
+          orderButtons:[...root.querySelectorAll("[data-meditation-course-order]")]
+            .map(button=>({expanded:button.getAttribute("aria-expanded"),text:button.textContent?.trim()})),
+          contactForms:root.querySelectorAll("[data-meditation-course-contact]").length,
+          formDisplay:[...root.querySelectorAll("[data-meditation-course-contact]")]
+            .map(node=>getComputedStyle(node).display),
+          programmeVisible:Boolean(root.getClientRects().length),
+        }));
+        throw new Error(engine+" "+locale+" "+width+"px course enquiry did not open: "+JSON.stringify(state),{cause:error});
+      }
       assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
         "one-off reply consent gates the real course enquiry");
       const geometry=await course.evaluate((el)=>{
@@ -155,10 +182,24 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // Wait for React to commit the selected vector; a click can resolve
+      // before WebKit flushes state, while the button may still reflect the prior goal.
+      await page.waitForFunction(()=>
+        document.querySelector('[data-guided-focus-vector="goals"]')
+          ?.getAttribute("aria-pressed")==="true",
+        null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
-      await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      const difficulty=course.locator("[data-video-key-difficulty]");
+      await difficulty.fill("I feel rushed");
+      // The context is optional, but the browser check waits for its real
+      // rendered Personal Meditation step before starting generation.
+      await page.waitForFunction(()=>{
+        const root=document.querySelector("[data-video-guided-course]");
+        return root?.querySelector("[data-guided-personal-meditation-step]")
+          ?.textContent?.includes("I feel rushed")===true &&
+          root?.querySelector("[data-guided-generate-meditation]")?.disabled===false;
+      },null,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
