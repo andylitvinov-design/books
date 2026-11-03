@@ -41,6 +41,25 @@ test('only verified concurrency-only edits can avoid unrelated specialists',()=>
   changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
 });
 
+test('a failed run explicitly associated with a sibling PR on the same branch cannot block this PR',()=>{
+ const current=pr();
+ const sibling=run({id:154,conclusion:'failure',pull_requests:[{
+   number:28,head:{sha:SHA,ref:'feat/test'},base:{ref:TARGET},
+ }]});
+ const result=inspectWorkflowRuns({expected:[path],runs:[sibling],pr:current});
+ assert.deepEqual(result.orphanFailures,[]);
+ assert.deepEqual(result.missing,[path]);
+ assert.deepEqual(result.failed,[]);
+ // Truly unassociated failures remain fail-closed.
+ const orphan=run({id:155,conclusion:'failure',pull_requests:[]});
+ const blocked=inspectWorkflowRuns({expected:[path],runs:[orphan],pr:current});
+ assert.deepEqual(blocked.orphanFailures,['155:failure']);
+ // A failure genuinely associated with this PR is still a hard failure.
+ const own=run({id:156,conclusion:'failure'});
+ const ownResult=inspectWorkflowRuns({expected:[path],runs:[own],pr:current});
+ assert.deepEqual(ownResult.failed,[path+':failure']);
+});
+
 test('concurrency advisory never hides push, orphan, wrong-head or unrelated runs',()=>{
  const paths=new Set([path]);
  assert.equal(isConcurrencyAdvisoryRun(run(),pr(),paths),true);
