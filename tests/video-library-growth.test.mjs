@@ -17,8 +17,9 @@ const actual=()=>({
 
 test("catalog plan counts real approved clips, not candidate HLS URLs or editorial scripts",()=>{
   const args=actual(),plan=planVideoLibraryGrowth(args);
-  assert.equal(plan.currentApprovedCatalogRecords,44);
-  assert.equal(plan.minimumAdditionalApprovedMasters,276);
+  assert.ok(args.catalog.scenes.length>=44);
+  assert.equal(plan.currentApprovedCatalogRecords,args.catalog.scenes.length);
+  assert.equal(plan.minimumAdditionalApprovedMasters,Math.max(0,320-args.catalog.scenes.length));
   assert.equal(plan.pendingCandidateSources,16);
   assert.equal(plan.newlyPublishedByThisPlanner,0);
   assert.equal(plan.editorialCategories,4);
@@ -36,12 +37,13 @@ test("catalog plan counts real approved clips, not candidate HLS URLs or editori
 test("500-clip ambition does not mark any unverified source as published",()=>{
   const plan=planVideoLibraryGrowth({...actual(),target:500});
   assert.equal(plan.uniqueSourceTarget,500);
-  assert.equal(plan.minimumAdditionalApprovedMasters,456);
-  assert.equal(plan.proposedSourceBriefs.length,320);
+  assert.equal(plan.minimumAdditionalApprovedMasters,Math.max(0,500-actual().catalog.scenes.length));
+  assert.equal(plan.proposedSourceBriefs.length,500);
+  assert.equal(plan.byCategory.reduce((sum,row)=>sum+row.desiredUniqueVisualSources,0),500);
   assert.equal(plan.newlyPublishedByThisPlanner,0);
 });
 
-test("reject duplicate or forged approval, stock pages already used, and missing provenance",()=>{
+test("reject duplicated candidate or forged approval, but support legitimate source promotion",()=>{
   const args=actual();
   const candidate=args.candidateManifests[0].sources[0];
   args.candidateManifests[1].sources[0]={...args.candidateManifests[1].sources[0],id:candidate.id,sourcePage:candidate.sourcePage};
@@ -53,7 +55,11 @@ test("reject duplicate or forged approval, stock pages already used, and missing
 
   args.candidateManifests=actual().candidateManifests;
   args.publishedSourceRecords=[{sources:[{sourcePage:candidate.sourcePage}]}];
-  assert.throws(()=>planVideoLibraryGrowth(args),/duplicate_or_unreviewed_candidate/);
+  const promoted=planVideoLibraryGrowth(args);
+  assert.equal(promoted.candidateSourcesAlreadyInPublishedProvenance,1);
+  assert.equal(promoted.pendingCandidateSources,15);
+  assert.equal(promoted.currentApprovedCatalogRecords,args.catalog.scenes.length);
+  assert.equal(promoted.newlyPublishedByThisPlanner,0);
 
   args.publishedSourceRecords=[];
   args.catalog.scenes[0].status="draft";
