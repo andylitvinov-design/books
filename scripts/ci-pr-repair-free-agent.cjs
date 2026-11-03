@@ -99,10 +99,47 @@ function narrowFailedSourceScope(root,scope){
    evidence:focused.evidence?{test:focused.evidence.test,line:focused.evidence.line}:null}));
  return focused;
 }
-function boundedSource(content){
+function boundedSource(content,evidence=null){
  if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
- // Large UI files are common. Supply stable beginning/end excerpts (not a
- // whole page); a proposed hunk must still match git apply on the real file.
+ // The old head/tail-only excerpt silently omitted real failures in the
+ // middle of 30-150 KB UI files. Focus *only* on lexical hints from the
+ // independently reproduced, literal-source assertion; never trust model
+ // suggestions to choose files, tests or verification scope.
+ const words=[...new Set((String(evidence?.assertion||'')
+   .replace(/\\(.)/g,'$1').match(/[A-Za-z][A-Za-z0-9_-]{4,}/g)||[])
+   .map(w=>w.toLowerCase()))].filter(w=>!new Set([
+     'assert','match','doesnotmatch','deepequal','strictequal','includes',
+     'equal','false','true','undefined','source','entry'
+   ]).has(w)).slice(0,16);
+ if(words.length){
+   const lines=content.split(/\r?\n/);
+   const ranked=lines.map((line,i)=>({
+     i,score:words.reduce((n,w)=>n+(line.toLowerCase().includes(w)?1:0),0)
+   })).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.i-b.i);
+   const centers=[];
+   for(const hit of ranked){
+     if(centers.every(i=>Math.abs(hit.i-i)>36))centers.push(hit.i);
+     if(centers.length===3)break;
+   }
+   if(centers.length){
+     const head=content.slice(0,1200),tail=content.slice(-2400);
+     for(const radius of [20,12,6,2,0]){
+       const windows=centers.sort((a,b)=>a-b).map(i=>{
+         const start=Math.max(0,i-radius),end=Math.min(lines.length,i+radius+1);
+         return '/* [SOURCE LINES '+(start+1)+'-'+end+
+           ': excerpt markers are NOT file contents] */\n'+
+           lines.slice(start,end).join('\n');
+       });
+       const excerpt=head+'\n/* [SOURCE MIDDLE OMITTED] */\n'+
+         windows.join('\n/* [SOURCE LINES OMITTED] */\n')+
+         '\n/* [SOURCE MIDDLE OMITTED] */\n'+tail;
+       if(Buffer.byteLength(excerpt,'utf8')<=MAX_SOURCE)
+         return {content:excerpt,bounded:true};
+     }
+   }
+ }
+ // No grounded middle line, or an oversized single line: preserve a
+ // deterministic bounded fallback rather than sending the whole source.
  let excerpt=content.slice(0,2700)+'\n/* [BOUNDED SOURCE EXCERPT: middle omitted] */\n'+content.slice(-13500);
  while(Buffer.byteLength(excerpt,'utf8')>MAX_SOURCE)
    excerpt=excerpt.slice(0,2700)+'\n/* [BOUNDED SOURCE EXCERPT: middle omitted] */\n'+excerpt.slice(-12000);
@@ -127,7 +164,7 @@ function checkScopeFiles(root,scope){
    const content=fs.readFileSync(full,'utf8');
    if(!content||Buffer.byteLength(content)>MAX_DISK_SOURCE||content.includes('\0'))
      throw Error('FREE_AI_SOURCE_TOO_LARGE');
-   const excerpt=boundedSource(content);
+   const excerpt=boundedSource(content,scope.evidence);
    total+=Buffer.byteLength(excerpt.content);
    return {file,...excerpt};
  }).filter(x=>{

@@ -3,7 +3,7 @@
 // when no bounded test directly imports each changed source file.
 const fs=require('node:fs'),path=require('node:path');
 const {spawnSync}=require('node:child_process');
-const SRC=/^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
+const SRC=/^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[A-Za-z0-9_.()[\]-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
 const TEST=/^tests\/(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.test\.(?:mjs|cjs|js)$/;
 function selectTests(root,changed,candidates){
  if(!Array.isArray(changed)||!changed.length||changed.length>8||!changed.every(x=>typeof x==='string'&&SRC.test(x))||

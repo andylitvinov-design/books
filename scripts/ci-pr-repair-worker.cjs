@@ -362,6 +362,21 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
+  // A writer API response is not a published PR SHA. Read the remote ref
+  // back and prove the exact expected parent before emitting PUBLISHED.
+  // The terminal finalizer independently checks the live PR HEAD again.
+  const remote=(await github.rest.git.getRef({
+    owner,repo,ref:'heads/'+pr.head.ref
+  })).data;
+  if(remote?.ref!=='refs/heads/'+pr.head.ref ||
+     remote?.object?.sha!==created.sha)
+    throw Error('HH_REPAIR_PUBLISH_REMOTE_REF_UNVERIFIED');
+  const committed=(await github.rest.git.getCommit({
+    owner,repo,commit_sha:created.sha
+  })).data;
+  if(!Array.isArray(committed?.parents)||committed.parents.length!==1||
+     committed.parents[0]?.sha!==expectedSha)
+    throw Error('HH_REPAIR_PUBLISH_PARENT_UNVERIFIED');
   const repairKind=candidate.repair_kind==='free_ai'?'free_ai':
      candidate.repair_kind==='codex'?'codex':'lint';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
