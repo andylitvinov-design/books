@@ -275,6 +275,7 @@ jobs:
             const report=await run({github,core,context,dryRun});
             core.info('HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
               candidates:report.candidates,dispatched:report.dispatchAccepted,
+              ciWake:report.ciWake,
               blocked:report.blocked,reason:report.reason
             }));
             // The monitor consumes the same schema as before, but now from
@@ -295,7 +296,13 @@ jobs:
                   source_schema:report.schema,
                   counts:{candidates:number(report.candidates),
                     unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
-                    worker_dispatches:number(report.dispatchAccepted)},
+                    worker_dispatches:number(report.dispatchAccepted),
+                    ci_wake_waiting:number(report.ciWake?.waiting??0),
+                    ci_wake_queued:number(report.ciWake?.queued??0),
+                    ci_wake_running:number(report.ciWake?.running??0),
+                    ci_wake_confirmed:number(report.ciWake?.confirmed??0),
+                    ci_wake_stalled:number(report.ciWake?.stalled??0),
+                    ci_wake_unknown:number(report.ciWake?.unknown??0)},
                   reason:typeof report.reason==='string'?report.reason:null};
                 if(Object.values(snapshot.counts).some(v=>v===null)||
                    !Number.isFinite(Date.parse(snapshot.checked_at)))throw Error('BAD_MONITOR_COUNTS');
