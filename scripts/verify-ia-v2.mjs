@@ -190,10 +190,17 @@ async function verifySiteMenu(page, header, { locale, surface, label, expectedMe
 // Never shorten the matrix or treat a rejected case as an advisory check.
 async function verifyPublicByLocale(page, engine, locales, verify) {
   const pages = [page]
+  const extraContexts = []
   const pageErrors = []
   try {
     for (let i = 1; i < locales.length; i++) {
-      const sibling = await page.context().newPage()
+      // Separate contexts avoid locale-cookie and session collisions between
+      // concurrent EN/RU/ES navigations. No test credentials are copied.
+      const context = await page.context().browser().newContext({
+        ignoreHTTPSErrors: true, serviceWorkers: 'block', viewport: page.viewportSize()
+      })
+      extraContexts.push(context)
+      const sibling = await context.newPage()
       sibling.on('pageerror', error => pageErrors.push(engine + '/' + locales[i] + ': ' + error.message))
       pages.push(sibling)
     }
@@ -205,7 +212,7 @@ async function verifyPublicByLocale(page, engine, locales, verify) {
     if (failed) throw failed.reason
     assert.deepEqual(pageErrors, [], engine + ': secondary locale browser errors')
   } finally {
-    await Promise.allSettled(pages.slice(1).map(sibling => sibling.close()))
+    await Promise.allSettled(extraContexts.map(context => context.close()))
   }
 }
 
