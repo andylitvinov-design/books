@@ -13,6 +13,24 @@ test("MyTube taxonomy is exactly 4 × 4 × 4 with four scenarios per topic", () 
   assert.deepEqual(MYTUBE_TAXONOMY_COUNTS, { categories: 4, subcategories: 16, topics: 64, scenarios: 256 });
 });
 
+test("the canonical MyTube and public-site category tree matches the approved four directions", () => {
+  const ru = listMyTubeCategories("ru");
+  assert.deepEqual(ru.map(item => item.label), [
+    "Деньги и развитие", "Любовь и отношения", "Энергия и уверенность", "Стресс и тревога",
+  ]);
+  const expected = [
+    ["Предназначение и развитие", "Достижение целей", "Деньги и изобилие", "Бизнес и карьера"],
+    ["Одиночество и расставание", "Поиск любви", "Отношения в паре", "Близость и семья"],
+    ["Усталость и восстановление", "Тело и здоровье", "Жизненная энергия", "Уверенность и спокойствие"],
+    ["Стресс и выгорание", "Тревога и страхи", "Психологические травмы", "Депрессия и апатия"],
+  ];
+  for (const [index, category] of ru.entries()) {
+    const subs = listMyTubeSubcategories(category.id, "ru");
+    assert.deepEqual(subs.map(item => item.label), expected[index]);
+    assert.ok(subs.every(item => item.chooseWhen.length > 10));
+  }
+});
+
 test("all category, subcategory, topic and scenario labels exist in RU/EN/ES", () => {
   for (const locale of ["ru", "en", "es"]) {
     const categories = listMyTubeCategories(locale);
