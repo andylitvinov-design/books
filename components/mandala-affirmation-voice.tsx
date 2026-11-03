@@ -24,9 +24,10 @@ const copy={
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
     voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     sample:"Прослушать",sampleBusy:"Загрузка…",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
+    selectedPhrase:"Утверждённая фраза",additional:"дополнительных фраз",pendingText:"Сначала утвердите изменённые фразы выше.",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
-    consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
-    generate:"Создать аудиодорожку",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
+    consent:"Разрешаю отправить только утверждённые фразы в бесплатный Gemini TTS или, для английского, бесплатный Deepgram через OpenRouter. Платный резерв для этих фраз не используется. Не указываю личных или медицинских данных. Google может использовать бесплатные запросы для улучшения сервисов.",
+    generate:"Озвучить выбранные фразы бесплатно",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
     unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит запросов исчерпан. Платёж с посетителя не взимается.",
     error:"Не удалось получить звук. Выберите другой голос или повторите позже.",tooLong:"Аудио длиннее 60 секунд: сократите количество аффирмаций.",
     download:"Скачать WAV",tip:"Вы сможете прослушать, скачать WAV или нажать «Создать видео» — голос уже добавлен. При изменении фраз понадобится новая озвучка.",
@@ -37,9 +38,10 @@ const copy={
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
     voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     sample:"Listen",sampleBusy:"Loading…",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
+    selectedPhrase:"Approved phrase",additional:"more phrases",pendingText:"Approve the edited phrases above first.",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
-    consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
-    generate:"Generate voice track",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
+    consent:"I consent to send only the approved phrases to free-tier Gemini TTS, or free Deepgram via OpenRouter for English. No paid backup is used for these phrases. Do not include personal or medical data. Google may use free-tier prompts to improve services.",
+    generate:"Narrate selected phrases for free",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
     unavailable:"Free voice generation has not been enabled yet.",quota:"Audio request limit reached. No visitor charges.",
     error:"Audio could not be generated. Try another voice or again later.",tooLong:"Speech is longer than 60 seconds; shorten the affirmations.",
     download:"Download WAV",tip:"Listen, download WAV, or select Create video — your voice is already attached. Changed phrases require new narration.",
@@ -50,9 +52,10 @@ const copy={
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
     voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     sample:"Escuchar",sampleBusy:"Cargando…",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
+    selectedPhrase:"Frase aprobada",additional:"frases más",pendingText:"Confirma primero las frases editadas.",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
-    consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
-    generate:"Generar pista de voz",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
+    consent:"Autorizo enviar solo las frases aprobadas a Gemini TTS gratuito o a Deepgram gratuito mediante OpenRouter para inglés. No se usa un respaldo de pago. Evito datos médicos o personales. Google puede usar las solicitudes gratuitas para mejorar sus servicios.",
+    generate:"Narrar gratis las frases elegidas",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
     unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota agotada; no hay cobros al visitante.",
     error:"No se pudo generar el sonido. Elige otra voz.",tooLong:"La voz dura más de 60 segundos; reduce las afirmaciones.",
     download:"Descargar WAV",tip:"Escucha, descarga el WAV o pulsa Crear vídeo. Si cambias las frases, genera la voz de nuevo.",
@@ -113,6 +116,8 @@ export function MandalaAffirmationVoice({
   const [sampleBusyId,setSampleBusyId]=useState("");
   const [sampleMessage,setSampleMessage]=useState("");
   const sampleAudioRef=useRef<HTMLAudioElement|null>(null);
+  const generatedAudioRef=useRef<HTMLAudioElement|null>(null);
+  const playGeneratedAfterRequestRef=useRef(false);
   const sampleControllerRef=useRef<AbortController|null>(null);
   const sampleJobRef=useRef(0);
   const sampleCacheRef=useRef<Map<string,string>>(new Map());
@@ -153,6 +158,7 @@ export function MandalaAffirmationVoice({
     // A voice/language change with identical text instead detaches the file.
     if(voiceDataRef.current&&!textChanged)onInvalidateRef.current?.();
     voiceDataRef.current=null;
+    playGeneratedAfterRequestRef.current=false;
     const previous=audioUrlRef.current;
     if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
     jobRef.current++;
@@ -272,12 +278,21 @@ export function MandalaAffirmationVoice({
   useEffect(()=>{
     if(sampleUrl)void sampleAudioRef.current?.play().catch(()=>{});
   },[sampleUrl]);
+  // A successful user-requested narration should play when the browser allows
+  // it. iPhone Safari can require an extra tap; native controls always remain.
+  useEffect(()=>{
+    if(audioUrl&&playGeneratedAfterRequestRef.current){
+      playGeneratedAfterRequestRef.current=false;
+      void generatedAudioRef.current?.play().catch(()=>{});
+    }
+  },[audioUrl]);
 
   async function createAudio(){
     if(!languageAvailable||disabled||approvalPending||busy||!speechText||!consent)return;
     const job=++jobRef.current;
     const controller=new AbortController();
     controllerRef.current=controller;
+    playGeneratedAfterRequestRef.current=true;
     setBusy(true);setMessage("");setAudioUrl("");setSpeechSeconds(0);
     onGeneratingRef.current(true);
     try {
@@ -306,6 +321,7 @@ export function MandalaAffirmationVoice({
       await renderBalance(clip,{bed,voiceLevel,musicLevel},job);
     } catch(e) {
       if(job!==jobRef.current)return;
+      playGeneratedAfterRequestRef.current=false;
       const code=e instanceof Error?e.message:"";
       if(code!=="AbortError")setMessage(code==="QUOTA"?t.quota:code==="TOO_LONG"?t.tooLong:t.error);
     } finally {
@@ -317,6 +333,11 @@ export function MandalaAffirmationVoice({
       <AudioLines size={20} aria-hidden="true"/>
       <div><h4 id="video-affirmation-voice-title">{t.title}</h4><p>{t.lead}</p></div>
     </div>
+    {voiceGender!=="own" ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
+      <small>{t.selectedPhrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
+      <p data-video-affirmation-selected-phrase>{approvalPending?t.pendingText:speechText?lines[0]:t.enable}</p>
+      {!approvalPending&&speechText&&lines.length>1?<small>+{lines.length-1} {t.additional}</small>:null}
+    </div>:null}
     {voiceGender!=="own" ? <details className={css.transcriptDisclosure}>
       <summary>{t.preview} · {t.review}</summary>
       {speechText?<div className={css.transcript}>
@@ -344,7 +365,12 @@ export function MandalaAffirmationVoice({
             </button>
             <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
               aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
-              onClick={()=>void previewSample(v.id)}>
+              onClick={()=>{
+                // Previewing a different voice must also SELECT it for the
+                // consented phrase and video track; never preview X, render Y.
+                if(voiceId!==v.id){setVoiceId(v.id);setConsent(false);}
+                void previewSample(v.id);
+              }}>
               {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
               <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
             </button>
@@ -408,8 +434,8 @@ export function MandalaAffirmationVoice({
     </button>
     {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
-      <strong><Check size={16} aria-hidden="true"/>{t.finished} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
-      <audio controls preload="metadata" src={audioUrl} aria-label={t.finished}/>
+      <strong><Check size={16} aria-hidden="true"/>{t.finished} · {VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
+      <audio ref={generatedAudioRef} controls preload="metadata" src={audioUrl} aria-label={t.finished+" · "+(VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||"")}/>
       <a href={audioUrl} download={"holistic-house-affirmations-"+language+"-"+voiceId+".wav"}>
         <Download size={16} aria-hidden="true"/>{t.download}
       </a>
