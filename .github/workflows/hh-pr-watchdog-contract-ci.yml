@@ -74,6 +74,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+      - name: Install trusted test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Syntax-check trusted watchdog and tests
         run: |
           node --check scripts/ci-pr-priority.cjs
