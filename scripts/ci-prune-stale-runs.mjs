@@ -63,7 +63,7 @@ export function eligible(run, pr, ctx) {
       pr.head?.repo?.full_name !== ctx.repo || run.head_branch !== pr.head?.ref ||
       !sha40(run.head_sha) || !sha40(pr.head?.sha)) return false;
   if (pr.state === 'closed') {
-    return !ctx.headSha && (!ctx.number || (ctx.closedHeadSha && ctx.closedHeadSha === pr.head.sha)) &&
+    return !ctx.headSha && (!ctx.number || (Boolean(ctx.closedHeadSha) && ctx.closedHeadSha === pr.head.sha)) &&
       closedEvidence(run, pr);
   }
   if (pr.state !== 'open' || ctx.closedHeadSha ||
