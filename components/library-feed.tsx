@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import type { MyTubeVideoTags } from "@/lib/mandala/mytube-video-tagging.mjs";
 import styles from "./library-feed.module.css";
 
 export type LibraryFeedItem = {
@@ -39,7 +40,7 @@ export type LibraryFeedItem = {
   directions?: string[];
   traditions?: string[];
   provenance?: string[];
-};
+} & Partial<MyTubeVideoTags>;
 
 const words = {
   en: {
