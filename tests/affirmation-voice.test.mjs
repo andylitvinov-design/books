@@ -239,3 +239,15 @@ test("one real-network acceptance request is strictly fixed to approved phrase a
     opts.method==="GET"?new Response(JSON.stringify({enabled:false}),{status:200}):new Response(wav)}),
     /FREE_PROVIDER_NOT_READY/);
 });
+
+test("anonymous selected phrase can never hit paid backup even if operator custom mode has it",()=>{
+  const route=read("app/api/holistic-support/voice/route.js");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(route,/if\(!wav && backupKey && validated\.mode==='custom'\)/,
+    "only authenticated custom mode can ever consider the approved paid fallback");
+  assert.match(route,/const publicFree=providers\.gemini\|\|providers\.openrouterFree/);
+  assert.match(route,/publicAffirmationsEnabled:publicFree/);
+  assert.match(route,/const languages=providers\.gemini\?/);
+  assert.doesNotMatch(voice,/xAI \(operator-funded backup\)|xAI \(respaldo/);
+  assert.ok(voice.includes('mode:"affirmations",voiceId,language,text:speechText,consent:true'));
+});
