@@ -240,3 +240,14 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
 });
+
+test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
+  const source=workflow('hh-native-auto-merge.yml');
+  const job=source.split('  recover-interrupted-core:')[1].split('  prune-head:')[0];
+  assert.match(job,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/);
+  assert.match(job,/new Set\(\["timed_out","startup_failure"\]\)/);
+  assert.match(job,/event\.head_sha !== live\.head\.sha/);
+  assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/);
+  assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/);
+  assert.doesNotMatch(job,/cancelled.*timed_out|startup_failure.*failure/);
+});
