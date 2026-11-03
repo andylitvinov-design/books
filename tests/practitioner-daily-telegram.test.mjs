@@ -113,7 +113,7 @@ test('owner digest counts tracked site CTA clicks without inventing visitors or 
   ],counts:{newApp:0,newPublic:0}})
   assert.match(report.text,/Вчера: 6 \(Заказать 3 · WhatsApp 2 · Telegram 1\)/)
   assert.match(report.text,/За 7 дней: 9 учтённых кликов/)
-  assert.match(report.text,/пока нет данных по добровольным посещениям/)
+  assert.match(report.text,/пока нет измеренных агрегированных посещений/)
   assert.match(report.text,/История до включения нового счётчика не восстановлена/)
   assert.match(report.text,/Учтены только кнопки услуг, не все клики на сайте/)
   assert.doesNotMatch(report.text,/untrusted\.example|fake_campaign|503|500/)
@@ -124,7 +124,7 @@ test('owner digest counts tracked site CTA clicks without inventing visitors or 
 test('zero counted CTA clicks are not misreported as zero visits or zero Google traffic',()=>{
   const report=makePracticeDigest({dates,services:[one],daily:[]})
   assert.match(report.text,/Вчера: 0 \(Заказать 0 · WhatsApp 0 · Telegram 0\)/)
-  assert.match(report.text,/посадочные страницы и источники: пока нет данных/i)
+  assert.match(report.text,/посадочные страницы и источники: пока нет измеренных агрегированных посещений/i)
   assert.doesNotMatch(report.text,/Google: 0|посещений: 0/)
 })
 
