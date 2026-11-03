@@ -96,7 +96,7 @@ test('unresolved queued dependency fails closed only at the overall bounded dead
     runs: async () => { reads++; return [run('queued', null)]; },
     jobs: async () => { throw Error('queued workflow must never be accepted as success'); },
   };
-  const err = await assert.rejects(() => verify(api, ctx, sources, {
+  await assert.rejects(() => verify(api, ctx, sources, {
     now: () => elapsed,
     sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
   }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
