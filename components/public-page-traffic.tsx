@@ -9,8 +9,11 @@ const readCookie = (name: string) => document.cookie.split("; ").find(part => pa
 const hasCookie = (name: string, value: string) =>
   document.cookie.split("; ").some(part => part === name + "=" + value);
 
-function optedIn() {
-  return hasCookie("hh_public_stats_consent", "v1") &&
+function countAllowed() {
+  // Preserve every explicit refusal saved before or after this change.
+  // New public-page aggregates are anonymous and require no tracking cookie.
+  return window.location.hostname === "holistichouse.vercel.app" &&
+    !hasCookie("hh_public_stats_consent", "denied") &&
     !hasCookie("hh_public_stats_skip", "1");
 }
 function enquiryOptedIn() {
@@ -18,7 +21,7 @@ function enquiryOptedIn() {
 }
 
 function sendPublicStat(path: string, source: string, event: "landing" | "view" | "click") {
-  if (!optedIn()) return;
+  if (!countAllowed()) return;
   // Page, coarse source and event only: no arbitrary URL, campaign details,
   // user or session identifier, input values, or referral query parameters.
   void fetch("/api/analytics/public-page", {
@@ -31,7 +34,7 @@ function sendPublicStat(path: string, source: string, event: "landing" | "view" 
   }).catch(() => {});
 }
 
-/** Public marketing paths only; Google and advertising analytics remain on hold. */
+/** Automatic anonymous aggregates on allowlisted public pages only; Google and ads remain off. */
 export function PublicPageTraffic() {
   const pathname = usePathname();
   const originalSource = useRef<string | null>(null);
@@ -90,7 +93,7 @@ export function PublicPageTraffic() {
           attributionObservedInDocument.current = true;
         }
       }
-      if (!optedIn()) { lastPath.current = null; originalSource.current = null; return; }
+      if (!countAllowed()) { lastPath.current = null; originalSource.current = null; return; }
       if (lastPath.current === path) return;
       if (originalSource.current === null)
         originalSource.current = sourceFromPublicEntry(window.location.href, document.referrer);
@@ -104,7 +107,7 @@ export function PublicPageTraffic() {
     window.addEventListener("holistic-house:public-stats-consent", recordPage);
 
     const recordClick = (event: MouseEvent) => {
-      if (!optedIn() || !event.isTrusted || event.defaultPrevented) return;
+      if (!countAllowed() || !event.isTrusted || event.defaultPrevented) return;
       const target = event.target;
       if (!(target instanceof Element) ||
           target.closest("[data-first-party-consent]") ||
