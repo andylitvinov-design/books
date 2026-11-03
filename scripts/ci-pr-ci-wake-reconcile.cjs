@@ -9,6 +9,8 @@ const CORE='.github/workflows/hh-pr-core-release.yml';
 const MAX_AGE=20*60_000;
 const SLACK=3*60_000;
 const LIVE_STATUSES=new Set(['queued','in_progress','completed','waiting','pending','requested']);
+const EXECUTED_CONCLUSIONS=new Set(['success','failure','timed_out']);
+const SHA=/^[a-f0-9]{40}$/i;
 const signedFor=(task,comments)=>{
  if(!Array.isArray(comments))return null;
  const signed=comments.filter(trustedControlComment);
@@ -32,16 +34,46 @@ function receiptState(task,comments) {
 function provenCoreRun(run,task,requestedAt){
  if(!run||run.event!=='pull_request'||run.name!=='HH PR core release gate'||
     run.path?.split('@')[0]!==CORE||run.repository?.full_name!==REPO||
-    run.head_branch!==task.head_ref||
+    run.head_repository?.full_name!==REPO||
+    run.head_branch!==task.head_ref||!SHA.test(task.head_sha||'')||
     !LIVE_STATUSES.has(run.status)||!Number.isSafeInteger(run.id)||run.id<1)
     return false;
  const at=Date.parse(run.created_at||'');
  if(!Number.isFinite(at)||at<requestedAt-SLACK)return false;
- // PR workflow runs may report a synthetic merge SHA. Do not equate it
- // with source HEAD or infer PR association from the branch name alone.
- return Array.isArray(run.pull_requests)&&run.pull_requests.some(p=>
-   p.number===task.pr_number&&p.head?.sha===task.head_sha&&
-   p.base?.ref===PROD);
+ // GitHub legitimately returns pull_requests:[] for recent PR Core runs.
+ // That is not an absent run: an exact source SHA + trusted head repo/ref
+ // still proves the event tested this source. Never use branch alone.
+ if(!Array.isArray(run.pull_requests))return false;
+ if(run.pull_requests.length===0)
+   return run.head_sha===task.head_sha;
+ // A synthetic test-merge SHA can be accepted only with GitHub's explicit
+ // PR number, exact source SHA and production target association.
+ return run.pull_requests.some(p=>p.number===task.pr_number&&
+   p.head?.sha===task.head_sha&&p.base?.ref===PROD);
+}
+async function verifiedCoreJob({run,github,limited,owner,repo}){
+ let jobs;
+ try{
+   const response=await limited('ci-wake-executed-jobs',()=>
+     github.rest.actions.listJobsForWorkflowRun({
+       owner,repo,run_id:run.id,per_page:100,filter:'latest'
+     }));
+   const data=response?.data;
+   if(!Number.isSafeInteger(data?.total_count)||data.total_count>100||
+      !Array.isArray(data.jobs)||data.jobs.length!==data.total_count)
+     return {state:'UNKNOWN',reason:'CORE_JOB_HISTORY_INCOMPLETE'};
+   jobs=data.jobs;
+ }catch{return {state:'UNKNOWN',reason:'CORE_JOB_HISTORY_UNAVAILABLE'};}
+ const coreJobs=jobs.filter(job=>job.name==='core-lint-types-build');
+ if(coreJobs.length!==1)return {state:'UNKNOWN',reason:'CORE_PRIMARY_JOB_UNVERIFIED'};
+ const job=coreJobs[0];
+ const started=Number.isFinite(Date.parse(job.started_at||''))&&
+   typeof job.runner_name==='string'&&job.runner_name.length>0;
+ if(!started)return {state:'WAITING',reason:'CORE_RUNNER_NOT_STARTED'};
+ if(job.status==='in_progress')return {state:'RUNNING',jobId:job.id};
+ if(job.status==='completed'&&EXECUTED_CONCLUSIONS.has(job.conclusion))
+   return {state:'EXECUTED',jobId:job.id};
+ return {state:'UNKNOWN',reason:'CORE_JOB_NOT_EXECUTED'};
 }
 async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limited}){
  const previous=receiptState(task,comments);
@@ -52,19 +84,26 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
  let run=null,zeroHistory=false;
  if(previous.status==='AWAITING_CORE'){
    try{
+     // The created-time filter excludes historical runs before this wake.
+     // Without it, an old PR can remain "unverified" forever even when no
+     // Core run has appeared after an accepted Ready event.
+     const created='>='+new Date(previous.requestedAt-SLACK).toISOString();
      const response=await limited('ci-wake-core-history',()=>github.request(
        'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
          owner,repo,workflow_id:'hh-pr-core-release.yml',
-         branch:task.head_ref,event:'pull_request',per_page:30
+         branch:task.head_ref,event:'pull_request',created,per_page:100
        }));
      const history=response?.data;
      if(!history||!Number.isSafeInteger(history.total_count)||
-        !Array.isArray(history.workflow_runs)||history.workflow_runs.length>30||
-        history.workflow_runs.length>history.total_count){
+        history.total_count<0||history.total_count>100||
+        !Array.isArray(history.workflow_runs)||
+        history.workflow_runs.length!==history.total_count){
        result.state='CORE_HISTORY_UNVERIFIED';return result;
      }
-     zeroHistory=history.total_count===0&&history.workflow_runs.length===0;
-     run=history.workflow_runs.find(r=>provenCoreRun(r,task,previous.requestedAt));
+     zeroHistory=history.total_count===0;
+     run=history.workflow_runs
+       .filter(r=>provenCoreRun(r,task,previous.requestedAt))
+       .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at))[0];
    }catch{result.state='CORE_HISTORY_UNAVAILABLE';return result;}
    if(!run){
      const elapsed=now-previous.requestedAt;
@@ -78,8 +117,33 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
        result.state='CI_WAKE_CORE_ASSOCIATION_UNVERIFIED';return result;
      }
      result.state='CI_WAKE_UNDELIVERED';
+     result.reasonCode='NO_PR_CORE_AFTER_20_MINUTES';
    } else {
-     result.state='CI_CORE_CONFIRMED';result.coreRunId=run.id;
+     result.coreRunId=run.id;
+     const elapsed=now-previous.requestedAt;
+     if(['queued','waiting','pending','requested'].includes(run.status)){
+       result.state='CI_CORE_QUEUED';return result;
+     }
+     if(run.status==='completed'&&!EXECUTED_CONCLUSIONS.has(run.conclusion)){
+       // A skipped/cancelled/startup-failed workflow is not proof that a
+       // runner executed the required Core job.
+       result.state=elapsed>=MAX_AGE?'CI_WAKE_UNDELIVERED':'CI_CORE_INTERRUPTED';
+       result.reasonCode='CORE_WORKFLOW_INTERRUPTED_BEFORE_PROOF';
+       if(result.state==='CI_CORE_INTERRUPTED')return result;
+     } else {
+       const proof=await verifiedCoreJob({run,github,limited,owner,repo});
+       result.coreJobId=proof.jobId||null;
+       if(proof.state==='EXECUTED'&&run.status==='completed'){
+         result.state='CI_CORE_CONFIRMED';
+         result.reasonCode='VERIFIED_CORE_RUNNER_EXECUTED';
+       }else if(proof.state==='RUNNING'||(proof.state==='EXECUTED'&&run.status==='in_progress')){
+         result.state='CI_CORE_RUNNING';return result;
+       }else if(proof.state==='WAITING'){
+         result.state='CI_CORE_WAITING_RUNNER';return result;
+       }else{
+         result.state=proof.reason||'CORE_JOB_EVIDENCE_UNVERIFIED';return result;
+       }
+     }
    }
  }
  async function exactHead(){
@@ -101,7 +165,9 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
        owner,repo,issue_number:task.pr_number,
        body:commentBody({...task,state,source_published:false,
          core_run_id:result.coreRunId,
-         reason_code:state==='CI_WAKE_UNDELIVERED'?'NO_PR_CORE_AFTER_20_MINUTES':'VERIFIED_REAL_PR_CORE',
+         reason_code:result.reasonCode||
+           (state==='CI_WAKE_UNDELIVERED'?'NO_PR_CORE_AFTER_20_MINUTES':'VERIFIED_REAL_PR_CORE'),
+         core_job_id:result.coreJobId||null,
          created_at:new Date(now).toISOString()})
      }));
      result.receiptWritten=true;
@@ -141,4 +207,4 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
  }catch{result.state='CI_WAKE_QUEUE_RETIRE_UNAVAILABLE';}
  return result;
 }
-module.exports={receiptState,provenCoreRun,reconcileCiWake};
+module.exports={receiptState,provenCoreRun,verifiedCoreJob,reconcileCiWake};
