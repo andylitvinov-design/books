@@ -150,7 +150,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
-      const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
+      // The approved transcript lives inside a closed native details.
+      // A visitor must reveal it before its visible text is read by WebKit.
+      const transcriptPanel=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-spoken-text]")});
+      if(await transcriptPanel.getAttribute("open")===null)
+        await transcriptPanel.locator("summary").click();
+      const visibleTranscript=page.locator("[data-video-affirmation-spoken-text]");
+      await expect(visibleTranscript).toBeVisible();
+      const transcript=(await visibleTranscript.innerText()).trim();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
@@ -158,6 +166,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="female"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      // The soundtrack selector is in separate advanced options, hidden until
+      // the visitor opens them with the native disclosure summary.
+      const voiceOptions=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-bed]")});
+      if(await voiceOptions.getAttribute("open")===null)
+        await voiceOptions.locator("summary").click();
+      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
