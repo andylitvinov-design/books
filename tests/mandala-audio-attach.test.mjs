@@ -40,8 +40,10 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/const selectedAudioKey=uploadedAudio/);
   assert.match(studio,/const attachedAudioKey=attachedAudio===null/);
   assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
-  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,caption/);
+  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,[\s\S]*?audioStartSeconds,timelineTextClips,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,
+    "native sound begins only when the recorder starts, not during video preflight");
   assert.match(studio,/function attachSelectedAudio\(\)/);
   assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);
   assert.match(studio,/my-voice\\./);
@@ -49,8 +51,8 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
-  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume\)/);
+  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
   for(const fragment of [

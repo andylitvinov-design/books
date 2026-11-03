@@ -20,7 +20,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
     "paintVideoAffirmations(ctx,time,affirmationLines,affirmations)",
-    "paintStageCaptionOverlay(ctx,time,cinematicPlan)",
+    "paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips)",
     "if(usingFreeFilmCompilation&&!frame)return false",
   ])assert.ok(studio.includes(marker),marker);
 });
@@ -35,6 +35,8 @@ test("No customer upload, fake video or unbounded output",()=>{
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
+  assert.match(helper,/source\.start\(startSeconds\)/,
+    "Safari AAC must honor the soundtrack offset on the project clock");
   assert.match(helper,/video_output_not_mp4/);
   assert.match(studio,/HH_WEBKIT_MP4_EXPORT_FAILURE:/);
   assert.match(helper,/await output\.cancel\(\)/);

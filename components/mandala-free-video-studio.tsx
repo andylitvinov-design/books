@@ -5122,8 +5122,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             playheadSeconds={previewPlaying?previewPlayhead:previewSeekSeconds}
             playing={previewPlaying}
             onSeek={seekTimeline}
-            onTogglePlay={()=>{if(previewPlaying)seekTimeline(previewPlayhead);
-              else openAffirmationPreview();}}
+            onTogglePlay={()=>{
+              if(previewPlaying){seekTimeline(previewPlayhead);return;}
+              if(recording||preparing)return;
+              const at=previewSeekSeconds>=duration?0:previewSeekSeconds;
+              if(at!==previewSeekSeconds){setPreviewSeekSeconds(at);setPreviewPlayhead(at);}
+              startMovieSound(attachedAudio,soundVolume,at);
+              setPreviewPlaying(true);
+              const film=premiumVideoRef.current;
+              if(film&&activeFilm){
+                film.muted=true;
+                void film.play().catch(()=>{
+                  if(aliveRef.current)setNotice(ui.videoUnavailable);
+                });
+              }
+            }}
             onAddVideo={()=>{
               setActiveWorkspace("video");setStudioMode("pump");
               window.requestAnimationFrame(()=>document.querySelector("[data-free-film-compilation-catalog]")
