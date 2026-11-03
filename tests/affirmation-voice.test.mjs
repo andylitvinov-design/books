@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {affirmationNarrationText,affirmationNarrationForSelection,isApprovedAffirmationNarration,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
 import {validateStudioRequest,buildStudioPayload,VOICE_STUDIO_VOICES,voiceStudioProviders} from "../lib/mandala/voice-studio.mjs";
+import {fixedLivePhraseRequest,verifyLiveSelectedPhrase,verifyLiveVoiceBytes} from "../scripts/verify-live-selected-voice-phrase.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -202,4 +203,39 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/);
   assert.match(css,/\.phrasePick select\{/);
   assert.doesNotMatch(ui,/autoPlay/);
+});
+
+test("one real-network acceptance request is strictly fixed to approved phrase and free Leon",async()=>{
+  const expected={mode:"affirmations",voiceId:"leon",language:"ru",text:"Я выбираю спокойствие.",consent:true};
+  assert.deepEqual(fixedLivePhraseRequest(),expected);
+  const requests=[];
+  const wavRate=24000,frames=24000;
+  const wav=Buffer.alloc(44+frames*2);
+  wav.write("RIFF",0);wav.writeUInt32LE(wav.length-8,4);
+  wav.write("WAVEfmt ",8);wav.writeUInt32LE(16,16);
+  wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);
+  wav.writeUInt32LE(wavRate,24);wav.writeUInt32LE(wavRate*2,28);
+  wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
+  wav.write("data",36);wav.writeUInt32LE(frames*2,40);
+  for(let i=0;i<frames;i++)wav.writeInt16LE(Math.round(11000*Math.sin(2*Math.PI*220*i/wavRate)),44+i*2);
+  const fetchImpl=async (url,opts)=>{
+    requests.push({url,opts});
+    if(opts.method==="GET")return new Response(JSON.stringify({
+      enabled:true,providers:{gemini:true,openrouterFree:true,openrouter:false},languages:["en","ru","es"],
+    }),{status:200,headers:{"content-type":"application/json"}});
+    return new Response(wav,{status:200,headers:{"content-type":"audio/wav","cache-control":"private, no-store","x-hh-voice-provider":"gemini"}});
+  };
+  const evidence=await verifyLiveSelectedPhrase({fetchImpl});
+  assert.equal(evidence.voiceId,"leon");
+  assert.equal(evidence.provider,"gemini");
+  assert.ok(evidence.rms>0.002);
+  assert.equal(requests.length,2,"one actual phrase request, not six paid retries");
+  assert.deepEqual(JSON.parse(requests[1].opts.body),expected);
+  assert.equal(requests[1].opts.headers.Origin,"https://holistichouse.vercel.app");
+  assert.equal("Authorization" in requests[1].opts.headers,false);
+  const silent=Buffer.from(wav);silent.fill(0,44);
+  assert.throws(()=>verifyLiveVoiceBytes(silent.buffer.slice(silent.byteOffset,silent.byteOffset+silent.byteLength)),/SILENT/);
+  await assert.rejects(verifyLiveSelectedPhrase({fetchImpl:async(url,opts)=>
+    opts.method==="GET"?new Response(JSON.stringify({enabled:false}),{status:200}):new Response(wav)}),
+    /FREE_PROVIDER_NOT_READY/);
 });
