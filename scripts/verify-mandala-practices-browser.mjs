@@ -159,6 +159,15 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // A WebKit click can resolve before React commits the selected direction.
+      // Wait for the actual accessible selection and enabled action, without
+      // a second click, sleep, or bypass of the real safety/validation gate.
+      await page.waitForFunction(()=>{
+        const course=document.querySelector("[data-video-guided-course]");
+        return course?.querySelector('[data-guided-focus-vector="goals"][aria-pressed="true"]') &&
+          course.getAttribute("data-guided-focus-ready")==="true" &&
+          course.querySelector("[data-guided-generate-meditation]")?.disabled===false;
+      },null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
