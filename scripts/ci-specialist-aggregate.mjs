@@ -194,7 +194,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
 export function optionalProfileWriterSkip(files, branch) {
   const name = '.github/workflows/hh-profile-axis-matching.yml';
   const source = files?.base?.get(name);
-  if (typeof source !== 'string' || source !== files?.current?.get(name) ||
+  const candidate = files?.current?.get(name);
+  // The selective-workflow migration can replace this owner's YAML self-trigger
+  // with the reviewed shared contract. The only approved exception is this
+  // exact one-line swap: job guards, permissions and every other line remain
+  // byte-identical to immutable production BASE.
+  const oldTrigger = "      - '.github/workflows/hh-profile-axis-matching.yml'";
+  const migrationTrigger = "      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  const approvedMigration = typeof source === 'string' && typeof candidate === 'string' &&
+    source.split(oldTrigger).length === 2 && !source.includes(migrationTrigger) &&
+    candidate === source.replace(oldTrigger, migrationTrigger);
+  if (typeof source !== 'string' || typeof candidate !== 'string' ||
+      (source !== candidate && !approvedMigration) ||
       typeof branch !== 'string' || !branch ||
       branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
   const onlyWriter = [

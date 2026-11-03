@@ -389,6 +389,37 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
     'own-branch skips, edited workflow, and any failed required job are not accepted');
 });
 
+test('profile-axis writer skip stays branch-conditional after exact one-line selective workflow migration',()=>{
+  const file='.github/workflows/hh-profile-axis-matching.yml';
+  const base=readFileSync(file,'utf8');
+  const oldPath="      - '.github/workflows/hh-profile-axis-matching.yml'";
+  const contract="      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  assert.equal(base.split(oldPath).length,2);
+  assert.equal(base.includes(contract),false);
+  const migrated=base.replace(oldPath,contract);
+  const current=(value)=>({base:new Map([[file,base]]),current:new Map([[file,value]])});
+  const branch='perf/ci-selective-workflow-self-path-v1';
+  assert.equal(optionalProfileWriterSkip(current(migrated),branch),true,
+    'unchanged immutable writer condition permits skipped job only on unrelated branch');
+  assert.equal(optionalProfileWriterSkip(current(migrated),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  const actual=[
+    {name:'axis-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
+  ];
+  assert.equal(inspectJobs(actual,file,['writer-practical-focused']),1,
+    'only the completed main axis suite counts as executed');
+  assert.throws(()=>inspectJobs([{...actual[0],conclusion:'failure'},actual[1]],file,['writer-practical-focused']),/UNSUCCESSFUL/);
+  for(const unsafe of [
+    base.replace(oldPath,''),
+    migrated.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
+    migrated.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'"),
+    migrated.replace('permissions:\\n  contents: read','permissions:\\n  contents: write'),
+    migrated.replace('  workflow_dispatch:', '  schedule:'),
+    migrated.replace(contract,"      - 'tests/unapproved.test.mjs'"),
+  ]) assert.equal(optionalProfileWriterSkip(current(unsafe),branch),false,
+    'unknown trigger/job/permissions changes stay fail-closed');
+});
+
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
   assert.throws(()=>inspectJobs([],path),/ZERO_JOB/);
   for(const conclusion of ['skipped','cancelled','failure',null]) {
