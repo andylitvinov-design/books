@@ -166,28 +166,43 @@ function verifyFreeModelMetadata(payload,model=MODEL){
  const rows=Array.isArray(payload)?payload:Array.isArray(payload?.data)?payload.data:null;
  if(!rows)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
  const entry=rows.find(item=>item&&(
-   item.id===model||item.id==='opencode/'+suffix||
+   item.id===model||item.id==='opencode/'+suffix||item.id===suffix||
    (item.providerID==='opencode'&&item.modelID===suffix)
  ));
- if(!entry||!Array.isArray(entry.variants)||entry.variants.length===0)
-  throw Error('FREE_AI_MODEL_NOT_IN_FREE_CATALOG');
+ if(!entry)throw Error('FREE_AI_MODEL_NOT_IN_FREE_CATALOG');
  const costs=[];
- for(const variant of entry.variants){
-  if(!variant||!Array.isArray(variant.cost)||variant.cost.length===0)
-   throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
-  costs.push(...variant.cost);
+ if(Array.isArray(entry.variants)&&entry.variants.length){
+  for(const variant of entry.variants){
+   if(!variant||!Array.isArray(variant.cost)||variant.cost.length===0)
+    throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+   costs.push(...variant.cost);
+  }
+ }else if(Array.isArray(entry.cost)&&entry.cost.length){
+  costs.push(...entry.cost);
+ }else{
+  const pricing=entry.pricing||entry.cost;
+  if(!pricing||typeof pricing!=='object')throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
+  costs.push({
+   input:pricing.input??pricing.prompt??pricing.input_price,
+   output:pricing.output??pricing.completion??pricing.output_price,
+   cache:{read:pricing.cache?.read??pricing.cached_read??pricing.cache_read,
+    write:pricing.cache?.write??pricing.cached_write??pricing.cache_write}
+  });
  }
  if(!costs.length)throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
  for(const cost of costs){
-  if(!cost||typeof cost.input!=='number'||typeof cost.output!=='number'||
-    !cost.cache||typeof cost.cache.read!=='number'||typeof cost.cache.write!=='number')
+  const cache=cost?.cache||{};
+  const input=cost?.input,output=cost?.output;
+  const read=cache.read??cost?.cache_read??cost?.cached_read;
+  const write=cache.write??cost?.cache_write??cost?.cached_write;
+  if(typeof input!=='number'||typeof output!=='number'||
+    typeof read!=='number'||typeof write!=='number')
    throw Error('FREE_AI_MODEL_PRICE_UNKNOWN');
-  if(cost.input!==0||cost.output!==0||cost.cache.read!==0||cost.cache.write!==0)
+  if(input!==0||output!==0||read!==0||write!==0)
    throw Error('FREE_AI_MODEL_PRICE_NOT_ZERO');
  }
  return {model,costRows:costs.length,zeroCost:true};
 }
-
 
 async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutMs=10000}={}){
  if(typeof fetchImpl!=='function')throw Error('FREE_AI_MODEL_CATALOG_UNAVAILABLE');
@@ -200,7 +215,7 @@ async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutM
  return verifyFreeModelMetadata(payload,model);
 }
 
-function propose(){
+async function propose(){
  const scope=sourceScope(),root=process.cwd();
  const sources=checkScopeFiles(root,scope);
  const signals=collectDiagnostics(root,scope);
