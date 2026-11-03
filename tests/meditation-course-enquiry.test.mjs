@@ -27,7 +27,8 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.match(src,/const consentId=formId\+"-contact-consent"/);
   assert.match(src,/id=\{consentId\} name="contactConsent" type="checkbox"/);
   assert.match(src,/label htmlFor=\{consentId\}/);
-  assert.match(src,/onClick=\{event=>\{event\.preventDefault\(\);setConsent\(value=>!value\);\}\}/);
+  assert.doesNotMatch(src,/label htmlFor=\{consentId\}[^>]*onClick=/);
+   assert.match(src,/onChange=\{event=>setConsent\(event\.target\.checked\)\}/);
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
   assert.match(src,/crypto.randomUUID/);
