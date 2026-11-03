@@ -245,7 +245,7 @@ def run():
     for index,row in enumerate(rows):
         item=generate(row,root,width,height,seconds,fps,a.verify)
         scenes.append(item)
-        total+=item['bytes']+(root/'public'+item['poster']).stat().st_size
+        total+=item['bytes']+(root/'public'/item['poster'].lstrip('/')).stat().st_size
         if total>a.max_mebibytes*1024*1024:
             raise RuntimeError('total encoded assets exceed budget; no publication')
         if (index+1)%20==0:
