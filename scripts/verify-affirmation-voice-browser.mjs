@@ -304,20 +304,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
         phase(engine,"encoded-audio-verified");
       }
-      // A real phrase edit must invalidate the old voice attachment. The
-      // visitor changes the wording in its visible workspace, then returns.
+      // Adding another approved phrase must preserve the WAV of the
+      // exact one-line text already spoken and encoded in the exported MP4.
       await page.locator('[data-video-quick-control="phrases"]').click();
       const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
-      // The phrase editor propagates its pending state to the shared voice
-      // panel in a React effect. Wait for the *actual disabled control*
-      // instead of racing the next render frame.
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
-        "unapproved phrase cannot invalidate existing sound");
+        "unapproved edits cannot invalidate consented audio");
+      await page.locator('[data-hypno-approve]').click();
+      await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
+      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
+        "adding an unspoken phrase does not invalidate the actual WAV");
+      // Unlike the unrelated edit, removing the phrase selected for actual
+      // synthesis must invalidate the attached soundtrack before export.
+      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="1"]');
+      await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
+      await spokenPhrase.click();
+      await expect(spokenPhrase).toHaveAttribute("aria-pressed","false");
+      await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
+      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
+        "pending edits do not revoke the prior approved transcript");
       await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       // The approved Video Studio puts narration in fifth Montage → Voice.
