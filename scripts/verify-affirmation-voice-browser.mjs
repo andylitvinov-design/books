@@ -156,7 +156,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         "the visitor can choose one of their approved phrases or all");
       await phraseSelector.selectOption("1");
       await expect(phraseSelector).toHaveValue("1");
-      const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
+      // The approved transcript is inside a visitor-controlled native details.
+      // Open it with a real summary click; WebKit innerText on hidden content is
+      // empty even when the selected phrase is already the one sent to TTS.
+      const transcriptDisclosure=page.locator("[data-video-affirmation-voice] details")
+        .filter({has:page.locator("[data-video-affirmation-spoken-text]")});
+      if(await transcriptDisclosure.getAttribute("open")===null)
+        await transcriptDisclosure.locator("summary").click();
+      const spoken=page.locator("[data-video-affirmation-spoken-text]");
+      await expect(spoken).toBeVisible();
+      const approved=(await phraseSelector.locator('option[value="1"]').innerText())
+        .replace(/^2\.\s*/,"").trim();
+      const expectedSpeech=/[.!?…]$/u.test(approved)?approved:approved+".";
+      await expect(spoken).toHaveText(expectedSpeech);
+      const transcript=(await spoken.innerText()).trim();
       assert.ok(transcript.length>5&&transcript.length<=45,"only one approved phrase is spoken");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
