@@ -19,8 +19,9 @@ jobs:
     runs-on: ubuntu-24.04
 `;
 test('BASE condition false for this exact PR makes only that skipped job advisory',()=>{
-  const allowed=trustedConditionallyInapplicableJobs(workflow,pr());
+  const allowed=trustedConditionallyInapplicableJobs(workflow,workflow,pr());
   assert.deepEqual(allowed,['writer-practical-focused']);
+  assert.deepEqual(trustedConditionallyInapplicableJobs(workflow,workflow.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest'),pr()),[]);
   const jobs=[
     {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
     {name:'axis-unit-types-build',status:'completed',conclusion:'success'},
@@ -30,7 +31,7 @@ test('BASE condition false for this exact PR makes only that skipped job advisor
     /UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 test('same BASE condition remains required when the exact PR head matches',()=>{
-  const allowed=trustedConditionallyInapplicableJobs(workflow,pr('feat/meditation-writer-device-v1-20261030'));
+  const allowed=trustedConditionallyInapplicableJobs(workflow,workflow,pr('feat/meditation-writer-device-v1-20261030'));
   assert.deepEqual(allowed,[]);
   const jobs=[
     {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
@@ -45,7 +46,7 @@ test('unknown functions, contexts and non-single-line guards never waive a skipp
     "startsWith(github.head_ref, 'feat/meditation-writer-device-')");
   const unknownContext=workflow.replace('github.head_ref','github.actor');
   const multiline=workflow.replace(/    if: (.+)/, () => '    if: >-\n      $1');
-  assert.deepEqual(trustedConditionallyInapplicableJobs(unknownFunction,pr()),[]);
-  assert.deepEqual(trustedConditionallyInapplicableJobs(unknownContext,pr()),[]);
-  assert.deepEqual(trustedConditionallyInapplicableJobs(multiline,pr()),[]);
+  assert.deepEqual(trustedConditionallyInapplicableJobs(unknownFunction,unknownFunction,pr()),[]);
+  assert.deepEqual(trustedConditionallyInapplicableJobs(unknownContext,unknownContext,pr()),[]);
+  assert.deepEqual(trustedConditionallyInapplicableJobs(multiline,multiline,pr()),[]);
 });
