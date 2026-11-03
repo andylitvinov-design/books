@@ -2784,6 +2784,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const entry=chooseAudioFile(clip.file);
     if(!entry)return;
     setHypnoSpeechSource(clip.file);
+    setHypnoSpeechText(clip.spokenText);
+    setHypnoSpeechDuration(clip.mixSeconds);
     setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
     previousHypnoAudioRef.current=null;
     // This local File is generated from consented text and actually attached to
