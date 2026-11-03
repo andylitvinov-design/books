@@ -132,33 +132,15 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // The approved Video Studio's *whole* extra editor is collapsed by
-  // default. Open the real advanced controls on owner layout; the previously
-  // deployed layout has no such toggle. Both use the same original recorder.
-  const ownerAdvanced=page.locator('[data-video-advanced-toggle]');
-  if(await ownerAdvanced.count()){
-    // Server HTML can receive a click before React has hydrated the editor.
-    // Retry only a real, bounded user gesture; never set UI state from tests.
-    await page.waitForLoadState('load',{timeout:30000});
-    let expanded=false;
-    for(let attempt=0;attempt<3;attempt++){
-      if(await ownerAdvanced.getAttribute('aria-expanded')==='true'){
-        expanded=true;break;
-      }
-      await ownerAdvanced.click({timeout:15000});
-      expanded=await page.waitForFunction(()=>{
-        const button=document.querySelector('[data-video-advanced-toggle]');
-        const studio=document.querySelector('[data-mandala-free-video]');
-        return button?.getAttribute('aria-expanded')==='true' &&
-          studio?.getAttribute('data-video-advanced-open')==='true';
-      },undefined,{timeout:2500}).then(()=>true,error=>{
-        if(!/Timeout/i.test(String(error)))throw error;
-        return false;
-      });
-      if(expanded)break;
-    }
-    assert.ok(expanded,'FIRST_VIDEO_ADVANCED_TOGGLE_NOT_INTERACTIVE');
-  }
+  // Compact Video hides its extended source editor until the visitor chooses
+  // "All stories". Exercise that REAL visible button, not a hidden DOM node
+  // or direct React state manipulation, before testing the actual export.
+  const allStories = page.locator('[data-auto-video-all-scenes]');
+  await allStories.waitFor({state:'visible',timeout:40000});
+  await allStories.click();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
+    undefined,{timeout:15000});
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
   if(await advanced.getAttribute('open')===null)

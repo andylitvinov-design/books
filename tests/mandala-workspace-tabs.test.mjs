@@ -44,9 +44,9 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
-   "fifth Montage reuses one original photo editor");
- assert.match(studio,/\{activeWorkspace==="pro" \? <details className=\{videoStyles.quickExtras\} data-video-pro-advanced>/,
-   "advanced visual settings are in the sixth PRO workspace");
+   "second Montage reuses one original photo editor");
+ assert.match(studio,/<details className=\{videoStyles\.montageStyleSettings\} data-video-editor-style-settings/,
+   "the one advanced style settings panel now belongs to the second Montage workspace");
  assert.match(studio,/\{deepVideoPane\}/);
 });
 test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
@@ -223,6 +223,57 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  const benchmark=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-studio-hydrated=\{studioHydrated\?"true":"false"\}/);
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
- assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-advanced-toggle"));
+ assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-first-video-advanced"),
+   "hydration must complete before the first direct free-video disclosure");
  assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
+});
+
+test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
+ const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second");
+ const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
+ assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
+ assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
+ const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
+ assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const scenario=editor.indexOf('data-video-editor-scenario');
+ assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.match(editor,/data-video-montage-script-update/);
+ assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
+   "editing a four-shot montage changes the local actual caption track");
+ assert.match(editor,/setCaptionMode\("custom"\)/,
+   "single-scene style applies the script as a real caption");
+ assert.match(editor,/data-video-editor-style-settings/);
+ assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
+ assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
+});
+
+test("owner 03 Nov: iPhone Montage appears as tabs > script > 16:9 film > editable tracks",()=>{
+ const layout=css.slice(css.lastIndexOf("/* HH editor one-screen iPhone composition"));
+ assert.match(layout,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1/);
+ assert.match(layout,/quickBuilder \[data-video-editor-scenario\]\s*\{[^}]*order:2/);
+ assert.match(layout,/quickBuilder>\.previewStage\s*\{[^}]*order:3/);
+ assert.match(layout,/\[data-video-multitrack-timeline\]\s*\{[^}]*order:4/);
+ assert.match(layout,/aspect-ratio:16\/9!important/);
+ assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ const timelineCss=readFileSync(new URL("../components/mandala-multitrack-timeline.module.css",import.meta.url),"utf8");
+ const tracks=timelineCss.slice(timelineCss.lastIndexOf("/* HH iPhone track order"));
+ for(const [kind,order] of [["video",2],["audio",3],["text",4]]){
+   assert.ok(tracks.includes('.trackRow[data-video-track="'+kind+'"]{order:'+order+';}'));
+ }
+});
+
+test("iPhone Montage portals existing six tabs above the script and uses one real export",()=>{
+ const montage=studio.slice(studio.indexOf("const [effectsNavTarget"),studio.indexOf("  return (",studio.indexOf("const [effectsNavTarget")));
+ assert.match(montage,/setMontageNavTarget/);
+ assert.match(studio,/data-video-montage-nav-slot/);
+ assert.match(studio,/createPortal\(nav,montageNavTarget\)/);
+ const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ assert.match(editor,/data-video-montage-tools/);
+ assert.match(editor,/data-video-montage-export/);
+ assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(css,/\.montageNavSlot>\.quickVideoNav\{/);
+ assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
 });
