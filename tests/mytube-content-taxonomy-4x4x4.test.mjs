@@ -13,6 +13,7 @@ test("MyTube taxonomy has the exact 4x4x4x4 shape", () => {
     assert.equal(category.subcategories.length, 4, category.id);
     for (const subcategory of category.subcategories) {
       assert.equal(subcategory.topics.length, 4, subcategory.id);
+      for (const locale of ["ru", "en", "es"]) assert.ok(subcategory.chooseWhen?.[locale], `missing ${locale} choice hint: ${subcategory.id}`);
       for (const topic of subcategory.topics) {
         assert.equal(topic.scenarios.length, 4, topic.id);
       }
