@@ -68,7 +68,7 @@ on:
       - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
-      - '.github/workflows/hh-support-mobile-mock-browser.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
 permissions:
   contents: read
 concurrency:

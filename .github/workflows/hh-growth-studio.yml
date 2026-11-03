@@ -42,7 +42,7 @@ on:
       - 'tests/growth-studio-content-radar.test.mjs'
       - 'tests/growth-studio-provider-readiness.test.mjs'
       - 'tests/growth-studio-manual-inbox.test.mjs'
-      - '.github/workflows/hh-growth-studio.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:
