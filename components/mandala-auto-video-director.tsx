@@ -2,8 +2,8 @@
 
 import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
-import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {Check,Sparkles,Target,Play,ArrowRight,Heart,Leaf,Zap,Coins,Star} from "lucide-react";
+import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
@@ -136,7 +136,6 @@ export function MandalaAutoVideoDirector({
  const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>({goal,theme});
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
- const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
  const [selectedCategoryId,setSelectedCategoryId]=useState("energy-confidence");
  const [selectedSubcategoryId,setSelectedSubcategoryId]=useState("life-energy");
  const [selectedTopicId,setSelectedTopicId]=useState<string|null>(null);
@@ -152,7 +151,6 @@ export function MandalaAutoVideoDirector({
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
  },[]);
- const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const taxonomyCategories=listMyTubeCategories(locale);
  const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
  const taxonomyTopics=listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale);
@@ -206,7 +204,7 @@ export function MandalaAutoVideoDirector({
  const alternatives=proposal?[proposal.presetId,...proposal.alternativePresetIds]
    .filter((id):id is string=>Boolean(id)): [];
  const choose=()=>{
-   setSelectedGoalId(null);
+   
    setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
@@ -216,7 +214,6 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();
    onGoalChange(nextGoal);
    onCategoryChange?.(nextTheme);
-   setSelectedGoalId(null);setSelectedGoalIds([]);
    if(topicId)setSelectedTopicId(topicId);
    setProposalContext({goal:nextGoal,theme:nextTheme});
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
@@ -231,7 +228,6 @@ export function MandalaAutoVideoDirector({
    setSelectedCategoryId(categoryId);
    setSelectedSubcategoryId(firstSubcategory?.id||"");
    setSelectedTopicId(null);
-   setSelectedGoalId(null);setSelectedGoalIds([]);
    onCategoryChange?.(nextTheme);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal,theme:nextTheme});
@@ -318,18 +314,6 @@ export function MandalaAutoVideoDirector({
          setTimelineEdits(null);setConfirmedTimelineKey(null);
        }}/>
    </label>
-   <p className={css.popularHeading}>
-     {locale==="ru"?"Популярные темы — выберите или напишите свою":
-       locale==="es"?"Temas populares: elige o escribe el tuyo":
-       "Popular topics — choose one or write your own"}
-   </p>
-   <div className={css.topicChoices} role="group" aria-label={
-      locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular topics"}>
-     {popularTopicOrder[selectedCategoryId].map(id=>{
-       const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
-       return item?renderTopic(item):null;
-     })}
-   </div>
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
      <label htmlFor="auto-video-refine">{t.refine}</label>
      <textarea id="auto-video-refine" rows={2} maxLength={120}
@@ -362,7 +346,7 @@ export function MandalaAutoVideoDirector({
      </p>:null}
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
-       {selectedTaxonomyTopic?<p className={css.meta}>{t.selectedGoal}: {selectedTaxonomyTopic.label}</p>:selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
+       {selectedTaxonomyTopic?<p className={css.meta}>{t.selectedGoal}: {selectedTaxonomyTopic.label}</p>:null}
        <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
        <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
@@ -498,7 +482,7 @@ export function MandalaAutoVideoDirector({
                onInvalidate?.();setOverrideId(null);setTimelineEdits(null);
                setConfirmedTimelineKey(null);
                setProposalContext({goal,theme});
-               setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,scenes,
+               setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
          </div>
