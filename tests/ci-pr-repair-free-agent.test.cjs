@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment
+ validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice
 }=require('../scripts/ci-pr-repair-free-agent.cjs');
 const SHA='a'.repeat(40);
 test('free model fixed and no paid model routing',()=>{
@@ -84,4 +84,26 @@ test('isolated model environment accepts only the dedicated free OpenCode key',(
   const cfg=JSON.parse(fs.readFileSync(path.join(p,'config','opencode','opencode.json'),'utf8'));
   assert.deepEqual(cfg.permissions,[{action:'*',resource:'*',effect:'deny'}]);
  }finally{fs.rmSync(p,{force:true,recursive:true});}
+});
+test('live model catalog must prove every input/output/cache price is exactly zero',()=>{
+ const payload={data:[{id:'opencode/glm-5.3-flash-free',providerID:'opencode',
+  modelID:'glm-5.3-flash-free',variants:[{id:'default',cost:[
+   {input:0,output:0,cache:{read:0,write:0}},
+   {input:0,output:0,cache:{read:0,write:0}}
+  ]}]}]};
+ assert.deepEqual(verifyFreeModelMetadata(payload),{
+  model:MODEL,costRows:2,zeroCost:true
+ });
+ const paid=structuredClone(payload);
+ paid.data[0].variants[0].cost[1].output=0.0001;
+ assert.throws(()=>verifyFreeModelMetadata(paid),/FREE_AI_MODEL_PRICE_NOT_ZERO/);
+ const unknown=structuredClone(payload);delete unknown.data[0].variants[0].cost[0].cache;
+ assert.throws(()=>verifyFreeModelMetadata(unknown),/FREE_AI_MODEL_PRICE_UNKNOWN/);
+ assert.throws(()=>verifyFreeModelMetadata({data:[]}),/FREE_AI_MODEL_NOT_IN_FREE_CATALOG/);
+});
+test('live catalog lookup fails closed before inference when unavailable',async()=>{
+ await assert.rejects(verifyFreeModelPrice({fetchImpl:async()=>({ok:false})}),
+  /FREE_AI_MODEL_CATALOG_UNAVAILABLE/);
+ await assert.rejects(verifyFreeModelPrice({fetchImpl:async()=>({ok:true,json:async()=>({})})}),
+  /FREE_AI_MODEL_PRICE_UNKNOWN/);
 });
