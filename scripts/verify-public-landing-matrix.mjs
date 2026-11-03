@@ -19,7 +19,7 @@ const cases = [
   ["/es/services/business-consulting","[data-business-visual-screen]","[data-business-visual-screen=\"final-capture\"]",430],
   ["/en/services/personal-support","[data-support-visual-screen]","[data-support-visual-screen=\"final-capture\"]",390],
   ["/en/services/free-situation-review","[data-free-review-intro-video], [data-featured-free-review-testimonials], [data-personal-express-enquiry]","[data-personal-express-enquiry]",390],
-  ["/es/services/dao-health-profile","[data-free-visual-screen]","[data-free-visual-screen=\"final-capture\"]",390],
+  ["/es/services/dao-health-profile","main[data-free-entry-landing=\"dao\"] section","main[data-free-entry-landing=\"dao\"] [data-service-lead-capture]",390],
   ["/en/academy/coaching/egyptian","[data-tradition-visual-screen]","[data-tradition-visual-screen=\"final-capture\"]",390],
   ["/ru/academy/coaching/greek","[data-tradition-visual-screen]","[data-tradition-visual-screen=\"final-capture\"]",390],
   ["/en/academy/reiki/free-practitioner-course","[data-reiki-visual-screen]","[data-reiki-visual-screen=\"final-capture\"]",390],
@@ -47,6 +47,8 @@ for (const engine of [chromium,webkit]) {
         if (path.endsWith("/free-situation-review")) {
           // Free Express intentionally keeps private phone / drawing intake
           // closed until a real visitor reveals it. Exercise its actual CTA.
+          await final.waitFor({state:"visible",timeout:15000});
+          await page.locator('[data-personal-express-enquiry][data-express-hydrated="true"]').waitFor({state:"attached",timeout:15000});
           const reveal=final.locator("[data-express-reveal]");
           await reveal.waitFor({state:"visible",timeout:15000});
           await reveal.click();

@@ -668,7 +668,7 @@ try {
             const more = capture.locator('details:has([data-contact-channel-chooser])');
             await expect(more).toHaveCount(1);
             await expect(more).not.toHaveAttribute('open', '');
-            await more.locator('summary').click();
+            await more.locator(':scope > summary').click();
             await expect(more).toHaveAttribute('open', '');
             const chooser = await openRegisteredContactChannelChooser(more, expect, page);
             const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);

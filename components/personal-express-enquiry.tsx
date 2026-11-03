@@ -85,6 +85,8 @@ export function PersonalExpressEnquiry({
   const [focus, setFocus] = useState<Focus>("situation");
   const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeDisclosure = useCallback(() => {
@@ -163,7 +165,7 @@ export function PersonalExpressEnquiry({
     <div className={styles.wrapper} data-personal-express-review>
       {intro}
       <section className={styles.capture} id="request-free-review" data-personal-express-enquiry
-        data-expanded={expanded ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
+        data-expanded={expanded ? "true" : "false"} data-express-hydrated={hydrated ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
         <div className={styles.photo}>
           <Image src="/images/holistic-house/andy-about.png" alt={t.alt}
             fill sizes="(max-width: 720px) 90px, 38vw" />
@@ -175,7 +177,7 @@ export function PersonalExpressEnquiry({
           <p className={styles.lead}>{t.lead}</p>
           <TelegramDiagnosticEntry locale={locale} />
           <button ref={revealRef} type="button" className={styles.reveal}
-            data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
+            data-express-reveal disabled={!hydrated} aria-expanded={expanded} aria-controls="express-request-form"
             aria-label={expanded ? t.close : t.secureAlternative}
             onClick={() => { if (expanded) closeDisclosure(); else setExpanded(true); }}>
             {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
