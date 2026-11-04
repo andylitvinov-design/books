@@ -128,6 +128,6 @@ test('ambiguous, stale or foreign failed-Core callbacks never authorize targeted
 });
 test('fast failed-Core handoff cannot wake the full Control Tower as a second hop',()=>{
  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
- assert.ok(source.includes("if (centralDispatch && !eventFastPath && !budget.exhausted)"));
+ assert.ok(source.includes("if (centralDispatch && !eventFastPath && !directHandoffLocal && !budget.exhausted)"));
  assert.ok(source.includes("inventoryScope:eventFastPath?'VERIFIED_SINGLE_CORE_EVENT_PR'"));
 });
