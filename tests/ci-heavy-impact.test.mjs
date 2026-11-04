@@ -425,6 +425,17 @@ test('cross-domain critical change matrix preserves owned suites and avoids CI-o
       owners: ['holistic-support-mandala.yml'] },
     { risk: 'live-audio API', path: 'app/api/live-audio/session/route.ts',
       owners: ['hh-live-audio-ci.yml'] },
+    { risk: 'shared literal Next API route', path: 'app/api/app/[...path]/route.js',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-messenger-mobile-release.yml', 'hh-energywork-ai.yml',
+        'hh-public-services-production.yml'], strictApp: true },
+    { risk: 'nested optional-slug route', path: 'app/[locale]/academy/[[...slug]]/page.tsx',
+      owners: ['hh-energywork-ai.yml'] },
+    { risk: 'Energywork owner private review', path: 'tests/reiki-review-owner-lifetime.test.mjs',
+      owners: ['hh-energywork-ai.yml'] },
+    { risk: 'Energywork YAML only', path: '.github/workflows/hh-energywork-ai.yml',
+      owners: ['hh-actionlint.yml'],
+      excluded: ['hh-energywork-ai.yml'] },
     { risk: 'private mobile messages', path: 'app/[locale]/app/messages/page.tsx',
       owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
         'hh-messenger-mobile-release.yml'], strictApp: true },
@@ -450,7 +461,7 @@ test('cross-domain critical change matrix preserves owned suites and avoids CI-o
       owners: ['hh-app-r1.yml'],
       excluded: ['hh-billing-isolated.yml', 'holistic-support-mandala.yml'] },
   ];
-  assert.ok(cases.length >= 24, 'protect the full risk-category regression inventory');
+  assert.ok(cases.length >= 28, 'protect the full risk-category regression inventory');
   const workflow = new Map();
   const matches = (name, path) => {
     if (!workflow.has(name)) workflow.set(name, parsePrTrigger(read(name), name));
