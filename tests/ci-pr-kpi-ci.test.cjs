@@ -4,7 +4,7 @@ const {normalizeCoreEvidence}=require('../scripts/ci-pr-kpi-ci.cjs');
 const SHA='a'.repeat(40),BASE='b'.repeat(40),AT='2026-11-01T22:30:00Z',END='2026-11-01T22:35:00Z';
 const run={id:7,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/pull/8/merge',event:'pull_request',status:'completed',conclusion:'success',run_attempt:1,created_at:AT,updated_at:END,head_sha:SHA,head_branch:'fix/8',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},pull_requests:[{number:8,head:{sha:SHA,ref:'fix/8'},base:{sha:BASE,ref:'codex/public-book-library'}}]};
 const job=name=>({run_id:7,run_attempt:1,name,status:'completed',conclusion:'success',completed_at:END});
-const jobs=[job('hh-core-verified'),job('hh-specialist'),job('release-ready')];
+const jobs=[job('core-lint-types-build'),job('hh-specialist'),job('hh-merge-check')];
 test('only real same-run required gate jobs produce exact-head CI evidence',()=>{
  const r=normalizeCoreEvidence([run],jobs);assert.equal(r.complete,true);
  assert.deepEqual(r.events.map(x=>x.kind),['ci_first_pass','ci_green']);assert.equal(r.events[0].head,SHA);
@@ -34,4 +34,20 @@ test('a failing or pending non-gate job prevents a false first-pass success',()=
  const r=normalizeCoreEvidence([failed],js);assert.deepEqual(r.events.map(e=>e.kind),['ci_first_failure']);
  const pending=[...jobs,{run_id:7,run_attempt:1,name:'other required',status:'in_progress',conclusion:null}];
  assert.equal(normalizeCoreEvidence([{...run,status:'in_progress',conclusion:null}],pending).events.some(e=>e.kind==='ci_first_pass'),false);
+});
+
+test('production Core job names are mandatory and legacy names do not fabricate CI green',()=>{
+ const legacy=[job('hh-core-verified'),job('hh-specialist'),job('release-ready')];
+ const a=normalizeCoreEvidence([run],legacy);
+ assert.equal(a.complete,false);assert.equal(a.events.some(e=>e.kind==='ci_green'),false);
+ const withRepair=[...jobs,{...job('hh-eslint-repair'),conclusion:'skipped'}];
+ const b=normalizeCoreEvidence([run],withRepair);
+ assert.equal(b.complete,true);assert.equal(b.events.find(e=>e.kind==='ci_green')?.head,SHA);
+});
+test('green requires success of actual hh-merge-check, not a skipped or failed required gate',()=>{
+ for(const conclusion of ['failure','cancelled','skipped']){
+  const candidate=jobs.map(j=>j.name==='hh-merge-check'?{...j,conclusion}:j);
+  const outcome=normalizeCoreEvidence([{...run,conclusion:conclusion==='skipped'?'success':'failure'}],candidate);
+  assert.equal(outcome.events.some(e=>e.kind==='ci_green'),false);
+ }
 });
