@@ -61,11 +61,23 @@ async function archive({github,context,minRemaining=80}){
     context.eventName!=='workflow_run'||context.ref!=='refs/heads/codex/bootstrap-books')
     return {status:'UNTRUSTED_CONTEXT'};
  let row=fromEvent(context.payload?.workflow_run);
+ // workflow_run may omit pull_requests after a merge. Recover only GitHub's
+ // immutable run→PR association; never match by branch name alone.
+ if(!row&&Number.isSafeInteger(context.payload?.workflow_run?.id)&&
+    context.payload.workflow_run.id>0&&typeof github.request==='function'){
+   try {
+     const related=await github.request(
+       'GET /repos/{owner}/{repo}/actions/runs/{run_id}/pull_requests',{
+         owner:OWNER,repo:REPO,run_id:context.payload.workflow_run.id,per_page:100});
+     if(Array.isArray(related?.data)&&related.data.length<100)
+       row=fromEvent({...context.payload.workflow_run,pull_requests:related.data});
+   } catch(_) { /* no association proof: fail closed */ }
+ }
  if(!row)return {status:'UNVERIFIED_PR_ASSOCIATION'};
  if(!['success','failure','timed_out','startup_failure'].includes(row.conclusion))
     return {status:'NON_TERMINAL_CONCLUSION'};
  const {owner,repo}=context.repo;
- // At most 3 GETs and 1 comment write; never touch a PR or its CI status.
+ // At most 4 GETs and 1 comment write; never touch a PR or its CI status.
  const response=await github.rest.actions.listJobsForWorkflowRun({owner,repo,
     run_id:row.run_id,per_page:100,filter:'latest'});
  row={...row,...getJobs(response,row)};
