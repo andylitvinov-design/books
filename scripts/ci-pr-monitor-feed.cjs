@@ -104,6 +104,7 @@ function renderSnapshot(snapshot){
   return [MARKER,'## Watchdog direct handoff — public snapshot',
     'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. Production PR backlog and actionable dispatch candidates are different quantities. Source publication and LIVE require separate proof.',
     '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
+    'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
 }
 async function publishMonitorSnapshot({github,context,report}){

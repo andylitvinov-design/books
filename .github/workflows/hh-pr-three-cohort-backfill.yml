@@ -1,0 +1,100 @@
+name: HH PR three-cohort evidence backfill
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-three-cohort-backfill.yml'
+      - 'scripts/ci-pr-three-cohorts.cjs'
+      - 'scripts/ci-pr-cohort-backfill.cjs'
+      - 'tests/ci-pr-three-cohorts.test.cjs'
+  pull_request:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-three-cohort-backfill.yml'
+      - 'scripts/ci-pr-three-cohorts.cjs'
+      - 'scripts/ci-pr-cohort-backfill.cjs'
+      - 'tests/ci-pr-three-cohorts.test.cjs'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate offline cohorts; no Actions API calls
+        run: |
+          node --check scripts/ci-pr-three-cohorts.cjs
+          node --check scripts/ci-pr-cohort-backfill.cjs
+          node --test tests/ci-pr-three-cohorts.test.cjs
+  backfill:
+    # One-off, bounded readback after protected merge, or explicit manual run.
+    # No schedule, no source mutation, no CI rerun, no extra Vercel work.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    concurrency:
+      group: hh-three-cohort-historic-backfill
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout only trusted CI control plane
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Recover event evidence; update single persistent cohort report
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs=require('node:fs');
+            const {collect}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-cohort-backfill.cjs');
+            const {analyze,renderMarkdown}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-three-cohorts.cjs');
+            const data=await collect({github,maxRequests:95,minRemaining:350});
+            core.info('HH_THREE_COHORT_EVIDENCE '+JSON.stringify({
+              source:data.source,prs:data.prs.length,intervals:data.intervals.length,
+              open:data.openPRs.length}));
+            // Do not overwrite the verified baseline with zeros on a failed read.
+            if(!data.source.closed_complete){
+              core.setFailed('HISTORIC_COHORT_INVENTORY_NOT_COMPLETE: '+String(data.source.reason||'unknown'));
+              return;
+            }
+            const report=analyze({...data,source:data.source});
+            const full=renderMarkdown(report);
+            fs.writeFileSync('pr-three-cohorts.json',JSON.stringify(report,null,2));
+            let issueBody=full;
+            if(issueBody.length>60000){
+              const cut=full.indexOf('## Evidence drill-down');
+              issueBody=full.slice(0,cut)+
+                '\n\nFull per-PR timelines (all three cohorts) are in the **pr-three-cohort-evidence** artifact of this workflow run.\n'+
+                `Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n`;
+            }
+            const issueNumber=3394;
+            const {owner,repo}=context.repo;
+            const issue=(await github.rest.issues.get({owner,repo,issue_number:issueNumber})).data;
+            if(issue?.state!=='open'||!issue.body?.includes('<!-- HH_PR_THREE_COHORTS_V1 -->')){
+              core.setFailed('COHORT_MONITOR_ISSUE_UNVERIFIED');return;
+            }
+            await github.rest.issues.update({owner,repo,issue_number:issueNumber,body:issueBody});
+            await core.summary.addHeading('HH historical PR cohorts: evidence and coverage')
+              .addRaw(`Report: https://github.com/${owner}/${repo}/issues/${issueNumber}\n\n`)
+              .addCodeBlock(JSON.stringify({source:report.source,windows:report.windows.map(w=>({key:w.key,count:w.count,outcomes:w.outcomes,total:w.total,unknown:w.phases.unknown}))},null,2),'json').write();
+      - name: Upload read-only evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-three-cohort-evidence
+          path: pr-three-cohorts.json
+          if-no-files-found: ignore
+          retention-days: 30
