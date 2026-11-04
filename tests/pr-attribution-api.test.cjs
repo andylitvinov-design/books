@@ -186,3 +186,36 @@ test('historical LIVE receipt is paired to exact merge SHA and adds Merge→LIVE
  assert.equal(api.verifiedLiveReceipt([{...receipt,created_at:at(90)}],prMerged),null);
  assert.equal(api.verifiedLiveReceipt([{...receipt,body:body.replace('PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT','UNTRUSTED')}],prMerged),null);
 });
+
+test('context stages partition every unattributed millisecond without claiming runner or repair',async()=>{
+ const m=makeRequest();
+ const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(110))});
+ const spans=out.intervals.filter(x=>x.stage==='unattributed');
+ const expected=spans.reduce((sum,x)=>sum+x.duration_ms,0);
+ assert.equal(expected,out.stage_totals_ms.unattributed);
+ assert.equal(Object.values(out.gap_context_ms).reduce((sum,ms)=>sum+ms,0),expected);
+ assert.equal(out.gap_context_coverage,'EVENT_BOUNDARIES_NOT_CAUSES');
+ assert(out.gap_context_ms.failed_ci_to_next_event>0);
+ assert(spans.some(x=>x.substage==='failed_ci_to_next_event'&&x.evidence_urls.some(url=>url.includes('/actions/'))));
+ assert.equal(m.calls.length,6); // Reuses the same Github reads
+});
+test('context without workflow records is never fabricated as real CI time',async()=>{
+ const m=makeRequest({runRows:[],commentRows:[]});
+ const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(110))});
+ assert.equal(out.stage_totals_ms.checks,0);
+ assert.equal(out.stage_totals_ms.runner_wait,0);
+ assert.equal(out.gap_context_ms.created_to_first_observed_event,90*60000);
+ assert.equal(out.stage_totals_ms.unattributed,90*60000);
+ assert.equal(out.gap_context_coverage,'EVENT_BOUNDARIES_NOT_CAUSES');
+});
+test('mobile UI displays event-bounded gap categories without rewriting causality',()=>{
+ const fs=require('node:fs');
+ const src=fs.readFileSync('ops/pr-monitor/pr-attribution-ui.js','utf8');
+ assert.match(src,/failed_ci_to_next_event/);
+ assert.match(src,/green_ci_to_next_event/);
+ assert.match(src,/source_published_to_next_event/);
+ assert.match(src,/rawUnknownMs/);
+ assert.match(src,/groupedMs===rawUnknownMs/);
+ assert.match(src,/Причина подтверждена/);
+ assert.match(src,/причин/);
+});
