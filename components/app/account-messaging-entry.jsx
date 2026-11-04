@@ -26,7 +26,7 @@ export default function AccountMessagingEntry({accountId,locale='en'}){
    .catch(()=>{if(!controller.signal.aborted)setStatus({available:false})})
   return ()=>controller.abort()
  },[accountId])
- if(!accountId||!status||status.connected||!status.available)return null
+ if(!accountId||!status||status.connected)return null
  const t=COPY[locale]||COPY.en
  const root='/'+(locale==='es'?'es':locale==='ru'?'ru':'en')+'/app'
  return <aside className={styles.root} aria-label={t.heading}>
@@ -35,7 +35,7 @@ export default function AccountMessagingEntry({accountId,locale='en'}){
    <h2>{t.heading}</h2>
    <p>{t.description}</p>
    <div className={styles.links}>
-    <Link href={root+'/settings#hh-telegram-connect'} prefetch={false} className={styles.primary}>{status.pending?t.pending:t.action}</Link>
+    {status.available&&<Link href={root+'/settings#hh-telegram-connect'} prefetch={false} className={styles.primary}>{status.pending?t.pending:t.action}</Link>}
     <Link href={root+'/messages'} prefetch={false} className={styles.secondary}>{t.site}</Link>
    </div>
   </div>

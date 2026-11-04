@@ -35,6 +35,7 @@ const copy={
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
 const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
@@ -630,7 +631,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}</small>
+            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
