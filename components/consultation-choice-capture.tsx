@@ -275,6 +275,9 @@ export function ConsultationChoiceCapture({
       </div>
       {isPaidRequest ? (
         <ContactChannelChooser
+          // New paid offer = new enquiry. Remount the chooser so WebKit cannot
+          // apply a previous offer's delayed reset after the visitor opens it.
+          key={serviceChoice}
           locale={locale}
           whatsappUrl={whatsappUrl}
           publicServiceTitle={t.serviceOptions[serviceChoice]}

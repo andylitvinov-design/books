@@ -386,3 +386,44 @@
  .root .emptyHint strong{font-size:13px}
  .root .emptyHint small{font-size:11px}
 }
+
+
+/* Three honest chat destinations, using pre-existing protected Orders/Clients. */
+.root .sections{grid-template-columns:repeat(3,minmax(0,1fr))}
+.root .sections .aiTab{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:49px;
+ padding:8px 6px;border:1px solid #e7dfd2;border-radius:12px;background:#fffefa;color:#567265;
+ text-decoration:none;box-sizing:border-box}
+.root .sections .aiTab strong{font:760 13px/1.25 system-ui,sans-serif}
+.root .sections .aiTab svg{flex:none}
+.root .sections .aiTab:focus-visible{outline:3px solid #087f60;outline-offset:2px}
+@media(max-width:354px){.root .sections .aiTab{gap:3px;padding:7px 3px}.root .sections .aiTab strong{font-size:12px}.root .sections .aiTab svg{width:17px;height:17px}}
+
+
+/* Owner-approved compact five-function AI rail (2 November): only one bottom dock. */
+.root .head{min-height:92px;padding:12px 15px 13px;align-items:center;margin-bottom:9px;
+ border:1px solid #f0e6dc;border-radius:20px;
+ background:linear-gradient(90deg,rgba(255,251,245,.98) 0%,rgba(255,249,243,.87) 57%,rgba(255,243,225,.14) 100%),
+ url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat}
+.root .head h1{font-size:clamp(27px,3.5vw,32px);color:#134537}
+.root .sections{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.root .sections button,.root .sections .aiTab{min-height:48px;min-width:0;padding:7px 5px;gap:6px;border-radius:99px}
+.root .sections .aiTab[aria-selected="true"]{background:linear-gradient(115deg,#f5e2ff,#faf2ff);
+ color:#772bd2;border-color:#c5a2ec;box-shadow:0 3px 12px #9350d521}
+.root .sections .aiTab svg{width:18px;height:18px}
+.root .sections .aiTab strong{font-size:13px}
+.root .sections .count{min-width:20px;height:20px;font-size:11px}
+@media(max-width:700px){
+ .root .head{min-height:75px;padding:10px 11px}
+ .root .head h1{font-size:27px}
+ .root .head p{font-size:11px}
+ .root .sections button,.root .sections .aiTab{min-height:45px;padding:6px 4px;gap:4px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:12px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:18px;height:18px}
+}
+@media(max-width:350px){
+ .root .head{min-height:69px}
+ .root .head h1{font-size:25px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:16px;height:16px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:11px}
+ .root .sections button{gap:3px}
+}

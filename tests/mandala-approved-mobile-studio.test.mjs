@@ -15,7 +15,7 @@ test("the existing public editor retains one real video renderer and the new com
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
   const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
-    "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
+    "data-video-live-stage","data-video-quick-controls","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',

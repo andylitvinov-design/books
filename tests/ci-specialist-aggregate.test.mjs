@@ -561,10 +561,10 @@ test('production workflow directory can be parsed without silently ignoring unkn
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
   // 2 Nov 2026 reviewed CI architecture: retain the 94-workflow baseline plus
-  // the isolated Language Agent and the owner-approved one-shot free-model
-  // connectivity/agent pilot. The latter is push-only on disposable branches,
-  // uses no credentials, and never runs for PRs or production pushes.
-  assert.ok(names.length <= 96, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // the isolated Language Agent, the owner-approved one-shot free-model
+  // pilot, and the already merged visual service acceptance workflow.
+  // Every extra slot below is pinned to its own explicit safety contract.
+  assert.ok(names.length <= 97, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   if(names.length > 94){
     assert.ok(names.includes('hh-language-agent.yml'),'The reviewed Language Agent remains the 95th workflow slot');
     const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
@@ -574,7 +574,7 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
   }
   if(names.length > 95){
-    assert.equal(names.length,96,'Only one additional workflow slot is reviewed');
+    assert.ok(names.length <= 97,'Only two additional named workflow slots are reviewed');
     assert.ok(names.includes('hh-gauntlet-free-smoke.yml'),'The only reviewed 96th workflow is the isolated Gauntlet smoke');
     const smoke=readFileSync('.github/workflows/hh-gauntlet-free-smoke.yml','utf8');
     assert.match(smoke,/branches:\s*\[\s*'codex\/hh-gauntlet-run-\*'\s*\]/,'Gauntlet smoke is restricted to disposable run branches');
@@ -587,6 +587,25 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.match(smoke,/No paid retry is permitted/,'Gauntlet smoke forbids paid inference fallback');
     assert.match(smoke,/node --test tests\/hh-gauntlet-loop\.test\.mjs/,'Gauntlet smoke retains dedicated ACL/loop tests');
     assert.match(smoke,/timeout-minutes: 18/,'Gauntlet smoke keeps the runtime bounded');
+  }
+  if(names.length > 96){
+    assert.equal(names.length,97,'Only the named visual service workflow uses the 97th slot');
+    assert.ok(names.includes('hh-visual-service-landings.yml'),'The 97th workflow must be visual service acceptance');
+    const visual=readFileSync('.github/workflows/hh-visual-service-landings.yml','utf8');
+    assert.match(visual,/pull_request:\s*\n\s*branches: \[codex\/public-book-library\]/,'Visual acceptance runs against the production PR base');
+    assert.match(visual,/permissions:\s*\n\s*contents: read/,'Visual acceptance has read-only repository permissions');
+    assert.match(visual,/persist-credentials: false/,'Checkout must not retain credentials');
+    assert.match(visual,/npm ci --include=dev --no-audit --no-fund/,'Visual acceptance uses the lockfile');
+    assert.match(visual,/tests\/visual-service-story\.test\.mjs/);
+    assert.match(visual,/tests\/visual-landing-sitewide-audit\.test\.mjs/);
+    assert.match(visual,/npx --no-install tsc --noEmit/);
+    assert.match(visual,/npm run build/);
+    assert.match(visual,/playwright@1\.63\.0/);
+    assert.match(visual,/playwright install --with-deps chromium webkit/);
+    assert.match(visual,/node scripts\/verify-public-landing-matrix\.mjs/);
+    assert.match(visual,/node scripts\/verify-visual-service-mobile\.mjs/);
+    assert.match(visual,/HH_PUBLIC_QA_ORIGIN: http:\/\/127\.0\.0\.1:3100/,'Synthetic acceptance targets a loopback server');
+    assert.doesNotMatch(visual,/continue-on-error:\s*true|pull_request_target:|schedule:/,'Visual acceptance cannot silently skip failure or gain a privileged trigger');
   }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
