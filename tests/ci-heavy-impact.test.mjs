@@ -357,7 +357,7 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   const guard = read('hh-pr-sweep-guard.yml');
   const app = read('hh-app-r1.yml');
   assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
-  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    #[^\n]+\n    #[^\n]+\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
@@ -369,4 +369,14 @@ test('owner video review runs real browser and physical source checks',()=>{
     assert.ok(step.startsWith('- name: '+name),name);
     assert.match(step.slice(0,step.indexOf('\n      - name:',1)>0?step.indexOf('\n      - name:',1):step.length),/feat\/video-owner-review-/,name);
   }
+});
+
+
+test('App R1 avoids the five-job fanout for changes to its routing unit tests alone', () => {
+  const changed = ['tests/ci-heavy-impact.test.mjs'];
+  const match = name => matchesTrigger(parsePrTrigger(read(name), name), changed, 'codex/public-book-library');
+  assert.equal(match('hh-app-r1.yml'), false, 'App R1 full matrix must not run for its focused unit tests');
+  assert.equal(match('hh-pr-sweep-guard.yml'), true, 'Guard must still run routing unit tests');
+  assert.equal(match('hh-pr-core-release.yml'), true, 'Core must still validate this PR');
+  assert.equal(match('hh-app-r1.yml'), false, 'No expensive self-dispatch from test-only changes');
 });
