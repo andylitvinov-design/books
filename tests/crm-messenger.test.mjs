@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Include the new consent and manual campaign guards in the existing protected CRM check.
+import './crm-telegram-campaigns.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
