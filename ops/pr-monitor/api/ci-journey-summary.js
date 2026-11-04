@@ -142,6 +142,15 @@ function report(store,h,now=Date.now()){
    .filter(x=>t(x.last_at)>=cutoff&&t(x.last_at)<=now+60000)
    .sort((a,b)=>b.elapsed_ms-a.elapsed_ms||a.pr-b.pr);
  const nums=rows.map(x=>x.elapsed_ms),sum=nums.reduce((a,b)=>a+b,0);
+ const stages=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
+ const stageTotals=Object.fromEntries(stages.map(k=>[k,rows.reduce(
+   (total,row)=>total+(row.stages_ms?.[k]||0),0)]));
+ const stageSamples=Object.fromEntries(stages.map(k=>[k,rows.filter(
+   row=>(row.stages_ms?.[k]||0)>0).length]));
+ const stageSum=Object.values(stageTotals).reduce((a,b)=>a+b,0);
+ const reconciled=Math.abs(stageSum-sum)<=Math.max(1,rows.length);
+ const stageMeans=Object.fromEntries(stages.map(k=>[k,rows.length?
+   rnd(stageTotals[k]/rows.length/60000):null]));
  return {schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    generated_at:new Date(now).toISOString(),
    period_hours:h,cohort:'LAST_OBSERVED_CORE_JOB_COMPLETED_IN_WINDOW',
@@ -150,6 +159,7 @@ function report(store,h,now=Date.now()){
      archived_runs:store.runs.length,archived_prs:byPR.size,
      partial_prs:rows.filter(x=>x.partial).length,
      history_complete:false,pagination_partial:store.pagination_partial,
+     rows_returned:Math.min(250,rows.length),rows_total:rows.length,
      api_remaining:store.remaining,stale:store.stale===true,
      archive_fetched_at:store.fetched_at,
      note:'Первая и последняя CI из наблюдаемых Core runs; отсутствие старых workflow_run событий может уменьшать длительность.'},
@@ -158,6 +168,13 @@ function report(store,h,now=Date.now()){
      p90_minutes:nums.length?rnd(quant(nums,.9)/60000):null,
      repeats:rows.reduce((n,x)=>n+x.repeats,0),
      failures:rows.reduce((n,x)=>n+x.failures,0)},
+   stage_breakdown:{schema:'HH_CI_JOURNEY_CONTRIBUTIONS_V1',
+     cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',
+     n:rows.length,mean_minutes_per_pr:stageMeans,
+     prs_with_observed_span:stageSamples,
+     total_mean_minutes:nums.length?rnd(sum/nums.length/60000):null,
+     observed_elapsed_ms:sum,stage_total_ms:stageTotals,
+     reconciled},
    rows:rows.slice(0,250)};
 }
 module.exports=async(req,res)=>{
