@@ -1280,9 +1280,10 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
     'actions/cache/save@v4',
     'hh-public-next-',
     'steps.public_acceptance.outputs.build_ok',
-    'playwright install chromium',
-    'smoke_engines',
-    'playwright install --with-deps chromium webkit',
+    'mcr.microsoft.com/playwright:v1.63.0-noble',
+    'Verify preinstalled Chromium and WebKit',
+    'playwright@1.63.0',
+    'await engine.launch({ headless: true',
     './node_modules/.bin/next build',
   ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
   assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
@@ -1316,14 +1317,22 @@ test('Core-only PR fast-lane regression cannot summon unrelated public browser E
   }
 });
 
-test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+test('pinned preinstalled Playwright engines retain sensitive PR browser coverage and legacy seed safety', () => {
   const serviceWorkflow=workflow('hh-public-services-production.yml');
   const seed=workflow('hh-public-playwright-cache.yml');
   const key='hh-public-browser-blobs-';
   assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
   assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
     'pull-request jobs must not publish cross-PR browser caches');
-  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  // The pinned official image already includes both browser binaries. Its
+  // exact-version launch smoke replaces redundant per-PR browser downloads;
+  // the legacy production-only seed remains isolated and owner-controlled.
+  assert.ok(serviceWorkflow.includes('mcr.microsoft.com/playwright:v1.63.0-noble'));
+  assert.ok(serviceWorkflow.includes('Verify preinstalled Chromium and WebKit'));
+  assert.ok(serviceWorkflow.includes('await engine.launch({ headless: true'));
+  assert.ok(!serviceWorkflow.includes('playwright install --with-deps'),
+    'Pinned-image browser checks must not add repeated external downloads');
+  assert.ok(seed.includes(key));
   assert.match(seed, /^  push:\s*$/m);
   assert.ok(seed.includes("branches: ['codex/public-book-library']"));
   assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
