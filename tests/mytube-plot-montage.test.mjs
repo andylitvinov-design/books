@@ -20,8 +20,11 @@ test("a plot selection yields four distinct approved topic-matched MP4 scenes, n
     assert.equal(result.stages.length,4);
     assert.equal(result.verifiedFinishedPlot,false);
     assert.equal(result.mediaFidelity,"topic_matched_symbolic_approximation");
+    assert.equal(result.hasOriginalAbstractMotion,false);
+    assert.deepEqual(result.sourceKinds,["licensed_filmed_footage"]);
     assert.ok(result.stages.every((stage,i)=>
-      stage.stage===i+1 && stage.plotBeat===plot.beats[i] && stage.depictedEventVerified===false));
+      stage.stage===i+1 && stage.plotBeat===plot.beats[i] &&
+      stage.sourceKind==="licensed_filmed_footage" && stage.depictedEventVerified===false));
     assert.equal(validateMontageClips(result.clipIds,stock.scenes),true);
     for(const length of [10,15,20,30,60]){
       const timing=allocateAdaptiveFilmTimeline(length,result.clipIds);
@@ -75,6 +78,7 @@ test("the UI uses plot ranking, exact preset timing, authored captions and expli
   assert.match(director,/recommendMyTubePlotMontage/);
   assert.match(director,/timelineForTopic\(selectedTopicId,selectedScenarioId,recommended,plot\)/);
   assert.match(director,/data-mytube-plot-media-status/);
+  assert.match(director,/data-mytube-plot-media-origin/);
   assert.match(director,/data-mytube-clear-plot/);
   assert.match(director,/plotLacksApprovedClips/);
   assert.match(director,/disabled=\{disabled\|\|plotLacksApprovedClips\}/);
