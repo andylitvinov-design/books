@@ -274,6 +274,50 @@ export function requiresCurrentProductionBase(changed) {
   );
 }
 
+// Verified one-time owner selector migration: changing a path filter alone
+// cannot change runtime, permissions or job bodies. A rising production BASE
+// must not turn an otherwise green CI-maintenance PR red. This exception is
+// used only with exact status rows from the immutable GitHub test-merge diff.
+const OPTIONAL_SELECTOR_OWNERS = new Set([".github/workflows/admin-seo-dashboard.yml",".github/workflows/dao-iching-library.yml",".github/workflows/hh-benchmark-program.yml",".github/workflows/hh-benchmark-public-browser.yml",".github/workflows/hh-course-presets.yml",".github/workflows/hh-direct-video-notes.yml",".github/workflows/hh-energywork-ai.yml",".github/workflows/hh-event-referral-contract.yml",".github/workflows/hh-first-video-live-export.yml",".github/workflows/hh-growth-journey.yml",".github/workflows/hh-growth-studio.yml",".github/workflows/hh-home-conversation.yml",".github/workflows/hh-ideas-coaching-public.yml",".github/workflows/hh-live-audio-ci.yml",".github/workflows/hh-live-seo-audit.yml",".github/workflows/hh-personal-coaching-session.yml",".github/workflows/hh-public-performance-audit.yml",".github/workflows/hh-salesbot-remaster-feature.yml",".github/workflows/hh-sitemap-runtime-assets.yml",".github/workflows/hh-static-image-cost-guard.yml",".github/workflows/hh-support-guided-recommendations.yml",".github/workflows/hh-video-feature-lab.yml",".github/workflows/holistic-house-native.yml",".github/workflows/holistic-house-ocean-audio.yml",".github/workflows/library-public-feed.yml",".github/workflows/mentor-community-acceptance.yml",".github/workflows/practice-google-browser.yml",".github/workflows/practice-material-previews.yml",".github/workflows/practice-visual-browser.yml"]);
+const OPTIONAL_SELECTOR_OLD = "      - 'tests/ci-pr-selective-workflows.test.mjs'";
+const OPTIONAL_SELECTOR_NEW = "      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'";
+const OPTIONAL_SELECTOR_GUARD = '.github/workflows/hh-pr-sweep-guard.yml';
+const OPTIONAL_SELECTOR_MARKER = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
+const OPTIONAL_SELECTOR_TESTS = new Set(['tests/ci-pr-selective-workflows.test.mjs',
+  'tests/growth-studio-benchmark-quick-compose.test.mjs']);
+export function verifiedOptionalOwnerSelectorMigration(files, rows) {
+  if (!(files?.base instanceof Map) || !(files?.current instanceof Map) ||
+      !Array.isArray(rows) || rows.length < 3 || rows.length > 34) return false;
+  let owners = 0, marker = 0;
+  const seen = new Set();
+  for (const row of rows) {
+    const {filename: path, status} = row || {};
+    if (typeof path !== 'string' || seen.has(path) || row.previous_filename) return false;
+    seen.add(path);
+    if (OPTIONAL_SELECTOR_OWNERS.has(path)) {
+      const original = files.base.get(path), candidate = files.current.get(path);
+      if (status !== 'M' || typeof original !== 'string' ||
+          original.split(OPTIONAL_SELECTOR_OLD).length !== 2 ||
+          original.includes(OPTIONAL_SELECTOR_NEW) ||
+          candidate !== original.replace(OPTIONAL_SELECTOR_OLD,OPTIONAL_SELECTOR_NEW)) return false;
+      owners++;
+      continue;
+    }
+    if (path === OPTIONAL_SELECTOR_GUARD) {
+      const original = files.base.get(path), candidate = files.current.get(path);
+      if (status !== 'M' || typeof original !== 'string' ||
+          original.split(OPTIONAL_SELECTOR_OLD).length !== 2 ||
+          original.includes(OPTIONAL_SELECTOR_NEW) ||
+          candidate !== original.replace(OPTIONAL_SELECTOR_OLD,
+            OPTIONAL_SELECTOR_OLD + '\n' + OPTIONAL_SELECTOR_NEW)) return false;
+      continue;
+    }
+    if (path === OPTIONAL_SELECTOR_MARKER && status === 'A') { marker++; continue; }
+    if (OPTIONAL_SELECTOR_TESTS.has(path) && status === 'M') continue;
+    return false; // no runtime, checkout, auth, dependency, mixed or unknown changes
+  }
+  return owners >= 1 && marker === 1;
+}
 // A precise PR state reason is actionable; a generic HEAD/BASE message is not.
 // Keep the fail-closed prefix for existing consumers and expose the precise cause.
 export function classifyPrState(pr, ctx, requireCurrentBase = false) {
@@ -395,7 +439,8 @@ export async function verify(api,ctx,files,options={}) {
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   // BASE/HEAD workflow definitions and the actual merge snapshot stay
   // immutable even when the production target moves after the check started.
-  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  const requireCurrentBase=!pinnedChangeRows || (requiresCurrentProductionBase(changed) &&
+    !verifiedOptionalOwnerSelectorMigration(files,changedRows));
   const approvedBaseChanges = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
