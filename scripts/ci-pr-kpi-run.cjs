@@ -7,6 +7,7 @@ const {collectDispatcherEvents}=require('./ci-pr-kpi-dispatch-collector.cjs');
 const {normalizeCoreEvidence}=require('./ci-pr-kpi-ci.cjs');
 const {buildReport}=require('./ci-pr-kpi-report.cjs');
 const {collectCancellationEvidence}=require('./ci-pr-kpi-cancellations.cjs');
+const {publish:publishLiveFeed}=require('./ci-pr-kpi-live-feed.cjs');
 async function run({github,core,context,now=Date.now(),deps={}}){
  const {owner,repo}=context.repo;
  if(owner!=='andylitvinov-design'||repo!=='books'||!Number.isFinite(now))throw Error('INVALID_CONTEXT');
@@ -69,6 +70,12 @@ async function run({github,core,context,now=Date.now(),deps={}}){
   cancelled_runner_minutes_observed:recent.cancelled_runner_minutes_observed,
   unverified_job_inventories:recent.unverified_job_inventories}));
  await core.summary.addHeading('HH Control Tower KPI: evidence and coverage').addCodeBlock(text,'json').write();
+ // Reuse the already-running hourly KPI job and its verified snapshots.
+ // A denied public-feed write is advisory and never turns a LIVE verifier red.
+ if(context.eventName==='schedule'){
+  try{await publishLiveFeed({github,core,context,now,receipts,merges});}
+  catch(e){core.warning?.('HH_JOURNEY_LIVE_FEED_UNAVAILABLE '+String(e?.message||e).slice(0,140));}
+ }
  return report;
 }
 module.exports={run};
