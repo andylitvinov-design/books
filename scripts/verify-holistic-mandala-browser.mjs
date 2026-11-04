@@ -757,6 +757,18 @@ const runEngine = async ([engine, browserType]) => {
         // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
         await themeDisclosure.locator("summary").click();
         await expect(themeDisclosure).not.toHaveAttribute("open","");
+        // The free-review entry remains in server HTML after the Studio.
+        // Approved mobile Video Studio CSS intentionally hides this extra
+        // marketing banner (no second promo); desktop retains the real CTA.
+        // Test source, real link and mobile hidden state instead of falsely
+        // requiring a second visible iPhone promo.
+        assert.equal(new URL(page.url()).pathname,`/${locale}/holistic-support/mandala`,
+          "editor interactions must not navigate from the canonical Studio");
+        const diagnosticEntry=page.locator("[data-video-diagnostic-banner] a[href$='/services/free-situation-review']");
+        await expect(diagnosticEntry,"original same-site free-review destination must remain mounted")
+          .toHaveCount(1);
+        await expect(diagnosticEntry,"approved iPhone Studio does not display a duplicate marketing banner")
+          .toBeHidden();
         const layout=await page.evaluate(()=>{
           const root=document.querySelector("[data-video-quick-builder]");
           const header=root?.querySelector("[data-video-mandala-hero]");
@@ -775,7 +787,8 @@ const runEngine = async ([engine, browserType]) => {
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?
               getComputedStyle(diagnostic).display!=="none":false,
-            diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
+            diagnosticAfterStudio:Boolean(root && diagnostic &&
+              (root.compareDocumentPosition(diagnostic)&Node.DOCUMENT_POSITION_FOLLOWING))};
         });
         assert.ok(layout.hero<=260 && layout.hero>=140,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
