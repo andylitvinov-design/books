@@ -23,7 +23,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
-      - '.github/workflows/hh-live-seo-audit.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - 'scripts/verify-live-sitemap.mjs'
       - 'scripts/verify-public-tests-mobile.mjs'
       - 'app/[locale]/tests/**'
