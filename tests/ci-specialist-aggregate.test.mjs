@@ -1141,7 +1141,7 @@ function virtualSpecialistClock() {
   };
 }
 
-test('absent required workflow fails in one minute even while another specialist is running', async () => {
+test('truly absent required workflow still fails closed after bounded peer-wait grace', async () => {
   const second = '.github/workflows/another-required.yml';
   const workflows = new Map([[path, yaml], [second, yaml]]);
   const clock = virtualSpecialistClock();
@@ -1154,9 +1154,52 @@ test('absent required workflow fails in one minute even while another specialist
   };
   await assert.rejects(
     () => verify(api, ctx, { base: workflows, current: workflows },
-      { maxWaitMs: 35*60_000, missingGraceMs: 60_000, pollMs: 20_000, ...clock }),
+      { maxWaitMs: 35*60_000, missingGraceMs: 60_000, correlatedMissingGraceMs: 180_000, pollMs: 20_000, ...clock }),
     error => /SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED/.test(error.message) && error.message.includes(second)
   );
+  assert.equal(clock.elapsed(), 180_000);
+});
+
+test('late-indexed required workflow is not falsely NOT_TRIGGERED while peers are pending', async () => {
+  const second = '.github/workflows/late-indexed.yml';
+  const workflows = new Map([[path, yaml], [second, yaml]]);
+  const clock = virtualSpecialistClock();
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => {
+      const moment = clock.elapsed();
+      const unfinished = moment < 140_000;
+      const known = run({ status: unfinished ? 'in_progress' : 'completed',
+        conclusion: unfinished ? null : 'success' });
+      if (moment < 120_000) return [known];
+      return [known, run({ id: 256, path: second,
+        status: unfinished ? 'queued' : 'completed',
+        conclusion: unfinished ? null : 'success' })];
+    },
+    jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }],
+  };
+  const result = await verify(api, ctx, { base: workflows, current: workflows },
+    { maxWaitMs: 180_000, missingGraceMs: 60_000,
+      correlatedMissingGraceMs: 180_000, pollMs: 20_000, ...clock });
+  assert.deepEqual(result.expected, [path, second].sort());
+  assert.equal(result.executed.length, 2, 'both real jobs must execute successfully');
+  assert.ok(clock.elapsed() >= 140_000, 'never accept a registered but unfinished workflow');
+});
+
+test('sole missing required workflow still fails after normal discovery grace', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [],
+  };
+  await assert.rejects(() => verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 180_000, missingGraceMs: 60_000,
+      correlatedMissingGraceMs: 180_000, pollMs: 20_000, ...clock }),
+    /SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED/);
   assert.equal(clock.elapsed(), 60_000);
 });
 
