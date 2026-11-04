@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/hh-pr-queue-dispatcher.yml'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-conflict-event-handoff.cjs'
+      - 'tests/ci-pr-conflict-event-handoff.test.cjs'
+      - 'tests/ci-pr-single-snapshot-routing.test.cjs'
       - 'scripts/ci-pr-ci-wake-reconcile.cjs'
       - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
       - 'scripts/ci-pr-ci-legacy-recovery.cjs'
@@ -22,6 +25,9 @@ on:
       - 'scripts/ci-pr-task-state.cjs'
       - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-conflict-event-handoff.cjs'
+      - 'tests/ci-pr-conflict-event-handoff.test.cjs'
+      - 'tests/ci-pr-single-snapshot-routing.test.cjs'
       - 'scripts/ci-pr-ci-wake-reconcile.cjs'
       - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
       - 'scripts/ci-pr-ci-legacy-recovery.cjs'
@@ -74,12 +80,15 @@ jobs:
           node --check scripts/ci-pr-api-quota.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-conflict-event-handoff.cjs
+          node --check tests/ci-pr-conflict-event-handoff.test.cjs
+          node --check tests/ci-pr-single-snapshot-routing.test.cjs
           node --check scripts/ci-pr-ci-wake-reconcile.cjs
           node --check tests/ci-pr-ci-wake-reconcile.test.cjs
           node --check scripts/ci-pr-ci-legacy-recovery.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-core-priority.test.cjs
-          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-kpi.test.cjs tests/ci-pr-kpi-report.test.cjs
+          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-single-snapshot-routing.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-kpi.test.cjs tests/ci-pr-kpi-report.test.cjs
   observe:
     # Legacy workflow name retained for existing monitor references.
     # This job has no write permission and cannot reserve or dispatch tasks.
