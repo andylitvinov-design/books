@@ -4,7 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
-      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - 'components/ideas-discovery.tsx'
       - 'components/holistic-support-choices.tsx'
       - 'scripts/verify-holistic-support-browser.mjs'
