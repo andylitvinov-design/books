@@ -78,7 +78,7 @@ test('missing runs and jobs never fabricate queue, checks or repair; time is unk
  assert.equal(out.stage_totals_minutes.unattributed,90);
  assert.equal(out.confirmed_attempts,0);
  assert.equal(out.stage_totals_minutes.checks,0);
- assert.equal(out.source.reads,4);
+ assert.equal(out.source.reads,5); // Extra exact-HEAD lookup after empty branch run inventory.
 });
 
 test('non-production PR refused before any CI inventory',async()=>{
@@ -117,6 +117,31 @@ test('verified two-parent synthetic GitHub run is accepted, unverified is not',a
  assert.equal(nope.source.history_partial,true);
 });
 
+
+test('merged workflow with cleared PR refs is recovered only from exact final HEAD and matching branch',async()=>{
+ const withoutRefs={...runs[1],pull_requests:[]};
+ const m=makeRequest({prValue:{...pr,commits:1,base:{ref:base,sha:C}},runRows:[withoutRefs],commentRows:[]});
+ const out=await api.loadPr(3390,{request:m.request,token:'',now:Date.parse(at(100))});
+ assert.equal(out.confirmed_runs,1);
+ assert.equal(out.source.exact_head_no_pr_ref_matches,1);
+ assert.equal(out.stage_totals_minutes.runner_wait,6);
+ assert(out.stage_totals_minutes.checks>0);
+ assert.equal(out.stage_totals_minutes.created_to_first_ci,54);
+ const wrong={...withoutRefs,head_branch:'foreign-branch'};
+ const bad=makeRequest({prValue:{...pr,commits:1,base:{ref:base,sha:C}},runRows:[wrong],commentRows:[]});
+ const ignored=await api.loadPr(3390,{request:bad.request,token:'',now:Date.parse(at(100))});
+ assert.equal(ignored.confirmed_runs,0);
+ assert.equal(ignored.stage_totals_minutes.unattributed,90);
+});
+
+test('multi-commit PR with cleared historical run refs never invents created-to-first-CI',async()=>{
+ const noRefs={...runs[1],pull_requests:[]};
+ const m=makeRequest({prValue:{...pr,commits:3,base:{ref:base,sha:C}},runRows:[noRefs],commentRows:[]});
+ const out=await api.loadPr(3390,{request:m.request,token:'',now:Date.parse(at(100))});
+ assert.equal(out.source.history_partial,true);
+ assert.equal(out.stage_totals_minutes.created_to_first_ci,0);
+ assert(out.stage_totals_minutes.unattributed>0);
+});
 
 test('GitHub issue timeline shows concrete conflict labels but does not pretend to measure repair',async()=>{
  const labels=[{id:817,event:'labeled',label:{name:'hh:conflict-repair-needed'},created_at:at(30)},

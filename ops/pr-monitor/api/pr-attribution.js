@@ -104,6 +104,36 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   if(first.total_count>200){partial=true;runInventoryComplete=false;}
   else if(first.total_count!==runs.length){partial=true;runInventoryComplete=false;}
  }
+ // GitHub often clears workflow_run.pull_requests after a PR is merged.
+ // Recover ONLY the immutable final PR HEAD, with matching branch, event,
+ // repository and workflow; no broad or unverified historical attribution.
+ let headMatchFallbacks=0;
+ if(!runs.some(r=>r?.pull_requests?.some?.(x=>x?.number===number) ||
+                 (r?.head_sha===pr.head?.sha && r?.head_branch===sourceBranch)) &&
+    sourceBranch && SHA.test(pr.head?.sha||'')) {
+  const params=new URLSearchParams({event:'pull_request',head_sha:pr.head.sha,
+    created:`${new Date(opened).toISOString().slice(0,10)}..${new Date(ended).toISOString().slice(0,10)}`,
+    per_page:'100',page:'1'});
+  const exact=await gh(`/actions/workflows/${CORE}/runs?${params}`);
+  if(!Array.isArray(exact.workflow_runs)||!Number.isSafeInteger(exact.total_count))
+   throw makeError('HEAD_RUN_INVENTORY_UNVERIFIED',503);
+  if(exact.total_count>100){runInventoryComplete=false;partial=true;}
+  runs.push(...exact.workflow_runs);
+ }
+ runs=runs.map(run=>{
+  if(!Array.isArray(run?.pull_requests)||run.pull_requests.length!==0||
+     run.head_sha!==pr.head?.sha||run.head_branch!==sourceBranch||
+     run.event!=='pull_request'||run.name!=='HH PR core release gate'||
+     String(run.path||'').split('@')[0]!=='.github/workflows/hh-pr-core-release.yml'||
+     run.repository?.full_name!==`${OWNER}/${REPO}`||
+     run.head_repository?.full_name!==`${OWNER}/${REPO}`||
+     !SHA.test(pr.base?.sha||''))return run;
+  headMatchFallbacks++;
+  return {...run,pull_requests:[{number,base:{ref:'codex/public-book-library',sha:pr.base.sha},
+    head:{ref:sourceBranch,sha:pr.head.sha}}],verified_exact_head_association:true};
+ });
+ // A multi-commit PR may have older HEAD attempts outside this read.
+ if(headMatchFallbacks>0&&pr.commits!==1){runInventoryComplete=false;partial=true;}
  // Strict PR association: ignore runs from a different PR, base, or branch.
  runs=runs.filter(run=>run?.event==='pull_request' &&
    run.repository?.full_name===`${OWNER}/${REPO}` &&
@@ -152,10 +182,12 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
    Array.isArray(r.verified_merge_parents));
  const timeline=analyzePrTimeline({pr,runs:filtered,jobs,events,now,runInventoryComplete});
  return {...timeline,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
+  exact_head_no_pr_ref_matches:headMatchFallbacks,
   history_partial:partial,remaining_api_quota:remaining,
   known_limitations:[
     'Максимум 6 Core runs, 100 jobs/run и 100 последних комментариев; более старая история может отсутствовать.',
     'Метки конфликтов показывают событие и причину задержки, но не измеряют время устранения без проверенной пары task receipts.',
+    'Старые GitHub workflow runs могут потерять PR references: восстанавливается лишь точное совпадение финального HEAD SHA и branch.',
     'Данные не копируются в базу, собираются исключительно по запросу конкретного PR.'
   ]}};
 }
