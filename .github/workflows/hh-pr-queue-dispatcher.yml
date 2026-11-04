@@ -1,8 +1,7 @@
 name: HH PR Control Tower queue dispatcher
 on:
-  schedule:
-    - cron: '7 * * * *'
-  # Worker results now wake Watchdog directly; Control Tower observes hourly.
+  # Scheduled Watchdog publishes the sole fresh PR snapshot. This observer
+  # remains available for manual/push contract checks, not hourly duplicate scans.
   push:
     branches: ['codex/bootstrap-books']
     paths:
