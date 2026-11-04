@@ -4594,12 +4594,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </nav>
         {/* One in-flow six-tool rail: fixed above the shared video across all workspaces. */}
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}
+        onPointerDownCapture={()=>{quickNavTokenRef.current++;}}
+        onKeyDownCapture={event=>{if(event.key==="Enter"||event.key===" ")quickNavTokenRef.current++;}}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
           data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
           aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           onClick={()=>{
+            // A new workspace is explicit user intent: retire stale catalog jumps.
+            quickNavTokenRef.current++;
             setActiveWorkspace(item.id);
             if(item.id!=="practices")setIntroPlaying(false);
             setStudioMode(item.id==="practices"?"therapy":"pump");
@@ -5238,9 +5242,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               })));
           }}
           onShowAll={()=>{
+            // On WebKit, a queued two-frame smooth-scroll can steal the next
+            // quick-workspace tap (real macOS CI 41927406194). Invalidate that
+            // jump on pointer/keyboard navigation and never leave a scroll
+            // animation running underneath the next tab's native click.
+            const navigationToken=++quickNavTokenRef.current;
             setShowAdvancedVideo(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"})));
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+              if(navigationToken!==quickNavTokenRef.current)return;
+              document.getElementById("video-templates")?.scrollIntoView({
+                behavior:"instant" as ScrollBehavior,block:"start",
+              });
+            }));
           }}
           onContinue={()=>{
             setActiveWorkspace("phrases");setStudioMode("pump");
