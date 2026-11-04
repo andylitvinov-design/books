@@ -141,6 +141,30 @@ function planCandidates(prs,now){
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
+// This is a label-only inventory observation, NOT a source-repair admission.
+// Hold/Draft/conflict/specialist labels may overlap. No extra GitHub reads.
+function backlogLabelHints(prs){
+ if(!Array.isArray(prs))throw Error('INVALID_BACKLOG_INVENTORY');
+ const result={draft:0,hold:0,blocked:0,manual_repair:0,claimed:0,
+   specialist:0,gate_review:0,conflict:0,source:0,ci:0,labeled_unique:0};
+ for(const pr of prs){
+  if(pr?.draft)result.draft++;
+  const labels=new Set((pr?.labels||[]).map(l=>l?.name||l).filter(l=>typeof l==='string'));
+  for(const [key,name] of [
+   ['hold','hh:hold'],['blocked','hh:blocked'],
+   ['manual_repair','hh:repair-manual'],['claimed','hh:worker-claimed'],
+   ['specialist','hh:specialist-repair-needed'],['gate_review','hh:release-gate-review'],
+   ['conflict','hh:conflict-repair-needed'],['source','hh:repair-needed'],
+   ['ci','hh:ci-needed']
+  ])if(labels.has(name))result[key]++;
+  if(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed',
+    'hh:specialist-repair-needed','hh:release-gate-review',
+    'hh:conflict-repair-needed','hh:repair-needed','hh:ci-needed']
+    .some(name=>labels.has(name)))result.labeled_unique++;
+ }
+ return result;
+}
+
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
@@ -244,6 +268,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  summary.discovered=prs.length;
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
+ summary.backlogLabelHints=backlogLabelHints(production);
  // Reconcile a *proven* old terminal denial only after the new no-commit
  // Worker is on trusted default. This cannot silently free a source owner:
  // the helper validates bot-signed receipts, completed run, current HEAD,
@@ -880,4 +905,4 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  log();return state;
 }
 module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
- DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure};
+ DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints};

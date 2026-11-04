@@ -17,7 +17,9 @@ test('zero eligible queue preserves 160 production PRs, never zero global backlo
   assert.equal(snapshot.counts.production_prs,160);
   assert.equal(snapshot.counts.actionable_prs,0);
   assert.equal(snapshot.counts.candidates,0);
-  assert.equal(snapshot.delivery_status,'NO_AUTOMATION_ELIGIBLE_TASKS');
+  assert.equal(snapshot.delivery_status,'OPEN_PR_BACKLOG_NOT_FULLY_TRIAGED');
+  assert.equal(snapshot.counts.labeled_outstanding_prs,0);
+  assert.equal(snapshot.api_budget.tracked_requests,0);
   assert.equal(snapshot.source_commit,SHA);
   assert.deepEqual(parseExisting(renderSnapshot(snapshot)),snapshot);
   assert.match(renderSnapshot(snapshot), /issues\/3394/);
@@ -96,4 +98,52 @@ test('recovered stale CI hold stays separate from Worker started or delivered',(
  assert.equal(s.queue_states.ci_hold_recovered,1);
  assert.equal(s.counts.worker_dispatches,0);
  assert.equal(s.counts.total_blockers,0);
+});
+
+test('existing manual/policy labels remain visible despite zero automatic source candidates',()=>{
+ const hints={draft:46,hold:70,blocked:3,manual_repair:23,claimed:2,
+  specialist:6,gate_review:6,conflict:2,source:0,ci:0,labeled_unique:93};
+ const s=buildMonitorSnapshot(report({production:145,discovered:153,
+  backlogLabelHints:hints,apiRequests:16,apiRemaining:4870,
+  inventoryScope:'ALL_OPEN_PRS'}),context);
+ assert.equal(s.delivery_status,'OUTSTANDING_LABELED_WORK_NO_AUTO_DISPATCH');
+ assert.equal(s.counts.labeled_outstanding_prs,93);
+ assert.equal(s.backlog_label_hints.manual_repair,23);
+ assert.equal(s.backlog_label_hints.specialist,6);
+ assert.equal(s.counts.total_blockers,0,'sampled failed dispatches are not all blocked PRs');
+ assert.equal(s.api_budget.tracked_requests,16);
+ assert.equal(s.api_budget.remaining_observed,4870);
+ assert.equal(s.api_budget.paused,false);
+ assert.deepEqual(parseExisting(renderSnapshot(s)),s);
+});
+test('event-only scan and rate-limit never claim global zero',()=>{
+ const event=buildMonitorSnapshot(report({production:1,
+  inventoryScope:'EVENT_SINGLE_PR',backlogLabelHints:{draft:0}}),context);
+ assert.equal(event.delivery_status,'EVENT_PR_NOT_ACTIONABLE');
+ const paused=buildMonitorSnapshot(report({production:0,
+  reason:'API_PAUSED_INVENTORY',apiRequests:1,
+  apiPauseReason:'PRIMARY_RATE_LIMIT',apiRemaining:0}),context);
+ assert.equal(paused.delivery_status,'API_PAUSED_SNAPSHOT_INCOMPLETE');
+ assert.equal(paused.api_budget.paused,true);
+ assert.equal(paused.counts.production_prs,0);
+});
+test('label hint classifier is read-only, overlapping counts are not double-counted',()=>{
+ const {backlogLabelHints}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const rows=[
+  {draft:true,labels:[{name:'hh:repair-manual'},{name:'hh:specialist-repair-needed'}]},
+  {draft:false,labels:[{name:'hh:hold'},{name:'hh:conflict-repair-needed'}]},
+  {draft:false,labels:[]}
+ ];
+ const found=backlogLabelHints(rows);
+ assert.equal(found.draft,1);assert.equal(found.manual_repair,1);
+ assert.equal(found.specialist,1);assert.equal(found.conflict,1);
+ assert.equal(found.hold,1);assert.equal(found.labeled_unique,2);
+ assert.throws(()=>backlogLabelHints(null),/INVALID_BACKLOG_INVENTORY/);
+});
+test('malformed negative or oversized label hints fail closed',()=>{
+ assert.throws(()=>buildMonitorSnapshot(report({
+  backlogLabelHints:{labeled_unique:-1}}),context),/INVALID_MONITOR_COUNT/);
+ assert.throws(()=>buildMonitorSnapshot(report({
+  production:2,backlogLabelHints:{labeled_unique:3}}),context),
+  /BACKLOG_LABEL_HINTS_EXCEED_INVENTORY/);
 });
