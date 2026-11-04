@@ -17,10 +17,22 @@ Goal: original MyTube editing experience with useful **CapCut-class workflows**,
 4. Per-approved-shot edit inspector: original/warm/cool/dream tints; soft legacy cut, direct cut, fade-to-black and flash-to-white transitions. Both sides of an adjacent shot boundary use one setting.
 5. Visual treatment is painted by the **same** Canvas function in preview and encoded export. No additional render worker, paid API, proprietary stock or new billing.
 
+## Follow-up: native project completion (#3380)
+
+Implemented in the same local Video Studio editor, without a second export engine:
+
+- Forty-step undo/redo for scene order, trims, scene looks, captions, audio offsets, aspect ratio and duration. Caption drags and typing coalesce into one undoable gesture.
+- Explicit download and import of a versioned **metadata-only** JSON draft. Its valid approved scene IDs, order, four cut durations, look/transition settings, captions, aspect and audio start can be restored. User voice/audio bytes and photos are deliberately **not** stored.
+- Strict size, schema, source whitelist, source rights, duplicate ID and caption-time validation. Import never trusts media URLs or local file paths from JSON.
+- RU/EN/ES labels, iPhone-friendly controls, stale import rejection and a reminder to reattach media.
+- No automatic cloud saving, no provider calls, subscriptions or new workflows.
+
+The existing Mandala focused unit job includes `tests/mandala-creative-editor-draft-history.test.mjs`, `tests/mandala-creative-timeline.test.mjs` and `tests/mandala-multitrack-timeline.test.mjs` without adding a new runner. This describes code scope, not independent physical iPhone proof or LIVE release.
+
 ## Remaining milestones (not claimed as implemented)
 
 - Non-destructive source in/out trimming, arbitrary extra video layers, picture-in-picture, clip-level speed controls and keyframes; these require an upgraded composition model and deterministic source frame scheduling rather than silently relaxing the four-shot licensing/decoding rules.
-- Full undo/redo history, autosaved private drafts with restore/import validation, multi-project library and collaboration.
+- Automatic encrypted private draft autosave and a multi-project cloud library, both only with explicit authorization and owner-scoped storage rules. Manual metadata-only file export/import and bounded undo/redo are now in #3380.
 - Waveform extraction, multiple independent voice/music/SFX lanes, volume envelopes, per-clip EQ and voice cleanup with consistent iPhone export.
 - True two-source cross-dissolve, masks/chroma key, motion tracking, background removal, AI captions/speech-to-text and GPU effects. Do not present a dark fade or color tint as any of these.
 - Automated highlight selection/beat sync and transcript-aligned cuts from the existing director, with provenance and user-editability.

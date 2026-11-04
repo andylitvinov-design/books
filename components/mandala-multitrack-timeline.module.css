@@ -92,3 +92,18 @@
   .audioOffset{order:9}
   .hint{order:10}
 }
+
+
+/* Compact native edit history controls, readable on narrow iPhones. */
+.transportActions button.historyAction{
+  width:34px;height:34px;min-width:34px;
+  border:1px solid #d4e2d9;border-radius:10px;
+  background:#f6faf6;color:#245748;
+}
+.transportActions button.historyAction:disabled{
+  opacity:.35;cursor:not-allowed;
+}
+@media(max-width:359px){
+  .transportActions{gap:4px}
+  .transportActions button.historyAction{width:30px;height:30px;min-width:30px}
+}
