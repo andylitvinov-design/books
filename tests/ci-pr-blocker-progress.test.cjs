@@ -97,12 +97,19 @@ test('P0 names only explicitly assigned GitHub owner, never PR author as owner',
  const unassigned=run();
  assert.equal(unassigned.cases[0].assigned_owner,null);
 });
+test('P0 keeps every distinct confirmed root case even above the old 16-row limit',()=>{
+ const cases=Array.from({length:17},(_,i)=>({...c(),pr_number:3240+i}));
+ const progress=run({cas:cases});
+ assert.equal(progress.active_tracked,17);
+ assert.equal(progress.untracked_due_to_limit,0);
+ assert.equal(progress.cases.at(-1).pr_number,3256);
+});
 test('P0 collector rejects malformed or made-up blocker evidence',()=>{
  assert.throws(()=>reconcileBlockerProgress({observedAt:TIME,
   watchdogSample:sample([{...c(),head_sha:'short'}])}),
  /INVALID_EXACT_HEAD_BLOCKER_CASES/);
  assert.throws(()=>reconcileBlockerProgress({observedAt:TIME,
-  watchdogSample:sample(Array.from({length:17},()=>c()))}),
+  watchdogSample:sample(Array.from({length:33},()=>c()))}),
  /INVALID_EXACT_HEAD_BLOCKER_CASES/);
 });
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
@@ -129,6 +136,7 @@ test('P0 existing monitor persists real root-by-PR and compares next cycle witho
  let decoded=parseExisting(body);
  assert.equal(decoded.blocker_progress.cases[0].state,'NEW_CONFIRMED');
  assert.equal(decoded.blocker_progress.cases[0].pr_number,3240);
+ assert.equal(decoded.watchdog_sample.blocker_cases,undefined,'do not duplicate cases in issue body');
  const second=await publishMonitorSnapshot({github,context,
   report:{...rawReport(LATER),watchdogSample:{...observation,checkedAt:LATER}}});
  assert.equal(second.status,'PUBLISHED');
