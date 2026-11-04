@@ -386,3 +386,10 @@ test("browser stale-audio check removes the spoken phrase by text after selectio
   assert.match(source,/await spokenPhrase\.click\(\)/);
   assert.match(source,/removed spoken phrase must block stale WAV reuse or detach it/);
 });
+
+test('browser checks phrase consent before switching to the separate montage workspace',()=>{
+  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
+  const consent=source.indexOf('await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked',start);
+  const montage=source.indexOf('data-video-quick-control="editor"',start);
+  assert.ok(start>=0&&consent>start&&montage>consent,'the phrase consent control must be checked while its workspace is mounted');
+});

@@ -462,6 +462,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-plan-requested={planOpen ? "true" : "false"}
     data-guided-plan-current={currentProgramme ? "true" : "false"}
     data-guided-focus-ready={focusReady?"true":"false"}
+    data-guided-profile-status={profileStatus}
     data-guided-has-script={firstScript.trim().length>0?"true":"false"}
     data-guided-meditation-open={meditationOpen?"true":"false"}
     data-guided-meditation-click-count={meditationActionCount}
@@ -474,7 +475,6 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     data-guided-programme-ready={currentProgramme?"true":"false"}
     data-guided-context-ready={keyDifficulty.trim()?"true":"false"}
     data-guided-focus-mode={focusMode}
-    data-guided-profile-status={profileStatus}
     data-guided-selected={selectedState?"true":"false"}
     data-guided-programme-signature-match={programmeSignature===journeySignature?"true":"false"}
     aria-labelledby="guided-course-heading">

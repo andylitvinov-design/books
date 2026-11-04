@@ -582,12 +582,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.ok(await page.locator("[data-video-narration-stale]").isVisible() ||
         await page.locator("[data-video-live-audio]").count()===0,
         "removed spoken phrase must block stale WAV reuse or detach it");
-      // The approved Video Studio puts narration in fifth Montage → Voice.
-      // Do not click the removed global voice disclosure in the first workspace.
+      // Phrase narration belongs to this workspace; verify revoked consent
+      // before switching to the separate cloud voice controls in Montage.
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
+      if(!await page.locator("[data-video-narration-stale]").isVisible())
+        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
-      // Consent for the previous transcript never carries over to new lines.
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
       if(await page.locator("[data-video-narration-stale]").isVisible()){
         await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
       }else{
