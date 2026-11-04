@@ -126,8 +126,8 @@ for(const browserType of [chromium,webkit]){
         card:box(root.querySelector('[data-order-card]'))}
     })
     assert.ok(metrics.scrollWidth<=metrics.clientWidth+3,key+' horizontal overflow '+JSON.stringify(metrics))
-    assert.ok(metrics.heading.bottom<=metrics.tabs.top+4&&
-      metrics.tabs.bottom<=metrics.intro.top+4&&metrics.intro.bottom<=metrics.search.top+4,
+    assert.ok(metrics.tabs.bottom<=metrics.heading.top+4&&
+      metrics.heading.bottom<=metrics.intro.top+4&&metrics.intro.bottom<=metrics.search.top+4,
       key+' section order '+JSON.stringify(metrics))
     assert.ok(metrics.card.width>200&&metrics.card.right<=width+3,
       key+' order card fits '+JSON.stringify(metrics))
@@ -159,6 +159,19 @@ for(const browserType of [chromium,webkit]){
     await aiTab.click()
     await root.locator('#hh-ai-panel').waitFor({state:'visible',timeout:15000})
     sameShell(await shell(),'AI')
+    // Five approved AI actions stay on one horizontal row on each mobile width.
+    const aiLayout=await page.evaluate(()=>{
+      const rail=document.querySelector('[data-chat-menu-rail]')
+      const outer=document.querySelector('[data-hh-compact-ai-workspace]').getBoundingClientRect()
+      const actions=[...rail.querySelectorAll('[data-hh-ai-quick-action]')]
+      const r=actions.map(el=>el.getBoundingClientRect())
+      return {count:r.length,topDrift:Math.max(...r.map(x=>Math.abs(x.top-r[0].top))),
+        right:r.at(-1).right,outerRight:outer.right,outerWidth:outer.width}
+    })
+    assert.equal(aiLayout.count,5,key+' five real AI shortcuts')
+    assert.ok(aiLayout.topDrift<=2&&aiLayout.right<=aiLayout.outerRight+2,
+      key+' one horizontal AI shortcut row '+JSON.stringify(aiLayout))
+    assert.ok(aiLayout.outerWidth>=width-32,key+' full width AI workspace '+JSON.stringify(aiLayout))
     await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
     await customer.waitFor({state:'visible',timeout:15000})
     sameShell(await shell(),'clients return')

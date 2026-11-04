@@ -88,3 +88,16 @@ The latest owner screenshots are three real views of the same private `/ru/app/m
 - Use the same compact 52px tappable tab geometry for widths 320, 354, 390 and 430. Counter badges are absolute visual overlays, not additional inline layout width. On deep links, initialize the selected tab from the actual URL before the first client effect.
 - Test exact header/tabs bounding rectangles (<=2 CSS px delta) after Orders -> Clients -> AI -> Clients switching in synthetic signed-in Chromium and WebKit, for all EN/RU/ES and four mobile widths. The pre-existing order/chat, CRM, privacy and provider gates remain unchanged.
 - This change is not evidence of rendered mobile acceptance, a live deploy or real provider delivery; record each gate separately.
+
+
+## 4 November 2026 · approved three-panel iPhone composition
+
+Same protected route and same view: \`/{en,ru,es}/app/messages?section=ai|orders|clients\`. The current screenshot and the approved mock must be compared only in matching tab, auth/role and viewport.
+
+- The three-folder AI / Orders / Clients switcher is the FIRST content row, before title/notification/refresh. Compact 50px pills have the same coordinates in all sections at 320/354/390/430px; real unread badge never changes geometry.
+- The five actual AI actions Video/Meditation/Practice/Course/Ritual move to ONE horizontal row ABOVE the full-width chat. They prepare a draft, not send automatically. Real protected agent endpoint, response modes/opt-in, truthful media-not-rendered messaging and actual Send are retained. The picture's microphone is illustrative unless actual working recording is developed separately.
+- Orders retain real authenticated statuses, unread and order↔practitioner conversations; when no orders are present show only the two existing verified free offers plus honest empty state, never mock paid orders.
+- Clients retain actual account-scoped CRM/direct/website rows, search, provider badges, unread counts, original protected full-screen mobile conversation and editor, no fabricated contacts/messages.
+- Warm ivory #FCF9F2, dark #143D3A, white cards, emerald #067A67 and restrained lavender selected AI. One bottom navigation, EN/RU/ES and iPhone keyboard/safe area remain intact.
+
+Acceptance: route-matched synthetic Chromium+WebKit at four widths in EN/RU/ES, switcher-header geometry, five horizontal quick prompts, real orders/CRM composers. Then exact PR HEAD Core/Specialist/merge gate, protected merge, canonical Vercel READY SHA and authenticated iPhone visual/E2E checks. UI cannot prove actual provider delivery or payment.

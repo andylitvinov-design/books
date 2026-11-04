@@ -221,21 +221,6 @@ export default function MessagesOrdersClients({locale='en',children}){
   )
   return <section className={styles.root} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
-    <header className={styles.head}>
-      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.headerActions}>
-        <Link prefetch={false} className={styles.notificationSettings}
-          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
-          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
-          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
-          <Bell size={17} aria-hidden="true"/>
-        </Link>
-        <button type="button" onClick={reload} className={styles.refresh}
-          aria-label={t.retry} title={t.retry}>
-          <RefreshCw size={19} aria-hidden="true"/>
-        </button>
-      </span>
-    </header>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
@@ -255,6 +240,21 @@ export default function MessagesOrdersClients({locale='en',children}){
         {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
       </button>
     </div>
+    <header className={styles.head}>
+      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
+      <span className={styles.headerActions}>
+        <Link prefetch={false} className={styles.notificationSettings}
+          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
+          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
+          <Bell size={17} aria-hidden="true"/>
+        </Link>
+        <button type="button" onClick={reload} className={styles.refresh}
+          aria-label={t.retry} title={t.retry}>
+          <RefreshCw size={19} aria-hidden="true"/>
+        </button>
+      </span>
+    </header>
     {section==='ai'&&<div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai>
       <MessengerAiWorkspace locale={locale}/>
     </div>}

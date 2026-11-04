@@ -355,3 +355,15 @@
   flex-basis:50px;height:50px;min-height:50px;padding-top:3px;padding-bottom:3px
  }
 }
+
+
+/* Protected My Clients inbox: consistent warm card, genuine status & source tags. */
+.shell[data-embedded="true"]{--ink:#143d3a;--green:#067a67;--line:#e7e3da}
+.shell[data-embedded="true"] .search,.shell[data-embedded="true"] .unreadFilter{
+ background:#fffdfb;border-color:#e7e3da;border-radius:17px}
+.shell[data-embedded="true"] .person,.shell[data-embedded="true"] .personSelected{
+ background:linear-gradient(130deg,#fffefa,#fffdfb);border-color:#e7e3da;border-radius:20px}
+.shell[data-embedded="true"] .personSelected{border-color:#75b6a0;background:#eff8f2}
+.shell[data-embedded="true"] .threadFlag{background:#e9f7ef;color:#136e56}
+.shell[data-embedded="true"] .threadFlag[data-state="waiting"]{background:#fff0d9;color:#85591c}
+.shell[data-embedded="true"] .unread{background:#087b60;color:#fff}
