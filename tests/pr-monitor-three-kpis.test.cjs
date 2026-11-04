@@ -66,6 +66,47 @@ test('Green→Merge is measured only on final head after required job PASS',()=>
  assert.ok(x.mean_min>0);
  assert.equal(x.rows[0].pr,6);
 });
+test('post-Core verified merge restores Green → Merge without inventing merge timestamp',()=>{
+ const created=new Date(now-7200000).toISOString();
+ const run=record(18,'success',{merged_at:null,pr_created_at:created,current_head:true});
+ const proof={number:18,state:'closed',created_at:created,
+  merged_at:new Date(now-300000).toISOString(),merge_commit_sha:'b'.repeat(40),
+  head:{sha},base:{ref:'codex/public-book-library'}};
+ const w=k.window(now,0);
+ const without=k.gateToMerge([run],w,now);
+ assert.equal(without.n,0,'green alone never proves merged_at');
+ const withProof=k.gateToMerge([run],w,now,[proof]);
+ assert.equal(withProof.n,1);
+ assert.equal(withProof.exact_head_merge_proofs,1);
+ assert.equal(withProof.archived_merge_proofs,0);
+ assert.equal(withProof.rows[0].merge_proof,'GITHUB_MERGED_PR_EXACT_HEAD');
+ assert.equal(withProof.rows[0].merge_sha,'b'.repeat(40));
+ const data=k.report([run],now,{mergeProofs:[proof]});
+ assert.equal(data.windows.last_24h.green_to_merge.n,1);
+});
+test('post-Core merge proof rejects wrong HEAD, base, SHA, creation time and duplicates',()=>{
+ const created=new Date(now-7200000).toISOString();
+ const run=record(19,'success',{merged_at:new Date(now-300000).toISOString(),
+  pr_created_at:created,current_head:true});
+ const proof={number:19,state:'closed',created_at:created,
+  merged_at:new Date(now-300000).toISOString(),merge_commit_sha:'b'.repeat(40),
+  head:{sha},base:{ref:'codex/public-book-library'}};
+ const invalid=[
+  {...proof,head:{sha:'f'.repeat(40)}},
+  {...proof,base:{ref:'codex/bootstrap-books'}},
+  {...proof,merge_commit_sha:null},
+  {...proof,created_at:new Date(now-7300000).toISOString()},
+  {...proof,merged_at:new Date(now+7200000).toISOString()},
+  {...proof,state:'open'}
+ ];
+ for(const p of invalid){
+  assert.equal(k.gateToMerge([run],k.window(now,0),now,[p]).n,0,
+   'contradicting proof must also invalidate archived fallback');
+ }
+ assert.equal(k.gateToMerge([run],k.window(now,0),now,[proof,proof]).n,0);
+ assert.equal(k.gateToMerge([run],k.window(now,0),now).n,1,
+   'authenticated preexisting archive continues working without a new snapshot');
+});
 test('Error→Repair requires authenticated same PR same HEAD start timestamp after failure',()=>{
  const failure=record(12,'failure',{
   jobs:[job(121,'core-lint-types-build','failure',today),

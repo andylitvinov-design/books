@@ -66,8 +66,10 @@
     'n=0 · Repair без доказанной пары событий'};
   if(key==='green_to_merge')return {
    label:entry.n?min(entry.mean_min):'—',
-   sub:entry.n?'n='+entry.n+' · p50 '+min(entry.median_min)+' · p95 '+min(entry.p95_min):
-    'n=0 · проверенного PASS → Merge нет'};
+   sub:entry.n?'n='+entry.n+' · P50 '+min(entry.median_min)+' · P95 '+min(entry.p95_min)+
+    ' · merge по точному HEAD '+(entry.exact_head_merge_proofs||0)+
+    ', архив '+(entry.archived_merge_proofs||0):
+    'n=0 · нет пары последних обязательных PASS и подтверждённого merge'};
   const n=entry.measured||0;
   return {label:n&&entry.percent_observed!==null?
     '≈'+fmt.format(entry.percent_observed)+'%*':'—',
@@ -129,6 +131,12 @@
    ' запусков, '+(report.coverage?.archive_complete_read?'все страницы прочитаны':'неполный список страниц')+
    '. Исходная история Core CI не подтверждена полной; исторические пропуски ≠ 0.');
   if(report.coverage?.stale)meta.append(' УСТАРЕВШИЙ снимок.');
+  const merge=report.coverage?.merge_lookup;
+  if(merge)meta.append(' Merge после Core: '+(merge.status||'НЕИЗВЕСТНО')+
+   ' · '+(merge.returned_merged_prs??0)+' подтверждённых PR в '+(merge.pages??0)+
+   ' страницах GitHub; охват старой истории не гарантирован.'+
+   (merge.reason?' Ошибка: '+merge.reason+'.':''));
+  meta.append(' Максимальную задержку ВСЕХ PR нельзя считать доказанной, пока есть пропуски меток.');
  }
  async function load(repair=false,force=false) {
   if(busy)return;
