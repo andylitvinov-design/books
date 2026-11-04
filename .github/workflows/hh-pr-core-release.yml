@@ -156,6 +156,8 @@ jobs:
                   tests/ci-prune-stale-runs.test.mjs|\
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-public-services-plan.mjs|\
+                  tests/ci-public-services-plan.test.mjs|\
                   scripts/ci-pr-readiness.mjs|\
                   scripts/ci-source-preflight.mjs|\
                   tests/ci-source-preflight.test.mjs|\
@@ -529,8 +531,9 @@ jobs:
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, hh-specialist]
-    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
-    if: ${{ !cancelled() }}
+    # Draft Core and Specialist are intentionally not run; show SKIPPED rather than a misleading red check.
+    # A ready_for_review event starts fresh exact-HEAD Core and Specialist; failed Ready PRs stay blocked.
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     # Read-only required aggregator: no Next build, npm or privileged tools.
     runs-on: ubuntu-slim
     timeout-minutes: 2
