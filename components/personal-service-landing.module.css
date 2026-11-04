@@ -281,3 +281,31 @@
  .capturePortrait{height:100px}
 }
 @media(prefers-reduced-motion:reduce){.screen,.videoScreen{scroll-behavior:auto}}
+
+/* Mobile final capture stays within one viewport, with a keyboard-accessible
+   internal scroll for the consented form instead of clipping the last fields. */
+@media(max-width:767px){
+  .captureScreen{
+    height:min(700px,calc(100svh - 140px));
+    min-height:0;
+    overflow:hidden;
+  }
+  .captureScreen .capturePortrait{
+    flex:0 0 auto;
+    height:clamp(92px,13svh,122px);
+    min-height:0;
+  }
+  .captureScreen .captureContent{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    align-self:stretch;
+    scrollbar-width:thin;
+  }
+  .captureScreen .captureContent :global([data-inline-offer-form]){
+    min-width:0;
+    max-width:100%;
+  }
+}
