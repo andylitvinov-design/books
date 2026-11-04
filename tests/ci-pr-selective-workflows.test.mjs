@@ -5,8 +5,9 @@ import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-agg
 
 // Deliberate one-time migration proof: changing this exact contract file
 // dispatches every affected specialist under both old and new BASE/HEAD manifests.
-// Later edits to an unrelated optional workflow YAML run Core/actionlint/Guard,
-// not that workflow's expensive product browser suite.
+// Most optional YAML self-edits run Core/actionlint/Guard without an extra
+// product matrix. The audited owner exceptions below intentionally retain their
+// independent browser/consent QA when their own security policy changes.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
   "dao-iching-library.yml",
@@ -38,22 +39,33 @@ const ownerWorkflows = [
   "practice-visual-browser.yml",
   "practice-google-browser.yml"
 ];
+// These eight existing production workflows deliberately self-trigger on YAML
+// edits. That is a stronger safety policy than the optional default; enforce
+// both their genuine owner checks and the shared Core/actionlint coverage.
+const auditedOwnerSelfChecks = new Set([
+  "hh-energywork-ai.yml", "hh-event-referral-contract.yml",
+  "hh-home-conversation.yml", "hh-live-seo-audit.yml",
+  "hh-public-performance-audit.yml", "hh-support-guided-recommendations.yml",
+  "practice-visual-browser.yml", "practice-google-browser.yml",
+]);
 const highRiskSelfChecks = ["opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
 const contractFile = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
 
-test('optional workflow edits are owned by actionlint; shared contract migration remains independently verified', () => {
+test('optional workflow edits use actionlint unless their audited owner requires real QA', () => {
   assert.equal(new Set(ownerWorkflows).size, ownerWorkflows.length);
+  assert.equal(auditedOwnerSelfChecks.size,8);
+  for(const name of auditedOwnerSelfChecks)assert.ok(ownerWorkflows.includes(name),name);
   for (const name of ownerWorkflows) {
     const routes = trigger(name);
     assert.ok(routes?.paths?.includes(contractFile), name + ': shared migration contract absent');
-    assert.equal(routes.paths.includes('.github/workflows/' + name), false,
-      name + ': self-edit must not launch expensive product checks');
+    assert.equal(routes.paths.includes('.github/workflows/' + name), auditedOwnerSelfChecks.has(name),
+      name + ': self-edit must use exactly the reviewed owner-risk policy');
     assert.equal(matchesTrigger(routes, [contractFile], TARGET), true,
       name + ': initial migration must still dispatch genuine exact-HEAD QA');
-    assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), false,
-      name + ': config-only edit must be delegated to actionlint and Guard');
+    assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), auditedOwnerSelfChecks.has(name),
+      name + ': config-only edit must use reviewed Core, actionlint, Guard and applicable owner QA');
   }
   const actionlint = trigger('hh-actionlint.yml');
   const core = trigger('hh-pr-core-release.yml');
