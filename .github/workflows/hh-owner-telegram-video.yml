@@ -37,6 +37,7 @@ on:
       - "lib/practitioners/owner-telegram-story-rights.mjs"
       - "lib/mandala/dot-story-*"
       - "tests/dot-story-*.test.mjs"
+      - "tests/owner-telegram-youtube-metadata.test.mjs"
       - "tests/owner-telegram-video.test.mjs"
       - "tests/owner-telegram-youtube-visibility.test.mjs"
       - "tests/owner-telegram-video-cut-recovery.test.mjs"
@@ -67,6 +68,7 @@ on:
       - "lib/practitioners/owner-telegram-story-rights.mjs"
       - "lib/mandala/dot-story-*"
       - "tests/dot-story-*.test.mjs"
+      - "tests/owner-telegram-youtube-metadata.test.mjs"
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
       - "scripts/propose-openverse-video-sfx.mjs"
@@ -103,7 +105,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Telegram and audio regression tests
-        run: node --test tests/owner-telegram-youtube-visibility.test.mjs tests/youtube-owner-publications.test.mjs tests/owner-telegram-video.test.mjs tests/heygen-en-youtube.test.mjs tests/owner-telegram-video-cut-recovery.test.mjs tests/dot-story-cut-plan.test.mjs tests/dot-story-ffmpeg-args.test.mjs tests/dot-story-render-runtime.test.mjs tests/dot-story-ffmpeg-integration.test.mjs tests/telegram-story-picker.test.mjs tests/telegram-story-plots.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs tests/propose-openverse-video-sfx.test.mjs
+        run: node --test tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-youtube-metadata.test.mjs tests/youtube-owner-publications.test.mjs tests/owner-telegram-video.test.mjs tests/heygen-en-youtube.test.mjs tests/owner-telegram-video-cut-recovery.test.mjs tests/dot-story-cut-plan.test.mjs tests/dot-story-ffmpeg-args.test.mjs tests/dot-story-render-runtime.test.mjs tests/dot-story-ffmpeg-integration.test.mjs tests/telegram-story-picker.test.mjs tests/telegram-story-plots.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs tests/propose-openverse-video-sfx.test.mjs
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
