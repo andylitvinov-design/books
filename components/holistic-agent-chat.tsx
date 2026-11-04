@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
@@ -94,7 +94,10 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
   destroy?:()=>void };
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
-export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
+export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
+export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null
+}) {
   const t=copy[locale];
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
@@ -113,6 +116,14 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
   const [source,setSource]=useState("");
   const [busy,setBusy]=useState(false);
   const controller=useRef<AbortController|null>(null);
+  const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  useEffect(()=>{
+    if(!quickPrompt)return;
+    setDraft(quickPrompt.text.slice(0,2000));
+    if(quickPrompt.format)setFormat(quickPrompt.format);
+    // The user explicitly selected a rail action: prepare, never auto-send it.
+    composerRef.current?.focus({preventScroll:true});
+  },[quickPrompt]);
   const [previewFocus,setPreviewFocus]=useState<PreviewFocus>("");
   const [previewMinutes,setPreviewMinutes]=useState<8|12|20>(12);
   const [previewReady,setPreviewReady]=useState(false);
@@ -201,8 +212,11 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       setBusy(false);controller.current=null;
     }
   }
-  return <section className={styles.root} data-hh-agent-preview>
-    <h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p>
+  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}>
+    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
+    {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
+    <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
+      <summary>{locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy"}</summary>
     <label className={styles.mode}>{t.mode}
       <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
         <option value="rules">{t.rules}</option>
@@ -242,6 +256,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
       {t.consent}
     </label>}
+    </details>
     <div className={styles.thread} role="log" aria-live="polite">
       {!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
@@ -263,8 +278,8 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       </div>}
     {status&&<p role="status">{status}</p>}
     <form onSubmit={submit} className={styles.form}>
-      <textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
-        maxLength={2000} rows={3} disabled={busy} aria-label={t.placeholder}/>
+      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
+        maxLength={2000} rows={compact?2:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
         <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>

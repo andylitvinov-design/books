@@ -42,6 +42,22 @@ const MANDALA_UNIT = new Set([
   'tests/video-ai-gpu-readiness.test.mjs',
 ]);
 
+// Core already compiles/types/lints a production PR and dedicated macOS
+// WebKit performs the real encoded H.264/AAC/voice acceptance on video/voice
+// release branches. Do not run a THIRD Next build plus two Linux browsers in
+// the Mandala PR job. Full Chromium/WebKit workspace QA remains manual-only.
+// All mandatory focused source/consent/codec tests stay enabled on PRs.
+export function applyPrBrowserBudget(mode, eventName, impact, headRef = '') {
+  if (mode === 'mandala' && eventName === 'pull_request') {
+    // Scenario source review changes require real browser acceptance rather
+    // than the generic PR budget's source-only classification.
+    if (headRef === 'feat/video-120-scenario-media-bindings-20261102')
+      return { ...impact, browser: true };
+    return { ...impact, browser: false };
+  }
+  return impact;
+}
+
 export function decideHeavyImpact(mode, changed) {
   if (!['app-r1', 'mandala', 'free-review'].includes(mode)) throw Error('UNKNOWN_SUITE:' + mode);
   const strictlyModified = Array.isArray(changed) && changed.length > 0 &&
@@ -168,7 +184,8 @@ async function main() {
       files = null;
     }
   }
-  const result = decideHeavyImpact(mode, files);
+  const result = applyPrBrowserBudget(mode, process.env.GITHUB_EVENT_NAME,
+    decideHeavyImpact(mode, files), process.env.GITHUB_HEAD_REF);
   console.log(mode + ' ' + reason + ' ' + JSON.stringify(result));
   if (!process.env.GITHUB_OUTPUT) throw Error('MISSING_GITHUB_OUTPUT');
   for (const [name, enabled] of Object.entries(result)) {

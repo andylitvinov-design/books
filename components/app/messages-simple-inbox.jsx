@@ -250,7 +250,9 @@ export default function MessagesSimpleInbox({
       delete windowElement.dataset.keyboardOpen
       const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
       const top=windowElement.getBoundingClientRect().top
-      const nav=document.querySelector('.hh-mobile-app-nav')
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const nav=sharedDock&&window.getComputedStyle(sharedDock).display!=='none'
+        ?sharedDock:document.querySelector('.hh-mobile-app-nav')
       const navVisible=nav&&window.getComputedStyle(nav).display!=='none'
       const navTop=navVisible&&!focused?nav.getBoundingClientRect().top:null
       const height=availableInboxHeight({

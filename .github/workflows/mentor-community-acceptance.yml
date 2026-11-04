@@ -16,7 +16,7 @@ on:
       - 'tests/mentor-community-v1.test.mjs'
       - 'tests/helpers/seed-mentor-community-browser.mjs'
       - 'scripts/verify-mentor-community-browser.mjs'
-      - '.github/workflows/mentor-community-acceptance.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

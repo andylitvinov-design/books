@@ -18,16 +18,13 @@ on:
       - 'tests/business-consultation-finder.test.mjs'
       - 'tests/business-service-browser.test.mjs'
       - 'tests/topic-journey-account-scope.test.mjs'
-      - 'components/library-hub.tsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'components/app/portrait-recommendations.module.css'
       - 'components/app/development-program.jsx'
       - 'app/[locale]/explore/[theme]/page.tsx'
-      - 'app/sitemap.ts'
       - 'tests/growth-journey-public.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - '.github/workflows/hh-growth-journey.yml'
-
+      - 'tests/ci-pr-selective-workflows.test.mjs'
 permissions:
   contents: read
 

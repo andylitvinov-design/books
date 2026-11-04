@@ -13,6 +13,7 @@ import {createHash} from "node:crypto";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 export const CANDIDATE_FILE=join(root,"data/video-catalog/dareful-verified-candidate-wave-20261101.json");
 export const CANDIDATE_WAVE2_FILE=join(root,"data/video-catalog/dareful-verified-candidate-wave2-20261101.json");
+export const CANDIDATE_WAVE3_FILE=join(root,"data/video-catalog/dareful-verified-candidate-wave3-20261103.json");
 const output=join(root,"artifacts","dareful-wave-previews");
 const license="https://creativecommons.org/licenses/by/4.0/";
 function vettedUrl(value,host,pattern){
@@ -89,6 +90,13 @@ export async function previewCandidates({sourceFile=CANDIDATE_FILE,directory=out
  return {readyForReview:results.filter(r=>!r.error).length,failed:results.filter(r=>r.error).length,output:directory};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
- previewCandidates(process.argv.includes("--wave2")?{sourceFile:CANDIDATE_WAVE2_FILE,directory:join(root,"artifacts","dareful-wave2-previews")}:undefined).then(value=>console.log(JSON.stringify(value)))
+ const selection=process.argv.includes("--wave3")
+   ? {sourceFile:CANDIDATE_WAVE3_FILE,directory:join(root,"artifacts","dareful-wave3-previews")}
+   : process.argv.includes("--wave2")
+     ? {sourceFile:CANDIDATE_WAVE2_FILE,directory:join(root,"artifacts","dareful-wave2-previews")}
+     : undefined;
+ if(process.argv.includes("--wave2")&&process.argv.includes("--wave3"))
+   throw Error("select_at_most_one_candidate_wave");
+ previewCandidates(selection).then(value=>console.log(JSON.stringify(value)))
    .catch(error=>{console.error("Dareful preview rejected: "+error.message);process.exitCode=1});
 }

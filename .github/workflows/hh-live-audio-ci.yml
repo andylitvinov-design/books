@@ -18,7 +18,7 @@ on:
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
-      - '.github/workflows/hh-live-audio-ci.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:

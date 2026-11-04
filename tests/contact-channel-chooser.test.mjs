@@ -46,9 +46,9 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<details className=\{styles\.optionalName\} open=\{nameOpen\}>/);
-  assert.match(src, /setNameOpen\(value => !value\)/);
-  assert.match(src, /setNameOpen\(false\)/);
+  assert.match(src, /<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+  assert.match(src, /<summary>\{c\.nameOptional\}<\/summary>/);
+  assert.doesNotMatch(src, /setNameOpen|open=\{nameOpen\}/);
   assert.match(src, /<details className=\{styles\.optionalNote\} open=\{noteOpen\}>/);
   assert.match(src, /setNoteOpen\(value => !value\)/);
   assert.match(src, /setNoteOpen\(false\)/);
@@ -121,4 +121,16 @@ test("cart form is inert until real hydration, with phone and explicit consent s
   assert.match(qa, /form\[data-contact-hydrated="true"\]/);
   assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
   assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
+});
+
+test("optional name disclosure uses one native user click, reset only on changed offer, and never changes consent", () => {
+  const src = read("components/contact-channel-chooser.tsx");
+  assert.match(src, /<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+  assert.match(src, /<summary>\{c\.nameOptional\}<\/summary>/);
+  assert.doesNotMatch(src, /nameOpen|setNameOpen/);
+  assert.match(src, /setDisplayName\("?"\)/);
+  assert.match(src, /setConsent\(false\)/);
+  assert.match(src, /checked=\{consent\}/);
+  assert.match(src, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(src, /resetSignature = JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
 });

@@ -10,7 +10,7 @@ import {resolve,join,dirname} from "node:path";
 import {spawnSync} from "node:child_process";
 import {createHash} from "node:crypto";
 import {fileURLToPath} from "node:url";
-import {CANDIDATE_FILE,CANDIDATE_WAVE2_FILE,validateCandidateManifest} from "./preview-dareful-candidates.mjs";
+import {CANDIDATE_FILE,CANDIDATE_WAVE2_FILE,CANDIDATE_WAVE3_FILE,validateCandidateManifest} from "./preview-dareful-candidates.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const output=resolve(root,"artifacts/dareful-wave-masters");
 const license="https://creativecommons.org/licenses/by/4.0/";
@@ -92,6 +92,14 @@ export function renderCandidateDrafts({sourceFile=CANDIDATE_FILE,directory=outpu
  return {drafts:results.length,dir:directory,readyForEditorReview:true,published:false};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- try{console.log(JSON.stringify(renderCandidateDrafts(process.argv.includes("--wave2")?{sourceFile:CANDIDATE_WAVE2_FILE,directory:resolve(root,"artifacts/dareful-wave2-masters")}:undefined),null,2))}
+ try{
+   if(process.argv.includes("--wave2")&&process.argv.includes("--wave3"))throw Error("select_at_most_one_candidate_wave");
+   const selection=process.argv.includes("--wave3")
+     ? {sourceFile:CANDIDATE_WAVE3_FILE,directory:resolve(root,"artifacts/dareful-wave3-masters")}
+     : process.argv.includes("--wave2")
+       ? {sourceFile:CANDIDATE_WAVE2_FILE,directory:resolve(root,"artifacts/dareful-wave2-masters")}
+       : undefined;
+   console.log(JSON.stringify(renderCandidateDrafts(selection),null,2));
+ }
  catch(e){console.error("Draft real MP4 rendering failed: "+e.message);process.exitCode=1}
 }

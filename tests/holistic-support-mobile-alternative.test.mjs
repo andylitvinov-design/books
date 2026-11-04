@@ -92,9 +92,10 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
   for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
     assert.ok(client.includes(pair), pair);
-  // The tab query is critical: without it the existing route initially shows
-  // Orders, not the already-approved person-by-person conversations.
-  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  // Legacy ?tab=chats still opens protected client conversations, while
+  // new direct Messenger visits intentionally open the owner-approved AI tab.
+  assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
+  assert.ok(orders.includes("requested==='orders'||q.has('order')?'orders':'ai'"));
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
   assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
