@@ -319,3 +319,43 @@ test('closed classifier rejects contradictory merge facts and is idempotent',()=
   const synced=desiredClosedLabels({...base,labels:first.desired.map(name=>({name}))},NOW);
   assert.equal(synced.needsSync,false);
 });
+
+
+test('same-repo stacked PR receives all four informational labels without merge authorization',async()=>{
+ const base={ref:'codex/hh-intelligence-video-history-20261029',
+   repo:{full_name:'andylitvinov-design/books'}};
+ const item=pr(2580,'feat(intelligence): saved course progress',{base});
+ const f=fixture([item]);
+ const result=await run({github:f.github,core:core(),context,now:NOW});
+ assert.equal(result.inScope,1);
+ assert.equal(result.production,0);
+ assert.equal(result.defaultBranchPRs,0);
+ assert.equal(result.stackedBranchPRs,1);
+ assert.equal(result.updated,1);
+ assert.deepEqual(f.counts.adds[0].labels,[
+   'hh:direction:academy-courses','hh:priority:4',
+   'hh:merge-priority:08','hh:merge-stage:inspect'
+ ]);
+ assert.equal(f.counts.removes.length,0);
+});
+
+test('foreign-base and unproven-base PRs are excluded; changed SHA cannot receive labels',async()=>{
+ const base={ref:'feat/holistic-mind-language-agent-20261029',
+   repo:{full_name:'andylitvinov-design/books'}};
+ const foreign={ref:base.ref,repo:{full_name:'foreign/repo'}};
+ const items=[
+   pr(2557,'feat(memory): private client memory',{base}),
+   pr(2556,'feat(memory): foreign parent',{base:foreign}),
+   pr(2555,'feat(memory): missing parent proof',{base:{ref:'feat/unknown'}})
+ ];
+ const f=fixture(items);
+ const result=await run({github:f.github,core:core(),context,now:NOW});
+ assert.equal(result.stackedBranchPRs,1);
+ assert.equal(result.updated,1);
+ assert.equal(f.counts.adds[0].issue_number,2557);
+ const g=fixture([items[0]]);
+ g.github.rest.pulls.get=async()=>({data:{...items[0],head:{...items[0].head,sha:'b'.repeat(40)}}});
+ const stale=await run({github:g.github,core:core(),context,now:NOW});
+ assert.equal(stale.updated,0);
+ assert.equal(g.counts.adds.length,0);
+});
