@@ -268,7 +268,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.route("**/api/holistic-support/voice",refuseSofia);
       const sofiaPreview=chooserPending.locator('[data-video-affirmation-voice-preview="sofia"]');
       await sofiaPreview.click();
-      await expect(page.locator(".sampleStatus")).toHaveCount(0).catch(()=>{});
       await expect(sofiaPreview).toHaveAttribute("aria-busy","false",{timeout:10000});
       await expect(chooserPending.locator('[data-video-affirmation-voice-preview="maya"]')).toBeEnabled();
       await expect(page.locator('[data-video-affirmation-voice-select] [role="status"]'))
