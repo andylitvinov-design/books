@@ -9,8 +9,9 @@
     if(!response.ok)throw Error('Original monitor '+response.status);
     var html=await response.text();
     if(!/<\/head>/i.test(html)||!/<main\b/i.test(html))throw Error('Original monitor markup incomplete');
-    var additions='<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-2">'+
-      '<script src="/pr-two-screen.js?v=20261104-2" defer><\/script>';
+    var additions='<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-3">'+
+      '<script src="/pr-cohort-wall-clock.js?v=20261104-3" defer><\/script>'+ 
+      '<script src="/pr-two-screen.js?v=20261104-3" defer><\/script>';
     // Disable only the old layout reordering script, without removing any
     // source asset or changing any KPI/event processing modules.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js" ><\/script>');
