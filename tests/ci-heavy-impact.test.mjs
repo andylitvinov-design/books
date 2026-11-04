@@ -384,6 +384,104 @@ test('App R1 impact uses sparse checkout and one strictly routed no-op browser',
     'Use the single immutable HEAD classification for all dependent jobs');
 });
 
+// Exact-owner regression table: cover the product/security/dependency categories,
+// not only one or two convenient paths. Core is path-independent and mandatory.
+// Cheap Guard owns this test; editing it must never start unrelated media runners.
+test('cross-domain critical change matrix preserves owned suites and avoids CI-only fan-out', () => {
+  const cases = [
+    { risk: 'login callback', path: 'app/api/auth/callback/route.js',
+      owners: ['ia-v2.yml'] },
+    { risk: 'private direct messages', path: 'app/api/app/direct-messages/route.js',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-crm-source-check.yml', 'hh-messenger-mobile-release.yml'], strictApp: true },
+    { risk: 'private client UI', path: 'components/app/owner-cabinet.tsx',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml'], strictApp: true },
+    { risk: 'auth and security library', path: 'lib/security/session.ts',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml'], strictApp: true },
+    { risk: 'assessment API', path: 'app/api/assessments/scoring/route.ts',
+      owners: ['hh-app-r1.yml'], strictApp: true },
+    { risk: 'assessment evidence', path: 'data/assessments/checkin.json',
+      owners: ['hh-app-r1.yml'], strictApp: true },
+    { risk: 'SQL and row-level security', path: 'supabase/migrations/20261104_owner_rls.sql',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-billing-isolated.yml'], strictApp: true },
+    { risk: 'commerce payment API', path: 'app/api/payments/checkout/route.js',
+      owners: ['hh-billing-isolated.yml', 'hh-public-services-production.yml'],
+      excluded: ['hh-app-r1.yml'] },
+    { risk: 'billing library', path: 'lib/billing/paypal.js',
+      owners: ['hh-billing-isolated.yml'] },
+    { risk: 'CRM private contact data', path: 'lib/crm/consent.js',
+      owners: ['hh-crm-source-check.yml'] },
+    { risk: 'private practitioner relay', path: 'lib/practitioners/direct-message.js',
+      owners: ['hh-crm-source-check.yml', 'ia-v2.yml'] },
+    { risk: 'customer consent capture', path: 'components/consultation-choice-capture.tsx',
+      owners: ['hh-public-services-production.yml', 'hh-free-review-live-mobile.yml',
+        'hh-crm-source-check.yml'] },
+    { risk: 'video voice provider', path: 'app/api/holistic-support/voice/route.js',
+      owners: ['holistic-support-mandala.yml'] },
+    { risk: 'video director logic', path: 'lib/mandala/video-chat-understanding.mjs',
+      owners: ['holistic-support-mandala.yml'] },
+    { risk: 'licensed audio media', path: 'public/audio/mandala/original.wav',
+      owners: ['holistic-support-mandala.yml'] },
+    { risk: 'live-audio API', path: 'app/api/live-audio/session/route.ts',
+      owners: ['hh-live-audio-ci.yml'] },
+    { risk: 'private mobile messages', path: 'app/[locale]/app/messages/page.tsx',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-messenger-mobile-release.yml'], strictApp: true },
+    { risk: 'shared runtime middleware', path: 'middleware.ts',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-billing-isolated.yml'], strictApp: true },
+    { risk: 'root dependency lockfile', path: 'package-lock.json',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-billing-isolated.yml', 'hh-live-audio-ci.yml'], strictApp: true },
+    { risk: 'Next runtime config', path: 'next.config.ts',
+      owners: ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+        'hh-billing-isolated.yml', 'hh-live-audio-ci.yml'], strictApp: true },
+    { risk: 'CI router source', path: 'scripts/ci-heavy-impact.mjs',
+      owners: ['hh-app-r1.yml', 'hh-pr-sweep-guard.yml',
+        'holistic-support-mandala.yml', 'hh-free-review-live-mobile.yml'] },
+    { risk: 'CI workflow owner', path: '.github/workflows/hh-app-r1.yml',
+      owners: ['hh-app-r1.yml', 'hh-pr-sweep-guard.yml', 'hh-actionlint.yml'] },
+    { risk: 'CI policy test only', path: 'tests/ci-heavy-impact.test.mjs',
+      owners: ['hh-pr-sweep-guard.yml'],
+      excluded: ['hh-app-r1.yml', 'holistic-support-mandala.yml',
+        'hh-free-review-live-mobile.yml'] },
+    { risk: 'profile-only presentation', path: 'components/profile-compact-design.tsx',
+      owners: ['hh-app-r1.yml'],
+      excluded: ['hh-billing-isolated.yml', 'holistic-support-mandala.yml'] },
+  ];
+  assert.ok(cases.length >= 24, 'protect the full risk-category regression inventory');
+  const workflow = new Map();
+  const matches = (name, path) => {
+    if (!workflow.has(name)) workflow.set(name, parsePrTrigger(read(name), name));
+    return matchesTrigger(workflow.get(name), [path], 'codex/public-book-library');
+  };
+  const strict = { full_app: true, database: true, banner: true, profile: true };
+  for (const { risk, path, owners, excluded = [], strictApp = false } of cases) {
+    assert.equal(matches('hh-pr-core-release.yml', path), true,
+      risk + ': mandatory Core must never be filtered by file path');
+    for (const name of owners) assert.equal(matches(name, path), true,
+      risk + ': lost domain owner ' + name + ' for ' + path);
+    for (const name of excluded) assert.equal(matches(name, path), false,
+      risk + ': unnecessary specialist fan-out ' + name + ' for ' + path);
+    if (strictApp) assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict,
+      risk + ': security, database and browser must fail closed');
+  }
+  // Cosmetic-only presentation can delegate unrelated database and full-App
+  // runs, but adding, removing, renaming or mixing in sensitive source cannot.
+  const cosmetic = 'components/profile-compact-design.tsx';
+  assert.deepEqual(decideHeavyImpact('app-r1', one(cosmetic)),
+    { full_app: false, database: false, banner: false, profile: true });
+  for (const status of ['added', 'removed', 'renamed'])
+    assert.deepEqual(decideHeavyImpact('app-r1', one(cosmetic, status)), strict);
+  for (const risk of ['lib/security/session.ts', 'app/api/app/direct-messages/route.js',
+    'supabase/migrations/20261104_owner_rls.sql', 'package-lock.json'])
+    assert.deepEqual(decideHeavyImpact('app-r1', [...one(cosmetic), ...one(risk)]), strict);
+  // Unknown new source still hits Core; never assume an unrecognized feature
+  // belongs to an optional suite or that no check is needed.
+  assert.equal(matches('hh-pr-core-release.yml', 'scripts/new-unknown-runtime.mjs'), true);
+});
+
 test('App R1 trigger covers all critical routes and preserves mandatory sensitive checks', () => {
   const trigger = parsePrTrigger(read('hh-app-r1.yml'), 'hh-app-r1.yml');
   const strict = { full_app: true, database: true, banner: true, profile: true };
