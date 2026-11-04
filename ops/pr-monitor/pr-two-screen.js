@@ -128,9 +128,11 @@
     var direct = queueNumbers(queueSnapshot);
     function one(index) {
       var a=original?.[index];
-      // A successful direct source is preferred over an uninitialized hidden original widget.
+      // The original widget's live callback remains authoritative when numeric.
+      // The direct endpoint is only a fallback if that widget did not mount.
+      if (/^\d+$/.test(a||'')) return a;
       if (validCount(direct?.[index])) return String(direct[index]);
-      return /^\d+$/.test(a||'') ? a : '—';
+      return '—';
     }
     var running=one(2), queued=one(1);
     cells.running.n.textContent=running;
@@ -143,6 +145,9 @@
   }
   async function readQueue() {
     try {
+      if (originalQueue()?.slice(1,3).every(function(v){return /^\d+$/.test(v);})) {
+        queueError=null;showQueue();return;
+      }
       // This is the EXISTING queue endpoint and an on-demand GET only.
       // No new schedules, no GitHub client token, no interval polling.
       var response=await fetch('/api/ci-queue-detail',{cache:'default',
