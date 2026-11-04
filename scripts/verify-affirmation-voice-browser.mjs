@@ -589,14 +589,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
-      if(await page.locator("[data-video-narration-stale]").isVisible()){
-        await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
-      }else{
-        // A removed narration is no longer attached to the one canonical
-        // renderer; the visitor may still create a video without that voice.
-        await expect(page.locator("[data-video-live-audio]")).toHaveCount(0);
-        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
-      }
+      // The phrase warning is intentionally unmounted in Montage. If the
+      // old narration is still attached there, export must remain disabled;
+      // an independently selected soundtrack is not stale narration.
+      const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
+      const stillHasOldVoice=soundtrackLabels.some(label=>
+        label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
+      if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)

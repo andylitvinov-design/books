@@ -393,3 +393,12 @@ test('browser checks phrase consent before switching to the separate montage wor
   const montage=source.indexOf('data-video-quick-control="editor"',start);
   assert.ok(start>=0&&consent>start&&montage>consent,'the phrase consent control must be checked while its workspace is mounted');
 });
+
+test('stale narration safety remains checked after the phrase warning unmounts',()=>{
+  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
+  const after=source.slice(start,source.indexOf('const voicePanel=',start));
+  assert.match(after,/const stillHasOldVoice=/);
+  assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
+  assert.match(after,/holistic-house-hypno-audio\.wav/);
+  assert.match(after,/expectedFileName/);
+});
