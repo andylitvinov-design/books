@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
+import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',
@@ -120,6 +121,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
       <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
     </div>
+    <SupportPhotoCabinet locale={locale} />
     {status==='disabled'&&<p role="status">{t.disabled}</p>}
     {status==='error'&&<p role="alert">{t.error}</p>}
     {status==='ready'&&<>

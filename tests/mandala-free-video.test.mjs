@@ -194,7 +194,8 @@ test("AI Video Create acknowledges only an actually accepted local render prefli
     studio.indexOf("  // This is a local, non-persistent preview."));
   const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
     studio.indexOf("  const deepAudioPane = ("));
-  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;"));
+  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
+    "never start a new render while a source photo is decoding or an encoder is active");
   assert.doesNotMatch(start,/\breturn\s*;/);
   assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
   assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
