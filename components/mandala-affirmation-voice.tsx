@@ -23,7 +23,7 @@ const copy={
   ru:{
     title:"Озвучить аффирмации",lead:"Выберите утверждённую фразу и голос. Получите настоящую бесплатную озвучку и добавьте её в видео.",
     voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
-    phrase:"Фраза для озвучки",allPhrases:"Все утверждённые фразы",sample:"Прослушать",sampleBusy:"Загрузка…",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
+    phrase:"Фраза для озвучки",allPhrases:"Все утверждённые фразы",sample:"Прослушать",sampleBusy:"Загрузка…",sampleCancel:"Отменить",sampleBusyHelp:"Готовим короткий образец голоса. Вы можете отменить запрос или выбрать другой голос.",sampleCancelled:"Загрузка отменена. Нажмите «Прослушать», чтобы повторить.",sampleTimeout:"Голос не загрузился за 27 секунд. Попробуйте ещё раз — другие голоса доступны.",sampleAudioError:"iPhone не смог воспроизвести WAV. Попробуйте снова или проверьте звук в плеере.",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
     pendingText:"Сначала утвердите изменённые фразы выше.",
     preview:"Выбранная фраза",enable:"Сначала включите аффирмации и выберите фразы выше.",
     consent:"Разрешаю отправить только выбранный утверждённый текст в бесплатный Gemini или OpenRouter/Deepgram (только английский). Личные и медицинские данные не включаются. Правила провайдеров действуют; Google может использовать бесплатные запросы для улучшения сервисов. Платный резерв для этого действия отключён.",
@@ -37,7 +37,7 @@ const copy={
   en:{
     title:"Narrate affirmations",lead:"Choose an approved phrase and voice. Generate a free real voice track and attach it to your video.",
     voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
-    phrase:"Phrase to narrate",allPhrases:"All approved phrases",sample:"Listen",sampleBusy:"Loading…",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
+    phrase:"Phrase to narrate",allPhrases:"All approved phrases",sample:"Listen",sampleBusy:"Loading…",sampleCancel:"Cancel",sampleBusyHelp:"Preparing a short voice sample. You can cancel or select another voice.",sampleCancelled:"Loading cancelled. Tap Listen to retry.",sampleTimeout:"The voice did not load within 27 seconds. Retry or choose another voice.",sampleAudioError:"This device could not play the WAV. Retry or use the player controls.",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
     pendingText:"Approve the edited phrases above first.",
     preview:"Selected spoken phrase",enable:"First enable affirmations and select your phrases above.",
     consent:"I agree to send only the selected approved text to free Gemini or OpenRouter/Deepgram (English only). No identifying or medical details are included. Provider data policies apply; free Google inputs may improve services. Paid fallback is disabled here.",
@@ -51,7 +51,7 @@ const copy={
   es:{
     title:"Poner voz a las afirmaciones",lead:"Elige una frase aprobada y una voz. Genera gratis una pista de voz real para tu vídeo.",
     voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
-    phrase:"Frase que se leerá",allPhrases:"Todas las frases aprobadas",sample:"Escuchar",sampleBusy:"Cargando…",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
+    phrase:"Frase que se leerá",allPhrases:"Todas las frases aprobadas",sample:"Escuchar",sampleBusy:"Cargando…",sampleCancel:"Cancelar",sampleBusyHelp:"Preparando una muestra breve. Puedes cancelar o elegir otra voz.",sampleCancelled:"Carga cancelada. Pulsa Escuchar para reintentar.",sampleTimeout:"La voz no cargó en 27 segundos. Reintenta o elige otra voz.",sampleAudioError:"El dispositivo no pudo reproducir WAV. Reintenta o usa el reproductor.",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
     pendingText:"Primero aprueba las frases editadas arriba.",
     preview:"Frase elegida",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
     consent:"Autorizo enviar solo el texto aprobado elegido a Gemini gratuito o OpenRouter/Deepgram (solo inglés). No incluye datos médicos ni personales. Se aplican las políticas de cada proveedor; Google puede usar solicitudes gratuitas para mejorar servicios. El respaldo de pago está desactivado.",
@@ -237,24 +237,47 @@ export function MandalaAffirmationVoice({
     setSampleUrl("");setSampleVoiceId("");setSampleBusyId("");setSampleMessage("");
   }
   async function previewSample(id:string){
-    if(disabled||busy||sampleBusyId)return;
+    if(disabled||busy)return;
+    // A second tap while waiting cancels the in-flight request. Other voice
+    // buttons remain usable, cancelling stale requests instead of freezing UI.
+    if(sampleBusyId===id){
+      resetSample();
+      setSampleMessage(t.sampleCancelled);
+      return;
+    }
+    // iPhone Safari rejects play() after an asynchronous network response.
+    // Replaying an already fetched sample directly inside a tap is a real
+    // user gesture and must never spend another free provider request.
+    if(!sampleBusyId && sampleVoiceId===id && sampleUrl && sampleAudioRef.current){
+      const player=sampleAudioRef.current;
+      try{player.currentTime=0;await player.play();}
+      catch{/* Native audio controls remain available for a manual second tap. */}
+      return;
+    }
     resetSample();
     if(!languageAvailable){setSampleMessage(t.unavailable);return;}
     const job=sampleJobRef.current;
     const cacheKey=language+":"+id;
     setSampleBusyId(id);
+    let timer:ReturnType<typeof setTimeout>|null=null;
+    let timedOut=false;
     try{
       let uri=sampleCacheRef.current.get(cacheKey);
       if(!uri){
         const controller=new AbortController();
         sampleControllerRef.current=controller;
+        // The server already bounds the free Gemini call at 20 seconds, but
+        // the browser must also bound the entire HTTP/body read on slow mobile.
+        timer=setTimeout(()=>{timedOut=true;controller.abort();},27000);
         const reply=await fetch("/api/holistic-support/voice",{
           method:"POST",headers:{"Content-Type":"application/json"},
-          // Server chooses an impersonal fixed transcript. Never transmit lines.
+          // Fixed public text only, never the visitor's unapproved phrases.
           body:JSON.stringify({mode:"sample",voiceId:id,language}),
           signal:controller.signal,cache:"no-store",
         });
         if(!reply.ok)throw new Error(reply.status===429?"QUOTA":"TTS");
+        if(!/^audio\\/wav(?:;|$)/i.test(reply.headers.get("content-type")||""))
+          throw new Error("TTS");
         const audio=await reply.blob();
         const seconds=audio.size>=44&&audio.size<=8*1024*1024
           ?wavDurationFromHeader(await audio.slice(0,256).arrayBuffer()):0;
@@ -273,9 +296,11 @@ export function MandalaAffirmationVoice({
       setSampleVoiceId(id);setSampleUrl(uri);setSampleMessage(t.sampleReady);
     }catch(error){
       if(job!==sampleJobRef.current)return;
-      if(error instanceof Error&&error.name==="AbortError")return;
-      setSampleMessage(error instanceof Error&&error.message==="QUOTA"?t.sampleQuota:t.sampleError);
+      if(timedOut)setSampleMessage(t.sampleTimeout);
+      else if(error instanceof Error&&error.name==="AbortError")return;
+      else setSampleMessage(error instanceof Error&&error.message==="QUOTA"?t.sampleQuota:t.sampleError);
     }finally{
+      if(timer!==null)clearTimeout(timer);
       if(job===sampleJobRef.current){setSampleBusyId("");sampleControllerRef.current=null;}
     }
   }
@@ -384,7 +409,7 @@ export function MandalaAffirmationVoice({
               <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
             </button>
             <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
-              aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
+              aria-label={t.sample+" "+v.name[locale]} aria-busy={sampleBusyId===v.id} disabled={busy||disabled||!languageAvailable}
               onClick={()=>{
                 // The voice heard in Preview is also the chosen voice for the
                 // approved phrase and final WAV; no hidden mismatch on export.
@@ -392,16 +417,17 @@ export function MandalaAffirmationVoice({
                 void previewSample(v.id);
               }}>
               {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
-              <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
+              <span>{sampleBusyId===v.id?t.sampleCancel:t.sample}</span>
             </button>
           </div>)}
         </div>
         {sampleUrl?<div className={css.samplePlayer} data-video-affirmation-sample-ready>
           <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
           <audio ref={sampleAudioRef} controls preload="metadata" src={sampleUrl}
-            aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}/>
+            aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}
+            onError={()=>setSampleMessage(t.sampleAudioError)}/>
         </div>:null}
-        {sampleMessage?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleMessage}</small>:null}
+        {(sampleBusyId||sampleMessage)?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleBusyId?t.sampleBusyHelp:sampleMessage}</small>:null}
       </div>
       <MandalaLocalVoiceTracks locale={locale} hidden={voiceGender!=="own"}
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
