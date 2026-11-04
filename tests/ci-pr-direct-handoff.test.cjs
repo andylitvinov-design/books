@@ -17,7 +17,7 @@ test('Control Tower cannot dispatch while Watchdog holds sole guarded writer',()
  assert.match(direct,/  workflow_run:/);
  assert.match(direct,/types: \[completed\]/);
  assert.match(direct,/group: hh-control-tower-single-writer/);
- assert.match(direct,/ci-pr-event-handoff\\.cjs/);
+ assert.ok(direct.includes('ci-pr-event-handoff.cjs'));
  assert.match(direct,/HH_DIRECT_CORE_HANDOFF/);
  assert.match(watchdog,/HH PR source Repair Worker/);
  assert.match(watchdog,/HH zero-cost PR CI worker/);
