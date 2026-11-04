@@ -34,6 +34,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
 });
 
+
+test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]
+    ?.split('      - name: Install checksum-verified actionlint')[0];
+  assert.ok(fast, 'fast deterministic ESLint contract must remain');
+  assert.match(fast, /node --test tests\/ci-deterministic-eslint-repair\.test\.mjs/);
+  assert.doesNotMatch(fast, /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'synthetic Git topology fixtures must run once under mandatory Core, not twice on ubuntu-slim');
+  assert.match(workflow('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'Core must retain the complete fail-closed topology regression');
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+  assert.doesNotMatch(lint, /continue-on-error:\s*true/);
+});
+
 test('deleted workflow-only changes cannot hide an unverified YAML removal', () => {
   const s = workflow('hh-actionlint.yml');
   assert.match(s, /git diff --no-renames --name-status -z/);
