@@ -564,8 +564,8 @@ test('real WebKit browser acceptance requires new presented decoded frames after
 test('WebKit recovery proof accepts genuine same-ms seek→play only with later real frames',()=>{
  const src=videos[0].src;
  const before={time:31.447,presentedFrame:{at:14175}};
- const player={currentSrc:src,muted:true,paused:false,seeking:false,ended:false,error:null};
- const ev=(type,at,more={})=>({type,at,source:src,open:true,...more});
+ const player={currentSrc:src,currentTime:31.94,muted:true,paused:false,seeking:false,ended:false,error:null};
+ const ev=(type,at,more={})=>({type,at,source:src,node:3,open:true,connected:true,paused:false,seeking:false,...more});
  const sequence=[
    ev('js-play',14263),ev('js-load',15980),ev('loadedmetadata',17076),
    ev('seeked',17554),ev('js-play',17554),ev('playing',17558),
@@ -576,6 +576,22 @@ test('WebKit recovery proof accepts genuine same-ms seek→play only with later 
    oneReload:true,firstPlay:true,metadata:true,seeked:true,
    resumed:true,playing:true,realFrame:true,sameSource:true,muted:true,live:true,
  });
+ // Safari can omit a duplicate 'playing' event after the already-active
+ // decoder resumes: actual same-node presented frames + moving media clock
+ // remain mandatory, not the optional event or a synthetic clock.
+ const noRepeatedPlaying=sequence.filter(event=>event.type!=='playing');
+ assert.deepEqual(verifyNativeWebKitRecovery(player,before,noRepeatedPlaying),accepted,
+   'Real recovered same-node frames prove video even when WebKit omits playing');
+ const oldPlayerFrame=noRepeatedPlaying.map(event=>event.type==='presented-frame'
+   ?{...event,node:99}:event);
+ assert.equal(verifyNativeWebKitRecovery(player,before,oldPlayerFrame).realFrame,false,
+   'A competing old same-source decoder cannot certify a recovered player');
+ const stalledClock={...player,currentTime:before.time};
+ assert.equal(verifyNativeWebKitRecovery(stalledClock,before,noRepeatedPlaying).realFrame,false,
+   'A frozen media clock cannot certify recovered frames');
+ const missingFrame=noRepeatedPlaying.slice(0,-1);
+ assert.equal(verifyNativeWebKitRecovery(player,before,missingFrame).playing,false,
+   'No playing event and no real new frame must remain RED');
  const withoutFrame=sequence.slice(0,-1);
  assert.equal(verifyNativeWebKitRecovery(player,before,withoutFrame).realFrame,false,
    'No decoded frame must NEVER certify a WebKit resume');
