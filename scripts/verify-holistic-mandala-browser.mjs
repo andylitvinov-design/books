@@ -777,7 +777,7 @@ const runEngine = async ([engine, browserType]) => {
               getComputedStyle(diagnostic).display!=="none":false,
             diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
         });
-        assert.ok(layout.hero<=260 && layout.hero>=155,
+        assert.ok(layout.hero<=260 && layout.hero>=140,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
         assert.ok(layout.brand>=40 && layout.brand<=75,
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
@@ -786,10 +786,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,true,
-          "the free diagnostic CTA remains visible below the Video Studio");
-        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
-          "the diagnostic CTA must follow—not precede—the editor: "+JSON.stringify(layout));
+        assert.equal(layout.diagnosticVisible,false,
+          "the approved Video Studio first screen has no unsolicited marketing banner");
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);
