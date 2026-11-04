@@ -1581,3 +1581,16 @@ test('seven costly PR workflows cancel obsolete first-attempt HEAD without push-
     assert.doesNotMatch(match[2], /github\.event\.(?:before|after)/, file + ': push-only fields never cancel PR runs');
   }
 });
+
+
+// CI-only planner and its deterministic contracts do not touch Next runtime.
+// Real production-path changes still route through full Core/Specialist checks.
+test('Public Services planner/source test stay in the narrow Core CI-only lane', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const scope = core.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0] || '';
+  for (const name of ['scripts/ci-public-services-plan.mjs', 'tests/ci-public-services-plan.test.mjs']) {
+    assert.ok(scope.includes(name + '|\\'), 'CI-only route missing for ' + name);
+  }
+  assert.match(core, /name: hh-merge-check/, 'required protected gate is not optional');
+  assert.match(core, /needs: \[scope, hh-specialist\]/, 'real Specialist remains mandatory');
+});

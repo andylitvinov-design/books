@@ -156,6 +156,8 @@ jobs:
                   tests/ci-prune-stale-runs.test.mjs|\
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-public-services-plan.mjs|\
+                  tests/ci-public-services-plan.test.mjs|\
                   scripts/ci-pr-readiness.mjs|\
                   scripts/ci-source-preflight.mjs|\
                   tests/ci-source-preflight.test.mjs|\
