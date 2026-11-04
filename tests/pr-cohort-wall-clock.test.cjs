@@ -60,3 +60,20 @@ test('no hidden conversion of unknown to zero and no I/O',()=>{
  const s=require('node:fs').readFileSync(require('node:path').join(__dirname,'../ops/pr-monitor/pr-cohort-wall-clock.js'),'utf8');
  assert.doesNotMatch(s,/fetch\s*\(|setInterval\s*\(|workflow_dispatch/);
 });
+
+test('P50/P95 and stage coverage preserve original three-PR cohort',()=>{
+ const x=M.calculate(cohort,archive);
+ assert.equal(x.overall_p50_minutes,12);
+ assert.equal(x.overall_p95_minutes,19.2);
+ assert.equal(x.stage_kpis.checks.measured_prs,2);
+ assert.equal(x.stage_kpis.checks.cohort_prs,3);
+ assert.equal(x.stage_kpis.checks.coverage_pct,200/3);
+ assert.equal(x.stage_kpis.checks.mean_measured_min,5);
+ assert.equal(x.stage_kpis.checks.p50_min,5);
+ assert.equal(x.stage_kpis.checks.p95_min,5.9);
+ assert.equal(x.stage_kpis.no_archive_unknown.measured_prs,1);
+ assert.equal(x.stage_kpis.no_archive_unknown.cohort_prs,3);
+ assert.equal(x.stage_kpis.no_archive_unknown.contribution_mean_minutes,4);
+ assert.equal(x.largest_delay.status,'UNATTRIBUTED_TIME_MAY_DOMINATE');
+ assert.equal(x.reconciled,true);
+});
