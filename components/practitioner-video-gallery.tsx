@@ -32,7 +32,7 @@ function embedFor(url:string):Embed|null{
  }catch{/* Invalid or legacy content stays hidden. */}
  return null
 }
-export default function PractitionerVideoGallery({videos,locale='en'}:{videos:VideoMaterial[];locale?:string}){
+export default function PractitionerVideoGallery({videos,locale='en',variant='default'}:{videos:VideoMaterial[];locale?:string;variant?:'default'|'compact'}){
  const [playing,setPlaying]=useState<string|null>(null)
  const [showAll,setShowAll]=useState(false)
  const t=labels[locale as keyof typeof labels]||labels.en
@@ -41,7 +41,7 @@ export default function PractitionerVideoGallery({videos,locale='en'}:{videos:Vi
   .sort((a,b)=>Number(b.video.locale===locale)-Number(a.video.locale===locale))
  if(!entries.length)return null
  const visible=showAll?entries:entries.slice(0,6)
- return <section id="practitioner-videos" className={styles.section} aria-labelledby="practitioner-video-gallery-title">
+ return <section id="practitioner-videos" className={styles.section+(variant==='compact'?' '+styles.compact:'')} aria-labelledby="practitioner-video-gallery-title">
   <header className={styles.header}>
    <p className="homeopathy-kicker">{t.eyebrow}</p>
    <h2 id="practitioner-video-gallery-title">{t.title}</h2>

@@ -16,6 +16,7 @@ const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:310
 const evidence = '/tmp/site-video-evidence'
 mkdirSync(evidence, { recursive: true })
 const results = []
+const skippedResults = []
 function pass(label) { results.push(label); console.log(`PASS: ${label}`) }
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 let server, app, browser
@@ -76,10 +77,16 @@ try {
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
-    let response = await page.goto(new URL(target, origin).href, options)
-    // Different placements can be anchors on the same Services page. A hash-only
-    // navigation makes no HTTP request and returns null. Reload to inspect the
-    // newly published server snapshot rather than the old document already open.
+    const destination = new URL(target, origin)
+    const previous = new URL(page.url())
+    // Multiple placements can share one Services path and differ by #anchor.
+    // Avoid dispatching an unnecessary Next.js same-document navigation, which
+    // does not request fresh publication data and can recurse through popstate.
+    const sameDocument = previous.origin === destination.origin &&
+      previous.pathname === destination.pathname && previous.search === destination.search
+    let response = sameDocument
+      ? await page.reload(options)
+      : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
@@ -90,7 +97,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -125,12 +132,42 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
+  let russianPresentationVerified = false
   for (const home of ['/', '/ru']) {
     await navigate(home)
+    // The withdrawn 2026-10-01 intro remains retired; this is a different
+    // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
+    const presentation = page.locator('[data-video-slot="home-presentation"]')
+    if (home === '/ru') {
+      // A production-domain check may run before this PR is deployed.
+      // Local/preview builds MUST show the approved RU presentation.
+      if (!live || await presentation.count()) {
+        await expect(presentation).toHaveCount(1)
+        await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
+        await expect(presentation.locator('iframe')).toHaveCount(0)
+        const play = presentation.locator('button.site-video-play')
+        await expect(play).toBeEnabled({ timeout: 30000 })
+        await play.click()
+        await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
+        russianPresentationVerified = true
+      }
+    } else if (await presentation.count()) {
+      // English is visible only if a separately approved English YouTube
+      // presentation exists; never reuse the Russian publication.
+      await expect(presentation).toHaveAttribute('data-video-locale', 'en')
+      await expect(presentation.locator('iframe')).toHaveCount(0)
+    }
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
   }
-  pass(`${live ? 'Production' : 'Local'}: EN/RU AI home intros hidden; Services and Homeopathy approved videos remain playable`)
+  pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
+  if (russianPresentationVerified) {
+    pass(`${live ? 'Production' : 'Local'}: approved RU presentation click-to-iframe verified`)
+  } else {
+    const skipped = 'SKIPPED: production RU presentation slot absent; click-to-iframe not verified'
+    skippedResults.push(skipped)
+    console.log(skipped)
+  }
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
@@ -174,22 +211,27 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      // Owner-approved RU guided-imagery video in data/service-video-library.ts,
+      // not the generic Russian overview used by Alchemy and constellations.
       ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
+      // The standalone systemic-constellations landing uses the owner's
+      // published business-constellations case, not the generic method video.
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      // FreeEntryLanding owns its own inline intro; it does not render the old
+      // ServiceVideoShowcase wrapper. The approved overview recording is kept.
+      ['/en/services/free-situation-review', 'free-review-intro', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const locator = route.endsWith('/free-situation-review')
-        ? '[data-free-review-intro-video]'
-        : topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`
-      const block = page.locator(locator)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' :
+        topic === 'free-review-intro' ? '[data-free-review-intro-video]' :
+        `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -198,7 +240,9 @@ try {
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000, message: `Playback on ${route} must match its approved source ${expectedUrl}` }).toBe(true)
+      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), {
+        timeout: 10000, message: `${route}: player must embed the exact approved public source ${expectedUrl}`,
+      }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
@@ -213,9 +257,21 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // About now shows ten verified archived public testimonials (6 EN, 4 RU
+  // with matching approved local posters). The two unverified-poster RU
+  // clips are excluded by PersonalTestimonials, never silently substituted.
+  const approvedReviewIds = [
+    'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
+    '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
+    'VABgpmn4ZYA', 'muOnIHllI7E',
+  ].sort()
+  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
+  await expect(aboutReviews).toHaveCount(approvedReviewIds.length)
+  const renderedIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+  assert.deepEqual(renderedIds, approvedReviewIds, 'About contains only the approved public testimonial originals')
+  await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten identity-matched public testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')

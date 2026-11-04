@@ -4,8 +4,8 @@ import {ownerVideoOauthStateMatches} from '@/lib/practitioners/owner-telegram-vi
 import {getAppConfig} from '@/lib/app/config'
 import {openSealed} from '@/lib/app/crypto'
 import {PRACTITIONER_ID} from '@/data/app-services'
-import {verifyYoutubeRuOwner} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
-import {saveOwnerVideoYoutubeConsent,ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-service'
+import {verifyYoutubeRuOwner,verifyYoutubeEnOwner} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
+import {saveOwnerVideoYoutubeConsent,ownerVideoOauthConfigured,ownerYoutubeExpectedChannel} from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 const COOKIE='hh_tgvideo_oauth_state'
@@ -45,13 +45,24 @@ export async function GET(request){
      body:payload,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(12000)})
    if(!response.ok)return result('failed')
    const token=await response.json().catch(()=>null)
+   const granted=new Set(String(token?.scope||'').split(/\s+/))
+   const editing=sealed.visibility===true
+   const target=sealed.target??'ru'
+   if(target!=='ru'&&target!=='en')return result('failed')
    if(!token||typeof token.refresh_token!=='string'||token.refresh_token.length<10||
      typeof token.access_token!=='string'||token.access_token.length<20||
-     !String(token.scope||'').includes('youtube.upload')||
-     !String(token.scope||'').includes('youtube.readonly'))
+     !granted.has('https://www.googleapis.com/auth/youtube.upload')||
+     !granted.has('https://www.googleapis.com/auth/youtube.readonly')||
+     (editing&&!granted.has('https://www.googleapis.com/auth/youtube.force-ssl')))
      return result('failed')
+   if(target==='en'){
+     const expected=await ownerYoutubeExpectedChannel('en')
+     const channel=await verifyYoutubeEnOwner(token.access_token,expected)
+     await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})
+     return result('en-connected')
+   }
    const channel=await verifyYoutubeRuOwner(token.access_token)
-   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel)
+   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing})
    return result('connected')
  }catch{return result('failed')}
 }

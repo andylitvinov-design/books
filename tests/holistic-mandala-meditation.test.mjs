@@ -66,6 +66,10 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   const client = read("components/mandala-meditation-client.tsx");
   const styles = read("components/mandala-meditation.module.css");
   assert.match(client, /setFocusMode\(/);
+  assert.match(client, /onClick=\{toggleFocusMode\}/);
+  assert.match(client, /function toggleFocusMode\(\) \{ setFocusMode\(value => !value\); \}/);
+  assert.doesNotMatch(client, /onPointerUp=|onPointerDown=|pointerHandledRef|onFocusPointerUp|onFocusClick/);
+  assert.doesNotMatch(client, /lastFocusPress/);
   assert.match(client, /event\.key === "Escape"/);
   assert.match(client, /document\.body\.style\.overflow = "hidden"/);
   assert.match(client, /aria-pressed=\{focusMode\}/);

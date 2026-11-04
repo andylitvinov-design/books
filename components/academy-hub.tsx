@@ -179,10 +179,62 @@ export function AcademyBackLink({ locale }: { locale: PublicLocale }) {
   return <Link className="library-back-link" href={"/" + locale + "/academy"}>← {academyCopy[locale].back}</Link>;
 }
 
+// Existing PsiMaster courses stay single-source records. These three links make the
+// historical Russian curricula discoverable without treating video excerpts as
+// complete new courses or duplicating the original source/media manifests.
+const restoredMysteryLinks = [
+  {
+    programId: "mysteries/maya-aztec/feathered-serpent",
+    videoIds: ["videos/maya-archetypes"],
+    description: "Мистерии Майя и Ацтеков: Пернатый Змей, Ицамна, Кинич Ахау и другие архетипы. Программа сохранена; доступны 6 оригинальных видео по архетипам Майя.",
+    videoCta: "Смотреть видео Майя",
+  },
+  {
+    programId: "mysteries/egypt/high-wisdom",
+    videoIds: ["videos/egypt-osiris"],
+    description: "Египетские мистерии: семь модулей о богах Египта — Осирис, Маат, Гор, Исида и другие. Видеоархив подтверждён для Осириса (7 уроков), остальные модули представлены программой.",
+    videoCta: "Смотреть видео Осириса",
+  },
+  {
+    programId: "mysteries/greece-rome/beauty-and-power",
+    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
+    description: "Греческие мистерии: шестимодульная программа «Красота и Сила Античности» о греческих архетипах. Оригинальные циклы Деметры (5 видео) и Диониса (7 видео) доступны отдельно.",
+    videoCta: "Смотреть цикл Деметры",
+  },
+] as const;
+
 export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale; view?: AcademyView }) {
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
   const hints = academyCourseHints[locale];
+  const psimasterRuPrograms = locale === "ru"
+    ? preferredAcademyRecords(locale, (record) =>
+      record.sourceProvider === "psimaster" && record.sourceLocale === "ru")
+    : [];
+  const availableMysteryVideos = new Map(
+    locale === "ru" ? videoRecords(locale).map((record) => [record.logicalId, record] as const) : [],
+  );
+  const restoredMysteryCards: AcademyCourseItem[] = locale === "ru"
+    ? restoredMysteryLinks.flatMap((entry, index) => {
+      const record = psimasterRuPrograms.find((item) => item.logicalId === entry.programId);
+      if (!record) return [];
+      const originalVideo = entry.videoIds
+        .map((id) => availableMysteryVideos.get(id))
+        .find((video) => video && mediaForRecord(video).some((media) => Boolean(youtubeIdFromUrl(media.mediaUrl))));
+      return [{
+        id: "academy-restored-" + entry.programId.replaceAll("/", "-"),
+        title: academyDisplayTitle(record, locale),
+        subtitle: "МИСТЕРИИ · ОРИГИНАЛ НА РУССКОМ",
+        description: entry.description,
+        href: "/" + locale + "/academy/" + record.routeKey,
+        courseHref: originalVideo ? "/" + locale + "/academy/" + originalVideo.routeKey : undefined,
+        takeLabel: originalVideo ? entry.videoCta : undefined,
+        actionLabel: originalVideo ? entry.videoCta : action.program,
+        image: originalVideo ? recordImage(originalVideo) : recordImage(record, index),
+        archiveKind: "course" as const,
+      }];
+    })
+    : [];
   // Personal Coaching is a standalone service, excluded from the course count.
   const coachingItem: AcademyCourseItem = {
       id: "academy-free-personal-coaching",
@@ -276,6 +328,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
           actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
         },
+        ...restoredMysteryCards,
         {
           id: "academy-featured-yggdrasil",
           detailsHint: hints.yggdrasilFull,
@@ -353,9 +406,9 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   // Preserve historical source routes, but never advertise a Russian-language
   // lesson as if the English / Spanish catalogue offered an English recording.
   const legacyCourses: AcademyArchiveButton[] = locale === "ru"
-    ? preferredAcademyRecords(locale, (record) =>
-      record.sourceProvider === "psimaster" && record.sourceLocale === "ru"
-    ).map((record, index) => ({
+    ? psimasterRuPrograms
+      .filter((record) => !restoredMysteryLinks.some((entry) => entry.programId === record.logicalId))
+      .map((record, index) => ({
       id: record.logicalId,
       title: academyDisplayTitle(record, locale),
       subtitle: record.status === "archive_only" ? "ТОЛЬКО АРХИВ" : "ИСТОРИЧЕСКАЯ ПРОГРАММА · НА РУССКОМ",

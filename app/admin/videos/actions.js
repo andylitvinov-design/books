@@ -80,6 +80,12 @@ export async function saveSiteVideoAction(input) {
   revalidatePath(page)
   // The same consultation video is deliberately reused beside both consultation entry points.
   if (record.slot === 'consultation') revalidatePath(`/${record.locale}/about`)
+  // The authenticated editor updates its own client records immediately. A
+  // revalidatePath('/admin/videos') here refreshes the active Server Action
+  // route and can remount the form before the saved/published announcement is
+  // read (observed during the second language's real browser publication).
+  // The next navigation reads the authoritative store and the explicit
+  // Refresh action fetches fresh records; public destinations remain revalidated.
   // Refresh this same master's gallery across all three languages. Never
   // invalidate client cabinets; only verified public master profile pages.
   const affectedMasters = new Set([previous?.published?.practitionerSlug, record.published?.practitionerSlug])
@@ -87,6 +93,5 @@ export async function saveSiteVideoAction(input) {
     if (typeof slug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) continue
     for (const language of ['en', 'ru', 'es']) revalidatePath('/' + language + '/masters/' + slug)
   }
-  revalidatePath('/admin/videos')
   return { ok: true, record }
 }

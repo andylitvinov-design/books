@@ -1,8 +1,12 @@
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { AlchemySoulLanding } from "@/components/alchemy-soul-landing";
+import { AlchemyServiceReviews } from "@/components/alchemy-service-reviews";
 import { DistanceHomeopathyGuide } from "@/components/distance-homeopathy-guide";
 import { spanishMetadata } from "@/lib/spanish-metadata";
 import styles from "@/components/alchemy-soul-landing.module.css";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = spanishMetadata(
   "/es/services/alchemy-of-soul",
@@ -15,6 +19,7 @@ export default function SpanishAlchemyOfTheSoulPage() {
     <>
       <PublicSiteHeader locale="es" />
       <AlchemySoulLanding locale="es" />
+      <AlchemyServiceReviews locale="es" />
       <details className={styles.guideDisclosure} data-alchemy-extended-guide>
         <summary>Lectura opcional: guía completa sobre homeopatía a distancia</summary>
         <DistanceHomeopathyGuide locale="es" embedded />

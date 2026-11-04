@@ -44,7 +44,9 @@ export default async function ServiceDetail({params}:PageProps){
   const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
-  const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
+  const isFree=service.reikiOffer
+    ? service.reikiOffer.variants.length>0&&service.reikiOffer.variants.every(variant=>variant.price===0)
+    : service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
   const price=isFree?(ru?"Бесплатно":es?"Gratis":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":es?"desde ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":es?"Precio acordado antes de reservar":"Price agreed before booking";
   const requestHref=service.slug === "remote-energy-support"
     ? `/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(practitioner.slug)}`
@@ -92,6 +94,39 @@ export default async function ServiceDetail({params}:PageProps){
         <p className={styles.bookingNote}>{bookingNote}</p>
       </div>
     </section>
+    {service.reikiOffer&&<section className={styles.reikiOffers} data-public-reiki-options
+      aria-label={ru?"Опубликованные варианты Рейки":es?"Opciones Reiki publicadas":"Published Reiki options"}>
+      <div>
+        <h2>{ru?"Варианты Рейки и цены":es?"Opciones Reiki y precios":"Reiki options and prices"}</h2>
+        <p>{ru?"Стоимость зависит от отчёта, длительности и сертификата. Условия и время подтверждает мастер до оплаты."
+          :es?"El importe depende del informe, la duración y el certificado. El profesional confirma los detalles antes de cobrar."
+          :"The selected report, duration and certificate determine the price. Your practitioner confirms availability before payment."}</p>
+      </div>
+      <div className={styles.reikiOfferGrid}>
+        {service.reikiOffer.variants.map((variant,index)=><article key={index} className={styles.reikiOfferCard}>
+          <strong>{service.reikiOffer!.kind==="session"
+            ? ru?"Рейки-поддержка":es?"Apoyo Reiki":"Reiki support"
+            : service.reikiOffer!.kind==="initiation"
+              ? ru?"Инициация":es?"Iniciación":"Initiation"
+              : ru?"Курс обучения":es?"Curso":"Training course"}</strong>
+          <span>{variant.duration?variant.duration+" min · ":""}{
+            variant.report==="brief"?(ru?"Краткий отчёт":es?"Informe breve":"Brief report"):
+            variant.report==="text"?(ru?"Личный разбор текстом":es?"Informe personal escrito":"Personal written review"):
+            ru?"Личный разбор голосом":es?"Informe personal por voz":"Personal voice review"
+          }</span>
+          {service.reikiOffer!.kind!=="session"&&<small>{variant.certificate
+            ?ru?"С сертификатом (выдача подтверждается)":es?"Con certificado (pendiente de confirmación)":"With certificate (issuance to be confirmed)"
+            :ru?"Без сертификата":es?"Sin certificado":"Without certificate"}</small>}
+          <b>{variant.price===0?(ru?"Бесплатно":es?"Gratis":"Free"):
+            new Intl.NumberFormat(locale,{style:"currency",currency:service.reikiOffer!.currency}).format(variant.price)}</b>
+        </article>)}
+      </div>
+      <p className={styles.reikiOfferFootnote}>{ru?"Сроки, указанные мастером: ":es?"Plazos indicados por el profesional: ":"Practitioner-advertised timings: "}
+        {service.reikiOffer.timings.map(value=>value==="day"?(ru?"до 24 часов":es?"24 horas":"24 hours"):
+          value==="days"?(ru?"до 3 дней":es?"3 días":"3 days"):(ru?"выбранный час":es?"hora elegida":"chosen hour")).join(" · ")||
+          (ru?"по договорённости":es?"a convenir":"by agreement")}.
+      </p>
+    </section>}
     {(service.photos||[]).length>0&&<section className={mediaStyles.gallery} aria-label={ru?"Фотографии услуги":es?"Fotos del servicio":"Service photos"}>{(service.photos||[]).map((src,i)=><img key={src} src={src} alt={service.copy.title+" — "+(i+1)} loading="lazy" />)}</section>}
     <section className={`services-studio-approach ${styles.approach}`}>
       <div><p className="homeopathy-kicker">{ru?"Практик":es?"Profesional":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":es?"Credenciales verificadas":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">{es?"Colaborador de Holistic House":"Holistic House Partner"}</p>}</div>
@@ -100,7 +135,7 @@ export default async function ServiceDetail({params}:PageProps){
       {(service.faq||[]).length>0&&<details><summary>FAQ</summary><ul>{service.faq?.map((question,i)=><li key={i}>{question}</li>)}</ul></details>}
       <div className="hh-actions">{service.whatsapp&&<TrackedServiceExternalLink serviceId={service.id} event="whatsapp" href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</TrackedServiceExternalLink>}{service.telegram&&<TrackedServiceExternalLink serviceId={service.id} event="telegram" href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</TrackedServiceExternalLink>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
-    <div className={styles.reviews}><ServiceReviews serviceId={service.id} locale={locale}/></div>
+    <div className={styles.reviews}><ServiceReviews serviceId={service.id} locale={locale} verifiedOnly={service.slug === "remote-energy-support"}/></div>
     <nav className={styles.bottomActions} aria-label={ru?"Следующий шаг":es?"Próximo paso":"Next step"}>
       <TrackedServiceLink serviceId={service.id} event="order" className={styles.bottomPrimary} href={requestHref}>{bookingLabel} →</TrackedServiceLink>
       <Link href={`/${locale}/services`}>{ru?"Другие услуги":es?"Otros servicios":"Explore other services"} →</Link>

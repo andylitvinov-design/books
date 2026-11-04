@@ -4,6 +4,7 @@ import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
+import { readPublicEnquiryAttribution } from '@/lib/analytics/enquiry-attribution.mjs'
 import { SESSION_BOOKING_COOKIE, SESSION_BOOKING_TTL, isAlchemyBooking, signSessionBooking } from '@/lib/practitioners/public-session-booking.mjs'
 import { FREE_EXPRESS_COOKIE, FREE_EXPRESS_TTL_SECONDS, createFreeExpressToken, isFreeExpressRequest } from '@/lib/practitioners/free-express-continuation.mjs'
 
@@ -20,13 +21,13 @@ export async function POST(request) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     await consumeRate(config, { op: 'guest-service-enquiry', ip }, 6, 3600)
     const payload = await readBody(request, 8192)
-    const result = await createPublicServiceEnquiry(config, payload)
-    if (result.saved === true && result.contactPending === false) {
+    const result = await createPublicServiceEnquiry(config, payload, readPublicEnquiryAttribution(request))
+    if (result.saved === true) {
       // The committed enquiry is authoritative; optional provider work must
       // never turn a saved lead into a browser-side error or leak private text.
       after(async () => {
         try {
-          const delivery = await dispatchPublicServiceEnquiryTelegram(config, result.id)
+          const delivery = await dispatchPublicServiceEnquiryTelegram(config, result.id, payload.operationId)
           if (delivery.attempted > 0 && delivery.accepted !== 1)
             console.error('HH_PUBLIC_ENQUIRY_OWNER_TG_UNCONFIRMED')
         } catch {

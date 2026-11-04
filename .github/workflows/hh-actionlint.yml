@@ -1,0 +1,147 @@
+name: HH workflow syntax — actionlint
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/**'
+      - 'tests/ci-workflow-globs.test.mjs'
+      - 'tests/pr-fast-lane.test.mjs'
+      - 'scripts/ci-deterministic-eslint-repair.mjs'
+      - 'tests/ci-deterministic-eslint-repair.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-workflow-lint-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+jobs:
+  validate-workflows:
+    name: actionlint-changed
+    runs-on: ubuntu-slim
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Pin exact PR event base before shallow changed-workflow audit
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD^2 2>/dev/null)" == "$PR_HEAD_SHA" ]] || {
+            echo 'Unexpected PR merge checkout: changed workflow audit must be exact-head.' >&2
+            exit 1
+          }
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          git cat-file -e "$BASE_SHA^{commit}"
+          echo 'Event base pinned for exact workflow diff (no full-history clone).' >> "$GITHUB_STEP_SUMMARY"
+      - name: Fast zero-install CI policy contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Fail cheap, on ubuntu-slim: do not wait for the production Core
+          # runner to discover a deterministic unit-contract typo.
+          # These tests use only Node built-ins and do not run npm install.
+          if [[ -f tests/pr-fast-lane.test.mjs ]]; then
+            node --test tests/pr-fast-lane.test.mjs
+          fi
+          if [[ -f tests/ci-deterministic-eslint-repair.test.mjs ]]; then
+            [[ -f scripts/ci-deterministic-eslint-repair.mjs ]] || {
+              echo 'Repair contract exists but its worker source is missing' >&2
+              exit 1
+            }
+            node --test tests/ci-deterministic-eslint-repair.test.mjs
+          fi
+      - name: Install checksum-verified actionlint v1.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz' \
+            --output "$archive"
+          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          printf '%s\n' "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Validate all registered workflows (including unchanged baseline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=()
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+          if (( ${#files[@]} == 0 )); then
+            echo 'No workflow YAML files found; refusing empty validation' >&2
+            exit 1
+          fi
+          printf 'Full workflow validation: %s definitions\n' "${#files[@]}" >> "$GITHUB_STEP_SUMMARY"
+          # Full baseline syntax/expression audit: historical shell warnings are
+          # inventoried separately; changed workflows still get strict shellcheck.
+          actionlint -shellcheck= -color "${files[@]}"
+      - name: Regression checks for dynamic route filters and CI event scope
+        run: node --test tests/ci-workflow-globs.test.mjs
+      - name: Validate all exact changed workflow definitions
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          files=()
+          if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+            while IFS= read -r -d '' file; do
+              [[ -f "$file" ]] && files+=("$file")
+            done < <(git diff --name-only -z "$BASE_SHA" HEAD -- '.github/workflows/')
+          else
+            while IFS= read -r -d '' file; do
+              files+=("$file")
+            done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+          fi
+          if (( ${#files[@]} == 0 )); then
+            # A verified deletion-only migration has no current YAML to shellcheck.
+            # The previous step validated ALL remaining workflow definitions;
+            # BASE-trusted release-ready requires an explicit mapped replacement.
+            deleted_only=false
+            if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+              saw_deletion=false
+              deleted_only=true
+              while IFS= read -r -d '' status && IFS= read -r -d '' filename; do
+                saw_deletion=true
+                [[ -n "$filename" && "$status" == D ]] || deleted_only=false
+              done < <(git diff --no-renames --name-status -z "$BASE_SHA" HEAD -- '.github/workflows/')
+              [[ "$saw_deletion" == true ]] || deleted_only=false
+            fi
+            if [[ "$deleted_only" == true ]]; then
+              echo 'Deletion-only YAML changes: all current definitions passed actionlint; BASE-trusted exact-head replacement validation remains mandatory.' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            # Script/test-only edits also trigger this lightweight CI contract
+            # workflow. All baseline YAML was validated above; the exact
+            # contract test already ran before downloading actionlint.
+            if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+              contract_changed=false
+              while IFS= read -r -d '' contract; do
+                [[ -n "$contract" ]] && contract_changed=true
+              done < <(git diff --name-only -z "$BASE_SHA" HEAD -- \
+                'tests/ci-workflow-globs.test.mjs' \
+                'tests/pr-fast-lane.test.mjs' \
+                'scripts/ci-deterministic-eslint-repair.mjs' \
+                'tests/ci-deterministic-eslint-repair.test.mjs')
+              if [[ "$contract_changed" == true ]]; then
+                echo 'CI contract-only trigger: baseline actionlint and fast unit contracts passed; no changed workflow YAML.' >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+            fi
+            echo 'Workflow filter triggered but no changed YAML is available; refusing unverified changes.' >&2
+            exit 1
+          fi
+          printf '%s\n' "${files[@]}" >> "$GITHUB_STEP_SUMMARY"
+          actionlint -color "${files[@]}"

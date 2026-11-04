@@ -9,53 +9,107 @@ const page = read("app/[locale]/holistic-support/mobile/page.tsx");
 const banner = read("components/sitewide-antistress-banner.tsx");
 const original = read("app/[locale]/holistic-support/page.tsx");
 
-test("alternative mobile workspace omits only the heavy public header and sitewide marketing ribbon", () => {
+test("mobile alternative preserves standard Support and excludes redundant marketing header", () => {
   assert.doesNotMatch(page, /PublicSiteHeader/);
   assert.match(client, /data-support-app-header/);
-  assert.match(client, /Holistic House/);
+  assert.match(css, /\.compactAppHeader \{ display: none; \}/);
   assert.match(banner, /holistic-support\\\/mobile/);
   assert.match(original, /PublicSiteHeader/);
   assert.match(original, /HolisticSupportChoices/);
 });
 
-test("mobile screenshot feedback: check-in and support choices share a first-row grid; avatar is the second row", () => {
-  assert.match(css, /@media \(max-width: 640px\)\s*\{/);
-  assert.match(css, /@media \(max-width: 375px\)\s*\{/);
-  assert.match(css, /grid-template-areas:\s*"assessment tools" "profile profile"/);
-  assert.match(css, /\.assessment\s*\{ grid-area: assessment;/);
-  assert.match(css, /\.tools\s*\{ grid-area: tools;/);
-  assert.match(css, /\.profile\s*\{[\s\S]*?grid-area: profile/);
-  assert.match(css, /\.scaleList\s*\{ grid-template-columns: 1fr;/);
-  assert.match(css, /\.toolButton\s*\{ min-width: 0; min-height: 91px/);
-  assert.match(css, /\.photo\s*\{ grid-row: 1 \/ 3;/);
-  assert.match(css, /\.recommendButton\s*\{ grid-row: 2;/);
+test("original screenshot: three zones in one compact row and 4 prominent 2x2 action tiles", () => {
+  assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /@media \(max-width: 350px\)/);
+  assert.match(css, /grid-template-areas: "assessment profile tools"/);
+  assert.match(css, /\.scaleDetail \{ display: contents; \}/);
+  assert.match(css, /\.scaleLabel \{ grid-column: 1 \/ 3; grid-row: 1;/);
+  assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-rows: repeat\(2,minmax\(0,77px\)\)/);
+  assert.match(css, /\.toolMicro \{ display: block;/);
+  assert.match(css, /\.photo \{ align-self: center;/);
+  assert.match(client, /support-reference-avatar\.webp/);
+  assert.match(client, /support-mock-hero\.webp/);
+  assert.match(css, /support-mock-video-posters\.webp/);
+  assert.match(client, /choices\.filter\(item => item\.id !== "pump"\)/);
+  assert.match(client, /data-support-tool="pump"/);
+  assert.match(client, /className=\{styles\.toolShortcuts\}/);
+  assert.match(client, /data-support-tool="masters"/);
+  assert.match(client, /className=\{styles\.recommendShort\}/);
   assert.match(client, /type="range" min="1" max="10"/);
-  assert.match(client, /aria-valuetext/);
   assert.match(client, /URL\.createObjectURL/);
 });
 
-test("Master, Program and Topic buttons are all visible in one row, not clipped by a horizontal scroller", () => {
-  assert.match(css, /\.heroFilters\s*\{ display: grid; grid-template-columns: repeat\(3, minmax\(0,1fr\)\)/);
-  assert.match(css, /\.heroMode\s*\{ display: none;/);
-  assert.match(css, /\.heroFilter\s*\{[\s\S]*?min-width: 0;/);
-  assert.match(css, /\.heroFilter select\s*\{[\s\S]*?position: absolute;[\s\S]*?opacity: 0;/);
-  assert.match(client, /className=\{styles\.filterValue\}/);
-  assert.match(client, /t\.master/);
-  assert.match(client, /t\.program/);
-  assert.match(client, /t\.theme/);
-  assert.match(css, /\.hero\[data-playing="true"\] \.heroFilters/);
+test("reference avatar is a real WebP, and 4 nature posters/hero are bundled", () => {
+  for (const filename of [
+    "support-reference-avatar.webp", "support-mock-hero.webp", "support-mock-video-posters.webp",
+  ]) {
+    const bytes=readFileSync(new URL("../public/images/holistic-house/"+filename, import.meta.url));
+    assert.equal(bytes.toString("ascii",0,4),"RIFF",filename+" RIFF");
+    assert.equal(bytes.toString("ascii",8,12),"WEBP",filename+" WEBP");
+    assert.ok(bytes.length>1000,filename+" non-empty");
+  }
 });
 
-test("only four source-backed recording cards appear in a single swipeable mobile rail", () => {
+test("scenic player keeps four visible filters and source-backed recordings", () => {
+  assert.match(css, /grid-template-columns: minmax\(0,1.19fr\) repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.heroMode \{ display: flex;/);
+  assert.match(css, /\.heroFilter select \{ position: absolute;/);
+  assert.match(client, /className=\{styles\.filterValue\}/);
+  for (const name of ["master","program","theme"]) assert.ok(client.includes("t."+name));
+  assert.match(css, /\.hero\[data-playing="true"\] \.heroFilters/);
+  assert.match(client, /data-support-player data-playing=/);
   assert.match(client, /\.slice\(0, 4\)/);
-  assert.match(css, /grid-auto-flow: column; grid-auto-columns: minmax\(156px, 45%\)/);
-  assert.match(css, /scroll-snap-type: x mandatory/);
-  assert.match(client, /progressTotal = relevantVideos\.length/);
-  assert.match(client, /progressCount = relevantVideos\.filter/);
+  assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css, /scroll-snap-type: none/);
+  assert.match(client, /shortVideoTitle\(video.title, locale\)/);
+  assert.match(client, /aria-label=\{video.title\}/);
   assert.match(page, /freeMeditationVideos\("ru"\)/);
   assert.match(page, /englishGuidedMeditations/);
   assert.match(client, /onClick=\{startVideo\}/);
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /safe-area-inset-bottom/);
+  assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
+});
+
+test("progress is derived from opens and four self-ratings, never fake streaks", () => {
+  assert.match(client, /progressTotal = relevantVideos\.length/);
+  assert.match(client, /progressCount = relevantVideos\.filter/);
+  assert.match(client, /averageScore = \(checkinOrder\.reduce/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.match(client, /className=\{styles\.progressStarted\}/);
+  assert.match(client, /className=\{styles\.progressAverage\}/);
+  assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);
+});
+
+
+test("approved screenshot uses scenic video first; every category has matching thumbnail navigation", () => {
+  const masters = read("components/holistic-support-master-gallery.tsx");
+  const talisman = read("components/holistic-support-talisman-viewer.tsx");
+  const talismanCss = read("components/holistic-support-talisman-viewer.module.css");
+  assert.ok(client.indexOf('data-support-player data-playing=') <
+    client.indexOf('id="support-meditation-gallery"'),
+    "big original meditation player must precede thumbnails");
+  assert.match(client, /data-support-tool="masters"/);
+  assert.match(client, /HolisticSupportMasterGallery locale=\{locale\} kind=\{choice\}/);
+  assert.match(client, /HolisticSupportMasterGallery locale=\{locale\} kind="consultation"/);
+  assert.match(masters, /data-support-master-hero/);
+  assert.match(masters, /data-support-master-rail/);
+  assert.match(masters, /data-support-master-request/);
+  assert.match(masters, /data-support-offer-request/);
+  assert.match(talisman, /data-support-talisman-rail/);
+  assert.match(talismanCss, /\.rail\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
+
+test("mobile screenshot acceptance runs all 18 isolated cases with bounded concurrency", () => {
+  const script = read("scripts/verify-holistic-support-mock-fidelity.mjs");
+  assert.match(script, /supportCases = \["ru", "en", "es"\]\.flatMap/);
+  assert.match(script, /\[320, 390, 430\]\.map\(width/);
+  assert.match(script, /\[chromium, webkit\]/);
+  assert.match(script, /Promise\.allSettled\(supportCases\.slice\(from, from \+ 2\)/);
+  assert.match(script, /if \(rejected\) throw rejected\.reason/);
+  assert.match(script, /assert\.equal\(evidence\.length, 18/);
+  assert.match(script, /await page\.close\(\)/);
+  assert.match(script, /serviceWorkers: "block"/);
 });

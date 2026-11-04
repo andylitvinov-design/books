@@ -7,20 +7,20 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · FREE APP",
     title: "Keep Holistic House on your phone",
-    description: "Install free on iPhone or Android, without an app store. Open your private Cabinet from its own Home Screen icon.",
-    action: "Install for free",
+    description: "Install the free Home Screen web app today with Messenger inside. Signed native releases will appear after verification.",
+    action: "Install free web app", 
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНО",
     title: "Holistic House на вашем телефоне",
-    description: "Установите бесплатно на iPhone или Android без магазина приложений. Открывайте личный кабинет с отдельной иконки.",
-    action: "Установить бесплатно",
+    description: "Установите бесплатное веб-приложение на экран iPhone или Android уже сейчас. Мессенджер внутри, нативные версии готовятся.",
+    action: "Установить на телефон", 
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · APP GRATIS",
     title: "Holistic House en tu teléfono",
-    description: "Instala gratis en iPhone o Android, sin tienda de aplicaciones. Abre tu espacio privado desde su propio icono.",
-    action: "Instalar gratis",
+    description: "Instala hoy la aplicación web gratuita en la pantalla de inicio con mensajería. Las versiones nativas aún se preparan.",
+    action: "Instalar gratis", 
   },
 } as const;
 
