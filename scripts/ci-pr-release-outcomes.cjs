@@ -3,6 +3,7 @@
 const fs=require('node:fs');
 const {trustedContext}=require('./ci-pr-live-verifier.cjs');
 const {verifyServedRevision}=require('./ci-pr-served-release.cjs');
+const {reconcileMergeLive}=require('./ci-pr-merge-live-tracking.cjs');
 const PROD='codex/public-book-library', DEFAULT='codex/bootstrap-books';
 const ALIAS='holistichouse.vercel.app', SHA=/^[0-9a-f]{40}$/i;
 const HOUR=3600000, WINDOW_HOURS=24, PAGE_LIMIT=5, ANCESTRY_LIMIT=200, HISTORY_PAGES=10;
@@ -138,7 +139,7 @@ async function confirmedAncestry(github,{owner,repo},prs,servedSha){
   historyPages,historyCommits,historyHits,historyFailed,
   capped:prs.length>ANCESTRY_LIMIT};
 }
-async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch,vercelToken=''}){
+async function run({github,core,context,liveEvidence={},functionalSmokeReceipts=[],now=Date.now(),reportPath='',fetchImpl=fetch,vercelToken=''}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
   window_hours:WINDOW_HOURS,control_branch:DEFAULT,production_branch:PROD,
   public_alias:ALIAS,merged_scope:'PRODUCTION_BRANCH_ONLY',
@@ -149,7 +150,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   live_coverage:'UNVERIFIED',merged_coverage:'UNVERIFIED',
   core:null,pr_to_merge_p50_minutes:null,pr_to_merge_p90_minutes:null,
   merge_to_live_observation_upper_bound_p50_minutes:null,
-  sampled_prs:[],ancestry:null,receipt_candidate:null,errors:[]};
+  sampled_prs:[],ancestry:null,receipt_candidate:null,merge_live_tracking:null,errors:[]};
  const finish=async()=>{
   if(reportPath){try{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');}
     catch(err){report.errors.push('WRITE_REPORT_'+String(err.code||'error'));}}
@@ -260,6 +261,15 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   report.live_confirmed_count=0;report.unverified_live_count=0;
   report.live_coverage='complete_current_head';
  }
+ // This additional, separately named KPI requires a PR-specific post-deploy
+ // functional smoke; a healthy homepage or generic READY never counts as it.
+ // Receipts are supplied by the existing trusted :00 LIVE owner, not fetched
+ // by a new poller, runner, workflow or Vercel cron.
+ report.merge_live_tracking=reconcileMergeLive({prs,
+  confirmedPrNumbers:report.live_confirmed_count===null?null:confirmed,
+  productionEvidence:actualLive,smokeReceipts:functionalSmokeReceipts,
+  observedAt:report.observed_at,mergedCoverage:report.merged_coverage,
+  ancestryComplete:report.ancestry?.coverage==='complete'});
  report.sampled_prs=prs.slice(0,20).map(pr=>({
   number:pr.number,base_branch:PROD,merged_sha:pr.merge_commit_sha||null,
   merged_at:pr.merged_at,
