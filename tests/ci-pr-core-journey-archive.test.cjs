@@ -47,7 +47,7 @@ test('archive updates same run idempotently',async()=>{
    eventName:'workflow_run',payload:{workflow_run:event}};
  assert.equal((await archive({github,context})).status,'ARCHIVED');
  assert.equal((await archive({github,context})).status,'ARCHIVED');
- assert.equal(parseShard(body,'2026-11-04T14').runs.length,1);
+ assert.equal(parseShard(body,'2026-11-04T14-success').runs.length,1);
 });
 test('quota reserve prevents writes',async()=>{
  let writes=0;
