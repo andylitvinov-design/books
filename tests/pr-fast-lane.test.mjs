@@ -301,8 +301,9 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
     const run = (command, args, extra = {}, allowFailure = false) => {
       const options = { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 };
       let result = spawnSync(command, args, options);
-      // On a busy runner only an idempotent cold fixture initialization can retry.
-      // Never retry classifier checks, failed commits, or security assertions.
+      // On a busy ubuntu-slim runner, the first cold git init can time out.
+      // Retry only this idempotent fixture setup command, not classifier logic,
+      // failed Git commits, or negative safety assertions.
       if (command === 'git' && args[2] === 'init' && result.error?.code === 'ETIMEDOUT') {
         console.warn('Fast-lane fixture: cold git init timed out; retrying once');
         result = spawnSync(command, args, { ...options, timeout: 30_000 });
