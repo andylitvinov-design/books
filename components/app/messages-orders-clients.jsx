@@ -225,8 +225,9 @@ export default function MessagesOrdersClients({locale='en',children}){
         (visual?.height||window.innerHeight)<window.innerHeight*0.75)
       hub.dataset.chatEditing=editing?'true':'false'
       hub.dataset.keyboardOpen=keyboard?'true':'false'
-      const docks=[...document.querySelectorAll('[data-hh-unified-dock],.hh-messages-page .hh-mobile-app-nav')]
-      const dock=docks.find(el=>getComputedStyle(el).display!=='none'&&
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const fallbackDock=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const dock=[sharedDock,fallbackDock].find(el=>el&&getComputedStyle(el).display!=='none'&&
         el.getBoundingClientRect().height>0)
       const navTop=dock?.getBoundingClientRect().top
       const limit=editing?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
