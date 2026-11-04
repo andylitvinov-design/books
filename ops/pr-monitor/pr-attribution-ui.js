@@ -7,7 +7,19 @@
     created_to_first_ci:'Создание → первый CI',runner_wait:'Ожидание runner',
     checks:'Проверки CI',repair_after_failure:'Исправления после ошибок',
     conflict_resolution:'Разрешение конфликтов',repeat_ci:'Повторные CI',
-    waiting_merge:'CI green → merge',unattributed:'Нераспределённое время'
+    waiting_merge:'CI green → merge',unattributed:'Периоды без доказанной причины'
+  };
+  const gapLabels={
+    created_to_first_observed_event:'После создания PR, до первого события',
+    failed_ci_to_next_event:'После ошибки CI → следующее событие',
+    green_ci_to_next_event:'После зелёного CI → следующее событие',
+    source_published_to_next_event:'После изменения кода → следующее событие',
+    repair_started_without_verified_publish:'После начала Repair без подтверждённой публикации',
+    conflict_mark_to_next_event:'Метка конфликта → следующее событие',
+    between_ci_events:'Между CI jobs и событиями',
+    between_pr_events:'Между событиями PR',
+    ambiguous_overlap:'Неподтверждённое пересечение источников',
+    missing_evidence:'История событий отсутствует'
   };
   const showTime=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
     day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -51,8 +63,8 @@
     line.append(title);
     for(const [k,v] of [
       ['Полное время',fmtMin(data.elapsed_minutes)],
-      ['Подтверждено',`${data.accounted_percent}%`],
-      ['Нераспределено',fmtMin(data.unattributed_minutes)],
+      ['Причина подтверждена',`${data.accounted_percent}%`],
+      ['Без доказанной причины',fmtMin(data.unattributed_minutes)],
       ['Повторные CI',data.repeated_attempts],
       ['Ошибки checks',data.failures]]){
       const box=elt('div','hh-pr-audit-stat');box.append(elt('small',null,k),elt('strong',null,v));line.append(box);
@@ -96,7 +108,16 @@
 
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',
-        'История источников неполная: временные промежутки без записей остаются нераспределёнными.'));
+        'История GitHub неполная: пропущенные события не означают ноль минут или простой исполнителя.'));
+    }
+    result.append(elt('p','hh-pr-audit-stamp',
+      'Доказанная причина ≠ наблюдаемый промежуток. Границы этапов подтверждены GitHub, но без парных событий нельзя приписывать всё время ожиданию runner, ремонту или человеку.'));
+    const rawUnknownMs=(data.stage_totals_ms?.unattributed ?? Math.round(Number(data.unattributed_minutes||0)*60000));
+    const groupedMs=Object.values(data.gap_context_ms||{}).reduce((sum,ms)=>sum+(Number.isSafeInteger(ms)&&ms>=0?ms:0),0);
+    const groupedValid=!!data.gap_context_ms&&Object.values(data.gap_context_ms).every(ms=>Number.isSafeInteger(ms)&&ms>=0)&&groupedMs===rawUnknownMs;
+    if(data.gap_context_ms&&!groupedValid){
+      result.append(elt('p','hh-pr-audit-alert',
+        'Сумма контекстных интервалов не совпала с длительностью PR. Показываем исходные GitHub-интервалы без распределения по категориям.'));
     }
     const categories=elt('div','hh-pr-audit-stages');
     for(const [key,title] of Object.entries(label)){
@@ -108,7 +129,33 @@
         elt('b',null,total>0?fmtMin(total):'Нет подтверждения'));
       details.append(summary);
       if(!relevant.length)details.append(elt('p','hh-pr-audit-none','Подтверждённых интервалов нет. Это не означает, что этап занимал 0 минут.'));
-      for(const row of relevant){
+      if(key==='unattributed'&&groupedValid){
+        const grouped=[...Object.entries(data.gap_context_ms)]
+          .filter(([,ms])=>ms>0).sort((a,b)=>b[1]-a[1]);
+        for(const [kind,ms] of grouped){
+          const subgroup=elt('details','hh-pr-audit-stage');
+          const subgroupTitle=elt('summary');
+          subgroupTitle.append(elt('span',null,gapLabels[kind]||'Неидентифицированные события'),
+            elt('b',null,fmtMin(ms)));
+          subgroup.append(subgroupTitle);
+          for(const row of relevant.filter(x=>(x.substage||'unknown')===kind)){
+            const item=elt('div','hh-pr-audit-interval');
+            item.append(elt('div','hh-pr-audit-clock',`${fmtDate(row.start_at)} → ${fmtDate(row.end_at)}`),
+              elt('strong','hh-pr-audit-duration',fmtMin(row.duration_minutes)),
+              elt('p',null,row.reason||'Реальная причина этого промежутка не установлена'));
+            const links=elt('div','hh-pr-audit-links');
+            for(const [i,u] of (row.evidence_urls||[]).entries()){
+              const href=link(u);if(!href)continue;
+              const a=elt('a',null,i===0?'Начальное событие GitHub':'Следующее событие / PR');
+              a.href=href;a.target='_blank';a.rel='noopener noreferrer';links.append(a);
+            }
+            if(links.childElementCount)item.append(links);
+            subgroup.append(item);
+          }
+          details.append(subgroup);
+        }
+      }
+      for(const row of key==='unattributed'&&groupedValid?[]:relevant){
         const item=elt('div','hh-pr-audit-interval');
         item.append(elt('div','hh-pr-audit-clock',`${fmtDate(row.start_at)} → ${fmtDate(row.end_at)}`),
           elt('strong','hh-pr-audit-duration',fmtMin(row.duration_minutes)),
@@ -142,7 +189,7 @@
     else section.append(table);
     result.append(section);
     result.append(elt('p','hh-pr-audit-foot',
-      'Повторный CI включает только подтверждённую очередь и выполнение. При параллельных jobs их wall-clock учитывается один раз. Незаписанные ожидания, включая промежутки после ошибок, остаются нераспределёнными.'));
+      'Повторный CI включает только подтверждённую очередь и выполнение. Параллельные jobs учитываются по общей длительности PR один раз. Контекстные промежутки показывают событие до/после, но не доказывают причину задержки.'));
   }
   async function load(n){
     if(active)active.abort();active=new AbortController();
