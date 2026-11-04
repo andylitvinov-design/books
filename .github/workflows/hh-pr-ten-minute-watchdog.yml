@@ -61,11 +61,9 @@ permissions:
   pull-requests: write
 jobs:
   reconcile:
-    # Skipped successful Core callbacks do not contend for the real worker lease.
-    # Each failed-Core PR has an independent exact-branch lease. Periodic
-    # reconciliation has its own lane, so event storms cannot replace it.
+    # The in-process Watchdog and dispatcher own one authenticated writer lease.
     concurrency:
-      group: hh-pr-ten-minute-watchdog-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || 'periodic' }}
+      group: hh-control-tower-single-writer
       cancel-in-progress: false
     if: >-
       github.repository == 'andylitvinov-design/books' &&
@@ -127,11 +125,34 @@ jobs:
               return {status:response.status,data,
                 headers:{'x-ratelimit-remaining':response.headers.get('x-ratelimit-remaining')}};
             }} : null;
-            await run({
-              github, core, context, repairGithub,
-              hasMergeToken: Boolean(token),
-              dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
-            });
+            const dryRun=context.eventName==='push' ||
+              String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            const report=await run({github,core,context,repairGithub,
+              hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true});
+            // One runner holds the lease and passes the in-memory PR snapshot.
+            // No duplicate global enumeration, no extra artifact or CI rerun.
+            if(!dryRun&&report?.inventoryComplete===true&&!report?.apiRateLimited&&
+               Array.isArray(report.prInventorySnapshot)){
+              const {run:dispatch}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-queue-dispatcher.cjs');
+              const routed=await dispatch({github,core,context,dryRun:false,
+                inventorySnapshot:report.prInventorySnapshot});
+              core.info('HH_WATCHDOG_SNAPSHOT_HANDOFF '+JSON.stringify({
+                inventoryScope:routed.inventoryScope,candidates:routed.candidates,
+                dispatched:routed.dispatchAccepted,blocked:routed.blocked,reason:routed.reason
+              }));
+              try{
+                const {publishMonitorSnapshot}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-monitor-feed.cjs');
+                const result=await publishMonitorSnapshot({github,context,report:routed});
+                core.info('HH_SNAPSHOT_HANDOFF_MONITOR_'+result.status+
+                  ' #3128'+(result.run_id?' run='+result.run_id:''));
+              }catch(error){
+                core.warning('HH_SNAPSHOT_MONITOR_UNAVAILABLE '+
+                  String(error?.message||'unknown').slice(0,120));
+              }
+            }else core.info('HH_SNAPSHOT_HANDOFF_SKIPPED '+
+              (report?.apiRateLimited?'API_LIMITED':'NO_COMPLETE_SNAPSHOT_OR_DRY_RUN'));
   completion-wait:
     # Wait without holding the direct task writer lease.
     if: >-
@@ -172,8 +193,8 @@ jobs:
       always() &&
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name == 'schedule' ||
-       (github.event_name == 'workflow_dispatch' &&
+      ((github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.direct_dispatch == 'true' &&
         github.event.inputs.completion_wake != 'true') ||
        (github.event_name == 'workflow_run' &&
         github.event.workflow_run.status == 'completed' &&
