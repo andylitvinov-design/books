@@ -1,6 +1,6 @@
 "use client";
 
-import {Bookmark, RotateCcw, Search, Sparkles} from "lucide-react";
+import {Bookmark, ChevronDown, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
@@ -16,7 +16,7 @@ const labels={
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
-    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
+    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Уточнить подбор",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
@@ -36,7 +36,7 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
-    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
+    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Refine",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
@@ -56,7 +56,7 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
-    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
+    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Afinar selección",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
@@ -87,6 +87,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const [savedIds,setSavedIds]=useState<string[]>([]);
   const [hiddenIds,setHiddenIds]=useState<string[]>([]);
   const [search,setSearch]=useState("");
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const [source,setSource]=useState("all");
   const [period,setPeriod]=useState("all");
   const [durationRange,setDurationRange]=useState("all");
@@ -242,10 +243,10 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       {search && <button type="button" onClick={()=>setSearch("")} aria-label={t.resetFilters}>×</button>}
     </label>}
     <section className={styles.panel} aria-label={t.title}>
-      <div className={styles.intro}>
+      {variant!=="mytube"&&<div className={styles.intro}>
         <h2><Sparkles size={23} aria-hidden="true"/>{t.title}</h2>
         <p>{t.lead}</p>
-      </div>
+      </div>}
       <div className={styles.areaSection} data-mytube-taxonomy="v2">
         <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
         <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
@@ -255,6 +256,15 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
             aria-pressed={mytubeCategoryId===item.id}
             onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
         </div>
+        {variant==="mytube"&&<button type="button" className={styles.filterToggle}
+          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls"
+          onClick={()=>setFiltersOpen(value=>!value)}>
+          <SlidersHorizontal size={16} aria-hidden="true"/>
+          {filtersOpen?t.collapse:t.refine}
+          <ChevronDown size={16} aria-hidden="true"/>
+        </button>}
+        <div id={variant==="mytube"?"mytube-refine-controls":undefined}
+          className={styles.refine} hidden={variant==="mytube"&&!filtersOpen}>
         {mytubeCategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeSubcategoryTitle}</strong></div>
           <div className={styles.goals} data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
@@ -285,7 +295,6 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               onClick={()=>setMyTubeScenarioId(item.id)}>{item.label}</button>)}
           </div>
         </>:null}
-      </div>
       <div className={styles.controls}>
         <label>{t.original}
           <select value={language} onChange={event=>setLanguage(event.target.value)}>
@@ -363,6 +372,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
+        </div>
+      </div>
     </section>
     <div className={styles.results} aria-live="polite">
       <span>{area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span>{ordered.length}</span>
