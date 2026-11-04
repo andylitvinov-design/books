@@ -247,7 +247,50 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     assert.equal(sample.paused, false);
     assert.equal(sample.visible, true);
     assert.equal(sample.error, null);
-    assert.equal(sample.playRequest.error, null, 'Native playback request must not reject before active decoded playback');
+    // A bounded user-initiated WebKit source reconstruction legitimately
+    // rejects the ORIGINAL play() promise with AbortError. This is not a pass
+    // by itself: require one same-source load, fresh metadata, exact seeked,
+    // one explicit resumed native play and genuinely NEW decoded frames/time.
+    // A generic rejected play, fake media, retry loop or cancelled playback
+    // must remain RED (all strict checks above stay in place).
+    if(sample.playRequest.error!==null){
+      assert.equal(sample.playRequest.state,'rejected');
+      assert.equal(sample.playRequest.error.name,'AbortError',
+        'Only a native source reload may abort the original user Play promise');
+      const proof=await video.evaluate((el,before)=>{
+        const events=(window.__tantraNativeTimeline??[])
+          .filter(event=>event.source===el.currentSrc && event.open===true &&
+            Number.isFinite(event.at) && event.at>(before.presentedFrame?.at??-1));
+        const firstPlay=events.find(event=>event.type==='js-play');
+        const reloads=events.filter(event=>event.type==='js-load' &&
+          firstPlay && event.at>firstPlay.at);
+        const reload=reloads[0];
+        const metadata=events.find(event=>event.type==='loadedmetadata' &&
+          reload && event.at>reload.at);
+        const seeked=events.find(event=>event.type==='seeked' &&
+          metadata && event.at>metadata.at);
+        const resumed=events.find(event=>event.type==='js-play' &&
+          seeked && event.at>seeked.at);
+        const playing=events.find(event=>event.type==='playing' &&
+          resumed && event.at>resumed.at);
+        const frame=events.find(event=>event.type==='presented-frame' &&
+          playing && event.at>playing.at &&
+          Number.isFinite(event.presentedFrame?.mediaTime) &&
+          event.presentedFrame.mediaTime>before.time+0.35 &&
+          event.currentSrc===undefined &&
+          event.source===el.currentSrc);
+        return {oneReload:reloads.length===1,firstPlay:!!firstPlay,
+          metadata:!!metadata,seeked:!!seeked,resumed:!!resumed,
+          playing:!!playing,realFrame:!!frame,
+          sameSource:events.every(event=>event.source===el.currentSrc),
+          muted:el.muted,live:!el.paused&&!el.seeking&&!el.ended&&!el.error};
+      },initial);
+      observation.recoveryProof=proof;
+      assert.deepEqual(proof,{
+        oneReload:true,firstPlay:true,metadata:true,seeked:true,
+        resumed:true,playing:true,realFrame:true,sameSource:true,muted:true,live:true,
+      },'A WebKit AbortError is acceptable only after one fully proven same-source native recovery and real moving frames');
+    }
     observation.stage = 'active';
     return { participant: index + 1, initial, sample };
   } catch (error) {
