@@ -211,6 +211,8 @@ export function TantraVideoTestimonials(props: Props) {
           pending = false;
           video.removeEventListener("loadedmetadata", onMetadata);
           video.removeEventListener("seeked", onSeeked);
+          video.removeEventListener("loadeddata", onDecodedWithoutSeek);
+          video.removeEventListener("canplay", onDecodedWithoutSeek);
         };
         const onSeeked = () => {
           if (!pending) return;
@@ -226,11 +228,25 @@ export function TantraVideoTestimonials(props: Props) {
             // A rejected real-media play must not be misreported as success.
           }
         };
+        // On WebKit, load() can retain the DOM's saved currentTime. Assigning
+        // that same time is then a no-op: neither seeking nor seeked fires.
+        // Resume a user's explicit muted Play only once the SAME source has
+        // decoded a real frame at the retained position. The browser release
+        // test still requires new advancing decoded frames and media time.
+        const onDecodedWithoutSeek = () => {
+          if (!pending || !valid() || !video.paused || video.seeking ||
+              video.readyState < 2 || video.videoWidth <= 0 ||
+              video.videoHeight <= 0 ||
+              Math.abs(video.currentTime - resumeAt) > 0.05) return;
+          onSeeked(); // same-source, decoded, already-at-position path
+        };
         const onMetadata = () => {
           if (!pending || !valid() || !Number.isFinite(video.duration) ||
               resumeAt >= video.duration) { clear(); return; }
           try {
             video.addEventListener("seeked", onSeeked, { once: true });
+            video.addEventListener("loadeddata", onDecodedWithoutSeek, { once: true });
+            video.addEventListener("canplay", onDecodedWithoutSeek, { once: true });
             video.currentTime = resumeAt; // exact retained position, no backward offset
           } catch { clear(); }
         };
