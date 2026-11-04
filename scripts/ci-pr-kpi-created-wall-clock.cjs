@@ -30,7 +30,7 @@ function cohortStage(samples,total){
  const s=summarize(samples),n=s.n;
  return {...s,measured_prs:n,cohort_prs:total,missing_prs:total-n,
   coverage_pct:total?round(n*100/total):null,
-  contribution_mean_minutes:total?round(samples.reduce((a,b)=>a+b,0)/total):null};
+  contribution_mean_minutes:total&&n?round(samples.reduce((a,b)=>a+b,0)/total):null};
 }
 function jobTime(j){const q=ts(j.created_at),s=ts(j.started_at),e=ts(j.completed_at);return q!==null&&s!==null&&e!==null&&q<=s&&s<=e?{q,s,e}:null;}
 function matchesRun(run,pr,syntheticParents){
