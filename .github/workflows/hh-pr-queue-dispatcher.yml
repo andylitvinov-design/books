@@ -14,6 +14,7 @@ on:
       - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-api-quota.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
+      - 'tests/ci-pr-inprocess-snapshot.test.cjs'
       - 'tests/ci-pr-ci-legacy-recovery.test.cjs'
       - 'tests/ci-pr-core-priority.test.cjs'
   pull_request:
@@ -27,6 +28,7 @@ on:
       - 'scripts/ci-pr-ci-legacy-recovery.cjs'
       - 'tests/ci-pr-api-quota.test.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
+      - 'tests/ci-pr-inprocess-snapshot.test.cjs'
       - 'tests/ci-pr-ci-legacy-recovery.test.cjs'
       - 'tests/ci-pr-core-priority.test.cjs'
       - '.github/workflows/hh-pr-queue-dispatcher.yml'
@@ -74,12 +76,13 @@ jobs:
           node --check scripts/ci-pr-api-quota.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check tests/ci-pr-inprocess-snapshot.test.cjs
           node --check scripts/ci-pr-ci-wake-reconcile.cjs
           node --check tests/ci-pr-ci-wake-reconcile.test.cjs
           node --check scripts/ci-pr-ci-legacy-recovery.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-core-priority.test.cjs
-          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-kpi.test.cjs tests/ci-pr-kpi-report.test.cjs
+          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-kpi.test.cjs tests/ci-pr-kpi-report.test.cjs
   observe:
     # Legacy workflow name retained for existing monitor references.
     # This job has no write permission and cannot reserve or dispatch tasks.
