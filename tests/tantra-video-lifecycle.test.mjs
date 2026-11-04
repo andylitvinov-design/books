@@ -190,7 +190,7 @@ test('native explicit play observer never controls playback and media identity i
  assert.match(source,/windowView\.setTimeout\(\(\) => \{[\s\S]*setFreshDecoder\(/,
    'Only a bounded post-user-play stalled decoder may trigger a fresh native source');
  assert.equal((source.match(/\.load\(/g)||[]).length,1,'Only a demonstrated muted post-reopen stall may reconstruct the original decoder');
- assert.equal((source.match(/currentTime\s*=/g)||[]).length,3,'One exact-position restore is permitted after verified stall, plus the two existing authenticated paths');
+ assert.equal((source.match(/currentTime\s*=/g)||[]).length,4,'Exactly one additional seek is permitted only on a fresh same-source decoder after a proven, explicitly played stall');
  assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);
  assert.match(source,/video\.currentTime = saved\.time/);
 });
