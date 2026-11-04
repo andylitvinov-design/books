@@ -74,7 +74,7 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,hypnoAudioBusy:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
