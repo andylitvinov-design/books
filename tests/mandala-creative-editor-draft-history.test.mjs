@@ -1,4 +1,6 @@
 import test from "node:test";
+import "./mandala-smart-captions.test.mjs"; // Reuse the existing Mandala specialist job; no new CI runner.
+
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "../lib/mandala/creative-editor-draft.mjs";
