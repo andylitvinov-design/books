@@ -71,9 +71,9 @@ test("caption drag and keystrokes coalesce, history bounded, different actions i
  let h=emptyMyTubeEditorHistory();
  h=recordMyTubeEditorUndo(h,{t:0},"caption:abc",100);
  h=recordMyTubeEditorUndo(h,{t:1},"caption:abc",300);
- h=recordMyTubeEditorUndo(h,{t:2},"caption:abc",701);
+ h=recordMyTubeEditorUndo(h,{t:2},"caption:abc",901);
  assert.equal(h.past.length,2);
- h=recordMyTubeEditorUndo(h,{t:3},"audio-offset",720);
+ h=recordMyTubeEditorUndo(h,{t:3},"audio-offset",920);
  assert.equal(h.past.length,3);
  for(let i=0;i<80;i++)h=recordMyTubeEditorUndo(h,{t:i},"shot-reorder",800+i);
  assert.equal(h.past.length,MYTUBE_UNDO_LIMIT);
