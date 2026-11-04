@@ -35,6 +35,27 @@ try {
   const more = page.locator('[data-free-film-more]');
   if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
   await preset.click();
+  // React can commit the selected original-motion plan after Playwright's
+  // pointer action resolves. Wait for the actual selection, not a fixed delay;
+  // fail closed with diagnostic evidence if the real application never commits.
+  try {
+    await page.waitForFunction(() =>
+      document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') === 'true',
+      undefined, { timeout: 8000 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      pressed: document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') ?? null,
+      selected: [...document.querySelectorAll('[data-free-film-preset][aria-pressed="true"]')]
+        .map(node => node.getAttribute('data-free-film-preset')),
+      sourceIds: [...document.querySelectorAll('[data-free-film-source]')]
+        .map(node => node.getAttribute('data-free-film-source')),
+      readiness: document.querySelector('[data-free-film-readiness]')?.textContent?.slice(0, 180) ?? null,
+    }));
+    console.error('HH_ORIGINAL_MOTION_PRESET_SELECTION_DIAGNOSTICS '+JSON.stringify({engine,state,errors}));
+    throw error;
+  }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
