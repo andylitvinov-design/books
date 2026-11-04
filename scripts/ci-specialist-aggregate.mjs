@@ -116,7 +116,7 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
     // only probe a required workflow known missing after the initial grace.
     runsForWorkflow: async (sha, filename) => {
       if (!/^[0-9a-f]{40}$/.test(sha) ||
-          !/^\\.github\\/workflows\\/[a-z0-9._-]+\\.ya?ml$/i.test(filename))
+          !/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(filename))
         throw Error('INVALID_WORKFLOW_FALLBACK_ARGUMENTS');
       const workflow = filename.slice(WORKFLOW_PREFIX.length);
       const result = await get('/actions/workflows/' + workflow +
