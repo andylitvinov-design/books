@@ -94,3 +94,29 @@ Acceptance is the exact branch's Core/Specialist checks plus an actual
 iPhone/WebKit clip with a visible zoom/pan across 4 approved scenes, valid
 audio, synchronized captions and decodable MP4; protected merge → Vercel
 READY exact SHA, with no additional paid services.
+
+
+## 2026-11-04 — non-destructive video source slip + playback-speed (release gated)
+
+A user may now select a licensed shot in **Montage** and edit two *actual media*
+parameters rather than merely changing UI labels:
+
+- **Start position in source:** 0–95% in steps of 5. Internally this is a
+  deterministic slip offset in the current licensed MP4's natural loop, not
+  a new URL, arbitrary local user upload or pretending to use AI.
+- **Source playback speed:** 0.75×, 1×, 1.25× and 1.5×, applied to the
+  muted native HTMLVideoElement decoder that supplies the actual frames.
+- One \`resolveLicensedSourceFrame\` maps shot-local project seconds to source
+  seconds in the **same** Preview, MediaRecorder and WebCodecs renderer.
+  No change to overall project length, spoken audio/soundtrack or captions.
+- A speed/phase change invalidates the previously encoded video, pauses the
+  preview, and is Undo/Redo-able (adjacent slider steps coalesce).
+- The existing portable project draft stores the two new optional scalar
+  properties, rejects invalid and unexpected fields, and accepts old drafts.
+
+This is **slip editing and constant-speed playback**, NOT complete source
+in/out trimming, audio pitch correction or a speed-ramp engine. The project
+still deliberately uses four separately licensed approved video scenes.
+The next required release gate is real WebKit iPhone frame/loop/playback testing,
+with an output MP4 that has the correct four scenes and still has the
+visitor's original audio. No paid provider and no new background worker.
