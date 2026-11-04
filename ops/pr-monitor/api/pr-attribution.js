@@ -64,9 +64,12 @@ function extractStageReceipts(comments,number){
 }
 async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  let remaining=null,used=0,partial=false;
+ const reserve=token?80:12;
  async function gh(path){
   if(used>=15)throw makeError('GITHUB_READ_BUDGET_EXHAUSTED',429);
-  if(remaining!==null&&remaining<80)throw makeError('GITHUB_RATE_RESERVE',429);
+  // GitHub anonymous GETs have a 60/h bucket: a fixed 80 request floor
+  // would disable every no-token monitor response after the first GET.
+  if(remaining!==null&&remaining<reserve)throw makeError('GITHUB_RATE_RESERVE',429);
   used++;
   const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
     'User-Agent':'hh-pr-attribution-on-demand'};
@@ -136,7 +139,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  const events=extractStageReceipts(comments,number);
  // A label proves the recorded conflict signal, never the time spent fixing it.
  // When near the read budget, skip the optional timeline instead of losing core data.
- if(used<15 && (remaining===null||remaining>=80)) {
+ if(used<15 && (remaining===null||remaining>=reserve)) {
   try{
    const labelRows=await gh(`/issues/${number}/timeline?per_page=100`);
    if(Array.isArray(labelRows)){

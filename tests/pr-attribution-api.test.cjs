@@ -93,6 +93,17 @@ test('rate-limit reserve blocks later reads without fake zero values',async()=>{
  assert.equal(m.calls.length,1);
 });
 
+test('anonymous GitHub API bucket (60/h) allows verified reads below 80 without exhausting reserve',async()=>{
+ const m=makeRequest({rate:54});
+ const out=await api.loadPr(3390,{request:m.request,token:'',now:Date.parse(at(100))});
+ assert.equal(out.elapsed_minutes,90);
+ assert.equal(out.source.reads,6);
+ assert.equal(out.source.remaining_api_quota,54);
+ const authenticated=makeRequest({rate:54});
+ await assert.rejects(()=>api.loadPr(3390,{request:authenticated.request,token:'example-test-token',now:Date.parse(at(100))}),/GITHUB_RATE_RESERVE/);
+ assert.equal(authenticated.calls.length,1);
+});
+
 test('verified two-parent synthetic GitHub run is accepted, unverified is not',async()=>{
  const syntheticSha='d'.repeat(40);
  const r={...runs[1],head_sha:syntheticSha};
