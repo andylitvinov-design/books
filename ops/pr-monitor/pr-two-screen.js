@@ -378,8 +378,43 @@
     document.body.classList.add('hh2-active');
     mounted=true;
   }
+  function repairLegacyUnmeasuredZeros() {
+    // Existing lower monitor section (separate backend) incorrectly formats
+    // missing-stage n=0 as 0.00 min. Preserve the section and its controls;
+    // change ONLY such empty evidence cells into an explicit missing state.
+    const headings=Array.from(document.querySelectorAll('h2,h3,h4,h5'));
+    const title=headings.find(function(h){
+      return /Где прошло время до merge/i.test(h.textContent||'');
+    });
+    if(!title)return;
+    const section=title.closest('section,article')||title.parentElement?.parentElement;
+    if(!section)return;
+    const evidenceLeaves=Array.from(section.querySelectorAll('*')).filter(function(el){
+      return el.childElementCount===0&&/Проверено:\s*0\s+из\s+\d+\s+PR/i.test(el.textContent||'');
+    });
+    for(const leaf of evidenceLeaves) {
+      let cur=leaf,found=false;
+      for(let depth=0;depth<4&&cur&&cur!==section;depth++,cur=cur.parentElement) {
+        const numbers=Array.from(cur.querySelectorAll('strong,b,[class*="value"],[class*="amount"]'))
+          .filter(function(el){return el.childElementCount===0&&/^\s*0[,\.]00\s*$/.test(el.textContent||'');});
+        if(numbers.length){
+          numbers.forEach(function(el){el.textContent='—';el.title='Нет проверенной пары событий для этапа; это не ноль минут';});
+          found=true;break;
+        }
+      }
+      if(found)leaf.title='0 подтверждённых PR. Длительность не измерена.';
+    }
+    if(evidenceLeaves.length&&!section.querySelector('.hh2-legacy-proof-notice')){
+      const notice=make('p','hh2-legacy-proof-notice hh2-diagnostic',
+        'Строки с «Проверено: 0» не имеют измеренного времени. '+
+        'Их значения — «—», не 0 минут. Сопоставимая, арифметически полная '+
+        'разбивка из сохранённых CI находится на втором экране выше.');
+      title.insertAdjacentElement('afterend',notice);
+    }
+  }
   function chartAndMetrics() {
     if (!mounted) return;
+    repairLegacyUnmeasuredZeros();
     var graph = document.getElementById('hh-pr-trends');
     if (graph && !graphSlot.contains(graph)) {
       graphSlot.replaceChildren(graph);
