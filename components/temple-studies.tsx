@@ -193,6 +193,22 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
 
             <TempleInitiationChooser locale={locale} />
 
+            <section className="temple-learning-intro" aria-labelledby="temple-attunements-library-title">
+              <p className="homeopathy-kicker">Temple Studies · {locale === "ru" ? "Архив" : locale === "es" ? "Archivo" : "Archive"}</p>
+              <h2 id="temple-attunements-library-title">
+                {locale === "ru" ? "Библиотека храмовых настроек" : locale === "es" ? "Biblioteca de sintonizaciones" : "Temple attunement library"}
+              </h2>
+              <p>{locale === "ru"
+                ? "Стихи и настройки из авторских методичек: традиция → канал божества → отдельные записи с фотографиями и местами их создания."
+                : locale === "es"
+                  ? "Poemas y sintonizaciones originales por tradición y deidad, con fotografías y lugares documentados."
+                  : "Original attunements grouped by tradition and deity channel, with source photographs and recorded locations."}</p>
+              <Link href={`/${locale}/temple-channels`} className="temple-primary-cta" prefetch={false}>
+                {locale === "ru" ? "Найти настройку" : locale === "es" ? "Buscar sintonización" : "Find an attunement"}
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </section>
+
             {videoIndex.length > 0 ? (
               <details className="temple-video-index" aria-labelledby="temple-video-index-heading">
                 <summary className="temple-video-index-summary">
