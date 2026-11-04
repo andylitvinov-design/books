@@ -360,3 +360,13 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
+
+test('owner video review runs real browser and physical source checks',()=>{
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},'feat/video-owner-review-20261102'),{browser:true});
+  const yaml=read('holistic-support-mandala.yml');
+  for(const name of ['Install isolated Chromium and WebKit','Ensure ffprobe and ffmpeg','Verify all 44 first-party MP4','Audit 120 scenario','Verify private owner scenario review snapshot','Public mandala photo']){
+    const step=yaml.slice(yaml.indexOf('- name: '+name));
+    assert.ok(step.startsWith('- name: '+name),name);
+    assert.match(step.slice(0,step.indexOf('\n      - name:',1)>0?step.indexOf('\n      - name:',1):step.length),/feat\/video-owner-review-/,name);
+  }
+});
