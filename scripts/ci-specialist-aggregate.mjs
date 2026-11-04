@@ -370,13 +370,12 @@ export async function verify(api,ctx,files,options={}) {
   // No reruns, commits, privileged permissions or paid services are needed.
   const correlatedMissingGrace = Math.min(maxWait,
     boundedMs(options.correlatedMissingGraceMs ?? 5*60_000, 8*60_000));
-  // A registered queued/requested/waiting workflow is evidence of dispatch,
-  // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
-  // while its runner is still waiting. Give it the same absolute 35-minute
-  // bounded deadline as running workflows; the parent job has a 45m timeout.
-  // Missing workflows retain their short discovery grace; genuine failures
-  // still abort immediately. An override may shorten, never extend, the cap.
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? maxWait, 40*60_000));
+  // Registered queued/requested/waiting checks are dispatched, not failed.
+  // Unlike actual execution, idle runner allocation must not occupy this
+  // read-only aggregation runner for 35 minutes. Keep a 10-minute default,
+  // with an explicit bounded override for confirmed long GitHub queue periods.
+  // Exhaustion blocks merge as RUNNER_QUEUE, never as failed application code.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
@@ -493,6 +492,7 @@ export async function verify(api,ctx,files,options={}) {
   const missingDeadline = start + missingGrace;
   const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
+  let incompleteSince = null;
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
@@ -549,13 +549,54 @@ export async function verify(api,ctx,files,options={}) {
     }
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.orphanFailures.length ||
-        unregistered.length || retiredProblems.length) {
+    const unexpected = [...new Set([...unregistered, ...retiredProblems])];
+    const withConclusion = endings => unexpected.filter(item =>
+      endings.some(conclusion => item.endsWith(':' + conclusion)));
+    const unexpectedFailures = withConclusion(['failure']);
+    const unexpectedCancelled = withConclusion(['cancelled']);
+    const unexpectedInterrupted = withConclusion(['timed_out', 'startup_failure']);
+    const unexpectedNotExecuted = withConclusion(['skipped', 'neutral', 'action_required']);
+    const known = new Set([...unexpectedFailures, ...unexpectedCancelled,
+      ...unexpectedInterrupted, ...unexpectedNotExecuted]);
+    const unexpectedIncomplete = unexpected.filter(item => !known.has(item));
+    // Only an actual terminal failure is a failed source check. Cancelled,
+    // infrastructure-interrupted and skipped dependencies also block release,
+    // but must never create a false source-repair task.
+    if (state.failed.length || state.orphanFailures.length || unexpectedFailures.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
-        failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
-        unregistered, retired:retiredProblems,
+        failed:state.failed, orphan:state.orphanFailures,
+        unregistered:unregistered.filter(item => unexpectedFailures.includes(item)),
+        retired:retiredProblems.filter(item => unexpectedFailures.includes(item)),
       }));
     }
+    if (state.cancelled.length || state.orphanCancelled.length || unexpectedCancelled.length) {
+      throw Error('SPECIALIST_DEPENDENCY_CANCELLED:' + JSON.stringify({
+        cancelled:state.cancelled, orphan:state.orphanCancelled, unexpected:unexpectedCancelled,
+      }));
+    }
+    if (state.interrupted.length || state.orphanInterrupted.length || unexpectedInterrupted.length) {
+      throw Error('SPECIALIST_DEPENDENCY_INTERRUPTED:' + JSON.stringify({
+        interrupted:state.interrupted, orphan:state.orphanInterrupted, unexpected:unexpectedInterrupted,
+      }));
+    }
+    if (state.notExecuted.length || state.orphanNotExecuted.length || unexpectedNotExecuted.length) {
+      throw Error('SPECIALIST_DEPENDENCY_NOT_EXECUTED:' + JSON.stringify({
+        notExecuted:state.notExecuted, orphan:state.orphanNotExecuted, unexpected:unexpectedNotExecuted,
+      }));
+    }
+    const incomplete = [...state.uncertain, ...state.orphanIncomplete, ...unexpectedIncomplete];
+    if (incomplete.length) {
+      if (incompleteSince === null) incompleteSince = now();
+      const remaining = Math.min(deadline - now(), 30_000 - (now() - incompleteSince));
+      if (remaining <= 0) {
+        throw Error('SPECIALIST_DEPENDENCY_INCOMPLETE:' + JSON.stringify({incomplete}));
+      }
+      // GitHub sometimes publishes completed without its terminal conclusion
+      // for one index read. Recheck briefly, never call it a source failure.
+      await sleep(Math.max(1, Math.min(5_000, pollMs, remaining)));
+      continue;
+    }
+    incompleteSince = null;
     if (!state.missing.length && !state.pending.length) break;
     // GitHub may take a few seconds to register a newly triggered workflow.
     // After the short discovery grace, absence is a configuration/dispatch
@@ -569,14 +610,14 @@ export async function verify(api,ctx,files,options={}) {
     }
     // A registered but queued/requested/waiting workflow is not an executing
     // test. Give the GitHub runner queue a separate bounded startup window.
-    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    const notStarted = state.queued;
     if (notStarted.length && timestamp >= queuedDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
-        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+        JSON.stringify({queued:notStarted,running:state.running}));
     }
     if (timestamp >= deadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
-        JSON.stringify({pending:state.pending}));
+        JSON.stringify({running:state.running,queued:state.queued}));
     }
     const nextDeadline = Math.min(deadline,
       state.missing.length ? missingStateDeadline : Infinity,
@@ -599,6 +640,20 @@ export async function verify(api,ctx,files,options={}) {
       if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
       // No workflow dispatch or retry; keep independent green runs untouched.
       await sleep(Math.max(1, Math.min(pollMs, 5_000, jobDeadline - now())));
+    }
+    // GitHub's jobs endpoint may lag a completed workflow. After the bounded
+    // grace, a still-running job is incomplete evidence, not a failed test.
+    const pendingJobs = jobs.filter(job => job.status !== 'completed');
+    if (pendingJobs.length) {
+      throw Error('SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT:' + JSON.stringify({
+        pending:pendingJobs.map(job => run.path + ':' + job.name + ':' + (job.status || 'unknown')),
+      }));
+    }
+    const cancelledJobs = jobs.filter(job => job.conclusion === 'cancelled');
+    if (cancelledJobs.length) {
+      throw Error('SPECIALIST_DEPENDENCY_JOB_CANCELLED:' + JSON.stringify({
+        cancelled:cancelledJobs.map(job => run.path + ':' + job.name),
+      }));
     }
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
@@ -709,6 +764,12 @@ export function diagnoseAggregateError(error) {
     ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
     ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Keep merge blocked. After every named queued exact-HEAD workflow finishes successfully, retry only the failed hh-specialist job once (by job ID), never re-run green Core or the whole workflow.'],
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
+    ['SPECIALIST_DEPENDENCY_CANCELLED:','DEPENDENCY_CANCELLED','A cancelled exact-HEAD dependency did not run successfully. Check current HEAD and rerun only the affected check when safe; do not open a source repair task.'],
+    ['SPECIALIST_DEPENDENCY_INTERRUPTED:','DEPENDENCY_INTERRUPTED','Inspect timed-out/startup-failed infrastructure or job duration; do not presume application test failure.'],
+    ['SPECIALIST_DEPENDENCY_NOT_EXECUTED:','DEPENDENCY_NOT_EXECUTED','Inspect skipped/neutral/approval-required dispatch; required CI remains blocked.'],
+    ['SPECIALIST_DEPENDENCY_INCOMPLETE:','DEPENDENCY_INCOMPLETE','GitHub provided an incomplete/unknown terminal state; inspect the exact run and recover valid evidence.'],
+    ['SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT:','DEPENDENCY_JOB_PENDING','The jobs API still reports unfinished jobs after its bounded consistency grace.'],
+    ['SPECIALIST_DEPENDENCY_JOB_CANCELLED:','DEPENDENCY_JOB_CANCELLED','Inspect the cancelled required job; rerun only verified interrupted work on current HEAD.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
     ['MISSING_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_MISSING','Check the immutable BASE job contract and exact-HEAD evidence, not independent green workflows.'],
@@ -737,8 +798,11 @@ export function diagnoseAggregateError(error) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }
-  if (category === 'WORKFLOW_NOT_TRIGGERED' || category === 'RUNNER_QUEUE' || category === 'CHECK_TIMEOUT') {
-    for (const field of ['missing','pending','queued','running']) {
+  if (['WORKFLOW_NOT_TRIGGERED','RUNNER_QUEUE','CHECK_TIMEOUT','DEPENDENCY_CANCELLED',
+    'DEPENDENCY_INTERRUPTED','DEPENDENCY_NOT_EXECUTED','DEPENDENCY_INCOMPLETE',
+    'DEPENDENCY_JOB_PENDING','DEPENDENCY_JOB_CANCELLED'].includes(category)) {
+    for (const field of ['missing','pending','queued','running','cancelled',
+      'interrupted','notExecuted','incomplete','unexpected','orphan']) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }

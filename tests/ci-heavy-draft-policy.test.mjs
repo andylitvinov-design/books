@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflows = [
   'assessment-range-mobile-browser.yml',
@@ -270,7 +271,7 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
     const expectedCancel = ['hh-app-r1.yml','hh-app-browser.yml'].includes(name)
-      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"
       : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
     assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
@@ -767,4 +768,86 @@ test('IA WebKit host pins Ubuntu 24.04 and keeps full authenticated browser acce
   assert.match(source,/postgres:\s*\n/);
   assert.match(source,/redis:\s*\n/);
   assert.match(source,/scripts\/verify-ia-v2\.mjs/);
+});
+
+
+test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual acceptance keeps it', () => {
+  const image = "image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}";
+  for (const [name, sourceContract, fullQA] of [
+    ['hh-app-browser.yml', 'node --test tests/ci-heavy-impact.test.mjs', 'Browser journey with protocol double, never Google or production'],
+    ['hh-portrait-mobile-browser.yml', 'node --test tests/portrait-report-actions.test.mjs', 'Five profile navigation with four scored sectors'],
+    ['hh-reiki-all-slides-browser.yml', 'node --test tests/reiki-referral-landing.test.mjs', 'Verify Chromium full 64 screens and Safari guest save-only checkpoint'],
+  ]) {
+    const workflow = read(name);
+    const postgres = workflow.split('    services:\n      postgres:\n')[1]?.split('    env:\n')[0];
+    assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
+    assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    assert.ok(workflow.includes(sourceContract), name + ' must still run its real PR source contract');
+    assert.ok(workflow.includes(fullQA), name + ' must preserve real-browser manual acceptance');
+    assert.match(workflow, /workflow_dispatch:/, name + ' manual QA must remain callable');
+    assert.doesNotMatch(workflow, /continue-on-error:\s*true/, name + ' cannot ignore real failures');
+  }
+});
+
+test('Messenger mobile Draft skips heavy runners and automatically rechecks on Ready', () => {
+  const workflow = read('hh-messenger-mobile-release.yml');
+  assert.match(workflow,
+    /^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(workflow.includes("  messenger-release:\n    # Draft staging skips costly source/security work; Ready/manual/push retain real contracts.\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'Draft should not allocate Messenger tests; Ready must still execute them');
+  for (const required of ['tests/app-auth-pkce.integration.mjs',
+    'tests/practitioner-direct-messages.test.mjs', 'tests/direct-message-media-transport.test.mjs',
+    'npm run build', 'workflow_dispatch:', '  push:']) {
+    assert.ok(workflow.includes(required), 'Messenger security and post-merge acceptance lost: ' + required);
+  }
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/, 'Real Messenger failures may never be advisory');
+});
+
+test('Free Review runs for real lead/intake changes, not shared CI policy test-only edits', () => {
+  const trigger = name => parsePrTrigger(read(name), name);
+  const match = (name,path) => matchesTrigger(trigger(name), [path], 'codex/public-book-library');
+  const shared = 'tests/ci-heavy-impact.test.mjs';
+  assert.equal(match('hh-free-review-live-mobile.yml', shared), false,
+    'Free Review heavy runner must not start for Guard-owned CI test changes');
+  assert.equal(match('hh-pr-sweep-guard.yml', shared), true,
+    'the existing Guard must still validate the shared routing test');
+  assert.equal(match('hh-pr-core-release.yml', shared), true,
+    'Core retains the protected default PR check');
+  for (const real of [
+    'scripts/ci-heavy-impact.mjs','scripts/verify-free-review-live-mobile.mjs',
+    'components/free-entry-landing.tsx','components/personal-express-enquiry.tsx',
+    'lib/coaching/intake-model.js','tests/free-diagnosis-three-offers.test.mjs'
+  ]) assert.equal(match('hh-free-review-live-mobile.yml', real), true,
+    'real functional Free Review changes must still execute their owner QA: '+real);
+  const yaml=read('hh-free-review-live-mobile.yml');
+  assert.match(yaml,/workflow_dispatch:/);
+  assert.match(yaml,/^  push:/m);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
+
+test('Public Services shallow recovery never bypasses exact merged HEAD and ancestry proof', () => {
+  const workflow = read('hh-public-services-production.yml');
+  const preflight = workflow.split('      - name: Verify bounded Public Services PR ancestry before impact routing\n')[1]
+    ?.split('      - uses: actions/setup-node@v4')[0];
+  assert.ok(preflight, 'Public Services must validate the real synthetic merge before routing');
+  const required = [
+    'fetch-depth: 2',
+    'actual_checkout="$(git rev-parse HEAD)"',
+    '"$actual_checkout" == "$GITHUB_SHA"',
+    '"$(git rev-parse --is-shallow-repository)" == true',
+    'git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"',
+    'tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"',
+    'tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"',
+    '"$tested_head" == "$PR_HEAD_SHA"',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+  ];
+  for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
+    'Missing fail-closed checkout proof: ' + item);
+  assert.ok(preflight.indexOf('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"') <
+    preflight.lastIndexOf('[[ "$tested_head" == "$PR_HEAD_SHA"'),
+    'Limited recovery must precede repeated strict parent validation, not override it');
+  assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true/,
+    'No full clone or ignored failures allowed');
+  assert.ok(workflow.includes("  public-services:\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'Ready PR real browser source/security gating must remain enabled');
 });

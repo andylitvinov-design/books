@@ -46,7 +46,8 @@ jobs:
         browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
-        image: postgres:17-alpine
+        # PR source contracts need no DB; keep PostgreSQL for manual full-browser QA.
+        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin

@@ -38,7 +38,8 @@ jobs:
     timeout-minutes: 23
     services:
       postgres:
-        image: postgres:17-alpine
+        # PR executes source contracts only; PostgreSQL is reserved for manual QA.
+        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
