@@ -22,7 +22,9 @@ test('compact issue distinguishes missing measurements and never invents zero CI
  const body=renderCompact(fixture(),{runId:123});
  assert.match(body,/<details><summary>source repair: 0 PR/);
  assert.match(body,/missing coverage, not 0 minutes/);
- assert.match(body,/unknown: 1 PR/);
+ assert.match(body,/Контекстное распределение периодов без установленной причины/);
+  assert.match(body,/причинность не подтверждена/);
+  assert.match(body,/<details><summary>Между подтверждёнными событиями PR: 1 PR/);
 });
 test('invalid report identity or run cannot overwrite public monitor',()=>{
  assert.throws(()=>renderCompact({}, {runId:123}),/INVALID/);

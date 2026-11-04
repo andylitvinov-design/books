@@ -1,6 +1,7 @@
 'use strict';
 /** Read-only, event-sourced PR cohort accounting. No inference of idle/runner/repair time. */
 const REPO='andylitvinov-design/books';
+const {explainPrClock,GAP_CATEGORIES,LABELS}=require('./ci-pr-gap-attribution.cjs');
 const WINDOWS=[
   {key:'two_weeks',label:'20–21 Oct 2026',start:'2026-10-20T11:27:00.000Z',end:'2026-10-21T11:27:00.000Z'},
   {key:'one_week',label:'27–28 Oct 2026',start:'2026-10-27T11:27:00.000Z',end:'2026-10-28T11:27:00.000Z'},
@@ -65,8 +66,9 @@ function splitIntervals(p,intervals){
  if(partition!==elapsed)throw Error('COHORT_WALL_CLOCK_NOT_RECONCILED');
  return{minutes:result,segments,known_minutes:minutes(elapsed-totals.unknown),coverage_percent:elapsed?round((elapsed-totals.unknown)*100/elapsed):100};
 }
-function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],source={}}){
- if(!Array.isArray(prs)||!Array.isArray(intervals)||!Array.isArray(openPRs)||!Array.isArray(windows))throw Error('INVALID_COHORT_INPUT');
+function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],observations=[],source={}}){
+ if(!Array.isArray(prs)||!Array.isArray(intervals)||!Array.isArray(openPRs)||!Array.isArray(windows)||!Array.isArray(observations))throw Error('INVALID_COHORT_INPUT');
+ const obsByPr=new Map();for(const observation of observations){if(Number.isSafeInteger(observation?.pr)){if(!obsByPr.has(observation.pr))obsByPr.set(observation.pr,[]);obsByPr.get(observation.pr).push(observation);}}
  const seen=new Set();for(const p of prs){validatedPR(p);if(seen.has(p.number))throw Error('DUPLICATE_PR_'+p.number);seen.add(p.number);}
  const analyses=[];
  for(const w of windows){const start=instant(w.start),end=instant(w.end);if(start===null||end===null||end-start!==86400000)throw Error('INVALID_COHORT_WINDOW');
@@ -76,10 +78,15 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],source={}}){
    // No association means unknown waves, never evidence of zero CI.
    const wave=source?.core_waves_by_pr?.[p.number];
    const coreWaves=Number.isSafeInteger(wave?.count)&&wave.count>0?wave.count:null;
+   const explanation=explainPrClock({pr:p,segments:part.segments,observations:obsByPr.get(p.number)||[]});
    return{pr:p.number,url:`https://github.com/${REPO}/pull/${p.number}`,title:p.title||'',base:p.base?.ref||null,
     created_at:p.created_at,closed_at:p.closed_at,merged_at:p.merged_at||null,
     outcome:classify(p),replacement:p.replacement||null,delivery_chain:p.delivery_chain||null,full_minutes:minutes(t.closed-t.created),
     phases:part.minutes,segments:part.segments,known_pct:part.coverage_percent,
+    context_segments:explanation.segments,observations:explanation.observations,
+    observed_gap_minutes:explanation.context_gap_minutes,
+    direct_verified_minutes:explanation.verified_cause_minutes,
+    gap_categories:explanation.observed_gap_categories,root_cause_coverage_pct:explanation.known_cause_pct,
     evidence_count:part.segments.filter(s=>s.url).length,
     core_ci_waves:coreWaves,core_ci_repeats:coreWaves===null?null:coreWaves-1,
     first_core_at:coreWaves===null?null:wave.first_at,
@@ -96,7 +103,13 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],source={}}){
   const phases={};for(const stage of PHASES){const covered=rows.filter(x=>stage==='unknown'||x.phases[stage]>0),summary=stats(covered.map(x=>x.phases[stage]));phases[stage]={...summary,covered_prs:covered.length,
     coverage_pct:rows.length?round(100*covered.length/rows.length):null,
     contribution_to_cohort_mean:rows.length&&(covered.length||stage==='unknown')?round(rows.reduce((s,x)=>s+x.phases[stage],0)/rows.length):null};}
+  const gap_phases={};for(const name of GAP_CATEGORIES){const measured=rows.filter(r=>r.gap_categories[name]>0);
+   const s=stats(measured.map(r=>r.gap_categories[name]));gap_phases[name]={...s,
+    contribution_to_cohort_mean:rows.length?round(rows.reduce((sum,r)=>sum+r.gap_categories[name],0)/rows.length):null,
+    coverage_pct:rows.length?round(measured.length*100/rows.length):null,covered_prs:measured.length};}
   analyses.push({key:w.key,label:w.label,window_start:w.start,window_end:w.end,count:rows.length,outcomes,
+   gap_phases,mean_context_gap_minutes:rows.length?round(rows.reduce((sum,r)=>sum+r.observed_gap_minutes,0)/rows.length):null,
+   mean_direct_verified_minutes:rows.length?round(rows.reduce((sum,r)=>sum+r.direct_verified_minutes,0)/rows.length):null,
    total:totals,phases,rows,ci_waves:ciWaves,
    chain_delivery:{replaced_chains:rows.filter(r=>r.outcome==='replaced').length,
     confirmed_production_merges:rows.filter(r=>r.delivery_chain?.status==='PRODUCTION_MERGE_CONFIRMED_NOT_LIVE').length,
@@ -138,9 +151,15 @@ function renderMarkdown(result){
  compare('Core CI wave count: median (attributed only)',x=>fmt(x.ci_waves.median_min));
  compare('Core CI repeated: linked PRs',x=>x.ci_waves.repeat_prs);
  compare('Core run inventory verified complete',x=>x.ci_waves.complete_run_inventory?'YES':'NO / PARTIAL');
+ compare('Direct job / repair measured time (mean), min',x=>fmt(x.mean_direct_verified_minutes));
+ compare('Observed-context intervals, causality unverified (mean), min',x=>fmt(x.mean_context_gap_minutes));
  line.push('','**Stages:** cohort-mean contribution; then mean / median / P90 among measured PRs; then % of PRs with evidence. A dash means unmeasured (not zero). Unknown is explicit.','',
  '| Stage | '+w.map(x=>x.label).join(' | ')+' |','|---|'+w.map(()=>'---:').join('|')+'|');
- for(const phase of PHASES){line.push('| '+phase.replaceAll('_',' ')+' | '+w.map(x=>{const s=x.phases[phase];return fmt(s.contribution_to_cohort_mean)+'; '+fmt(s.average_min)+' / '+fmt(s.median_min)+' / '+fmt(s.p90_min)+'; '+fmt(s.coverage_pct)+'%';}).join(' | ')+' |');}
+ for(const phase of PHASES.filter(p=>p!=='unknown')){line.push('| '+phase.replaceAll('_',' ')+' | '+w.map(x=>{const s=x.phases[phase];return fmt(s.contribution_to_cohort_mean)+'; '+fmt(s.average_min)+' / '+fmt(s.median_min)+' / '+fmt(s.p90_min)+'; '+fmt(s.coverage_pct)+'%';}).join(' | ')+' |');}
+ line.push('','## Наблюдаемые интервалы между событиями (НЕ подтверждение причины)',
+  'Эти интервалы закрывают промежутки исходного `unknown`: каждая минута имеет начало, конец и ближайшее подтверждённое событие. Название сообщает, **между какими событиями** прошло время, а не чем занимался исполнитель. Отсутствие событий остаётся отдельной категорией.',
+  '| Observed context | '+w.map(x=>x.label).join(' | ')+' |','|---|'+w.map(()=>'---:').join('|')+'|');
+ for(const category of GAP_CATEGORIES)line.push('| '+LABELS[category]+' | '+w.map(x=>{const s=x.gap_phases[category];return fmt(s.contribution_to_cohort_mean)+' min; '+fmt(s.coverage_pct)+'% PR';}).join(' | ')+' |');
  line.push('','## Evidence drill-down');
  for(const x of w){line.push('',`<details><summary>${x.label}: ${x.count} completed PRs, ${x.known_phase_prs} with ≥1 attributed stage</summary>`,'',
  '| PR | Base | Outcome | Full, min | Core waves | Attributed % | Evidence |','|---|---|---|---:|---:|---:|---|');
@@ -155,7 +174,7 @@ function renderMarkdown(result){
   line.push('',`<details><summary>#${r.pr} · ${r.full_minutes} min · ${r.outcome} · ${r.base||'unknown base'}</summary>`,'',
    `Created: ${r.created_at}; closed: ${r.closed_at}.`,'',
    '| Stage | From | To | Minutes | SHA | Evidence / reason |','|---|---|---|---:|---|---|');
-  for(const s of r.segments){const d=minutes(instant(s.end)-instant(s.start));line.push(`| ${s.phase} | ${s.start} | ${s.end} | ${d} | ${s.head_sha?s.head_sha.slice(0,12):'—'} | ${s.url?'[GitHub]('+s.url+')':''} ${s.reason||''} |`);}
+  for(const s of r.context_segments||r.segments){const d=minutes(instant(s.end)-instant(s.start));const linked=s.url?'[GitHub]('+s.url+')':'';const next=s.to_event?.url?' → [Next event]('+s.to_event.url+')':'';line.push(`| ${s.phase} | ${s.start} | ${s.end} | ${d} | ${s.head_sha?s.head_sha.slice(0,12):'—'} | ${linked}${next} ${s.reason||''}${s.causal===false?' (context, cause unverified)':''} |`);}
   line.push('','</details>');
  }
  line.push('','## Open PR backlog (not in closed cohorts)',`Count observed: ${result.open_backlog.total}.`,
@@ -163,4 +182,4 @@ function renderMarkdown(result){
   '## Evidence limitations',...result.limitations.map(s=>'- '+s),'');
  return line.join('\n');
 }
-module.exports={REPO,WINDOWS,PHASES,stats,splitIntervals,analyze,renderMarkdown,classify};
+module.exports={REPO,WINDOWS,PHASES,GAP_CATEGORIES,stats,splitIntervals,analyze,renderMarkdown,classify};

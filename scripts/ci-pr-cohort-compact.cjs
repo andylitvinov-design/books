@@ -1,6 +1,7 @@
 'use strict';
 /** Compact public issue drilldown; full, immutable per-PR data remain in the artifact. */
-const {REPO,PHASES,renderMarkdown}=require('./ci-pr-three-cohorts.cjs');
+const {REPO,PHASES,GAP_CATEGORIES,renderMarkdown}=require('./ci-pr-three-cohorts.cjs');
+const {LABELS}=require('./ci-pr-gap-attribution.cjs');
 const ISSUE='https://github.com/'+REPO+'/issues/3394';
 function renderCompact(report,{runId,maxPerStage=6}={}){
  if(report?.schema!=='HH_PR_THREE_COHORTS_V1'||!Number.isSafeInteger(runId)||runId<1||
@@ -13,7 +14,7 @@ function renderCompact(report,{runId,maxPerStage=6}={}){
  const clean=v=>String(v??'').replace(/[|\r\n<>]/g,' ').slice(0,140);
  for(const window of report.windows){
   out.push('### '+clean(window.label));
-  for(const phase of PHASES){
+  for(const phase of PHASES.filter(p=>p!=='unknown')){
    const rows=(window.rows||[]).filter(r=>Number.isFinite(r.phases?.[phase])&&r.phases[phase]>0)
     .sort((a,b)=>b.phases[phase]-a.phases[phase]||a.pr-b.pr);
    if(phase==='unknown' && rows.length===0)continue;
@@ -40,13 +41,35 @@ function renderCompact(report,{runId,maxPerStage=6}={}){
    out.push('','</details>');
   }
  }
+ out.push('','## Контекстное распределение периодов без установленной причины',
+ 'Каждый интервал имеет реальные начальную и конечную отметки; контекст означает, ПОСЛЕ какого события прошло время, но не доказывает, что именно вызвало задержку. Отсутствующие события GitHub остаются явно обозначены.','');
+ for(const window of report.windows){
+  out.push('### '+clean(window.label));
+  const top=GAP_CATEGORIES.map(k=>[k,window.gap_phases?.[k]]).filter(([,v])=>v?.covered_prs>0)
+   .sort((a,b)=>b[1].contribution_to_cohort_mean-a[1].contribution_to_cohort_mean).slice(0,5);
+  for(const [kind,stat] of top){
+   out.push('',`<details><summary>${clean(LABELS[kind])}: ${stat.covered_prs} PR; вклад ${stat.contribution_to_cohort_mean} мин/PR</summary>`,
+    '','| PR | Минуты | Начало → конец UTC | Предыдущее событие → следующее |', '|---|---:|---|---|');
+   const rows=(window.rows||[]).filter(row=>row.gap_categories?.[kind]>0)
+    .sort((a,b)=>b.gap_categories[kind]-a.gap_categories[kind]).slice(0,Math.min(3,maxPerStage));
+   for(const row of rows){const seg=(row.context_segments||[]).filter(s=>s.phase===kind).sort((a,b)=>b.minutes-a.minutes)[0];
+    if(!seg)continue;const from=seg.from_event?.url?'[from]('+seg.from_event.url+')':'[PR]('+row.url+')';
+    const to=seg.to_event?.url?'[to]('+seg.to_event.url+')':'[PR]('+row.url+')';
+    out.push(`| [#${row.pr}](${row.url}) | ${seg.minutes} | ${clean(seg.start)} → ${clean(seg.end)} | ${from} → ${to}; причинность не подтверждена |`);
+   }
+   out.push('','</details>');
+  }
+ }
  out.push('','## Longest eight — latest cohort (creation → closure)','');
  for(const row of report.windows[report.windows.length-1].rows.slice(0,8)){
   out.push(`<details><summary>#${row.pr}: ${row.full_minutes} min · ${clean(row.outcome)} · ${clean(row.base)}</summary>`,'',
    `[PR #${row.pr}](${row.url}) · Created ${clean(row.created_at)} · Closed ${clean(row.closed_at)}`);
-  const evidence=(row.segments||[]).filter(s=>s.url).slice(0,10);
+  const evidence=(row.context_segments||row.segments||[]).slice(0,24);
   if(evidence.length){out.push('','| Stage | UTC start | UTC end | SHA | Event and reason |','|---|---|---|---|---|');
-   for(const s of evidence)out.push(`| ${clean(s.phase)} | ${clean(s.start)} | ${clean(s.end)} | ${clean(s.head_sha?.slice(0,12)||'—')} | [GitHub](${s.url}) · ${clean(s.reason)} |`);
+   for(const s of evidence){const link=s.url?'[GitHub]('+s.url+')':'[PR]('+row.url+')';
+    const next=s.to_event?.url?' → [next]('+s.to_event.url+')':'';
+    out.push(`| ${clean(s.phase)} | ${clean(s.start)} | ${clean(s.end)} | ${clean(s.head_sha?.slice(0,12)||'—')} | ${link}${next} · ${clean(s.reason)} ${s.causal===false?'(context only)':''} |`);
+   }
   }else out.push('','No verified interval; whole life is explicitly unknown.');
   if(row.delivery_chain)out.push('',`Replacement chain: ${row.delivery_chain.prs.map(n=>'[#'+n+'](https://github.com/'+REPO+'/pull/'+n+')').join(' → ')} · ${clean(row.delivery_chain.status)}. A production merge is **not** Vercel LIVE.`);
   out.push('','</details>');
@@ -56,7 +79,7 @@ function renderCompact(report,{runId,maxPerStage=6}={}){
  for(const row of (report.open_backlog?.rows||[]).slice(0,6))out.push(`- [#${row.pr}](${row.url}): ${row.age_minutes} min open at cohort end; ${clean(row.base)}`);
  const runUrl=`https://github.com/${REPO}/actions/runs/${runId}`;
  out.push('','**Complete 3-cohort PR timeline:** [GitHub Actions evidence artifact]('+runUrl+') (pr-three-cohort-evidence, 30-day retention).',
-  '**Standing report:** '+ISSUE+'.','Historical CI intervals without evidence are unallocated, never silently counted as runner wait or repairs.','');
+  '**Standing report:** '+ISSUE+'.','Intervals with unknown causes are split by verified event boundaries, never silently called runner wait, source repair or human idle time.','');
  const body=out.join('\n');if(body.length>60000)throw Error('COMPACT_COHORT_TOO_LONG');return body;
 }
 module.exports={renderCompact};
