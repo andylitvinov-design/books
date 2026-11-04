@@ -48,7 +48,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         const tabs=root.locator("[data-video-quick-control]");
         await expect(goals.first()).toBeVisible({timeout:20000});
         await expect(stories.first()).toBeVisible({timeout:20000});
-        assert.equal(await goals.count(),4);
+        assert.equal(await goals.count(),5);
         assert.equal(await topics.count(),6);
         assert.equal(await stories.count(),4);
         assert.equal(await tabs.count(),6);
@@ -87,12 +87,12 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
           "player appears immediately below the six tabs: "+JSON.stringify(layout));
         assert.equal(await page.locator("[data-video-diagnostic-banner]").count(),0,
           "video editor must have no unsolicited diagnostic ribbon");
-        assert.ok(layout.goals.length===4 && layout.goals.every((item,index)=>
+        assert.ok(layout.goals.length===5 && layout.goals.every((item,index)=>
           item.height>=44 && Math.abs(item.y-layout.goals[0].y)<4 &&
           (index===0||item.x>layout.goals[index-1].x+30)),
-          "four text-only goal categories appear in one row: "+JSON.stringify(layout.goals));
-        assert.ok(layout.goals[3].x+layout.goals[3].width<=layout.viewport+2,
-          "all four compact goals must be fully visible without horizontal scrolling");
+          "five real goal categories appear fully in one row: "+JSON.stringify(layout.goals));
+        assert.ok(layout.goals[4].x+layout.goals[4].width<=layout.viewport+2,
+          "all five compact goals must be fully visible without horizontal scrolling");
         assert.ok(layout.topics.every(item=>item.height>=44),
           "readable topic cards: "+JSON.stringify(layout.topics));
         assert.ok(layout.stories.length===4 &&
