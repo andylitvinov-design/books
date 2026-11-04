@@ -33,7 +33,8 @@ test('only a trusted completed failed Core event can wake source repair',()=>{
 });
 test('event verifies causal source failure, then dispatches only verified PR in one call',async()=>{
  const calls=[];
- const evidence={eventPrNumber:3162,verifiedSourceFailures:1,conflictLabelsQueued:0};
+ const snapshot={number:3162,head:{ref:'codex/pr-source',sha:'a'.repeat(40)}};
+ const evidence={eventPrNumber:3162,verifiedSourceFailures:1,conflictLabelsQueued:0,verifiedPrSnapshot:snapshot};
  const result=await run({context:event(),github:{},core:{},
   reconcileRun:async args=>{calls.push(['reconcile',args]);return evidence;},
   dispatchRun:async args=>{calls.push(['dispatch',args]);return {dispatchAccepted:1,reason:'DISPATCH_ACCEPTED'};}
@@ -44,6 +45,7 @@ test('event verifies causal source failure, then dispatches only verified PR in 
  assert.equal(calls[0][1].eventFastPath,true);
  assert.equal(calls[0][1].hasMergeToken,false);
  assert.equal(calls[1][1].focusPrNumber,3162);
+ assert.equal(calls[1][1].focusPrSnapshot,snapshot,'dispatcher reuses the verified Watchdog snapshot');
 });
 test('no speculative dispatch for policy, incomplete evidence or stale association',async()=>{
  for(const evidence of [
