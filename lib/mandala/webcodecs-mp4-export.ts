@@ -157,22 +157,40 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     // Canvas frames, stage captions, phrases and actual source scenes.
     const frames=Math.ceil(seconds*frameRate);
     const startedAt=performance.now();
+    // An actual native WebKit video decoder can temporarily withhold the
+    // NEXT licensed shot while seeking. Wait for its genuine decoded frame,
+    // but never replace it with a stale/fake shot or drop the chosen sound.
+    // Bound BOTH per-frame and whole-export decoder waits.
+    let decoderHoldMs=0;
+    const maxFrameDecoderWaitMs=1400;
+    const maxTotalDecoderWaitMs=4800;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+(i*1000/frameRate)-performance.now();
+      const remaining=startedAt+decoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
-      // The same logical timestamp must drive shot selection and MP4 PTS.
-      // A stalled encoder must fail rather than speed up the story or drift
-      // across approved cut boundaries.
+      // MP4 presentation timestamps remain exact even when a native decoder
+      // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
-      if(performance.now()-startedAt > time*1000+750)
+      if(performance.now()-startedAt > time*1000+decoderHoldMs+750)
         throw new Error("video_encoder_timeline_drift");
-      if(!renderFrame(time))throw new Error("licensed_scene_frame_unavailable");
+      let decodedRealFrame=renderFrame(time);
+      if(!decodedRealFrame){
+        const waitStarted=performance.now();
+        do{
+          if(!shouldContinue())throw new Error("export_cancelled");
+          if(performance.now()-waitStarted>=maxFrameDecoderWaitMs ||
+             decoderHoldMs+performance.now()-waitStarted>=maxTotalDecoderWaitMs)break;
+          await new Promise<void>(resolve=>setTimeout(resolve,40));
+          decodedRealFrame=renderFrame(time);
+        }while(!decodedRealFrame);
+        decoderHoldMs+=performance.now()-waitStarted;
+        if(!decodedRealFrame)throw new Error("licensed_scene_frame_unavailable");
+      }
       await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
       if((i%Math.max(1,Math.ceil(frameRate/3)))===0)
         onProgress?.(Math.min(99,Math.floor(i/frames*100)));
-      if(performance.now()-startedAt>(seconds+20)*1000)
+      if(performance.now()-startedAt>(seconds+20)*1000+decoderHoldMs)
         throw new Error("video_encoder_too_slow");
     }
     videoSource.close();
