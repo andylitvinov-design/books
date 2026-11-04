@@ -87,7 +87,7 @@ const copy={
     noMotion:"Без анимации",fadeMotion:"Проявление",slideMotion:"Подъём",popMotion:"Появление",
     top:"Вверху",center:"По центру",bottom:"Внизу",
     motion:"Движение кадра",keyframes:"Ключевые кадры",
-    noMotion:"Без движения",pushIn:"Приближение",pullOut:"Отдаление",
+    stillMotion:"Без движения",pushIn:"Приближение",pullOut:"Отдаление",
     panLeft:"Панорама влево",panRight:"Панорама вправо",drift:"Плавное смещение",
     tilt:"Лёгкий поворот",custom:"Вручную",startZoom:"Масштаб в начале",
     endZoom:"Масштаб в конце",endPan:"Сдвиг в конце (X)",
@@ -107,7 +107,7 @@ const copy={
     noMotion:"None",fadeMotion:"Fade",slideMotion:"Slide up",popMotion:"Pop",
     top:"Top",center:"Center",bottom:"Bottom",
     motion:"Shot motion",keyframes:"Keyframes",
-    noMotion:"Still",pushIn:"Zoom in",pullOut:"Zoom out",
+    stillMotion:"Still",pushIn:"Zoom in",pullOut:"Zoom out",
     panLeft:"Pan left",panRight:"Pan right",drift:"Gentle drift",
     tilt:"Gentle tilt",custom:"Custom",startZoom:"Start zoom",
     endZoom:"End zoom",endPan:"End horizontal pan",
@@ -127,7 +127,7 @@ const copy={
     noMotion:"Ninguna",fadeMotion:"Aparecer",slideMotion:"Subir",popMotion:"Salto",
     top:"Arriba",center:"Centro",bottom:"Abajo",
     motion:"Movimiento de escena",keyframes:"Fotogramas clave",
-    noMotion:"Sin movimiento",pushIn:"Acercar",pullOut:"Alejar",
+    stillMotion:"Sin movimiento",pushIn:"Acercar",pullOut:"Alejar",
     panLeft:"Panorámica izquierda",panRight:"Panorámica derecha",
     drift:"Desplazamiento suave",tilt:"Giro suave",custom:"Personalizado",
     startZoom:"Zoom inicial",endZoom:"Zoom final",endPan:"Panorámica X final",
@@ -429,7 +429,7 @@ export function MandalaMultiTrackTimeline({
           <select data-video-timeline-motion-preset
             value={shots[selectedShot].motion?.preset??"none"} disabled={disabled}
             onChange={event=>onSetShotMotion(selectedShot,motionPreset(event.currentTarget.value))}>
-            <option value="none">{t.noMotion}</option>
+            <option value="none">{t.stillMotion}</option>
             <option value="push-in">{t.pushIn}</option>
             <option value="pull-out">{t.pullOut}</option>
             <option value="pan-left">{t.panLeft}</option>
