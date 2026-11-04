@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { createPortal, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
@@ -4049,23 +4049,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
-  // Only the third workspace may portal the original tab rail ahead of Wave.
-  // All other workspaces keep the source-order hero -> tabs hierarchy.
-  const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
-  const [montageNavTarget,setMontageNavTarget]=useState<HTMLElement|null>(null);
-  useLayoutEffect(()=>{
-    const mobile=window.matchMedia("(max-width: 759px)");
-    const sync=()=>{
-      setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
-        ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
-      setMontageNavTarget(activeWorkspace==="editor"&&mobile.matches
-        ?document.querySelector<HTMLElement>("[data-video-montage-nav-slot]"):null);
-    };
-    sync();
-    mobile.addEventListener("change",sync);
-    return()=>mobile.removeEventListener("change",sync);
-  },[activeWorkspace]);
-
+  // The only workspace tab rail stays in the same place above the ONE player
+  // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode}
@@ -4093,9 +4078,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <UserRound size={20} aria-hidden="true"/>
           </Link>
         </nav>
+        {/* One in-flow six-tool rail: fixed above the shared video across all workspaces. */}
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        {workspaceTabs.map(item=><button type="button" key={item.id}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
+          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
+          onClick={()=>{
+            setActiveWorkspace(item.id);
+            if(item.id!=="practices")setIntroPlaying(false);
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
+          }}><item.Icon size={18} aria-hidden="true"/>
+          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
+          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
+        </button>)}
+      </nav>
         
-        {activeWorkspace==="editor"?<div className={videoStyles.montageNavSlot}
-          data-video-montage-nav-slot/>:null}
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -4244,7 +4244,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
-        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoNavSlot} data-video-hypno-nav-slot/> : null}
         {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
           data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
 
@@ -4252,30 +4251,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
           data-video-live-stage aria-labelledby="video-live-stage-title">
-        {(()=>{
-        const nav=(
-      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
-        {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
-          onClick={()=>{
-            setActiveWorkspace(item.id);
-            if(item.id!=="practices")setIntroPlaying(false);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/>
-          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
-          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
-        </button>)}
-      </nav>
-        );
-        return activeWorkspace==="effects"&&effectsNavTarget
-          ?createPortal(nav,effectsNavTarget)
-          :activeWorkspace==="editor"&&montageNavTarget
-            ?createPortal(nav,montageNavTarget):nav;
-      })()}
+
         <div className={videoStyles.previewStageHeading}>
             <div>
               <small>{locale==="ru"?"ВАШ ВИДЕОЭКРАН":locale==="es"?"TU PANTALLA DE VÍDEO":"YOUR VIDEO SCREEN"}</small>

@@ -219,7 +219,7 @@
 /* Video-first mobile editor: original Mandala/meditation source retained in
    one accessible advanced disclosure, never recreated or uploaded. */
 .workshop{width:min(980px,calc(100% - 22px));padding:10px 0 44px}
-.page{background:radial-gradient(circle at 52% 0%,#fff0d8,var(--hh-light-canvas) 45%,#f9f0e3 100%)}
+.page{background:radial-gradient(circle at 52% 0%,#fff8e9,#fcfaf4 48%,#f5ede0 100%)}
 .advancedWorkbench{margin:15px 0 5px;min-width:0;border:1px solid #dfeadd;background:rgba(255,253,247,.95);border-radius:17px;padding:8px 12px}
 .advancedWorkbench>summary{cursor:pointer;display:flex;align-items:center;min-height:47px;color:#285b47;font:800 13px/1.35 Arial,Helvetica,sans-serif}
 .advancedWorkbench[open]>summary{margin-bottom:10px;border-bottom:1px solid #e4ede0}
@@ -242,27 +242,7 @@
 @media (max-width: 640px) {
   .page { background: linear-gradient(155deg,#fff8ed,var(--hh-light-canvas) 52%,#f7eddd); }
   .siteHeaderWrap { display: none; }
-  .workshop { width: calc(100% - 12px); padding-top: 5px; padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
-}
-
-
-/* The original blue diagnostic entry returns at half its former ~96px
-   iPhone height. The separate recommendations rail follows inside studio. */
-.slimDiagnostic{display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;
-  min-height:48px;margin:0;padding:2px max(10px,env(safe-area-inset-left));
-  background:#102c4b;color:#fff}
-.slimDiagnostic>svg{flex:none;color:#e9bba2}
-.slimDiagnostic>strong{flex:1;min-width:0;font:800 clamp(10px,2.9vw,13px)/1.17 Arial,Helvetica,sans-serif;
-  text-transform:uppercase;overflow-wrap:break-word}
-.slimDiagnostic>a{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:none;
-  min-height:44px;padding:7px 11px;border-radius:11px;background:#8f2a56;color:#fff;
-  font:800 clamp(10px,2.9vw,13px)/1.15 Arial,Helvetica,sans-serif;text-decoration:none}
-.slimDiagnostic>a svg{flex:none}
-.slimDiagnostic>a:focus-visible{outline:3px solid #f1ce7d;outline-offset:2px}
-@media(max-width:350px){
-  .slimDiagnostic{gap:5px;padding:2px 7px}
-  .slimDiagnostic>a{gap:3px;padding:6px 7px;font-size:10px}
-  .slimDiagnostic>strong{font-size:9.6px}
+  .workshop { width: calc(100% - 12px); padding-top: 4px; padding-bottom: calc(var(--hh-unified-nav-height, 90px) + 24px); }
 }
 
 
