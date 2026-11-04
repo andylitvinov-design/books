@@ -158,3 +158,32 @@ test("new 364 MP4s are genuinely additional with v6-v10 for 64 topics and 44 pri
  assert.equal(alternatives.length,64);
  assert.ok(alternatives.every(p=>p.clips.every(id=>/-v[6-9]$/.test(id))));
 });
+
+test('actual Canvas painter draws an approved original motion video instead of a generic themed background', async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const ts=(await import('typescript')).default;
+ const studio=readFileSync(resolve(root,'components/mandala-free-video-studio.tsx'),'utf8');
+ const start=studio.indexOf('function paint('),end=studio.indexOf('// A genuine local multi-shot film',start);
+ assert.ok(start>=0&&end>start,'extract the actual canonical Canvas painter');
+ const js=ts.transpileModule(studio.slice(start,end)+'\nglobalThis.paintUnderTest=paint;',{
+   compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
+ const calls=[];
+ const firstPartyFilmFor=(theme,id)=>source.scenes.some(s=>s.id===id&&s.theme===theme&&s.status==='approved')?{src:'approved'}:null;
+ const sandbox={firstPartyFilmFor,getThemedRealFilm:()=>null,
+   paintRealThemedVideoFrame:()=>calls.push('video'),paintThemedVideoFrame:()=>calls.push('procedural')};
+ runInNewContext(js,sandbox,{timeout:2000});
+ const video={readyState:4,videoWidth:432,videoHeight:768};
+ const ctx={canvas:{width:1280,height:720}};
+ const paint=(theme,id,media=video)=>sandbox.paintUnderTest(ctx,null,'glow',0,'landscape',null,'',theme,id,'slow','soft',media);
+ for (const theme of ['goals','life','relationships','health','energy']) {
+   const clip=source.scenes.find(s=>s.theme===theme&&s.status==='approved');
+   assert.ok(clip,theme+' has an approved original clip');
+   paint(theme,clip.id);
+   assert.equal(calls.pop(),'video',theme+' must draw its decoded approved original clip');
+ }
+ paint('goals','unapproved-nonexistent-id');
+ assert.equal(calls.pop(),'procedural','unknown IDs must not pass the source gate');
+ const clip=source.scenes.find(s=>s.theme==='goals');
+ paint('goals',clip.id,{...video,readyState:1});
+ assert.equal(calls.pop(),'procedural','a source without decoded data is never treated as a video frame');
+});
