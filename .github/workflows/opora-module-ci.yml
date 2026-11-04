@@ -23,7 +23,11 @@ on:
       - 'tests/antistress-*.mjs'
       - 'tests/my-course-moment-trends.test.mjs'
       - 'tests/my-course-programs.test.mjs'
-      - 'tests/course-*.mjs'
+      - 'tests/course-baseline-explainer.test.mjs'
+      - 'tests/course-compact-owner-ui.test.mjs'
+      - 'tests/course-entry-selector.test.mjs'
+      - 'tests/course-test-sequence.test.mjs'
+      - '.github/workflows/opora-module-ci.yml'
       - 'scripts/verify-opora-*.mjs'
       - 'middleware.ts'
       - 'package.json'
@@ -121,9 +125,13 @@ jobs:
           /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
         run: node scripts/verify-opora-as56-browser.mjs
+      - name: Verify OPORA course-ready mobile viewport and visible Start CTA
+        run: node scripts/verify-opora-course-ready-viewport.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: opora-as56-mobile-${{ matrix.browser }}-${{ github.run_id }}
-          path: artifacts/opora-as56-mobile/${{ matrix.browser }}/
+          path: |
+            artifacts/opora-as56-mobile/${{ matrix.browser }}/
+            artifacts/opora-ready-mobile/${{ matrix.browser }}/
           retention-days: 7

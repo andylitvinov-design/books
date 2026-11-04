@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Reuse the existing focused CRM CI job for end-to-end alert source contracts.
+import './holistic-house-direct-message-phone-alerts.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {directMediaSpec,directMessageText,directAudioTitle,DIRECT_MEDIA_BUCKET} from '../lib/practitioners/direct-message-policy.mjs'

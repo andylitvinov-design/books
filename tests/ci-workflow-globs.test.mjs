@@ -135,7 +135,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
     'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
   assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
   assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(s, /fetch-depth: 0/);
+  assert.match(s, /fetch-depth: 2/);
   assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
   assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
   assert.match(s, /HH_PUBLIC_CASES/);
@@ -144,7 +144,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    'npm run build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"
@@ -153,20 +153,111 @@ test('Public Services exact-head routing preserves source contracts and real ris
 });
 
 
-test('Core scope uses bounded shallow checkout while preserving exact PR merge parent and base verification', () => {
+test('Core classification and all applicable Core checks share the first scheduled runner', () => {
   const s=workflow('hh-pr-core-release.yml');
-  const scope=s.split('\n  scope:')[1]?.split('\n  code:')[0];
-  assert.ok(scope, 'Core scope job must exist');
-  assert.match(scope, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
-  assert.doesNotMatch(scope, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
-  assert.match(scope, /Verify bounded shallow scope ancestry before PR routing/);
-  assert.match(scope, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
-  assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
-  assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
-  assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
-  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" \|\|/);
-  assert.match(scope, /Verify live PR readiness before costly CI/);
-  assert.match(scope, /Classify strictly documentation-only PRs/);
-  assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
-  assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
+  const core=s.split('\n  scope:')[1]?.split('\n  hh-specialist:')[0];
+  assert.ok(core, 'Unified Core job must exist');
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /runs-on: ubuntu-24\.04/);
+  assert.doesNotMatch(core, /^\s+needs:/m, 'Core must not wait for a separate classification job');
+  assert.match(core, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
+  assert.doesNotMatch(core, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
+  assert.match(core, /Verify bounded shallow scope ancestry before PR routing/);
+  assert.match(core, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
+  assert.match(core, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
+  assert.match(core, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
+  assert.match(core, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
+  assert.match(core, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" 2>\/dev\/null/);
+  assert.ok(core.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+    'fallback must prove the old base using authenticated GitHub Compare');
+  assert.ok(core.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'),
+    'verified event base is reused without a second shallow ancestry failure');
+  assert.match(core, /Verify live PR readiness before costly CI/);
+  assert.match(core, /Classify strictly documentation-only PRs/);
+  assert.match(core, /Route exact image and proven public JSX changes without Next build/);
+  assert.match(core, /npm ci --no-audit --no-fund/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /steps\.diff\.outputs\.ci_only/);
+  assert.match(core, /steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.doesNotMatch(s, /^  code:/m, 'the delayed dependent Core job must be removed');
+  assert.doesNotMatch(core, /continue-on-error:\s*true|--force/);
+});
+
+test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores only trusted production caches', () => {
+  const s = workflow('ia-v2.yml');
+  for (const file of [
+    'app/[locale]/app/[[...path]]/workspace.css',
+    'app/[locale]/app/messages/messages-page.css',
+    'components/app/messages-bottom-navigation.jsx',
+    'lib/mobile-visual-bottom.mjs',
+    'tests/mobile-visual-dock.test.mjs',
+  ]) assert.ok(s.includes(file), 'mobile dock exact scope missing ' + file);
+  assert.match(s, /const mobileDockExpected=new Map\(\[/);
+  assert.match(s, /mobileDockOnly=fields\.at\(-1\)===''/);
+  assert.match(s, /\|\|operatorOnly\|\|mobileDockOnly/);
+  for (const line of [
+    '["app/[locale]/app/[[...path]]/workspace.css","M"]',
+    '["app/[locale]/app/messages/messages-page.css","M"]',
+    '["components/app/messages-bottom-navigation.jsx","M"]',
+    '["lib/mobile-visual-bottom.mjs","M"]',
+  ]) assert.ok(s.includes(line), 'repeatable mobile dock change must use exact modified-file manifest: ' + line);
+  assert.ok(!s.includes('["tests/mobile-visual-dock.test.mjs","M"]'),
+    'the fast lane must never allow the PR to rewrite its own geometry test');
+  assert.ok(!s.includes('["tests/messages-iphone-keyboard-layout.test.mjs","M"]'),
+    'the fast lane must never allow the PR to rewrite its iPhone keyboard test');
+  assert.match(s, /run: node --test tests\/mobile-visual-dock\.test\.mjs tests\/messages-iphone-keyboard-layout\.test\.mjs/);
+  const detect = s.indexOf('Detect exact Mobile Dock-only batch before costly IA work');
+  const install = s.indexOf('      - run: npm ci --no-audit --no-fund');
+  assert.ok(detect >= 0 && install > detect, 'dock scope must be proven before npm install or heavy IA checks');
+  assert.match(s, /id: dock-scope/);
+  assert.match(s, /secondParent===expectedHead/);
+  assert.match(s, /merge-base','--is-ancestor',expectedBase,firstParent/);
+  assert.match(s, /Mobile Dock geometry and iPhone keyboard contracts/);
+  assert.ok(s.includes("steps.dock-scope.outputs.dock_only == 'true'"));
+  for (const step of [
+    'IA security, ownership and navigation contracts',
+    'Application, CRM and billing functional contracts',
+    'Guest test access and privacy contracts',
+    'Select exact-merge Messenger fast lane (fail closed)',
+    'Source-content validators',
+    'Restore trusted production-owned scenario media cache',
+    'Restore trusted production Next compiler cache',
+    'Isolated browser tools and Redis CLI',
+    'Initialize disposable owner database with real app migrations',
+    'Synthetic encrypted-store and owner/client browser acceptance',
+  ]) {
+    const start = s.indexOf('- name: ' + step);
+    assert.ok(start >= 0, 'expected full IA step ' + step);
+    const condition = s.slice(start, start + 300).split('\n').find(line => line.trim().startsWith('if:')) || '';
+    assert.ok(condition.includes("steps.dock-scope.outputs.dock_only != 'true'"), step + ' must remain mandatory outside the exact dock lane');
+  }
+  assert.ok(!s.includes('/^\\.github\\/workflows\\/ia-v2\\.yml$/'),
+    'editing the IA workflow itself must retain the full specialist path');
+  assert.match(s, /uses: actions\/cache\/restore@v4/);
+  assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}"));
+  assert.ok(s.includes("key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
+  assert.match(s, /path: \.next\/cache/);
+  assert.doesNotMatch(s, /actions\/cache\/save@v4/,
+    'PR workflow restores only; trusted production remains the sole cache writer');
+});
+
+test('IA and Mandala browsers allocate expensive runners only after cheap exact-HEAD preflight', () => {
+  const ia = workflow('ia-v2.yml');
+  assert.match(ia, /^  browser_preflight:\n    if: .*draft == false/m);
+  assert.match(ia, /^  verify:\n    if: .*draft == false.*\n    needs: \[browser_preflight\]/m);
+  assert.match(ia, /node --test tests\/ia-v2-loopback-proxy\.test\.mjs tests\/ia-public-navigation-diagnostics\.test\.mjs/);
+  const mandala = workflow('holistic-support-mandala.yml');
+  const preflightGuard = mandala.match(/^  webkit_preflight:\n    if: (.+)$/m)?.[1];
+  const macosGuard = mandala.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1];
+  assert.equal(preflightGuard, "${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
+    'macOS WebKit must retain original video release guard');
+  assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
+  for (const source of [ia, mandala]) {
+    assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
+    assert.match(source, /git rev-parse HEAD\^2/);
+    assert.match(source, /git rev-parse HEAD\^1/);
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
 });

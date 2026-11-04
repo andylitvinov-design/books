@@ -85,8 +85,8 @@ test("long-running cinematic preview loops actual scene times and synchronized a
     "final encoded video still uses the original bounded timeline");
   assert.match(studio,/const frameTime=Math\.min\(duration,\(now-start\)\/1000\)/,
     "encoded frame clock must be bounded by the requested movie duration");
-  assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime\)/,
-    "the selected stock shot is sampled from the very same timeline");
+  assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime,true\)/,
+    "the selected stock shot advances on the very same export timeline");
   assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
     "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
   assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations\)/,

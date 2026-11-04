@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { decideHeavyImpact, readTestedCandidateChanges } from '../scripts/ci-heavy-impact.mjs';
+import { applyPrBrowserBudget, decideHeavyImpact, readTestedCandidateChanges } from '../scripts/ci-heavy-impact.mjs';
 import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const one = (filename, status = 'modified') => [{ filename, status }];
@@ -213,18 +213,28 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala PR retains contracts and restricts real media to manual or exact procedural P0 branch', () => {
+test('Mandala PR retains units and runs full media browser only manually or for dedicated voice release branches', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
-  assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  const scopedGeneratedMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/hh-free-procedural-video-')))";
-  for (const name of ['Build','Install isolated Chromium and WebKit (no external account)',
-    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
-    'Public mandala photo, PNG and video browser flow · 320/390/430px']) {
-    assert.ok(yaml.includes('      - name: '+name+'\n        '+scopedGeneratedMediaGate),
-      'real media must run only on manual validation or the exact P0 procedural video PR: '+name);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-studio-'\)/);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-mix-'\)/);
+  assert.match(yaml, /node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(yaml, /run: node --test [^\n]*tests\/first-video-director\.test\.mjs/, 'first-video director must remain in the executable test command');
+  assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'.*\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'.*/);
+});
+
+test('Video Studio and Hypnocorrection release branches run real browser and macOS WebKit gates', () => {
+  const yaml = read('holistic-support-mandala.yml');
+  const browser = yaml.match(/- name: Public mandala photo, PNG and video browser flow[^\n]*\n\s*if: ([^\n]+)/)?.[1] || '';
+  const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
+  for (const branch of ['feat/hh-free-procedural-video-', 'fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
+    assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
+    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
   }
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(yaml, /ffprobe -version/);
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
@@ -268,7 +278,7 @@ test('App R1 short delegated jobs must complete successfully for verified non-ap
     assert.ok(section.includes("if: needs.impact.outputs."+scope+" == 'true'"),
       job+' must retain actual tests when required');
   }
-  assert.match(read('hh-pr-core-release.yml'),/^  release-ready:/m);
+  assert.match(read('hh-pr-core-release.yml'),/^  hh-merge-check:/m);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
@@ -317,4 +327,30 @@ test('only audited CI-policy paths skip unrelated heavy browser matrices', () =>
   }
   assert.deepEqual(decideHeavyImpact('free-review',
     [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
+});
+
+test('Mandala PRs skip redundant Linux browsers but keep required source contracts and macOS media QA', () => {
+  const changed = [{filename:'app/api/holistic-support/voice/route.js',status:'modified'}];
+  const full = decideHeavyImpact('mandala', changed);
+  assert.deepEqual(full,{browser:true},'risk classifier remains fail-closed');
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',full),{browser:false},
+    'Core and macOS WebKit own the PR build and encoded-media gate');
+  assert.deepEqual(applyPrBrowserBudget('mandala','workflow_dispatch',full),{browser:true},
+    'manual full media QA remains available');
+  assert.deepEqual(applyPrBrowserBudget('mandala','push',full),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('free-review','pull_request',{browser:true}),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('app-r1','pull_request',{full_app:true}),{full_app:true});
+  const yaml = read('holistic-support-mandala.yml');
+  assert.match(yaml,/voice-webkit-macos:\n/);
+  assert.match(yaml,/HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1/);
+  assert.match(yaml,/Mandala and mobile support contracts/);
+  assert.match(yaml,/node --test tests\/video-chat-ai\.test\.mjs/);
+});
+
+test('cheap CI routing jobs allow bounded checkout time without weakening specialist gates', () => {
+  const guard = read('hh-pr-sweep-guard.yml');
+  const app = read('hh-app-r1.yml');
+  assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
+  for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });

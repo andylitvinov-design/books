@@ -33,3 +33,9 @@ assets/documents/report-coast-cover.jpg
 # First-party scenario MP3 performances are reproducibly synthesized at build.
 # Commit the score/metadata, not ~75 MB of derived binaries.
 /public/audio/mandala/scenarios/
+
+# Native release credentials and signing scripts: generated only in protected CI
+/android/app/hh-play-signing.gradle
+/android/app/google-services.json
+*.jks
+*.keystore

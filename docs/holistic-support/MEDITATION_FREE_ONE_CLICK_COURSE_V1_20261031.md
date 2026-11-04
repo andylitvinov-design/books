@@ -1,0 +1,39 @@
+# Holistic House — бесплатная медитация + 7 тем курса (31 октября 2026)
+
+Реальная архитектура: внутренний Psychologist Mind определяет безопасную восьмишаговую структуру; Meditation Director делает семь смысловых частей и локальный шаблон; при разрешении клиента бесплатный Gemini или OpenRouter (только free-маршруты) пишет оригинальные текстовые части первой медитации; внутренний Editor проверяет объём, повторы, язык, безопасность. Если бесплатный провайдер недоступен или ответ недостаточно качественный, сайт показывает оригинальный локальный шаблон с честным указанием происхождения.
+
+Один запрос клиента возвращает первую медитацию и семь ТЕМ дней 2–8, выбранных из восьми занятий Psychologist Mind. Темы — не семь аудиозаписей и не оформленный платный курс. Для будущих медитаций нужно отдельно подтвердить безопасность, согласие и правила оплаты.
+
+Поле пожеланий используется на защищённом сервере для проверки и подбора психостратегии. Сырые описания, результаты тестов, история и профили не уходят в бесплатные внешние модели. Провайдер получает только разрешённые коды темы, цели, образа, стиля и ограничений. Режим AI включается только с явным согласием. Целевая длительность и оценка реальной речи с паузами отображаются раздельно.
+
+Для выпуска: дождаться #2532, пройти focused Node/ESLint/tsc, полный Next production build и E2E мобильного UI, auth/IDOR, редакторскую проверку, подтвердить бесплатную квоту, защищённый merge и Vercel READY + source SHA. Платные модели автоматически не вызывать.
+Автоматический режим ввода: клиент может написать проблему и желаемое изменение без выбора психологической классификации. Защищённый алгоритм переводит текст в один из утверждённых кодов направления и цели; при неоднозначности использует явно обозначенный общий вариант, не выставляя диагноз. Дополнительные фильтры стиля и модели доступны через раскрываемую панель. Авторские описания клиента остаются внутри приложения, бесплатные провайдеры получают только коды.
+
+## Доработка: связка медитации, практики и восьми сессий (2 ноября 2026)
+
+- Из одного аутентифицированного и проверенного запроса создаются: текст медитации первого дня, три варианта выполнения **одного** одобренного навыка (практика, упражнение, символический ритуал) и восьмисессионный **план** с конкретными упражнениями по каталогу для каждого подходящего занятия.
+- «Ритуал» — только добровольная символическая рамка уже проверенного упражнения. Нет клинических процедур, магических обещаний, обязательных жестов, дыхательных манипуляций или интерпретации символов.
+- Текущая практика подбирается по **цели клиента во всей разрешённой программе**, поэтому не ограничивается постановкой цели первого дня. Упражнения внутри каждой сессии выбираются исключительно среди одобренных для неё методов.
+- Будущие семь медитаций, аудиофайлы, видео, покупка курса и прохождение 8 сессий **не создаются** автоматически. Любая новая сессия требует актуального preflight и согласия. Переход к специалисту остаётся заявкой.
+- Gemini/OpenRouter получают только заранее одобренные обезличенные коды литературного задания. Каталог методов, решение о безопасности, тип практики и план восьми сессий — **наши собственные алгоритмы**. При отключении внешнего AI остаются текстовый шаблон, выбор методов и полный план.
+- Все три варианта UI переключаются локально, без дополнительных сетевых запросов, списаний XP или передачи личных записей. На LIVE ничего не включать до выпуска объединённого PR #2676 по существующему CI/QA и подтверждённому SHA Vercel.
+
+## 1 November: UI step orchestration and strict model routing
+
+Explicit state (four goal choices) versus developmental vector entry mode on
+the light mobile editor. The route accepts only meditation, practice, course.
+Only the first action may use an explicitly consented external text model;
+practice and eight-session-plan actions use trusted first-party methods,
+regardless of forged client flags. The UI has three separate actions and
+shows only the selected result: text+voice, catalogue practice/ritual/exercise,
+or the 8-stage programme; it does not mislabel future themes as videos.
+The text route still uses one shared authenticated Psychologist Mind
+preflight and builds the vetted intermediate objects in one pass.
+The current release is NOT LIVE before stack completion, safety/privacy
+acceptance, exact-head CI and Vercel SHA verification.
+
+## Four-step Studio → Writer contract (2 November 2026)
+
+The only visible customer journey remains the existing four-step `MandalaGuidedCourse` (PR #3066 + #3068). New `mandala-bridge.mjs` converts explicit locale/theme/current→desired selection to one reviewed `focus` / `intentionCode` Writer request in RU/EN/ES, validated by the existing `normalizeWriterRequest` and `resolveMeditationClientIntent`. It never reads the profile/tests, invents a clinical indication, transmits personal notes by default, enables provider consent, or creates media. Optional notes are sent only with a separate explicit first-party opt-in and remain excluded from free external-model payloads. Resource-imagery consent and external model consent are independently enforced by the existing authenticated route. Unknown state/theme, incomplete vector and invalid avoid codes fail closed.
+
+**Current scope:** contract + TypeScript declaration + focused tests, added in the same existing #2676 PR. This alone does not wire a new button or turn on Gemini. The optional UI adapter is to be mounted inside the canonical `MandalaGuidedCourse` **after** parent #2532 protected merge and the final #3068 production source reconciliation. The original local script, practice chooser, resource permissions and eight-session roadmap must remain usable without login or provider charges. Do not show another full meditation filter form as the primary practice screen. Editorial and real-provider smoke remain release requirements.

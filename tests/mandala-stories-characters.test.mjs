@@ -57,7 +57,9 @@ test("one original video preview and export share the selected symbolic layer",(
   const s=read("components/mandala-free-video-studio.tsx");
   const c=read("components/mandala-stories-characters.tsx");
   const css=read("components/mandala-stories-characters.module.css");
-  assert.match(s,/import \{ MandalaStoriesCharacters \}/);
+  assert.ok(s.includes('const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));'),
+    "Characters remain an interactive panel, but only load in the PRO workspace");
+  assert.doesNotMatch(s,/import \{ MandalaStoriesCharacters \} from/, "avoid eager Characters bundle");
   assert.match(s,/data-workspace-section="pro"/);
   assert.match(s,/data-video-quick-control=\{item\.id\}/);
   assert.match(s,/activeWorkspace==="pro"/);
@@ -66,12 +68,16 @@ test("one original video preview and export share the selected symbolic layer",(
   assert.match(s,/setAppliedStory\(next\)/);
   assert.match(s,/storySelectionItems\(next\)\.some\(item=>item\.capability!=="local"\)/);
   assert.match(s,/storySelectionItems\(appliedStory\)\.length>0\|\|/);
-  assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,4,
-    "first preview + animated preview + first recording frame + recorded frames");
-  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory/,
-    "film scene, cut positions and character overlay all invalidate the previous export");
-  assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory, creationMode, currentFreeVideoPlan, backgroundOnly, photoConsent, photoUrl\]\);/,
-    "changing generation mode, approved plan, background, or photo permissions invalidates a stale personal export");
+  assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,5,
+    "one preview and both real native + WebCodecs export paths retain the selected story");
+  assert.match(s,/renderFrame:time=>\{/,
+    "WebCodecs must actually paint each frame, not substitute a catalog source");
+  assert.match(s,/paintStoryMotifs\(ctx,time,appliedStory\)/,
+    "WebCodecs exported frames must preserve approved story layers");
+  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|"",\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original"\]\),appliedStory/,
+    "film scene, cut positions, transition, color treatment and character overlay invalidate the previous export");
+  assert.match(s,/cinematicPlan,\s*usingFreeFilmCompilation,\s*freeFilmReady,\s*appliedStory,\s*timelineTextClips,stopMovieSound,duration,previewFrameRevision,\s*creationMode,currentFreeVideoPlan,backgroundOnly,photoConsent,photoUrl\]\);/,
+     "video and text/audio timing changes must invalidate the same Canvas preview and exported output");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);

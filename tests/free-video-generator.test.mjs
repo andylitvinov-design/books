@@ -5,6 +5,14 @@ import {buildFreeVideoPlan,cleanVisualDescription,FREE_VIDEO_EXAMPLES,
   FREE_VIDEO_FAMILIES,FREE_VIDEO_PALETTES,FREE_VIDEO_VERSION} from "../lib/mandala/free-video-generator.mjs";
 import * as generator from "../lib/mandala/free-video-generator.mjs";
 
+test("Safari MP4 frame renderer receives the procedural plan and consent-gated portrait",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const webCodecsRender=source.match(/renderFrame:time=>\{([\s\S]*?)return true;/)?.[1];
+  assert.ok(webCodecsRender,"Safari MP4 frame renderer is present");
+  assert.match(webCodecsRender,/paintCinematicFrame\([\s\S]*?cinematicPlan,frame,currentFreeVideoPlan,/);
+  assert.match(webCodecsRender,/creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean\(photoUrl\)\?image:null/);
+});
+
 test("eight original procedural worlds preserve the first three families and palettes",()=>{
   assert.deepEqual(FREE_VIDEO_FAMILIES,["mandala","light","lotus","temple","tree","cosmic","light_tunnel","flowering_garden"]);
   assert.equal(FREE_VIDEO_VERSION,"hh-free-procedural-v2");

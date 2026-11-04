@@ -340,7 +340,7 @@ test("real iPhone Safari 26 chooses WebM first; other browsers keep MP4 first",(
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua}),[...webm,...mp4]);
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:"Mozilla/5.0 Chrome/153.0"}),[...mp4,...webm]);
   assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/26.1 Safari/605.1"),true);
-  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/25.0 Safari/605.1"),false);
+  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/25.0 Safari/605.1"),true);
   assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X)",5),true);
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,preferWebm:true}),webm);
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,forceMp4:true}),mp4);

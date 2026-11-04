@@ -46,3 +46,22 @@ test("no synthetic or uploaded media introduced", () => {
   const route = read("app/[locale]/meditations/page.tsx");
   assert.doesNotMatch(app + route, /(?:\.mp3|\.m4a|\.mp4|(?:upload|publish|generateVoice|synthesizeSpeech)\s*\()/);
 });
+
+test("retired conditional PR 2308 never skips an otherwise successful specialist", () => {
+  const workflow = read(".github/workflows/meditation-catalog-checks.yml");
+  assert.doesNotMatch(workflow,/^    if: .*pull_request\.number == 2308/m);
+  assert.match(workflow,/^  targeted:/m);
+  assert.match(workflow,/^  browser-mobile:/m);
+  assert.match(workflow,/^  fullscreen-candidate-browser:/m);
+  assert.match(workflow,/Check full-screen browser script syntax on every relevant PR/);
+  assert.match(workflow,/run: node --check scripts\/verify-meditation-immersive-browser\.mjs/);
+  for (const step of [
+    "Install reviewed exact-PR dependencies",
+    "Build exact candidate, no user/provider secrets",
+    "Chromium and WebKit full-screen 320/390/430 EN/RU/ES real interactions",
+  ]) assert.ok(workflow.includes("      - name: "+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+    "Manual full-screen E2E must stay available: "+step);
+  assert.match(workflow,/fromJSON\(github\.event_name == 'pull_request'/);
+  assert.match(workflow,/node scripts\/verify-meditation-live-journey\.mjs/);
+  assert.match(workflow,/node scripts\/verify-meditation-immersive-browser\.mjs/);
+});

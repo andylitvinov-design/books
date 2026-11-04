@@ -3,6 +3,10 @@
  */
 import assert from 'node:assert/strict';
 import { chromium, webkit } from '@playwright/test';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const origin = process.env.HH_TEST_PUBLIC_ORIGIN || 'http://127.0.0.1:3100';
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Loopback origin required');
@@ -73,6 +77,42 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
     assert.equal(new Set(frames.values()).size, families.length, `${engine}: eight families must have distinct pixels`);
     assert.deepEqual(externalPosts, [], `${engine}: no external provider POST`);
     assert.deepEqual(errors, [], `${engine}: no page exceptions`);
+    // The canvas check above is not an export test. Attach a real bundled
+    // soundtrack and verify the actual downloaded procedural movie as media.
+    const soundtrack=page.locator('[data-video-quick-music-check]').first();
+    await soundtrack.waitFor({state:'visible'});
+    if(await soundtrack.getAttribute('aria-checked')!=='true')await soundtrack.click();
+    assert.equal(await soundtrack.getAttribute('aria-checked'),'true',`${engine}: soundtrack attached`);
+    const create=page.locator('[data-free-video-create]');
+    await create.waitFor({state:'visible'});
+    assert.equal(await create.isEnabled(),true,`${engine}: procedural export is enabled`);
+    await create.click();
+    const save=page.locator('[data-mandala-video-download]');
+    await save.waitFor({state:'visible',timeout:180000});
+    const directory=await mkdtemp(join(tmpdir(),'hh-procedural-export-'));
+    try {
+      const [download]=await Promise.all([page.waitForEvent('download',{timeout:20000}),save.click()]);
+      const file=join(directory,'actual-video');
+      await download.saveAs(file);
+      const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_type,codec_name:format=duration','-of','json',file],{encoding:'utf8'});
+      assert.equal(probe.status,0,`${engine}: ffprobe must read the downloaded file: ${probe.stderr}`);
+      const media=JSON.parse(probe.stdout),streams=media.streams||[];
+      assert.ok(streams.some(s=>s.codec_type==='video'&&s.codec_name==='h264'),`${engine}: H.264 video required`);
+      assert.ok(streams.some(s=>s.codec_type==='audio'&&s.codec_name==='aac'),`${engine}: AAC audio required`);
+      assert.ok(Number.isFinite(Number(media.format?.duration))&&Number(media.format.duration)>=28,`${engine}: finite complete duration required`);
+      const frame=second=>spawnSync('ffmpeg',['-v','error','-ss',String(second),'-i',file,'-frames:v','1','-vf','scale=32:18','-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:1024*1024});
+      const first=frame(1),second=frame(4);
+      assert.equal(first.status,0,`${engine}: first frame decodes`);
+      assert.equal(second.status,0,`${engine}: later frame decodes`);
+      assert.ok(first.stdout.length>0&&!first.stdout.equals(second.stdout),`${engine}: exported frames must move`);
+      const audio=spawnSync('ffmpeg',['-v','error','-i',file,'-map','0:a:0','-t','2','-ar','8000','-ac','1','-f','s16le','pipe:1'],{maxBuffer:1024*1024});
+      assert.equal(audio.status,0,`${engine}: audio decodes`);
+      let energy=0;const samples=Math.floor(audio.stdout.length/2);
+      for(let i=0;i<samples;i++){const v=audio.stdout.readInt16LE(i*2)/32768;energy+=v*v;}
+      assert.ok(samples>4000&&Math.sqrt(energy/samples)>0.003,`${engine}: exported sound must be audible`);
+    } finally { await rm(directory,{recursive:true,force:true}); }
+    assert.deepEqual(externalPosts, [], `${engine}: export must not call a provider`);
+    assert.deepEqual(errors, [], `${engine}: export must not cause a page exception`);
     console.log(`PASS ${engine}: eight distinct, moving and reproducible procedural worlds`);
     await page.close();
   } finally { await browser.close(); }

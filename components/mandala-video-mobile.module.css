@@ -2381,7 +2381,7 @@
  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{display:grid}
  .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-video-quick-section="1"],
  .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-auto-video-director]{display:none}
- .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result],
+ .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]):not([data-active-workspace="effects"]) .quickBuilder>[data-video-result],
  .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result-empty]{display:none}
  .studio .quickBuilder>.quickHeader,.studio .quickBuilder>.quickBenefits,
  .studio .quickBuilder>.quickDisclosure{display:none}
@@ -2484,6 +2484,168 @@
 }
 
 
+/* Owner-approved iPhone first slide: compact header/nav, music and real-media result. */
+.musicEditorPane{min-width:0;display:grid;gap:8px;margin:0 0 12px}
+.resultEmptyPreview{display:grid;grid-template-columns:112px minmax(0,1fr);gap:9px;align-items:center;min-width:0}
+.resultEmptyPreview img{grid-column:1;width:112px;height:67px;object-fit:cover;border-radius:9px}
+.resultEmptyPreview span{grid-column:2;color:#697e70;font:750 10px/1.25 Arial,sans-serif;letter-spacing:.025em}
+@media(max-width:759px){
+ .studio .quickBuilder>.quickBrandBar{min-height:51px;padding:2px 5px}
+ .studio .quickBrandIdentity strong{font-size:20px}
+ .studio .quickVideoNav{margin:4px 0 0;gap:4px}
+ .studio .quickVideoNav button{min-height:53px;border-radius:10px;gap:3px;padding:5px 2px;font-size:clamp(9px,2.45vw,11px);line-height:1.12}
+ .studio .quickVideoNav button svg{width:17px;height:17px}
+ .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 10px 11px!important;gap:5px}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{padding:9px 8px;gap:4px}
+ .studio .quickMusicRail{grid-auto-columns:minmax(174px,47%);gap:6px;padding:1px 1px 3px}
+ .studio .quickMusicRail .quickMusicItem{grid-template-columns:51px 43px minmax(0,1fr);grid-template-rows:56px;min-height:64px;padding:3px;gap:3px}
+ .studio .quickMusicRail .quickMusicPoster{width:51px;height:56px}
+ .studio .quickMusicRail .quickMusicPlay{min-width:42px;min-height:42px;width:42px;height:42px}
+ .studio .resultEmpty{padding:10px;gap:7px}
+}
+@media(max-width:355px){
+ .studio .quickVideoNav button{font-size:8px;letter-spacing:-.02em;overflow-wrap:anywhere}
+ .studio .quickMusicRail{grid-auto-columns:174px}
+}
+
+
+/* Owner approved 01-Nov final flow. Only the existing Studio modules are
+   rearranged: player -> 6 workspaces -> 4 pictured goals -> single topic input
+   + six text choices -> 4 real film options -> words/audio-guidance CTA.
+   No parallel AI/recording/storage/payment controls. */
+.quickTopicHost{display:block;width:100%;min-width:0;max-width:100%}
+.phraseAudioNext{display:flex;align-items:center;justify-content:center;
+ gap:9px;width:100%;min-height:48px;padding:10px 12px;
+ border:1px solid #b7d7c3;border-radius:12px;background:#e9f5ed;
+ color:#175a45;font:800 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.phraseAudioNext>svg:last-child{margin-left:auto}
+.phraseAudioNext:disabled{opacity:.5;cursor:not-allowed}
+.advancedVideoToggle{display:flex;align-items:center;gap:8px;width:100%;
+ min-height:44px;padding:9px 12px;border:1px solid #ccdfd0;border-radius:12px;
+ background:#fafcf6;color:#24604c;font:750 12px/1.25 Arial,Helvetica,sans-serif;
+ cursor:pointer}
+.advancedVideoToggle>svg:last-child{margin-left:auto}
+.studio[data-video-advanced-open="true"] .advancedVideoToggle>svg:last-child{transform:rotate(180deg)}
+.studio[data-active-workspace]:not([data-active-workspace="video"]) .advancedVideoToggle{display:none!important}
+.phraseAudioNext:focus-visible,.advancedVideoToggle:focus-visible{
+ outline:3px solid #d5a756;outline-offset:2px}
+@media(max-width:759px){
+ .studio .quickBuilder{gap:7px;padding-bottom:10px}
+ .studio .quickBuilder>.quickBrandBar{min-height:52px;padding:2px 5px}
+ .studio .quickBrandIdentity strong{font:650 clamp(19px,5vw,24px)/1 Georgia,serif}
+ .studio .quickBrandIdentity small{font-size:10px;line-height:1.2}
+ .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+   aspect-ratio:2.78/1!important;border:1px solid #d9e1d5;border-radius:16px!important}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroPromo{
+   background-image:linear-gradient(100deg,#112e263d,#1028200b),
+   url('/images/holistic-house/reiki-practitioner-sunrise.webp')!important;
+   background-position:center 46%!important;background-size:cover!important}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroCanvas{opacity:.17}
+ .studio .previewStage .heroShade{background:linear-gradient(90deg,#101d1aa9,transparent 72%),
+   linear-gradient(0deg,#12251f65,transparent 60%)}
+ .studio .heroEditorial{left:12px;bottom:11px;max-width:51%}
+ .studio .heroEditorial h2{font-size:clamp(18px,4.9vw,24px)!important}
+ .studio .heroEditorial p{font-size:clamp(9px,2.45vw,11px)!important}
+ .studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:5px 0 0}
+ .studio .quickVideoNav button{min-width:0;min-height:58px;gap:4px;
+   padding:5px 1px;border:1px solid #e3e8df;border-radius:11px;
+   background:#fffefb;color:#415b50;font:650 clamp(9px,2.45vw,11px)/1.1 Arial,Helvetica,sans-serif;
+   text-align:center;overflow-wrap:normal;hyphens:auto}
+ .studio .quickVideoNav button svg{width:19px;height:19px}
+ .studio .quickVideoNav button[aria-pressed="true"]{
+   border-color:#198164;background:#e9f6ee;color:#145c45;box-shadow:inset 0 0 0 1px #b3dcc4}
+ .studio .quickBuilder>[data-video-quick-section="1"]{order:3;display:grid;gap:7px;
+   padding:11px 10px 12px!important;border:1px solid #e2e6db;border-radius:17px;
+   background:#fffdfa;box-shadow:0 3px 14px #304a3410}
+ .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+   font:800 clamp(15px,4vw,19px)/1.2 Arial,Helvetica,sans-serif}
+ .studio .quickBuilder>[data-video-topic-section]{order:4;display:grid;
+   margin:0;padding:11px 10px 12px;border:1px solid #e2e6db;border-radius:17px;
+   background:#fffdfa;box-shadow:0 3px 14px #304a3410}
+ .studio .quickBuilder>[data-auto-video-director]{order:5;min-width:0;margin:0}
+ .studio .quickBuilder>[data-video-result]{order:6;margin:0}
+ .studio .quickBuilder>[data-video-result-empty]{display:none!important}
+ .studio .quickBuilder>.advancedVideoToggle{order:7;margin:0}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{order:5}
+ .studio .quickBuilder>[data-video-quick-phrases]{order:4;padding:12px 10px;
+   background:#fffdfa;border-radius:16px}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{
+   padding:10px 9px;border-radius:16px;background:#fffdfa}
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{
+   display:none!important}
+ .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-audio-choices]{
+   display:grid!important}
+ .studio .quickBuilder>[data-video-order-bar]{order:18}
+ .studio .quickBuilder>.quickHeader,
+ .studio .quickBuilder>.quickBenefits,
+ .studio .quickBuilder>.quickDisclosure{display:none!important}
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-quick-section="4"],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-first-video-advanced],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>.sceneLibrary,
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-quick-tier],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-free-film-compilation-catalog],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickThemeAdvanced{
+   display:none!important}
+ .studio[data-active-workspace="video"][data-video-advanced-open="true"] .quickThemeAdvanced{
+   display:block!important}
+ .studio[data-active-workspace="phrases"] [data-video-hypnosis-section],
+ .studio[data-active-workspace="effects"] [data-video-effects-panel],
+ .studio[data-active-workspace="practices"] [data-video-meditation-course-panel],
+ .studio[data-active-workspace="pro"] [data-video-quick-personal],
+ .studio[data-active-workspace="editor"] [data-video-final-editor]{
+   max-width:100%;min-width:0;border-radius:16px;background:#fffdfa;color:#194738}
+ .studio .workspaceHeading{order:3;min-width:0;margin:0;padding:12px;
+   border:1px solid #e1e9df;border-radius:16px;background:#fffdfa}
+ .studio .workspaceHeading h3{font:800 19px/1.23 Arial,Helvetica,sans-serif}
+ .studio .workspaceHeading p{font:500 12px/1.4 Arial,Helvetica,sans-serif}
+ .studio .quickBuilder [data-video-quick-section="1"] .quickThemeAdvanced[open]{
+   max-width:100%;overflow-x:hidden}
+ .studio .quickVideoNav button:focus-visible{outline:3px solid #d5ad67;outline-offset:2px}
+}
+@media(max-width:355px){
+ .studio .quickVideoNav{gap:3px}
+ .studio .quickVideoNav button{font-size:clamp(8px,2.7vw,9.6px);padding:4px 1px;min-height:55px}
+ .studio .quickVideoNav button svg{width:16px;height:16px}
+ .studio .quickBuilder>[data-video-topic-section]{padding:10px 7px}
+ .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 7px!important}
+}
+
+/* The ONE music library is shared by Style (advanced) and Support Phrases.
+   Default entry stays short; a deliberate Advanced action reveals it. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-advanced-open="true"]
+   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:9}
+ .studio[data-active-workspace="phrases"]
+   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:5}
+ .studio[data-active-workspace="video"] .quickBuilder>.advancedVideoToggle{display:flex;order:8}
+ .studio .quickBuilder>[data-video-topic-section]{scroll-margin-top:12px}
+}
+
+/* #2913 AI chat remains callable without displacing the approved phone mock.
+   The single chat only opens from the goal clarification tile or its disclosure.
+   AI requests still require explicit consent inside the verified chat. */
+.directorChatDetails{display:grid;min-width:0;max-width:100%;margin:0;
+  padding:0;border:1px solid #d8e5da;border-radius:15px;background:#fffdfa;
+  color:#194a3a;overflow:clip}
+.directorChatDetails:not([open]){display:none!important}
+.directorChatDetails>summary{display:flex;align-items:center;gap:8px;min-height:44px;
+  padding:9px 12px;font:750 13px/1.3 Arial,Helvetica,sans-serif;
+  color:#175f48;cursor:pointer;list-style:none}
+.directorChatDetails>summary::-webkit-details-marker{display:none}
+.directorChatDetails>summary svg:last-child{margin-left:auto}
+.directorChatDetails[open]>summary svg:last-child{transform:rotate(180deg)}
+.directorChatDetails>summary:focus-visible{outline:3px solid #d7b56b;outline-offset:-2px}
+.directorChatDetails>section{min-width:0;max-width:100%;margin:0;border-radius:0}
+@media(max-width:759px){
+  .studio .quickBuilder>.directorChatDetails{order:5}
+  .studio[data-active-workspace="video"] .directorChatDetails[open]{display:grid}
+  .studio[data-active-workspace="video"] .quickBuilder>[data-auto-video-director]{order:6}
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-result]{order:7}
+  .studio .quickBuilder>.advancedVideoToggle{order:8}
+}
+@media(prefers-reduced-motion:reduce){
+  .directorChatDetails>summary svg:last-child{transition:none}
+}
 /* Unified Phrases tab, owner mock 01-Nov-2026. Reuses the canonical player,
    audio-attachment state and sound previews; no second audio state machine. */
 .studio[data-active-workspace="phrases"] .hypnosisSection{display:grid;gap:12px;
@@ -2539,3 +2701,1010 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+/* Third mobile workspace: one portaled heading/Wave ABOVE the existing
+   16:9 hero, matching the owner's approved screen without forking playback. */
+.hypnoIntroSlot{display:block;min-width:0;width:100%;margin:8px 0 0}
+@media(max-width:759px){
+  .studio .quickBuilder>.hypnoIntroSlot{order:0;margin:4px 0 2px}
+  .studio[data-active-workspace="effects"] .workspaceHeading{display:none}
+}
+
+/* Hypnocorrection has one original player followed by its four owner-approved
+   effects groups. The actual encoded result/save follows Create, never precedes
+   the controls. Other five Video Studio workspaces keep their own ordering. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4}
+}
+
+/* Screenshot-specific third-workspace hero: the same Canvas preview is cropped
+   into a compact landscape poster; exported video dimensions are unchanged. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .previewStage .hero{aspect-ratio:3.3/1!important}
+}
+
+
+/* Practices: uplifting editorial hero and optional advanced tools. */
+.studio[data-active-workspace="practices"] .workspaceHeading{min-height:150px;padding:19px 17px 23px;border:1px solid #f2ebd9;border-radius:22px;background:linear-gradient(90deg,#fffdfa 0%,#fffcf5ee 49%,#fff5e13d 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat;box-shadow:0 10px 23px #52643d12;align-content:center}
+.studio[data-active-workspace="practices"] .workspaceHeading small{color:#377a53;letter-spacing:.13em}
+.studio[data-active-workspace="practices"] .workspaceHeading h3{font:750 clamp(26px,6.3vw,37px)/1.12 Georgia,serif;color:#143e33;letter-spacing:-.03em}
+.studio[data-active-workspace="practices"] .workspaceHeading p{max-width:460px;color:#29483b;font-size:clamp(14px,3.6vw,16px);font-weight:550;line-height:1.5}
+.studio[data-active-workspace="practices"] .therapyCourse{margin-top:10px}
+.therapyAudioDetails,.therapyRelatedDetails{box-sizing:border-box;min-width:0;margin:12px 0;border:1px solid #dfeadd;border-radius:18px;background:#fffefa;color:#184b3d;overflow:hidden}
+.therapyAudioDetails>summary,.therapyRelatedDetails>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:55px;padding:12px 15px;color:#12674f;cursor:pointer;font-size:clamp(14px,3.65vw,16px);font-weight:800;list-style:none}
+.therapyAudioDetails>summary::-webkit-details-marker,.therapyRelatedDetails>summary::-webkit-details-marker{display:none}
+.therapyAudioDetails>summary svg,.therapyRelatedDetails>summary svg{flex:none;transition:transform .2s ease}
+.therapyAudioDetails[open]>summary svg,.therapyRelatedDetails[open]>summary svg{transform:rotate(180deg)}
+.therapyAudioDetails>div,.therapyRelatedDetails>div{padding:10px}
+@media(max-width:430px){
+ .studio[data-active-workspace="practices"] .workspaceHeading{min-height:155px;padding:17px 14px 20px;background-position:58% center}
+ .studio[data-active-workspace="practices"] .workspaceHeading h3{font-size:clamp(25px,7vw,31px)}
+ .studio[data-active-workspace="practices"] .workspaceHeading p{font-size:14px;max-width:295px}
+ .studio[data-active-workspace="practices"] .therapyCourse{margin:10px 0}
+}
+
+/* Unified actual TTS selector below approved phrase rows, inside the numbered voice card. */
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice]{margin:5px 0;padding:13px;border:1px solid #e0e8df;border-radius:14px;background:#fffefa}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection .phraseVoiceNotice{font-size:clamp(13px,3.7vw,15px);line-height:1.4}
+
+/* Owner-approved Phrases/Hypnocorrection editor first; no second renderer. */
+.studio[data-active-workspace="phrases"] .phraseEditorLead{
+ display:block;min-width:0;max-width:100%;margin:6px 0 11px;scroll-margin-top:84px;
+}
+.studio .quickVideoNav button[data-video-quick-control="phrases"] span{
+ font-size:clamp(8px,2.05vw,10px);line-height:1.08;
+ white-space:normal;overflow-wrap:anywhere;hyphens:auto;
+}
+@media(max-width:355px){
+ .studio .quickVideoNav button[data-video-quick-control="phrases"] span{
+   font-size:8px;line-height:1.04;
+ }
+ .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:5px 0 8px}
+}
+
+
+/* Holistic Light — Warm & Alive, owner-approved 02 Nov 2026.
+   Larger MOBILE controls and editorial hierarchy; keep one working player,
+   existing tabs, original renderer, safe-area dock and advanced tools. */
+.heroEyebrow{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  border:1px solid #fff8;padding:7px 11px;border-radius:999px;
+  background:#fffdf5e8;color:#075b42;font:800 12px/1.2 Arial,Helvetica,sans-serif;
+  text-shadow:none;box-shadow:0 3px 12px #2d412d18}
+.heroEyebrow svg{flex:none}
+.quickPracticeShortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;min-width:0;margin:10px 0 2px}
+.quickPracticeShortcuts button{display:flex;align-items:center;justify-content:space-between;
+  gap:9px;min-width:0;min-height:70px;padding:13px 14px;
+  border:1px solid #d7e6d8;border-radius:20px;background:#eaf6e9;
+  color:#125940;text-align:left;font:800 15px/1.25 Arial,Helvetica,sans-serif;
+  box-shadow:0 5px 17px #214b3210}
+.quickPracticeShortcuts button:nth-child(2){border-color:#f3ddcb;background:#fff0e5;color:#9c602c}
+.quickPracticeShortcuts button:nth-child(3){border-color:#e7d8ef;background:#f4eafa;color:#745185}
+.quickPracticeShortcuts button>svg{flex:none}
+.quickPracticeShortcuts button span{flex:1;min-width:0;overflow-wrap:normal}
+.quickPracticeShortcuts button:disabled{opacity:.5;cursor:not-allowed}
+.quickPracticeShortcuts button:focus-visible{outline:3px solid #c99c55;outline-offset:3px}
+
+@media(max-width:759px){
+  .studio{font-size:16px;line-height:1.4}
+  .studio .quickBuilder{gap:14px;padding-bottom:20px}
+  .studio .quickBuilder>.quickBrandBar{min-height:78px;gap:12px;padding:8px 10px}
+  .studio .quickBuilder .quickBrandBack{width:48px;height:48px}
+  .studio .quickBuilder .quickBrandBack svg{width:35px;height:35px}
+  .studio .quickBrandIdentity strong{font:700 clamp(24px,6.6vw,30px)/1.05 Georgia,serif;letter-spacing:-.025em}
+  .studio .quickBrandIdentity small{font:500 clamp(12px,3.1vw,14px)/1.35 Arial,Helvetica,sans-serif}
+  .studio .quickBrandProfile{width:48px;height:48px}
+  .studio .quickBrandProfile svg{width:23px;height:23px}
+
+  /* Full-width hero, not the former 2.78:1 strip. Actual video/Canvas stays mounted. */
+  .studio .previewStage .hero,
+  .studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:248px!important;aspect-ratio:1.54/1!important;max-height:none!important;
+    border:1px solid #e5ddcb;border-radius:25px!important;
+    box-shadow:0 12px 28px #493d2622}
+  .studio .previewStage .heroShade{
+    background:linear-gradient(90deg,#092c26c9 0%,#103c30a3 42%,#112f2815 100%),
+      linear-gradient(0deg,#0b312673,transparent 70%)}
+  .studio .heroEditorial{left:18px;right:auto;bottom:17px;max-width:67%;display:grid;gap:7px}
+  .studio .heroEditorial h2{
+    font:850 clamp(23px,6.7vw,30px)/1.08 Arial,Helvetica,sans-serif!important;
+    letter-spacing:-.035em;text-shadow:0 2px 8px #001d1780}
+  .studio .heroEditorial p{
+    font:550 clamp(12px,3.25vw,15px)/1.3 Arial,Helvetica,sans-serif!important;
+    color:#fffaf2!important;text-shadow:0 1px 7px #00251d99}
+  .studio .heroEyebrow{font-size:clamp(11px,2.8vw,13px);padding:7px 9px}
+  .studio .previewStage .heroPlay{left:81%;top:50%;width:60px;height:60px;
+    border:2px solid #fffcf0a8;background:#113d2db8;box-shadow:0 5px 24px #07372f70}
+  .studio .previewStage .heroPlay svg{width:30px;height:30px}
+  .studio .heroDuration{top:13px;right:13px;padding:8px 11px;border-radius:12px;font-size:13px}
+
+  /* Six REAL workspaces stay visible; 3×2 avoids illegible 8–10px labels. */
+  .studio .quickVideoNav{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0}
+  .studio .quickVideoNav button{
+    min-height:100px;padding:12px 7px;gap:8px;
+    border:1px solid #e6ded2;border-radius:21px;
+    background:linear-gradient(145deg,#fffcf7,#fff9f1);color:#173e34;
+    font:750 clamp(12px,3.5vw,15px)/1.18 Arial,Helvetica,sans-serif;
+    letter-spacing:0;hyphens:auto;overflow-wrap:normal;
+    box-shadow:0 4px 14px #3d4d3011}
+  .studio .quickVideoNav button svg{width:27px;height:27px;color:#087656}
+  .studio .quickVideoNav button[data-video-quick-control="phrases"] span{
+    font:750 clamp(12px,3.35vw,14px)/1.16 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;hyphens:auto}
+  .studio .quickVideoNav button[aria-pressed="true"]{
+    background:linear-gradient(135deg,#55ba80,#087e5a);border-color:#138b67;
+    color:#fff;box-shadow:0 6px 16px #08755335}
+  .studio .quickVideoNav button[aria-pressed="true"] svg{color:#fff}
+  .studio .quickVideoNav button:focus-visible{outline:3px solid #d6a653;outline-offset:3px}
+
+  /* Large numbered cards with generous gutters. */
+  .studio .quickBuilder>[data-video-quick-section="1"],
+  .studio .quickBuilder>[data-video-topic-section]{
+    padding:18px 15px 20px!important;gap:14px;border:1px solid #eee4d6;
+    border-radius:25px;background:linear-gradient(145deg,#fffefa,#fffaf5);
+    box-shadow:0 9px 25px #5c493014}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+    font:850 clamp(21px,6vw,27px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.025em}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 svg{
+    width:26px;height:26px;color:#08745a}
+  .studio .quickBuilder>[data-auto-video-director]{order:6;margin:0}
+  .studio .quickBuilder>.quickPracticeShortcuts{order:7;grid-template-columns:minmax(0,1fr);
+    gap:9px;margin:0}
+  .studio .quickPracticeShortcuts button{
+    min-height:62px;border-radius:18px;padding:12px 16px;
+    font-size:clamp(15px,4vw,17px)}
+  .studio .quickPracticeShortcuts button svg:first-child{width:25px;height:25px}
+  .studio .quickPracticeShortcuts button svg:last-child{margin-left:auto}
+  .studio .advancedVideoToggle{min-height:56px;padding:11px 15px;
+    border-radius:17px;font-size:clamp(14px,3.9vw,16px)}
+  .studio .workspaceHeading h3{font-size:clamp(22px,5.8vw,27px)}
+  .studio .workspaceHeading p{font-size:14px}
+}
+@media(min-width:760px){
+  .studio .heroEyebrow{margin-bottom:6px}
+}
+
+
+/* Owner-approved 02 Nov fifth Montage essentials and sixth PRO.
+   One source-backed player/audio editor, no new rendering engine. */
+.basicStudio{display:grid;gap:14px;min-width:0;margin:10px 0 0;padding:16px;
+  border:1px solid #e8e1d5;border-radius:22px;background:linear-gradient(155deg,#fffefa,#fff9ef);
+  box-shadow:0 8px 25px #234b3a12;color:#173d36}
+.basicStudio .quickSectionHeading h3{font:800 clamp(19px,4.7vw,25px)/1.2 Arial,Helvetica,sans-serif;color:#142c45}
+.basicStudio .quickSectionHeading p{margin:5px 0 0;color:#58746d;font-size:13px;line-height:1.45}
+.basicTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;min-width:0}
+.basicTabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  min-width:0;min-height:88px;padding:9px 5px;border:1px solid #dddcd6;border-radius:17px;
+  background:#fffdfa;color:#143b4a;font:800 clamp(11px,2.9vw,14px)/1.18 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;text-align:center}
+.basicTabs button svg{flex:none;color:#078765}
+.basicTabs button[aria-pressed=true]{background:#e4f4e8;border-color:#079d75;
+  box-shadow:inset 0 0 0 1px #0a9e76;color:#075943}
+.basicTabs button:disabled{opacity:.55}
+.basicTabs button:focus-visible,.basicStyles button:focus-visible,.basicFormat button:focus-visible,
+.basicPreview:focus-visible{outline:3px solid #d7b167;outline-offset:2px}
+.basicStyles{display:grid;gap:10px;min-width:0}
+.basicStyleHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.basicStyleHeading h4{display:flex;align-items:center;gap:7px;margin:0;
+  font:800 clamp(17px,4vw,21px)/1.15 Georgia,serif;color:#142b45}
+.basicStyleHeading h4 svg{flex:none;color:#14826b}
+.basicStyleHeading button{display:flex;align-items:center;gap:3px;min-height:44px;padding:7px 2px;
+  border:0;background:transparent;color:#087c65;font:800 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+.basicStyleRail{grid-auto-columns:clamp(145px,45%,198px);gap:12px;padding:2px 3px 10px}
+.basicStyleRail button{gap:7px;text-align:left}
+.basicStylePoster{position:relative;display:block;width:100%;aspect-ratio:1.45;overflow:hidden;
+  border:2px solid transparent;border-radius:16px;background:#e8f0df;box-shadow:0 4px 12px #153d3117}
+.basicStyleRail button .basicStylePoster img{display:block;width:100%;height:100%;
+  aspect-ratio:auto;object-fit:cover;border:0;border-radius:0}
+.basicStyleRail button[aria-pressed=true] .basicStylePoster{border-color:#0c9d77;
+  box-shadow:0 0 0 3px #c0e9d6,0 4px 12px #174b321c}
+.basicStylePlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:44px;height:44px;border:2px solid #fff;
+  border-radius:50%;background:#0a5a4eb8;color:white}
+.basicStylePlay svg{margin-left:2px}
+.basicStyleCheck{position:absolute;top:7px;right:7px;display:grid;place-items:center;
+  width:28px;height:28px;border:2px solid white;border-radius:50%;background:#009675;color:white}
+.basicStyleRail .basicStyleName{font:800 13px/1.3 Arial,Helvetica,sans-serif;color:#183d3b;min-height:36px;display:block}
+.basicMusicPane,.basicVoicePane{min-width:0;margin:0}
+.basicVoicePane[open]{background:#fffefa;border-color:#d4e3d8;padding:0 10px 10px}
+.basicMusicPane .audioSection{margin:0}
+.basicFormat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;min-width:0}
+.basicFormat fieldset{min-width:0;padding:10px 9px 12px;border:1px solid #e0e4da;
+  border-radius:16px;background:#fffdf9}
+.basicFormat legend{display:flex;align-items:center;gap:6px;padding:0 5px;
+  color:#264f46;font:800 13px/1.3 Arial,Helvetica,sans-serif}
+.basicFormat legend svg{color:#117a63}
+.basicFormatOptions{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.basicFormatOptions button{display:flex;justify-content:center;align-items:center;flex:1 1 43px;
+  min-width:0;min-height:44px;padding:8px 7px;border:1px solid #d3dfd7;border-radius:11px;
+  background:#fff;color:#2d5546;font:800 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+.basicFormatOptions button[aria-pressed=true]{border-color:#098969;background:#d8f0e1;color:#075b46}
+.basicPreview{display:flex;justify-content:center;align-items:center;gap:10px;width:100%;
+  min-height:51px;padding:10px 13px;border:1px solid #b5dbca;border-radius:14px;
+  background:#f1faf2;color:#076a52;font:800 14px/1.3 Arial,Helvetica,sans-serif}
+.basicPreview:disabled{opacity:.5}
+.studio [data-video-pro-advanced]>summary{display:flex;align-items:center;gap:8px;
+  min-height:48px;padding:10px 12px;color:#176a52;font-weight:800}
+@media(max-width:759px){
+ .studio [data-video-basic-editor]{order:4;margin:0}
+ .studio[data-active-workspace=pro] [data-video-quick-personal]{order:4}
+ .studio[data-active-workspace=pro] [data-video-final-editor]{order:5}
+ .studio[data-active-workspace=editor] [data-video-order-bar]{order:18}
+}
+@media(max-width:355px){
+ .basicStudio{gap:11px;padding:11px 8px}
+ .basicTabs{gap:5px}
+ .basicTabs button{min-height:79px;padding:7px 3px;font-size:11px}
+ .basicStyleRail{grid-auto-columns:clamp(140px,49%,170px);gap:8px}
+ .basicFormat{grid-template-columns:1fr;gap:9px}
+}
+@media(prefers-reduced-motion:reduce){.basicStudio *,.basicStyleRail{transition:none!important;scroll-behavior:auto!important}}
+/* The six working tabs remain reachable, but Effects presents them BEFORE
+   the original Wave -> film -> four-group sequence, not between film/groups.
+   The direct #video-hypnocorrection-mobile link lands above Wave on iPhone,
+   instead of hiding the headline and the only existing video player. */
+@media(max-width:759px){
+  .studio[data-active-workspace="effects"] .quickBuilder>.quickBrandBar{order:-1}
+  .studio[data-active-workspace="effects"] .quickBuilder>.quickVideoNav{order:0}
+  .studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{order:1}
+  .studio[data-active-workspace="effects"] .quickBuilder>.previewStage{order:2}
+  .studio[data-active-workspace="effects"] [data-video-hypnocorrection-panel]{
+    scroll-margin-top:min(44svh,390px)}
+}
+
+/* 02 Nov owner reference, third workspace only. The original six theme buttons
+   (same category handlers, scenes and privacy fences) are the visible goal step.
+   Do not display the four-portal Auto Director shortcuts alongside them. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"]{
+   display:grid!important;order:3;min-width:0;margin:0;padding:12px 10px!important;
+   border:1px solid #e8e9e1;border-radius:18px;background:#fffefa;
+   box-shadow:0 3px 14px #344c3710}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"] .quickGoalHost{display:none!important}
+ .studio[data-active-workspace="effects"] .quickBuilder>.quickSection[data-video-quick-section="1"] .quickSectionHeading h3{
+   font:800 clamp(18px,4.6vw,21px)/1.16 Arial,Helvetica,sans-serif;color:#162438}
+ .studio[data-active-workspace="effects"] .quickThemeAdvanced{display:block;min-width:0}
+ .studio[data-active-workspace="effects"] .quickThemeAdvanced>summary{display:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail{
+   display:grid!important;grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));
+   grid-auto-columns:unset;gap:7px;max-width:100%;width:100%;
+   overflow:visible;scroll-snap-type:none;padding:0;margin:1px 0 0}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button{
+   display:flex;flex-direction:row;align-items:center;justify-content:center;
+   gap:5px;min-width:0;max-width:none;width:100%;height:auto;min-height:53px;
+   padding:6px 4px;border:1px solid #e2e7dd;border-radius:14px;
+   background:#f1f6ed;color:#1e5442;box-shadow:none;text-align:center;
+   white-space:normal}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button::after,
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button>img{display:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon{
+   position:static;flex:none;display:grid;place-items:center;width:25px;height:25px;
+   border:0;border-radius:8px;background:transparent;color:inherit;box-shadow:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:23px;height:23px;color:inherit}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeName{
+   position:static;display:block;min-width:0;font:800 clamp(10.8px,2.9vw,13px)/1.14 Arial,Helvetica,sans-serif;
+   color:inherit;text-shadow:none;overflow-wrap:normal;hyphens:auto}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="life"]{background:#e9f5e6;color:#128360}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="energy"]{background:#fff2da;color:#ca7d17}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="relationships"]{background:#fae8ed;color:#bb476b}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="goals"]{background:#f1e9fd;color:#8557c5}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="money"]{background:#fff1d7;color:#c68b1f}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="health"]{background:#eaf3e4;color:#15885d}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[aria-pressed="true"]{
+   padding:5px 3px;border:2px solid #0e9869;background:#e5f5e5;color:#086b4e;
+   box-shadow:inset 0 0 0 1px #a6d5b4}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{
+   display:grid;order:4;min-width:0;margin:0;padding:0!important;
+   border:0;background:transparent;box-shadow:none}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:5}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail{gap:5px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button{min-height:58px;gap:2px;padding:4px 2px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon{width:20px;height:23px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:20px;height:20px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeName{font-size:10.5px}
+}
+/* Single real workspace nav portals here in mobile Effects only. On desktop the
+   nav stays in its original source position below the existing Canvas hero. */
+.hypnoNavSlot{display:none}
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>.hypnoNavSlot{
+   display:block;order:0;width:100%;min-width:0;margin:0;padding:0}
+ .studio[data-active-workspace="effects"] .hypnoNavSlot>.quickVideoNav{
+   display:grid;width:100%;min-width:0;margin:0}
+}
+
+/* Compact mobile title for the unified six-button navigation flow. */
+.quickBrandMobileTitle{display:none}
+@media(max-width:759px){
+  .studio .quickBrandIdentity{display:none}
+  .studio .quickBrandMobileTitle{display:block;min-width:0;flex:1;color:#233c2c;
+    font:700 clamp(16px,4.4vw,20px)/1.1 Georgia,serif}
+}
+/* Owner 03 Nov: six real studio tools remain ONE row on iPhone.
+   Full tab names stay accessible, compact labels keep 320px readable. */
+.quickNavCompact{display:none}
+.montageScenario{
+  display:grid;gap:9px;min-width:0;padding:13px;border:1px solid #d5e7dc;
+  border-radius:18px;background:linear-gradient(145deg,#f6fcf7,#fffdf8);
+}
+.montageScenario label{display:flex;align-items:center;gap:8px;color:#15483d;
+  font:800 17px/1.25 Arial,Helvetica,sans-serif}
+.montageScenario p{margin:0;color:#617568;font:500 13px/1.4 Arial,Helvetica,sans-serif}
+.montageScenario textarea{width:100%;min-width:0;min-height:110px;resize:vertical;
+  border:1px solid #cedbd2;border-radius:13px;background:#fff;color:#1a4338;
+  padding:12px;font:500 16px/1.45 system-ui,-apple-system,sans-serif}
+.montageScenario textarea:focus-visible,
+.montageScenario button:focus-visible,
+.montageStyleSettings summary:focus-visible{outline:3px solid #16866c;outline-offset:2px}
+.montageScenario button{display:inline-flex;justify-content:center;align-items:center;gap:8px;
+  min-height:46px;padding:10px 13px;border:1px solid #0b8065;border-radius:12px;
+  background:#087c62;color:white;font:750 14px/1.25 Arial,Helvetica,sans-serif}
+.montageScenario button:disabled{opacity:.55;cursor:not-allowed}
+.montageStyleSettings{min-width:0;margin-top:12px;padding:0 10px;
+  border:1px solid #cfe4d6;border-radius:16px;background:#f8fbf7}
+.montageStyleSettings>summary{display:flex;align-items:center;gap:9px;
+  min-height:50px;cursor:pointer;color:#175a47;font:750 14px/1.25 Arial,Helvetica,sans-serif;
+  list-style:none}
+.montageStyleSettings>summary::-webkit-details-marker{display:none}
+.montageStyleSettings>summary svg:last-child{margin-left:auto}
+.montageStyleSettings[open]{padding-bottom:10px}
+@media(max-width:640px){
+  .studio .quickVideoNav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:4px;margin:7px 0 0;padding:0;min-width:0}
+  .studio .quickVideoNav button{min-width:0;min-height:68px;gap:5px;padding:7px 1px;
+    border-radius:11px;font:750 clamp(9px,2.45vw,11px)/1.2 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;word-break:normal;hyphens:auto}
+  .studio .quickVideoNav button svg{width:18px;height:18px}
+  .studio .quickVideoNav .quickNavFull{display:none}
+  .studio .quickVideoNav .quickNavCompact{display:block;min-width:0;
+    max-width:100%;text-align:center;overflow-wrap:anywhere}
+  .montageScenario{padding:11px}
+}
+
+
+/* Montage multitrack: one compact screen using the original Canvas, not a second player. */
+.montageSettingsDisclosure{min-width:0;border:1px solid #d9e5db;border-radius:14px;
+  background:#f9fcf8;padding:0 12px}
+.montageSettingsDisclosure>summary{min-height:45px;display:flex;align-items:center;
+  color:#17644e;cursor:pointer;font-weight:750;font-size:13px;list-style:revert}
+.montageSettingsDisclosure[open]{padding-bottom:13px}
+.montageSettingsDisclosure>.quickSectionHeading{margin:6px 0 11px}
+.montageSettingsDisclosure:focus-within{border-color:#7bb9a2}
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"] .previewStageHeading,
+  .studio[data-active-workspace="editor"] .previewMiniSource,
+  .studio[data-active-workspace="editor"] .workspaceHeading{display:none!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero,
+  .studio[data-active-workspace="editor"][data-video-studio-mode="therapy"] .previewStage .hero{
+    width:100%;aspect-ratio:16/9!important;min-height:0!important;max-height:280px!important;
+    border-radius:15px!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero[data-hero-promo="true"] .heroPromo{
+    opacity:0!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroCanvas{
+    opacity:1!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroEditorial{
+    display:none!important}
+  .studio[data-active-workspace="editor"] .previewStage .hero .heroPlay{
+    left:50%!important;top:50%!important}
+  .studio[data-active-workspace="editor"] .basicStudio{
+    margin-top:5px;padding:9px 8px;gap:7px;border-radius:16px}
+  .studio[data-active-workspace="editor"] .montageScenario{gap:5px;padding:8px 9px}
+  .studio[data-active-workspace="editor"] .montageScenario p{display:none}
+  .studio[data-active-workspace="editor"] .montageScenario textarea{
+    min-height:62px;height:65px;padding:8px 10px}
+  .studio[data-active-workspace="editor"] .montageScenario button{
+    min-height:39px;padding:7px 10px}
+  .studio[data-active-workspace="editor"] .quickVideoNav{margin:3px 0 0}
+}
+
+/* HH editor one-screen iPhone composition — six tabs, script, 16:9 film, tracks. */
+@media (max-width: 759px) {
+  /* Keep the existing source-backed editor; flatten only its visual wrapper so
+     scenario and original timeline can sit on either side of the same Canvas. */
+  .studio[data-active-workspace="editor"] .quickBuilder {
+    gap:6px;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.quickVideoNav {
+    order:1; margin:0; grid-template-columns:repeat(6,minmax(0,1fr));
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor] {
+    display:grid!important; order:4; width:100%; max-width:100%;
+    min-width:0; margin:0; padding:8px;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-editor-scenario] {
+    order:2; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+    display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:center;
+    gap:4px 6px; margin:0; padding:7px 8px; border-radius:13px;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] label {
+    grid-column:1/-1; font-size:14px; line-height:1.2;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] p {display:none;}
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] textarea {
+    grid-column:1; grid-row:2; width:100%; height:44px!important;
+    min-height:44px!important; max-height:44px; resize:none;
+    overflow-y:auto; padding:7px 9px; font-size:14px; line-height:1.3;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] textarea:focus {
+    height:94px!important; max-height:94px;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] button {
+    grid-column:2; grid-row:2; width:44px; min-width:44px; height:44px;
+    min-height:44px; padding:0; font-size:0; gap:0;
+  }
+  .studio[data-active-workspace="editor"] [data-video-editor-scenario] button svg {
+    width:20px; height:20px;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage {
+    order:3; margin:0!important; width:100%;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-multitrack-timeline] {
+    order:4; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+    margin:0;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder [data-video-montage-settings] {
+    order:5; width:100%; max-width:100%; box-sizing:border-box; margin:0;
+  }
+  .studio[data-active-workspace="editor"] .previewStage .hero,
+  .studio[data-active-workspace="editor"][data-video-studio-mode="therapy"] .previewStage .hero {
+    width:100%; min-height:0!important; max-height:none!important;
+    aspect-ratio:16/9!important;
+  }
+}
+
+/* The ORIGINAL six-tab rail is portaled above the Montage scenario on iPhone. */
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"] .quickBuilder>.montageNavSlot{
+   display:block;order:1;width:100%;min-width:0;margin:0}
+ .studio[data-active-workspace="editor"] .montageNavSlot>.quickVideoNav{
+   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+   gap:4px;width:100%;min-width:0;margin:0}
+ .studio[data-active-workspace="editor"] .montageNavSlot .quickVideoNav button{
+   min-height:52px;padding:5px 1px;font-size:clamp(10px,2.8vw,12px);line-height:1.1}
+ .studio[data-active-workspace="editor"] .montageNavSlot .quickNavCompact{font-weight:800}
+ .studio[data-active-workspace="editor"] .montageQuickTools{
+   display:flex;align-items:center;flex-wrap:nowrap;gap:5px;
+   overflow-x:auto;min-width:0;padding:2px 0 5px;scrollbar-width:thin}
+ .studio[data-active-workspace="editor"] .montageQuickTools button{
+   display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;
+   gap:5px;min-height:44px;padding:8px 11px;background:#fffef9;
+   border:1px solid #dbe7db;border-radius:12px;color:#165c4a;
+   font:750 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+ .studio[data-active-workspace="editor"] .montageQuickTools button:disabled{opacity:.5}
+ .studio[data-active-workspace="editor"] .montageQuickTools button:focus-visible,
+ .studio[data-active-workspace="editor"] .montageExport:focus-visible{
+   outline:3px solid #176e6e;outline-offset:2px}
+ .studio[data-active-workspace="editor"] .montageExport{
+   display:flex;align-items:center;justify-content:center;gap:10px;
+   width:100%;min-height:50px;border:0;border-radius:14px;
+   background:linear-gradient(105deg,#079a76,#067a67);color:#fff;
+   font:800 15px/1.2 Arial,Helvetica,sans-serif}
+ .studio[data-active-workspace="editor"] .montageExport:disabled{opacity:.5;cursor:not-allowed}
+}
+
+/* 03 Nov owner-approved Video Studio home: tabs first, REAL playable presentation
+   directly underneath, bright ivory panels and accessible mobile typography.
+   Controls continue to use the single existing player, rendering and consent. */
+@media(max-width:759px){
+  .studio[data-active-workspace="video"],
+  .studio[data-active-workspace="editor"]{
+    --video-warm-ivory:#fcf9f2;
+    --video-ink:#143d3a;
+    --video-emerald:#067a67
+  }
+  .studio[data-active-workspace="video"] .quickBuilder{
+    gap:12px;background:var(--video-warm-ivory);padding:0 0 15px
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav,
+  .studio[data-active-workspace="editor"] .quickBuilder>.quickVideoNav{
+    order:1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:5px;width:100%;margin:0;padding:2px 0 0;min-width:0
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>.previewStage,
+  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage{
+    order:2;margin:0;min-width:0;padding:0!important
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>.workspaceHeading{display:none}
+  .studio[data-active-workspace="video"] .quickBrandBar{
+    min-height:65px;padding:4px 5px;gap:10px
+  }
+  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+    font:750 clamp(23px,6vw,28px)/1.03 Georgia,serif;
+    color:#165341
+  }
+  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+    font:700 clamp(12px,3.15vw,14px)/1.2 Arial,Helvetica,sans-serif;
+    color:#637269
+  }
+  .studio[data-active-workspace="video"] .quickVideoNav button{
+    min-width:0;min-height:82px;padding:9px 2px;gap:6px;
+    border-radius:16px;border:1px solid #eee7df;
+    background:linear-gradient(160deg,#fffdfa,#fff8f0);
+    box-shadow:0 5px 12px #6e52301a;
+    color:#162e42;font:800 clamp(10.5px,2.8vw,12.5px)/1.13 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;hyphens:auto
+  }
+  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+    width:25px;height:25px;color:#08785d
+  }
+  .studio[data-active-workspace="video"] .quickVideoNav button[aria-pressed="true"]{
+    background:linear-gradient(145deg,#13ad82,#036d53);
+    border-color:#078b69;color:white;box-shadow:0 6px 12px #07785a35
+  }
+  .studio[data-active-workspace="video"] .quickVideoNav button[aria-pressed="true"] svg{color:#fff}
+  .studio[data-active-workspace="video"] .previewStage .hero,
+  .studio[data-active-workspace="video"][data-video-studio-mode="therapy"] .previewStage .hero{
+    width:100%;aspect-ratio:16/9!important;min-height:190px!important;
+    max-height:255px!important;border-radius:23px!important;
+    border:1px solid #e6dbc9;
+    box-shadow:0 8px 25px #8c663727;overflow:hidden
+  }
+  .studio[data-active-workspace="video"] .previewStage .heroShade{
+    background:linear-gradient(100deg,#132520c9 0%,#28403573 42%,transparent 88%),
+      radial-gradient(circle at 78% 18%,#ffbe684d,transparent 60%)
+  }
+  .studio[data-active-workspace="video"] .previewStage .hero[data-hero-promo="true"] .heroPromo{
+    opacity:1;filter:saturate(1.16) sepia(.09)
+  }
+  .studio[data-active-workspace="video"] .previewStage .heroEditorial{
+    display:grid;gap:7px;left:15px;bottom:24px;max-width:58%;
+    right:auto;text-align:left
+  }
+  .studio[data-active-workspace="video"] .heroEditorial h2{
+    font:850 clamp(24px,6.15vw,29px)/1.05 Arial,Helvetica,sans-serif!important;
+    color:white;text-shadow:0 2px 7px #152b2888;
+    letter-spacing:-.028em
+  }
+  .studio[data-active-workspace="video"] .heroEditorial p{
+    font:650 clamp(12.8px,3.45vw,15px)/1.24 Arial,Helvetica,sans-serif!important;
+    color:#fffdf7!important;text-shadow:0 1px 5px #1a362bab
+  }
+  .studio[data-active-workspace="video"] .heroEyebrow{
+    font-size:12px;padding:5px 8px;background:#113e318c;border-radius:12px
+  }
+  .studio[data-active-workspace="video"] .previewStage .heroPlay{
+    left:77%;top:50%;width:56px;height:56px;
+    border-radius:50%;border:2px solid #fffaebaa;
+    background:#244131b8;box-shadow:0 4px 25px #102f2470
+  }
+  .studio[data-active-workspace="video"] .previewStage .heroPlay svg{
+    width:27px;height:27px
+  }
+  .studio[data-active-workspace="video"] .heroDuration{
+    font-size:12px;right:10px;top:11px;padding:7px 9px
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"],
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{
+    padding:15px 12px 17px!important;gap:11px;border-radius:24px;
+    border:1px solid #eee5d8;
+    background:linear-gradient(155deg,#fffefa,#fffaf5);
+    box-shadow:0 6px 20px #674e2b16
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+    font:850 clamp(21px,5.5vw,26px)/1.14 Arial,Helvetica,sans-serif;
+    color:#143d3a;letter-spacing:-.02em
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 svg{
+    width:25px;height:25px;color:#087b5f
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{
+    padding-top:15px!important
+  }
+  .studio[data-active-workspace="video"] .quickBuilder>[data-auto-video-director]{
+    order:6;margin:0
+  }
+}
+@media(max-width:359px){
+  .studio[data-active-workspace="video"] .quickVideoNav button{
+    min-height:76px;font-size:10.5px;padding:7px 1px
+  }
+  .studio[data-active-workspace="video"] .quickVideoNav button svg{width:22px;height:22px}
+  .studio[data-active-workspace="video"] .heroEditorial{max-width:63%;left:11px}
+  .studio[data-active-workspace="video"] .heroEditorial h2{font-size:22px!important}
+  .studio[data-active-workspace="video"] .heroEditorial p{font-size:12px!important}
+  .studio[data-active-workspace="video"] .previewStage .heroPlay{left:82%;width:44px;height:44px}
+
+}
+
+
+/* Holistic House | 03 Nov owner-approved Phrases phone screen.
+   Scope all changes to Phrases; do not modify the canonical video Canvas,
+   Montage controls or Hypno Effect audio authoring. */
+.studio[data-active-workspace="phrases"] .workspaceHeading,
+.studio[data-active-workspace="phrases"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] .phraseAudioSettings,
+.studio[data-active-workspace="phrases"] .phraseAudioNext,
+.studio[data-active-workspace="phrases"] .phraseVoiceAction,
+.studio[data-active-workspace="phrases"] [data-hypno-video-advanced],
+.studio[data-active-workspace="phrases"] [data-hypno-preview],
+.studio[data-active-workspace="phrases"] [data-video-quick-audio-choices]{display:none!important}
+.studio[data-active-workspace="phrases"] [data-video-quick-phrases]{
+  border:0!important;background:transparent!important;box-shadow:none!important}
+.studio[data-active-workspace="phrases"] [data-hypno-voice]{
+  border-radius:23px;border:1px solid #e6e8dd;
+  background:linear-gradient(138deg,#fffefa,#faf9f4);padding:16px;
+  box-shadow:0 8px 23px #574f3414}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection .phraseVoiceNotice:not([data-video-voice-approval-required]){
+  display:none}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice]{
+  padding:5px 0;margin:4px 0;border:0;background:transparent;box-shadow:none}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice] .heading{
+  display:none}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice] .genderTabs button{
+  font-weight:800}
+.studio[data-active-workspace="phrases"] .quickPhrasePersonal{
+  border-color:#b9dccc;background:#e9f8ef;color:#086f55}
+.studio[data-active-workspace="phrases"] .quickPhraseSection .quickSectionHeading h3{
+  font:850 clamp(20px,5.35vw,27px)/1.2 Arial,Helvetica,sans-serif;color:#074e3e}
+.studio[data-active-workspace="phrases"] .phraseAudioHeading h3{
+  font:800 clamp(19px,5vw,24px)/1.2 Arial,Helvetica,sans-serif}
+.studio[data-active-workspace="phrases"] .studio :is(button,input,select):focus-visible{
+  outline:3px solid #d6a653;outline-offset:2px}
+@media(max-width:759px){
+  /* Six buttons in exactly ONE row ABOVE the wide 16:9 working stage. */
+  /* The single real tab rail is a CHILD of previewStage in the current JSX.
+     The former quickBuilder > nav selector never matched at iPhone width. */
+  .studio[data-active-workspace="phrases"] .previewStage .quickVideoNav{
+    order:-1!important;display:grid!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    width:100%;min-width:0;gap:clamp(3px,.8vw,6px);margin:0;padding:0}
+  .studio[data-active-workspace="phrases"] .quickVideoNav button{
+    min-height:73px!important;min-width:0!important;
+    padding:8px 2px!important;gap:5px!important;border-radius:14px!important;
+    font:750 clamp(9.5px,2.75vw,12px)/1.16 Arial,Helvetica,sans-serif!important;
+    overflow-wrap:break-word;hyphens:auto;letter-spacing:-.015em}
+  .studio[data-active-workspace="phrases"] .quickVideoNav button svg{
+    flex:none;width:clamp(19px,5.5vw,23px)!important;height:clamp(19px,5.5vw,23px)!important}
+  .studio[data-active-workspace="phrases"] .quickVideoNav button[aria-pressed="true"]{
+    background:linear-gradient(135deg,#10b88f,#057453)!important;border-color:#0b9370;
+    color:#fff!important;box-shadow:0 5px 15px #0b7d5b31}
+  .studio[data-active-workspace="phrases"] .quickVideoNav button[aria-pressed="true"] svg{
+    color:#fff}
+  .studio[data-active-workspace="phrases"] .quickBuilder>.previewStage{order:2!important}
+  .studio[data-active-workspace="phrases"] .previewStage .hero{
+    min-height:0!important;max-height:400px!important;aspect-ratio:16/9!important;
+    border-radius:19px!important;box-shadow:0 9px 24px #4b4e3328}
+  .studio[data-active-workspace="phrases"] .heroEditorial{left:13px;bottom:13px;max-width:68%}
+  .studio[data-active-workspace="phrases"] .heroEditorial h2{
+    font:850 clamp(18px,5.1vw,26px)/1.08 Arial,Helvetica,sans-serif!important}
+  .studio[data-active-workspace="phrases"] .heroEditorial p{
+    font:550 clamp(10.5px,2.9vw,14px)/1.25 Arial,Helvetica,sans-serif!important}
+  .studio[data-active-workspace="phrases"] .heroEyebrow{
+    font-size:clamp(10px,2.55vw,12px);padding:4px 7px}
+  .studio[data-active-workspace="phrases"] .previewStage .heroPlay{
+    left:83%;width:53px;height:53px;min-width:53px;min-height:53px}
+  .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases]{
+    order:4!important;display:block;padding:0!important;margin:0}
+  .studio[data-active-workspace="phrases"] .quickPhraseSection>.quickSectionHeading{
+    gap:8px;align-items:center;margin:7px 0 12px}
+  .studio[data-active-workspace="phrases"] .quickPhrasePersonal{
+    width:42%;max-width:42%;min-height:55px;padding:8px;
+    font-size:clamp(12px,3.25vw,14px);border-radius:15px;text-align:center}
+  .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:0!important}
+}
+@media(max-width:355px){
+  .studio[data-active-workspace="phrases"] .quickVideoNav button{
+    font-size:9px!important;min-height:69px!important;padding:6px 1px!important}
+  .studio[data-active-workspace="phrases"] .heroEditorial{max-width:70%}
+  .studio[data-active-workspace="phrases"] .heroEditorial h2{font-size:17px!important}
+}
+
+
+/* Video Studio 03-Nov owner-approved first screen: tabs -> true 16:9 film
+   with three real controls -> request & goal in ONE card -> topic -> 4 films.
+   Overrides only the guest Video workspace and the existing Montage preview. */
+.heroWithRail{min-width:0}
+.heroRail{display:none}
+.quickStepHint{margin:2px 0 1px;color:#61716b;font:500 14px/1.4 Arial,Helvetica,sans-serif}
+.quickRequestHost,.quickProfileHost{width:100%;min-width:0}
+.quickRequestHost [data-video-request-input]{display:block;width:100%}
+.quickRequestHost [data-auto-video-input]{
+  box-sizing:border-box;width:100%;min-width:0;min-height:58px;padding:13px 15px;
+  border:1px solid #b8c8c6;border-radius:15px;background:#fff;color:#143d3a;
+  font:500 16px/1.35 Arial,Helvetica,sans-serif;
+  box-shadow:0 3px 10px #3a524015
+}
+.quickRequestHost [data-auto-video-input]:focus-visible{
+  outline:3px solid #176e6e;outline-offset:2px;border-color:#067a67
+}
+.quickGoalLabel{margin:5px 0 0;color:#60492d;font:800 15px/1.2 Arial,Helvetica,sans-serif}
+@media(max-width:759px){
+ .studio[data-active-workspace="video"] .previewStage>.quickVideoNav{
+   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+   align-items:stretch;gap:4px;width:100%;min-width:0;
+   margin:0 0 8px;padding:0;order:0
+ }
+ .studio[data-active-workspace="video"] .previewStage>.previewStageHeading{display:none!important}
+ .studio[data-active-workspace="video"] .previewStage>.heroWithRail,
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+   display:flex;gap:7px;align-items:stretch;min-width:0;width:100%
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail>.hero,
+ .studio[data-active-workspace="editor"] .previewStage .heroWithRail>.hero{
+   box-sizing:border-box;flex:1 1 0;width:auto!important;min-width:0;
+   min-height:0!important;max-height:none!important;aspect-ratio:16/9!important;
+   margin:0;border-radius:19px!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail>.hero{
+   aspect-ratio:16/9!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail{
+   display:flex;flex:0 0 46px;flex-direction:column;
+   justify-content:space-between;align-items:center;gap:4px;
+   min-width:46px;padding:4px 1px;border-radius:22px;
+   background:linear-gradient(145deg,#fffdfa,#fff2e8)
+ }
+ .studio .previewStage .heroRail button{
+   display:grid;place-items:center;flex:0 0 44px;
+   width:44px;height:44px;min-width:44px;min-height:44px;
+   padding:5px;border:1px solid #eae0d5;border-radius:50%;
+   background:#fffaf4;color:#285349;cursor:pointer;
+   box-shadow:0 3px 7px #3f3c2517
+ }
+ .studio .previewStage .heroRail button:disabled{opacity:.45;cursor:not-allowed}
+ .studio .previewStage .heroRail button:focus-visible{
+   outline:3px solid #176e6e;outline-offset:2px
+ }
+ .studio[data-active-workspace="video"] .heroEditorial{
+   left:10px;bottom:12px;max-width:66%;gap:3px
+ }
+ .studio[data-active-workspace="video"] .heroEditorial h2{
+   font-size:clamp(18px,5vw,25px)!important;line-height:1.04!important
+ }
+ .studio[data-active-workspace="video"] .heroEditorial p{
+   font-size:clamp(10px,2.7vw,13px)!important;line-height:1.18!important
+ }
+ .studio[data-active-workspace="video"] .heroEyebrow{display:none}
+ .studio[data-active-workspace="video"] .previewStage .heroPlay{
+   left:81%;top:50%;width:44px;height:44px;min-width:44px;min-height:44px
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroPlay svg{
+   width:24px;height:24px
+ }
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"]{
+   gap:8px;padding:13px 12px 15px!important
+ }
+ .studio[data-active-workspace="video"] .quickRequestHost{margin:1px 0 0}
+ .studio[data-active-workspace="video"] .quickProfileHost{margin:2px 0 4px}
+ .studio[data-active-workspace="video"] .quickGoalLabel{margin-top:4px}
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{
+   gap:7px;padding:13px 12px!important
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"] .heroEditorial{max-width:63%;left:8px}
+ .studio[data-active-workspace="video"] .heroEditorial h2{font-size:17px!important}
+ .studio[data-active-workspace="video"] .heroEditorial p{font-size:9px!important}
+ .studio[data-active-workspace="video"] .previewStage .heroPlay{left:83%;width:44px;height:44px}
+ .studio[data-active-workspace="video"] .quickStepHint{font-size:13px}
+}
+
+
+/* 04 Nov owner visual recovery: ONE stable header -> compact six-tab rail ->
+   ONE 16:9 Canvas/MP4 preview in Style, Montage, Phrases, Hypno, Course and PRO.
+   Previous per-workspace 73-100px tiles and portal-only positions are superseded.
+   No renderer, audio, privacy or export state is duplicated or replaced. */
+@media (max-width:759px) {
+  .studio[data-active-workspace] .quickBuilder {
+    gap:8px;
+    padding-bottom:12px;
+    background:transparent;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar {
+    order:0!important;
+    min-height:52px!important;
+    gap:8px;
+    margin:0;
+    padding:2px 4px!important;
+  }
+  .studio[data-active-workspace] .quickBuilder .quickBrandBack,
+  .studio[data-active-workspace] .quickBrandProfile {
+    width:44px;height:44px;
+  }
+  .studio[data-active-workspace] .quickBuilder .quickBrandBack svg {
+    width:28px;height:28px;
+  }
+  .studio[data-active-workspace] .quickBrandMobileTitle {
+    font-size:clamp(17px,4.6vw,21px);
+    color:#234735;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav {
+    order:1!important;
+    display:grid!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    gap:4px;
+    align-items:stretch;
+    min-width:0;
+    width:100%;
+    margin:0 0 1px!important;
+    padding:0!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button {
+    display:flex;
+    flex-direction:column;
+    min-width:0!important;
+    min-height:52px!important;
+    padding:5px 1px!important;
+    gap:3px!important;
+    border:1px solid #e9e1d5!important;
+    border-radius:12px!important;
+    background:linear-gradient(160deg,#fffdf9,#faf6ee)!important;
+    box-shadow:0 2px 7px #5c493010!important;
+    color:#234735!important;
+    text-align:center;
+    font:750 clamp(9px,2.55vw,11px)/1.12 Arial,Helvetica,sans-serif!important;
+    overflow-wrap:normal;
+    word-break:normal;
+    hyphens:none;
+  }
+  .studio[data-active-workspace] .quickVideoNav button svg {
+    flex:none;
+    width:18px!important;
+    height:18px!important;
+    color:#087b60!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] {
+    border-color:#0a8967!important;
+    background:linear-gradient(145deg,#27a782,#08795f)!important;
+    color:#fff!important;
+    box-shadow:0 3px 9px #06775c2a!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg {
+    color:#fff!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[data-video-quick-control="phrases"] .quickNavCompact {
+    font-size:clamp(9px,2.55vw,11px)!important;
+    overflow-wrap:normal;
+  }
+  .studio[data-active-workspace] .quickBuilder>.previewStage {
+    order:2!important;
+    display:grid;
+    gap:0;
+    min-width:0;
+    width:100%;
+    margin:0!important;
+    padding:0!important;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .studio[data-active-workspace] .previewStage>.heroWithRail {
+    display:flex;
+    gap:6px;
+    align-items:stretch;
+    min-width:0;
+    width:100%;
+  }
+  .studio[data-active-workspace] .previewStage .heroWithRail>.hero {
+    box-sizing:border-box;
+    flex:1 1 0;
+    width:auto!important;
+    min-width:0;
+    min-height:0!important;
+    max-height:none!important;
+    aspect-ratio:16/9!important;
+    margin:0!important;
+    border-radius:16px!important;
+    overflow:hidden;
+  }
+  .studio[data-active-workspace] .previewStage .heroRail {
+    display:flex;
+    flex:0 0 44px;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    gap:4px;
+    min-width:44px;
+    padding:2px 0;
+    border-radius:15px;
+    background:transparent;
+  }
+  .studio[data-active-workspace] .previewStage .heroRail button {
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    flex:0 0 44px;
+  }
+  .studio[data-active-workspace] .previewStage .heroPlay {
+    left:81%;
+    top:50%;
+    width:44px!important;
+    height:44px!important;
+    min-width:44px;
+    min-height:44px;
+  }
+  .studio[data-active-workspace] .previewStage .heroPlay svg {
+    width:23px!important;
+    height:23px!important;
+  }
+  .studio[data-active-workspace] .heroEditorial {
+    left:10px;
+    bottom:10px;
+    max-width:64%;
+    gap:3px;
+  }
+  .studio[data-active-workspace] .heroEditorial h2 {
+    font-size:clamp(17px,4.6vw,22px)!important;
+    line-height:1.08!important;
+  }
+  .studio[data-active-workspace] .heroEditorial p {
+    font-size:clamp(10px,2.9vw,12px)!important;
+    line-height:1.25!important;
+  }
+  .studio[data-active-workspace] .quickBuilder>.workspaceHeading {
+    order:4!important;
+    min-height:0;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot {
+    order:3!important;
+    margin:4px 0;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"] {
+    order:4!important;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel] {
+    order:5!important;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor] {
+    order:4!important;
+  }
+  .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases] {
+    order:4!important;
+  }
+  .studio[data-active-workspace] .quickBuilder>[data-video-quick-section="1"],
+  .studio[data-active-workspace] .quickBuilder>[data-video-topic-section] {
+    gap:8px;
+    padding:12px 10px!important;
+    border-radius:17px;
+  }
+  .studio[data-active-workspace] .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 {
+    font-size:clamp(17px,4.8vw,21px);
+    line-height:1.2;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickPracticeShortcuts button {
+    min-height:48px;
+    padding:8px 10px;
+    gap:6px;
+    border-radius:13px;
+    font-size:13px;
+  }
+  .studio[data-active-workspace] .basicStudio {
+    gap:9px;
+    padding:10px;
+    border-radius:16px;
+  }
+  .studio[data-active-workspace] .basicTabs {
+    gap:5px;
+  }
+  .studio[data-active-workspace] .basicTabs button {
+    min-height:54px;
+    padding:6px 3px;
+    gap:3px;
+    border-radius:12px;
+    font-size:clamp(10px,2.8vw,12px);
+  }
+  .studio[data-active-workspace] .basicTabs button svg {
+    width:20px;height:20px;
+  }
+  .studio[data-active-workspace] .advancedVideoToggle {
+    min-height:46px;
+    padding:8px 11px;
+    border-radius:12px;
+    font-size:13px;
+  }
+  .studio[data-active-workspace] .workspaceCourseGrid>a,
+  .studio[data-active-workspace] .workspaceCourseGrid>button {
+    min-height:68px;
+    padding:9px 10px;
+    border-radius:13px;
+  }
+}
+@media (max-width:354px) {
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav { gap:3px; }
+  .studio[data-active-workspace] .quickVideoNav button { padding:5px 0!important; }
+}

@@ -9,26 +9,11 @@ on:
       - 'app/ia-v2.css'
       - 'app/es/library/page.tsx'
       - 'components/dao-*'
-      - 'components/library-hub.tsx'
-      - 'data/dao-*'
-      - 'data/dao-hexagrams-editorial/**'
-      - 'lib/dao-divination.*'
-      - 'lib/public-locales.ts'
-      - 'tests/dao-*.test.mjs'
-      - '.github/workflows/dao-iching-library.yml'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'app/[locale]/dao/hexagrams/**'
-      - 'app/es/dao/hexagrams/**'
-      - 'app/[locale]/library/page.tsx'
-      - 'app/es/library/page.tsx'
-      - 'components/dao-*'
       - 'data/dao-*'
       - 'data/dao-hexagrams-editorial/**'
       - 'lib/dao-divination.*'
       - 'tests/dao-*.test.mjs'
-      - '.github/workflows/dao-iching-library.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

@@ -9,8 +9,7 @@ import facetsData from "@/data/academy/meditation-filter-facets-20261028.json";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { PROFILE_RESEARCH_AXES } from "@/lib/profile/profile-scale-selection";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
-import { rankClientServices } from "@/lib/holistic-support/client-intent-model.mjs";
-import { rankMeditationCatalog } from "@/lib/holistic-support/meditation-catalog-ranker.mjs";
+import { buildHolisticIntelligencePlan } from "@/lib/holistic-support/holistic-intelligence.mjs";
 import type {
   MeditationCatalogRecord, MeditationMatch, MeditationRequest,
 } from "@/lib/holistic-support/meditation-catalog-types";
@@ -225,17 +224,19 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
   const eligibleVideos=useMemo(() => minimumStars && !stars.loading && !stars.unavailable
     ? videos.filter(video => matchesStarFilter(stars.ratings[video.youtube_id],minimumStars))
     : videos,[videos,minimumStars,stars.ratings,stars.loading,stars.unavailable]);
-  const matched: MeditationMatch[] = useMemo(() =>
-    applied ? rankMeditationCatalog({ videos:eligibleVideos, publishedSourceIds, request: applied }) : [],
-    [applied, eligibleVideos, publishedSourceIds]);
+  // One shared decision contract for video and service matching. The public
+  // finder supplies only explicit local filters and approved public catalogues.
+  const intelligence = useMemo(() => applied ? buildHolisticIntelligencePlan({
+    locale,
+    intent:{...applied, paymentPreference:freeServicesOnly ? "free" : "any",
+      enabledFormats:["meditation","service"] as const, videoLimit:12},
+    catalogs:{meditationVideos:eligibleVideos,publishedSourceIds,services:coreServiceOffers(locale)},
+  }) : null,[applied,eligibleVideos,publishedSourceIds,freeServicesOnly,locale]);
+  const matched: MeditationMatch[] = intelligence?.meditations || [];
   const found = (sortRated ? sortByStars(matched,match=>match.video.youtube_id,stars.ratings) : matched)
     .filter(match=>stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[match.video.youtube_id],minimumStars));
   const active = found.find(match => match.video.youtube_id === selectedId) ?? found[0];
-  const services = useMemo(() => applied ? rankClientServices({
-    offers:coreServiceOffers(locale),
-    request:{...applied,paymentPreference:freeServicesOnly?"free":"any"},
-    limit:3,
-  }) : [],[applied,locale,freeServicesOnly]);
+  const services = intelligence?.services || [];
   const selectedInfo = (key: FilterKind, value: string) => {
     const f = facet(key).find(item => item.facet_key === value);
     return f ? titleOf(f, locale) : value;

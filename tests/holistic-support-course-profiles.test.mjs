@@ -18,7 +18,7 @@ test("Tests shortcut opens four profile categories in the existing mobile shell"
     assert.match(profiles, new RegExp('id: "' + sector + '"'));
     assert.match(profiles, new RegExp('data-support-profile=\\{id\\}'));
   }
-  for (const label of ["Профиль здоровья", "Профиль денег", "Профиль отношений", "Профиль смыслов"]) {
+  for (const label of ["Профиль здоровья", "Профиль денег", "Профиль отношений", "Профиль уверенности"]) {
     assert.ok(profiles.includes(label), label);
   }
   assert.match(profiles, /aria-pressed=\{active === id\}/);

@@ -9,7 +9,7 @@ const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_r
 test('Core owns production PR type/build and specialists retain independent nonproduction checks',()=>{
   assert.match(core,/name: Exact proposed release production build and TypeScript check/);
   assert.match(core,/run: npm run build/);
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   for(const name of ['hh-growth-journey.yml','hh-course-presets.yml']){
     const s=read(name);
     assert.ok(s.includes("      - 'tests/ci-growth-course-core-reuse.test.mjs'"),name+' policy test path missing');
