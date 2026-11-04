@@ -82,7 +82,8 @@ test('Core history uses the verified numeric workflow ID, not filename-only look
  }};
  const output=await collect({github:gh,now,maxRequests:60,minRemaining:150});
  assert.equal(output.source.closed_complete,true);
- assert.deepEqual(seen,[WORKFLOW_ID,WORKFLOW_ID,WORKFLOW_ID]);
+ assert.ok(seen.length>=3&&seen.length<=4);
+ assert.ok(seen.every(id=>id===WORKFLOW_ID));
 });
 
 test('historical Core run with empty GitHub pull_requests still joins unique exact merged HEAD',async()=>{

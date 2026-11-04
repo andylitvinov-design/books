@@ -163,8 +163,9 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
        r.repository?.full_name===REPO&&r.head_repository?.full_name===REPO&&
        /^[a-f0-9]{40}$/i.test(r.head_sha||'')&&
        Array.isArray(r.pull_requests)&&
-       (!r.pull_requests.length||(r.pull_requests.length===1&&
-        r.pull_requests[0].number===p.number&&r.pull_requests[0].base?.ref===p.base?.ref))&&
+       (!r.pull_requests.length&&r.head_sha===p.head?.sha||
+        r.pull_requests.length===1&&r.pull_requests[0].number===p.number&&
+        r.pull_requests[0].base?.ref===p.base?.ref)&&
        ts(r.created_at)>=ts(p.created_at)&&ts(r.created_at)<ts(p.closed_at))
        .sort((a,b)=>ts(a.created_at)-ts(b.created_at));
       if(runs.length){
