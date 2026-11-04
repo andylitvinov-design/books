@@ -55,7 +55,6 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
       - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
@@ -67,7 +66,9 @@ jobs:
   impact:
     name: route-expensive-app-suites
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # A lightweight, read-only classifier must not queue behind full Next/browser runners.
+    # Guard policy tests cover routing, and unknown paths still enable all suites.
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     outputs:
       full_app: ${{ steps.choose.outputs.full_app }}
