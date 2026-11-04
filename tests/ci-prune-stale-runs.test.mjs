@@ -331,12 +331,17 @@ test('metrics monitor counts new checks separately from jobs actually running', 
 test('optional conflict grouping cannot falsely fail a successful protected CI prune',()=>{
  const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
  const marker='- name: Group unresolved PR merge-conflict candidates (read-only)';
- const idx=yaml.indexOf(marker);
- assert.ok(idx>0);
- const prune=yaml.slice(0,idx);
+ const reportMarker='- name: P1 PR-minute loss report — verified time stamps and TOP-3 sample';
+ const idx=yaml.indexOf(marker), reportIdx=yaml.indexOf(reportMarker);
+ assert.ok(idx>reportIdx && reportIdx>0);
+ const prune=yaml.slice(0,reportIdx);
+ const report=yaml.slice(reportIdx,idx);
  const diag=yaml.slice(idx);
- assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
- assert.doesNotMatch(prune,/continue-on-error: true/);
+ assert.match(prune,/node scripts\\/ci-prune-stale-runs\\.mjs/);
+ assert.doesNotMatch(prune,/continue-on-error: true/,'the mutating prune must remain fatal');
+ assert.match(report,/node scripts\\/pr-loss-report\\.mjs/);
+ assert.match(report,/continue-on-error: true/,'read-only metrics must never block cleanup');
+ assert.match(report,/timeout-minutes: 3/);
  assert.match(diag,/id: conflict_diagnostic/);
  assert.match(diag,/continue-on-error: true/);
  assert.match(diag,/timeout-minutes: 2/);
