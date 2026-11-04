@@ -13,7 +13,7 @@ const RX=/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|actio
 const instant=x=>{const t=Date.parse(x||'');return Number.isFinite(t)?t:null;};
 const minutes=x=>Math.round(x/600)/100;
 const round=x=>Math.round(x*100)/100;
-function stats(values){const a=values.filter(x=>Number.isFinite(x)).sort((x,y)=>x-y),n=a.length;if(!n)return{n:0,average_min:null,median_min:null,p90_min:null};const q=p=>{const i=(n-1)*p,l=Math.floor(i),h=Math.ceil(i);return round(a[l]+(a[h]-a[l])*(i-l));};return{n,average_min:round(a.reduce((s,x)=>s+x,0)/n),median_min:q(.5),p90_min:q(.9)};}
+function stats(values){const a=values.filter(x=>Number.isFinite(x)).sort((x,y)=>x-y),n=a.length;if(!n)return{n:0,average_min:null,median_min:null,p90_min:null};const q=p=>round(a[Math.floor((n-1)*p)]); /* owner's established lower-order quantile */return{n,average_min:round(a.reduce((s,x)=>s+x,0)/n),median_min:q(.5),p90_min:q(.9)};}
 function validatedPR(p){
  if(!Number.isSafeInteger(p?.number)||p.number<1)throw Error('INVALID_PR_NUMBER');
  const created=instant(p.created_at),closed=instant(p.closed_at),merged=p.merged_at==null?null:instant(p.merged_at);
@@ -81,7 +81,7 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],source={}}){
   const totals=stats(rows.map(x=>x.full_minutes));const outcomes=Object.fromEntries(['merged','replaced','closed_without_merge'].map(k=>[k,rows.filter(r=>r.outcome===k).length]));
   const phases={};for(const stage of PHASES){const covered=rows.filter(x=>stage==='unknown'||x.phases[stage]>0),summary=stats(covered.map(x=>x.phases[stage]));phases[stage]={...summary,covered_prs:covered.length,
     coverage_pct:rows.length?round(100*covered.length/rows.length):null,
-    contribution_to_cohort_mean:rows.length?round(rows.reduce((s,x)=>s+x.phases[stage],0)/rows.length):null};}
+    contribution_to_cohort_mean:rows.length&&(covered.length||stage==='unknown')?round(rows.reduce((s,x)=>s+x.phases[stage],0)/rows.length):null};}
   analyses.push({key:w.key,label:w.label,window_start:w.start,window_end:w.end,count:rows.length,outcomes,
    total:totals,phases,rows,known_phase_prs:rows.filter(r=>r.known_pct>0).length,
    missing_details:rows.filter(r=>r.known_pct<100).length});
@@ -92,7 +92,7 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],source={}}){
   age_minutes:minutes(latestEnd-instant(p.created_at)),base:p.base?.ref||null,
   state:Array.isArray(p.labels)?p.labels.map(l=>typeof l==='string'?l:l.name).filter(x=>typeof x==='string'&&/^hh:/.test(x)):[]
  })).sort((a,b)=>b.age_minutes-a.age_minutes);
- return{schema:'HH_PR_THREE_COHORTS_V1',timezone:'America/Toronto',definition:'created_at and closed_at both within exact local 07:27–07:27 window',
+ return{schema:'HH_PR_THREE_COHORTS_V1',timezone:'America/Toronto',definition:'created_at and closed_at both within exact local 07:27–07:27 window',quantile_method:'LOWER_ORDER_STATISTIC',
   source,windows:analyses,open_backlog:{total:open.length,rows:open},limitations:[
    'Only independently evidenced intervals are assigned to a named stage; the rest is unknown, not idle time.',
    'Intervals from concurrent Actions jobs are unioned, not summed. Runner minutes are separate from PR wall-clock.',
@@ -104,16 +104,18 @@ function renderMarkdown(result){
  if(result?.schema!=='HH_PR_THREE_COHORTS_V1')throw Error('INVALID_COHORT_REPORT');
  const line=['<!-- HH_PR_THREE_COHORTS_V1 -->','# Three 24-hour PR cohorts · Toronto 07:27 → 07:27',''];
  const w=result.windows;
- line.push('**Coverage:** '+(result.source?.coverage||'PARTIAL_UNVERIFIED')+' · Read budget: '+(result.source?.reads??'?')+' · '+(result.source?.checked_at||'not checked'),'',
+ line.push('**Coverage:** '+(result.source?.coverage||'PARTIAL_UNVERIFIED')+' · Read budget: '+(result.source?.reads??'?')+' · '+(result.source?.checked_at||'not checked'),
+  '**API limitation:** '+String(result.source?.reason||'none')+' · CI inventory errors: '+JSON.stringify(result.source?.ci_runs_errors||{}),
+  '**Quantiles:** lower order statistic (the same method as the original cohort comparison).','',
  '| Measure | '+w.map(x=>x.label).join(' | ')+' |','|---|'+w.map(()=>'---:').join('|')+'|');
  const compare=(name,fn)=>line.push('| '+name+' | '+w.map(x=>fn(x)).join(' | ')+' |');
  const fmt=x=>x===null||x===undefined?'—':String(x);
  compare('Created & closed',x=>x.count);compare('Merged',x=>x.outcomes.merged);compare('Closed, replaced',x=>x.outcomes.replaced);
  compare('Closed without merge, other',x=>x.outcomes.closed_without_merge);
  compare('Average, min',x=>fmt(x.total.average_min));compare('Median, min',x=>fmt(x.total.median_min));compare('P90, min',x=>fmt(x.total.p90_min));
- line.push('','**Stages:** each cell shows cohort-mean contribution in minutes / % PR with measured stage. The unknown portion is explicit.','',
+ line.push('','**Stages:** cohort-mean contribution; then mean / median / P90 among measured PRs; then % of PRs with evidence. A dash means unmeasured (not zero). Unknown is explicit.','',
  '| Stage | '+w.map(x=>x.label).join(' | ')+' |','|---|'+w.map(()=>'---:').join('|')+'|');
- for(const phase of PHASES){line.push('| '+phase.replaceAll('_',' ')+' | '+w.map(x=>{const s=x.phases[phase];return fmt(s.contribution_to_cohort_mean)+' / '+fmt(s.coverage_pct)+'%';}).join(' | ')+' |');}
+ for(const phase of PHASES){line.push('| '+phase.replaceAll('_',' ')+' | '+w.map(x=>{const s=x.phases[phase];return fmt(s.contribution_to_cohort_mean)+'; '+fmt(s.average_min)+' / '+fmt(s.median_min)+' / '+fmt(s.p90_min)+'; '+fmt(s.coverage_pct)+'%';}).join(' | ')+' |');}
  line.push('','## Evidence drill-down');
  for(const x of w){line.push('',`<details><summary>${x.label}: ${x.count} completed PRs, ${x.known_phase_prs} with ≥1 attributed stage</summary>`,'',
  '| PR | Base | Outcome | Full, min | Attributed % | Evidence |','|---|---|---|---:|---:|---|');
