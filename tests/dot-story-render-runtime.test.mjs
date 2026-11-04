@@ -142,3 +142,18 @@ test('CC BY credits contain original page, author, licence, adaptation and survi
  assert.throws(()=>storyYoutubeDescription('',[...ids.slice(0,3),'unknown-clip']),
    /VIDEO_STORY_ATTRIBUTION_SOURCE_UNKNOWN/);
 });
+
+test('actual MyTube topic coverage enables real matched story clips; unbound concepts do not',()=>{
+ for(const plot of listTelegramStoryPlots('stress-relief-s1')){
+  const result=inspectStoryPlotCoverage(plot.id);
+  assert.equal(result.readyForPlanning,true,plot.id);
+  assert.ok(result.candidateCount>=4);
+  assert.equal(result.mediaFidelity,'topic_matched_symbolic_approximation');
+  assert.equal(result.physicalMediaVerified,false);
+ }
+ for(const plot of listTelegramStoryPlots('life-purpose-s1')){
+  const result=inspectStoryPlotCoverage(plot.id);
+  assert.equal(result.readyForPlanning,false,plot.id);
+  assert.equal(result.physicalMediaVerified,false);
+ }
+});
