@@ -1,3 +1,5 @@
+> **HISTORICAL POLICY — SUPERSEDED 2026-11-04.** Its P0–P3 labels/scoring and older scheduler directions are NOT current instructions. Use [HH_DIRECTION_WATCHER_FIVE_LEVEL_POLICY](HH_DIRECTION_WATCHER_FIVE_LEVEL_POLICY.md) and [PR_AUTOMATION_CANONICAL_V1](../operations/PR_AUTOMATION_CANONICAL_V1.md). The original text below is kept unchanged as an archive of prior rules.
+
 # PR Priority Scheduler — Holistic House
 
 This version prioritizes which PR is examined or claimed; it never waives required checks, changes production protection, overwrites a source branch, performs an unsafe merge, or pays for external APIs.
