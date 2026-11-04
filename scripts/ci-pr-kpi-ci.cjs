@@ -28,7 +28,10 @@ function normalizeCoreEvidence(runs,jobs,syntheticParents={}){
   if(forRun.some(j=>!Number.isSafeInteger(j.run_attempt)||j.run_attempt<1))return null;
   const all=forRun.filter(j=>j.run_attempt===attempt);
   if(!all.length||all.some(j=>j.status!=='completed'||!Number.isFinite(Date.parse(j.completed_at||''))))return null;
-  const names=['hh-core-verified','hh-specialist','release-ready'];
+  // These are the CURRENT job names in protected production
+  // .github/workflows/hh-pr-core-release.yml. The older names
+  // (hh-core-verified / release-ready) never matched its real job runs.
+  const names=['core-lint-types-build','hh-specialist','hh-merge-check'];
   const selected=names.map(name=>all.filter(j=>j.name===name));
   if(selected.some(list=>list.length!==1))return null;
   const gates=selected.map(x=>x[0]);
