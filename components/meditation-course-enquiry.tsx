@@ -121,7 +121,21 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
         <div className={css.consent} data-meditation-course-consent>
           <input id={consentId} name="contactConsent" type="checkbox" checked={consent}
             onChange={event=>setConsent(event.target.checked)}/>
-          <label htmlFor={consentId}>
+          <label htmlFor={consentId} onPointerDown={event=>{
+            // Safari can scroll the form while the email field loses focus.
+            // Keep the original pointer target until release; an interrupted
+            // scroll still produces pointercancel, not consent.
+            if(event.isPrimary){
+              try{event.currentTarget.setPointerCapture(event.pointerId);}catch{/* Native click remains available. */}
+            }
+          }} onClick={event=>{
+            // WebKit can drop the native label -> sibling input activation
+            // under the mobile dock. Handle exactly one label click, while the
+            // checkbox itself keeps native onChange and keyboard controls.
+            event.preventDefault();
+            if(busy)return;
+            setConsent(value=>!value);
+          }}>
             <span>{t.consent}</span>
           </label>
         </div>

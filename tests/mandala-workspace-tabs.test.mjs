@@ -130,9 +130,11 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/data-video-audio-attach/);
 });
 test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+  const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('<nav className={videoStyles.quickVideoNav}',start);
-  assert.ok(start>0&&finish>start);
+  const finish=studio.indexOf('{/* Show the introductory film separately',start);
+  assert.ok(nav>0&&start>nav&&finish>start,
+    "tabs precede the Canvas; the informational YouTube overlay follows it");
   assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
   assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
   assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);

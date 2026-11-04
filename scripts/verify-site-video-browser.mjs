@@ -10,6 +10,7 @@ import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
+import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -248,15 +249,15 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // Two approved layouts during rollout: the legacy 10 archived public posters
-  // or six original-language players plus six behind explicit disclosure.
-  // The browser asserts exact YouTube IDs in either version, never an arbitrary count.
+  // The exact release must show original-language players first and mount the
+  // other approved language only after an explicit disclosure click.
   const enIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js',
     'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc'].sort()
   const ruIds = ['m9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM',
     'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'].sort()
   const primaryGrid = page.locator('[data-about-primary-testimonials="en"]')
-  if (await primaryGrid.count()) {
+  await expect(primaryGrid).toHaveCount(1)
+  {
     const primary = primaryGrid.locator('[data-about-testimonial-audio="en"][data-testimonial-video-id]')
     await expect(primary).toHaveCount(enIds.length)
     const ids = await primary.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
@@ -271,15 +272,6 @@ try {
     assert.deepEqual(idsAfterOpen, ruIds, 'Disclosed RU archive retains six exact Russian originals')
     await expect(page.locator('iframe')).toHaveCount(0)
     pass((live ? 'Production' : 'Local')+': six EN first, six RU only after disclosure; no eager iframe')
-  } else {
-    const approvedReviewIds = [...enIds, 'MIVLm1GUTtM', 'ttQxUHopaUM',
-      'VABgpmn4ZYA', 'muOnIHllI7E'].sort()
-    const legacy = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
-    await expect(legacy).toHaveCount(approvedReviewIds.length)
-    const ids = await legacy.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
-    assert.deepEqual(ids, approvedReviewIds, 'Legacy About retains ten approved original public videos')
-    await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
-    pass((live ? 'Production' : 'Local')+': legacy 10 approved public testimonial videos; no eager iframe')
   }
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
@@ -315,6 +307,10 @@ try {
     await page.screenshot({ path: `${evidence}/live-player-open.png` })
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
+  }
+  if (!live) {
+    await verifyAboutTestimonials(origin)
+    pass('About original-language disclosures: Chromium and WebKit at 320/390/430 in EN/RU/ES')
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
   pass('No page JavaScript errors')

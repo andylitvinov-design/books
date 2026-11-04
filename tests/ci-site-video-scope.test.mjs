@@ -59,3 +59,14 @@ test('same existing jobs retain protected browser QA on sensitive PR and manual 
   }
   assert.doesNotMatch(y,/continue-on-error:\s*true/);
 });
+
+test('About testimonial gallery retains the real browser suite and original source contracts',()=>{
+  const y=readFileSync(new URL('../.github/workflows/site-video-browser.yml',import.meta.url),'utf8');
+  for(const path of ['components/about-testimonial-gallery.tsx','components/about-testimonial-gallery.module.css','tests/about-testimonial-languages.test.mjs']){
+    assert.ok(y.includes("'"+path+"'"),path+' must trigger the established suite');
+    assert.equal(needsFullSiteVideoBrowser(one(path)),true,path+' is not a reviewed display-only skip');
+  }
+  assert.match(y,/node --test[^\n]*tests\/about-testimonial-languages\.test\.mjs/);
+  assert.match(y,/npx[^\n]*eslint[^\n]*components\/about-testimonial-gallery\.tsx/);
+  assert.match(y,/node scripts\/verify-site-video-browser\.mjs/);
+});

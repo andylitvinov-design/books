@@ -113,3 +113,17 @@ test("other-language action is localized, keyboard accessible and compact on sma
   assert.match(css, /max-width: 430px/);
   assert.match(css, /prefers-reduced-motion/);
 });
+
+
+test("site-video release gate requires the new original-language gallery on the tested release",()=>{
+  const verifier=read("scripts/verify-site-video-browser.mjs");
+  assert.match(verifier,/await expect\(primaryGrid\)\.toHaveCount\(1\)/);
+  assert.match(verifier,/six EN first, six RU only after disclosure/);
+  assert.match(verifier,/await verifyAboutTestimonials\(origin\)/);
+  const browser=read("scripts/verify-about-testimonials-browser.mjs");
+  assert.match(browser,/\[320,390,430\]/);
+  assert.match(browser,/\['en','ru','es'\]/);
+  assert.match(browser,/\['webkit',webkit\]/);
+  assert.match(browser,/data-about-secondary-testimonials/);
+  assert.doesNotMatch(verifier,/legacy 10 approved public testimonial videos/);
+});

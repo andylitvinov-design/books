@@ -389,9 +389,19 @@ try {
     await page.goto(origin + "/es/services/catalog", { waitUntil: "domcontentloaded" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
+    // After Next's route hydration attaches the real controlled checkbox and
+    // search handlers, selecting free-only must enable a text-free search.
+    // A DOMContentLoaded-only navigation can expose an inert SSR checkbox.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Catalog search hydration must complete before the free-only interaction" },
+    ).toBe(true);
     await expect(freeOnly).not.toBeChecked();
     await freeOnly.check();
-    await page.locator('#find-your-service form[role="search"] button[type="submit"]').click();
+    await expect(freeOnly).toBeChecked();
+    const freeOnlySubmit = page.locator('#find-your-service form[role="search"] button[type="submit"]');
+    await expect(freeOnlySubmit).toBeEnabled();
+    await freeOnlySubmit.click();
     await expect(page.locator("#hh-service-discovery-results-title")).toHaveText("Servicios gratuitos");
     await page.close();
   }
@@ -429,18 +439,71 @@ try {
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-hero-390.png", fullPage: false, animations: "disabled" });
       await primary.click();
       await page.waitForURL(/#request-session$/);
-      const target = main.locator('aside#request-session [data-consultation-capture="service"]');
+      // The current one-idea landing has one real inline CRM capture, not the
+      // retired ConsultationChoiceCapture/WhatsApp-first paid selector.
+      const target = main.locator('section#request-session[data-service-visual-screen="final-capture"]');
       await visible(target);
-      assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
-        "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] > button');
-      assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
-      await choices.nth(1).click();
-      await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
-      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-        "Express rate preserved in approved draft: " + label);
+      const capture = target.locator('[data-service-lead-capture][data-inline-offer-form]');
+      await visible(capture);
+      const form = capture.locator('form[data-compact-lead-form]');
+      await form.locator('input[name="contact"]').waitFor({state:"visible"});
+      // The form is client-side: reject an SSR click that happened before hydration.
+      await form.locator('input[name="contact"][required]').waitFor({state:"visible"});
+      await page.waitForFunction(() => document.querySelector(
+        'section#request-session [data-compact-lead-form]')?.getAttribute("data-compact-hydrated")==="true",
+        null,{timeout:15000});
+      const choices = capture.locator("select");
+      assert.equal(await choices.count(),1,"One real service-format selector: "+label);
+      assert.equal(await choices.locator("option").count(),2,"30/60-minute paid choices: "+label);
+      assert.ok((await choices.locator('option[value="30-min"]').innerText()).includes("€50"),
+        "The express session must transparently cost €50: "+label);
+      assert.ok((await choices.locator('option[value="60-min"]').innerText()).includes("€100"),
+        "The full session must transparently cost €100: "+label);
+      await choices.selectOption("30-min");
+      await expect(choices).toHaveValue("30-min");
+      const replyConsent=form.locator('input[type="checkbox"][required]');
+      await expect(replyConsent).toHaveCount(1);
+      await expect(replyConsent).not.toBeChecked();
+      const submit=capture.locator('button[data-compact-channel="whatsapp"]');
+      await expect(submit).toBeVisible();
+      let submissions=0,payload=null;
+      await page.route("**/api/service-enquiries",async route=>{
+        if(route.request().method()!=="POST")return route.continue();
+        submissions++;payload=route.request().postDataJSON();
+        await route.fulfill({status:201,contentType:"application/json",
+          body:JSON.stringify({saved:true,referenceCode:"HH-ABCD1234EF56"})});
+      });
+      // Intercept external popups in the isolated local browser; no provider
+      // request, real client details or live database write can escape this test.
+      await page.evaluate(()=>{
+        window.__testNoExternalHandoff=[];
+        window.open=()=>({opener:null,closed:false,
+          location:{replace:url=>window.__testNoExternalHandoff.push(String(url))},
+          close:()=>{}});
+      });
+      await form.locator('input[name="contact"]').fill("landing-qa@example.test");
+      await submit.click();
+      await expect(form.locator('[role="alert"]')).toBeVisible();
+      assert.equal(submissions,0,"Consent cannot be bypassed: "+label);
+      await replyConsent.check();
+      await submit.click();
+      await expect(capture.locator("[data-lead-saved]")).toBeVisible({timeout:15000});
+      assert.equal(submissions,1,"One consented CRM request: "+label);
+      assert.equal(payload?.contactConsent,true,"Reply consent is recorded: "+label);
+      assert.equal(payload?.contact?.email,"landing-qa@example.test");
+      assert.equal(payload?.sourcePath,"/"+locale+"/services/"+service);
+      assert.ok(payload?.description?.includes("30-min"),"Selected session preserved in CRM: "+label);
+      const whatsapp=capture.locator('a[data-compact-channel="whatsapp"]');
+      const draft=new URL(await whatsapp.getAttribute("href"));
+      assert.equal(draft.origin,"https://wa.me");
+      assert.ok(draft.searchParams.get("text")?.includes("HH-ABCD1234EF56"));
+      assert.ok(draft.searchParams.get("text")?.includes("30-min"),
+        "The same 30-minute offer is included in the draft: "+label);
+      assert.ok(!draft.href.includes("landing-qa%40example.test"),
+        "Visitor contact must never leak to a messenger URL: "+label);
+      const external=await page.evaluate(()=>window.__testNoExternalHandoff);
+      assert.equal(external.length,1,"One intercepted handoff; no external navigation");
+      assert.equal(new URL(external[0]).origin,"https://wa.me");
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
@@ -595,17 +658,35 @@ try {
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
-            const capture = main.locator('section:has(> details)');
-            assert.equal(await capture.count(), 1, "Exactly one core-service footer");
+            // Current visual core services use a dedicated final enquiry screen
+            // with one first-party compact capture. The former footer/details
+            // selector was removed; never mark a missing legacy footer as UX failure.
+            const capture = main.locator('[data-core-visual-screen="final-capture"]');
+            await expect(capture).toHaveCount(1);
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
+            const inline = capture.locator('[data-inline-offer-form]');
+            await expect(inline).toHaveCount(1);
+            const form = inline.locator('form[data-compact-lead-form]');
+            await expect(form).toHaveCount(1);
+            await expect(form.locator('input[name="contact"][required]')).toHaveCount(1);
+            const replyConsent = form.locator('input[type="checkbox"][required]');
+            await expect(replyConsent).toHaveCount(1);
+            await expect(replyConsent).not.toBeChecked();
+            await expect(form.locator('[data-compact-channel]')).toHaveCount(2);
+            // The optional messenger alternative starts collapsed and may
+            // create prepared links only after a synthetic consented local save.
+            const more = capture.locator('details:has([data-contact-channel-chooser])');
+            await expect(more).toHaveCount(1);
+            await expect(more).not.toHaveAttribute('open', '');
+            await more.locator(':scope > summary').click();
+            await expect(more).toHaveAttribute('open', '');
+            const chooser = await openRegisteredContactChannelChooser(more, expect, page);
             const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
             assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
-            const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
-            assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
-            await alternative.locator("summary").click();
-            await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
-            await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+            const freeAlternative = capture.locator('a[href="/' + locale + '/services/free-situation-review"]');
+            await expect(freeAlternative).toHaveCount(1);
+            await visible(freeAlternative);
+            await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-final-capture-390.png", fullPage: false});
           }
         }
         await page.close();
