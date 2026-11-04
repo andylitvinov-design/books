@@ -106,8 +106,12 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Require real FFmpeg and FFprobe for track-pause acceptance
+      - name: Install FFmpeg and FFprobe on the existing runner for real media acceptance
         run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
           ffmpeg -version >/dev/null
           ffprobe -version >/dev/null
       - name: Telegram and audio regression tests
