@@ -175,7 +175,7 @@ for(const browserType of [chromium,webkit]){
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
     assert.equal(await aiComposer.evaluate(el=>document.activeElement===el),false,
       key+' quick action must not autofocus keyboard')
-    await aiComposer.fill('One line\\n'.repeat(12))
+    await aiComposer.fill('One line\n'.repeat(12))
     const multiline=await aiComposer.evaluate(el=>({
       height:el.getBoundingClientRect().height,
       bottom:el.getBoundingClientRect().bottom,
