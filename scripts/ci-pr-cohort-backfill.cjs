@@ -3,7 +3,7 @@
 const {REPO,WINDOWS}=require('./ci-pr-three-cohorts.cjs');
 const {parseComment}=require('./ci-pr-stage-receipts.cjs');
 const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW='hh-pr-core-release.yml';
-const MIN_REMAINING=350,MAX_REQUESTS=95;
+const MIN_REMAINING=150,MAX_REQUESTS=95;
 const ts=x=>Date.parse(x||'');
 const coreUrl=id=>`https://github.com/${REPO}/actions/runs/${id}`;
 function budget({maxRequests=MAX_REQUESTS,minRemaining=MIN_REMAINING}={}){
@@ -14,7 +14,7 @@ function budget({maxRequests=MAX_REQUESTS,minRemaining=MIN_REMAINING}={}){
   try{const res=await call();const h=res?.headers?.['x-ratelimit-remaining'];
    if(h!==undefined&&h!==null&&Number.isFinite(Number(h))){state.remaining=Number(h);if(state.remaining<minRemaining){state.paused=true;state.reason='API_RATE_RESERVE';}}
    state.operations.push(name);return res.data;
-  }catch(error){if([403,429].includes(error?.status)||/rate limit/i.test(String(error?.message||''))){state.paused=true;state.reason='GITHUB_RATE_LIMIT';}
+  }catch(error){if(error?.status===429||/rate limit/i.test(String(error?.message||''))||(error?.status===403&&Number(error?.response?.headers?.['x-ratelimit-remaining'])===0)){state.paused=true;state.reason='GITHUB_RATE_LIMIT';}
    throw error;}
  }};
 }
@@ -22,7 +22,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
  if(!github?.rest?.pulls?.list||!Number.isFinite(now))throw Error('INVALID_COLLECTOR');
  const gate=budget({maxRequests,minRemaining});const oldest=ts(WINDOWS[0].start);
  const result={prs:[],intervals:[],openPRs:[],source:{checked_at:new Date(now).toISOString(),reads:0,coverage:'PARTIAL',
-  closed_complete:false,open_complete:false,ci_runs_complete:{},sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
+  closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
  let closedFinished=false,allClosed=[],error=null;
  try{
   // A single creation-sorted REST sweep avoids Search's incomplete-index sample.
@@ -67,7 +67,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   const byPr=new Map(result.prs.map(p=>[p.number,[]]));
   for(const window of WINDOWS){
    const hits=[],start=ts(window.start),end=ts(window.end);let complete=false;
-   for(let page=1;page<=7;page++){
+   try{for(let page=1;page<=7;page++){
     if(gate.state.paused)break;
     const response=await gate.request('core-runs-'+window.key+'-'+page,()=>github.rest.actions.listWorkflowRuns({
      owner:OWNER,repo:REPOSITORY,workflow_id:WORKFLOW,event:'pull_request',
@@ -76,7 +76,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     if(!Array.isArray(runs)||runs.length>100)throw Error('INVALID_CORE_RUN_PAGE');
     hits.push(...runs);if(runs.length<100){complete=true;break;}
     if(runs.length&&runs.every(run=>ts(run.created_at)<start)){complete=true;break;}
-   }
+   }}catch(e){result.source.ci_runs_errors[window.key]=String(e?.message||e).slice(0,180);}
    result.source.ci_runs_complete[window.key]=complete;
    for(const run of hits){
     const at=ts(run.created_at);if(!Number.isFinite(at)||at<start||at>=end||run.event!=='pull_request'||
@@ -141,8 +141,8 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     reason:'successful exact-HEAD hh-merge-check → protected merge'});
    if(gate.state.paused)break;
    // One timeline page is authoritative only when fewer than 100 events exist.
-   const timeline=await gate.request('timeline-'+p.number,()=>github.rest.issues.listEventsForTimeline({
-    owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));
+   let timeline;try{timeline=await gate.request('timeline-'+p.number,()=>github.rest.issues.listEventsForTimeline({
+    owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));}catch(e){result.source.reason||='TIMELINE_PARTIAL: '+String(e.message||e).slice(0,100);}
    if(Array.isArray(timeline)&&timeline.length<100){
     result.source.sampled_timeline_prs.push(p.number);
     const labels=timeline.filter(e=>['labeled','unlabeled'].includes(e.event)&&
@@ -156,8 +156,8 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    }
    // Existing authenticated comment receipts (not arbitrary prose) prove repair work.
    if(gate.state.paused)break;
-   const comments=await gate.request('stage-comments-'+p.number,()=>github.rest.issues.listComments({
-    owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));
+   let comments;try{comments=await gate.request('stage-comments-'+p.number,()=>github.rest.issues.listComments({
+    owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));}catch(e){result.source.reason||='RECEIPTS_PARTIAL: '+String(e.message||e).slice(0,100);}
    if(Array.isArray(comments)&&comments.length<100){const receipts=comments.flatMap(c=>parseComment(c,{number:p.number}));
     const started=receipts.filter(x=>x.stage==='repair_started');
     for(const s of started){const matches=receipts.filter(x=>x.stage==='source_published'&&
