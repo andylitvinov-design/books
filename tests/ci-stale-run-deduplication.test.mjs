@@ -15,7 +15,9 @@ test('expensive workflows cancel only earlier first attempts for the same PR, ne
   for (const [path, group] of workflows) {
     const source = readFileSync(path, 'utf8')
     assert.ok(source.includes('group: ' + group + samePr), path)
-    assert.ok(source.includes('cancel-in-progress: ' + superseded), path)
+    const expectedCancel = ['.github/workflows/hh-app-r1.yml', '.github/workflows/hh-app-browser.yml'].includes(path)
+      ? "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}" : superseded
+    assert.ok(source.includes('cancel-in-progress: ' + expectedCancel), path)
     assert.ok(!source.includes('github.event.before != github.event.after'), path)
   }
 })
