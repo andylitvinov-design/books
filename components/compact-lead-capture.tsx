@@ -23,7 +23,7 @@ const copy = {
     consent: "I agree to save my contact for one personal reply about this request. No marketing.",
     submit: "Send request without a messenger",
     channelsTitle: "Or continue in a messenger",
-    channelsHint: "Optional — your email or phone is enough to register the request."
+    channelsHint: "Optional — your email or phone is enough to register the request.",
     saving: "Saving…",
     notice: "Free to enquire · No confirmed booking or payment · Please don't enter health details.",
     invalid: "Enter a valid email or an international phone number starting with +.",
@@ -44,7 +44,7 @@ const copy = {
     consent: "Согласен(-на) сохранить контакт для личного ответа по этой заявке. Без рассылок.",
     submit: "Отправить заявку без мессенджера",
     channelsTitle: "Или продолжить в мессенджере",
-    channelsHint: "Необязательно — для заявки достаточно email или телефона."
+    channelsHint: "Необязательно — для заявки достаточно email или телефона.",
     saving: "Сохраняем…",
     notice: "Запрос бесплатный · Без подтверждённой записи и оплаты · Не пишите данные о здоровье.",
     invalid: "Укажите email или номер телефона с международным кодом +.",
@@ -65,7 +65,7 @@ const copy = {
     consent: "Acepto guardar mi contacto para una respuesta personal sobre esta solicitud. Sin publicidad.",
     submit: "Enviar solicitud sin mensajería",
     channelsTitle: "O continuar por mensajería",
-    channelsHint: "Opcional — basta con correo o teléfono para registrar la solicitud."
+    channelsHint: "Opcional — basta con correo o teléfono para registrar la solicitud.",
     saving: "Guardando…",
     notice: "Consulta gratuita · Sin reserva ni pago confirmado · No incluyas datos de salud.",
     invalid: "Introduce un correo válido o un teléfono internacional que empiece por +.",
