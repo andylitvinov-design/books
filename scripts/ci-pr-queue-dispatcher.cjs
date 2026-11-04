@@ -51,8 +51,17 @@ function verifiedAggregatePolicyHold(checks){
 
 }
 function trustedContext(context){
- if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
-    context.ref!=='refs/heads/'+DEFAULT)return false;
+ if(context.repo?.owner+'/'+context.repo?.repo!==REPO)return false;
+ // PR events run on the protected production base; execute trusted default code.
+ if(context.eventName==='pull_request_target'){
+  const pr=context.payload?.pull_request;
+  return context.ref==='refs/heads/'+PROD &&
+   ['opened','reopened','ready_for_review','synchronize'].includes(context.payload?.action) &&
+   Number.isSafeInteger(pr?.number)&&pr.number>0 &&
+   pr.state==='open'&&pr.base?.ref===PROD &&
+   pr.head?.repo?.full_name===REPO&&SHA.test(pr.head?.sha||'');
+ }
+ if(context.ref!=='refs/heads/'+DEFAULT)return false;
  if(context.eventName==='workflow_run'){
   const w=context.payload?.workflow_run;
   const verifiedCoreFailure=w?.name==='HH PR core release gate' &&
@@ -133,7 +142,7 @@ function planCandidates(prs,now){
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,focusConflictPrNumber=null,inventorySnapshot=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -150,8 +159,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,ciHoldRecovered:0,
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
-  eventFocused:focusPrNumber!==null,
-  inventoryScope:focusPrNumber!==null?'EVENT_SINGLE_PR':'ALL_OPEN_PRS',reason:null};
+  eventFocused:focusPrNumber!==null||focusConflictPrNumber!==null,
+  inventoryScope:focusConflictPrNumber!==null?'EVENT_SINGLE_CONFLICT_PR':
+   focusPrNumber!==null?'EVENT_SINGLE_CORE_PR':
+   inventorySnapshot!==null?'WATCHDOG_SHARED_SNAPSHOT':'ALL_OPEN_PRS',reason:null};
  // An accepted dispatch is NOT execution: only a signed real-runner
  // receipt contributes to the separate confirmation count.
  summary.runnerStartedConfirmed=0;
@@ -188,7 +199,48 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  let prs=[];
  try{
-  if(focusPrNumber!==null){
+  if(focusConflictPrNumber!==null){
+   // One authenticated PR event, one targeted live read; never scan every PR.
+   const eventPr=context.payload?.pull_request;
+   if(context.eventName!=='pull_request_target'||
+      !Number.isSafeInteger(focusConflictPrNumber)||focusConflictPrNumber<1||
+      eventPr?.number!==focusConflictPrNumber||
+      !SHA.test(eventPr?.head?.sha||''))
+    throw Error('CONFLICT_EVENT_FOCUS_INVALID');
+   const live=(await limited('conflict-event-exact-pr',()=>github.rest.pulls.get({
+    owner,repo,pull_number:focusConflictPrNumber
+   }))).data;
+   if(live?.state!=='open'||live.draft||live.head?.sha!==eventPr.head.sha||
+      live.head?.repo?.full_name!==REPO||live.base?.ref!==PROD)
+    throw Error('CONFLICT_EVENT_CHANGED_OR_HELD');
+   if(!validPR(live)||(live.labels||[]).some(x=>[
+     'hh:specialist-policy-hold','hh:policy-hold','hh:blocked-permission'
+    ].includes(x.name))){
+    summary.reason='CONFLICT_EVENT_POLICY_HOLD';return finish();
+   }
+   if(live.mergeable!==false||live.mergeable_state!=='dirty'){
+    summary.reason=live.mergeable===null?'CONFLICT_MERGEABILITY_PENDING':
+     'CONFLICT_EVENT_NOT_DIRTY';return finish();
+   }
+   const labels=[...(live.labels||[])];
+   if(!labels.some(x=>x.name==='hh:conflict-repair-needed')){
+    if(dryRun)summary.wouldQueueConflict=1;
+    else await limited('conflict-event-queue-label',()=>github.rest.issues.addLabels({
+     owner,repo,issue_number:focusConflictPrNumber,labels:['hh:conflict-repair-needed']
+    }));
+    labels.push({name:'hh:conflict-repair-needed'});
+   }
+   prs=[{...live,labels}];
+  }else if(inventorySnapshot!==null){
+   // In-memory Watchdog snapshot from this same trusted GitHub runner.
+   if(!['schedule','workflow_dispatch','push'].includes(context.eventName)||
+      !Array.isArray(inventorySnapshot)||inventorySnapshot.length>3000||
+      inventorySnapshot.some(x=>!Number.isSafeInteger(x?.number)||x.number<1||
+        typeof x.state!=='string')||
+      new Set(inventorySnapshot.map(x=>x.number)).size!==inventorySnapshot.length)
+    throw Error('WATCHDOG_SNAPSHOT_UNVERIFIED');
+   prs=inventorySnapshot;
+  }else if(focusPrNumber!==null){
    // The same trusted Core callback first diagnoses this PR in Watchdog.
    // Reuse its exact-HEAD snapshot; never list 150+ open PRs a second time.
    const event=context.payload?.workflow_run;
@@ -235,7 +287,13 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // A synthetic workflow_run.head_sha need not equal the PR HEAD; the
  // Watchdog verifies the corresponding merge commit's second parent.
  let focusedPR=null;
- if(focusPrNumber!==null){
+ if(focusConflictPrNumber!==null){
+  const selected=production.filter(pr=>pr.number===focusConflictPrNumber&&
+    validPR(pr)&&pr.mergeable===false&&pr.mergeable_state==='dirty');
+  if(selected.length!==1){summary.reason='CONFLICT_EVENT_FOCUS_UNVERIFIED';return finish();}
+  focusedPR=selected[0];
+  summary.legacyCiRecovery={status:'SKIPPED_CONFLICT_EVENT'};
+ }else if(focusPrNumber!==null){
   const event=context.payload?.workflow_run;
   const selected=production.filter(pr=>pr.number===focusPrNumber && validPR(pr));
   const associated=event?.pull_requests;
@@ -271,8 +329,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  if(!candidates.length){summary.reason='NO_ACTIONABLE_PR';return finish();}
  // Metadata-only handoffs survive runner saturation or unknown inventory.
  let capacity=null,capacityReason=null;
- try{capacity=await capacityFn(github,owner,repo);}
- catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
+ if(focusConflictPrNumber===null){
+  try{capacity=await capacityFn(github,owner,repo);}
+  catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
+ }else capacityReason='NOT_REQUIRED_FOR_CONFLICT_METADATA';
  // A transitional partial inventory must never admit CI. Re-read once so a
  // settled GitHub snapshot can unblock this sweep without waiting for cron.
  // If the recheck fails, retain the conservative partial snapshot.
@@ -309,7 +369,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
   let children=prs,heads=prs;
-  if(focusPrNumber!==null){
+  if(focusPrNumber!==null||focusConflictPrNumber!==null){
    // A single PR cannot prove whether its source branch is shared or
    // children depend on it: scoped reads preserve the existing safety gates.
    try{
@@ -341,6 +401,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
      !validPR(fresh)||laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
+  // A conflict callback may ONLY create a manual conflict handoff.
+  if(focusConflictPrNumber!==null&&
+     !(fresh.mergeable===false&&fresh.mergeable_state==='dirty')){
+   blocked('CONFLICT_EVENT_NO_LONGER_DIRTY');continue;
+  }
   let comments;
   try{
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
