@@ -343,7 +343,7 @@ export function MandalaAffirmationVoice({
       <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
       <p data-video-affirmation-selected-phrase>{approvalPending?t.pendingText:speechText||t.enable}</p>
     </div>:null}
-    {voiceGender!=="own" ? <details className={css.transcriptDisclosure}>
+    {voiceGender!=="own" ? <details className={css.transcriptDisclosure} data-video-affirmation-transcript-review>
       <summary>{t.preview} · {t.review}</summary>
       {speechText?<div className={css.transcript}>
         <p data-video-affirmation-spoken-text>{speechText}</p>
@@ -406,7 +406,7 @@ export function MandalaAffirmationVoice({
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
     {voiceGender!=="own" ? <>
-    <details className={css.voiceAdvanced}>
+    <details className={css.voiceAdvanced} data-video-affirmation-voice-advanced>
       <summary>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     <div className={css.controls}>
       <label>{t.language}
