@@ -3,7 +3,8 @@
 
 import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
-import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors} from "lucide-react";
+import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut} from "lucide-react";
+import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-multitrack-timeline.module.css";
 
@@ -13,10 +14,14 @@ export type TimelineTextClip={
   startSeconds:number;
   durationSeconds:number;
 };
+export type TimelineTransition="soft"|"cut"|"fade_black"|"flash_white";
+export type TimelineLook="original"|"warm"|"cool"|"dream";
 export type TimelineShot={
   sceneId:string;
   title:string;
   poster?:string|null;
+  transitionIn?:TimelineTransition;
+  colorLook?:TimelineLook;
   startSeconds:number;
   durationSeconds:number;
 };
@@ -38,6 +43,9 @@ type Props={
   onAddCaption:()=>string;
   onSetCaption:(id:string,patch:Partial<Omit<TimelineTextClip,"id">>)=>void;
   onRemoveCaption:(id:string)=>void;
+  onSplitCaption:(id:string,atSeconds:number)=>string;
+  onDuplicateCaption:(id:string)=>string;
+  onSetShotEffect?:(index:number,patch:{transitionIn?:TimelineTransition;colorLook?:TimelineLook})=>void;
   onOpenAudio:()=>void;
   onChangeAudioStart:(seconds:number)=>void;
 };
@@ -58,31 +66,49 @@ const copy={
     editor:"Монтажные дорожки",editText:"Настройка надписи",textValue:"Текст",start:"Начало, сек",
     length:"Длительность, сек",soundStart:"Начало звука",remove:"Удалить надпись",
     play:"Воспроизвести",pause:"Пауза",duration:"Время",shot:"Сцена",shift:"Переместить сцену",
-    shorten:"Укоротить на секунду",lengthen:"Удлинить на секунду",hint:"Перетащите блок или ползунок, чтобы изменить время."},
+    shorten:"Укоротить на секунду",lengthen:"Удлинить на секунду",hint:"Перетащите блок или ползунок, чтобы изменить время.",
+    zoom:"Масштаб",snap:"Магнит",split:"Разрезать по курсору",duplicate:"Дублировать",
+    transition:"Переход",look:"Цветовой стиль",soft:"Мягкий",cut:"Без перехода",
+    fadeBlack:"Затемнение",flashWhite:"Белая вспышка",original:"Оригинал",warm:"Тёплый",
+    cool:"Прохладный",dream:"Мечта"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
     length:"Duration, sec",soundStart:"Audio starts",remove:"Remove caption",
     play:"Play",pause:"Pause",duration:"Timeline",shot:"Shot",shift:"Move shot",
-    shorten:"Shorten by 1 second",lengthen:"Lengthen by 1 second",hint:"Drag a block or scrub the ruler to adjust timing."},
+    shorten:"Shorten by 1 second",lengthen:"Lengthen by 1 second",hint:"Drag a block or scrub the ruler to adjust timing.",
+    zoom:"Zoom",snap:"Snap",split:"Split at playhead",duplicate:"Duplicate",
+    transition:"Transition",look:"Color look",soft:"Soft",cut:"Cut",
+    fadeBlack:"Fade to black",flashWhite:"White flash",original:"Original",warm:"Warm",
+    cool:"Cool",dream:"Dream"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
     length:"Duración, seg",soundStart:"Inicio del audio",remove:"Quitar texto",
     play:"Reproducir",pause:"Pausa",duration:"Tiempo",shot:"Escena",shift:"Mover escena",
-    shorten:"Acortar un segundo",lengthen:"Ampliar un segundo",hint:"Arrastra un bloque o la regla para ajustar el tiempo."}
+    shorten:"Acortar un segundo",lengthen:"Ampliar un segundo",hint:"Arrastra un bloque o la regla para ajustar el tiempo.",
+    zoom:"Zoom",snap:"Imán",split:"Cortar en el cursor",duplicate:"Duplicar",
+    transition:"Transición",look:"Color de escena",soft:"Suave",cut:"Corte",
+    fadeBlack:"Fundido negro",flashWhite:"Destello blanco",original:"Original",warm:"Cálido",
+    cool:"Frío",dream:"Sueño"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
   onSeek,onTogglePlay,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
-  onSetCaption,onRemoveCaption,onOpenAudio,onChangeAudioStart
+  onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,
+  onOpenAudio,onChangeAudioStart
 }:Props){
   const t=copy[locale];
   const drag=useRef<Drag|null>(null);
   const [selectedText,setSelectedText]=useState<string|null>(null);
   const [selectedShot,setSelectedShot]=useState<number|null>(null);
+  const [zoom,setZoom]=useState(1);
+  const [snapEnabled,setSnapEnabled]=useState(true);
   const chosen=captions.find(clip=>clip.id===selectedText);
+  const cutMarks=[0,seconds,...shots.map(shot=>shot.startSeconds)];
+  const snapPosition=(at:number,max=seconds)=>snapEnabled
+    ?snapTimelineSecond(at,cutMarks,max):clamp(round(at),0,max);
   const percent=(start:number)=>String(clamp(start/Math.max(seconds,.1)*100,0,100))+"%";
   const width=(duration:number)=>String(clamp(duration/Math.max(seconds,.1)*100,0,100))+"%";
   const position=(clientX:number,element:HTMLElement)=>{
@@ -108,11 +134,12 @@ export function MandalaMultiTrackTimeline({
     if(Math.abs(event.clientX-active.startX)>4)active.moved=true;
     if(active.kind==="ruler")onSeek(position(event.clientX,lane));
     if(active.kind==="audio"&&audio)
-      onChangeAudioStart(round(clamp(active.startSeconds+delta,0,Math.max(0,seconds-.1))));
+      onChangeAudioStart(snapPosition(round(clamp(active.startSeconds+delta,0,
+        Math.max(0,seconds-.1))),Math.max(0,seconds-.1)));
     if(active.kind==="text"&&active.id){
       const item=captions.find(clip=>clip.id===active.id);
-      if(item)onSetCaption(active.id,{startSeconds:round(clamp(active.startSeconds+delta,0,
-        Math.max(0,seconds-item.durationSeconds)))});
+      if(item)onSetCaption(active.id,{startSeconds:snapPosition(round(clamp(active.startSeconds+delta,0,
+        Math.max(0,seconds-item.durationSeconds))),Math.max(0,seconds-item.durationSeconds))});
     }
   };
   const end=(event:ReactPointerEvent<HTMLElement>)=>{
@@ -150,6 +177,20 @@ export function MandalaMultiTrackTimeline({
         </button>
       </div>
     </div>
+    <div className={css.zoomBar}>
+      <label data-video-timeline-snap><Magnet size={14} aria-hidden="true"/>
+        <input type="checkbox" checked={snapEnabled} disabled={disabled}
+          onChange={event=>setSnapEnabled(event.currentTarget.checked)}/>{t.snap}</label>
+      <span>{t.zoom}</span>
+      <button type="button" onClick={()=>setZoom(Math.max(1,zoom/2))}
+        disabled={disabled||zoom<=1} aria-label={t.zoom+" −"}><ZoomOut size={16}/></button>
+      <output data-video-timeline-zoom>{zoom}×</output>
+      <button type="button" onClick={()=>setZoom(Math.min(4,zoom*2))}
+        disabled={disabled||zoom>=4} aria-label={t.zoom+" +"}><ZoomIn size={16}/></button>
+    </div>
+    <div className={css.timelineViewport} data-video-timeline-viewport tabIndex={0}
+      role="region" aria-label={t.editor}>
+    <div className={css.timelineContent} style={{width:String(zoom*100)+"%"}}>
     <div className={css.rulerRow}>
       <span className={css.laneName} aria-hidden="true">{t.duration}</span>
       <button type="button" className={css.ruler} disabled={disabled}
@@ -208,6 +249,8 @@ export function MandalaMultiTrackTimeline({
         <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>
       </div>
     </div>
+    </div>
+    </div>
     <div className={css.addBar}>
       <button type="button" disabled={disabled} onClick={onAddVideo}
         data-video-timeline-add-video><Plus size={16}/><Film size={15}/>{t.addVideo}</button>
@@ -234,6 +277,18 @@ export function MandalaMultiTrackTimeline({
               durationSeconds:Number(e.currentTarget.value)})}/>
         </label>
       </div>
+      <div className={css.captionTools}>
+        <button type="button" disabled={disabled||captions.length>=16||
+          playheadSeconds<chosen.startSeconds+.2||
+          playheadSeconds>chosen.startSeconds+chosen.durationSeconds-.2}
+          data-video-timeline-split-caption
+          onClick={()=>setSelectedText(onSplitCaption(chosen.id,playheadSeconds))}>
+          <Scissors size={15}/>{t.split}</button>
+        <button type="button" disabled={disabled||captions.length>=16}
+          data-video-timeline-duplicate-caption
+          onClick={()=>setSelectedText(onDuplicateCaption(chosen.id))}>
+          <Copy size={15}/>{t.duplicate}</button>
+      </div>
       <button type="button" className={css.remove} disabled={disabled}
         onClick={()=>{onRemoveCaption(chosen.id);setSelectedText(null);}}>
         <Trash2 size={15}/>{t.remove}</button>
@@ -250,6 +305,32 @@ export function MandalaMultiTrackTimeline({
       <button type="button" aria-label={t.lengthen} disabled={disabled||selectedShot===shots.length-1||
         shots[selectedShot+1].durationSeconds<=2} onClick={()=>onResizeShot(selectedShot,1)}>+1s</button>
     </div>:null}
+    {selectedShot!==null&&shots[selectedShot]&&onSetShotEffect?
+      <div className={css.sceneInspector} data-video-timeline-shot-effects>
+        <label>{t.transition}
+          <select data-video-timeline-transition
+            value={shots[selectedShot].transitionIn??"soft"}
+            disabled={disabled||selectedShot===0}
+            onChange={event=>onSetShotEffect(selectedShot,{
+              transitionIn:event.currentTarget.value as TimelineTransition})}>
+            <option value="soft">{t.soft}</option>
+            <option value="cut">{t.cut}</option>
+            <option value="fade_black">{t.fadeBlack}</option>
+            <option value="flash_white">{t.flashWhite}</option>
+          </select>
+        </label>
+        <label>{t.look}
+          <select data-video-timeline-look
+            value={shots[selectedShot].colorLook??"original"} disabled={disabled}
+            onChange={event=>onSetShotEffect(selectedShot,{
+              colorLook:event.currentTarget.value as TimelineLook})}>
+            <option value="original">{t.original}</option>
+            <option value="warm">{t.warm}</option>
+            <option value="cool">{t.cool}</option>
+            <option value="dream">{t.dream}</option>
+          </select>
+        </label>
+      </div>:null}
     {audio?<label className={css.audioOffset} data-video-timeline-audio-start>
       <span>{t.soundStart}: {audio.startSeconds.toFixed(1)}s</span>
       <input type="range" min={0} max={Math.max(0,seconds-.1)} step={.1}

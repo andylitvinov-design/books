@@ -35,8 +35,9 @@ import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
-import {clampTrackSecond,timedCaptionAt} from "@/lib/mandala/editable-timeline.mjs";
-import type {TimelineTextClip} from "./mandala-multitrack-timeline";
+import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
+import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
+import type {TimelineTextClip,TimelineTransition,TimelineLook} from "./mandala-multitrack-timeline";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -1256,11 +1257,8 @@ function paintCinematicFrame(
     ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
   }
   ctx.restore();
-  const edge=Math.min(localTime,Math.max(0,shot.durationSeconds-localTime));
-  if(edge<.35){
-    ctx.fillStyle="rgba(17,36,30,"+(0.25*(1-edge/.35)).toFixed(3)+")";
-    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
-  }
+  // Non-destructive per-shot finishing: preview and encoded export use this Canvas.
+  paintCreativeTimelineShot(ctx,storyboard.shots,storyboard.shots.indexOf(shot),localTime);
 }
 /** Each authored caption is rendered locally on the same Canvas as MediaRecorder. */
 function paintStageCaptionOverlay(
@@ -1938,7 +1936,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
     audioStartSeconds,timelineTextClips,caption,affirmations,hypnoLight,
-    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||""]),appliedStory]);
+    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
+       shot.transitionIn||"soft",shot.colorLook||"original"]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -3093,6 +3092,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }))} as CinematicStoryboard;
     });
     stopMovieSound();setPreviewPlaying(false);
+  };
+  const changeTimelineShotEffect=(index:number,patch:{
+    transitionIn?:TimelineTransition;colorLook?:TimelineLook
+  })=>{
+    if(recording||preparing)return;
+    if(patch.transitionIn&&!CREATIVE_TRANSITIONS.includes(patch.transitionIn))return;
+    if(patch.colorLook&&!CREATIVE_LOOKS.includes(patch.colorLook))return;
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION||index<0||index>=current.shots.length)
+        return current;
+      const shots=current.shots.map((shot,i)=>i===index?{...shot,...patch}:shot);
+      return {...current,shots} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+  };
+  const splitTimelineText=(id:string,atSeconds:number)=>{
+    const newId="timeline-text-"+(++timelineTextSerial.current);
+    setTimelineTextClips(current=>splitTimelineCaption(current??timelineCaptions,id,
+      atSeconds,duration,newId));
+    stopMovieSound();setPreviewPlaying(false);return newId;
+  };
+  const duplicateTimelineText=(id:string)=>{
+    const newId="timeline-text-"+(++timelineTextSerial.current);
+    setTimelineTextClips(current=>duplicateTimelineCaption(current??timelineCaptions,id,
+      newId,duration));
+    stopMovieSound();setPreviewPlaying(false);return newId;
   };
   const changeTimelineCaption=(id:string,patch:Partial<Omit<TimelineTextClip,"id">>)=>{
     setTimelineTextClips(current=>(current??timelineCaptions).map(clip=>{
@@ -5233,7 +5258,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?cinematicPlan.shots.map(shot=>({
                 sceneId:shot.sceneId,title:freeFilmClipLabel(shot.sceneId),
                 poster:firstPartyFilmFor(shot.theme,shot.sceneId)?.poster,
-                startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds
+                startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds,
+                transitionIn:shot.transitionIn,colorLook:shot.colorLook
               }))
               :activeFilm?[{sceneId:theme==="money"?moneyScene||"golden-rain":otherScene,
                 title:sceneName,poster:activeFilm.poster,startSeconds:0,durationSeconds:duration}]:[]}
@@ -5267,7 +5293,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             onMoveShot={moveTimelineShot}
             onResizeShot={shiftFilmCut}
+            onSetShotEffect={usingFreeFilmCompilation?changeTimelineShotEffect:undefined}
             onAddCaption={addTimelineCaption}
+            onSplitCaption={splitTimelineText}
+            onDuplicateCaption={duplicateTimelineText}
             onSetCaption={changeTimelineCaption}
             onRemoveCaption={id=>{
               setTimelineTextClips(current=>(current??timelineCaptions).filter(clip=>clip.id!==id));
