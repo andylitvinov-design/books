@@ -1310,10 +1310,10 @@ test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback
   assert.equal(stale.missingCore,2);
   assert.match(graphQLSource,/p402:pullRequest/);
 });
-test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
+test('Watchdog serializes periodic and event handoffs under one writer concurrency',()=>{
   const fs=require('node:fs');
   const source=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
-  assert.ok(source.includes("github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || 'periodic'"));
+  assert.ok(source.includes("group: hh-control-tower-single-writer"));
   assert.ok(source.includes('cancel-in-progress: false'));
 });
 
