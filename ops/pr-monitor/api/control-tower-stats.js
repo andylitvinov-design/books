@@ -7,6 +7,26 @@ const SCHEMA='HH_CONTROL_DISPATCH_METRICS_V1';
 let cached=null,cacheAt=0;
 const valid=n=>Number.isSafeInteger(n)&&n>=0;
 function count(n,fallback=0){return valid(n)?n:fallback;}
+function verifiedSample(raw,production){
+ if(!raw||raw.schema!=='HH_WATCHDOG_VERIFIED_SAMPLE_V1'||
+    raw.scope!=='BOUNDED_DEEP_INSPECTION'||
+    !valid(production)||raw.production_prs!==production||
+    !Number.isFinite(Date.parse(raw.checked_at||'')))return null;
+ const keys=['inspected','mergeConflicts','coreFailures','specialistFailures',
+  'specialistPolicyHolds','releaseGateOnly','verifiedSourceFailures',
+  'coreFailureUnverified','specialistEvidenceUnverified',
+  'sourceRepairQueued','conflictLabelsQueued'];
+ if(keys.some(key=>!valid(raw[key])||raw[key]>production))return null;
+ if(keys.slice(1).some(key=>raw[key]>raw.inspected))return null;
+ const lowerBound=Math.max(raw.mergeConflicts,raw.coreFailures,
+  raw.specialistFailures,raw.specialistPolicyHolds);
+ if(raw.verified_blocked_lower_bound!==lowerBound)return null;
+ return {scope:'BOUNDED_DEEP_INSPECTION',inspected:raw.inspected,
+  core_failures:raw.coreFailures,merge_conflicts:raw.mergeConflicts,
+  specialist_failures:raw.specialistFailures,
+  specialist_policy_holds:raw.specialistPolicyHolds,
+  verified_blocked_lower_bound:lowerBound,checked_at:raw.checked_at};
+}
 function normalize(source,now=Date.now()){
  if(!source||source.schema!==SCHEMA||source.source_dry_run!==false||
     source.source_schema!=='HH_CONTROL_DISPATCH_V1'||!valid(source.run_id)||
@@ -25,8 +45,12 @@ function normalize(source,now=Date.now()){
    inspected:count(c.inspected,null),
    unknown_owner_locks:c.unknown_owner_locks,
    dispatch_requests_accepted:count(c.dispatch_requests_accepted,null),
-   worker_dispatches:c.worker_dispatches
+   worker_dispatches:c.worker_dispatches,
+   labeled_outstanding_prs:count(c.labeled_outstanding_prs,null)
  };
+ const sample=verifiedSample(source.watchdog_sample,normalizedCounts.production_prs);
+ const sampleStatus=sample?'VERIFIED_BOUNDED_SAMPLE':
+   source.watchdog_sample_status==='UNVERIFIED'?'UNVERIFIED':'NOT_PROVIDED';
  let blocked_reasons={},blocked_examples={};
  const hasReasons=!!source.blocked_reasons&&typeof source.blocked_reasons==='object'&&
    !Array.isArray(source.blocked_reasons);
@@ -44,6 +68,15 @@ function normalize(source,now=Date.now()){
      ).map(x=>({pr_number:x.pr_number,head_sha:x.head_sha}));
    }
  }
+ const attemptedBlockers=hasReasons?
+  Object.values(blocked_reasons).reduce((a,b)=>a+b,0):0;
+ // One bounded sample: overlapping Core, conflict and Specialist categories
+ // must not be summed. Missing evidence is UNKNOWN rather than zero.
+ const lowerBound=Math.max(attemptedBlockers,
+  sample?.verified_blocked_lower_bound||0);
+ normalizedCounts.blocked_total=lowerBound>0?lowerBound:null;
+ normalizedCounts.verified_blocked_lower_bound=
+  sample?.verified_blocked_lower_bound??null;
  const age=Math.max(0,Math.floor((now-checked)/60000));
  return {
    schema:SCHEMA,source_dry_run:false,source_schema:'HH_CONTROL_DISPATCH_V1',generated_at:new Date(now).toISOString(),
@@ -53,7 +86,8 @@ function normalize(source,now=Date.now()){
    counts:normalizedCounts,queue_states:q,
    blocked_reasons,blocked_examples,
    blocked_reasons_complete:hasReasons,
-   blocked_total:hasReasons?Object.values(blocked_reasons).reduce((a,b)=>a+b,0):null,
+   watchdog_sample:sample,watchdog_sample_status:sampleStatus,
+   blocked_total:normalizedCounts.blocked_total,
    source_event:typeof source.source_event==='string'?source.source_event:null,
    delivery_status:typeof source.delivery_status==='string'?source.delivery_status:null,
    reason:typeof source.reason==='string'?source.reason:null,
