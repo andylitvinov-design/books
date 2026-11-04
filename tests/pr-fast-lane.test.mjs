@@ -1177,7 +1177,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
@@ -1458,7 +1458,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
@@ -1482,7 +1482,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
   assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
-  assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
+  assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
@@ -1502,7 +1502,7 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(gate, /Unified Core gate passed/);
@@ -1514,7 +1514,7 @@ test('required hh-merge-check uses ubuntu-slim and keeps fail-closed Core/Specia
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
