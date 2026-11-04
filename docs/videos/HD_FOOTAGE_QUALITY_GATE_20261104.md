@@ -26,3 +26,15 @@ First inspect **16 existing Dareful / Joel Holland source-page candidates** (thr
 The new `lib/mandala/video-quality-evidence.mjs` labels existing low-resolution animation as `standard_motion_art`, distinguishable from `editorially_reviewed_hd`. The goal-first director may prefer a reviewer-approved HD alternative **only when editorial relevance and exclusions tie**. Semantic subject matching and the user's explicit selected goal always dominate technical resolution.
 
 **Counts:** 16 inspected source candidates do not add 16 published films. Publish only individual quality-verified approved MP4s, then recalculate the total from the first-party catalog and available physical files. The first creative HD prototypes were rejected because technically HD but visually too schematic.
+
+## Independent sample audit of the first 320 original animations
+
+Performed offline against all **320 actual MP4 files** in the previously exported original-motion ZIP, not merely a metadata count.
+
+- **320/320** decode successfully as H.264 video, 432×768 / 18fps / approximately 5s. **0/320** meet the new native 720p24 HD requirement.
+- **2/320** show unusually weak motion at mean decoded-frame luma delta below 1.0: `motion-goals-money-goal-achievement-v1`, `motion-stress-recovery-specific-phobias-v4`.
+- **2/320** show weak edge activity below 1.2: `motion-energy-confidence-self-confidence-v5`, `motion-stress-recovery-abandonment-wounds-v3`.
+- Pairwise poster-frame **dHash distance ≤4** flagged **149 pairs out of 51,040 comparisons** for editorial near-similarity review, across different topics. This is NOT proof of 149 duplicate MP4s: the hash is one frame, and multiple flagged pairs may share a clip.
+- Technical validity is not artistic quality; independent videos can share compositional structure. This explains why adding hundreds of recoloured procedural scenes would fail the user's quality requirement.
+
+The four weak-metric sources are **review candidates, not automatically deleted clips**. Removing them without a curated replacement would silently break existing four-shot presets. The new director tie-breaker prefers individually reviewed higher-definition sources when relevance is identical.
