@@ -36,6 +36,7 @@ on:
       - 'scripts/ci-pr-release-kpi.cjs'
       - 'tests/ci-pr-release-kpi.test.cjs'
       - 'scripts/ci-pr-kpi*.cjs'
+      - 'scripts/ci-pr-phase-times.cjs'
       - 'tests/ci-pr-kpi*.test.cjs tests/ci-pr-api-budget.test.cjs'
       - 'tests/ci-pr-live-verifier.test.cjs'
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
@@ -134,6 +135,7 @@ jobs:
           node --check scripts/ci-pr-served-release.cjs
           node --check tests/ci-pr-served-release.test.cjs
           node --check scripts/ci-pr-release-kpi.cjs
+          node --check scripts/ci-pr-phase-times.cjs
           for f in scripts/ci-pr-kpi*.cjs tests/ci-pr-kpi*.test.cjs; do node --check "$f"; done
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
