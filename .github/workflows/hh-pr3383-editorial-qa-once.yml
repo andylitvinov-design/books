@@ -1,0 +1,22 @@
+name: HH PR3383 non-public HD editorial gate tests - once
+on:
+  push:
+    branches: [codex/hd-footage-quality-wave-20261104]
+    paths:
+      - .github/workflows/hh-pr3383-editorial-qa-once.yml
+permissions:
+  contents: read
+jobs:
+  editorial-qa:
+    if: github.ref == 'refs/heads/codex/hd-footage-quality-wave-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Independently verify physical MP4 and JPG SHA, attribution and NO LIVE gate
+        run: node --test tests/pr3383-editorial-stage-gates.test.mjs tests/hd-dareful-review-contract.test.mjs tests/video-quality-evidence.test.mjs
