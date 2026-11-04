@@ -5,6 +5,9 @@ on:
     # auto-merge itself still waits for a successful Core CI completion.
     types: [opened, reopened, ready_for_review, synchronize]
     branches: ['codex/public-book-library']
+  # Reviewer changes are an event-driven wakeup, never a new poller.
+  pull_request_review:
+    types: [submitted, dismissed]
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
   # Core must verify its own gate and specialist CI before the merge review. Listening
@@ -26,11 +29,18 @@ jobs:
        github.event.action != 'synchronize' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_review' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.base.ref == 'codex/public-book-library' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.event == 'pull_request' &&
        github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    concurrency:
+      group: hh-native-merge-${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch || github.run_id }}
+      cancel-in-progress: false
     steps:
       # This privileged workflow executes trusted base/default-branch code only.
       # Never checkout or execute code from the PR head with this token.
@@ -59,7 +69,8 @@ jobs:
             let expectedHead = null;
             let completedRunId = null;
             const log = message => core.info("CI_AUTO_MERGE: " + message);
-            if (context.eventName === "pull_request_target") {
+            if (context.eventName === "pull_request_target" ||
+                context.eventName === "pull_request_review") {
               const source = context.payload.pull_request;
               if (!source || source.head?.repo?.full_name !== fullRepo ||
                   source.base?.ref !== "codex/public-book-library") return;
@@ -335,8 +346,29 @@ jobs:
             core.setOutput("requires_current_base",String(
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"));
-      - name: Enable native auto-merge for this exact head
+      - name: Verify effective review, resolved threads and free owner lease
+        id: safety
         if: steps.ready.outputs.eligible == 'true' && steps.freshness.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          # No separate workflow and no owner PAT for the read-only policy.
+          github-token: ${{ github.token }}
+          script: |
+            const policy=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-native-merge-policy.cjs');
+            const verdict=await policy.auditNativeMerge({
+              github,owner:context.repo.owner,repo:context.repo.repo,
+              number:Number('${{ steps.ready.outputs.pr }}'),
+              expectedHead:'${{ steps.ready.outputs.head }}',
+              expectedBase:'${{ steps.ready.outputs.base }}'
+            });
+            core.info('CI_AUTO_MERGE_SAFETY: '+verdict.reason);
+            if(verdict.ok)core.setOutput('eligible','true');
+      - name: Enable native auto-merge for this exact head
+        if: >-
+          steps.ready.outputs.eligible == 'true' &&
+          steps.freshness.outputs.eligible == 'true' &&
+          steps.safety.outputs.eligible == 'true'
         env:
           # A repo-scoped token lets resulting merges trigger push workflows.
           # Preserve native auto-merge if the optional credential is absent.
