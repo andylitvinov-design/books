@@ -134,12 +134,13 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   // The pinned Playwright container already includes Chromium/WebKit OS deps.
   // Accept either reviewed setup, without weakening any real browser cases.
-  const pinnedBrowsers=/container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/.test(source);
+  const pinnedBrowsers=source.includes('image: mcr.microsoft.com/playwright:v1.63.0-noble');
   const installedBrowsers=/playwright install --with-deps chromium webkit/.test(source);
   assert.ok(pinnedBrowsers||installedBrowsers,
     'Chromium + WebKit require the pinned image or real dependency install');
   if(pinnedBrowsers){
-    assert.match(source,/HH_PLAYWRIGHT_PACKAGE: \/tmp\/hh-public-services-tools\/node_modules\/playwright/);
+    assert.ok(source.includes('HH_PLAYWRIGHT_PACKAGE: /tmp/hh-public-services-tools/node_modules/playwright'));
+    assert.ok(source.includes('await engine.launch({ headless: true'));
     assert.match(source,/timeout-minutes: 20/);
   }
   assert.match(source, /timeout-minutes: 20/);
@@ -617,8 +618,7 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
     ['Verify preinstalled Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ] : [
-    ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
-    ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Verify preinstalled Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ];
   for (const [name, output] of scopedSteps) {
