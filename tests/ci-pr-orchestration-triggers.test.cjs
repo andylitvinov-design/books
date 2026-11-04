@@ -3,16 +3,20 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
-test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
+test('watchdog has independent cron; failed Core is a direct event workflow',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
+  const direct=read('hh-pr-direct-core-failure');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
-  assert.ok(s.includes("      - 'HH PR core release gate'"));
+  assert.ok(!s.includes("      - 'HH PR core release gate'"));
+  assert.ok(!s.includes("  failed-core-event-handoff:"));
   assert.ok(s.includes("      - 'HH PR source Repair Worker'"));
   assert.ok(s.includes("      - 'HH zero-cost PR CI worker'"));
-  assert.ok(s.includes("github.event.workflow_run.conclusion == 'failure'"));
-  assert.ok(s.includes("github.event.workflow_run.conclusion == 'timed_out'"));
-  assert.ok(s.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
-  assert.ok(s.includes("github.event.workflow_run.event == 'pull_request'"));
+  assert.ok(direct.includes("      - 'HH PR core release gate'"));
+  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'failure'"));
+  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'timed_out'"));
+  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
+  assert.ok(direct.includes("github.event.workflow_run.event == 'pull_request'"));
+  assert.ok(direct.includes("group: hh-control-tower-single-writer"));
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
 });
