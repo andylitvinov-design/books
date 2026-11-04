@@ -27,6 +27,7 @@ on:
       - 'tests/ci-pr-selective-core-rerun.test.cjs'
       - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
       - '.github/workflows/hh-pr-queue-dispatcher.yml'
+      - '.github/workflows/hh-pr-direct-core-failure.yml'
       - 'scripts/ci-pr-slot-wakeup.cjs'
       - 'tests/ci-pr-slot-wakeup.test.cjs'
       - 'scripts/ci-pr-priority.cjs'

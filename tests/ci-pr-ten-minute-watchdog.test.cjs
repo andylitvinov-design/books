@@ -359,7 +359,8 @@ test('obsolete release-ready recovery is absent while interrupted-core recovery 
   assert.match(source,/^  recover-interrupted-core:/m);
   assert.match(source,/^  workflow_run:/m);
   assert.match(source,/^      - 'HH PR core release gate'$/m);
-  assert.ok(source.includes('github.rest.actions.reRunWorkflow'));
+  assert.ok(source.includes('github.rest.actions.reRunJobForWorkflowRun'));
+  assert.ok(!source.includes('github.rest.actions.reRunWorkflow('));
   assert.ok(source.includes('fresh.run_attempt !== 1'));
   assert.ok(source.includes('event.head_repository?.full_name !== fullRepo'));
   assert.ok(source.includes('github-token: ${{ github.token }}'));
@@ -1364,6 +1365,16 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
 
+
+test('existing failed-Core handler retries an isolated infra job without extra runner',()=>{
+ const {readFileSync}=require('node:fs');
+ const handler=readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ assert.ok(handler.includes('id: infra_recovery'));
+ assert.ok(handler.includes('selectInterruptedMandatoryJob'));
+ assert.ok(handler.includes('github.rest.actions.reRunJobForWorkflowRun'));
+ assert.ok(handler.includes("if: steps.infra_recovery.outputs.infra_hold != 'true'"));
+ assert.ok(!handler.includes('github.rest.actions.reRunWorkflow('));
+});
 
 test('interrupted Core recovery allocates a runner only to eligible first-attempt events',()=>{
  const source=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');

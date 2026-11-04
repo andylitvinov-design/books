@@ -324,7 +324,7 @@ test('interrupted Core recovery never resubmits intentional cancellation or a st
   const native=read('hh-native-auto-merge');
   const recover=native.split('  recover-interrupted-core:\n')[1]?.split('  prune-head:\n')[0];
   assert.ok(recover, 'trusted infra-only recovery must remain');
-  assert.ok(recover.includes('new Set(["timed_out","startup_failure","failure"])'));
+  assert.ok(recover.includes('new Set(["timed_out","startup_failure"])'));
   assert.ok(recover.includes('reRunJobForWorkflowRun'), 'only interrupted job is retried');
   assert.ok(!recover.includes('reRunWorkflow('), 'never rerun all successful jobs');
   assert.ok(!recover.includes('new Set(["cancelled"'), 'superseded HEAD cancellations cannot be retried');

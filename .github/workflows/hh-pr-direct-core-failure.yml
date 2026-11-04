@@ -38,9 +38,89 @@ jobs:
       - name: Check trusted direct event code
         run: |
           node --check scripts/ci-pr-event-handoff.cjs
+          node --check scripts/ci-pr-selective-core-rerun.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+      - name: Recover one infrastructure-only job inside existing failed-Core handoff
+        id: infra_recovery
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const event=context.payload.workflow_run,{owner,repo}=context.repo;
+            const fullRepo=owner+"/"+repo;
+            const log=message=>core.info("FAILED_CORE_TARGETED_RECOVERY "+message);
+            // Failure may mask a timed-out mandatory job behind a red aggregate.
+            // Reuse this ALREADY RUNNING handoff job, not an extra workflow/runner.
+            if(event?.conclusion!=="failure"||event.run_attempt!==1||
+               event.event!=="pull_request"||event.status!=="completed"||
+               event.name!=="HH PR core release gate"||
+               event.path?.split("@")[0]!==".github/workflows/hh-pr-core-release.yml"||
+               event.repository?.full_name!==fullRepo||
+               event.head_repository?.full_name!==fullRepo){
+              log("SKIP not a first-attempt trusted failed Core");return;
+            }
+            const age=Date.now()-Date.parse(event.created_at||"");
+            if(!Number.isFinite(age)||age<0||age>2*60*60*1000)return;
+            const linked=(event.pull_requests||[]).filter(p=>
+              Number.isSafeInteger(p.number)&&
+              /^[a-f0-9]{40}$/.test(p.head?.sha||"")&&
+              p.base?.ref==="codex/public-book-library");
+            if(linked.length!==1){log("SKIP exact PR association unknown");return;}
+            const ref=linked[0];
+            const pr=(await github.rest.pulls.get({owner,repo,pull_number:ref.number})).data;
+            if(pr.state!=="open"||pr.draft||
+               pr.base?.ref!=="codex/public-book-library"||
+               pr.head.repo?.full_name!==fullRepo||
+               pr.head.ref!==event.head_branch||pr.head.sha!==ref.head.sha||
+               pr.mergeable===false||pr.mergeable_state==="dirty"||
+               (ref.base?.sha&&ref.base.sha!==pr.base.sha))return;
+            // An immutable synthetic merge is valid only for this exact HEAD/base.
+            if(!/^[a-f0-9]{40}$/.test(event.head_sha||""))return;
+            if(event.head_sha!==pr.head.sha){
+              const merge=(await github.rest.repos.getCommit({
+                owner,repo,ref:event.head_sha
+              })).data;
+              if(merge.parents?.length!==2||
+                 merge.parents[1]?.sha!==pr.head.sha||
+                 merge.parents[0]?.sha!==pr.base.sha)return;
+            }
+            const {selectInterruptedMandatoryJob}=require(process.env.GITHUB_WORKSPACE+
+              "/scripts/ci-pr-selective-core-rerun.cjs");
+            const runJobs=()=>github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:event.id,per_page:100,filter:"latest"
+            });
+            const initial=selectInterruptedMandatoryJob((await runJobs()).data);
+            log("JOB_DECISION "+JSON.stringify(initial));
+            if(initial.action!=="rerun_job")return;
+            // A verified timeout must never be misrouted as a product source error.
+            core.setOutput("infra_hold","true");
+            const fresh=(await github.rest.actions.getWorkflowRun({
+              owner,repo,run_id:event.id
+            })).data;
+            if(fresh.run_attempt!==1||fresh.status!=="completed"||
+               fresh.conclusion!=="failure"||fresh.head_sha!==event.head_sha)return;
+            const current=(await github.rest.pulls.get({
+              owner,repo,pull_number:ref.number
+            })).data;
+            if(current.state!=="open"||current.draft||
+               current.head.sha!==pr.head.sha||current.base.sha!==pr.base.sha)return;
+            const latest=selectInterruptedMandatoryJob((await runJobs()).data);
+            if(latest.action!=="rerun_job"||latest.jobId!==initial.jobId)return;
+            try {
+              await github.rest.actions.reRunJobForWorkflowRun({
+                owner,repo,job_id:initial.jobId
+              });
+              core.setOutput("targeted_rerun","true");
+              log("TARGETED_JOB_RERUN_ACCEPTED #"+initial.jobId+
+                " only; remaining green jobs preserved and no source repair dispatched");
+            }catch(error){
+              if([403,404,409,422].includes(error.status)){
+                core.warning("FAILED_CORE_TARGETED_RECOVERY denied HTTP "+error.status);
+              }else{throw error;}
+            }
       - name: Route verified failed Core directly to signed Repair
+        if: steps.infra_recovery.outputs.infra_hold != 'true'
         uses: actions/github-script@v7
         env:
           HH_CONTROL_TOWER_ENABLED: 'true'

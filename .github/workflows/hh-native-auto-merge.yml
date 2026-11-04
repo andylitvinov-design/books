@@ -453,7 +453,7 @@ jobs:
       github.event.workflow_run.repository.full_name == github.repository &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.run_attempt == 1 &&
-      contains(fromJSON('["timed_out","startup_failure","failure"]'), github.event.workflow_run.conclusion)
+      contains(fromJSON('["timed_out","startup_failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -477,7 +477,7 @@ jobs:
             const {owner,repo} = context.repo;
             const event = context.payload.workflow_run;
             const fullRepo = owner + "/" + repo;
-            const retryConclusions = new Set(["timed_out","startup_failure","failure"]);
+            const retryConclusions = new Set(["timed_out","startup_failure"]);
             const log = message => core.info("CORE_CI_RECOVERY: " + message);
             if (!event || event.name !== "HH PR core release gate" ||
                 event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
