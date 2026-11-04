@@ -97,15 +97,21 @@ test('Watchdog dispatches from durable CI and repair queue only when a slot exis
   assert.ok(s.includes("expected_sha:availableRepair?.head?.sha || ''"));
 });
 
-test('successful Core event has a separate rate-bounded free-slot wakeup',()=>{
-  const s=read('hh-pr-ten-minute-watchdog');
-  assert.ok(s.includes('  core-slot-wakeup:\n'));
-  assert.ok(s.includes('name: core-ci-freed-slot-wakeup'));
-  assert.ok(s.includes('group: hh-pr-core-slot-wakeup'));
-  assert.ok(s.includes('cancel-in-progress: false'));
-  assert.ok(s.includes('github.event.workflow_run.conclusion == \'success\''));
-  assert.ok(s.includes('scripts/ci-pr-slot-wakeup.cjs'));
-  assert.ok(s.includes('actions: write'));
+test('successful Core event has exactly one live rate-bounded slot wakeup owner',()=>{
+  const watchdog=read('hh-pr-ten-minute-watchdog');
+  const direct=read('hh-pr-direct-core-failure');
+  // This dead copy had no matching Core subscription and created skipped job
+  // records on every unrelated Watchdog run.
+  assert.ok(!watchdog.includes('  core-slot-wakeup:\n'));
+  assert.ok(!watchdog.includes("      - 'HH PR core release gate'"));
+  assert.ok(direct.includes("      - 'HH PR core release gate'"));
+  assert.ok(direct.includes('  core-slot-wakeup:\n'));
+  assert.ok(direct.includes('name: core-ci-freed-slot-wakeup'));
+  assert.ok(direct.includes('group: hh-pr-core-slot-wakeup'));
+  assert.ok(direct.includes('cancel-in-progress: false'));
+  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(direct.includes('scripts/ci-pr-slot-wakeup.cjs'));
+  assert.ok(direct.includes('actions: write'));
 });
 
 test('separate Direction Watcher classifies all open PRs with a ten-minute fallback',()=>{
@@ -252,7 +258,7 @@ test('live workers avoid duplicate unit suites while changes retain the full con
     'ci-pr-repair-worker','ci-pr-repair-test-scope','ci-pr-orchestration-triggers'
   ])assert.ok(contract.includes('tests/'+file+'.test.cjs'),file+' contract coverage');
 
-  const slot=read('hh-pr-ten-minute-watchdog').split('\n  core-slot-wakeup:\n')[1];
+  const slot=read('hh-pr-direct-core-failure').split('\n  core-slot-wakeup:\n')[1];
   assert.ok(slot && !slot.includes('node --test'),'slot wake remains lightweight');
   assert.ok(slot.includes('scripts/ci-pr-slot-wakeup.cjs'));
 
