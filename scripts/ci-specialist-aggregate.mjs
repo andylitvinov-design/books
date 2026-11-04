@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -475,8 +475,23 @@ export async function verify(api,ctx,files,options={}) {
         changedRows.every(row => row.status === 'M' || row.status === 'A' ||
           row.status === 'modified' || row.status === 'added') &&
         safeIndependentPublicMediaAdvance(diff, ctx.base, liveBaseSha, changed);
-      if (!documentationOnly && !independentlyRevalidated && !isolatedCiPolicy) {
+      // Do not invalidate a long-running sensitive PR just because another
+      // already-protected PR shipped *only* independent CI telemetry/tests or
+      // one-line retired optional-owner trigger removals. GitHub's full
+      // ancestor/commit/file proof and strict no-overlap check are required.
+      // Never reuse green checks over real runtime, Core, Guard, actionlint,
+      // Specialist, dependency or security policy changes.
+      const unrelatedCiMaintenance = pinnedChangeRows &&
+        safeIndependentCiMaintenanceAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated &&
+          !isolatedCiPolicy && !unrelatedCiMaintenance) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (unrelatedCiMaintenance) {
+        console.log('CI_BASE_ADVANCE_REUSED: exact-HEAD checks retained after unrelated protected CI maintenance; no second CI wave');
+        if (process.env.GITHUB_STEP_SUMMARY)
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '- CI target advanced by independently proven, disjoint maintenance; reuse original exact-HEAD checks (no rebuild)\n');
       }
       approvedBaseChanges.add(liveBaseSha);
     }
