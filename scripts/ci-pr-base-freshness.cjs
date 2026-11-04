@@ -2,6 +2,35 @@
 // The pull-request API's base SHA can reflect an older snapshot. A merge
 // policy change needs evidence against the current production branch.
 const SHA=/^[a-f0-9]{40}$/i;
+const ISOLATED_CI_ONLY=new Set([
+ 'scripts/ci-specialist-aggregate.mjs',
+ 'lib/ci/specialist-aggregate.mjs',
+ 'lib/ci/production-base-impact.mjs',
+ 'tests/ci-specialist-aggregate.test.mjs',
+ 'tests/ci-specialist-wait.test.mjs',
+]);
+const PUBLIC_MEDIA_ONLY=/^(?:components\/mandala-[a-z0-9._/-]+\.(?:tsx|jsx|css)|lib\/mandala\/[a-z0-9._/-]+\.(?:mjs|js|ts|tsx)|tests\/(?:mandala-|video-|free-film-)[a-z0-9._/-]+\.test\.mjs|docs\/[a-z0-9._-]+\.md)$/i;
+const FORBIDDEN_PUBLIC_MEDIA=/(?:^|[\/._-])(?:operations|policy|ci|workflow|security|privacy|auth|consent|secret|credential|payment|billing|rls|database|migration|supabase|api)(?:$|[\/._-])/i;
+function verifiedDetachedCiMediaAdvance(compare,runBase,liveBase,rows){
+ if(!SHA.test(runBase||'')||!SHA.test(liveBase||'')||runBase===liveBase||
+    !Array.isArray(rows)||!rows.length||rows.length>ISOLATED_CI_ONLY.size||
+    rows.some(row=>!ISOLATED_CI_ONLY.has(row.filename)||!['M','A'].includes(row.status))||
+    new Set(rows.map(row=>row.filename)).size!==rows.length||
+    !compare||compare.status!=='ahead'||compare.base_commit?.sha!==runBase||
+    compare.merge_base_commit?.sha!==runBase||compare.behind_by!==0||
+    !Number.isInteger(compare.ahead_by)||compare.ahead_by<1||compare.ahead_by>20||
+    compare.total_commits!==compare.ahead_by||
+    !Array.isArray(compare.commits)||compare.commits.length!==compare.ahead_by||
+    compare.commits.at(-1)?.sha!==liveBase||
+    !Array.isArray(compare.files)||compare.files.length<1||compare.files.length>=50)return false;
+ const changed=new Set(rows.map(row=>row.filename));
+ return compare.files.every(row=>
+   typeof row?.filename==='string'&&!changed.has(row.filename)&&
+   ['added','modified'].includes(row.status)&&!row.previous_filename&&
+   !row.filename.split('/').some(part=>!part||part==='.'||part==='..')&&
+   PUBLIC_MEDIA_ONLY.test(row.filename)&&!FORBIDDEN_PUBLIC_MEDIA.test(row.filename));
+}
+
 async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
@@ -28,15 +57,36 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
   const route=decideRoute(rows,null,null);
   if(!['FULL','CORE','ASSETS','TEXT'].includes(route))return fail('CLASSIFIER_RESULT_UNVERIFIED');
   const sensitive=route==='FULL';
+  let detachedRevalidated=false;
   if(sensitive){
-   if(actual!==pr.base.sha)return fail('SENSITIVE_BASE_STALE');
    if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase();
-   if(!SHA.test(verifiedRunBase||''))return fail('SENSITIVE_CI_BASE_UNVERIFIED');
-   if(verifiedRunBase!==actual)return fail('SENSITIVE_CI_BASE_STALE');
+   if(!SHA.test(verifiedRunBase||'')){
+    // A stale PR metadata snapshot is not a substitute for the Core run's
+    // tested-merge base. Do not trust the live PR base without run evidence.
+    return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_UNVERIFIED':'SENSITIVE_BASE_STALE');
+   }
+   if(verifiedRunBase!==actual){
+    // No generic stale-result waiver. Only a complete, ancestry-proven
+    // public-media delta can be reused for a detached CI-only source PR.
+    // No new workflow, build or protected rule bypass is introduced.
+    if(!rows.length||!rows.every(row=>['M','A'].includes(row.status)&&
+       ISOLATED_CI_ONLY.has(row.filename)))
+      return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_STALE':'SENSITIVE_BASE_STALE');
+    let comparison;
+    try{
+     comparison=(await github.rest.repos.compareCommits({
+       owner,repo,base:verifiedRunBase,head:actual,per_page:100
+     })).data;
+    }catch{return fail('SENSITIVE_COMPARE_UNAVAILABLE');}
+    if(!verifiedDetachedCiMediaAdvance(comparison,verifiedRunBase,actual,rows))
+      return fail('SENSITIVE_COMPARE_UNSAFE');
+    detachedRevalidated=true;
+   }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
   if(finalBranch?.commit?.sha!==actual)return fail('BASE_MOVED_DURING_CHECK');
-  return {ok:true,reason:sensitive?'SENSITIVE_BASE_VERIFIED':'NON_SENSITIVE_BASE_ADVANCE',base:actual};
+  return {ok:true,reason:detachedRevalidated?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
+    sensitive?'SENSITIVE_BASE_VERIFIED':'NON_SENSITIVE_BASE_ADVANCE',base:actual};
  }catch{return fail('BASE_OR_FILES_UNAVAILABLE');}
 }
 function coreRunBase(run,pr,fullRepo,suiteId){
@@ -81,4 +131,4 @@ async function loadTrustedClassifier(workspace){
  if(typeof mod.decideRoute!=='function')throw Error('CLASSIFIER_UNAVAILABLE');
  return {classifierBase,decideRoute:mod.decideRoute};
 }
-module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier};
+module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance};
