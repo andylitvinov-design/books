@@ -112,6 +112,26 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
     pr: (n) => get('/pulls/' + n),
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
+    // Targeted fallback for GitHub's eventually consistent HEAD-wide index:
+    // only probe a required workflow known missing after the initial grace.
+    runsForWorkflow: async (sha, filename) => {
+      if (!/^[0-9a-f]{40}$/.test(sha) ||
+          !/^\\.github\\/workflows\\/[a-z0-9._-]+\\.ya?ml$/i.test(filename))
+        throw Error('INVALID_WORKFLOW_FALLBACK_ARGUMENTS');
+      const workflow = filename.slice(WORKFLOW_PREFIX.length);
+      const result = await get('/actions/workflows/' + workflow +
+        '/runs?head_sha=' + sha + '&event=pull_request&per_page=100');
+      if (!Number.isSafeInteger(result?.total_count) || result.total_count > 100 ||
+          result.total_count < 0 || !Array.isArray(result.workflow_runs) ||
+          result.workflow_runs.length > result.total_count) throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+      return result.workflow_runs;
+    },
+    runById: async id => {
+      if (!Number.isSafeInteger(id) || id < 1) throw Error('INVALID_RUN_FALLBACK_ID');
+      const row = await get('/actions/runs/' + id);
+      if (row?.id !== id) throw Error('MISMATCHED_RUN_FALLBACK_ID');
+      return row;
+    },
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
     // PR event payloads may retain the base SHA from when the PR was opened.
     // Read the actual protected target ref, not pulls/:number.base.sha.
@@ -459,11 +479,60 @@ export async function verify(api,ctx,files,options={}) {
   const missingDeadline = start + missingGrace;
   const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
+  const recovered = new Map();
+  const probeTimes = new Map();
+  const refreshTimes = new Map();
   for (;;) {
-    const allRuns=await api.runs(ctx.head);
+    const indexed = await api.runs(ctx.head);
+    // Cache only GitHub-returned evidence. A recovered pending workflow must
+    // still finish successfully; refresh its immutable ID if the HEAD index lags.
+    if (typeof api.runById === 'function') {
+      const indexedIds = new Set(indexed.map(row => row.id));
+      for (const [filename, row] of recovered) {
+        if (indexedIds.has(row.id)) { recovered.delete(filename); continue; }
+        if (row.status === 'completed') continue;
+        if (now() - (refreshTimes.get(filename) ?? -Infinity) < 60_000) continue;
+        recovered.set(filename, await api.runById(row.id));
+        refreshTimes.set(filename, now());
+      }
+    }
+    const allRuns=[...indexed,...recovered.values()];
     fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
-    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) && !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory)),pr});
+    const eligibleRuns = rows => rows.filter(run =>
+      !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
+      !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
+    state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
+    if (state.missing.length && now() - start >= missingGrace &&
+        typeof api.runsForWorkflow === 'function') {
+      for (const filename of state.missing) {
+        if (now() - (probeTimes.get(filename) ?? -Infinity) < 120_000) continue;
+        const rows = await api.runsForWorkflow(ctx.head, filename);
+        if (!Array.isArray(rows) || rows.length > 100)
+          throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+        // The BASE-owned verifier proves exact HEAD, branch, repository and
+        // PR association. A source-less or unrelated run cannot be recovered.
+        const proof = inspectWorkflowRuns({expected:[filename],runs:rows,pr});
+        if (!proof.missing.length) {
+          const candidates = rows.filter(run =>
+            run.head_sha === ctx.head &&
+            String(run.path || '').split('@')[0] === filename &&
+            run.event === 'pull_request' &&
+            run.head_branch === pr.head.ref &&
+            run.head_repository?.full_name === pr.base.repo.full_name &&
+            Array.isArray(run.pull_requests) && run.pull_requests.some(item =>
+              item.number === pr.number && item.base?.ref === TARGET));
+          if (candidates.length) {
+            const latest = candidates.sort((left,right) =>
+              right.id - left.id || Number(right.run_attempt||1)-Number(left.run_attempt||1))[0];
+            recovered.set(filename,latest);
+          }
+        }
+        probeTimes.set(filename,now());
+      }
+      state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
+    }
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.orphanFailures.length ||
