@@ -137,7 +137,7 @@ test('Telegram OIDC uses the real OAuth PKCE start, stays off by default and doe
     assert.equal(telegram.status,200)
     const url=new URL(telegram.data.redirectUrl)
     assert.equal(url.searchParams.get('provider'),'custom:telegram')
-    assert.equal(url.searchParams.get('code_challenge_method'),'s256')
+    assert.equal(url.searchParams.get('code_challenge_method')?.toLowerCase(),'s256')
     assert(telegram.cookies.some(item=>item.httpOnly && item.name.startsWith('hh-app-auth')))
   }finally{
     if(original===undefined)delete process.env.HH_APP_TELEGRAM_OIDC_ENABLED
