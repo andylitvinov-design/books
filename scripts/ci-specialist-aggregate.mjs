@@ -337,6 +337,13 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  // An expected workflow can be created on GitHub but temporarily absent
+  // from its HEAD-indexed Actions list while other specialists are queued.
+  // Never certify a missing job; only postpone NOT_TRIGGERED for the bounded
+  // period in which independent required jobs are demonstrably pending.
+  // No reruns, commits, privileged permissions or paid services are needed.
+  const correlatedMissingGrace = Math.min(maxWait,
+    boundedMs(options.correlatedMissingGraceMs ?? 5*60_000, 8*60_000));
   // A registered queued/requested/waiting workflow is evidence of dispatch,
   // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
   // while its runner is still waiting. Give it the same absolute 35-minute
@@ -471,7 +478,9 @@ export async function verify(api,ctx,files,options={}) {
     // After the short discovery grace, absence is a configuration/dispatch
     // failure, NOT a 35-minute running test. Never waive an expected workflow.
     const timestamp = now();
-    if (state.missing.length && timestamp >= missingDeadline) {
+    const missingStateDeadline = state.pending.length
+      ? start + correlatedMissingGrace : missingDeadline;
+    if (state.missing.length && timestamp >= missingStateDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
         JSON.stringify({missing:state.missing,pending:state.pending}));
     }
@@ -487,11 +496,12 @@ export async function verify(api,ctx,files,options={}) {
         JSON.stringify({pending:state.pending}));
     }
     const nextDeadline = Math.min(deadline,
-      state.missing.length ? missingDeadline : Infinity,
+      state.missing.length ? missingStateDeadline : Infinity,
       notStarted.length ? queuedDeadline : Infinity);
-    // Discover absent workflows quickly; registered queued jobs need slower
-    // polling to avoid rate-limit amplification under CI runner pressure.
-    const interval = state.missing.length ? Math.min(pollMs, 10_000) : pollMs;
+    // Poll a sole missing workflow quickly; a mixed pending/missing set
+    // uses the existing slower cadence to conserve GitHub API quota.
+    const interval = state.missing.length && !state.pending.length
+      ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
