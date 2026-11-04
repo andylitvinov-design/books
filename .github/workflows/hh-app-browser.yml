@@ -54,7 +54,9 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:17-alpine
+        # Pull requests run source-only contracts; full isolated QA still uses PostgreSQL.
+        # Empty image suppresses the unused PR Docker service (GitHub Actions documented syntax).
+        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
