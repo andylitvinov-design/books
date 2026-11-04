@@ -93,14 +93,15 @@ test('real Dot owner parser accepts story command without routing arbitrary clie
  assert.equal(parseOwnerVideoUpdate({update_id:22,message:{
   ...base,from:{id:2222},text:'/video_story'}},{now,botUsername:bot}),null);
 });
-test('owner-only compact storyboard callback and back are independently parsed',()=>{
+test('owner-only compact plot callbacks use existing production selection service',()=>{
  const callback=data=>parseOwnerVideoUpdate({update_id:30,callback_query:{
   id:'callback-1',data,from:{id:user,is_bot:false},
   message:{...base,from:{id:77,is_bot:true,username:bot}},
  }},{now,botUsername:bot});
  assert.equal(callback('hh-story:abcdef123456:0:0:2').action,'story_choice');
- assert.equal(callback('hh-story:abcdef123456:0:0:2').storyChoice.index,2);
- assert.equal(callback('hh-story-back:abcdef123456:0').action,'story_back');
+ assert.equal(callback('hh-story:abcdef123456:0:0:2').storyCallback,
+  'hh-story:abcdef123456:0:0:2');
+ assert.equal(callback('hh-story-back:abcdef123456:0'),null);
  assert.equal(callback('hh-story:abcdef123456:0:9:2'),null);
 });
 
