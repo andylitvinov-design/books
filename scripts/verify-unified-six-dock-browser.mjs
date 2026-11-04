@@ -27,7 +27,7 @@ async function inspect(browserType,locale,width){
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
   const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\\(15, 15, 15/,
+  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
     id+" dark dock applies only to MyTube");
   const moreFilters=page.locator('button[aria-controls~="mytube-refine-controls"]');
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
