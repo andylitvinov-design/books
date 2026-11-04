@@ -172,7 +172,8 @@ on:
       - 'tests/video-studio-question-registry.test.mjs'
       - '.github/workflows/holistic-support-mandala.yml'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
+      # Shared CI-only impact policy is executed by HH PR Sweep Guard.
+      # Do not start 3-minute Mandala media generation for a policy-test edit.
   workflow_dispatch:
     inputs:
       dareful_preview_wave:
