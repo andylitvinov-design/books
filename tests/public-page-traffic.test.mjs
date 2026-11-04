@@ -133,8 +133,16 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   'SitewideLeadCapture',
   'AnalyticsConsent',
   'PublicPageTraffic',
-  'MobileBottomNavigation'
+  'MobileBottomNavigation',
+  // The owner-approved six-tab MyTube navigation is already shipped globally,
+  // but its UI is route-scoped and is not an automatic dialog.
+  'UnifiedMobileDock'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
+ const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')
+ assert.match(dock,/if \(!visible\) return null;/,'Dock renders only on its declared paths')
+ assert.match(dock,/<nav ref=\{navRef\} data-hh-unified-dock/,'Dock is a nav, not a modal')
+ assert.match(dock,/UNIFIED_DOCK_IDS\.map\(id =>/,'Dock keeps canonical six items')
+ assert.doesNotMatch(dock,/<(?:dialog|AlertDialog|Modal|Toast|BottomSheet)\b/,'Dock cannot mount unsolicited popups')
  assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false,
    'Delete obsolete notice rather than remounting or renaming its popup')
  assert.doesNotMatch(layout,/FirstPartyStatsNotice|[<]dialog\b|[<](?:AlertDialog|Modal|Toast|BottomSheet)\b/,
