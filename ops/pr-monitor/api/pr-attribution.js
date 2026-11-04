@@ -5,6 +5,7 @@
  * <monitor-root>/ci-pr-timeline-audit.cjs. Absolutely no cron or paid services.
  */
 const {analyzePrTimeline}=require('../ci-pr-timeline-audit.cjs');
+const {summarizeCheckpoints}=require('../pr-checkpoint-evidence.cjs');
 const OWNER='andylitvinov-design', REPO='books';
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
 const CORE='hh-pr-core-release.yml';
@@ -272,12 +273,17 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   concrete('deployment_ready','Production deployment READY',null,null,'deploy_ready_unobserved'),
   concrete('live_verified','Production LIVE подтверждён',live?.live_at,live?.receipt_url,'live_verified')
  ];
- const checkpointCoverage={total:checkpointRows.length,
-  observed:checkpointRows.filter(x=>x.evidence==='GITHUB_VERIFIED_EVENT').length,
-  missing:checkpointRows.filter(x=>x.evidence!=='GITHUB_VERIFIED_EVENT').map(x=>x.key),
-  caveat:'Отсутствие отметки может означать пропуск события либо ненужность этапа, а не нулевое время.'};
-
- const journey={checkpoints:checkpointRows,checkpoint_coverage:checkpointCoverage,created_at:pr.created_at,
+ // Missing conditional tasks are NOT missing mandatory merge milestones.
+ // Do not claim a historical N/A when GitHub pagination or old HEAD runs
+ // make the inventory partial. LIVE proof remains independent.
+ const checkpointEvidence=summarizeCheckpoints(checkpointRows,{
+  merged:pr.merged_at!=null,historyPartial:partial,
+  failures:timeline.failures,repeats:timeline.repeated_attempts,
+  conflictSeen:timeline.chronology.some(e=>
+   e.kind==='conflict_labeled'||e.kind==='conflict_unlabeled')
+ });
+ 
+ const journey={checkpoints:checkpointEvidence.checkpoints,checkpoint_coverage:checkpointEvidence.coverage,created_at:pr.created_at,
   first_observed_ci_at:timeline.chronology.find(e=>e.kind==='ci_queued')?.at||null,
   final_ci_green_at:[...timeline.chronology].reverse().find(e=>e.kind==='ci_green')?.at||null,
   merged_at:pr.merged_at||null,

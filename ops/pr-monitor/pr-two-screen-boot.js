@@ -13,7 +13,7 @@
       '<script src="/pr-timestamp-coverage.js?v=20261104-5" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-4">'+
       '<script src="/pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476" defer><\/script>'+
-      '<script src="/pr-two-screen.js?v=20261104-kpi-p95-3476" defer><\/script>'+
+      '<script src="/pr-two-screen.js?v=20261104-evidence-3501" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261104-kpi1">'+
       '<script src="/pr-three-kpi-ui.js?v=20261104-kpi1" defer><\/script>';
     // Disable only the old layout reordering script, without removing any

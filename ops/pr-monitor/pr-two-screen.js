@@ -488,10 +488,27 @@
       return n+(valid(data.stage_totals_minutes?.[p[0]])?data.stage_totals_minutes[p[0]]:0);
     },0);
     if(Math.abs(sum-data.elapsed_minutes)>0.1)throw Error('Времена этапов не складываются в общую длительность');
+    var reasonUnproven=valid(data.reason_unproven_minutes)?
+      data.reason_unproven_minutes:data.unattributed_minutes;
     var total=make('p','hh2-sample','PR #'+data.pr_number+' · всего '+duration(data.elapsed_minutes)+
-      ' · подтверждено '+(data.accounted_percent??'—')+'% · не распределено '+
-      duration(data.unattributed_minutes)+'. Этапы здесь по ОДНОМУ PR, без смешения выборок.');
+      ' · разбито по подтверждённым границам '+(data.accounted_percent??'—')+'%'+
+      ' · время с неподтверждённой причиной '+duration(reasonUnproven)+
+      ' (до первой CI, после зелёного gate и другие неизвестные интервалы). '+
+      'Границы интервала не доказывают первопричину задержки.');
     mount.append(total);
+    var proof=data.journey?.checkpoint_coverage;
+    if(proof?.schema==='HH_PR_CHECKPOINT_EVIDENCE_V1'){
+      mount.append(make('p','hh2-sample',
+        'Обязательные временные точки Created→Merged: '+proof.observed+'/'+proof.total+
+        ' · недостающие: '+(proof.missing?.length?proof.missing.join(', '):'нет')+
+        '. Условные этапы (Triage, Worker, Repair, конфликт, повторный CI) '+
+        'не снижают покрытие, если они не требовались. '+
+        (proof.history_partial?
+          'История GitHub частичная: даже полная цепочка не подтверждает все старые CI.':
+          'История проверенного набора событий не помечена как частичная.')+
+        ' Production LIVE: '+(proof.delivery?.independently_live_verified?
+           'есть отдельная подтверждённая квитанция.':'не подтверждён для этого PR.')));
+    }
     for(var pair of AUDIT_STAGES) {
       var key=pair[0],minutes=data.stage_totals_minutes?.[key],rows=data.intervals.filter(function(x){
         return x.stage===key && valid(x.duration_minutes);
@@ -530,7 +547,7 @@
     }
     var long=data.intervals.filter(function(i){return valid(i.duration_minutes);})
       .sort(function(a,b){return b.duration_minutes-a.duration_minutes;})[0];
-    if(long)mount.prepend(make('p','hh2-diagnostic','Самый длинный доказанный / нераспределённый интервал: '+
+    if(long)mount.prepend(make('p','hh2-diagnostic','Самый длинный интервал с подтверждёнными границами (причина может быть неизвестна): '+
       duration(long.duration_minutes)+' · '+String(long.reason||'причина неизвестна')));
   }
   async function auditPR(n, mount, button) {
