@@ -1533,3 +1533,21 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
   assert.equal(run([...delta.slice(0,-1),['D','tests/ci-public-services-plan.test.mjs']]).mode,'full',
     'deleted protection test never qualifies');
 });
+
+test('Public Services checkout uses the exact event merge and raw, shallow-safe two-parent proof',()=>{
+  const yaml=workflow('hh-public-services-production.yml');
+  for(const critical of [
+    'ref: ${{ github.sha }}',
+    'EXPECTED_MERGE_SHA: ${{ github.sha }}',
+    'git rev-parse HEAD',
+    'git cat-file -p HEAD',
+    'mapfile -t tested_parents',
+    '"\${#tested_parents[@]}" -eq 2',
+    'tested_base="\${tested_parents[0]}"',
+    'tested_head="\${tested_parents[1]}"',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+  ])assert.ok(yaml.includes(critical),'missing fail-closed exact event verification '+critical);
+  assert.equal(yaml.includes('git rev-parse HEAD^2'),false,
+    'shallow checkout cannot derive the second parent with rev-parse');
+  assert.ok(yaml.includes('PR_HEAD_SHA'),'event PR head must remain exact');
+});
