@@ -67,3 +67,27 @@ test('unavailable Core workflow inventory does not abort independently available
  assert.equal(r.source.sampled_timeline_prs[0],16);
  assert.equal(r.intervals.find(x=>x.phase==='merge_conflict')?.pr,16);
 });
+
+test('verified unique-branch fallback recovers first Core, runner queue and execution without fake repair',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const p={...pr(17),head:{ref:'feature-17',sha:'a'.repeat(40)},
+  base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const response=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const run={id:1234,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/pull/17/merge',
+  head_branch:'feature-17',event:'pull_request',status:'completed',conclusion:'failure',
+  repository:{full_name:repo},head_repository:{full_name:repo},pull_requests:[],run_attempt:1,
+  created_at:date+'03:00Z'};
+ const job={id:135,run_id:1234,run_attempt:1,name:'hh-specialist',status:'completed',conclusion:'failure',
+  created_at:date+'03:00Z',started_at:date+'05:00Z',completed_at:date+'08:00Z'};
+ const github={rest:{pulls:{list:async({state})=>response(state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async()=>response({total_count:0,workflow_runs:[]}),
+   listWorkflowRunsForRepo:async()=>response({total_count:1,workflow_runs:[run]}),
+   listJobsForWorkflowRun:async()=>response({total_count:1,jobs:[job]})},
+  issues:{listEventsForTimeline:async()=>response([]),listComments:async()=>response([])}}};
+ const res=await collect({github,now:Date.parse('2026-11-04T13:15:00Z'),maxRequests:50,minRemaining:150});
+ assert.equal(res.source.closed_complete,true);assert.deepEqual(res.source.branch_core_queries,[17]);
+ const report=analyze({...res,source:res.source});const row=report.windows[2].rows[0];
+ assert.equal(row.phases.created_to_first_ci,3);assert.equal(row.phases.runner_queue,2);
+ assert.equal(row.phases.ci_initial_execution,3);assert.equal(row.phases.source_repair,0);
+ assert.equal(row.phases.unknown,32);
+});
