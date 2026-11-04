@@ -1569,8 +1569,10 @@ test('Public Services checkout uses the exact event merge and raw, shallow-safe 
     'tested_head="\${tested_parents[1]}"',
     'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
   ])assert.ok(yaml.includes(critical),'missing fail-closed exact event verification '+critical);
-  assert.equal(yaml.includes('git rev-parse HEAD^2'),false,
-    'shallow checkout cannot derive the second parent with rev-parse');
+  assert.ok(yaml.includes('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"'),
+    'bounded recovery from protected production must remain available');
+  assert.ok(yaml.includes('mapfile -t tested_parents'),
+    'the final proof must read raw parent SHAs even after bounded recovery');
   assert.ok(yaml.includes('PR_HEAD_SHA'),'event PR head must remain exact');
 });
 

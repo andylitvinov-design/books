@@ -230,9 +230,21 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]] || {
             echo "::error::Checkout differs from the exact PR event merge SHA"; exit 1;
           }
-          # Git rev-parse HEAD^2 can return nothing on a shallow checkout
-          # even when the merge commit *header* contains two real parents.
-          # Read raw headers, never infer a merge from an untrusted branch name.
+          # Preserve production #3490's bounded shallow-history recovery. Raw
+          # header proof below still checks exact immutable parents independently.
+          tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
+          tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
+          if [[ "$tested_head" != "$PR_HEAD_SHA" || ! "$tested_base" =~ ^[0-9a-f]{40}$ ]]; then
+            actual_checkout="$(git rev-parse HEAD)"
+            [[ "$actual_checkout" == "$GITHUB_SHA" && "$(git rev-parse --is-shallow-repository)" == true ]] || {
+              echo "::error::Unexpected or non-shallow PR checkout; refusing recovery"; exit 1;
+            }
+            git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"
+            tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
+            tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
+          fi
+          # The raw merge commit itself must contain exactly two parents,
+          # independent of whether shallow traversal can resolve HEAD^2.
           mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
           [[ "${#tested_parents[@]}" -eq 2 ]] || {
             echo "::error::Exact event SHA is not a two-parent test merge"; exit 1;
