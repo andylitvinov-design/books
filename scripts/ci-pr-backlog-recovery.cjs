@@ -94,6 +94,13 @@ async function run({github,core,context,apply=false,now=Date.now(),maxLabels=20,
   }
   // Core can be evaluated on GitHub's synthetic test-merge SHA. Branch-scoped
   // Core run association must be checked even when no checks exist at PR HEAD.
+  // A check on the source HEAD is already evidence that CI started; a
+  // missing-Core recovery label is impossible, so avoid another API lookup.
+  if(checks.check_runs.length){
+   decisions.push({number:pr.number,head:pr.head.sha,...classify(fresh,{
+     checks:checks.check_runs,runs:[],now
+   })});continue;
+  }
   const history=await get('core_'+pr.number,()=>github.rest.actions.listWorkflowRuns({
     owner,repo,workflow_id:'hh-pr-core-release.yml',event:'pull_request',
     branch:fresh.head.ref,per_page:100
