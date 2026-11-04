@@ -9,12 +9,14 @@
   window.__hhTwoScreensV1 = true;
   var ROOT_ID = 'hh-pr-two-screens';
   var STAGES = [
-    ['prepare', 'Создание → готовность', 'Ready, Triage, получение задачи и исходный код до финального CI.'],
-    ['runner', 'Очередь → runner', 'Очередь GitHub Actions до фактического старта исполнителя.'],
-    ['ci', 'Core / Specialist CI', 'Работа проверок, ожидание и повторные волны; параллельные jobs не суммируются.'],
-    ['gate', 'Проверки → Merge Gate', 'Ожидание и подтверждение последнего обязательного gate.'],
-    ['merge', 'Gate → Merge', 'После успешного gate до merged_at.'],
-    ['merge_to_live', 'Merge → LIVE', 'Только при наличии независимой production READY и LIVE-квитанции.']
+    ['before_unknown','До первой сохранённой CI','Границы времени известны; причины внутри не подтверждены'],
+    ['workflow_wait','Workflow → jobs','Время создания jobs в сохранённых Core runs'],
+    ['runner_wait','Очередь runner','От jobs queued до started_at'],
+    ['checks','Работа Core CI','Подтверждённое wall-clock jobs без двойного счёта'],
+    ['ci_gaps','Между волнами CI','Промежутки между Core runs, не приписываем Repair без доказательств'],
+    ['after_unknown','Последняя CI → Merge','После последнего сохранённого job; Gate/ожидание не разделены'],
+    ['no_archive_unknown','Нет CI-истории PR','Общее время PR без подходящих достоверных CI-записей'],
+    ['merge_to_live','Merge → LIVE','Только независимо проверенная production-квитанция']
   ];
   var stages = Object.create(null), cells = Object.create(null);
   var root, graphSlot, graphHint, comparison, prList, coverage, status, firstFoot, secondFoot;
@@ -81,32 +83,19 @@
     return result;
   }
   var SUBSTEPS = {
-    prepare: [
-      ['ready','Создан → Ready'],['triage','Ready → Triage'],
-      ['claimed','Triage → назначен исполнитель'],['repair','Исполнитель → начало Repair'],
-      ['source','Repair → публикация исправления'],['first_ci','Публикация → первая CI']
+    before_unknown:[
+      ['before_unknown','Создан → первая сохранённая Core CI'],
+      ['ready','Отдельное время Ready'],['triage','Отдельное время Triage'],
+      ['repair','Отдельное время Repair']
     ],
-    runner: [
-      ['workflow_wait','Workflow поставлен → создание jobs'],
-      ['runner_wait','Ожидание runner после создания jobs']
-    ],
-    ci: [
-      ['checks','Выполнение Core CI jobs'],['specialist','Specialist CI jobs'],
-      ['between_waves_unknown','Промежутки между волнами CI (не установлено)'],
-      ['other_unknown','Другие пробелы событий CI'],['retry','Повторные CI: доказанные запуски']
-    ],
-    gate: [
-      ['green_checks','Core и Specialist зелёные'],
-      ['gate_queue','Ожидание Merge Gate'],['gate_run','Работа Merge Gate']
-    ],
-    merge: [
-      ['approval','Gate зелёный → готовность к merge'],
-      ['merge_wait','Ожидание auto-merge / слияния']
-    ],
-    merge_to_live: [
-      ['deploy_queue','Merge → создание production deployment'],
-      ['deploy_build','Deployment → READY'],['alias','READY → проверенный LIVE alias']
-    ]
+    workflow_wait:[['workflow_wait','Queued workflow → созданы jobs'],['workflow_missing','Неподтверждённые запуски']],
+    runner_wait:[['runner_wait','Jobs queued → runner started'],['runner_missing','Jobs без меток времени']],
+    checks:[['checks','Выполнение Core jobs'],['specialist','Specialist / другие проверки']],
+    ci_gaps:[['ci_wave_unknown','Между сохранёнными CI waves'],['ci_other_unknown','Другие пробелы CI']],
+    after_unknown:[['after_unknown','Последний сохранённый CI → merged_at'],
+       ['gate','Ожидание Merge Gate'],['merge_wait','После зелёного Gate']],
+    no_archive_unknown:[['no_archive_unknown','PR без полного CI архива'],['provenance','Доля PR с подтверждёнными CI']],
+    merge_to_live:[['deployment','Production deploy READY'],['alias','Верификация LIVE']]
   };
   function validCount(v) { return Number.isSafeInteger(v) && v >= 0; }
   function queueValue(snapshot, key) {
@@ -197,63 +186,99 @@
       return {ok:false,n,sum,reason:'NON_RECONCILED_STAGE_TOTAL'};
     return {ok:true,n,sum,reason:'EXACT_SAME_COHORT'};
   }
-  function archiveMatchedRows() {
-    if(!baseline?.rows||!Array.isArray(archive?.rows))return [];
-    var numbers=new Set(baseline.rows.map(function(p){return p.number;}));
-    return archive.rows.filter(function(r){return numbers.has(r.pr) &&
-      valid(r.elapsed_minutes) && r.stages_ms && typeof r.stages_ms==='object';});
+  function groupedValue(model,key) {
+    if(!model)return null;
+    if(key==='ci_gaps') {
+      const n=model.coverage.ci_window_prs;
+      if(!n)return null;
+      return {mean:(model.stage_mean_minutes.ci_wave_unknown||0)+
+          (model.stage_mean_minutes.ci_other_unknown||0),n};
+    }
+    if(key==='merge_to_live')return null;
+    const value=model.stage_mean_minutes[key],n=model.observed_count[key];
+    return n>0&&valid(value)?{mean:value,n}:null;
   }
   function applyArchive() {
-    var rows=archiveMatchedRows();
-    if(!rows.length) {
-      archiveNote.textContent='В сохранённом CI-архиве нет PR из выбранной 24-часовой когорты. '+
-        'Времена подэтапов не выводятся из других PR и остаются «—».';
+    if(!baseline)return;
+    const core=window.HHPrCohortWallClock;
+    if(!archive||!core){
+      archiveNote.textContent='Читаю сохранённые Core CI job-метки (без запуска новых CI)…';
       return;
     }
-    var keys=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
-    var sum=Object.create(null),tot=0;
-    for(var k of keys)sum[k]=0;
-    for(var r of rows) {
-      tot+=r.elapsed_minutes*60000;
-      for(var key of keys)sum[key]+=valid(r.stages_ms?.[key])?r.stages_ms[key]:0;
-    }
-    var actual=keys.reduce(function(n,k){return n+sum[k];},0);
-    if(Math.abs(actual-tot)>1000*rows.length) {
-      archiveNote.textContent='Архив CI: суммы интервалов не сходятся. Длительности скрыты.';
+    const model=core.calculate(baseline,archive);
+    if(!model||!model.reconciled||!model.total_mean_matches_original){
+      diagnostics.textContent='Ошибка арифметической сверки Created→Merged. Нельзя показывать неподтверждённые этапы.';
       return;
     }
-    for(var k of ['workflow_wait','runner_wait']) {
-      var note='Пересечение с выбранной когортой: '+rows.length+' PR / '+
-        baseline.n+' · среднее по CI-архиву, не всему потоку; история может быть частичной';
-      setSubstep('runner',k,sum[k]>0?sum[k]/rows.length/60000:null,note);
+    const N=model.N,covered=model.coverage.ci_window_prs;
+    for(const row of STAGES) {
+      const key=row[0],st=stages[key],item=groupedValue(model,key);
+      if(!st)continue;
+      st.current.textContent=key==='merge_to_live'?'—':item?
+        ((key==='workflow_wait'||key==='runner_wait'||key==='checks')?'≥ ':'')+
+        duration(item.mean):'—';
+      st.current.title=item?'Средний вклад на ВСЕ '+N+' PR (известен по '+item.n+
+        ' PR); отсутствие архива не приравнивается нулю.':'Подтверждённых меток нет';
+      if(st.name)st.name.title=item?'Наблюдаемые Core events: '+item.n+' из '+N:'Нет измерений';
+      st.history.textContent='—';
+      st.history.title='Нет сопоставимых подтверждённых CI events за 2 недели назад';
+      if(key==='merge_to_live')continue;
+      st.sample.textContent=
+        'Средний вклад в общую когорту: '+(item?duration(item.mean):'—')+
+        ' / PR; подтверждено по '+(item?.n??0)+' из '+N+
+        ' PR. Это не средняя длительность только проверенных PR. '+
+        ((key.endsWith('_unknown')||key==='ci_gaps')?
+          'Причина задержки внутри границ пока не установлена.':
+          'Это наблюдаемая нижняя граница; старая CI могла отсутствовать в архиве.');
     }
-    for(var k of ['checks','between_waves_unknown','other_unknown']) {
-      setSubstep('ci',k,sum[k]>0?sum[k]/rows.length/60000:null,
-        'То же пересечение '+rows.length+' PR / '+baseline.n+' · архив Core CI, не время всего PR');
+    for(const key of Object.keys(SUBSTEPS)) {
+      if(key==='merge_to_live')continue;
+      for(const pair of SUBSTEPS[key]){
+        const name=pair[0],val=model.stage_mean_minutes[name];
+        const n=model.observed_count[name]??0;
+        if(n>0&&valid(val))setSubstep(key,name,val,
+          'Среднее на '+N+' PR · покрытие '+n+'/'+N+
+          (name.endsWith('unknown')?' · причины не установлены':' · подтверждённые метки'));
+        else setSubstep(key,name,null,'В этот период нет проверенного временного интервала');
+      }
     }
-    // The CI archive partitions only first queued → last completed CI.
-    // Never add these subset means to the whole Created→Merged population mean.
-    var elapsed=tot/rows.length/60000,parts=actual/rows.length/60000;
-    archiveNote.textContent='CI-архив: '+rows.length+'/'+baseline.n+' тех же PR с сохранёнными job-метками. '+
-      'Путь первого → последнего Core CI: '+duration(elapsed)+
-      '; сумма неперекрывающихся подэтапов: '+duration(parts)+
-      '. Это отдельная неполная выборка, НЕ часть общей средней всей когорты.';
-    for(var key of ['runner','ci']) {
-      stages[key].sample.textContent='Подэтапы по пересечению '+rows.length+' PR, архив неполный. '+
-        'Промежутки без событий показаны отдельно, не записываются в Repair или ожидание runner.';
-    }
+    // Current stage and substep contributions are from exactly ONE denominator.
+    let total=Object.values(model.stage_totals_ms).reduce((a,b)=>a+b,0)/60000/N;
+    let m=model.overall_mean_minutes;
+    diagnostics.textContent='Арифметика: сумма всех этапов '+duration(total)+
+      ' = Created→Merged '+duration(m)+' по '+N+' PR. '+
+      'Подтверждённые Core CI пути: '+covered+'/'+N+'. '+
+      'Наибольшая НЕИЗВЕСТНАЯ часть: '+duration(
+        Math.max(model.stage_mean_minutes.no_archive_unknown||0,
+        model.stage_mean_minutes.before_unknown||0,
+        model.stage_mean_minutes.after_unknown||0))+
+      ' на PR; это недостаток меток, не доказательство ожидания конкретного исполнителя.';
+    archiveNote.textContent='Источник: сохранённые GitHub Actions Core CI; по '+covered+
+      ' из '+N+' PR найдены непротиворечивые job-интервалы. '+
+      'До/после этих интервалов причины НЕ подтверждены. '+model.coverage.rejected_ci_rows+
+      ' несогласованных записей отнесены к «Нет CI-истории». Данные архива могут быть неполны.';
+    if(prList)prList.querySelectorAll('.hh2-pr-item').forEach(function(entry){
+      const n=Number(entry.querySelector('summary strong')?.textContent.replace('#',''));
+      const p=model.paths.find(x=>x.pr===n);
+      if(!p)return;
+      let note=entry.querySelector('.hh2-pr-evidence');
+      if(!note){note=make('p','hh2-pr-evidence hh2-inline-warning','');
+        entry.querySelector('.hh2-detail')?.prepend(note);}
+      note.textContent=p.covered?'Core CI подтверждена; сегменты суммируются с общим временем.':
+        'Нет сопоставимого сохранённого Core CI пути: длительность PR не приписана CI или Repair.';
+    });
   }
   async function readArchive() {
     if(archivePending||archive)return;
     archivePending=true;
     try {
-      var response=await fetch('/api/ci-journey-summary?hours=24',{cache:'default',
+      var response=await fetch('/api/ci-journey-summary?hours=72',{cache:'default',
         headers:{Accept:'application/json'}});
       if(!response.ok)throw Error('HTTP '+response.status);
       var data=await response.json();
       if(data.schema!=='HH_CI_FIRST_LAST_ARCHIVE_V1'||!Array.isArray(data.rows))
         throw Error('Архив CI не соответствует ожидаемому формату');
-      archive=data;applyArchive();
+      archive=data;updateComparison();
     }catch(e){
       archiveNote.textContent='Архив CI: '+String(e.message||e).slice(0,110)+
         '. Нет данных ≠ 0.';
@@ -318,11 +343,9 @@
       var explanation = make('div','hh2-detail');
       detail.append(summary,explanation);
       comparison.append(detail);
-      stages[spec[0]] = {current:current,history:history,explanation:explanation};
+      stages[spec[0]] = {name:name,current:current,history:history,explanation:explanation};
       buildSubsteps(spec[0],explanation);
-      if (spec[0]==='runner'||spec[0]==='ci') detail.addEventListener('toggle',function(){
-        if (detail.open) void readArchive();
-      });
+      detail.addEventListener('toggle',function(){if(detail.open&&archive)applyArchive();});
     });
     var all = make('details','hh2-stage-item hh2-total');
     var sum = make('summary','hh2-stage-row');
@@ -333,12 +356,12 @@
     two.append(comparison);
     diagnostics=make('p','hh2-diagnostic','Проверяю охват подэтапов и сопоставимость периодов…');
     two.append(diagnostics);
-    archiveNote=make('p','hh2-meta','Подэтапы Core CI загружаются только при раскрытии соответствующего этапа.');
+    archiveNote=make('p','hh2-meta','Core CI архив загружается при открытии второго экрана, без новых расписаний.');
     two.append(archiveNote);
     coverage = make('p','hh2-meta','Сравнение по подтверждённым снимкам; этапы без исторических receipts остаются неизвестными.');
     two.append(coverage);
     var actions = make('div','hh2-actions');
-    var verify = make('button','hh2-button','Проверить подробные этапы');
+    var verify = make('button','hh2-button','Ручная глубокая проверка этапов');
     verify.type='button';
     verify.addEventListener('click',function () { void readDetailed(verify); });
     actions.append(verify); two.append(actions);
@@ -374,51 +397,26 @@
     }
   }
   function updateComparison() {
-    if (!mounted) return;
-    if (baseline) stages.total.current.textContent=duration(baseline.mean);
-    var historical=aggregate(sourceSnapshot?.windows?.find(function(w){return w.id==='two_weeks_ago';}));
-    if (historical) stages.total.history.textContent=duration(historical.mean);
-    var result=reconcileStagesForSameCohort(baseline,detailed);
-    var n=baseline?.n||0;
-    var measuredSum=result.sum??null;
-    var reconciled=result.ok;
-    for (var i=0;i<STAGES.length;i++) {
-      var key=STAGES[i][0], stage=stages[key];
-      var stat=detailed?.stages?.[key]||
-        (key==='merge_to_live'?detailed?.stages?.live_verified:null);
-      stage.current.textContent=reconciled&&key!=='merge_to_live'?duration(stat.mean):'—';
-      stage.history.textContent='—';
-      stage.current.title=reconciled?'Из единой когортной декомпозиции':
-        'Нет подтверждённого распределения для той же когорты';
-      stage.history.title='Не найден аналогичный по охвату исторический архив этапов';
-      if (stat?.n>0&&valid(stat.mean)) {
-        stage.sample.textContent='Отдельный замер: '+duration(stat.mean)+' · n='+stat.n+
-          '. Этот средний интервал получен по неполной выборке, его нельзя суммировать '+
-          'с общей средней '+duration(baseline?.mean)+'. Подэтапы без меток остаются «—».';
+    if(!mounted)return;
+    if(baseline)stages.total.current.textContent=duration(baseline.mean);
+    const historical=aggregate(sourceSnapshot?.windows?.find(function(w){return w.id==='two_weeks_ago';}));
+    if(historical)stages.total.history.textContent=duration(historical.mean);
+    if(!archive){
+      for(const [key] of STAGES){
+        stages[key].current.textContent='—';
+        stages[key].history.textContent='—';
       }
-    }
-    var oldN=historical?.n??'—';
-    coverage.textContent='Созданы и смержены за 24 часа: сейчас '+
-      (baseline?.n??'—')+' PR; в историческом архиве '+oldN+
-      ' PR. Историческое окно рассчитано отдельно по Toronto. «—» = измерений нет.';
-    var selected=detailed?.coverage?.selected;
-    if (selected!==undefined)
-      coverage.textContent+=' Глубокие этапы: проверено '+selected+
-        ' PR; это не весь поток и не одинаковый знаменатель.';
-    diagnostics.textContent=reconciled?
-      'Контроль: сумма пяти этапов '+duration(measuredSum)+
-        ' совпадает с Created→Merged '+duration(baseline.mean)+' (n='+n+').':
-      'Основная задержка по всему потоку пока НЕ ДОКАЗАНА. Created→Merged = '+
-      duration(baseline?.mean)+' по '+(baseline?.n??'—')+
-      ' PR; текущий разбор этапов охватывает '+(selected??'—')+
-      ' PR. Средние 2,3 ч и 1,4 ч из разных выборок, их нельзя складывать. '+
-      'Для подтверждённого распределения откройте подэтапы отдельного PR ниже.';
-    if (archive) applyArchive();
-    // Historical LIVE receipts cannot be used to claim the whole cohort is
-    // live. Only a matched full-population audit would establish that metric.
+      diagnostics.textContent=baseline?
+        'Общее Created→Merged: '+duration(baseline.mean)+' / PR из '+baseline.n+
+        ' PR. Загружаю Core CI архив для того же списка PR. Неизмеренные этапы не равны 0.':
+        'Ожидаю единый список созданных и смерженных PR…';
+    }else applyArchive();
+    const N=baseline?.n??'—';
+    coverage.textContent='Единая когорта созданных и смерженных PR: '+N+
+      ' за 24 ч; историческая когорта: '+(historical?.n??'—')+
+      '. Для исторических этапов двухнедельной давности нет сопоставимого CI-архива; «—» означает «не измерено», а не 0.';
     cells.live.querySelector('strong').textContent='—';
-    cells.live.querySelector('small').textContent='Нет полного набора LIVE-квитанций';
-
+    cells.live.querySelector('small').textContent='Полный набор независимых LIVE-квитанций отсутствует';
   }
   var AUDIT_STAGES=[
     ['created_to_first_ci','Создание → первый наблюдаемый Core CI'],
@@ -616,7 +614,7 @@
         if (entries.some(function (e) {return e.isIntersecting; })) {
           io.disconnect();
           var button=second.querySelector('.hh2-button');
-          if(button)void readDetailed(button);
+          void readArchive();
         }
       },{threshold:0.18});
       if(second)io.observe(second);
