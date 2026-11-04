@@ -72,17 +72,22 @@ async function verifiedCoreJob({run,github,limited,owner,repo}){
  if(!started)return {state:'WAITING',reason:'CORE_RUNNER_NOT_STARTED'};
  if(job.status==='in_progress')return {state:'RUNNING',jobId:job.id};
  if(job.status==='completed'&&EXECUTED_CONCLUSIONS.has(job.conclusion))
-   return {state:'EXECUTED',jobId:job.id};
+   return {state:'EXECUTED',jobId:job.id,conclusion:job.conclusion};
  return {state:'UNKNOWN',reason:'CORE_JOB_NOT_EXECUTED'};
 }
 async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limited}){
  const previous=receiptState(task,comments);
  const result={state:previous.status,coreRunId:null,receiptWritten:false,
-   hintCleared:false,manualFlagged:false};
+   hintCleared:false,manualFlagged:false,ciPhase:'unknown',
+   workflowStatus:null,workflowConclusion:null,coreJobConclusion:null};
  if(!['AWAITING_CORE','CONFIRMED','ESCALATED'].includes(previous.status))return result;
- if(previous.status==='ESCALATED')result.state='CI_WAKE_UNDELIVERED';
+ if(previous.status==='ESCALATED'){
+   result.state='CI_WAKE_UNDELIVERED';
+   result.ciPhase='undelivered';
+ }
  let run=null,zeroHistory=false;
  if(previous.status==='AWAITING_CORE'){
+   result.ciPhase='delivery_pending';
    try{
      // The created-time filter excludes historical runs before this wake.
      // Without it, an old PR can remain "unverified" forever even when no
@@ -117,9 +122,12 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
        result.state='CI_WAKE_CORE_ASSOCIATION_UNVERIFIED';return result;
      }
      result.state='CI_WAKE_UNDELIVERED';
+     result.ciPhase='undelivered';
      result.reasonCode='NO_PR_CORE_AFTER_20_MINUTES';
    } else {
      result.coreRunId=run.id;
+     result.workflowStatus=run.status;
+     result.workflowConclusion=run.conclusion||null;
      // GitHub can refresh run.pull_requests to the current HEAD after a
      // historic synthetic merge was checked. Require the actual merge
      // commit's second parent to be this exact source before any receipt.
@@ -143,24 +151,29 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
      }
      const elapsed=now-previous.requestedAt;
      if(['queued','waiting','pending','requested'].includes(run.status)){
-       result.state='CI_CORE_QUEUED';return result;
+       result.state='CI_CORE_QUEUED';result.ciPhase='queued';return result;
      }
      if(run.status==='completed'&&!EXECUTED_CONCLUSIONS.has(run.conclusion)){
        // A skipped/cancelled/startup-failed workflow is not proof that a
        // runner executed the required Core job.
        result.state=elapsed>=MAX_AGE?'CI_WAKE_UNDELIVERED':'CI_CORE_INTERRUPTED';
-       result.reasonCode='CORE_WORKFLOW_INTERRUPTED_BEFORE_PROOF';
+       result.ciPhase=run.conclusion==='cancelled'?'cancelled':'interrupted';
+       result.reasonCode=run.conclusion==='cancelled'?
+         'CORE_WORKFLOW_CANCELLED_BEFORE_PROOF':'CORE_WORKFLOW_INTERRUPTED_BEFORE_PROOF';
        if(result.state==='CI_CORE_INTERRUPTED')return result;
      } else {
        const proof=await verifiedCoreJob({run,github,limited,owner,repo});
        result.coreJobId=proof.jobId||null;
+       result.coreJobConclusion=proof.conclusion||null;
        if(proof.state==='EXECUTED'&&run.status==='completed'){
+         result.ciPhase=proof.conclusion==='success'?'passed':
+           proof.conclusion==='failure'?'failed':'timed_out';
          result.state='CI_CORE_CONFIRMED';
          result.reasonCode='VERIFIED_CORE_RUNNER_EXECUTED';
        }else if(proof.state==='RUNNING'||(proof.state==='EXECUTED'&&run.status==='in_progress')){
-         result.state='CI_CORE_RUNNING';return result;
+         result.state='CI_CORE_RUNNING';result.ciPhase='running';return result;
        }else if(proof.state==='WAITING'){
-         result.state='CI_CORE_WAITING_RUNNER';return result;
+         result.state='CI_CORE_WAITING_RUNNER';result.ciPhase='queued';return result;
        }else{
          result.state=proof.reason||'CORE_JOB_EVIDENCE_UNVERIFIED';return result;
        }
@@ -189,6 +202,9 @@ async function reconcileCiWake({task,comments,now,dryRun,github,owner,repo,limit
          reason_code:result.reasonCode||
            (state==='CI_WAKE_UNDELIVERED'?'NO_PR_CORE_AFTER_20_MINUTES':'VERIFIED_REAL_PR_CORE'),
          core_job_id:result.coreJobId||null,
+         ci_phase:result.ciPhase,workflow_status:result.workflowStatus,
+         workflow_conclusion:result.workflowConclusion,
+         core_job_conclusion:result.coreJobConclusion,
          created_at:new Date(now).toISOString()})
      }));
      result.receiptWritten=true;

@@ -453,7 +453,7 @@ jobs:
       github.event.workflow_run.repository.full_name == github.repository &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.run_attempt == 1 &&
-      contains(fromJSON('["timed_out","startup_failure"]'), github.event.workflow_run.conclusion)
+      contains(fromJSON('["timed_out","startup_failure","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -464,7 +464,12 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - name: Retry proven infrastructure interruption once, never failed code
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Retry one proven interrupted mandatory job, never failed source code
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
@@ -472,7 +477,7 @@ jobs:
             const {owner,repo} = context.repo;
             const event = context.payload.workflow_run;
             const fullRepo = owner + "/" + repo;
-            const retryConclusions = new Set(["timed_out","startup_failure"]);
+            const retryConclusions = new Set(["timed_out","startup_failure","failure"]);
             const log = message => core.info("CORE_CI_RECOVERY: " + message);
             if (!event || event.name !== "HH PR core release gate" ||
                 event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
@@ -523,45 +528,56 @@ jobs:
                 return;
               }
             }
-            // Never treat a code failure as recoverable infrastructure failure.
-            // Zero-job runs have no code results; interrupted jobs may only be
-            // retried when every job ended as cancelled/skipped/timed_out.
+            // Only a single trusted mandatory infrastructure interruption qualifies.
+            // A red aggregate downstream of an interrupted job is not source failure.
+            // Successful sibling jobs, cancelled runs, and failed source tests are never replayed.
             const jobData = (await github.rest.actions.listJobsForWorkflowRun({
               owner,repo,run_id:event.id,per_page:100,filter:"latest"
             })).data;
-            if (jobData.total_count > 100 || !Array.isArray(jobData.jobs)) {
-              log("SKIP incomplete job listing");
-              return;
-            }
-            const jobs = jobData.jobs;
-            const interrupted = jobs.length === 0 ||
-              (event.conclusion !== "failure" && jobs.every(job =>
-                ["cancelled","skipped","timed_out"].includes(job.conclusion)));
-            if (!interrupted) {
-              log("SKIP actual code, security or policy job failure; repair the root instead");
-              return;
-            }
+            const {selectInterruptedMandatoryJob}=require(process.env.GITHUB_WORKSPACE+
+              "/scripts/ci-pr-selective-core-rerun.cjs");
+            const decision=selectInterruptedMandatoryJob(jobData);
+            log("JOB_DECISION "+JSON.stringify(decision));
+            if(decision.action!=="rerun_job")return;
             const fresh = (await github.rest.actions.getWorkflowRun({
               owner,repo,run_id:event.id
             })).data;
             if (fresh.run_attempt !== 1 || fresh.status !== "completed" ||
                 fresh.conclusion !== event.conclusion || fresh.head_sha !== event.head_sha) {
-              log("SKIP run changed or already retried");
-              return;
+              log("SKIP run changed or already retried"); return;
             }
-            // Rerun does NOT mark checks successful, edit the PR, or bypass rules.
-            // A second failure, or any changed HEAD, requires investigation.
+            const latestPr = (await github.rest.pulls.get({
+              owner,repo,pull_number:reference.number
+            })).data;
+            if (latestPr.state !== "open" || latestPr.draft ||
+                latestPr.base.ref !== "codex/public-book-library" ||
+                latestPr.head.sha !== live.head.sha ||
+                latestPr.base.sha !== live.base.sha) {
+              log("SKIP PR changed before targeted retry"); return;
+            }
+            const latestJobs = (await github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:event.id,per_page:100,filter:"latest"
+            })).data;
+            const latestDecision=selectInterruptedMandatoryJob(latestJobs);
+            if (latestDecision.action!=="rerun_job" ||
+                latestDecision.jobId!==decision.jobId) {
+              log("SKIP job state changed before retry"); return;
+            }
+            // GitHub reruns only the selected job, not prior successful workflows.
             try {
-              await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
-              log("RERUN_ACCEPTED first-attempt interrupted workflow " + event.id +
-                  " on exact PR #" + reference.number + "; current verified Core and specialist CI still required");
+              await github.rest.actions.reRunJobForWorkflowRun({
+                owner,repo,job_id:decision.jobId
+              });
+              log("TARGETED_JOB_RERUN_ACCEPTED "+decision.jobName+" #"+decision.jobId+
+                " for PR #"+reference.number+"; never equate acceptance with CI PASS");
             } catch (error) {
               if ([403,404,409,422].includes(error.status)) {
-                core.warning("CORE_CI_RECOVERY: rerun not permitted/eligible (HTTP " + error.status + ")");
+                core.warning("CORE_CI_RECOVERY: targeted rerun denied (HTTP "+error.status+")");
               } else {
                 throw error;
               }
             }
+
   prune-head:
     # Reuse trusted production workflow; no extra GitHub Actions workflow.
     if: >-

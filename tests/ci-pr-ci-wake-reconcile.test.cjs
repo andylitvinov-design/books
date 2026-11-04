@@ -94,6 +94,8 @@ test('real GitHub Core with empty pull_requests is verified by the exact source 
  const r=await f.run();
  assert.equal(r.state,'CI_CORE_CONFIRMED');
  assert.equal(r.coreJobId,125);
+ assert.equal(r.ciPhase,'failed');
+ assert.match(f.calls.comment[0].body,/"ci_phase":"failed"/);
  assert.equal(f.calls.jobs.length,1);
  assert.equal(f.calls.removed.length,1);
  assert.match(f.calls.comment[0].body,/"core_job_id":125/);
@@ -106,6 +108,7 @@ test('Core workflow queued or waiting for a runner is not reported executed',asy
   const f=fixture({history:{total_count:1,workflow_runs:[run]},jobs:[waitingJob]});
   const r=await f.run();
   assert.equal(r.state,state==='queued'?'CI_CORE_QUEUED':'CI_CORE_WAITING_RUNNER');
+  assert.equal(r.ciPhase,'queued');
   assert.equal(r.receiptWritten,false);
   assert.equal(f.calls.removed.length,0);
  }
@@ -117,6 +120,7 @@ test('Core runner in progress remains pending, not completed',async()=>{
  const f=fixture({history:{total_count:1,workflow_runs:[running]},jobs:[job]});
  const r=await f.run();
  assert.equal(r.state,'CI_CORE_RUNNING');
+ assert.equal(r.ciPhase,'running');
  assert.equal(r.receiptWritten,false);
  assert.equal(f.calls.removed.length,0);
 });
@@ -148,8 +152,10 @@ test('cancelled Core is not completed Core, even when GitHub says completed',asy
  const f=fixture({history:{total_count:1,workflow_runs:[cancelled]}});
  const r=await f.run();
  assert.equal(r.state,'CI_WAKE_UNDELIVERED');
+ assert.equal(r.ciPhase,'cancelled');
  assert.equal(r.coreRunId,41570000000);
- assert.match(f.calls.comment[0].body,/CORE_WORKFLOW_INTERRUPTED_BEFORE_PROOF/);
+ assert.match(f.calls.comment[0].body,/CORE_WORKFLOW_CANCELLED_BEFORE_PROOF/);
+ assert.match(f.calls.comment[0].body,/"ci_phase":"cancelled"/);
  assert.equal(f.calls.labels.length,1);
 });
 test('incomplete time-bounded history is not accepted as absence',async()=>{
@@ -163,6 +169,7 @@ test('genuine zero-Core history after 20 minutes escalates once without new disp
  const f=fixture();
  const r=await f.run();
  assert.equal(r.state,'CI_WAKE_UNDELIVERED');
+ assert.equal(r.ciPhase,'undelivered');
  assert.equal(r.receiptWritten,true);
  assert.equal(r.manualFlagged,true);
  assert.equal(r.hintCleared,true);
