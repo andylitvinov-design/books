@@ -15,6 +15,14 @@ const payload = {
   website:'',
 }
 
+test('free-only service filter cannot lose an early pre-hydration selection',()=>{
+  const view=read('components/services-smart-discovery.tsx')
+  assert.match(view,/const \[facetsHydrated,setFacetsHydrated\] = useState\(false\)/)
+  assert.match(view,/useEffect\(\(\)=>\{setFacetsHydrated\(true\)\},\[\]\)/)
+  assert.match(view,/data-free-services-only\s+disabled=\{!facetsHydrated\}/)
+  assert.match(view,/setBudget\(event\.target\.checked \? "free" : ""\)/)
+})
+
 test('service offering identity is optional, a UUID claim only and checked against published owner data',()=>{
   const valid='fcef611f-e68b-5b30-b9f4-b0aa5614654d'
   assert.equal(normalizePublicServiceEnquiry({...payload,serviceOfferingId:valid}).serviceOfferingId,valid)
