@@ -431,11 +431,7 @@ test('Mandala policy-only impact tests route to fast Guard, while video, voice a
     assert.equal(matchesTrigger(mandala, [file]), true,
       file + ' still needs the full independent video and audio source gate');
   }
-  assert.ok(mandalaSource.includes('  focused-unit-types-build:\n    if: 
-  assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
-  assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
-});
- + '{{'),
+  assert.ok(mandalaSource.includes("  focused-unit-types-build:\n    if: "),
     'Mandala Ready source gate must still exist');
   assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
   assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
