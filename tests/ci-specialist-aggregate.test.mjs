@@ -1980,10 +1980,11 @@ test('trusted one-time optional owner routing tolerates only exact immutable-bas
   const guard='.github/workflows/hh-pr-sweep-guard.yml';
   const legacy="      - 'tests/ci-pr-selective-workflows.test.mjs'";
   const marker="      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'";
-  const oldOwner=readFileSync(owner,'utf8');
-  const oldGuard=readFileSync(guard,'utf8');
-  assert.equal(oldOwner.split(legacy).length,2);
-  assert.equal(oldGuard.split(legacy).length,2);
+  // Immutable fixtures: do not rely on concurrently merging owner PRs.
+  const oldOwner=['name: Example owner','on:','  pull_request:','    paths:',legacy,
+    'jobs:','  verify:','    runs-on: ubuntu-24.04'].join('\n')+'\n';
+  const oldGuard=['name: Example guard','on:','  pull_request:','    paths:',legacy,
+    'jobs:','  guard:','    runs-on: ubuntu-slim'].join('\n')+'\n';
   const base=new Map([[owner,oldOwner],[guard,oldGuard]]);
   const current=new Map([
     [owner,oldOwner.replace(legacy,marker)],
