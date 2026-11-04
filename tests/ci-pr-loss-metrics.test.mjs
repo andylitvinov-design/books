@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers} from '../lib/ci/pr-loss-metrics.mjs';
-import {collectCohort, formatSummary, searchQuery} from '../scripts/pr-loss-report.mjs';
+import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
 const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
@@ -140,7 +140,7 @@ test('bounded created-at cohort search retains true production base and declares
 });
 test('production-push reporter is a step of existing job, not a new scheduled workflow or privileged PR code',()=>{
   const wf=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
-  assert.match(wf,/node scripts\/pr-loss-report\.mjs/);
+  assert.match(wf,/node scripts\/ci-pr-loss-report\.mjs/);
   assert.match(wf,/if: github\.repository == 'andylitvinov-design\/books' && github\.event_name == 'push'/);
   assert.doesNotMatch(wf,/^  schedule:/m);
   assert.match(wf,/persist-credentials: false/);

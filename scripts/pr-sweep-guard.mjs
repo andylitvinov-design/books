@@ -251,10 +251,10 @@ if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
       process.exitCode=2;
     }
   }
-} else if (!['inspect', 'claim', 'heartbeat', 'record', 'repair-start', 'release'].includes(operation) ||
+} else if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) ||
   !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !Number.isSafeInteger(prNumber) || prNumber < 1 ||
   (operation !== 'inspect' && !/^[A-Za-z0-9_.-]{2,80}$/.test(owner))) {
-  console.error('usage: node scripts/pr-sweep-guard.mjs inspect|claim|heartbeat|record|repair-start|release owner/repo PR_NUMBER [AGENT_OWNER] [FAILED_RUN_ID]');
+  console.error('usage: node scripts/pr-sweep-guard.mjs inspect|claim|heartbeat|record|release owner/repo PR_NUMBER [AGENT_OWNER]');
   process.exitCode = 2;
 } else {
   const root = `https://api.github.com/repos/${repo}`;
@@ -345,54 +345,6 @@ if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
         const claimed = winner?.id === created.id;
         console.log(JSON.stringify({claimed,comment_id:created.id,winner_owner:winner?.state.owner,reason:'verify winner before every branch write; renew lease as needed'}));
         if (!claimed) process.exitCode = 4;
-      }
-    } else if (operation === 'repair-start') {
-      // Immutable, GitHub-server-timestamped declaration at actual Repair
-      // handoff. A lease claim alone is NOT a repair start.
-      if (!current || current.state.owner !== owner ||
-          current.state.head_sha !== pr.head.sha || current.state.base_sha !== pr.base.sha)
-        throw new Error('CURRENT_EXACT_HEAD_LEASE_REQUIRED');
-      const failureId = Number(process.argv[6]);
-      if (!Number.isSafeInteger(failureId) || failureId < 1)
-        throw new Error('FAILED_RUN_ID_REQUIRED');
-      const failedRun = await api('/actions/runs/' + failureId);
-      if (failedRun?.event !== 'pull_request' || failedRun.status !== 'completed' ||
-          !['failure','timed_out','action_required','startup_failure'].includes(failedRun.conclusion) ||
-          failedRun.head_sha !== pr.head.sha ||
-          !Array.isArray(failedRun.pull_requests) || failedRun.pull_requests.length !== 1 ||
-          failedRun.pull_requests[0]?.number !== prNumber ||
-          failedRun.pull_requests[0]?.base?.ref !== 'codex/public-book-library')
-        throw new Error('EXACT_PR_HEAD_FAILURE_REQUIRED');
-      const jobs = await api('/actions/runs/' + failureId + '/jobs?per_page=100&page=1');
-      if (!Number.isSafeInteger(jobs.total_count) || jobs.total_count < 1 ||
-          jobs.total_count > 100 || !Array.isArray(jobs.jobs) ||
-          jobs.jobs.length !== jobs.total_count ||
-          !jobs.jobs.some(job => ['failure','timed_out','action_required','startup_failure'].includes(job.conclusion) &&
-            Number.isFinite(Date.parse(job.completed_at || ''))))
-        throw new Error('CONFIRMED_COMPLETED_FAILED_JOB_REQUIRED');
-      const marker = '<!-- HH_PR_REPAIR_STARTED_V1 -->';
-      const duplicate = comments.some(comment => {
-        if (typeof comment.body !== 'string' || !comment.body.startsWith(marker+'\n')) return false;
-        try {
-          const value = JSON.parse(comment.body.slice(marker.length+1));
-          return value.schema==='HH_PR_REPAIR_STARTED_V1' &&
-            value.failed_run_id===failureId && value.failed_head_sha===pr.head.sha;
-        } catch { return false; }
-      });
-      if (duplicate) {
-        console.log(JSON.stringify({repair_start_recorded:true,duplicate:true,failed_run_id:failureId}));
-      } else {
-        const again = await api('/pulls/' + prNumber);
-        if (again.head?.sha !== pr.head.sha || again.base?.sha !== pr.base.sha ||
-            activeLease(await paginate('/issues/'+prNumber+'/comments'), Date.now())?.state.owner !== owner ||
-            again.state !== 'open') throw new Error('REPAIR_IDENTITY_MOVED');
-        const body = marker+'\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
-          action:'repair_started',owner,failed_run_id:failureId,failed_head_sha:pr.head.sha});
-        const posted = await api('/issues/'+prNumber+'/comments',
-          {method:'POST',body:{body}});
-        console.log(JSON.stringify({repair_start_recorded:true,comment_id:posted.id,
-          recorded_at:posted.created_at,failed_run_id:failureId,failed_head_sha:pr.head.sha,
-          note:'Declared Repair start; source edit/commit remains separately verified'}));
       }
     } else {
       if (!current || current.state.owner !== owner) throw new Error('Lease is not held by this owner');

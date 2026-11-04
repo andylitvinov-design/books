@@ -339,7 +339,7 @@ test('optional conflict grouping cannot falsely fail a successful protected CI p
  const diag=yaml.slice(idx);
  assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
  assert.doesNotMatch(prune,/continue-on-error: true/,'the mutating prune must remain fatal');
- assert.match(report,/node scripts\/pr-loss-report\.mjs/);
+ assert.match(report,/node scripts\/ci-pr-loss-report\.mjs/);
  assert.match(report,/continue-on-error: true/,'read-only metrics must never block cleanup');
  assert.match(report,/timeout-minutes: 3/);
  assert.match(diag,/id: conflict_diagnostic/);

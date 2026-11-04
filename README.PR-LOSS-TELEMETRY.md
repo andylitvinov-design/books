@@ -3,7 +3,7 @@
 This release is **operational CI telemetry**, not a public webpage or a new scheduled agent.
 It extends the existing trusted production-push runner in
 `.github/workflows/hh-ci-stale-run-prune.yml` and the existing PR Sweep
-lease tool. Nothing is allowed to bypass branch protections, change required
+lease tool (with a separate CI-only repair-start receipt helper). Nothing is allowed to bypass branch protections, change required
 checks, cancel a current HEAD, modify PR source or dispatch paid services.
 
 ## What is measured
@@ -51,14 +51,14 @@ Vercel deployment timestamps, or exact GitHub billing.
   diagnostic failure does not turn correctly passing CI cleanup RED.
 - Offline/manual read-only command on a trusted checkout with a
   GitHub Actions-read token:
-  `HH_PR_LOSS_COHORT_HOURS=24 HH_PR_LOSS_PR_LIMIT=6 HH_PR_LOSS_RUN_LIMIT=12 node scripts/pr-loss-report.mjs`.
+  `HH_PR_LOSS_COHORT_HOURS=24 HH_PR_LOSS_PR_LIMIT=6 HH_PR_LOSS_RUN_LIMIT=12 node scripts/ci-pr-loss-report.mjs`.
   `HH_PR_LOSS_OFFSET_DAYS=14` selects an equal-length historical
   24-hour *created* cohort ending fourteen days before the observation;
   never compare different cohort definitions or present sample metrics as a
   complete population estimate.
 - At the first actual source Repair activity after claiming the
   exact-HEAD single-writer lease:
-  `node scripts/pr-sweep-guard.mjs repair-start andylitvinov-design/books <PR_NUMBER> <AGENT_OWNER> <FAILED_RUN_ID>`.
+  `node scripts/ci-pr-repair-start.mjs andylitvinov-design/books <PR_NUMBER> <AGENT_OWNER> <FAILED_RUN_ID>`.
   It refuses a noncurrent HEAD, unrelated PR, no failed real job, or missing
   owner lease; it creates at most one immutable marker per failed run+SHA,
   using GitHub's server `created_at`. It does **not** claim the source was
@@ -75,8 +75,16 @@ the already-running trusted push job and read-only GitHub REST queries,
 bounded at 6 PRs and 12 runs per PR by default. All new scripts run with the
 standard GitHub token, and no secret values are logged.
 
+**Vercel Pro credit guard:** All changes in this PR must remain in the existing
+`scripts/vercel-ignore-build.mjs` exact non-runtime whitelist. The source
+files for this telemetry are `scripts/ci-*`, `lib/ci/*`, `tests/ci-*`,
+`.github/workflows/*` and this `README.PR-LOSS-TELEMETRY.md`.
+The real diff must be revalidated against latest production before squash
+merge; if a non-whitelisted path appears, this is a cost-risk HOLD.
+No extra Vercel site build or preview is required for CI-only telemetry.
+
 Source acceptance: deterministic Node tests
-`tests/pr-loss-metrics.test.mjs`, existing prune/PR Sweep tests, workflow
+`tests/ci-pr-loss-metrics.test.mjs`, `tests/ci-pr-repair-start.test.mjs`, existing prune/PR Sweep tests, workflow
 syntax/actionlint, exact-head protected `hh-merge-check`. After merge,
 verify the production branch SHA and that the next real production-push
 prune job emits a **non-synthetic** P1 report. Do not call the report LIVE
