@@ -689,7 +689,7 @@ export function MandalaAutoVideoDirector({
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
      <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
      {onShowAll?<button type="button" className={css.allScenes}
-       data-auto-video-all-scenes onClick={onShowAll}>
+       data-auto-video-all-scenes disabled={disabled} onClick={onShowAll}>
        {locale==="ru"?"Все сценарии":locale==="es"?"Todas las escenas":"All stories"}
        <ArrowRight size={16} aria-hidden="true"/>
      </button>:null}

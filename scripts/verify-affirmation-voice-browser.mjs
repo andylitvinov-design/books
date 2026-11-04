@@ -37,9 +37,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    const allStories=page.locator('[data-auto-video-all-scenes]');
+    await expect(allStories).toBeDisabled();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    await expect(allStories).toBeEnabled();
+    await allStories.click();
+    await expect(studio).toHaveAttribute("data-video-advanced-open","true");
     const phrases=page.locator('[data-video-quick-control="phrases"]');
     await expect(phrases).toBeEnabled();
     await phrases.click();

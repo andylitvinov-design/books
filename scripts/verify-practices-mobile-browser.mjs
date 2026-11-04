@@ -157,6 +157,31 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
             delete window.__hhConsentClickDiagnostic;
           });
         }
+        if(locale==="ru"&&width===320){
+          // Preserve keyboard access and reproduce Safari's focus-loss scroll:
+          // move the viewport between real pointerdown and pointerup. The
+          // same label must receive the one trusted click; no retry or force.
+          await consentBox.focus();
+          await consentBox.press("Space");
+          await expect(consentBox).not.toBeChecked();
+          await expect(send).toBeDisabled();
+          await consentLabel.evaluate(label=>{
+            label.addEventListener("pointerdown",()=>{
+              const before=window.scrollY;
+              window.scrollTo({top:Math.max(0,before-120),behavior:"instant"});
+              window.__hhConsentScrollCheck={before,after:window.scrollY};
+            },{once:true});
+          });
+          await consentLabel.click();
+          await expect(consentBox).toBeChecked({timeout:12000});
+          const scroll=await page.evaluate(()=>window.__hhConsentScrollCheck);
+          assert.ok(scroll&&scroll.before-scroll.after>=50,"the test must actually move the viewport during the tap");
+          await consentBox.focus();
+          await consentBox.press("Space");
+          await expect(consentBox).not.toBeChecked();
+          await consentLabel.tap();
+          await expect(consentBox).toBeChecked({timeout:12000});
+        }
         assert.equal(await consentBox.isChecked(),true,
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");

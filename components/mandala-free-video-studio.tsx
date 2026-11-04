@@ -4646,7 +4646,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <MandalaAutoVideoDirector
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
           scenes={FREE_FILM_CATALOG}
-          disabled={recording||preparing}
+          disabled={!studioHydrated||recording||preparing}
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
           clipLabel={freeFilmClipLabel}
           audioAttached={Boolean(attachedAudio)&&!audioNeedsAttachment}

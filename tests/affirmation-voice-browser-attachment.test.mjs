@@ -98,7 +98,13 @@ test("voice acceptance verifies one workspace click after delayed hydration",()=
 test("consent click diagnostics retain one genuine click and never capture contact values",()=>{
   const practices=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
   const block=practices.slice(practices.indexOf('const consentLabel=form.locator'),practices.indexOf('assert.equal(await consentBox.isChecked()'));
-  assert.equal((block.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  const [normal,shifted]=block.split('if(locale==="ru"&&width===320)');
+  assert.ok(shifted,"independent viewport-shift case must exist");
+  assert.equal((normal.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  assert.equal((shifted.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  assert.equal((shifted.match(/await consentLabel\.tap\(\)/g)||[]).length,1);
+  assert.match(shifted,/consentBox\.press\("Space"\)/);
+  assert.match(shifted,/scroll\.before-scroll\.after>=50/);
   assert.match(block,/toBeChecked\(\{timeout:12000\}\)/);
   assert.match(block,/toBeEnabled\(\{timeout:12000\}\)/);
   assert.match(block,/trusted:event\.isTrusted/);
