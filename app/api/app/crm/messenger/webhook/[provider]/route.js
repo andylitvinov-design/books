@@ -2,6 +2,8 @@ import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
+import { operationHash } from '@/lib/app/crypto'
+import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
@@ -71,7 +73,14 @@ export async function POST(request,{params}){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
-              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch(error){
+              // A committed inbox update is never rolled back or blindly re-sent
+              // after an ambiguous provider response. Only allowlisted metadata
+              // and an owner-secret HMAC of the update enter server logs.
+              const evidence=telegramPromptFailureEvidence(event.eventId,error,
+                value=>operationHash(value,config))
+              console.error('HH_CRM_TG_PROMPT_SEND_FAILED',evidence)
+            }
           }
           continue
         }
