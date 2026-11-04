@@ -43,6 +43,8 @@ import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyT
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
 import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
+import {paintMyTubeMotion,validateMyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
+import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {TimelineTextClip,TimelineTransition,TimelineLook} from "./mandala-multitrack-timeline";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -104,7 +106,7 @@ type EditorHistoryState={
 type ImportedEditorDraft={
   presetId:string;aspect:Aspect;durationSeconds:10|15|20|30|60;
   shots:{sceneId:string;startSeconds:number;durationSeconds:number;captionText:string;
-    transitionIn:TimelineTransition;colorLook:TimelineLook}[];
+    transitionIn:TimelineTransition;colorLook:TimelineLook;motion?:MyTubeMotion|null}[];
   captions:TimelineTextClip[]|null;audioStartSeconds:number;
 };
 // A selected sound is only a preview; attaching it is a separate, explicit step.
@@ -1251,10 +1253,17 @@ function paintCinematicFrame(
     return;
   }
   const localTime=Math.max(0,filmSecond-shot.startSeconds);
-  paint(ctx,image,effect,localTime,aspect,
+  const paintShot=()=>paint(ctx,image,effect,localTime,aspect,
     shot.theme==="money"?shot.sceneId as MoneySceneId:null,
     caption,shot.theme,shot.sceneId as LocalSceneId,speed,brightness,
     storyboard.version===FREE_FILM_PLAN_VERSION?stockShotVideo:null);
+  // The original local scene is transformed BEFORE captions and finishing.
+  // Preview, WebCodecs and MediaRecorder all use this same function.
+  if(storyboard.version===FREE_FILM_PLAN_VERSION&&shot.motion){
+    paintMyTubeMotion(ctx,shot.motion,localTime,shot.durationSeconds,paintShot);
+  }else{
+    paintShot();
+  }
   // The visitor's visual-style filter changes actual local rendered frames,
   // not merely the premium-provider storyboard text. All four looks use
   // portable Canvas gradients, identical in preview and MediaRecorder.
@@ -2028,6 +2037,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const plan={...clean,shots:clean.shots.map((shot,index)=>({
         ...shot,transitionIn:draft.shots[index].transitionIn,
         colorLook:draft.shots[index].colorLook,
+        motion:draft.shots[index].motion??null,
       }))} as CinematicStoryboard;
       resetEditorHistory();stopMovieSound();setPreviewPlaying(false);
       setTheme(preset.theme);setVideoCategory(preset.theme);
@@ -2219,7 +2229,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
     audioStartSeconds,timelineTextClips,caption,affirmations,hypnoLight,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
-       shot.transitionIn||"soft",shot.colorLook||"original"]),appliedStory]);
+       shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -3505,6 +3515,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return {...current,shots} as CinematicStoryboard;
     });
     stopMovieSound();setPreviewPlaying(false);
+  };
+  const changeTimelineShotMotion=(index:number,motion:MyTubeMotion|null)=>{
+    if(recording||preparing||!usingFreeFilmCompilation||!cinematicPlan||
+       index<0||index>=cinematicPlan.shots.length)return;
+    let safe:MyTubeMotion|null;
+    try{safe=validateMyTubeMotion(motion);}catch{return;}
+    // Each gesture is undoable and invalidates the previously encoded MP4.
+    recordBeforeEditorChange("shot-motion:"+index);
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
+      return {...current,shots:current.shots.map((shot,i)=>i===index?
+        {...shot,motion:safe}:shot)} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+    setPreviewFrameRevision(value=>value+1);
   };
   const splitTimelineText=(id:string,atSeconds:number)=>{
     recordBeforeEditorChange("caption-split");
@@ -5672,7 +5697,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 sceneId:shot.sceneId,title:freeFilmClipLabel(shot.sceneId),
                 poster:firstPartyFilmFor(shot.theme,shot.sceneId)?.poster,
                 startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds,
-                transitionIn:shot.transitionIn,colorLook:shot.colorLook
+                transitionIn:shot.transitionIn,colorLook:shot.colorLook,
+                motion:shot.motion??null
               }))
               :activeFilm?[{sceneId:theme==="money"?moneyScene||"golden-rain":otherScene,
                 title:sceneName,poster:activeFilm.poster,startSeconds:0,durationSeconds:duration}]:[]}
@@ -5707,6 +5733,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onMoveShot={moveTimelineShot}
             onResizeShot={shiftFilmCut}
             onSetShotEffect={usingFreeFilmCompilation?changeTimelineShotEffect:undefined}
+            onSetShotMotion={usingFreeFilmCompilation?changeTimelineShotMotion:undefined}
             onAddCaption={addTimelineCaption}
             onSplitCaption={splitTimelineText}
             onDuplicateCaption={duplicateTimelineText}
