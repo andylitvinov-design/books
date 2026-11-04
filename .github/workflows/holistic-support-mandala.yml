@@ -172,7 +172,8 @@ on:
       - 'tests/video-studio-question-registry.test.mjs'
       - '.github/workflows/holistic-support-mandala.yml'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
+      # Shared CI-only impact contracts execute in HH PR Sweep Guard;
+      # reserve the media suite for actual route code, video, voice and Mandala source changes.
   workflow_dispatch:
     inputs:
       dareful_preview_wave:
