@@ -20,15 +20,20 @@ await context.route('**/*', route => {
   return new URL(request.url()).origin === origin && ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort();
 });
 const page = await context.newPage();
-const errors = [];
+const errors = [], safeWarnings = [];
 page.on('pageerror', error => errors.push(error.message));
+page.on('console', message => {
+  const text=message.text();
+  if (/^HH_WEBKIT_MP4_EXPORT_FAILURE:[a-z_]+$/.test(text)) safeWarnings.push(text);
+});
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   await page.locator('[data-auto-video-all-scenes]').click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
-  if (!await preset.isVisible()) await page.locator('[data-free-film-more]').click();
+  const more = page.locator('[data-free-film-more]');
+  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
   await preset.click();
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
@@ -47,7 +52,17 @@ try {
   await attach.click();
   await generate.click();
   const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({ state: 'visible', timeout: 150000 });
+  try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
+  catch (error) {
+    const state=await page.evaluate(()=>({
+      generateDisabled:document.querySelector('[data-video-quick-generate]')?.disabled??null,
+      progress:document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')??null,
+      originalFallback:Boolean(document.querySelector('[data-video-original-fallback]')),
+      hasResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+    }));
+    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
+    throw error;
+  }
   const download = page.waitForEvent('download', { timeout: 30000 });
   await save.click();
   await (await download).saveAs(movie);

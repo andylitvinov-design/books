@@ -329,6 +329,12 @@ test('only audited CI-policy paths skip unrelated heavy browser matrices', () =>
     [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
 });
 
+test('scenario source bindings PR requires the real Linux browser acceptance', () => {
+  const branch='feat/video-120-scenario-media-bindings-20261102';
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},branch),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:true},'other-branch'),{browser:false});
+});
+
 test('Mandala PRs skip redundant Linux browsers but keep required source contracts and macOS media QA', () => {
   const changed = [{filename:'app/api/holistic-support/voice/route.js',status:'modified'}];
   const full = decideHeavyImpact('mandala', changed);
@@ -353,4 +359,14 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
   assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
+
+test('owner video review runs real browser and physical source checks',()=>{
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},'feat/video-owner-review-20261102'),{browser:true});
+  const yaml=read('holistic-support-mandala.yml');
+  for(const name of ['Install isolated Chromium and WebKit','Ensure ffprobe and ffmpeg','Verify all 44 first-party MP4','Audit 120 scenario','Verify private owner scenario review snapshot','Public mandala photo']){
+    const step=yaml.slice(yaml.indexOf('- name: '+name));
+    assert.ok(step.startsWith('- name: '+name),name);
+    assert.match(step.slice(0,step.indexOf('\n      - name:',1)>0?step.indexOf('\n      - name:',1):step.length),/feat\/video-owner-review-/,name);
+  }
 });
