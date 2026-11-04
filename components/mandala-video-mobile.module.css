@@ -1,6 +1,6 @@
 /* Mobile first Video Studio, art-directed to the approved Holistic House mock.
    The same local renderers are used for thumbnails, preview and exported clips. */
-.studio{--ink:#183d35;--green:#07936c;--cream:#fbf8f1;--edge:#e9e6db;
+.studio{--ink:#183d35;--green:#07936c;--cream:var(--hh-light-canvas);--edge:#e9e6db;
   color:var(--ink);font:500 14px/1.4 Arial,Helvetica,sans-serif;min-width:0;
   max-width:960px;margin:0 auto;padding:2px 0 76px}
 .studio *{box-sizing:border-box}
@@ -50,7 +50,7 @@
 .pagerDots{display:inline-flex;gap:5px}
 .pagerDots i{display:block;width:6px;height:6px;border-radius:50%;background:#dadfda}
 .pagerDots i:first-child{background:#009d70}
-.previewRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;margin-top:11px;padding:9px;border:1px solid #e0e9df;background:#f3f8f2;border-radius:13px}
+.previewRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;margin-top:11px;padding:9px;border:1px solid var(--hh-light-border);background:var(--hh-light-surface-soft);border-radius:13px}
 .previewButton{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #b7d8be;min-height:43px;border-radius:12px;background:#fffcf5;color:#14724f;font-size:12px;font-weight:750;padding:7px}
 .previewButton[aria-pressed="true"]{background:#e3f2e8;border-color:#0b9973}
 .canvasWindow{position:relative;display:grid;place-items:center;min-width:0;height:71px;overflow:hidden;border-radius:11px;background:#253934}
@@ -94,7 +94,7 @@
 .progress{height:6px;border-radius:10px;background:#dbe6dd;overflow:hidden}
 .progress span{display:block;height:100%;background:#07966e;transition:width .3s ease}
 .notice,.warning{font-size:11.5px;color:#905c22;margin:6px 0}
-.result{margin:12px 0 8px;padding:11px;border:1px solid #e1e8dd;border-radius:16px;background:#f9fcf8;scroll-margin-top:20px}
+.result{margin:12px 0 8px;padding:11px;border:1px solid var(--hh-light-border);border-radius:16px;background:var(--hh-light-surface);scroll-margin-top:20px}
 .result h3{font-size:14px}
 .result p{color:#667b6f;font-size:11.5px;margin-top:5px}
 .result video{display:block;width:min(100%,280px);height:auto;margin:10px auto;border-radius:12px;background:#253e34;max-height:300px}
