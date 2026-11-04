@@ -329,7 +329,12 @@ jobs:
             }
             core.setOutput("eligible","true");
             core.setOutput("verified_base",freshness.base);
-            core.setOutput("requires_current_base",String(freshness.reason==="SENSITIVE_BASE_VERIFIED"));
+            // CI-only policy reuse was authorized against this exact trusted
+            // public-media BASE. Pin it during ARM as well: another
+            // production commit must not silently turn that proof stale.
+            core.setOutput("requires_current_base",String(
+              freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
+              freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"));
       - name: Enable native auto-merge for this exact head
         if: steps.ready.outputs.eligible == 'true' && steps.freshness.outputs.eligible == 'true'
         env:
