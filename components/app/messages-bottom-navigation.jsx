@@ -20,6 +20,7 @@ export default function MessagesBottomNavigation({locale='en'}){
     const nav=navRef.current
     if(!nav)return
     const viewport=window.visualViewport
+    const page=nav.closest('.hh-messages-page')
     let frame=0
     const update=()=>{
       if(frame)return
@@ -28,6 +29,12 @@ export default function MessagesBottomNavigation({locale='en'}){
         if(!nav.isConnected)return
         const focused=document.activeElement
         const editing=focused?.matches?.('input,textarea,[contenteditable="true"],[role="textbox"]')
+        const visualBottom=(viewport?.offsetTop||0)+(viewport?.height||window.innerHeight)
+        // Safari can dismiss the keyboard while retaining textarea focus.
+        // The real viewport, not :focus, decides when the dock is hidden.
+        const keyboard=Boolean(editing&&window.innerWidth<=760&&viewport&&
+          (window.innerHeight-visualBottom>115||viewport.height<window.innerHeight*.75))
+        if(page)page.dataset.hhMobileKeyboardOpen=keyboard?'true':'false'
         nav.toggleAttribute('data-editor-focused',Boolean(editing))
         if(getComputedStyle(nav).display==='none'||window.innerWidth>760)return
         const inset=mobileVisualBottomGap({
@@ -63,6 +70,7 @@ export default function MessagesBottomNavigation({locale='en'}){
       viewport?.removeEventListener('scroll',update)
       document.body.style.removeProperty('--hh-app-visual-bottom-inset')
       document.body.style.removeProperty('--hh-app-mobile-nav-height')
+      page?.removeAttribute('data-hh-mobile-keyboard-open')
       nav.removeAttribute('data-editor-focused')
     }
   },[])

@@ -129,21 +129,21 @@
  :global(.hh-messages-page) .root[data-compact][data-has-messages="true"]>.compactDisclosure{
   display:none
  }
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.compactDisclosure,
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.compactSettings,
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.programPanel{
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.compactDisclosure,
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.compactSettings,
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.programPanel{
   display:none
  }
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form{
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.form{
   grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px
  }
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions{
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.form .actions{
   display:flex;align-items:center;gap:4px
  }
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions button:first-child{
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.form .actions button:first-child{
   display:none
  }
- :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form textarea{
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact]>.form textarea{
   height:44px;min-height:44px;max-height:92px
  }
 }

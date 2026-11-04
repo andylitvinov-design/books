@@ -185,6 +185,11 @@ for(const browserType of [chromium,webkit]){
       key+' multiline composer grows within cap '+JSON.stringify(multiline))
     assert.ok(multiline.bottom<=multiline.visualBottom+3,
       key+' editable field stays in viewport '+JSON.stringify(multiline))
+    // Headless WebKit has no native software keyboard: focus alone must not
+    // hide the dock or apply keyboard-only compact layout.
+    await page.waitForFunction(()=>document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='false')
+    assert.equal(await root.getAttribute('data-keyboard-open'),'false',
+      key+' keyboard state follows visual viewport, not focus alone')
     await aiComposer.fill('Synthetic unsent AI draft')
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
     await aiTab.click()

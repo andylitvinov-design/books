@@ -232,7 +232,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       const dock=[sharedDock,fallbackDock].find(el=>el&&getComputedStyle(el).display!=='none'&&
         el.getBoundingClientRect().height>0)
       const navTop=dock?.getBoundingClientRect().top
-      const limit=editing?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
+      const limit=keyboard?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
       hub.style.setProperty('--hh-messenger-top',top+'px')
       hub.style.setProperty('--hh-messenger-height',Math.max(1,Math.floor(limit-top-4))+'px')
     }

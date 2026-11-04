@@ -106,8 +106,8 @@
  .prepared{flex:none;margin:3px 0;padding:5px 8px;font-size:11px}
  .footer{flex:none;font-size:10px;padding:3px 0 0}
  .layout:has([data-has-messages="true"]) .welcome{display:none}
- [data-chat-editing="true"] .rail,
- [data-chat-editing="true"] .welcome,
- [data-chat-editing="true"] .prepared,
- [data-chat-editing="true"] .footer{display:none}
+ [data-keyboard-open="true"] .rail,
+ [data-keyboard-open="true"] .welcome,
+ [data-keyboard-open="true"] .prepared,
+ [data-keyboard-open="true"] .footer{display:none}
 }
