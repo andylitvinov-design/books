@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -85,11 +85,17 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         continue;
       }
       if (response.ok) return response.json();
-      const rateLimited = response.status === 403 &&
-        (response.headers?.get('x-ratelimit-remaining') === '0' ||
+      // Retryable HTTP 500 and network failures are different from a
+      // genuine quota exhaustion. Waiting 0.4/1.2/2.4 seconds cannot reset
+      // a primary/secondary GitHub rate window, and multiplied across
+      // concurrent specialists those retries make 403 storms worse.
+      const rateLimited = (response.status === 403 || response.status === 429) &&
+        (response.status === 429 ||
+         response.headers?.get('x-ratelimit-remaining') === '0' ||
          Boolean(response.headers?.get('retry-after')));
-      const transientStatus = response.status === 429 ||
-        (response.status >= 500 && response.status <= 504) || rateLimited;
+      if (rateLimited)
+        throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status + ' RATE_LIMITED');
+      const transientStatus = response.status >= 500 && response.status <= 504;
       if (!transientStatus || attempt >= retryDelaysMs.length)
         throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status);
       await sleep(retryDelaysMs[attempt]);
@@ -112,6 +118,26 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
     pr: (n) => get('/pulls/' + n),
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
+    // Targeted fallback for GitHub's eventually consistent HEAD-wide index:
+    // only probe a required workflow known missing after the initial grace.
+    runsForWorkflow: async (sha, filename) => {
+      if (!/^[0-9a-f]{40}$/.test(sha) ||
+          !/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(filename))
+        throw Error('INVALID_WORKFLOW_FALLBACK_ARGUMENTS');
+      const workflow = filename.slice(WORKFLOW_PREFIX.length);
+      const result = await get('/actions/workflows/' + workflow +
+        '/runs?head_sha=' + sha + '&event=pull_request&per_page=100');
+      if (!Number.isSafeInteger(result?.total_count) || result.total_count > 100 ||
+          result.total_count < 0 || !Array.isArray(result.workflow_runs) ||
+          result.workflow_runs.length > result.total_count) throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+      return result.workflow_runs;
+    },
+    runById: async id => {
+      if (!Number.isSafeInteger(id) || id < 1) throw Error('INVALID_RUN_FALLBACK_ID');
+      const row = await get('/actions/runs/' + id);
+      if (row?.id !== id) throw Error('MISMATCHED_RUN_FALLBACK_ID');
+      return row;
+    },
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
     // PR event payloads may retain the base SHA from when the PR was opened.
     // Read the actual protected target ref, not pulls/:number.base.sha.
@@ -337,6 +363,13 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  // An expected workflow can be created on GitHub but temporarily absent
+  // from its HEAD-indexed Actions list while other specialists are queued.
+  // Never certify a missing job; only postpone NOT_TRIGGERED for the bounded
+  // period in which independent required jobs are demonstrably pending.
+  // No reruns, commits, privileged permissions or paid services are needed.
+  const correlatedMissingGrace = Math.min(maxWait,
+    boundedMs(options.correlatedMissingGraceMs ?? 5*60_000, 8*60_000));
   // A registered queued/requested/waiting workflow is evidence of dispatch,
   // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
   // while its runner is still waiting. Give it the same absolute 35-minute
@@ -390,7 +423,15 @@ export async function verify(api,ctx,files,options={}) {
       // application source may have advanced without new proposed-merge CI.
       const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
         safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
-      if (!documentationOnly && !independentlyRevalidated) {
+      // Independently tested public media source advances cannot change a
+      // candidate that edits ONLY detached Specialist policy code/tests. The
+      // immutable PR HEAD, actual successful Core and every Specialist job
+      // remain mandatory; auth/billing/workflows/CI/unknown paths stay red.
+      const isolatedCiPolicy = pinnedChangeRows &&
+        changedRows.every(row => row.status === 'M' || row.status === 'A' ||
+          row.status === 'modified' || row.status === 'added') &&
+        safeIndependentPublicMediaAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated && !isolatedCiPolicy) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       approvedBaseChanges.add(liveBaseSha);
@@ -452,11 +493,60 @@ export async function verify(api,ctx,files,options={}) {
   const missingDeadline = start + missingGrace;
   const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
+  const recovered = new Map();
+  const probeTimes = new Map();
+  const refreshTimes = new Map();
   for (;;) {
-    const allRuns=await api.runs(ctx.head);
+    const indexed = await api.runs(ctx.head);
+    // Cache only GitHub-returned evidence. A recovered pending workflow must
+    // still finish successfully; refresh its immutable ID if the HEAD index lags.
+    if (typeof api.runById === 'function') {
+      const indexedIds = new Set(indexed.map(row => row.id));
+      for (const [filename, row] of recovered) {
+        if (indexedIds.has(row.id)) { recovered.delete(filename); continue; }
+        if (row.status === 'completed') continue;
+        if (now() - (refreshTimes.get(filename) ?? -Infinity) < 60_000) continue;
+        recovered.set(filename, await api.runById(row.id));
+        refreshTimes.set(filename, now());
+      }
+    }
+    const allRuns=[...indexed,...recovered.values()];
     fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
-    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) && !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory)),pr});
+    const eligibleRuns = rows => rows.filter(run =>
+      !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
+      !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
+    state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
+    if (state.missing.length && now() - start >= missingGrace &&
+        typeof api.runsForWorkflow === 'function') {
+      for (const filename of state.missing) {
+        if (now() - (probeTimes.get(filename) ?? -Infinity) < 120_000) continue;
+        const rows = await api.runsForWorkflow(ctx.head, filename);
+        if (!Array.isArray(rows) || rows.length > 100)
+          throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+        // The BASE-owned verifier proves exact HEAD, branch, repository and
+        // PR association. A source-less or unrelated run cannot be recovered.
+        const proof = inspectWorkflowRuns({expected:[filename],runs:rows,pr});
+        if (!proof.missing.length) {
+          const candidates = rows.filter(run =>
+            run.head_sha === ctx.head &&
+            String(run.path || '').split('@')[0] === filename &&
+            run.event === 'pull_request' &&
+            run.head_branch === pr.head.ref &&
+            run.head_repository?.full_name === pr.base.repo.full_name &&
+            Array.isArray(run.pull_requests) && run.pull_requests.some(item =>
+              item.number === pr.number && item.base?.ref === TARGET));
+          if (candidates.length) {
+            const latest = candidates.sort((left,right) =>
+              right.id - left.id || Number(right.run_attempt||1)-Number(left.run_attempt||1))[0];
+            recovered.set(filename,latest);
+          }
+        }
+        probeTimes.set(filename,now());
+      }
+      state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
+    }
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.orphanFailures.length ||
@@ -471,7 +561,9 @@ export async function verify(api,ctx,files,options={}) {
     // After the short discovery grace, absence is a configuration/dispatch
     // failure, NOT a 35-minute running test. Never waive an expected workflow.
     const timestamp = now();
-    if (state.missing.length && timestamp >= missingDeadline) {
+    const missingStateDeadline = state.pending.length
+      ? start + correlatedMissingGrace : missingDeadline;
+    if (state.missing.length && timestamp >= missingStateDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
         JSON.stringify({missing:state.missing,pending:state.pending}));
     }
@@ -487,11 +579,12 @@ export async function verify(api,ctx,files,options={}) {
         JSON.stringify({pending:state.pending}));
     }
     const nextDeadline = Math.min(deadline,
-      state.missing.length ? missingDeadline : Infinity,
+      state.missing.length ? missingStateDeadline : Infinity,
       notStarted.length ? queuedDeadline : Infinity);
-    // Discover absent workflows quickly; registered queued jobs need slower
-    // polling to avoid rate-limit amplification under CI runner pressure.
-    const interval = state.missing.length ? Math.min(pollMs, 10_000) : pollMs;
+    // Poll a sole missing workflow quickly; a mixed pending/missing set
+    // uses the existing slower cadence to conserve GitHub API quota.
+    const interval = state.missing.length && !state.pending.length
+      ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
@@ -622,7 +715,7 @@ export function diagnoseAggregateError(error) {
     ['NO_EXECUTED_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_NOT_EXECUTED','Inspect the required job dispatch, not unrelated green jobs.'],
     ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
     ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
-    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
+    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions and quota; never repeat exhausted 403 requests.'],
   ];
   const found = rules.find(([prefix]) => message.startsWith(prefix));
   const category = found?.[1] || 'CI_UNKNOWN_FAILURE';
