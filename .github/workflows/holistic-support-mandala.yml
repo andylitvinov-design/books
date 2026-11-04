@@ -70,6 +70,10 @@ on:
       - 'tests/wav-pcm-mixer.test.mjs'
       - 'tests/mandala-webcodecs-mp4.test.mjs'
       - 'scripts/verify-affirmation-voice-browser.mjs'
+      - 'scripts/verify-live-selected-voice-phrase.mjs'
+      - 'scripts/verify-live-selected-phrase.mjs'
+      - 'tests/voice-selected-phrase-free.test.mjs'
+      - 'tests/voice-selected-phrase-live.test.mjs'
       - 'app/api/holistic-support/voice/**'
       - 'tests/voice-studio.test.mjs'
       - 'tests/voice-studio-provider.test.mjs'
@@ -266,7 +270,18 @@ jobs:
       - name: Mandala and mobile support contracts
         run: node --test tests/video-chat-ai.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/video-project-v2.test.mjs tests/render-plan-v2.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/video-catalog-probe.test.mjs tests/video-library-growth.test.mjs tests/free-film-source-clock.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs tests/mandala-scenario-media-import-contract.test.mjs tests/mandala-scenario-soundtracks.test.mjs tests/mandala-video-goal-media-coverage.test.mjs
       - name: Voice provider contract and negative cases
-        run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs
+        run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
+
+      # One deliberately bounded real PRODUCTION request for a fixed public
+      # phrase in the selected Leon/Puck Gemini voice. Runs once per owner PR
+      # revision; no app secrets, no user data, no paid backup, no WAV artifact.
+      - name: Genuine free selected phrase spoken by selected voice (owner opt-in)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'fix/voice-picker-single-phrase-20261103' && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          HH_VOICE_SELECTED_LIVE_OWNER_OPT_IN: 'true'
+        run: |
+          node --check scripts/verify-live-selected-voice-phrase.mjs
+          node scripts/verify-live-selected-voice-phrase.mjs
       - name: Stories and Characters exact source acceptance
         run: |
           if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then

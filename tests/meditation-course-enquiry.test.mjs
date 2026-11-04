@@ -34,7 +34,7 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.match(src,/onChange=\{event=>setConsent\(event\.target\.checked\)\}/);
   // The native checkbox handles direct taps/keyboard; a full-width label
   // prevents WebKit's dropped sibling-input activation and toggles once.
-  assert.match(src,/<label htmlFor=\{consentId\} onClick=\{event=>\{/);
+  assert.match(src,/<label htmlFor=\{consentId\}[\s\S]*?onPointerDown=\{event=>\{[\s\S]*?setPointerCapture\(event\.pointerId\)[\s\S]*?onClick=\{event=>\{/);
   assert.match(src,/event\.preventDefault\(\);\s*if\(busy\)return;\s*setConsent\(value=>!value\);/);
   assert.doesNotMatch(src,/onClick=\{[^}]*setConsent\(true\)/);
   assert.match(src,/checked=\{consent\}/);

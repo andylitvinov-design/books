@@ -538,3 +538,11 @@ test("studio workspace buttons remain disabled until their real handlers hydrate
   assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
   assert.match(nav,/onClick=\{\(\)=>\{/);
 });
+
+test("director controls and All stories stay disabled until the studio hydrates",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const director=read("components/mandala-auto-video-director.tsx");
+  const mount=studio.slice(studio.indexOf("<MandalaAutoVideoDirector"),studio.indexOf("<MandalaAutoVideoDirector")+900);
+  assert.match(mount,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+  assert.match(director,/data-auto-video-all-scenes disabled=\{disabled\} onClick=\{onShowAll\}/);
+});

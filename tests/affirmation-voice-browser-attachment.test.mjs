@@ -16,7 +16,7 @@ test("voice browser selects the visible montage workspace before recording",()=>
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
   const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
-  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav"',generate);
+  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
   const render=source.indexOf('[data-video-quick-control="video"]',remix);
@@ -42,8 +42,12 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'tracks.includes("audio")',
     'pcm.stdout.some(value=>value!==0)',
     '[data-video-narration-stale]',
-    'assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true)',
+    'await expect(page.locator("[data-video-quick-generate]")).toBeDisabled()',
+    'await expect(page.locator("[data-video-live-audio]")).toHaveCount(0)',
+    'await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0)',
   ])assert.ok(source.includes(assertion),assertion);
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(editor,/onInvalidate=\{\(\)=>setAttachedAudio\(current=>\s*current\?\.kind==="file"&&current\.narration\?null:current\)\}/);
 });
 
 test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/macOS",()=>{
@@ -94,7 +98,13 @@ test("voice acceptance verifies one workspace click after delayed hydration",()=
 test("consent click diagnostics retain one genuine click and never capture contact values",()=>{
   const practices=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
   const block=practices.slice(practices.indexOf('const consentLabel=form.locator'),practices.indexOf('assert.equal(await consentBox.isChecked()'));
-  assert.equal((block.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  const [normal,shifted]=block.split('if(locale==="ru"&&width===320)');
+  assert.ok(shifted,"independent viewport-shift case must exist");
+  assert.equal((normal.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  assert.equal((shifted.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  assert.equal((shifted.match(/await consentLabel\.tap\(\)/g)||[]).length,1);
+  assert.match(shifted,/consentBox\.press\("Space"\)/);
+  assert.match(shifted,/scroll\.before-scroll\.after>=50/);
   assert.match(block,/toBeChecked\(\{timeout:12000\}\)/);
   assert.match(block,/toBeEnabled\(\{timeout:12000\}\)/);
   assert.match(block,/trusted:event\.isTrusted/);
