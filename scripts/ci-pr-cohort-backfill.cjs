@@ -2,7 +2,7 @@
 /** One-shot historical GitHub evidence collector. Never dispatches CI or changes a PR. */
 const {REPO,WINDOWS}=require('./ci-pr-three-cohorts.cjs');
 const {parseComment}=require('./ci-pr-stage-receipts.cjs');
-const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW='hh-pr-core-release.yml';
+const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW_ID=400848212,WORKFLOW='hh-pr-core-release.yml';
 const MIN_REMAINING=150,MAX_REQUESTS=95;
 const ts=x=>Date.parse(x||'');
 const coreUrl=id=>`https://github.com/${REPO}/actions/runs/${id}`;
@@ -70,7 +70,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    try{for(let page=1;page<=7;page++){
     if(gate.state.paused)break;
     const response=await gate.request('core-runs-'+window.key+'-'+page,()=>github.rest.actions.listWorkflowRuns({
-     owner:OWNER,repo:REPOSITORY,workflow_id:WORKFLOW,event:'pull_request',
+     owner:OWNER,repo:REPOSITORY,workflow_id:WORKFLOW_ID,event:'pull_request',
      created:`${window.start.slice(0,10)}..${window.end.slice(0,10)}`,per_page:100,page}));
     const runs=response?.workflow_runs;
     if(!Array.isArray(runs)||runs.length>100)throw Error('INVALID_CORE_RUN_PAGE');
@@ -176,4 +176,4 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
  if(error)result.source.coverage='PARTIAL_API_OR_EVIDENCE_FAILURE';
  return result;
 }
-module.exports={collect,budget};
+module.exports={collect,budget,WORKFLOW_ID};
