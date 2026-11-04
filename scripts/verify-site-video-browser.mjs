@@ -1,15 +1,12 @@
 // Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
-import { createHmac } from 'node:crypto'
 import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
-import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
-import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -49,9 +46,18 @@ try {
     // Match production HTTPS validation without weakening the application rule.
     server.listen(443, '127.0.0.1')
     await once(server, 'listening')
+    // The production build is tested separately above. This isolated app
+    // exercises real admin actions with the existing RLS-protected PostgreSQL
+    // practitioner directory plus ephemeral Redis; Next production mode
+    // intentionally refuses loopback synthetic DB credentials.
+    assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+    assert.match(process.env.HH_APP_DATABASE_URL || '', /^postgres:\/\/hh_app_ci_login:[^@]+@127\.0\.0\.1:5432\/hh_app_test$/)
     const log = createWriteStream(`${evidence}/local-app.log`)
-    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100', '-H', '127.0.0.1'], {
-      env: { ...process.env, PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
+    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3100', '-H', '127.0.0.1'], {
+      env: { ...process.env, NODE_ENV: 'development', HH_APP_ENABLED: 'true',
+        PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '',
+        PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1',
+        PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     app.stdout.pipe(log); app.stderr.pipe(log)
@@ -88,7 +94,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -296,6 +302,12 @@ try {
     await page.screenshot({ path: `${evidence}/live-player-open.png` })
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
+  } else {
+    // The required "admin-verified-owner-browser" job independently runs
+    // the same real editor publication/review journeys with the protected v2
+    // owner-session bridge, synthetic migrated Postgres and isolated Redis.
+    // Public browser smoke must never forge retired v1 administrator cookies.
+    skippedResults.push('SKIPPED: authenticated owner editor is verified in its independent v2 session browser job')
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
   pass('No page JavaScript errors')
