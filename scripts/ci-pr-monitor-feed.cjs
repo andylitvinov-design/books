@@ -20,6 +20,32 @@ function cleanBlocked(input){
   }
   return result;
 }
+function verifiedBoundedSample(input,productionCount){
+ if(input==null)return null;
+ if(input.schema!=='HH_WATCHDOG_VERIFIED_SAMPLE_V1'||
+    input.scope!=='BOUNDED_DEEP_INSPECTION'||
+    input.production!==productionCount||
+    !Number.isFinite(Date.parse(input.checkedAt||'')))
+  throw Error('INVALID_VERIFIED_WATCHDOG_SAMPLE');
+ const fields=['inspected','mergeConflicts','coreFailures','specialistFailures',
+  'specialistPolicyHolds','releaseGateOnly','verifiedSourceFailures',
+  'coreFailureUnverified','specialistEvidenceUnverified',
+  'sourceRepairQueued','conflictLabelsQueued'];
+ const sample={schema:input.schema,scope:input.scope,
+  checked_at:input.checkedAt,production_prs:productionCount};
+ for(const key of fields){
+  const value=validCount(input[key],'watchdog_sample.'+key);
+  if(value>productionCount)throw Error('WATCHDOG_SAMPLE_EXCEEDS_INVENTORY');
+  sample[key]=value;
+ }
+ if(fields.slice(1).some(key=>sample[key]>sample.inspected))
+  throw Error('WATCHDOG_SAMPLE_EXCEEDS_INSPECTION');
+ // Categories can overlap: MAX is a lower bound, never their sum.
+ sample.verified_blocked_lower_bound=Math.max(
+  sample.mergeConflicts,sample.coreFailures,
+  sample.specialistFailures,sample.specialistPolicyHolds);
+ return sample;
+}
 function buildMonitorSnapshot(report,context){
   if(report?.schema!=='HH_CONTROL_DISPATCH_V1'||report.dryRun!==false||
      !Number.isFinite(Date.parse(report.checkedAt||''))||
@@ -81,6 +107,10 @@ function buildMonitorSnapshot(report,context){
   if(labelHints&&labelHints.labeled_unique>counts.production_prs)
     throw Error('BACKLOG_LABEL_HINTS_EXCEED_INVENTORY');
   counts.labeled_outstanding_prs=labelHints?.labeled_unique??0;
+  const watchdogSample=verifiedBoundedSample(report.watchdogSample,counts.production_prs);
+  counts.verified_blocked_lower_bound=watchdogSample?.verified_blocked_lower_bound??0;
+  const watchdogSampleStatus=watchdogSample?'VERIFIED_BOUNDED_SAMPLE':
+    report.watchdogSampleStatus==='UNVERIFIED'?'UNVERIFIED':'NOT_PROVIDED';
   // The controlled quota counter is a LOWER BOUND on this run's REST use.
   // It must not be mislabeled as the combined user-hour API consumption.
   const apiBudget={
@@ -102,6 +132,11 @@ function buildMonitorSnapshot(report,context){
     ? 'DISPATCH_ACCEPTED_RUNNER_NOT_YET_PROVEN'
     : counts.candidates===0 && report.inventoryScope==='EVENT_SINGLE_PR'
     ? 'EVENT_PR_NOT_ACTIONABLE'
+    : counts.candidates===0 && watchdogSample &&
+      watchdogSample.inspected===0 && counts.production_prs>0
+    ? 'WATCHDOG_DEEP_INSPECTION_INCOMPLETE'
+    : counts.candidates===0 && counts.verified_blocked_lower_bound>0
+    ? 'VERIFIED_BLOCKED_WORK_NO_AUTO_SOURCE_REPAIR'
     : counts.candidates===0 && counts.labeled_outstanding_prs>0
     ? 'OUTSTANDING_LABELED_WORK_NO_AUTO_DISPATCH'
     : counts.candidates===0 && counts.production_prs>0
@@ -115,6 +150,7 @@ function buildMonitorSnapshot(report,context){
     source_commit:/^[a-f0-9]{40}$/i.test(context.sha||'')?context.sha:null,
     delivery_status:deliveryStatus,
     counts,queue_states:queueStates,backlog_label_hints:labelHints,
+    watchdog_sample_status:watchdogSampleStatus,watchdog_sample:watchdogSample,
     api_budget:apiBudget,blocked_reasons:blocked,
     blocked_examples:blockedExamples,
     reason:typeof report.reason==='string'?report.reason.slice(0,100):null
@@ -134,7 +170,7 @@ function parseExisting(body){
 function renderSnapshot(snapshot){
   const fence=String.fromCharCode(96).repeat(3);
   return [MARKER,'## Watchdog direct handoff — public snapshot',
-    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
+    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
     '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
