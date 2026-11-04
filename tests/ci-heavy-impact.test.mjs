@@ -357,7 +357,7 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   const guard = read('hh-pr-sweep-guard.yml');
   const app = read('hh-app-r1.yml');
   assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
-  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n(?:    #[^\n]+\n)*    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
@@ -403,4 +403,23 @@ test('App R1 trigger covers all critical routes and preserves mandatory sensitiv
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
   for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])
     assert.equal(matchesTrigger(trigger, [path]), false, path + ' should not wake App R1');
+});
+
+test('App R1 routing-unit edits execute Guard and Core without five-job App R1 fanout', () => {
+  const changed = ['tests/ci-heavy-impact.test.mjs'];
+  const triggers = name => matchesTrigger(
+    parsePrTrigger(read(name), name),
+    changed, 'codex/public-book-library'
+  );
+  assert.equal(triggers('hh-app-r1.yml'), false, 'Guard-owned test-only diff must not allocate App R1');
+  assert.equal(triggers('hh-pr-sweep-guard.yml'), true, 'Guard still checks the actual test source');
+  assert.equal(triggers('hh-pr-core-release.yml'), true, 'Protected Core remains required');
+  for (const changedProductionSource of [
+    'scripts/ci-heavy-impact.mjs', 'lib/security/auth.ts',
+    'app/api/app/messages/route.ts', 'supabase/migrations/20261104_secure.sql'
+  ]) {
+    assert.equal(matchesTrigger(parsePrTrigger(read('hh-app-r1.yml'), 'hh-app-r1.yml'),
+      [changedProductionSource], 'codex/public-book-library'), true,
+      changedProductionSource + ' must retain real specialist acceptance');
+  }
 });
