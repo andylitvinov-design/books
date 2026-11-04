@@ -14,7 +14,9 @@ permissions:
   pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+  # Cancel costly older Ready CI when a PR becomes Draft; the new Draft
+  # attempt remains fail-closed. Do not cancel metadata-only or manual runs.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   scope:
     name: core-lint-types-build
