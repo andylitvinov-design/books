@@ -62,15 +62,15 @@ function explainPrClock({pr,segments,observations=[]}){
  // Existing, authenticated interval boundaries are observable milestones too.
  // They cannot imply a green check, a red check, or a source commit by themselves.
  const inferred=[];
- const inferredKind={created_to_first_ci:['pr_ready','ci_queued'],runner_queue:['ci_queued','ci_started'],
+ const inferredKind={created_to_first_ci:[null,'ci_queued'],runner_queue:['ci_queued','ci_started'],
   ci_initial_execution:['ci_started','ci_completed'],ci_repeat_execution:['ci_started','ci_completed'],
   green_to_merge:['merge_gate_green','merged'],merge_conflict:['conflict_started','conflict_resolved'],
   source_repair:['repair_started','source_published'],after_failed_ci_unattributed:['ci_failed','ci_queued']};
  for(const s of segments){const pair=inferredKind[s.phase];if(!pair||!GOOD_LINK.test(s.url||''))continue;
   // A derived marker is only as strong as the underlying verified time interval.
   const source= SOURCES.has(s.source)?s.source:'github_actions_run';
-  inferred.push({pr:number,kind:pair[0],at:s.start,source,url:s.url,head_sha:s.head_sha||null,derived:true},
-    {pr:number,kind:pair[1],at:s.end,source,url:s.url,head_sha:s.head_sha||null,derived:true});
+  if(pair[0])inferred.push({pr:number,kind:pair[0],at:s.start,source,url:s.url,head_sha:s.head_sha||null,derived:true});
+  if(pair[1])inferred.push({pr:number,kind:pair[1],at:s.end,source,url:s.url,head_sha:s.head_sha||null,derived:true});
  }
  const got=new Map();for(const e of inferred){const ev=validateObservation(e,number,created,closed);if(ev){const key=ev.kind+':'+ev.at+':'+ev.url;got.set(key,ev);}}
  // Explicit evidence wins over an inferred milestone at the same kind/time/link.
