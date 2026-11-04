@@ -62,16 +62,22 @@ test('no speculative dispatch for policy, incomplete evidence or stale associati
   assert.notEqual(r.outcome,'DISPATCH_ACCEPTED');
  }
 });
-test('cron remains a real independent backstop; Core event uses same writer lease',()=>{
+test('cron remains independent while failed Core uses a separate trusted event runner and same lease',()=>{
  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
- assert.match(yaml,/cron: '6,16,26,36,46,56 \* \* \* \*'/);
- assert.match(yaml,/  failed-core-event-handoff:/);
- assert.match(yaml,/HH_CORE_EVENT_HANDOFF/);
- assert.match(yaml,/group: hh-control-tower-single-writer/);
- assert.match(yaml,/  direct-handoff:/);
- assert.match(yaml,/needs: reconcile/);
- assert.match(contract,/node --test .*ci-pr-event-handoff\.test\.cjs/);
+ assert.ok(yaml.includes("cron: '6,16,26,36,46,56 * * * *'"));
+ assert.ok(!yaml.includes("  failed-core-event-handoff:"));
+ assert.ok(!yaml.includes("      - 'HH PR core release gate'"));
+ assert.ok(direct.includes("      - 'HH PR core release gate'"));
+ assert.ok(direct.includes("types: [completed]"));
+ assert.ok(direct.includes("group: hh-control-tower-single-writer"));
+ assert.ok(direct.includes("ci-pr-event-handoff.cjs"));
+ assert.ok(direct.includes("HH_DIRECT_CORE_HANDOFF"));
+ assert.ok(yaml.includes("group: hh-control-tower-single-writer"));
+ assert.ok(yaml.includes("  direct-handoff:"));
+ assert.ok(yaml.includes("needs: reconcile"));
+ assert.ok(contract.includes("ci-pr-event-handoff.test.cjs"));
 });
 
 test('failed Core event reads only its exact live source branch, not all open PR pages',async()=>{
