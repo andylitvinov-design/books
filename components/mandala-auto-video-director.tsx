@@ -164,6 +164,12 @@ export function MandalaAutoVideoDirector({
    ()=>videoGoalCategories.find(item=>item.theme===theme)?.id ?? "strength");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
+ const [requestTarget,setRequestTarget]=useState<HTMLElement|null>(null);
+ const [profileTarget,setProfileTarget]=useState<HTMLElement|null>(null);
+ const [profileMode,setProfileMode]=useState<"short"|"extended"|null>(null);
+ const [profileCategory,setProfileCategory]=useState<keyof typeof popularTopicOrder>("strength");
+ const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
+ const [profileDetails,setProfileDetails]=useState("");
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [timelineEdits,setTimelineEdits]=useState<{
@@ -173,6 +179,8 @@ export function MandalaAutoVideoDirector({
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
+   setRequestTarget(document.querySelector<HTMLElement>("[data-video-request-prompt]"));
+   setProfileTarget(document.querySelector<HTMLElement>("[data-video-profile-picker]"));
  },[]);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
@@ -283,6 +291,86 @@ export function MandalaAutoVideoDirector({
        }</span>
      </button>;
  };
+
+ // Device-only profile recommender. Never persists answers or contacts an external AI.
+ const applyProfile=()=>{
+   if(disabled)return;
+   const category=videoGoalCategories.find(item=>item.id===profileCategory);
+   if(!category)return;
+   const nextTheme=category.theme as VideoTheme;
+   const nextGoal=[category.fullLabel[locale],popularTopicCopy[locale][profileFocus],
+     ...(profileMode==="extended"&&profileDetails.trim()?[profileDetails.trim().slice(0,160)]:[])
+   ].join(" · ").slice(0,300);
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
+   setSelectedCategoryId(profileCategory);setSelectedGoalId(profileFocus);
+   setSelectedGoalIds([profileFocus]);setSubcategoriesOpen(true);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:nextGoal,goalId:profileFocus,locale,
+     fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   setProfileMode(null);
+ };
+ const requestInput=<label className={css.topicInput} data-video-request-input>
+   <span className={css.srOnly}>{t.input}</span>
+   <input type="text" data-auto-video-input value={goal}
+     maxLength={300} disabled={disabled} placeholder={t.placeholder}
+     onChange={event=>{
+       const value=event.currentTarget.value;
+       onInvalidate?.();onGoalChange(value);
+       setProposalContext({goal:value,theme});
+       setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
+       setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
+       setTimelineEdits(null);setConfirmedTimelineKey(null);
+     }}/>
+ </label>;
+ const profilePanel=<div className={css.profilePanel} data-video-profile-recommendation>
+   <div className={css.profileSummary}>
+     <span><Sparkles size={19} aria-hidden="true"/>
+       {locale==="ru"?"Совет по вашему профилю":locale==="es"?"Recomendación por perfil":"Profile-based suggestion"}
+     </span>
+     <div className={css.profileActions}>
+       <button type="button" data-video-profile-short aria-expanded={profileMode==="short"}
+         disabled={disabled} onClick={()=>setProfileMode(mode=>mode==="short"?null:"short")}>
+         {locale==="ru"?"Краткая · 1 мин":locale==="es"?"Breve · 1 min":"Quick · 1 min"}
+       </button>
+       <button type="button" data-video-profile-extended aria-expanded={profileMode==="extended"}
+         disabled={disabled} onClick={()=>setProfileMode(mode=>mode==="extended"?null:"extended")}>
+         {locale==="ru"?"Расширенная":locale==="es"?"Detallada":"Detailed"}
+       </button>
+     </div>
+   </div>
+   {profileMode?<div className={css.profileForm} data-video-profile-form role="group"
+     aria-label={locale==="ru"?"Анкета подбора видео":locale==="es"?"Cuestionario de vídeo":"Video questionnaire"}>
+     <label>{locale==="ru"?"Что сейчас важнее?":locale==="es"?"¿Qué te importa más?":"What matters most?"}
+       <select value={profileCategory} disabled={disabled}
+         onChange={event=>setProfileCategory(event.currentTarget.value as keyof typeof popularTopicOrder)}>
+         {videoGoalCategories.map(category=><option key={category.id} value={category.id}>
+           {category.fullLabel[locale]}</option>)}
+       </select>
+     </label>
+     <label>{locale==="ru"?"Что хочется почувствовать?":locale==="es"?"¿Cómo quieres sentirte?":"How would you like to feel?"}
+       <select value={profileFocus} disabled={disabled}
+         onChange={event=>setProfileFocus(event.currentTarget.value as keyof typeof popularTopicCopy.ru)}>
+         {popularTopicOrder.strength.map(id=><option key={id} value={id}>
+           {popularTopicCopy[locale][id]}</option>)}
+       </select>
+     </label>
+     {profileMode==="extended"?<label>
+       {locale==="ru"?"Какие образы и пожелания учесть?":locale==="es"?"¿Qué imágenes prefieres?":"Any imagery or preferences?"}
+       <textarea maxLength={160} rows={2} value={profileDetails} disabled={disabled}
+         onChange={event=>setProfileDetails(event.currentTarget.value)}
+         placeholder={locale==="ru"?"Например: природа, вода, мягкое движение":locale==="es"?"Naturaleza y agua":"Nature, water, gentle movement"}/>
+     </label>:null}
+     <button type="button" className={css.profileSubmit} data-video-profile-apply
+       disabled={disabled} onClick={applyProfile}>
+       {locale==="ru"?"Подобрать 4 сценария":locale==="es"?"Sugerir 4 historias":"Suggest 4 stories"}
+       <ArrowRight size={17} aria-hidden="true"/>
+     </button>
+     <small>{locale==="ru"?"Ответы остаются на этой странице. Подбор из существующих видео без передачи данных внешнему ИИ.":
+       locale==="es"?"Respuestas locales, sin enviarlas a una IA externa.":
+       "Answers stay on this page; no external AI transfer."}</small>
+   </div>:null}
+ </div>;
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <div className={css.goalChoices} role="group" aria-label={
      locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
@@ -312,7 +400,7 @@ export function MandalaAutoVideoDirector({
  const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
    <div className={css.topicHead}>
      <h3><Leaf size={19} aria-hidden="true"/>
-       {locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}</h3>
+       {locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}</h3>
      <button type="button" data-auto-video-clarify
        disabled={disabled} aria-expanded={onClarify?helpOpen:refineOpen}
        onClick={()=>{
@@ -351,19 +439,6 @@ export function MandalaAutoVideoDirector({
        })}
      </div>
    </div>
-   <label className={css.topicInput}>
-     <span className={css.srOnly}>{t.input}</span>
-     <input type="text" data-auto-video-input value={goal}
-       maxLength={160} disabled={disabled} placeholder={t.placeholder}
-       onChange={event=>{
-         const value=event.currentTarget.value;
-         onInvalidate?.();onGoalChange(value);
-         setProposalContext({goal:value,theme});
-         setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
-         setTimelineEdits(null);setConfirmedTimelineKey(null);
-       }}/>
-   </label>
  </div>;
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
@@ -374,6 +449,8 @@ export function MandalaAutoVideoDirector({
        <ArrowRight size={16} aria-hidden="true"/>
      </button>:null}
    </div>
+   {requestTarget?createPortal(requestInput,requestTarget):requestInput}
+   {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
