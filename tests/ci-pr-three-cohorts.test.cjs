@@ -67,3 +67,66 @@ test('unavailable Core workflow inventory does not abort independently available
  assert.equal(r.source.sampled_timeline_prs[0],16);
  assert.equal(r.intervals.find(x=>x.phase==='merge_conflict')?.pr,16);
 });
+test('Core history uses the verified numeric workflow ID, not filename-only lookup on control default branch',async()=>{
+ const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ assert.equal(WORKFLOW_ID,400848212);
+ const now=Date.parse('2026-11-04T13:30:00Z');
+ const p={...pr(88),head:{ref:'feature-88',sha:'a'.repeat(40)},
+   base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ let seen=[];
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const gh={rest:{
+  pulls:{list:async args=>ret(args.state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async arg=>{seen.push(arg.workflow_id);return ret({total_count:0,workflow_runs:[]})}},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const output=await collect({github:gh,now,maxRequests:60,minRemaining:150});
+ assert.equal(output.source.closed_complete,true);
+ assert.deepEqual(seen,[WORKFLOW_ID,WORKFLOW_ID,WORKFLOW_ID]);
+});
+
+test('historical Core run with empty GitHub pull_requests still joins unique exact merged HEAD',async()=>{
+ const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const p={...pr(95,date+'00:00Z',date+'40:00Z',date+'40:00Z'),head:{sha:'a'.repeat(40),ref:'feature-95'},
+   base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const ret=data=>({headers:{'x-ratelimit-remaining':'900'},data});
+ const core={id:101,workflow_id:WORKFLOW_ID,name:'HH PR core release gate',event:'pull_request',
+  head_branch:'feature-95',head_sha:p.head.sha,repository:{full_name:repo},
+  head_repository:{full_name:repo},pull_requests:[],status:'completed',
+  conclusion:'success',run_attempt:1,
+  created_at:date+'05:00Z',updated_at:date+'32:00Z'};
+ const job=(id,name,start,end)=>({id,run_id:101,name,status:'completed',conclusion:'success',
+  created_at:date+'05:00Z',started_at:date+start+':00Z',completed_at:date+end+':00Z'});
+ const gh={rest:{
+   pulls:{list:async({state})=>ret(state==='closed'?[p]:[])},
+   actions:{listWorkflowRuns:async({workflow_id})=>{
+     assert.equal(workflow_id,WORKFLOW_ID);
+     return ret({total_count:1,workflow_runs:[core]});
+    },listJobsForWorkflowRun:async()=>ret({total_count:3,jobs:[
+      job(1,'core-lint-types-build','10','20'),job(2,'hh-specialist','11','25'),
+      job(3,'hh-merge-check','26','30')]})},
+   issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const r=await collect({github:gh,now:Date.parse('2026-11-04T13:35:00Z'),
+    maxRequests:60,minRemaining:150});
+ assert.equal(r.source.closed_complete,true);
+ assert.ok(r.intervals.some(x=>x.pr===95&&x.phase==='created_to_first_ci'));
+ assert.ok(r.intervals.some(x=>x.pr===95&&x.phase==='ci_initial_execution'));
+ assert.ok(r.intervals.some(x=>x.pr===95&&x.phase==='green_to_merge'));
+});
+test('blank PR links may not attach by branch name alone with a different HEAD',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const p={...pr(95),head:{sha:'a'.repeat(40),ref:'feature-95'},
+   base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const ret=data=>({headers:{'x-ratelimit-remaining':'900'},data});
+ const bad={id:101,event:'pull_request',name:'HH PR core release gate',
+  head_branch:'feature-95',head_sha:'b'.repeat(40),repository:{full_name:repo},
+  head_repository:{full_name:repo},pull_requests:[],status:'completed',
+  conclusion:'success',created_at:date+'05:00Z',updated_at:date+'20:00Z'};
+ const gh={rest:{pulls:{list:async({state})=>ret(state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async()=>ret({total_count:1,workflow_runs:[bad]})},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}}};
+ const r=await collect({github:gh,now:Date.parse('2026-11-04T13:35:00Z'),
+   maxRequests:60,minRemaining:150});
+ assert.equal(r.intervals.some(x=>x.pr===95&&x.phase==='created_to_first_ci'),false);
+});

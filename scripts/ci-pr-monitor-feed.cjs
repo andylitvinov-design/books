@@ -69,12 +69,43 @@ function buildMonitorSnapshot(report,context){
       .map(row=>({pr_number:row.pr_number,head_sha:row.head_sha}));
     if(safe.length)blockedExamples[reason]=safe;
   }
+  // Label hints come from the SAME fetched PR list. They are not independently
+  // verified failures or evidence authorizing any source write/merge.
+  const hintKeys=['draft','hold','blocked','manual_repair','claimed',
+    'specialist','gate_review','conflict','source','ci','labeled_unique'];
+  const rawHints=report.backlogLabelHints;
+  if(rawHints!==undefined&&(!rawHints||typeof rawHints!=='object'||Array.isArray(rawHints)))
+    throw Error('INVALID_BACKLOG_LABEL_HINTS');
+  const labelHints=rawHints===undefined?null:Object.fromEntries(hintKeys.map(key=>
+    [key,validCount(rawHints[key]??0,'backlog_label_hints.'+key)]));
+  if(labelHints&&labelHints.labeled_unique>counts.production_prs)
+    throw Error('BACKLOG_LABEL_HINTS_EXCEED_INVENTORY');
+  counts.labeled_outstanding_prs=labelHints?.labeled_unique??0;
+  // The controlled quota counter is a LOWER BOUND on this run's REST use.
+  // It must not be mislabeled as the combined user-hour API consumption.
+  const apiBudget={
+    tracked_requests:validCount(report.apiRequests??0,'apiRequests'),
+    remaining_observed:report.apiRemaining==null?null:
+      validCount(report.apiRemaining,'apiRemaining'),
+    paused:typeof report.apiPauseReason==='string'||/^API_PAUSED/.test(report.reason||''),
+    pause_reason:typeof report.apiPauseReason==='string'?
+      report.apiPauseReason.slice(0,100):null,
+    retry_at:Number.isFinite(Date.parse(report.apiRetryAt||''))?report.apiRetryAt:null
+  };
   const blockedTotal=Object.values(blocked).reduce((sum,n)=>sum+n,0);
   if(!Number.isSafeInteger(blockedTotal))throw Error('INVALID_BLOCKED_TOTAL');
   // Public UI must never render zero blockers when a sampled handoff was denied.
   counts.total_blockers=validCount(blockedTotal,'total_blockers');
-  const deliveryStatus=counts.dispatch_requests_accepted>0
+  const deliveryStatus=apiBudget.paused
+    ? 'API_PAUSED_SNAPSHOT_INCOMPLETE'
+    : counts.dispatch_requests_accepted>0
     ? 'DISPATCH_ACCEPTED_RUNNER_NOT_YET_PROVEN'
+    : counts.candidates===0 && report.inventoryScope==='EVENT_SINGLE_PR'
+    ? 'EVENT_PR_NOT_ACTIONABLE'
+    : counts.candidates===0 && counts.labeled_outstanding_prs>0
+    ? 'OUTSTANDING_LABELED_WORK_NO_AUTO_DISPATCH'
+    : counts.candidates===0 && counts.production_prs>0
+    ? 'OPEN_PR_BACKLOG_NOT_FULLY_TRIAGED'
     : counts.candidates===0?'NO_AUTOMATION_ELIGIBLE_TASKS'
     : blockedTotal>0?'HANDOFF_BLOCKED':'NO_SAFE_DISPATCH';
   return {
@@ -83,7 +114,8 @@ function buildMonitorSnapshot(report,context){
     source_event:String(context.eventName||'unknown').slice(0,40),
     source_commit:/^[a-f0-9]{40}$/i.test(context.sha||'')?context.sha:null,
     delivery_status:deliveryStatus,
-    counts,queue_states:queueStates,blocked_reasons:blocked,
+    counts,queue_states:queueStates,backlog_label_hints:labelHints,
+    api_budget:apiBudget,blocked_reasons:blocked,
     blocked_examples:blockedExamples,
     reason:typeof report.reason==='string'?report.reason.slice(0,100):null
   };
@@ -102,7 +134,7 @@ function parseExisting(body){
 function renderSnapshot(snapshot){
   const fence=String.fromCharCode(96).repeat(3);
   return [MARKER,'## Watchdog direct handoff — public snapshot',
-    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. Production PR backlog and actionable dispatch candidates are different quantities. Source publication and LIVE require separate proof.',
+    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
     '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');

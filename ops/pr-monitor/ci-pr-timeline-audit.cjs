@@ -256,12 +256,38 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
       addMark('ci_green',finished,'Core, Specialist и Merge Gate зелёные на одном HEAD и попытке',a.run.url,{head:a.run.head});
     }
   }
+  // GitHub's "rerun failed jobs" keeps successful jobs from earlier attempts:
+  // Core can be successful on attempt 1 while Specialist/Gate retry on 2.
+  // Accept cumulative proof only when the immutable run is completed/successful,
+  // the latest required job for EACH gate is successful, and no latest attempt
+  // job reports failure. Never combine across different runs or HEADs.
+  for(const run of rs){
+    if(run.runAttempt<2||run.status!=='completed'||run.conclusion!=='success'||
+       greens.some(g=>g.run.id===run.id))continue;
+    const all=js.filter(j=>j.runId===run.id);
+    const last=all.filter(j=>j.attempt===run.runAttempt);
+    if(!last.length||last.some(j=>!['success','skipped','neutral'].includes(j.conclusion)))continue;
+    const latest=[];
+    for(const name of ['core-lint-types-build','hh-specialist','hh-merge-check']){
+      const rows=all.filter(j=>j.name===name).sort((a,b)=>b.attempt-a.attempt||b.completed-a.completed);
+      if(!rows.length||rows[0].conclusion!=='success'||
+         rows.filter(j=>j.attempt===rows[0].attempt).length!==1){latest.length=0;break;}
+      latest.push(rows[0]);
+    }
+    if(latest.length!==3)continue;
+    const finished=Math.max(...last.map(j=>j.completed),...latest.map(j=>j.completed));
+    if(finished>p.end)continue;
+    greens.push({time:finished,head:run.head,run,urls:[run.url,...latest.map(j=>j.url)],proof:'cumulative_rerun'});
+    addMark('ci_green',finished,
+      'GitHub Actions завершён успешно: последние Core, Specialist и Gate зелёные на том же HEAD после частичного rerun',
+      run.url,{head:run.head,proof:'cumulative_rerun'});
+  }
   if (p.state==='merged') {
     const green=greens.filter(x=>x.head===p.head&&x.time<=p.merged)
       .sort((a,b)=>b.time-a.time)[0];
     if (green) add('waiting_merge',green.time,p.merged,
         'Защищённый CI зелёный на merged HEAD; ожидание фактического merge',
-        [green.run.url,p.url]);
+        [...(green.urls||[green.run.url]),p.url]);
     addMark('merged',p.merged,'GitHub подтвердил merge в production-ветку',p.url);
   } else if(p.state==='closed_without_merge') {
     addMark('closed_without_merge',p.end,'PR закрыт без merge — не считать production merge',p.url);
