@@ -1590,3 +1590,26 @@ test('Playwright Public Services container trusts only the GitHub checkout path 
  assert.equal(yaml.includes('git config --global --add safe.directory "*"'),false,
    'never globally whitelist untrusted directories');
 })
+
+test('modified source-test-only PRs select exact source contracts without unrelated legacy suites',()=>{
+  const one=planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']);
+  assert.deepEqual([one.mode,one.reason,one.build,one.browser,one.sourceTests],
+    ['contracts','EXISTING_NODE_SOURCE_TESTS_ONLY',false,false,'tests/temple-support-hub.test.mjs']);
+  const two=planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs',
+    'tests/goal-support-offers.test.mjs']);
+  assert.equal(two.sourceTests, PUBLIC_SOURCE_TESTS.filter(name =>
+    ['tests/temple-support-hub.test.mjs','tests/goal-support-offers.test.mjs'].includes(name)).join(','));
+  const mixed=planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs','middleware.ts']);
+  assert.equal(mixed.mode,'full');
+  assert.equal(requiresPublicServicesHeavyPr(mixed),true);
+  const workflowSource=workflow('hh-public-services-production.yml');
+  assert.match(workflowSource,/name: Verify only changed Public Services source tests/);
+  assert.match(workflowSource,/HH_PUBLIC_SOURCE_TESTS: \$\{\{ steps\.scope\.outputs\.source_tests \}\}/);
+  assert.match(workflowSource,/node --test "\$\{selected_tests\[@\]\}"/);
+  assert.match(workflowSource,/steps\.scope\.outputs\.reason == 'EXISTING_NODE_SOURCE_TESTS_ONLY'/);
+  assert.ok((workflowSource.match(/reason != 'EXISTING_NODE_SOURCE_TESTS_ONLY'/g)||[]).length >= 4,
+    'unrelated baseline suites must not run for source-test-only PRs');
+  assert.match(readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8'),
+    /'source_tests=' \+ \(plan\.sourceTests \|\| ''\)/);
+  assert.doesNotMatch(workflowSource,/continue-on-error:\s*true/);
+});
