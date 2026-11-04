@@ -24,7 +24,7 @@ on:
       - 'app/[locale]/explore/[theme]/page.tsx'
       - 'tests/growth-journey-public.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
 permissions:
   contents: read
 

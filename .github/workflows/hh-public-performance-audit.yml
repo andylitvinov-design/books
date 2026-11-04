@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - 'scripts/measure-hh-public-ttfb.mjs'
       - 'scripts/hh-public-html-metrics.mjs'
       - 'tests/hh-public-html-metrics.test.mjs'

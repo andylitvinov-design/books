@@ -3,7 +3,7 @@ name: Holistic House static image cost guard
 on:
   pull_request:
     paths:
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - "data/public-card-artwork*.json"
       - "lib/public-card-artwork.ts"
       - "scripts/build-public-card-artwork.mjs"
