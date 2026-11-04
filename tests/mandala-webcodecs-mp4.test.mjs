@@ -20,7 +20,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
     "paintVideoAffirmations(ctx,time,affirmationLines,affirmations)",
-    "paintStageCaptionOverlay(ctx,time,cinematicPlan)",
+    "paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips)",
     "if(usingFreeFilmCompilation&&!frame)return false",
   ])assert.ok(studio.includes(marker),marker);
 });
@@ -35,6 +35,8 @@ test("No customer upload, fake video or unbounded output",()=>{
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
+  assert.match(helper,/source\.start\(startSeconds\)/,
+    "Safari AAC must honor the soundtrack offset on the project clock");
   assert.match(helper,/video_output_not_mp4/);
   assert.match(studio,/HH_WEBKIT_MP4_EXPORT_FAILURE:/);
   assert.match(helper,/await output\.cancel\(\)/);
@@ -43,7 +45,8 @@ test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(studio,/loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
   assert.match(helper,/source\.loop=entry\.loop/);
-  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(gainValue,fadeIn\)/);
+  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(gainValue,startSeconds\+fadeIn\)/);
+  assert.match(helper,/const available=seconds-startSeconds/,"near-end audio fades remain within the remaining time");
   assert.match(helper,/narration_longer_than_video/);
   assert.match(helper,/offline\.startRendering\(\)/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/);
