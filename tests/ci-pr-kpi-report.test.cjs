@@ -109,3 +109,16 @@ test('created cohort metadata missing remains unknown rather than a zero-duratio
  assert.equal(result.cohort.merged,0);assert.equal(result.total.mean,null);
  assert.equal(result.rows_returned,0);
 });
+
+test('report exposes observed LIVE receipts without calling unknown PRs live or pretending full coverage',()=>{
+ const input=data();
+ input.receipts={complete:false,since:NOW-48*3600000,events:[{kind:'live_verified',
+  at:new Date(NOW-15*60000).toISOString(),pr:1,head:MERGE,
+  mergeSha:MERGE,production:true,aliasVerified:true,smokeVerified:true}]};
+ const r=buildReport(input);
+ assert.equal(r.live_receipts_observed.n,1);
+ assert.equal(r.live_receipts_observed.scope,'VERIFIED_RECEIPTS_ONLY_NOT_ALL_PRODUCTION_PR');
+ assert.equal(r.windows['1h'].current.coverage.live,false);
+ assert.equal(r.windows['1h'].current.kpi.merge_to_live,null);
+ assert.equal(r.windows['1h'].current.phase_minutes.stages.merged_to_live_verified.n,1);
+});
