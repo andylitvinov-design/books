@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Include the new consent and manual campaign guards in the existing protected CRM check.
+import './crm-telegram-campaigns.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
@@ -458,4 +460,17 @@ test('CRM connections put verified owner bot first and explain optional CRM Inbo
  assert.match(diag,/Never reuse the same bot token with a different webhook/)
  assert.ok(manager.indexOf('<CustomerTelegramBotSetup ') < manager.indexOf('<CrmIntegrationDiagnostics '),
   'first show the reusable existing verified practice bot, then optional integrations')
+})
+
+test('owner sees actionable missing-consent state; terminal blocks do not strand retries',()=>{
+  const store=source('lib/crm/messenger-store.js')
+  const route=source('app/api/app/crm/messenger/route.js')
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.ok(store.includes('as diagnostic_consented'))
+  assert.ok(store.includes("reason:'CONSENT_REQUIRED'"))
+  assert.ok(store.includes("row.status==='queued'&&check.ok&&customerConsent"))
+  assert.ok(route.includes('reason:dispatch.reason'))
+  assert.ok(ui.includes('CONSENT_REQUIRED:'))
+  assert.ok(ui.includes('pendingRequest.current=null'))
+  assert.ok(ui.includes("document.addEventListener('visibilitychange',onVisible)"))
 })
