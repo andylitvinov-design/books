@@ -141,7 +141,7 @@ function planCandidates(prs,now){
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -159,7 +159,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,
-  inventoryScope:focusPrNumber!==null?'EVENT_SINGLE_PR':'ALL_OPEN_PRS',reason:null};
+  inventoryScope:focusPrNumber!==null?'EVENT_SINGLE_PR':
+   inventorySnapshot!==null?'WATCHDOG_SHARED_SNAPSHOT':'ALL_OPEN_PRS',reason:null};
  // An accepted dispatch is NOT execution: only a signed real-runner
  // receipt contributes to the separate confirmation count.
  summary.runnerStartedConfirmed=0;
@@ -200,7 +201,17 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  let prs=[];
  try{
-  if(focusPrNumber!==null){
+  if(inventorySnapshot!==null){
+   // Accepted only from an in-process trusted Watchdog run. This is not a
+   // dispatch input, an artifact or an externally writable cached value.
+   if(!['schedule','workflow_dispatch','push'].includes(context.eventName)||
+      !Array.isArray(inventorySnapshot)||inventorySnapshot.length>3000||
+      inventorySnapshot.some(x=>!Number.isSafeInteger(x?.number)||x.number<1||
+        typeof x.state!=='string')||
+      new Set(inventorySnapshot.map(x=>x.number)).size!==inventorySnapshot.length)
+    throw Error('WATCHDOG_SNAPSHOT_UNVERIFIED');
+   prs=inventorySnapshot;
+  }else if(focusPrNumber!==null){
    // The same trusted Core callback first diagnoses this PR in Watchdog.
    // Reuse its exact-HEAD snapshot; never list 150+ open PRs a second time.
    const event=conflictEvent?context.payload?.pull_request:context.payload?.workflow_run;
