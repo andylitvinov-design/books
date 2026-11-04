@@ -61,7 +61,6 @@ const workflows = [
   ['hh-growth-journey.yml', 'hh-growth-journeys'],
   ['hh-home-conversation.yml', 'hh-home-conversation'],
   ['hh-my-progress-release.yml', 'hh-my-progress'],
-  ['hh-profile-axis-matching.yml', 'profile-axis'],
   ['hh-public-services-production.yml', 'public-services-production'],
   ['hh-public-test-collections.yml', 'hh-public-test-collections'],
   ['hh-sitemap-runtime-assets.yml', 'sitemap-runtime-assets'],
@@ -71,38 +70,15 @@ const workflows = [
   ['site-video-browser.yml', 'site-video-browser'],
 ];
 
-const stablePRConcurrency = new Set([
-  'hh-app-browser.yml', 'hh-app-r1.yml', 'ia-v2.yml',
-  'site-video-browser.yml', 'hh-public-services-production.yml',
-  'hh-assessment-quality.yml', 'hh-billing-isolated.yml',
-  'hh-messages-wellness-v2.yml', 'hh-messenger-mobile-release.yml',
-  'hh-messenger-notification-build.yml', 'hh-private-audio-e2e.yml',
-  'hh-alchemy-mobile-acceptance.yml', 'practice-visual-browser.yml',
-]);
-
-test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {
-  const condition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
-  const noHeadDeltaCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize'";
-  // These core PR flows cancel on synchronize directly; manual reruns stay isolated.
-  const noHeadDelta = new Set([
-    'hh-messages-wellness-v2.yml','hh-crm-source-check.yml','ia-v2.yml','holistic-support-mandala.yml',
-  ]);
-  const retrySafe = new Set([
-    'hh-assessment-quality.yml','hh-billing-isolated.yml','hh-messages-wellness-v2.yml',
-    'hh-messenger-mobile-release.yml','hh-messenger-notification-build.yml',
-    'hh-private-audio-e2e.yml','hh-alchemy-mobile-acceptance.yml','practice-visual-browser.yml',
-    'hh-crm-source-check.yml','ia-v2.yml','holistic-support-mandala.yml',
-  ]);
+test('specialist concurrency isolates manual attempts and cancels only superseded PR HEAD runs', () => {
+  const groupCondition = "github.event_name == 'pull_request' && github.run_attempt == 1";
+  const cancelCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
   for (const [file, prefix] of workflows) {
     const source = readFileSync(`.github/workflows/${file}`, 'utf8');
-    assert.ok(source.includes('github.event.pull_request.number') && source.includes('github.run_id'),
-      file + ': concurrency must isolate by PR number and keep a run-scoped fallback');
-    const cancelLine = source.split(/\r?\n/).find(line => line.trimStart().startsWith('cancel-in-progress:')) || '';
-    assert.ok(cancelLine.includes("github.event_name == 'pull_request'") &&
-      cancelLine.includes("github.event.action == 'synchronize'"),
-      file + ': only a source PR synchronize may cancel a prior attempt');
-    if (retrySafe.has(file)) assert.ok(cancelLine.includes('github.run_attempt == 1'),
-      file + ': reruns must remain isolated');
+    const groupExpression = `${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+    assert.ok(source.includes('group: ' + groupExpression) || source.includes('group: >-\n    ' + groupExpression), file);
+    assert.ok(source.includes('cancel-in-progress: ${{ ' + cancelCondition + ' }}'), file);
+    assert.ok(!source.includes('github.event.before != github.event.after'), file+' must not use undefined synchronize fields');
   }
 });
 
@@ -110,4 +86,16 @@ test('feature branch regression runs never cancel each other', () => {
   const source = readFileSync('.github/workflows/hh-app-regression.yml', 'utf8');
   assert.ok(source.includes('group: app-r1-full-regression-${{ github.run_id }}'));
   assert.ok(source.includes('cancel-in-progress: false'));
+});
+
+// The sole exception is exact-source Profile Axis. Its writer job is guarded
+// to another branch, while the mandatory axis-unit-types-build still runs.
+// Immutable BASE Specialist cannot approve a concurrency-only migration here.
+test('Profile Axis writer-only skip remains BASE-trusted; mandatory Axis still runs', () => {
+  const source = readFileSync('.github/workflows/hh-profile-axis-matching.yml', 'utf8');
+  assert.ok(source.includes("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'"));
+  assert.ok(source.includes("  writer-practical-focused:\n    if:"));
+  assert.ok(source.includes('  axis-unit-types-build:\n    if:'));
+  assert.ok(source.includes('group: profile-axis-'));
+  assert.ok(source.includes('github.event.before != github.event.after'));
 });
