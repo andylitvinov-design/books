@@ -89,3 +89,21 @@ body.hh2-active .hh2-full{display:none!important}
 
 /* Existing sections remain in normal document flow after the two screen overview. */
 @media(max-width:700px){.hh2-detail{max-height:46svh;overflow:auto}.hh2-stage-item[open]>.hh2-detail{overscroll-behavior:contain}}
+
+/* V3: equal-denominator stage means and visible evidence coverage. */
+.hh2-stage-coverage{display:block;font-size:9px;font-weight:500;color:#94afc3;margin-top:2px}
+.hh2-stage-head{grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr) minmax(0,.85fr)}
+.hh2-stage-head strong{font-size:9px}
+.hh2-stage-row{min-height:35px;padding:8px 9px}
+.hh2-stage-row span{line-height:1.2}
+.hh2-stage-row strong{font-size:12px}
+.hh2-pr-evidence{margin:0 0 6px;color:#aac7dc}
+.hh2-legacy-proof-notice{max-width:100%;margin:8px 0 12px}
+@media(max-width:700px){
+ .hh2-second{gap:7px}
+ .hh2-stage-row{min-height:34px;padding:6px 8px}
+ .hh2-stage-head{gap:5px;padding:0 8px 5px}
+ .hh2-stage-row strong{font-size:11px}
+ .hh2-compare{gap:3px}
+ .hh2-stage-coverage{font-size:9px}
+}

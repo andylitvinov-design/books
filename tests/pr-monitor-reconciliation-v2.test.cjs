@@ -42,7 +42,7 @@ test('queue snapshot handles genuine zero, but refuses missing as zero',()=>{
  assert.equal(queueNumbers({counts:{status:'unavailable'}}),null);
 });
 test('each major stage expands into named substeps rather than a descriptive paragraph',()=>{
- for(const key of ['prepare','runner','ci','gate','merge','merge_to_live']){
+ for(const key of ['before_unknown','workflow_wait','runner_wait','checks','ci_gaps','after_unknown','no_archive_unknown','merge_to_live']){
    assert.ok(SUBSTEPS[key].length>=2,key);
    assert.ok(SUBSTEPS[key].every(p=>p[0]&&p[1]),key);
  }
@@ -58,6 +58,6 @@ test('all original monitor sections remain in normal document flow',()=>{
 test('CI reads are bounded to existing endpoints and do not schedule new polling',()=>{
  assert.doesNotMatch(source,/setInterval\s*\(|workflow_dispatch|api\.github\.com/);
  assert.match(source,/fetch\('\/api\/ci-queue-detail'/);
- assert.match(source,/fetch\('\/api\/ci-journey-summary\?hours=24'/);
+ assert.match(source,/fetch\('\/api\/ci-journey-summary\?hours=72'/);
  assert.match(source,/fetch\('\/api\/pr-attribution\?pr='/);
 });
