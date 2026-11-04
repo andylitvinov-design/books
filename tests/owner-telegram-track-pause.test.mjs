@@ -13,8 +13,8 @@ import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-tel
 const id='b6e8526e-c251-4dd5-a9ca-2886c430f912'
 const chat={id:555555,type:'private'},person={id:555555,is_bot:false}
 const reply=(value,prompt)=>({update_id:1200,message:{
- date:1793001600,chat,from:person,text:value,reply_to_message:{
-  chat,from:{is_bot:true,username:'Andydotbot'},text:prompt
+ date:1793001600,chat:{...chat},from:{...person},text:value,reply_to_message:{
+  chat:{...chat},from:{is_bot:true,username:'Andydotbot'},text:prompt
  }}})
 const part=(kind,index,duration=0)=>({
  kind,fileId:'VALID_FILE_'+index,uniqueId:'VALID_UNIQUE_'+index,
@@ -105,7 +105,55 @@ test('real two-note OGG output decodes with an actual two-second pause',async t=
   const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries',
    'format=duration','-of','default=noprint_wrappers=1:nokey=1',result],{encoding:'utf8'}))
   assert.ok(duration>=2.8&&duration<=3.5,'duration='+duration)
+  const pcm=execFileSync('ffmpeg',['-v','error','-i',result,'-ar','8000','-ac','1',
+   '-f','s16le','pipe:1'])
+  const rms=(start,end)=>{
+   let sum=0,n=0
+   for(let i=Math.floor(start*8000);i<Math.floor(end*8000);i++){
+    const sample=pcm.readInt16LE(i*2)/32768;sum+=sample*sample;n++
+   }
+   return Math.sqrt(sum/n)
+  }
+  assert.ok(rms(0.1,0.3)>0.01,'first note is audible')
+  assert.ok(rms(1,2)<0.002,'requested pause is silent')
+  assert.ok(rms(2.6,2.8)>0.01,'second note follows the pause')
   const lossless=await joinOwnerVoiceWithPause(clips,{pauseSeconds:0})
   assert.ok(lossless.length>128)
+ }finally{rmSync(dir,{force:true,recursive:true})}
+})
+
+test('real photo video contains H264, AAC and the requested silence',t=>{
+ for(const cmd of ['ffmpeg','ffprobe']){
+  try{execFileSync(cmd,['-version'],{stdio:'ignore'})}catch{t.skip(cmd+' unavailable');return}
+ }
+ const dir=mkdtempSync(join(tmpdir(),'hh-pause-video-'))
+ try{
+  const photo=new URL('../public/videos/holistic-house/film-collection-v2/calm-sea.jpg',import.meta.url).pathname
+  const files=[{...part('photo',0),localPath:photo}]
+  for(const [i,freq] of [440,660].entries()){
+   const path=join(dir,'tone-'+i+'.ogg')
+   execFileSync('ffmpeg',['-nostdin','-v','error','-f','lavfi','-i',
+    'sine=frequency='+freq+':duration=1','-c:a','libopus','-y',path])
+   files.push({...part('audio',i+1,1),localPath:path})
+  }
+  const output=join(dir,'result.mp4')
+  execFileSync('ffmpeg',videoRenderArguments(files,output,{pauseSeconds:2}),{timeout:30000})
+  const info=JSON.parse(execFileSync('ffprobe',['-v','error','-show_entries',
+   'stream=codec_type,codec_name:format=duration','-of','json',output],{encoding:'utf8'}))
+  assert.ok(info.streams.some(s=>s.codec_type==='video'&&s.codec_name==='h264'))
+  assert.ok(info.streams.some(s=>s.codec_type==='audio'&&s.codec_name==='aac'))
+  assert.ok(Number(info.format.duration)>=3.8&&Number(info.format.duration)<=4.5)
+  const pcm=execFileSync('ffmpeg',['-v','error','-i',output,'-map','0:a:0',
+   '-ar','8000','-ac','1','-f','s16le','pipe:1'])
+  const rms=(start,end)=>{
+   let sum=0,n=0
+   for(let i=Math.floor(start*8000);i<Math.floor(end*8000);i++){
+    const sample=pcm.readInt16LE(i*2)/32768;sum+=sample*sample;n++
+   }
+   return Math.sqrt(sum/n)
+  }
+  assert.ok(rms(0.2,0.6)>0.01,'first track audible')
+  assert.ok(rms(1.4,2.4)<0.002,'two-second pause is silent')
+  assert.ok(rms(3.2,3.6)>0.01,'second track audible')
  }finally{rmSync(dir,{force:true,recursive:true})}
 })

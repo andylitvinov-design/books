@@ -15,14 +15,6 @@ const cases=[
 ];
 mkdirSync("artifacts/mandala-holistic-light",{recursive:true});
 const report=[];
-function twoByTwo(a,description){
-  assert.equal(a.length,4,description+" must have four items");
-  const distance=(x,y)=>Math.abs(x-y);
-  assert.ok(distance(a[0].y,a[1].y)<4 &&
-    distance(a[0].x,a[2].x)<4 &&
-    a[2].y>a[0].y+65 && a[1].x>a[0].x+40,
-    description+" must display two wide columns and two rows: "+JSON.stringify(a));
-}
 for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
   const browser=await browserType.launch({headless:true});
   try{
@@ -56,7 +48,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         const tabs=root.locator("[data-video-quick-control]");
         await expect(goals.first()).toBeVisible({timeout:20000});
         await expect(stories.first()).toBeVisible({timeout:20000});
-        assert.equal(await goals.count(),4);
+        assert.equal(await goals.count(),5);
         assert.equal(await topics.count(),6);
         assert.equal(await stories.count(),4);
         assert.equal(await tabs.count(),6);
@@ -81,23 +73,36 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         });
         assert.ok(layout.scroll<=layout.viewport+3,
           engine+"/"+locale+"/"+width+" horizontal overflow: "+JSON.stringify(layout));
-        assert.ok(layout.hero && layout.hero.height>=230 && layout.hero.width/layout.hero.height<2.2,
-          engine+" "+width+" large panoramic-but-readable real Canvas hero: "+JSON.stringify(layout.hero));
+        assert.ok(layout.hero && layout.hero.height>=140 &&
+          layout.hero.width/layout.hero.height>1.6 &&
+          layout.hero.width/layout.hero.height<1.95,
+          engine+" "+width+" true 16:9 shared Canvas hero: "+JSON.stringify(layout.hero));
         assert.equal(layout.tabs.length,6);
-        assert.ok(layout.tabs[0].height>=94 && layout.tabs[3].y>layout.tabs[0].y+75 &&
-          Math.abs(layout.tabs[0].x-layout.tabs[3].x)<4,
-          "six workspace buttons form 3x2: "+JSON.stringify(layout.tabs));
-        twoByTwo(layout.goals,"goals "+width);
-        assert.ok(layout.goals.every(item=>item.height>=170),
-          "large visual goals "+width+": "+JSON.stringify(layout.goals));
-        assert.ok(layout.topics.every(item=>item.height>=55),
+        assert.ok(layout.tabs.every((item,index)=>item.height>=44&&item.height<=70 &&
+          Math.abs(item.y-layout.tabs[0].y)<4 &&
+          (index===0||item.x>layout.tabs[index-1].x+38)),
+          "six compact workspace tabs share one row: "+JSON.stringify(layout.tabs));
+        assert.ok(layout.hero.y>=layout.tabs[0].y+layout.tabs[0].height &&
+          layout.hero.y-layout.tabs[0].y-layout.tabs[0].height<32,
+          "player appears immediately below the six tabs: "+JSON.stringify(layout));
+        assert.equal(await page.locator("[data-video-diagnostic-banner]").count(),0,
+          "video editor must have no unsolicited diagnostic ribbon");
+        assert.ok(layout.goals.length===5 && layout.goals.every((item,index)=>
+          item.height>=44 && Math.abs(item.y-layout.goals[0].y)<4 &&
+          (index===0||item.x>layout.goals[index-1].x+30)),
+          "five real goal categories appear fully in one row: "+JSON.stringify(layout.goals));
+        assert.ok(layout.goals[4].x+layout.goals[4].width<=layout.viewport+2,
+          "all five compact goals must be fully visible without horizontal scrolling");
+        assert.ok(layout.topics.every(item=>item.height>=44),
           "readable topic cards: "+JSON.stringify(layout.topics));
-        twoByTwo(layout.stories,"stories "+width);
-        assert.ok(layout.stories.every(item=>item.height>=180),
-          "large real four-story buttons: "+JSON.stringify(layout.stories));
+        assert.ok(layout.stories.length===4 &&
+          layout.stories.every((item,index)=>item.width>=70&&item.height>=90 &&
+            Math.abs(item.y-layout.stories[0].y)<4 &&
+            (index===0||item.x>layout.stories[index-1].x+60)),
+          "four licensed story cards form a horizontally browsable rail: "+JSON.stringify(layout.stories));
         assert.ok(layout.input && layout.input.height>=58 && layout.inputFont>=16,
           "iPhone native input: "+JSON.stringify(layout.input));
-        assert.ok(layout.confirm?.height>=65,"large next CTA "+JSON.stringify(layout.confirm));
+        assert.ok(layout.confirm?.height>=44,"readable next CTA "+JSON.stringify(layout.confirm));
         const check=page.locator("[data-video-practice-shortcuts]");
         await expect(check).toBeVisible();
         assert.equal(await check.locator("[data-video-practice-shortcut]").count(),3);
@@ -118,6 +123,20 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         await expect(root.locator('[data-video-quick-control="phrases"]'))
           .toHaveAttribute("aria-pressed","true",{timeout:18000});
         await root.locator('[data-video-quick-control="video"]').click();
+        // Switching the workspace must not shift the shared preview below another intro.
+        for(const tab of ["phrases","effects","practices","pro","editor","video"]){
+          await root.locator('[data-video-quick-control="'+tab+'"]').click();
+          const top=await page.evaluate(()=>{
+            const nav=document.querySelector("[data-video-quick-controls]");
+            const hero=document.querySelector("[data-video-mandala-hero]");
+            const a=nav?.getBoundingClientRect(),b=hero?.getBoundingClientRect();
+            return {tabBottom:a?.bottom,playerTop:b?.top,playerWidth:b?.width,
+              playerHeight:b?.height,navHeight:a?.height};
+          });
+          assert.ok(top.navHeight>=44 && top.playerHeight>=140 &&
+            top.playerTop>=top.tabBottom && top.playerTop-top.tabBottom<32,
+            engine+"/"+locale+"/"+width+"/"+tab+" consistent top video: "+JSON.stringify(top));
+        }
         await expect(root.locator('[data-video-practice-shortcut="meditation"]')).toBeVisible();
         // The source-backed shortcut must switch to the ONE existing course.
         await root.locator('[data-video-practice-shortcut="meditation"]').click();
