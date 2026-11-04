@@ -365,6 +365,25 @@ jobs:
               log("SKIP PR moved, changed base, became draft, or has conflicts");
               return;
             }
+            // Every rerun must belong to THIS immutable source HEAD or the exact
+            // synthetic merge of this HEAD into the current protected BASE.
+            // GitHub may rewrite pull_requests[].head.sha inside the run event,
+            // so that mutable association alone is insufficient.
+            if (!/^[0-9a-f]{40}$/.test(event.head_sha || "")) {
+              log("SKIP invalid immutable Core run SHA");
+              return;
+            }
+            if (event.head_sha !== live.head.sha) {
+              const mergeCommit = (await github.rest.repos.getCommit({
+                owner,repo,ref:event.head_sha
+              })).data;
+              const parents = mergeCommit.parents || [];
+              if (parents.length !== 2 || parents[1]?.sha !== live.head.sha ||
+                  parents[0]?.sha !== live.base.sha) {
+                log("SKIP superseded Core HEAD or BASE; no stale retry");
+                return;
+              }
+            }
             // Never treat a code failure as recoverable infrastructure failure.
             // Zero-job runs have no code results; interrupted jobs may only be
             // retried when every job ended as cancelled/skipped/timed_out.
