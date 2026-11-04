@@ -8,6 +8,7 @@ import {storySceneCandidates,verifyStoryShotSources} from '../lib/mandala/dot-st
 import {compileDotStoryFfmpegArgs} from '../lib/mandala/dot-story-ffmpeg-args.mjs';
 import {parseOwnerVideoUpdate} from '../lib/practitioners/owner-telegram-video-model.mjs';
 import {inspectStoryPlotCoverage} from '../lib/practitioners/owner-telegram-story-render.mjs';
+import {requiredStoryRightsCredits,storyYoutubeDescription} from '../lib/practitioners/owner-telegram-story-rights.mjs';
 import {listTelegramStoryCategories,listTelegramStorySubcategories,listTelegramStoryTopics,listTelegramStoryScenarios,listTelegramStoryPlots} from '../lib/mandala/telegram-story-plots.mjs';
 
 const rights={kind:'existing_approved_first_party_master'};
@@ -120,4 +121,24 @@ test('storyboard choice preview is honest about editorial coverage and physical 
  const invalid=inspectStoryPlotCoverage('invalid--plot');
  assert.equal(invalid.readyForPlanning,false);
  assert.equal(invalid.candidateCount,0);
+});
+
+test('CC BY credits contain original page, author, licence, adaptation and survive description edits',()=>{
+ const ids=['lake-mist-dawn','flower-softening','petal-hope','ocean-release'];
+ const credits=requiredStoryRightsCredits(ids);
+ assert.match(credits,/Joel Holland/);
+ assert.match(credits,/https:\/\/dareful\.com\//);
+ assert.match(credits,/https:\/\/creativecommons\.org\/licenses\/by\/4\.0\//);
+ assert.match(credits,/adapted for Holistic House/);
+ assert.equal(credits.split('\n').length,8);
+ const compiled=storyYoutubeDescription('A new private owner caption',ids);
+ assert.ok(compiled.startsWith('A new private owner caption'));
+ assert.ok(compiled.includes(credits));
+ assert.equal(storyYoutubeDescription('Another owner edit',ids).includes(credits),true);
+ assert.throws(()=>storyYoutubeDescription('x'.repeat(4800),ids),
+   /VIDEO_STORY_DESCRIPTION_TOO_LONG/);
+ assert.throws(()=>storyYoutubeDescription('Caption',['golden-rain']),
+   /VIDEO_STORY_ATTRIBUTION_MISSING/);
+ assert.throws(()=>storyYoutubeDescription('',[...ids.slice(0,3),'unknown-clip']),
+   /VIDEO_STORY_ATTRIBUTION_SOURCE_UNKNOWN/);
 });
