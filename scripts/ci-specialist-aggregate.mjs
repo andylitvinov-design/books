@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -417,7 +417,15 @@ export async function verify(api,ctx,files,options={}) {
       // application source may have advanced without new proposed-merge CI.
       const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
         safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
-      if (!documentationOnly && !independentlyRevalidated) {
+      // Independently tested public media source advances cannot change a
+      // candidate that edits ONLY detached Specialist policy code/tests. The
+      // immutable PR HEAD, actual successful Core and every Specialist job
+      // remain mandatory; auth/billing/workflows/CI/unknown paths stay red.
+      const isolatedCiPolicy = pinnedChangeRows &&
+        changedRows.every(row => row.status === 'M' || row.status === 'A' ||
+          row.status === 'modified' || row.status === 'added') &&
+        safeIndependentPublicMediaAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated && !isolatedCiPolicy) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       approvedBaseChanges.add(liveBaseSha);
