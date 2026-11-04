@@ -49,7 +49,7 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
     create policy published_catalog_read on app.service_offerings for select to hh_app_backend
       using (active and status='published');
     grant select on app.service_offerings to hh_app_backend;
-    create function auth.uid() returns uuid language sql stable as $ select null::uuid $;
+    create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
     create function app_private.account_active() returns boolean language sql stable as $$ select false $$;
     grant execute on function auth.uid(),app_private.account_active() to hh_app_backend;`)
   await db.query(migration)
@@ -78,6 +78,11 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
   assert.equal(saved.attributionStatus,'saved')
   assert.equal(saved.serviceOfferingId,'fcef611f-e68b-5b30-b9f4-b0aa5614654d',
     'an unambiguous published title is linked only to its owner-scoped offering')
+  // A client-supplied UUID must never assign an unpublished or foreign offering.
+  const rejected={...input,operationId:'20000000-0000-4000-8000-000000000017',
+   serviceOfferingId:'11111111-1111-4111-8111-111111111111'}
+  await assert.rejects(repository.createPublicServiceEnquiry(config,rejected,attribution),
+   err=>err.code==='SERVICE_OFFERING_NOT_VERIFIED')
   const {readPublicEnquiryNoticeMetadata}=await import('../lib/app/public-enquiry-telegram.js')
   const notice=await readPublicEnquiryNoticeMetadata(config,saved.id,input.operationId)
   assert.equal(notice.referenceCode,saved.referenceCode)
