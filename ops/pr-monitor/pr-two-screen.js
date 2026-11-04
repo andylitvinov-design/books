@@ -291,6 +291,19 @@
       if (changes.some(function (m) { return !root.contains(m.target); })) schedule();
     });
     observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:false});
+    // One lazy check when the user enters screen 2. No timer, refresh loop
+    // or additional scheduled GitHub workload. Manual retry remains available.
+    if ('IntersectionObserver' in window) {
+      var second=document.getElementById('hh2-stages');
+      var io=new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) {return e.isIntersecting; })) {
+          io.disconnect();
+          var button=second.querySelector('.hh2-button');
+          if(button)void readDetailed(button);
+        }
+      },{threshold:0.18});
+      if(second)io.observe(second);
+    }
   }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();
