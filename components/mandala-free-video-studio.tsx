@@ -1108,7 +1108,7 @@ function paint(
   const height = ctx.canvas.height;
   const adjustedTime = time * (speed === "dynamic" ? 1.45 : .76);
   if (theme !== "money") {
-    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 && getThemedRealFilm(theme, otherScene)) {
+    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 && firstPartyFilmFor(theme, otherScene)) {
       paintRealThemedVideoFrame(ctx,art,theme,adjustedTime,title,realVideo);
     } else {
       paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
