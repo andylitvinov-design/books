@@ -18,7 +18,6 @@ on:
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
-      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
   workflow_dispatch:
 
 permissions:
