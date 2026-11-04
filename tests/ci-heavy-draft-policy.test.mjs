@@ -734,7 +734,8 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
 test('Core auto first attempts supersede old HEAD but manual reruns cannot evict current',()=>{
   const core=read('hh-pr-core-release.yml');
   assert.ok(core.includes("group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"),
+    'Draft conversion must cancel obsolete Ready Core without cancelling manual or metadata runs');
   assert.ok(!core.includes('github.event.pull_request.head.sha || github.sha'));
   assert.match(core,/^  hh-merge-check:/m);
   assert.doesNotMatch(core,/^  release-ready:/m);
