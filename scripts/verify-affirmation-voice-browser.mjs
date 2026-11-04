@@ -556,7 +556,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
-      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
+      await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-hypno-audio.wav");
       // Unlike the unrelated edit, removing the phrase selected for actual
       // synthesis must invalidate the attached soundtrack before export.
       const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="1"]');

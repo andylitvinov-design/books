@@ -374,3 +374,8 @@ test("hypno remix keeps the actual consented spoken phrase and refuses stale sou
   assert.match(parent,/spokenText:hypnoSpeechText/);
   assert.doesNotMatch(parent,/spokenText:currentAffirmationSpeech/);
 });
+
+test("post-effect browser acceptance checks the actual mixed WAV after an unrelated phrase edit",()=>{
+  const afterEffect=source.slice(source.indexOf('phase(engine,"hypno-audio-effects-rendered")'));
+  assert.match(afterEffect,/data-video-live-audio[^\n]*toContainText\("holistic-house-hypno-audio\.wav"\)/);
+});
