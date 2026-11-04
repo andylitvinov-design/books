@@ -414,6 +414,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
   }
   const selected = new Set();
   let performance = false, ownPublicTests = false, protectedPublic = false;
+  const changedSourceTests = new Set();
   for (const file of files) {
     if (publicOwned.has(file)) {
       for (const name of publicOwned.get(file)) selected.add(name);
@@ -426,7 +427,11 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
       selected.add('verify-public-services-production.mjs');
       continue;
     }
-    if (sourceTests.has(file)) { ownPublicTests = true; continue; }
+    if (sourceTests.has(file)) {
+      ownPublicTests = true;
+      changedSourceTests.add(file);
+      continue;
+    }
     if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
@@ -464,6 +469,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
   }
   return { mode: 'contracts', reason: ownPublicTests ? 'EXISTING_NODE_SOURCE_TESTS_ONLY' : 'INDEPENDENT_OWNER_OR_CORE',
     build: false, browser: false, metrics: false, cases: 'none',
+    sourceTests: PUBLIC_SOURCE_TESTS.filter(file => changedSourceTests.has(file)).join(','),
     releaseProof: files.includes('app/api/public/release-evidence/route.js') };
 }
 
@@ -1020,7 +1026,8 @@ function main() {
         'release_proof=' + (plan.releaseProof === true),
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
-        'cases=' + plan.cases].join('\n') + '\n');
+        'cases=' + plan.cases,
+        'source_tests=' + (plan.sourceTests || '')].join('\n') + '\n');
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Public Services exact-PR scope\n' +
