@@ -193,6 +193,19 @@ jobs:
           persist-credentials: false
           # The PR merge + its two parents; bounded ancestry is validated below.
           fetch-depth: 2
+      # Playwright's pinned container runs Git under a different UID/HOME from
+      # checkout. Trust exactly THIS checked-out workspace, not safe.directory=*.
+      # Keep real two-parent SHA and ancestry verification immediately below.
+      - name: Trust exact checked-out workspace inside Public Services container
+        run: |
+          set -euo pipefail
+          [[ -n "${GITHUB_WORKSPACE:-}" && -d "$GITHUB_WORKSPACE/.git" ]] || {
+            echo "::error::Missing checked-out GitHub workspace"; exit 1;
+          }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          [[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]] || {
+            echo "::error::Unexpected workspace identity"; exit 1;
+          }
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
