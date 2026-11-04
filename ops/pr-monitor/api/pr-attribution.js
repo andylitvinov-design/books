@@ -104,8 +104,9 @@ function verifiedLiveReceipt(comments,pr){
      !url.includes('/pull/'+pr.number+'#issuecomment-'))continue;
   found.push({live_at:new Date(observed).toISOString(),deployment_id:deploy,
    proof_method:method,receipt_url:url,deploy_url:deployUrl,
-   merge_sha:mergeSha,merged_to_live_minutes:Math.round((observed-merged)/6000)/10,
-   created_to_live_minutes:Math.round((observed-created)/6000)/10});
+   merge_sha:mergeSha,merge_to_live_ms:observed-merged,created_to_live_ms:observed-created,
+   merged_to_live_minutes:Math.round((observed-merged)/600)/100,
+   created_to_live_minutes:Math.round((observed-created)/600)/100});
  }
  found.sort((a,b)=>a.live_at.localeCompare(b.live_at)||a.deployment_id.localeCompare(b.deployment_id));
  return found[0]||null;
@@ -285,6 +286,8 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   live_proof_status:live?'VERIFIED_HISTORICAL':'NOT_OBSERVED_IN_BOUNDED_COMMENTS',
   merge_to_live_minutes:live?.merged_to_live_minutes??null,
   created_to_live_minutes:live?.created_to_live_minutes??null,
+  merge_to_live_ms:live?.merge_to_live_ms??null,
+  created_to_live_ms:live?.created_to_live_ms??null,
   end_to_end_complete:!!live&&mergedAt!==null};
  return {...timeline,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
   exact_head_no_pr_ref_matches:headMatchFallbacks,
