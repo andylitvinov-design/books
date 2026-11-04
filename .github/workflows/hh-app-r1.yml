@@ -61,15 +61,11 @@ permissions:
   pull-requests: read
 concurrency:
   group: app-r1-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  # A new Draft event cancels only this PR's obsolete first-attempt full matrix.
-  # Ready/edit events never interrupt a healthy in-flight verification.
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   impact:
     name: route-expensive-app-suites
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    # A lightweight, read-only classifier must not queue behind full Next/browser runners.
-    # Guard policy tests cover routing, and unknown paths still enable all suites.
     runs-on: ubuntu-slim
     timeout-minutes: 8
     outputs:
@@ -82,6 +78,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 2
+          # Verify exact synthetic merge with full git trees, not media blobs.
+          sparse-checkout: |
+            scripts
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - name: Classify exact-head changes, otherwise run all original jobs
@@ -159,7 +158,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        # Both real browsers when needed; otherwise one fail-closed no-op job.
+        browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '["chromium","webkit"]' || '["none"]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

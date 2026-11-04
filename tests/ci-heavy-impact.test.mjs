@@ -210,7 +210,7 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /if: needs\.impact\.outputs\.full_app == 'true'/);
   assert.match(yaml, /Independent native\/PWA contracts/);
   assert.match(yaml, /run: npm run test:app:db/);
-  assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
+  assert.ok(yaml.includes("browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '[\"chromium\",\"webkit\"]' || '[\"none\"]') }}"), 'Both browser engines remain when applicable');
 });
 
 test('Mandala PR retains units and runs full media browser only manually or for dedicated voice release branches', () => {
@@ -357,7 +357,7 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   const guard = read('hh-pr-sweep-guard.yml');
   const app = read('hh-app-r1.yml');
   assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
-  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    #[^\n]+\n    #[^\n]+\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
@@ -371,12 +371,44 @@ test('owner video review runs real browser and physical source checks',()=>{
   }
 });
 
+test('App R1 impact uses sparse checkout and one strictly routed no-op browser', () => {
+  const yaml = read('hh-app-r1.yml');
+  assert.ok(yaml.includes('sparse-checkout: |\n            scripts'),
+    'The exact synthetic-merge diff must avoid pulling full media blobs');
+  assert.ok(yaml.includes('fetch-depth: 2'), 'Verified diff requires both merge parents');
+  assert.ok(yaml.includes("browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '[\"chromium\",\"webkit\"]' || '[\"none\"]') }}"),
+    'Both browser engines run on actual scope; one no-op job otherwise');
+  assert.ok(yaml.includes('run: test "$HH_ROUTED_SCOPE" = false'),
+    'Missing routing results must fail closed, never claim a passing browser run');
+  assert.ok(yaml.includes('needs: impact') && yaml.includes("needs.impact.result == 'success'"),
+    'Use the single immutable HEAD classification for all dependent jobs');
+});
 
-test('App R1 avoids the five-job fanout for changes to its routing unit tests alone', () => {
+test('App R1 trigger covers all critical routes and preserves mandatory sensitive checks', () => {
+  const trigger = parsePrTrigger(read('hh-app-r1.yml'), 'hh-app-r1.yml');
+  const strict = { full_app: true, database: true, banner: true, profile: true };
+  for (const path of [
+    'app/ru/app/account/page.tsx', 'app/en/client/report/page.tsx',
+    'app/api/app/profile/route.ts', 'app/api/client/report/route.ts',
+    'app/api/assessments/scoring/route.ts', 'components/app/owner-cabinet.tsx',
+    'lib/app/owner.ts', 'lib/profile/secure-profile.ts',
+    'lib/assessments/calculate.ts', 'lib/security/authorization.ts',
+    'data/assessments/checkin.json', 'supabase/migrations/20261104_security.sql',
+    'middleware.ts', 'next.config.ts', 'package.json', 'package-lock.json'
+  ]) {
+    assert.equal(matchesTrigger(trigger, [path]), true, path + ' must schedule App R1');
+    assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict, path + ' requires full checks');
+  }
+  for (const path of ['components/profile-compact-design.tsx', 'components/my-course-dashboard.tsx'])
+    assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
+  for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])
+    assert.equal(matchesTrigger(trigger, [path]), false, path + ' should not wake App R1');
+});
+
+test('App R1 routing unit tests cannot awaken its full specialist matrix', () => {
   const changed = ['tests/ci-heavy-impact.test.mjs'];
-  const match = name => matchesTrigger(parsePrTrigger(read(name), name), changed, 'codex/public-book-library');
-  assert.equal(match('hh-app-r1.yml'), false, 'App R1 full matrix must not run for its focused unit tests');
-  assert.equal(match('hh-pr-sweep-guard.yml'), true, 'Guard must still run routing unit tests');
-  assert.equal(match('hh-pr-core-release.yml'), true, 'Core must still validate this PR');
-  assert.equal(match('hh-app-r1.yml'), false, 'No expensive self-dispatch from test-only changes');
+  const routed = name => matchesTrigger(parsePrTrigger(read(name), name), changed, 'codex/public-book-library');
+  assert.equal(routed('hh-app-r1.yml'), false, 'App R1 must not awaken for test-only changes');
+  assert.equal(routed('hh-pr-sweep-guard.yml'), true, 'Guard must execute the routing unit tests');
+  assert.equal(routed('hh-pr-core-release.yml'), true, 'Core must still protect the PR');
 });
