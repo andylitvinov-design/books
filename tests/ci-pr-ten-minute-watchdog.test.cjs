@@ -1372,7 +1372,7 @@ test('existing failed-Core handler retries an isolated infra job without extra r
  assert.ok(handler.includes('id: infra_recovery'));
  assert.ok(handler.includes('selectInterruptedMandatoryJob'));
  assert.ok(handler.includes('github.rest.actions.reRunJobForWorkflowRun'));
- assert.ok(handler.includes("if: steps.infra_recovery.outputs.infra_hold != 'true'"));
+ assert.ok(handler.includes("steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true'"));
  assert.ok(!handler.includes('github.rest.actions.reRunWorkflow('));
 });
 
