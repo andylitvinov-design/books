@@ -89,6 +89,23 @@ test("if imported, physically verify five licensed MP3s: SHA-256, actual duratio
     assert.equal(info.streams[0].channels,2);
     assert.ok(Math.abs(Number(info.format.duration)-t.durationSeconds)<0.05,"catalog duration matches encoded file");
     assert.ok(Number(info.format.bit_rate)>=240000,"encoded bitrate below expected");
+    // File existence/codec alone can mask silent or corrupt releases. Decode
+    // real samples locally; no provider, patient data or paid audio service.
+    const pcm=spawnSync("ffmpeg",[
+      "-v","error","-i",path.pathname,"-vn","-ac","1","-ar","8000",
+      "-f","s16le","-"
+    ],{encoding:null,timeout:20000,maxBuffer:3*1024*1024});
+    assert.equal(pcm.status,0,pcm.stderr?.toString()||"MP3 decode failed");
+    assert.ok(pcm.stdout.length>8000*2*45,"audio is too short or unreadable: "+t.id);
+    let sum=0,peak=0;
+    const samples=pcm.stdout.length>>1;
+    for(let i=0;i+1<pcm.stdout.length;i+=2){
+      const v=pcm.stdout.readInt16LE(i)/32768;
+      sum+=v*v;peak=Math.max(peak,Math.abs(v));
+    }
+    const rms=Math.sqrt(sum/samples);
+    assert.ok(rms>0.003,"real MP3 is near-silent: "+t.id);
+    assert.ok(peak<0.9999,"real MP3 contains full-scale clipping: "+t.id);
   }
 });
 
