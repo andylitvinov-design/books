@@ -7,7 +7,7 @@ on:
       - 'scripts/benchmarking/first-video-live-export.mjs'
       - 'scripts/benchmarking/video-director-chat-live-acceptance.mjs'
       - 'tests/video-director-chat-live-acceptance.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
   workflow_dispatch:
     inputs:
       probe_free_ai:

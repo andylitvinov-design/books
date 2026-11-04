@@ -48,7 +48,7 @@ on:
       - 'tests/course-free-slot-restart.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
       - 'package.json'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
   workflow_dispatch:
 
 permissions:
