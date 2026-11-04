@@ -372,7 +372,7 @@ if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
         throw new Error('CONFIRMED_COMPLETED_FAILED_JOB_REQUIRED');
       const marker = '<!-- HH_PR_REPAIR_STARTED_V1 -->';
       const duplicate = comments.some(comment => {
-        if (typeof comment.body !== 'string' || !comment.body.startsWith(marker+'\\n')) return false;
+        if (typeof comment.body !== 'string' || !comment.body.startsWith(marker+'\n')) return false;
         try {
           const value = JSON.parse(comment.body.slice(marker.length+1));
           return value.schema==='HH_PR_REPAIR_STARTED_V1' &&
@@ -384,9 +384,9 @@ if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
       } else {
         const again = await api('/pulls/' + prNumber);
         if (again.head?.sha !== pr.head.sha || again.base?.sha !== pr.base.sha ||
-            !activeLease(await paginate('/issues/'+prNumber+'/comments'), Date.now()) ||
+            activeLease(await paginate('/issues/'+prNumber+'/comments'), Date.now())?.state.owner !== owner ||
             again.state !== 'open') throw new Error('REPAIR_IDENTITY_MOVED');
-        const body = marker+'\\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
+        const body = marker+'\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
           action:'repair_started',owner,failed_run_id:failureId,failed_head_sha:pr.head.sha});
         const posted = await api('/issues/'+prNumber+'/comments',
           {method:'POST',body:{body}});
