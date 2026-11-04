@@ -1,0 +1,34 @@
+/* HH PR 3 KPI V1 — within the existing second-screen flow. */
+.hh-kpi-panel{border:1px solid #355873;border-radius:11px;background:#10283c;
+  padding:10px;margin:5px 0 10px;min-width:0;color:#e6f1ff}
+.hh-kpi-head{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.hh-kpi-head h2{font-size:15px;margin:0;font-weight:800}
+.hh-kpi-head small{display:block;color:#9cbdd5;font-size:10px;margin-top:4px}
+.hh-kpi-head button,.hh-kpi-options button{border:1px solid #5686a9;background:#183b54;
+  color:#d5ecff;border-radius:8px;padding:7px 9px;font-size:11px;cursor:pointer}
+.hh-kpi-table{margin-top:10px}
+.hh-kpi-columns,.hh-kpi-row{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.88fr) minmax(0,.88fr);gap:6px}
+.hh-kpi-columns{font-size:10px;color:#9bbdd3;padding:0 5px 7px}
+.hh-kpi-columns strong:not(:first-child){text-align:right}
+.hh-kpi-item{margin:4px 0;border:1px solid #31536c;border-radius:8px;background:#102439}
+.hh-kpi-row{list-style:none;cursor:pointer;padding:9px 6px;align-items:start}
+.hh-kpi-row::-webkit-details-marker{display:none}
+.hh-kpi-name{font-weight:760;font-size:11px;color:#e6f3ff}
+.hh-kpi-number{min-width:0;text-align:right;color:#c6e5ff;font-size:12px;
+  font-weight:800;overflow-wrap:anywhere}
+.hh-kpi-number small{font-size:9px;display:block;color:#9ab4ca;font-weight:450;line-height:1.3;margin-top:3px}
+.hh-kpi-detail{border-top:1px solid #365570;padding:9px 10px 12px;font-size:11px;
+  color:#c3d8e9;line-height:1.5}
+.hh-kpi-detail p{margin:5px 0}
+.hh-kpi-warning{color:#e1bb80}
+.hh-kpi-options{display:flex;gap:8px;align-items:center;margin-top:8px}
+.hh-kpi-note{margin:8px 0 0;color:#a9c8db;font-size:10px;line-height:1.4}
+.hh-kpi-note a,.hh-kpi-example a{color:#93d5ff}
+.hh-kpi-examples{display:grid;gap:5px;margin-top:9px}
+.hh-kpi-example{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border-bottom:1px solid #34546d;padding:5px 0;font-size:10px}
+@media(max-width:700px){.hh-kpi-panel{padding:8px;margin:4px 0}
+ .hh-kpi-columns,.hh-kpi-row{gap:4px}
+ .hh-kpi-number{font-size:11px}
+ .hh-kpi-number small{font-size:9px}
+ .hh-kpi-row{padding:8px 4px}}

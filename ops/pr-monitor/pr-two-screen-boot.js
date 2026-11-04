@@ -9,7 +9,9 @@
     if(!response.ok)throw Error('Original monitor '+response.status);
     var html=await response.text();
     if(!/<\/head>/i.test(html)||!/<main\b/i.test(html))throw Error('Original monitor markup incomplete');
-    var additions='<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-3">'+
+    var additions='<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261104-kpi1">'+
+      '<script src="/pr-three-kpi-ui.js?v=20261104-kpi1" defer><\/script>'+ 
+      '<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-3">'+
       '<link rel="stylesheet" href="/pr-timestamp-coverage.css?v=20261104-4">'+
       '<script src="/pr-cohort-wall-clock.js?v=20261104-3" defer><\/script>'+ 
       '<script src="/pr-two-screen.js?v=20261104-3" defer><\/script>'+
