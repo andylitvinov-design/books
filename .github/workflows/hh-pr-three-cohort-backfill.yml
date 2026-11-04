@@ -61,7 +61,7 @@ jobs:
             const fs=require('node:fs');
             const {collect}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-cohort-backfill.cjs');
             const {analyze,renderMarkdown}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-three-cohorts.cjs');
-            const data=await collect({github,maxRequests:95,minRemaining:350});
+            const data=await collect({github,maxRequests:95,minRemaining:150});
             core.info('HH_THREE_COHORT_EVIDENCE '+JSON.stringify({
               source:data.source,prs:data.prs.length,intervals:data.intervals.length,
               open:data.openPRs.length}));

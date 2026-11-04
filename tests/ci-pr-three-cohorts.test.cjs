@@ -38,9 +38,32 @@ test('provenance rejects fake source repair, missing first CI inventory, post-cl
 });
 test('p90, median, positive evidence coverage and rendered per-PR drilldown',()=>{
  const a=analyze({prs:[pr(10),pr(11,date+'00:00Z',date+'20:00Z')],intervals:[ev(10,'runner_queue','05','10')]});
- assert.equal(a.windows[2].total.median_min,30);
+ assert.equal(a.windows[2].total.median_min,20);
  assert.equal(a.windows[2].phases.runner_queue.covered_prs,1);
  assert.equal(a.windows[2].phases.runner_queue.coverage_pct,50);
  assert.match(renderMarkdown(a),/Not recovered/);assert.match(renderMarkdown(a),/2026-11-03T13:00:00Z/);
  assert.deepEqual(stats([]),{n:0,average_min:null,median_min:null,p90_min:null});
+});
+
+test('lower-order statistic preserves the originally approved median and P90 convention',()=>{
+ assert.equal(stats([22.38,24.65]).median_min,22.38);
+ assert.equal(stats(Array.from({length:86},(_,i)=>i<77?385.18:450.23)).p90_min,385.18);
+});
+
+test('unavailable Core workflow inventory does not abort independently available timeline evidence',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const p={...pr(16),head:{ref:'feature-16',sha:'a'.repeat(40)},
+  base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const response=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const events=[{event:'labeled',created_at:date+'05:00Z',label:{name:'hh:conflict-repair-needed'}},
+  {event:'unlabeled',created_at:date+'10:00Z',label:{name:'hh:conflict-repair-needed'}}];
+ const github={rest:{pulls:{list:async ({state})=>response(state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async()=>{throw Object.assign(Error('Workflow missing'),{status:404});}},
+  issues:{listEventsForTimeline:async()=>response(events),listComments:async()=>response([])}}};
+ const r=await collect({github,now:Date.parse('2026-11-04T13:15:00Z'),maxRequests:50,minRemaining:150});
+ assert.equal(r.source.closed_complete,true);
+ assert.equal(r.source.ci_runs_complete.latest,false);
+ assert.match(r.source.ci_runs_errors.latest,/Workflow missing/);
+ assert.equal(r.source.sampled_timeline_prs[0],16);
+ assert.equal(r.intervals.find(x=>x.phase==='merge_conflict')?.pr,16);
 });
