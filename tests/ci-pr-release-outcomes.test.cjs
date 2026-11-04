@@ -175,3 +175,25 @@ test('production PR does not need ancestry in the GitHub default branch',async()
  assert.equal(r.control_plane_sample[0].delivery_state,
   'CONTROL_MERGED_RUNTIME_NOT_APPLICABLE');
 });
+
+
+test('merge to functional LIVE is scoped to PR, deployment SHA and observed smoke timestamp',async()=>{
+ const deploymentId='dpl_123456abcdef';
+ const smoke={schema:'HH_FUNCTIONAL_SMOKE_V1',trusted_source:true,result:'PASS',
+   repo:'andylitvinov-design/books',production_branch:'codex/public-book-library',
+   alias:'holistichouse.vercel.app',pr_number:3000,pr_merge_sha:mergedSha,
+   production_sha:sha,deployment_id:deploymentId,
+   checked_at:'2026-11-02T04:35:00Z',
+   checks:[{kind:'http',origin:'https://holistichouse.vercel.app',
+     path:'/en/holistic-support/mandala',passed:true,http_status:200,
+     assertion:'Mandala page contains the interactive experience'}]};
+ const report=await m.run({github:makeGithub(),core:core(),context:ctx,now,
+   liveEvidence:{verified_live:true,reason:'LIVE_VERIFIED',
+     production_sha:sha,deployment_id:deploymentId},
+   functionalSmokeReceipts:[smoke]});
+ assert.equal(report.merge_live_tracking.schema,'HH_PR_MERGE_LIVE_V1');
+ assert.equal(report.merge_live_tracking.functional_live_verified,1);
+ assert.equal(report.merge_live_tracking.items[0].merge_to_live_observed_minutes,35);
+ assert.equal(report.merge_live_tracking.items[0].served_sha,sha);
+ assert.equal(report.merge_live_tracking.items[0].deployment_id,deploymentId);
+});
