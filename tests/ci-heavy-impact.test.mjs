@@ -423,3 +423,35 @@ test('App R1 routing-unit edits execute Guard and Core without five-job App R1 f
       changedProductionSource + ' must retain real specialist acceptance');
   }
 });
+
+test('Mandala policy-only impact tests route to fast Guard, while video, voice and media still run Mandala', () => {
+  const mandalaSource = read('holistic-support-mandala.yml');
+  const guardSource = read('hh-pr-sweep-guard.yml');
+  const mandala = parsePrTrigger(mandalaSource, 'holistic-support-mandala.yml');
+  const guard = parsePrTrigger(guardSource, 'hh-pr-sweep-guard.yml');
+  const ciContract = 'tests/ci-heavy-impact.test.mjs';
+  assert.equal(matchesTrigger(guard, [ciContract]), true,
+    'Policy-only impact test must execute the fast Guard regression suite');
+  assert.ok(guardSource.includes('node --test tests/pr-sweep-guard.test.mjs') &&
+    guardSource.includes(ciContract), 'Guard must actually execute its owned impact test');
+  assert.equal(matchesTrigger(mandala, [ciContract]), false,
+    'Policy test alone must not start the long Mandala music/media job');
+  for (const file of [
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-heavy-impact.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'lib/mandala/voice-studio.mjs',
+    'app/api/holistic-support/voice/route.js',
+    'tests/mandala-free-video.test.mjs',
+    'tests/video-chat-understanding.test.mjs',
+    'scripts/generate-scenario-melodies.mjs',
+    'public/audio/mandala/example.mp3'
+  ]) {
+    assert.equal(matchesTrigger(mandala, [file]), true,
+      file + ' still needs the full independent video and audio source gate');
+  }
+  assert.ok(mandalaSource.includes("  focused-unit-types-build:\n    if: "),
+    'Mandala Ready source gate must still exist');
+  assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
+  assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
+});
