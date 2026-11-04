@@ -2006,7 +2006,7 @@ test('trusted one-time optional owner routing tolerates only exact immutable-bas
   ];
   for(const x of unsafe)
     assert.equal(verifiedOptionalOwnerSelectorMigration(files,[...rows,x]),false);
-  const modified=current.get(owner).replace('runs-on: ubuntu-24.04','runs-on: windows-latest');
+  const modified=current.get(owner)+'\n# unreviewed workflow amendment\n';
   assert.equal(verifiedOptionalOwnerSelectorMigration({
     base,current:new Map([[owner,modified],[guard,current.get(guard)]])
   },rows),false,'any other job body change must keep strict current-base checks');
