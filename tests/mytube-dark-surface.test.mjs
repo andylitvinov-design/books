@@ -44,8 +44,8 @@ test("MyTube hides secondary filter groups until the visitor explicitly refines"
  const view=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
  assert.match(view,/aria-controls="mytube-refine-controls mytube-more-controls"/);
- assert.match(view,/setFiltersOpen\\(value=>!value\\)/);
- assert.match(view,/hidden=\\{variant==="mytube"&&!filtersOpen\\}/);
- assert.match(css,/\\.refine\\[hidden\\],\\.moreControls\\[hidden\\]\\{display:none!important\\}/);
- assert.match(css,/\\.wrapper:not\\(\\.mytube\\) \\.refine,\\.moreControls\\{display:contents\\}/);
+ assert.match(view,/setFiltersOpen\(value=>!value\)/);
+ assert.match(view,/hidden=\{variant==="mytube"&&!filtersOpen\}/);
+ assert.match(css,/\.refine\[hidden\],\.moreControls\[hidden\]\{display:none!important\}/);
+ assert.match(css,/\.wrapper:not\(\.mytube\) \.refine,\.moreControls\{display:contents\}/);
 });
