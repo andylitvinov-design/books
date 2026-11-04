@@ -181,6 +181,22 @@
     var sample=make('p','hh2-sample','Времена не выводятся из разности других этапов. Глубокие замеры и архив CI могут иметь иной охват PR.');
     target.append(sample);stages[key].sample=sample;
   }
+  function reconcileStagesForSameCohort(total, data) {
+    var keys=['prepare','runner','ci','gate','merge'],n=total?.n;
+    if (!valid(n)||n===0||!valid(total?.mean)||
+      data?.population?.merged!==n)return {ok:false,n:n??null,reason:'DENOMINATOR_MISMATCH'};
+    var values=[];
+    for (var k of keys) {
+      var row=data.stages?.[k];
+      if(!row||row.n!==n||!valid(row.mean))
+        return {ok:false,n,reason:'UNVERIFIED_STAGE_'+k};
+      values.push(row.mean);
+    }
+    var sum=values.reduce(function(a,b){return a+b;},0);
+    if(Math.abs(sum-total.mean)>0.1)
+      return {ok:false,n,sum,reason:'NON_RECONCILED_STAGE_TOTAL'};
+    return {ok:true,n,sum,reason:'EXACT_SAME_COHORT'};
+  }
   function archiveMatchedRows() {
     if(!baseline?.rows||!Array.isArray(archive?.rows))return [];
     var numbers=new Set(baseline.rows.map(function(p){return p.number;}));
@@ -358,17 +374,10 @@
     if (baseline) stages.total.current.textContent=duration(baseline.mean);
     var historical=aggregate(sourceSnapshot?.windows?.find(function(w){return w.id==='two_weeks_ago';}));
     if (historical) stages.total.history.textContent=duration(historical.mean);
+    var result=reconcileStagesForSameCohort(baseline,detailed);
     var n=baseline?.n||0;
-    var keys=['prepare','runner','ci','gate','merge'];
-    var sameCount=Boolean(n&&detailed?.population?.merged===n);
-    var sameSample=sameCount&&keys.every(function(k){
-      var v=detailed.stages?.[k];return v&&v.n===n&&valid(v.mean);
-    });
-    var measuredSum=sameSample?keys.reduce(function(t,k){return t+detailed.stages[k].mean;},0):null;
-    // If stages are non-disjoint or do not sum to exactly this same-cohort
-    // Created→Merged mean, hide them from the additive "now" column.
-    var reconciled=sameSample&&valid(baseline.mean) &&
-      Math.abs(measuredSum-baseline.mean)<=0.1;
+    var measuredSum=result.sum??null;
+    var reconciled=result.ok;
     for (var i=0;i<STAGES.length;i++) {
       var key=STAGES[i][0], stage=stages[key];
       var stat=detailed?.stages?.[key]||
