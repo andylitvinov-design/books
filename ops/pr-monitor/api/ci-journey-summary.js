@@ -50,8 +50,8 @@ function parse(comment){
    return {...r,jobs,partial_jobs:r.partial_jobs===true||jobs.length!==r.jobs.length};
  }).filter(Boolean);
 }
-async function fetchArchive(){
- if(cache&&Date.now()-last<300000)return {...cache,stale:false};
+async function fetchArchive(force=false){
+ if(cache&&Date.now()-last<(force?60000:300000))return {...cache,stale:false};
  if(pending)return pending;
  pending=(async()=>{
    const since=new Date(Date.now()-96*3600000).toISOString();
@@ -164,11 +164,12 @@ module.exports=async(req,res)=>{
  res.setHeader('Content-Type','application/json; charset=utf-8');
  res.setHeader('X-Robots-Tag','noindex,nofollow');
  res.setHeader('X-Content-Type-Options','nosniff');
- res.setHeader('Cache-Control','public,s-maxage=300,stale-while-revalidate=900');
+ const force=req.query?.refresh==='1';
+ res.setHeader('Cache-Control',force?'private,no-store':'public,s-maxage=300,stale-while-revalidate=900');
  if(req.method!=='GET'){res.statusCode=405;res.setHeader('Allow','GET');return res.end(JSON.stringify({error:'METHOD_NOT_ALLOWED'}));}
  const hours=Number(req.query?.hours||24);
  if(!HOURS.includes(hours)){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_HOURS'}));}
- try{res.statusCode=200;res.end(JSON.stringify(report(await fetchArchive(),hours)));}
+ try{res.statusCode=200;res.end(JSON.stringify(report(await fetchArchive(force),hours)));}
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
