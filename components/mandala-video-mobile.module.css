@@ -3490,7 +3490,7 @@
 @media (max-width:759px) {
   .studio[data-active-workspace] .quickBuilder {
     gap:8px;
-    padding-bottom:calc(var(--hh-unified-nav-height, 90px) + 24px);
+    padding-bottom:12px;
     background:transparent;
   }
   .studio[data-active-workspace] .quickBuilder>.quickBrandBar {
