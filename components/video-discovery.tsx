@@ -295,6 +295,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               onClick={()=>setMyTubeScenarioId(item.id)}>{item.label}</button>)}
           </div>
         </>:null}
+        </div>
+      </div>
+      <div className={styles.moreControls} hidden={variant==="mytube"&&!filtersOpen}>
       <div className={styles.controls}>
         <label>{t.original}
           <select value={language} onChange={event=>setLanguage(event.target.value)}>
@@ -372,7 +375,6 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
-        </div>
       </div>
     </section>
     <div className={styles.results} aria-live="polite">
