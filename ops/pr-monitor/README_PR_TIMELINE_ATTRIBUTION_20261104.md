@@ -69,3 +69,11 @@ Then after applying to **full** existing Vercel source, test the preview deploym
 3. Published hourly KPI report and on-demand PR view can have different evidence coverage; expose this difference rather than comparing unsupported totals.
 4. Avoid filling `created → first CI` unless the earliest relevant workflow is known; when the workflow run inventory is truncated, the interval must remain unattributed.
 5. User requested NO extra paid usage. The patch is zero-schedule and runs only when a PR number is requested; existing Vercel/Actions standard request usage is still subject to the user's current plan.
+
+## Event-anchored context stages (Nov 4 follow-up)
+
+The API preserves the original `stage_totals_ms.unattributed` for compatibility and auditability. It additionally includes `gap_context_ms` and `gap_context_coverage = EVENT_BOUNDARIES_NOT_CAUSES`. `sum(gap_context_ms) === stage_totals_ms.unattributed` must hold before the UI groups gaps.
+
+These subdivisions show the **last observed event and next event** (created→first recorded event; CI failure→next event; green CI→next event; source publication→next event; conflict label→next event; repair started without a confirmed publication; between CI jobs; other event gaps). They do **not** prove what the developer, runner or repair agent did inside the interval. The original `accounted_percent` still means directly evidenced **causal** intervals only, not the percentage with event boundaries.
+
+No new API requests, webhooks, background jobs, scheduled CI, subscriptions, or automatic production deployments. The `ops/pr-monitor` folder remains a partial additive source patch: integrating these changed files into the **complete** independent monitor project and checking the live alias is required before any claim of LIVE release.
