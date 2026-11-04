@@ -13,12 +13,24 @@
   ['conflict_hint','Conflict hint observed'],['manual_hint','Manual routing observed'],
   ['hold_hint','Hold observed']
  ];
- var root,summary,status,rowsBox,filter,meta,loaded=null,busy=false;
+ var root,summary,status,rowsBox,filter,meta,loaded=null,busy=false,armed=false;
  var clock=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
   year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
  function make(tag,cls,t){var e=document.createElement(tag);if(cls)e.className=cls;
   if(t!==undefined)e.textContent=String(t);return e;}
  function date(n){return Number.isSafeInteger(n)&&n>0?clock.format(new Date(n*1000)):'—';}
+ function armLazy(){
+  if(armed||!root)return;
+  armed=true;
+  if('IntersectionObserver' in window){
+   var io=new IntersectionObserver(function(entries){
+    if(entries.some(function(e){return e.isIntersecting;})){
+     io.disconnect();void fetchData(false);
+    }
+   },{rootMargin:'250px 0px'});
+   io.observe(root);
+  }else void fetchData(false);
+ }
  function mount(){
   if(root)return true;
   var after=document.getElementById('hh2-stages');
@@ -46,6 +58,7 @@
   var caption=make('p','hh-pr-ts-note','Для точных дат CI и завершённых этапов откройте хронологию конкретного PR; недостающие старые события не восстанавливаются догадками.');
   root.append(head,summary,status,meta,controls,rowsBox,caption);
   after.insertAdjacentElement('afterend',root);
+  armLazy();
   return true;
  }
  function metric(label,n){
@@ -142,22 +155,5 @@
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
  else boot();
- document.addEventListener('visibilitychange',function(){
-  // Never auto refresh while hidden; first entrance is read-only.
- });
- // Read when panel first approaches viewport. No polling interval or new cron.
- if('IntersectionObserver' in window){
-  var ready=function(){
-   if(!root){requestAnimationFrame(ready);return;}
-   var io=new IntersectionObserver(function(entries){
-    if(entries.some(function(e){return e.isIntersecting;})){io.disconnect();void fetchData(false);}
-   },{rootMargin:'250px 0px'});
-   io.observe(root);
-  };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});
-  else ready();
- }else {
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){void fetchData(false);},{once:true});
-  else void fetchData(false);
- }
+
 })();
