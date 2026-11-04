@@ -17,7 +17,7 @@ test('watchdog has independent cron; failed Core is a direct event workflow',()=
   assert.ok(direct.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
   assert.ok(direct.includes("github.event.workflow_run.event == 'pull_request'"));
   assert.ok(direct.includes("group: hh-control-tower-single-writer"));
-  assert.ok(s.includes("context.eventName === 'push'"));
+  assert.ok(s.includes("context.eventName==='push'"));
   assert.ok(s.includes('default: false'));
 });
 test('source Repair Worker is addressed only; no empty cron consumes its publish lease',()=>{

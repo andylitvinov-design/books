@@ -41,7 +41,7 @@ test('shared inventory cannot be supplied by untrusted PR source events',async()
     number:3405,base:{ref:'codex/public-book-library'}}}};
  const r=await run({github:{rest:{}},core:core(),context:injected,
   inventorySnapshot:[pr()],dryRun:true});
- assert.match(r.reason,/WATCHDOG_SNAPSHOT_UNVERIFIED/);
+ assert.equal(r.reason,'CONFLICT_EVENT_REQUIRES_SNAPSHOT');
 });
 test('only one scheduled Watchdog writer and no second hourly Control Tower scan',()=>{
  const w=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
