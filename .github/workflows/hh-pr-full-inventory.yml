@@ -170,7 +170,7 @@ jobs:
                 if(preflight.mergeable===false||preflight.mergeable_state==="dirty"){
                   skip("MERGE_CONFLICT_DIRTY");continue;
                 }
-                if(preflight.mergeable!==true||!["clean","behind"].includes(preflight.mergeable_state)){
+                if(preflight.mergeable!==true||!["clean","behind","unstable","blocked"].includes(preflight.mergeable_state)){
                   skip("BLOCKED_OR_UNKNOWN_MERGEABILITY");continue;
                 }
                 const checks=await latestChecks(pr.head.sha);
@@ -191,7 +191,7 @@ jobs:
                    live.head.sha!==pr.head.sha||live.head.repo?.full_name!==fullRepo){
                   skip("CHANGED_HEAD_BASE_STATE");continue;
                 }
-                if(live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
+                if(live.mergeable!==true||!["clean","behind","unstable","blocked"].includes(live.mergeable_state)){
                   skip("NOT_MERGEABLE");continue;
                 }
                 if(qa.via==="INDEPENDENT_QA"){
@@ -227,7 +227,7 @@ jobs:
                const live=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
                if(live.state!=="open"||live.draft||live.auto_merge||
                   live.head.sha!==c.head||live.base.sha!==c.base||
-                  live.base.ref!==PROD||live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
+                  live.base.ref!==PROD||live.mergeable!==true||!["clean","behind","unstable","blocked"].includes(live.mergeable_state)){
                  skip("CHANGED_BEFORE_ARM");continue;
                }
                // Never rely on a stale success while the full inventory was being scanned.
