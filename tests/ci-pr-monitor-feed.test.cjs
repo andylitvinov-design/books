@@ -182,3 +182,47 @@ test('verified zero inspection is incomplete, not proof of zero blocked PRs',()=
  assert.equal(snapshot.delivery_status,'WATCHDOG_DEEP_INSPECTION_INCOMPLETE');
  assert.equal(snapshot.watchdog_sample.inspected,0);
 });
+
+test('live PR Monitor normalizes verified lower bound and overlapping sampled Core/Conflict safely',()=>{
+ const sample={schema:'HH_WATCHDOG_VERIFIED_SAMPLE_V1',
+  scope:'BOUNDED_DEEP_INSPECTION',checkedAt:at,production:160,
+  inspected:16,mergeConflicts:8,coreFailures:8,specialistFailures:6,
+  specialistPolicyHolds:0,releaseGateOnly:0,verifiedSourceFailures:0,
+  coreFailureUnverified:0,specialistEvidenceUnverified:0,
+  sourceRepairQueued:0,conflictLabelsQueued:0};
+ const source=buildMonitorSnapshot(report({watchdogSample:sample,
+  backlogLabelHints:{labeled_unique:100}}),context);
+ const handler=require('../ops/pr-monitor/api/control-tower-stats.js');
+ const live=handler.normalize(source,Date.parse(at)+1000);
+ assert.equal(live.watchdog_sample_status,'VERIFIED_BOUNDED_SAMPLE');
+ assert.equal(live.watchdog_sample.inspected,16);
+ assert.equal(live.watchdog_sample.core_failures,8);
+ assert.equal(live.watchdog_sample.merge_conflicts,8);
+ assert.equal(live.watchdog_sample.specialist_failures,6);
+ assert.equal(live.counts.verified_blocked_lower_bound,8);
+ assert.equal(live.counts.blocked_total,8);
+ assert.equal(live.counts.labeled_outstanding_prs,100);
+ assert.equal(live.delivery_status,'VERIFIED_BLOCKED_WORK_NO_AUTO_SOURCE_REPAIR');
+ assert.equal(live.blocked_reasons_complete,true);
+ // A forged/contradictory sample cannot make Live claim a verified count.
+ const invalid=handler.normalize({
+  ...source,watchdog_sample:{...source.watchdog_sample,verified_blocked_lower_bound:25}
+ },Date.parse(at)+1000);
+ assert.equal(invalid.watchdog_sample,null);
+ assert.equal(invalid.counts.blocked_total,null);
+});
+test('live monitor does not turn missing deep inspection into global zero blockers',()=>{
+ const handler=require('../ops/pr-monitor/api/control-tower-stats.js');
+ const source=buildMonitorSnapshot(report({
+  backlogLabelHints:{labeled_unique:100}}),context);
+ const live=handler.normalize(source,Date.parse(at)+1000);
+ assert.equal(live.counts.blocked_total,null);
+ assert.equal(live.counts.labeled_outstanding_prs,100);
+ assert.equal(live.watchdog_sample_status,'NOT_PROVIDED');
+ const ui=require('node:fs').readFileSync(
+  'ops/pr-monitor/watchdog-control-tower.js','utf8');
+ assert.match(ui,/data\.watchdog_sample/);
+ assert.match(ui,/data\.counts\.labeled_outstanding_prs/);
+ assert.match(ui,/specialist_policy_holds/);
+ assert.match(ui,/sample\.verified_blocked_lower_bound/);
+});
