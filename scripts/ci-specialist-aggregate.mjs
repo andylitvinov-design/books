@@ -85,11 +85,17 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         continue;
       }
       if (response.ok) return response.json();
-      const rateLimited = response.status === 403 &&
-        (response.headers?.get('x-ratelimit-remaining') === '0' ||
+      // Retryable HTTP 500 and network failures are different from a
+      // genuine quota exhaustion. Waiting 0.4/1.2/2.4 seconds cannot reset
+      // a primary/secondary GitHub rate window, and multiplied across
+      // concurrent specialists those retries make 403 storms worse.
+      const rateLimited = (response.status === 403 || response.status === 429) &&
+        (response.status === 429 ||
+         response.headers?.get('x-ratelimit-remaining') === '0' ||
          Boolean(response.headers?.get('retry-after')));
-      const transientStatus = response.status === 429 ||
-        (response.status >= 500 && response.status <= 504) || rateLimited;
+      if (rateLimited)
+        throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status + ' RATE_LIMITED');
+      const transientStatus = response.status >= 500 && response.status <= 504;
       if (!transientStatus || attempt >= retryDelaysMs.length)
         throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status);
       await sleep(retryDelaysMs[attempt]);
@@ -709,7 +715,7 @@ export function diagnoseAggregateError(error) {
     ['NO_EXECUTED_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_NOT_EXECUTED','Inspect the required job dispatch, not unrelated green jobs.'],
     ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
     ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
-    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
+    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions and quota; never repeat exhausted 403 requests.'],
   ];
   const found = rules.find(([prefix]) => message.startsWith(prefix));
   const category = found?.[1] || 'CI_UNKNOWN_FAILURE';
