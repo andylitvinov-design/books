@@ -5615,7 +5615,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Сохранить черновик":locale==="es"?"Guardar borrador":"Save draft"}
             </button>
             <button type="button" data-video-editor-draft-open
-              disabled={recording||preparing} onClick={()=>editorDraftInputRef.current?.click()}>
+              disabled={recording||preparing} onClick={()=>{
+                if(editorDraftInputRef.current){
+                  editorDraftInputRef.current.value="";
+                  editorDraftInputRef.current.click();
+                }
+              }}>
               <FolderOpen size={16} aria-hidden="true"/>
               {locale==="ru"?"Открыть черновик":locale==="es"?"Abrir borrador":"Open draft"}
             </button>
