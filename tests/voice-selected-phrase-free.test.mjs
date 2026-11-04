@@ -43,8 +43,8 @@ test("previewing a voice selects it for the actual phrase and WAV filename",()=>
   assert.ok(ui.includes("ref={generatedAudioRef} controls"));
   assert.ok(ui.includes("generatedAudioRef.current?.play().catch"),
     "try playing the real generated WAV; keep visible native controls on Safari");
-  assert.ok(ui.includes("onAttach({file,spokenText:speechText,voiceId,language"),
-    "the SAME voice and phrases must reach the final movie");
+  assert.match(ui,/onAttach\(\{file,(?:speechFile,)?spokenText:speechText,voiceId,language/,
+    "the SAME voice and phrases must reach the final movie, with its optional isolated speech source");
   assert.ok(ui.includes("approvalPending||busy||!speechText||!consent"));
   assert.ok(ui.includes("if(textChanged)setConsent(false)"));
   for(const label of ["Бесплатно озвучить фразу","Narrate phrase for free","Narrar frase gratis"])
