@@ -15,14 +15,6 @@ const cases=[
 ];
 mkdirSync("artifacts/mandala-holistic-light",{recursive:true});
 const report=[];
-function twoByTwo(a,description){
-  assert.equal(a.length,4,description+" must have four items");
-  const distance=(x,y)=>Math.abs(x-y);
-  assert.ok(distance(a[0].y,a[1].y)<4 &&
-    distance(a[0].x,a[2].x)<4 &&
-    a[2].y>a[0].y+65 && a[1].x>a[0].x+40,
-    description+" must display two wide columns and two rows: "+JSON.stringify(a));
-}
 for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
   const browser=await browserType.launch({headless:true});
   try{
@@ -99,11 +91,15 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
           item.height>=44 && Math.abs(item.y-layout.goals[0].y)<4 &&
           (index===0||item.x>layout.goals[index-1].x+30)),
           "four text-only goal categories appear in one row: "+JSON.stringify(layout.goals));
+        assert.ok(layout.goals[3].x+layout.goals[3].width<=layout.viewport+2,
+          "all four compact goals must be fully visible without horizontal scrolling");
         assert.ok(layout.topics.every(item=>item.height>=44),
           "readable topic cards: "+JSON.stringify(layout.topics));
-        twoByTwo(layout.stories,"stories "+width);
-        assert.ok(layout.stories.every(item=>item.height>=180),
-          "large real four-story buttons: "+JSON.stringify(layout.stories));
+        assert.ok(layout.stories.length===4 &&
+          layout.stories.every((item,index)=>item.width>=70&&item.height>=90 &&
+            Math.abs(item.y-layout.stories[0].y)<4 &&
+            (index===0||item.x>layout.stories[index-1].x+60)),
+          "four licensed story cards form a horizontally browsable rail: "+JSON.stringify(layout.stories));
         assert.ok(layout.input && layout.input.height>=58 && layout.inputFont>=16,
           "iPhone native input: "+JSON.stringify(layout.input));
         assert.ok(layout.confirm?.height>=44,"readable next CTA "+JSON.stringify(layout.confirm));
