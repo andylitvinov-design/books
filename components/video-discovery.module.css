@@ -202,3 +202,15 @@
 @media(prefers-reduced-motion:reduce){
   .mytube .filterToggle svg:last-child{transition:none}
 }
+
+
+/* Flatten the shared Library variant back to its pre-MyTube grid structure.
+   The dark version alone receives the extra disclosure containers. */
+.wrapper:not(.mytube) .refine,.moreControls{display:contents}
+.moreControls[hidden]{display:none!important}
+.mytube .refine:empty{display:none}
+.mytube .moreControls{
+  display:grid;gap:14px;margin:0;padding:14px;
+  border:1px solid #303030;border-radius:14px;
+  background:var(--mytube-surface,#181818)
+}
