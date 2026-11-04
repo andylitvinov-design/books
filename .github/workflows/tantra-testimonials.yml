@@ -88,7 +88,10 @@ jobs:
       - name: Install isolated browser tools
         if: github.event_name != 'pull_request' || steps.risk.outputs.full == 'true'
         run: |
-          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.64.1
+          # Diagnostic-only pin: 1.64.1 predates the 15 Oct 2026 WebKit/GStreamer fix.
+          # Use an isolated newer browser in this existing CI job; never change
+          # production dependencies, weaken native decoded-frame or add runners.
+          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.65.0-beta-1793744581000
           ln -s /tmp/tantra-tools/node_modules/@playwright node_modules/@playwright
           /tmp/tantra-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Build proposed application
