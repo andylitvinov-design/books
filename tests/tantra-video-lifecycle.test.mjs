@@ -183,8 +183,9 @@ test('native explicit play observer never controls playback and media identity i
   el.props.onPlay({currentTarget:media,preventDefault(){assert.fail('cannot prevent play')}});
   assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);
  }
- assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|\.load\(|setTimeout\(|setInterval\(/);
- assert.equal((source.match(/currentTime\s*=/g)||[]).length,2,'Only paused reconstruction and an actually decoded-frame resume may seek; stalled playback cannot be blindly rewound');
+ assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|setTimeout\(|setInterval\(/);
+ assert.equal((source.match(/\.load\(/g)||[]).length,1,'Only a demonstrated muted post-reopen stall may reconstruct the original decoder');
+ assert.equal((source.match(/currentTime\s*=/g)||[]).length,3,'One exact-position restore is permitted after verified stall, plus the two existing authenticated paths');
  assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);
  assert.match(source,/video\.currentTime = saved\.time/);
 });
@@ -379,30 +380,61 @@ test('WebKit stalled same-source play never seeks a decoder without decoded fram
   assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
   assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
 });
-test('WebKit stalled muted player gets only one pause/play recovery after explicit Play',()=>{
-  const callbacks=[];
-  let pauses=0,plays=0;
+test('WebKit stuck muted decoder reloads same-source metadata and resumes after exact seek once',()=>{
+  const callbacks=[], events=new Map();
+  let pauses=0,plays=0,loads=0;
   const f=deferredWebKitFixture({
     muted:true,readyState:4,
     pause(){pauses++;this.paused=true},
     play(){plays++;this.paused=false;return Promise.resolve()},
+    load(){loads++;this.paused=true;this.readyState=1},
+    addEventListener(type,fn){events.set(type,fn)},
+    removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type)},
     ownerDocument:{defaultView:{requestAnimationFrame(fn){callbacks.push(fn);return callbacks.length;}}},
   });
-  f.close();f.reopen();
-  const pausedOnClose=pauses;
-  assert.equal(plays,0,'Disclosure open and close never start playback');
-  assert.equal(f.media.muted,true,'Original mute preference survives disclosure');
+  f.close();f.reopen();const pausedOnClose=pauses;
+  assert.equal(plays,0,'Disclosure open/close must never play');
   f.media.paused=false;f.handlers.onPlay(f.event);
   callbacks.shift()(0);
-  assert.equal(plays,0,'The first 1.7 seconds cannot trigger automatic replay');
+  assert.equal(loads,0,'Healthy media gets a 1.7-second decoded-frame opportunity');
   callbacks.shift()(1800);
-  assert.equal(pauses,pausedOnClose+1,'Only one bounded native pause is permitted after stalled explicit Play');
-  assert.equal(plays,1,'One muted same-node recovery follows actual user playback');
-  assert.equal(f.media.paused,false,'Recovery does not leave a successful native play paused');
-  assert.deepEqual(f.writes,[],'Recovery never changes the retained playback position');
+  assert.equal(pauses,pausedOnClose+1,'One post-stall pause is permitted');
+  assert.equal(loads,1,'One verified same-source reconstruction, never a retry loop');
+  assert.equal(plays,0,'Load cannot autoplay before exact media position restore');
+  assert.deepEqual(f.writes,[],'Never seek before reconstructed same-source metadata');
+  assert.equal(typeof events.get('loadedmetadata'),'function');
+  f.media.readyState=2;
+  events.get('loadedmetadata')();
+  assert.deepEqual(f.writes,[5.391310898],'One same-source exact saved-position seek');
+  assert.equal(plays,0,'Seeking alone may not start playback');
+  assert.equal(typeof events.get('seeked'),'function');
+  f.media.seeking=false;
+  events.get('seeked')();
+  assert.equal(plays,1,'User-requested muted playback resumes after real seeked');
+  assert.equal(f.media.paused,false,'Resumed user playback remains native');
   f.handlers.onPlaying(f.event);
-  assert.equal(plays,1,'Repeated playing events cannot retrigger the bounded recovery');
-  assert.equal(callbacks.length,0,'No polling or timer loop survives the one-time recovery');
+  assert.equal(loads,1,'Repeated playing events cannot cause another load');
+  assert.equal(callbacks.length,0,'No unbounded animation-frame polling or blind retry');
+});
+test('WebKit same-source reload cancels if the user closes before metadata or source changes',()=>{
+  for(const cancel of [f=>{f.media.isConnected=false},f=>{f.media.currentSrc=videos[1].src}]){
+    const callbacks=[],events=new Map();let plays=0;
+    const f=deferredWebKitFixture({
+      muted:true,readyState:4,
+      pause(){this.paused=true},load(){this.paused=true},
+      play(){plays++;return Promise.resolve()},
+      addEventListener(type,fn){events.set(type,fn)},
+      removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type)},
+      ownerDocument:{defaultView:{requestAnimationFrame(fn){callbacks.push(fn);return callbacks.length;}}}
+    });
+    f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+    callbacks.shift()(0);callbacks.shift()(1800);
+    cancel(f);
+    if(events.has('loadedmetadata'))events.get('loadedmetadata')();
+    if(events.has('seeked'))events.get('seeked')();
+    assert.equal(plays,0,'No user intent remains after source/visibility cancellation');
+    assert.deepEqual(f.writes,[],'A different source or removed video is never sought');
+  }
 });
 test('stalled unmuted playback never auto-replays or changes user controls',()=>{
   const callbacks=[];let pauses=0,plays=0;

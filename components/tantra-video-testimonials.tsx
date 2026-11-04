@@ -120,14 +120,11 @@ export function TantraVideoTestimonials(props: Props) {
     };
     try { video.requestVideoFrameCallback(onFrame); }
     catch { retained.current.delete(video); }
-    // WebKit/GStreamer may report playing without a new decoded frame after
-    // hydration + disclosure reopen. A blind BACKWARD seek is unsafe (real
-    // artifact 13277168340: seeking without seeked). If a genuine user Play on
-    // a previously-muted, same-source ready decoder stalls for 1.7 seconds,
-    // give the *existing* player one bounded PAUSED -> PLAYING restart instead.
-    // The guard never runs on disclosure open, never seeks/loads/replaces a
-    // player and preserves the user's mute/volume and native controls. A failed
-    // restart still fails the strict decoded-frame and media-clock browser QA.
+    // WebKit/GStreamer may report playing without actually presenting a frame
+    // after reopening. The old pause/play fallback also failed real WebKit.
+    // Observe an actual user-triggered same-source stall before the single
+    // muted-only decoder reconstruction below; real decoded frames and clock
+    // advancement remain mandatory in the browser acceptance gate.
     const windowView=video.ownerDocument?.defaultView;
     if(windowView && typeof windowView.requestAnimationFrame==="function") {
       const startedTime=video.currentTime;
@@ -139,20 +136,60 @@ export function TantraVideoTestimonials(props: Props) {
         if(startAt===null)startAt=now;
         if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
         if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
-        retained.current.delete(video); // one observation, never retry
-        // A single explicit-play recovery is valid only for a muted player:
-        // asynchronous unmuted play() could violate browser user activation
-        // and turn an ordinary unmuted user click into unsolicited audio.
-        if (video.muted === true && video.readyState >= 2) {
+        retained.current.delete(video); // exactly one recovery after an explicit user Play
+        // WebKit artifact 13349375114 proves that a PAUSE→PLAY on the same
+        // backend emits "playing" but never delivers a subsequent frame.
+        // Reconstruct the SAME HTTP-backed source only if a muted, visible,
+        // already user-activated decoder is genuinely stuck for 1.7 seconds.
+        // No reload on disclosure open, no unsolicited audible playback.
+        if (video.muted !== true || video.readyState < 2 ||
+            typeof video.addEventListener !== "function" ||
+            typeof video.removeEventListener !== "function" ||
+            typeof video.load !== "function") return;
+        const disclosure = typeof video.closest === "function" ? video.closest("details") : null;
+        const resumeAt = Math.max(saved.time, startedTime);
+        const startAtReload = windowView.performance?.now?.() ?? 0;
+        const valid = () => video.isConnected !== false &&
+          video.currentSrc === saved.source && video.muted === true &&
+          (disclosure === null || disclosure.open) &&
+          (!windowView.performance?.now || windowView.performance.now() - startAtReload < 12000);
+        if (!Number.isFinite(resumeAt) || resumeAt <= 0 || !valid()) return;
+        let pending = true;
+        const clear = () => {
+          pending = false;
+          video.removeEventListener("loadedmetadata", onMetadata);
+          video.removeEventListener("seeked", onSeeked);
+        };
+        const onSeeked = () => {
+          if (!pending) return;
+          clear();
+          // Do not override a later user seek or a hidden/unmuted video.
+          if (!valid() || !video.paused || video.seeking ||
+              Math.abs(video.currentTime - resumeAt) > 0.35) return;
           try {
-            video.pause();
             void video.play().catch(() => {
-              // No automatic retry or seek. Leave native controls available.
+              // Native controls remain available; no second automatic attempt.
             });
           } catch {
-            // Native controls remain authoritative if recovery is rejected.
+            // A rejected real-media play must not be misreported as success.
           }
-        }
+        };
+        const onMetadata = () => {
+          if (!pending || !valid() || !Number.isFinite(video.duration) ||
+              resumeAt >= video.duration) { clear(); return; }
+          try {
+            video.addEventListener("seeked", onSeeked, { once: true });
+            video.currentTime = resumeAt; // exact retained position, no backward offset
+          } catch { clear(); }
+        };
+        try {
+          video.addEventListener("loadedmetadata", onMetadata, { once: true });
+          video.pause();
+          // preload=none otherwise may decline metadata after load().
+          // This fetches metadata only after a demonstrated stalled user Play.
+          video.preload = "metadata";
+          video.load();
+        } catch { clear(); }
       };
       windowView.requestAnimationFrame(observeClock);
     }
