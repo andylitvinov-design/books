@@ -205,7 +205,11 @@
   }
   function applyArchive() {
     var rows=archiveMatchedRows();
-    if(!rows.length)return;
+    if(!rows.length) {
+      archiveNote.textContent='В сохранённом CI-архиве нет PR из выбранной 24-часовой когорты. '+
+        'Времена подэтапов не выводятся из других PR и остаются «—».';
+      return;
+    }
     var keys=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
     var sum=Object.create(null),tot=0;
     for(var k of keys)sum[k]=0;
