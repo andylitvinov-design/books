@@ -338,50 +338,69 @@
       graph.classList.add('hh2-original-chart');
     }
     if (!graph && !graphSlot.firstElementChild) graphSlot.append(graphHint);
-    var q = originalQueue();
-    if (q) {
-      cells.running.n.textContent = q[2];
-      cells.queued.n.textContent = q[1];
-      cells.running.sub.textContent = 'Workflows · jobs выполняются: '+q[4];
-      cells.queued.sub.textContent = 'Workflows · jobs ожидают: '+q[3];
-      status.textContent = 'Источник: существующая очередь CI · PR ждут: '+q[0]+'. Срез обновляется исходным монитором.';
-    }
-    var current = originalCohort();
-    if (current && (current['Среднее Created→Merged'] || current['Медиана'])) {
-      cells.avg.querySelector('strong').textContent = current['Среднее Created→Merged'] || '—';
-      cells.median.querySelector('strong').textContent = current['Медиана'] || '—';
-      firstFoot.textContent = 'Срез Created→Merged из существующей API-когорты · Merged: '+
-        (current.Merged || '—')+'. Полного подтверждения LIVE для всех PR нет.';
-    } else if (baseline) {
+    showQueue();
+    // Both screens read exactly the same created-and-merged PR cohort.
+    if (baseline) {
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
       cells.median.querySelector('strong').textContent=duration(baseline.median);
-      firstFoot.textContent='Сохранённый срез PR: '+(sourceSnapshot?.generated_at||'дата неизвестна')+
-        ' · '+baseline.n+' PR. Это исторические 24 часа, не LIVE-счётчик.';
+      firstFoot.textContent='Одна когорта Created→Merged: '+baseline.n+' PR · срез '+
+        (baseline.to||'—')+' · '+(baseline.source==='live'?'текущий API':'архив; может устареть')+
+        '. LIVE пока подтверждается отдельно.';
     }
   }
   function updateComparison() {
     if (!mounted) return;
     if (baseline) stages.total.current.textContent=duration(baseline.mean);
-    var old=aggregate(sourceSnapshot?.windows?.find(function (w) { return w.id==='two_weeks_ago'; }));
-    if (old) stages.total.history.textContent=duration(old.mean);
+    var historical=aggregate(sourceSnapshot?.windows?.find(function(w){return w.id==='two_weeks_ago';}));
+    if (historical) stages.total.history.textContent=duration(historical.mean);
+    var n=baseline?.n||0;
+    var keys=['prepare','runner','ci','gate','merge'];
+    var sameCount=Boolean(n&&detailed?.population?.merged===n);
+    var sameSample=sameCount&&keys.every(function(k){
+      var v=detailed.stages?.[k];return v&&v.n===n&&valid(v.mean);
+    });
+    var measuredSum=sameSample?keys.reduce(function(t,k){return t+detailed.stages[k].mean;},0):null;
+    // If stages are non-disjoint or do not sum to exactly this same-cohort
+    // Created→Merged mean, hide them from the additive "now" column.
+    var reconciled=sameSample&&valid(baseline.mean) &&
+      Math.abs(measuredSum-baseline.mean)<=0.1;
     for (var i=0;i<STAGES.length;i++) {
       var key=STAGES[i][0], stage=stages[key];
-      var stat=detailed?.stages?.[key] || (key==='merge_to_live'?detailed?.stages?.live_verified:null);
-      stage.current.textContent=stat && stat.n>0 && valid(stat.mean)?duration(stat.mean):'—';
+      var stat=detailed?.stages?.[key]||
+        (key==='merge_to_live'?detailed?.stages?.live_verified:null);
+      stage.current.textContent=reconciled&&key!=='merge_to_live'?duration(stat.mean):'—';
       stage.history.textContent='—';
-      stage.current.title=stat && stat.n>0?'Среднее · n='+stat.n:'Нет проверенной пары событий';
-      stage.history.title='Нет исторической выборки того же этапа за 2 недели назад';
+      stage.current.title=reconciled?'Из единой когортной декомпозиции':
+        'Нет подтверждённого распределения для той же когорты';
+      stage.history.title='Не найден аналогичный по охвату исторический архив этапов';
+      if (stat?.n>0&&valid(stat.mean)) {
+        stage.sample.textContent='Отдельный замер: '+duration(stat.mean)+' · n='+stat.n+
+          '. Этот средний интервал получен по неполной выборке, его нельзя суммировать '+
+          'с общей средней '+duration(baseline?.mean)+'. Подэтапы без меток остаются «—».';
+      }
     }
-    var oldN = old ? old.n : '—';
-    coverage.textContent='Тот же 24-часовой интервал Toronto · Created+Merged: сейчас '+
-      (baseline?baseline.n:'—')+' PR, 2 недели назад '+oldN+
-      ' PR. Этапы без подтверждённых исторических меток отмечены «—».';
-    if (detailed?.coverage) coverage.textContent+=' Текущий глубокий замер: '+(detailed.coverage.selected??'—')+' PR; данные условной выборки, не всего потока.';
-    var live=detailed?.stages?.created_to_live;
-    if (live?.n>0&&valid(live.mean)) {
-      cells.live.querySelector('strong').textContent=duration(live.mean);
-      cells.live.querySelector('small').textContent='Только '+live.n+' PR с LIVE-квитанциями';
-    }
+    var oldN=historical?.n??'—';
+    coverage.textContent='Созданы и смержены за 24 часа: сейчас '+
+      (baseline?.n??'—')+' PR; в историческом архиве '+oldN+
+      ' PR. Историческое окно рассчитано отдельно по Toronto. «—» = измерений нет.';
+    var selected=detailed?.coverage?.selected;
+    if (selected!==undefined)
+      coverage.textContent+=' Глубокие этапы: проверено '+selected+
+        ' PR; это не весь поток и не одинаковый знаменатель.';
+    diagnostics.textContent=reconciled?
+      'Контроль: сумма пяти этапов '+duration(measuredSum)+
+        ' совпадает с Created→Merged '+duration(baseline.mean)+' (n='+n+').':
+      'Основная задержка по всему потоку пока НЕ ДОКАЗАНА. Created→Merged = '+
+      duration(baseline?.mean)+' по '+(baseline?.n??'—')+
+      ' PR; текущий разбор этапов охватывает '+(selected??'—')+
+      ' PR. Средние 2,3 ч и 1,4 ч из разных выборок, их нельзя складывать. '+
+      'Для подтверждённого распределения откройте подэтапы отдельного PR ниже.';
+    if (archive) applyArchive();
+    // Historical LIVE receipts cannot be used to claim the whole cohort is
+    // live. Only a matched full-population audit would establish that metric.
+    cells.live.querySelector('strong').textContent='—';
+    cells.live.querySelector('small').textContent='Нет полного набора LIVE-квитанций';
+
   }
   function fillPRs() {
     if (!baseline || !prList) return;
@@ -412,11 +431,34 @@
       var data=await response.json();
       if (data.schema!=='HH_PR_THREE_CREATED_COHORTS_V1' || !Array.isArray(data.windows)) throw Error('INVALID_SNAPSHOT');
       sourceSnapshot=data;
-      baseline=aggregate(data.windows.find(function (w) {return w.id==='last_day';}));
+      if (!baseline) {
+        baseline=aggregate(data.windows.find(function (w) {return w.id==='last_day';}));
+        if(baseline)baseline.source='archive';
+      }
       chartAndMetrics();updateComparison();fillPRs();
     } catch(e) {
       coverage.textContent='Сравнительный срез недоступен: '+String(e.message||e)+'. Нули не подставлены.';
       prList.replaceChildren(make('p','hh2-placeholder','Нет проверенной исторической когорты.'));
+    }
+  }
+  async function readCurrentCohort() {
+    try {
+      var response=await fetch('/api/pr-created-cohort',{cache:'default',
+        headers:{Accept:'application/json'}});
+      if(!response.ok)throw Error('HTTP '+response.status);
+      var data=await response.json();
+      if(data.schema!=='HH_PR_CREATED_COHORT_V1'||!Array.isArray(data.rows)||
+        !Number.isFinite(Date.parse(data.generated_at||'')))throw Error('INVALID_COHORT');
+      var end=Date.parse(data.generated_at),begin=end-24*3600000;
+      var rows=data.rows.filter(function(p){return p.base==='codex/public-book-library';});
+      var result=aggregate({from:new Date(begin).toISOString(),
+        to:new Date(end).toISOString(),rows:rows,complete:data.coverage?.complete===true});
+      if(!result)throw Error('INCOMPLETE_COHORT');
+      result.source='live';baseline=result;
+      chartAndMetrics();updateComparison();fillPRs();
+    }catch(e){
+      firstFoot.textContent='Текущая когорта недоступна: '+String(e.message||e)+
+        '. Архивный период обозначен отдельно, пропуски не считаются нулём.';
     }
   }
   async function readDetailed(button) {
@@ -446,7 +488,9 @@
   }
   function start() {
     if (mounted || !document.body) return;
-    build();chartAndMetrics();void readHistorical();
+    build();chartAndMetrics();void readHistorical();void readCurrentCohort();
+    void readQueue();
+    document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
     observer=new MutationObserver(function (changes) {
       if (changes.some(function (m) { return !root.contains(m.target); })) schedule();
     });
