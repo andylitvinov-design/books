@@ -526,7 +526,8 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'course' && state !== 'unavailable')
     return (
       <main className="hh-app hh-app--course-guest">
-        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+        <CourseGuestLanding locale={locale} onStart={()=>signin('google')} onTelegramStart={()=>signin('telegram')}
+          telegramAvailable={telegramAvailable} busy={busy} stressSignup={stressSignup} compact
           errorMessage={error ? message(error, c) : undefined}
           onRetry={state === 'error' ? load : undefined}
           legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
