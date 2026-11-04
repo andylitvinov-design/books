@@ -313,7 +313,7 @@ export function MandalaAutoVideoDirector({
  const requestInput=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
    <input type="text" data-auto-video-input value={goal}
-     maxLength={300} disabled={disabled} placeholder={t.placeholder}
+     maxLength={160} disabled={disabled} placeholder={t.placeholder}
      onChange={event=>{
        const value=event.currentTarget.value;
        onInvalidate?.();onGoalChange(value);
