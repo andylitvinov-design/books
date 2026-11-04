@@ -92,7 +92,7 @@ for(const browserType of [chromium,webkit]){
    })
    try{
     await intercept(page)
-    const result=await page.goto(origin+'/'+locale+'/app/messages',
+    const result=await page.goto(origin+'/'+locale+'/app/messages?section=orders',
       {waitUntil:'domcontentloaded',timeout:90000})
     assert.equal(result?.status(),200,key+' route')
     const root=page.locator('[data-orders-clients-hub]')
@@ -126,12 +126,26 @@ for(const browserType of [chromium,webkit]){
         card:box(root.querySelector('[data-order-card]'))}
     })
     assert.ok(metrics.scrollWidth<=metrics.clientWidth+3,key+' horizontal overflow '+JSON.stringify(metrics))
-    assert.ok(metrics.heading.bottom<=metrics.intro.top+4&&
-      metrics.intro.bottom<=metrics.tabs.top+4&&metrics.tabs.bottom<=metrics.search.top+4,
+    assert.ok(metrics.heading.bottom<=metrics.tabs.top+4&&
+      metrics.tabs.bottom<=metrics.intro.top+4&&metrics.intro.bottom<=metrics.search.top+4,
       key+' section order '+JSON.stringify(metrics))
     assert.ok(metrics.card.width>200&&metrics.card.right<=width+3,
       key+' order card fits '+JSON.stringify(metrics))
     if(width===390)await page.screenshot({path:dir+'/'+key+'-orders.png',fullPage:false})
+    const shell=()=>page.evaluate(()=>{
+      const root=document.querySelector('[data-orders-clients-hub]')
+      const header=root.querySelector('header').getBoundingClientRect()
+      const tabs=root.querySelector('[data-chat-top-tabs]').getBoundingClientRect()
+      return {top:header.top,height:header.height,tabsTop:tabs.top,tabsHeight:tabs.height,
+        subtitle:root.querySelector('header p')?.textContent}
+    })
+    const orderShell=await shell()
+    const sameShell=(next,name)=>{
+      for(const measure of ['top','height','tabsTop','tabsHeight'])
+        assert.ok(Math.abs(orderShell[measure]-next[measure])<=2,
+          key+' '+name+' '+measure+' jumped: '+JSON.stringify({orderShell,next}))
+      assert.equal(next.subtitle,orderShell.subtitle,key+' '+name+' header subtitle changed')
+    }
     await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
     const customer=page.locator('[data-embedded="true"][data-simple-messages]')
     await customer.waitFor({state:'visible',timeout:30000})
@@ -140,6 +154,14 @@ for(const browserType of [chromium,webkit]){
       .getAttribute('aria-selected'),'true')
     assert.equal(await customer.locator('[role="tablist"]').count(),0,
       key+' no nested tabs')
+    sameShell(await shell(),'clients')
+    const aiTab=root.getByRole('tab',{name:locale==='ru'?'ИИ':locale==='es'?'IA':'AI',exact:true})
+    await aiTab.click()
+    await root.locator('#hh-ai-panel').waitFor({state:'visible',timeout:15000})
+    sameShell(await shell(),'AI')
+    await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
+    await customer.waitFor({state:'visible',timeout:15000})
+    sameShell(await shell(),'clients return')
     const clientWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
     assert.ok(clientWidth<=width+3,key+' clients overflow '+clientWidth)
     if(width===390)await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})

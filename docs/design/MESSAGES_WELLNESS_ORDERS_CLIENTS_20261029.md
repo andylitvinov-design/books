@@ -78,3 +78,13 @@ The original 3 PNGs in ChatGPT Library `/Holistic House/Messenger Design 2026-10
 | `03_order_chat.png`: protected master↔customer order chat | `IMG_8717.jpeg`: Telegram CRM owner thread | No | Apply shared chat styling; test each actual provider separately; never promise provider media sends |
 
 **Evidence requirements:** real Chromium/WebKit 320/354/390/430 geometry, no cut-off composer, same-state screenshot/overlay on actual mock/synthetic data, and independent owner iPhone review for keyboard/permission. Code-only tests are not pixel fidelity. Last verified baseline at authoring `3c3bf9e194ae47d2e946d0b90ad18b12fe5b15f9`; production may advance before merge.
+
+## 3 November 2026 · latest owner correction: stable three-folder Messenger shell
+
+The latest owner screenshots are three real views of the same private `/ru/app/messages` page: `section=ai`, `section=orders`, and `section=clients`. This supersedes the *two-tab* header ordering and the "helper above tabs" instruction from 29 October; it does not supersede the truthful empty states, protected conversations, source-specific CRM logic or free offers.
+
+- The shared title, short translated subtitle, action icons and **three** tabs (AI / Orders / Clients) occupy the same vertical coordinates across list views. Data loading, client count and switching tabs must not move the tab row.
+- Keep the original botanical contextual card but render it **inside** Orders/Clients after the tabs, only when that authenticated list is loaded. AI has its own workspace instead.
+- Use the same compact 52px tappable tab geometry for widths 320, 354, 390 and 430. Counter badges are absolute visual overlays, not additional inline layout width. On deep links, initialize the selected tab from the actual URL before the first client effect.
+- Test exact header/tabs bounding rectangles (<=2 CSS px delta) after Orders -> Clients -> AI -> Clients switching in synthetic signed-in Chromium and WebKit, for all EN/RU/ES and four mobile widths. The pre-existing order/chat, CRM, privacy and provider gates remain unchanged.
+- This change is not evidence of rendered mobile acceptance, a live deploy or real provider delivery; record each gate separately.
