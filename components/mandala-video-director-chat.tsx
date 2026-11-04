@@ -345,7 +345,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      if(!payload||typeof payload.optionId!=="string"||
         typeof payload.confidence!=="number"||payload.confidence<.9)throw Error("UNTRUSTED_CHOICE");
      const option=videoChatTreeOptions(base,requestedStep,locale).find(x=>x.id===payload.optionId);
-     const next=option?chooseVideoChatTreeOption(base,requestedStep,option.id,locale) as Draft|null:null;
+     if(!option)throw Error("INVALID_OPTION");
+     const next=chooseVideoChatTreeOption(base,requestedStep,option.id,locale) as Draft|null;
      if(!next)throw Error("INVALID_OPTION");
      const following=nextVideoChatTreeStep(next) as Step;
      lastDraftRef.current={draft:{...base},step:requestedStep};
