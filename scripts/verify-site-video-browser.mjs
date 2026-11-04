@@ -271,6 +271,78 @@ try {
     const disclosure = page.locator('[data-about-other-language-testimonials="true"]')
     await expect(disclosure).toHaveCount(1)
     await expect(disclosure.locator('[data-about-secondary-testimonials]')).toHaveCount(0)
+    // SSR details can be clicked before React has attached its onToggle.
+    // Require actual React hydration before the real user click; the six
+    // genuine other-language players and iframe/privacy checks remain strict.
+    await page.waitForFunction(() => {
+      const element = document.querySelector('[data-about-other-language-testimonials="true"]')
+      const key = Object.keys(element || {}).find(name => name.startsWith('__reactProps'[data-about-secondary-testimonials="ru"] [data-about-testimonial-audio="ru"][data-testimonial-video-id]')
+    await expect(secondary).toHaveCount(ruIds.length)
+    const idsAfterOpen = await secondary.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+    assert.deepEqual(idsAfterOpen, ruIds, 'Disclosed RU archive retains six exact Russian originals')
+    await expect(page.locator('iframe')).toHaveCount(0)
+    pass((live ? 'Production' : 'Local')+': six EN first, six RU only after disclosure; no eager iframe')
+  }
+  await expect(page.locator('#personal-consultation-title')).toBeVisible()
+  await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
+  await navigate('/en/homeopathy/remedies')
+  const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
+  assert.ok(remedyPath)
+  await navigate('/en/books')
+  const bookPath = await page.locator('a[href^="/en/books/"]').first().getAttribute('href')
+  assert.ok(bookPath)
+  const paths = ['/?lang=en', '/?lang=ru', '/en/about', '/ru/about', '/en/services', '/ru/services', '/en/homeopathy', '/ru/homeopathy', '/en/homeopathy/remedies', '/ru/homeopathy/remedies', '/en/books', '/ru/books', remedyPath, bookPath]
+  for (const width of [1365, 390]) {
+    await page.setViewportSize({ width, height: 900 })
+    for (const path of paths) {
+      await navigate(path)
+      const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
+      assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
+    }
+    pass(`${live ? 'Production' : 'Local'}: ${paths.length} routes, HTTP 200 and no overflow at ${width}px`)
+  }
+  await navigate('/en/about')
+  await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-mobile.png`, fullPage: true })
+  await page.goto(`${origin}/admin/videos`)
+  await expect(page).toHaveURL(/\/admin\/login/)
+  assert.equal(await page.locator('.site-video-editor').count(), 0)
+  pass('Guest cannot access video editor')
+  if (live) {
+    await page.setViewportSize({ width: 1365, height: 1000 })
+    await navigate('/en/about')
+    const intro = page.locator('#psychic-alchemy-video')
+    await intro.getByRole('button', { name: /^Open video:/ }).click()
+    await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/fd5fcead9b067f9a0649862675a38771')
+    pass('Production: correct existing HeyGen iframe loads only on click')
+    await page.screenshot({ path: `${evidence}/live-player-open.png` })
+    const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
+    if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
+  } else {
+    // The required "admin-verified-owner-browser" job independently runs
+    // the same real editor publication/review journeys with the protected v2
+    // owner-session bridge, synthetic migrated Postgres and isolated Redis.
+    // Public browser smoke must never forge retired v1 administrator cookies.
+    skippedResults.push('SKIPPED: authenticated owner editor is verified in its independent v2 session browser job')
+  }
+  if (!live) {
+    await verifyAboutTestimonials(origin)
+    pass('About original-language disclosures: Chromium and WebKit at 320/390/430 in EN/RU/ES')
+  }
+  assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
+  pass('No page JavaScript errors')
+  writeFileSync(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ mode: live ? 'read-only production' : 'isolated Redis browser', passed: results, skipped: skippedResults }, null, 2))
+  console.log(`VERIFIED: ${results.length} scenario groups`)
+} catch (error) {
+  if (!live) { try { console.error('Isolated application log:', readFileSync(`${evidence}/local-app.log`, 'utf8')) } catch { /* not started */ } }
+  throw error
+} finally {
+  if (browser) await browser.close()
+  if (app) app.kill('SIGTERM')
+  if (server) server.close()
+}
+))
+      return Boolean(key && typeof element[key]?.onToggle === 'function')
+    }, null, { timeout: 30000 })
     await disclosure.locator('summary').click()
     const secondary = disclosure.locator('[data-about-secondary-testimonials="ru"] [data-about-testimonial-audio="ru"][data-testimonial-video-id]')
     await expect(secondary).toHaveCount(ruIds.length)
