@@ -111,16 +111,14 @@ export function TantraVideoTestimonials(props: Props) {
     };
     try { video.requestVideoFrameCallback(onFrame); }
     catch { retained.current.delete(video); }
-    // WebKit/GStreamer can report playing without advancing a decoded frame
-    // after hydration and disclosure reopen. A blind backward GOP seek is NOT a
-    // recovery: actual WebKit trace 13277168340 proves it enters seeking with
-    // no seeked event and freezes the native decoder permanently.
-    //
-    // Observe for one bounded window after a genuine user Play only. If no
-    // frame or clock advances, release our retained bookkeeping WITHOUT
-    // mutating the source, time, mute or native play/pause state. The browser's
-    // controls remain available, and strict real decoded-playback CI stays RED
-    // if the backend itself cannot resume. Never create a second player/load.
+    // WebKit/GStreamer may report playing without a new decoded frame after
+    // hydration + disclosure reopen. A blind BACKWARD seek is unsafe (real
+    // artifact 13277168340: seeking without seeked). If a genuine user Play on
+    // a previously-muted, same-source ready decoder stalls for 1.7 seconds,
+    // give the *existing* player one bounded PAUSED -> PLAYING restart instead.
+    // The guard never runs on disclosure open, never seeks/loads/replaces a
+    // player and preserves the user's mute/volume and native controls. A failed
+    // restart still fails the strict decoded-frame and media-clock browser QA.
     const windowView=video.ownerDocument?.defaultView;
     if(windowView && typeof windowView.requestAnimationFrame==="function") {
       const startedTime=video.currentTime;
@@ -132,7 +130,20 @@ export function TantraVideoTestimonials(props: Props) {
         if(startAt===null)startAt=now;
         if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
         if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
-        retained.current.delete(video); // one observation; no harmful seek
+        retained.current.delete(video); // one observation, never retry
+        // A single explicit-play recovery is valid only for a muted player:
+        // asynchronous unmuted play() could violate browser user activation
+        // and turn an ordinary unmuted user click into unsolicited audio.
+        if (video.muted === true && video.readyState >= 2) {
+          try {
+            video.pause();
+            void video.play().catch(() => {
+              // No automatic retry or seek. Leave native controls available.
+            });
+          } catch {
+            // Native controls remain authoritative if recovery is rejected.
+          }
+        }
       };
       windowView.requestAnimationFrame(observeClock);
     }

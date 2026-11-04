@@ -336,6 +336,47 @@ test('WebKit stalled same-source play never seeks a decoder without decoded fram
   assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
   assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
 });
+test('WebKit stalled muted player gets only one pause/play recovery after explicit Play',()=>{
+  const callbacks=[];
+  let pauses=0,plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){pauses++;this.paused=true},
+    play(){plays++;this.paused=false;return Promise.resolve()},
+    ownerDocument:{defaultView:{requestAnimationFrame(fn){callbacks.push(fn);return callbacks.length;}}},
+  });
+  f.close();f.reopen();
+  const pausedOnClose=pauses;
+  assert.equal(plays,0,'Disclosure open and close never start playback');
+  assert.equal(f.media.muted,true,'Original mute preference survives disclosure');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  callbacks.shift()(0);
+  assert.equal(plays,0,'The first 1.7 seconds cannot trigger automatic replay');
+  callbacks.shift()(1800);
+  assert.equal(pauses,pausedOnClose+1,'Only one bounded native pause is permitted after stalled explicit Play');
+  assert.equal(plays,1,'One muted same-node recovery follows actual user playback');
+  assert.equal(f.media.paused,false,'Recovery does not leave a successful native play paused');
+  assert.deepEqual(f.writes,[],'Recovery never changes the retained playback position');
+  f.handlers.onPlaying(f.event);
+  assert.equal(plays,1,'Repeated playing events cannot retrigger the bounded recovery');
+  assert.equal(callbacks.length,0,'No polling or timer loop survives the one-time recovery');
+});
+test('stalled unmuted playback never auto-replays or changes user controls',()=>{
+  const callbacks=[];let pauses=0,plays=0;
+  const f=deferredWebKitFixture({
+    muted:false,readyState:4,
+    pause(){pauses++;this.paused=true},
+    play(){plays++;throw Error('Unmuted auto-replay must not run')},
+    ownerDocument:{defaultView:{requestAnimationFrame(fn){callbacks.push(fn);return callbacks.length;}}},
+  });
+  f.close();f.reopen();const pausedOnClose=pauses;
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  callbacks.shift()(0);callbacks.shift()(1800);
+  assert.equal(plays,0);
+  assert.equal(pauses,pausedOnClose);
+  assert.deepEqual(f.writes,[]);
+  assert.equal(f.media.paused,false,'Native user playback remains authoritative');
+});
 test('WebKit healthy clock advance, native seeking and paused media cancel recovery',()=>{
   for(const cancel of [
     f=>f.setPosition(5.8),
