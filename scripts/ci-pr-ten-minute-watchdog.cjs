@@ -1216,6 +1216,19 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.apiRateLimited=budget.exhausted;
   summary.apiRemaining=budget.remaining;
   summary.apiBudgetReason=budget.reason;
+   // Reuse Watchdog's verified one-PR snapshot in the dispatcher.
+   // Non-enumerable: no second API inventory and no PR body in telemetry.
+   if(eventFastPath&&!dryRun&&!budget.exhausted&&all.length===1&&
+      priorityNumber===all[0].number&&summary.inspected===1){
+     const source=all[0],labels=[...(source.labels||[])];
+     const verifiedLabel=summary.sourceRepairQueued>0?REPAIR_LABEL:
+       summary.conflictLabelsQueued>0?CONFLICT_LABEL:null;
+     if(verifiedLabel&&!labels.some(l=>l.name===verifiedLabel))
+       labels.push({name:verifiedLabel});
+     Object.defineProperty(summary,'verifiedPrSnapshot',{
+       value:{...source,labels},enumerable:false
+     });
+   }
   const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\n');
   log(report.replaceAll('\n','; '));
   await core.summary.addHeading('HH PR 10-minute watchdog').addCodeBlock(report).write();

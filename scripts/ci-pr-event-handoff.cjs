@@ -48,7 +48,8 @@ async function run({github,core,context,dryRun=false,reconcileRun=null,dispatchR
  }
  // The dispatcher re-reads live PR, owner leases, history, worker capacity,
  // and exact-head proof before reserving or dispatching anything.
- const handed=await dispatch({github,core,context,dryRun,focusPrNumber:number});
+ const handed=await dispatch({github,core,context,dryRun,
+  focusPrNumber:number,focusPrSnapshot:evidence.verifiedPrSnapshot||null});
  result.dispatchAccepted=Number(handed?.dispatchAccepted||0);
  result.outcome=result.dispatchAccepted?'DISPATCH_ACCEPTED':
    dryRun?'WOULD_DISPATCH_OR_BLOCKED':'NOT_DISPATCHED_CRON_BACKSTOP';
