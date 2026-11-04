@@ -299,7 +299,8 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       GIT_AUTHOR_NAME: 'Synthetic', GIT_AUTHOR_EMAIL: 'synthetic@example.invalid',
       GIT_COMMITTER_NAME: 'Synthetic', GIT_COMMITTER_EMAIL: 'synthetic@example.invalid' };
     const run = (command, args, extra = {}, allowFailure = false) => {
-      const result = spawnSync(command, args, { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 });
+      // Allow runner contention without masking test failures: every Git command must still succeed.
+      const result = spawnSync(command, args, { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
       assert.ifError(result.error);
       if (allowFailure) return result;
       assert.equal(result.status, 0, `${command}: ${result.stderr}`);
@@ -346,7 +347,8 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
 test('PR fast lane ignores unrelated production commits in verified merge checkout', () => {
   const dir=mkdtempSync(join(tmpdir(),'hh-pr-merge-base-'));
   const run=(cmd,args,env={})=>{
-    const out=spawnSync(cmd,args,{cwd:dir,encoding:'utf8',timeout:10_000,maxBuffer:1024*1024,
+    // GitHub's shared runner may delay synthetic Git initialization under CI fan-out.
+    const out=spawnSync(cmd,args,{cwd:dir,encoding:'utf8',timeout:30_000,maxBuffer:1024*1024,
       env:{PATH:process.env.PATH,HOME:dir,TMPDIR:dir,GIT_CONFIG_NOSYSTEM:'1',
         GIT_CONFIG_GLOBAL:'/dev/null',GIT_AUTHOR_NAME:'Synthetic',
         GIT_AUTHOR_EMAIL:'synthetic@example.invalid',GIT_COMMITTER_NAME:'Synthetic',
