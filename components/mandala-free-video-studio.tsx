@@ -53,7 +53,7 @@ import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenari
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
-import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
+import { orderRecordingMimes, proceduralMp4Route } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame } from "@/lib/mandala/free-film-source-clock.mjs";
@@ -2370,15 +2370,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Safari 26+ WebCodecs avoids WebKit MediaRecorder's Canvas/audio muxer
     // deadlock. Chromium retains its tested native recorder implementation.
     const ua=typeof navigator==="undefined"?"":navigator.userAgent;
-    const useWebCodecsMp4=/AppleWebKit/i.test(ua)&&
-      !/Chrome|Chromium|Edg|OPR/i.test(ua)&&
-      typeof VideoEncoder!=="undefined"&&
-      typeof VideoEncoder.isConfigSupported==="function"&&
-      typeof VideoFrame!=="undefined"&&
-      // Silent WebKit must still be able to export H.264 if AAC is absent.
+    const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
+    const hasWebCodecs=typeof VideoEncoder!=="undefined"&&
+      typeof VideoEncoder.isConfigSupported==="function"&&typeof VideoFrame!=="undefined"&&
       (!attachedAudio || (typeof AudioEncoder!=="undefined"&&
-        typeof AudioEncoder.isConfigSupported==="function"&&
-        typeof OfflineAudioContext!=="undefined"));
+        typeof AudioEncoder.isConfigSupported==="function"&&typeof OfflineAudioContext!=="undefined"));
+    const procedural=creationMode==="generated"&&Boolean(currentFreeVideoPlan);
+    const explicitAvcMime=attachedAudio?'video/mp4;codecs="avc1.42E01E,mp4a.40.2"':"video/mp4;codecs=avc1.42E01E";
+    const nativeAvc=typeof MediaRecorder!=="undefined"&&typeof MediaRecorder.isTypeSupported==="function"&&
+      MediaRecorder.isTypeSupported(explicitAvcMime);
+    const proceduralRoute=proceduralMp4Route({nativeAvc,webCodecs:hasWebCodecs});
+    const useWebCodecsMp4=hasWebCodecs&&(safariWebKit||(procedural&&proceduralRoute==="webcodecs"));
+    if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
+      setResult(null);setPlaybackStatus("checking");
+      setExportUnavailable(true);
+      setNotice(locale==="ru"?"Этот браузер не поддерживает локальный MP4 H.264/AAC. Попробуйте другой браузер или устройство.":
+        locale==="es"?"Este navegador no admite MP4 H.264/AAC local. Prueba otro navegador o dispositivo.":
+        "This browser cannot create local H.264/AAC MP4. Try another browser or device.");
+      return;
+    }
     preparingRef.current=true;
     setPreparing(true);setProgress(0);
     setNotice(safeWebkitRetry
@@ -2534,7 +2544,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // Safari WebKit 26 often falls behind H.264/AAC muxing at 20 fps on
             // portrait Canvas. Keep real-time storyboard PTS and audible AAC,
             // but bound encoder input to a smooth, device-safe 12 fps.
-            canvas,seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
+            canvas,allowProceduralBrowser:procedural&&!safariWebKit,
+            seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
             audio:files.length?{files,volume:soundVolume}:undefined,
             shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
             onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
@@ -2616,7 +2627,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
 
-      const mimeTypes = recordingMimes(Boolean(musicSession), preferWebm, forceMp4ForRetry);
+      const mimeTypes = procedural
+        ? recordingMimes(Boolean(musicSession),false,true).filter(mime=>mime===explicitAvcMime)
+        : recordingMimes(Boolean(musicSession), preferWebm, forceMp4ForRetry);
       let mimeType = "";
       let recorder: MediaRecorder | null = null;
       for (const candidate of mimeTypes) {
@@ -6056,7 +6069,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       )}
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
-      {notice?<p role="status" className={videoStyles.notice} aria-live="polite">{notice}</p>:null}
+      {notice?<p role="status" className={videoStyles.notice} aria-live="polite"
+        data-video-export-unavailable={exportUnavailable?"true":undefined}>{notice}</p>:null}
       {exportUnavailable && !result && originalFallbackMp4 ?
         <div className={videoStyles.warning} data-video-original-fallback role="note">
           <p>{locale==="ru"

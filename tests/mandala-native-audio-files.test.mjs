@@ -192,3 +192,17 @@ test("desktop Safari WebM preference is capability-gated even with Playwright-st
   assert.deepEqual(orderRecordingMimes({mp4:["video/mp4"],webm:["video/webm"],userAgent:chrome}),
     ["video/mp4","video/webm"],"Chrome default must not be rewritten");
 });
+
+test('procedural export requires explicit AVC/AAC or the existing WebCodecs encoder',async()=>{
+  const {proceduralMp4Route}=await import('../lib/mandala/recording-codecs.mjs');
+  assert.equal(proceduralMp4Route({nativeAvc:true,webCodecs:false}),'native');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:true}),'webcodecs');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:false}),'unsupported');
+});
+
+test('procedural native recorder cannot silently downgrade H264/AAC to generic MP4',()=>{
+  assert.match(client,/MediaRecorder\.isTypeSupported\(explicitAvcMime\)/);
+  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>mime===explicitAvcMime\)/);
+  assert.match(client,/proceduralRoute==="unsupported"/);
+  assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);
+});

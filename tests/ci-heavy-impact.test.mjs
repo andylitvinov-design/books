@@ -333,6 +333,11 @@ test('procedural video PR runs real Linux browser acceptance despite the general
   const branch='feat/hh-free-procedural-video-v1-20261029';
   assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},branch),{browser:true});
   assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:true},branch),{browser:true});
+});
+
+test('scenario source bindings PR requires the real Linux browser acceptance', () => {
+  const branch='feat/video-120-scenario-media-bindings-20261102';
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},branch),{browser:true});
   assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:true},'other-branch'),{browser:false});
 });
 

@@ -88,9 +88,19 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
     const create=page.locator('[data-free-video-create]');
     await create.waitFor({state:'visible'});
     assert.equal(await create.isEnabled(),true,`${engine}: procedural export is enabled`);
+    console.log('PROCEDURAL_CODEC_CAPABILITIES '+JSON.stringify({engine,...await page.evaluate(()=>({
+      explicitAvcAac:typeof MediaRecorder!=="undefined"&&MediaRecorder.isTypeSupported('video/mp4;codecs="avc1.42E01E,mp4a.40.2"'),
+      videoEncoder:typeof VideoEncoder!=="undefined",audioEncoder:typeof AudioEncoder!=="undefined",
+    }))}));
     await create.click();
     const save=page.locator('[data-mandala-video-download]');
-    await save.waitFor({state:'visible',timeout:180000});
+    await page.waitForFunction(()=>{
+      const button=document.querySelector('[data-mandala-video-download]');
+      return Boolean(button&&button.getClientRects().length)||Boolean(document.querySelector('[data-video-export-unavailable="true"]'));
+    },null,{timeout:180000});
+    const unavailable=page.locator('[data-video-export-unavailable="true"]');
+    assert.equal(await unavailable.count(),0,`${engine}: export unavailable: ${(await unavailable.allTextContents()).join(' ')}`);
+    await save.waitFor({state:'visible',timeout:10000});
     const directory=await mkdtemp(join(tmpdir(),'hh-procedural-export-'));
     try {
       const [download]=await Promise.all([page.waitForEvent('download',{timeout:20000}),save.click()]);
@@ -99,8 +109,8 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
       const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_type,codec_name:format=duration','-of','json',file],{encoding:'utf8'});
       assert.equal(probe.status,0,`${engine}: ffprobe must read the downloaded file: ${probe.stderr}`);
       const media=JSON.parse(probe.stdout),streams=media.streams||[];
-      assert.ok(streams.some(s=>s.codec_type==='video'&&s.codec_name==='h264'),`${engine}: H.264 video required`);
-      assert.ok(streams.some(s=>s.codec_type==='audio'&&s.codec_name==='aac'),`${engine}: AAC audio required`);
+      assert.ok(streams.some(s=>s.codec_type==='video'&&s.codec_name==='h264'),`${engine}: H.264 video required; actual ${JSON.stringify(streams)}`);
+      assert.ok(streams.some(s=>s.codec_type==='audio'&&s.codec_name==='aac'),`${engine}: AAC audio required; actual ${JSON.stringify(streams)}`);
       assert.ok(Number.isFinite(Number(media.format?.duration))&&Number(media.format.duration)>=28,`${engine}: finite complete duration required`);
       const frame=second=>spawnSync('ffmpeg',['-v','error','-ss',String(second),'-i',file,'-frames:v','1','-vf','scale=32:18','-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:1024*1024});
       const first=frame(1),second=frame(4);

@@ -152,3 +152,49 @@
   .mytube .controls label{flex-basis:105px;min-width:0}
   .mytube .saved{flex-basis:100%}
 }
+
+
+/* MyTube-only video-first disclosure; the warm Library grid remains untouched. */
+.wrapper:not(.mytube) .refine,.moreControls{display:contents}
+.refine[hidden],.moreControls[hidden]{display:none!important}
+.mytube .intro{display:none}
+.mytube .panel{
+  gap:0;margin:0 0 13px;padding:0;border:0;border-radius:0;
+  background:transparent;box-shadow:none
+}
+.mytube .areaSection{gap:8px;min-width:0}
+.mytube .areaSection>.groupHeading{display:none}
+.mytube .lifeAreas button{min-height:44px}
+.mytube .filterToggle{
+  display:inline-flex;align-items:center;justify-content:flex-start;
+  justify-self:start;gap:8px;min-height:44px;max-width:100%;
+  margin:0;padding:6px 8px;border:0;border-radius:9px;
+  background:transparent;color:#ddd;font:700 13px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer
+}
+.mytube .filterToggle svg:first-child{color:#ff0033}
+.mytube .filterToggle svg:last-child{transition:transform .15s ease}
+.mytube .filterToggle[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
+.mytube .filterToggle:hover{background:#272727}
+.mytube .refine{
+  display:grid;gap:9px;margin:0;padding:12px;
+  border:1px solid #303030;border-radius:13px;background:#181818
+}
+.mytube .refine:empty{display:none}
+.mytube .moreControls{
+  display:grid;gap:12px;margin:0;padding:12px;
+  border:1px solid #303030;border-radius:13px;background:#181818
+}
+.mytube .refine .groupHeading strong{color:#ddd}
+.mytube .goals{flex-wrap:wrap}
+.mytube .goals button{min-height:44px}
+.mytube .saved{min-height:44px}
+.mytube .clearFilters{min-height:44px}
+.mytube .filterToggle:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:640px){
+ .mytube .panel{padding:0;margin:0 0 12px}
+ .mytube .lifeAreas button{min-height:44px}
+ .mytube .goals{flex-wrap:wrap;overflow:visible}
+ .mytube .goals button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.mytube .filterToggle svg:last-child{transition:none}}
