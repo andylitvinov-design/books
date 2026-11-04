@@ -149,11 +149,10 @@ test("iPhone music is one scannable rail with distinct Listen and Include contro
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(css,/font:650 clamp\(10px,2.75vw,12px\)/);
 });
-test("free personal video starts before the separate diagnostic marketing CTA",()=>{
+test("the approved Studio route opens directly without the separate diagnostic marketing CTA",()=>{
  const page=readFileSync(new URL("../app/[locale]/holistic-support/mandala/page.tsx",import.meta.url),"utf8");
- const studioPos=page.indexOf("<MandalaMeditationClient");
- const promoPos=page.indexOf("styles.slimDiagnostic");
- assert.ok(studioPos>=0&&promoPos>studioPos);
+ assert.match(page,/<MandalaMeditationClient/);
+ assert.doesNotMatch(page,/styles\.slimDiagnostic|data-video-diagnostic-banner|const promo =/);
 });
 
 test("video studio lazily loads optional editor workspaces and collapsed tools", () => {
@@ -251,14 +250,15 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
 
-test("owner 03 Nov: iPhone Montage appears as tabs > script > 16:9 film > editable tracks",()=>{
- const layout=css.slice(css.lastIndexOf("/* HH editor one-screen iPhone composition"));
- assert.match(layout,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1/);
- assert.match(layout,/quickBuilder \[data-video-editor-scenario\]\s*\{[^}]*order:2/);
- assert.match(layout,/quickBuilder>\.previewStage\s*\{[^}]*order:3/);
- assert.match(layout,/\[data-video-multitrack-timeline\]\s*\{[^}]*order:4/);
+test("owner 04 Nov: Montage retains the editor but places compact tabs and video first",()=>{
+ const layout=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
+ assert.match(layout,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1!important/);
+ assert.match(layout,/quickBuilder>\.previewStage\s*\{[^}]*order:2!important/);
+ assert.match(layout,/data-active-workspace="editor"\] \.quickBuilder>\[data-video-basic-editor\]\s*\{\s*order:4!important/);
  assert.match(layout,/aspect-ratio:16\/9!important/);
- assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/);
+ assert.ok(studio.indexOf("data-video-quick-controls") < studio.indexOf("data-video-live-stage"),
+   "one tab row stays between brand and player in every mode");
  const timelineCss=readFileSync(new URL("../components/mandala-multitrack-timeline.module.css",import.meta.url),"utf8");
  const tracks=timelineCss.slice(timelineCss.lastIndexOf("/* HH iPhone track order"));
  for(const [kind,order] of [["video",2],["audio",3],["text",4]]){
@@ -266,16 +266,16 @@ test("owner 03 Nov: iPhone Montage appears as tabs > script > 16:9 film > editab
  }
 });
 
-test("iPhone Montage portals existing six tabs above the script and uses one real export",()=>{
- const montage=studio.slice(studio.indexOf("const [effectsNavTarget"),studio.indexOf("  return (",studio.indexOf("const [effectsNavTarget")));
- assert.match(montage,/setMontageNavTarget/);
- assert.match(studio,/data-video-montage-nav-slot/);
- assert.match(studio,/createPortal\(nav,montageNavTarget\)/);
+test("all six workspaces use the same in-flow navigation and one real export",()=>{
+ assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
+ assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
+ assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
+   "no mode can teleport the navigation to a different vertical position");
  const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
  assert.match(editor,/data-video-montage-tools/);
  assert.match(editor,/data-video-montage-export/);
  assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
- const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(css,/\.montageNavSlot>\.quickVideoNav\{/);
+ const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
+ assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
 });
