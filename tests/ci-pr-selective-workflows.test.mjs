@@ -66,6 +66,15 @@ test('optional workflow edits are owned by actionlint; shared contract migration
     'Guard must execute contract on every scope-policy update');
 });
 
+test('Energywork workflow migration is covered by one real owner CI run',()=>{
+  const owner=trigger('hh-energywork-ai.yml');
+  assert.ok(owner?.paths?.includes(contractFile));
+  assert.ok(owner.paths.includes('tests/reiki-review-owner-lifetime.test.mjs'));
+  assert.equal(matchesTrigger(owner,[contractFile],TARGET),true);
+  assert.equal(matchesTrigger(owner,['tests/reiki-review-owner-lifetime.test.mjs'],TARGET),true);
+  assert.equal(matchesTrigger(owner,['.github/workflows/hh-energywork-ai.yml'],TARGET),false);
+});
+
 test('unrelated library and sitemap edits do not awaken Dao and growth browser owners', () => {
   for (const file of ['components/library-hub.tsx','lib/public-locales.ts']) {
     assert.equal(matchesTrigger(trigger('dao-iching-library.yml'),[file],TARGET),false,file + ': Dao scope too broad');
