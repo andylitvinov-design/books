@@ -276,7 +276,7 @@ export function MandalaAffirmationVoice({
           signal:controller.signal,cache:"no-store",
         });
         if(!reply.ok)throw new Error(reply.status===429?"QUOTA":"TTS");
-        if(!/^audio\\/wav(?:;|$)/i.test(reply.headers.get("content-type")||""))
+        if(!/^audio\/wav(?:;|$)/i.test(reply.headers.get("content-type")||""))
           throw new Error("TTS");
         const audio=await reply.blob();
         const seconds=audio.size>=44&&audio.size<=8*1024*1024
