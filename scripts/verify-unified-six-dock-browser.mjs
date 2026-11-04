@@ -43,6 +43,19 @@ async function inspect(browserType,locale,width){
     const v=window.visualViewport;
     return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
   },null,{timeout:10000});
+  // Regression for iPhone Safari URL-bar resizing: viewport geometry changes
+  // must not leave the six-tab dock stranded above the bottom edge.
+  if(browserType===webkit&&locale==="ru"&&width===390){
+   for(const height of [720,844]){
+    await page.setViewportSize({width,height});
+    await page.waitForFunction(()=>{
+     const el=document.querySelector("[data-hh-unified-dock]");
+     if(!el)return false;
+     const v=window.visualViewport;
+     return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
+    },null,{timeout:10000});
+   }
+  }
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<=2,id+" horizontal overflow "+overflow);
   // MyTube now uses the approved 4×4×4 editorial hierarchy, rather than the

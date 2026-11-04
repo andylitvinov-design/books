@@ -622,18 +622,19 @@ export function MandalaAutoVideoDirector({
      </p>:null}
    {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
      role="status" data-mytube-plot-media-status
+      data-mytube-plot-media-origin={selectedPlotMedia?.hasOriginalAbstractMotion?"includes-original-abstract-animation":"filmed-or-general"}
      data-ready={selectedPlotMedia?.hasFourApprovedSources||fallbackEnabled?"true":"false"}
      data-plot-media-mode={selectedPlotMedia?.hasFourApprovedSources?"topic-symbolic":
        fallbackEnabled?"caption-symbolic":"insufficient"}>
      {selectedPlotMedia?.hasFourApprovedSources
-       ?(locale==="ru"?`Для символического предпросмотра подобраны 4 проверенных MP4 из ${selectedPlotMedia.candidateCount} тематических кандидатов. События истории в кадрах не подтверждены.`:
-         locale==="es"?`Seleccionados 4 MP4 aprobados entre ${selectedPlotMedia.candidateCount} candidatos temáticos. Interpretación simbólica, no escenas exactas verificadas.`:
-         `4 approved MP4s selected from ${selectedPlotMedia.candidateCount} topic candidates. Symbolic preview, not verified plot actions.`)
+       ?(locale==="ru"?`Для символического предпросмотра подобраны 4 проверенных MP4 из ${selectedPlotMedia.candidateCount} тематических кандидатов. ${selectedPlotMedia.hasOriginalAbstractMotion?"Включена оригинальная абстрактная анимация. ":""}События истории в кадрах не подтверждены.`:
+         locale==="es"?`Seleccionados 4 MP4 aprobados entre ${selectedPlotMedia.candidateCount} candidatos temáticos. ${selectedPlotMedia.hasOriginalAbstractMotion?"Incluyen animación abstracta original. ":""}Interpretación simbólica, no escenas exactas verificadas.`:
+         `4 approved MP4s selected from ${selectedPlotMedia.candidateCount} topic candidates. ${selectedPlotMedia.hasOriginalAbstractMotion?"Includes original abstract animation. ":""}Symbolic preview, not verified plot actions.`)
        :fallbackEnabled?(locale==="ru"?
           "Вы выбрали символический видеоряд с четырьмя сюжетными титрами. Фоновое видео лицензировано, но не изображает действия сюжета буквально.":
           locale==="es"?"Elegiste un vídeo simbólico con cuatro subtítulos narrativos. Los clips están aprobados, pero no representan literalmente la trama.":
           "You chose a symbolic licensed montage with four plot captions. Clips do not literally depict the story events.")
-       :(locale==="ru"?`Недостаточно лицензированных тематических кадров: ${selectedPlotMedia?.candidateCount??0} из 4. Экспорт выбранного сюжета недоступен; можно снять его выбор и сделать общий символический ролик.`:
+       :(locale==="ru"?`Недостаточно проверенных тематических MP4: ${selectedPlotMedia?.candidateCount??0} из 4. Экспорт выбранного сюжета недоступен; можно снять его выбор и сделать общий символический ролик.`:
          locale==="es"?`Solo hay ${selectedPlotMedia?.candidateCount??0} de 4 clips aprobados. Esta trama no se puede exportar; quita su selección para un vídeo simbólico general.`:
          `Only ${selectedPlotMedia?.candidateCount??0} of 4 approved topic clips. Plot export is unavailable; deselect it for a general symbolic film.`)}
      {!selectedPlotMedia?.hasFourApprovedSources?<button type="button"
@@ -710,9 +711,9 @@ export function MandalaAutoVideoDirector({
        {topicMediaCoverage?<p className={css.notice} data-auto-video-topic-coverage
          data-coverage-ready={topicMediaCoverage.dedicatedFourSceneReady?"true":"false"}>
          {topicMediaCoverage.dedicatedFourSceneReady?
-           (locale==="ru"?"Подобраны 4 лицензированных видеофрагмента по выбранной теме. Сюжет и монтаж ещё требуют проверки.":
-             locale==="es"?"4 clips con licencia seleccionados por tema. Falta revisar la narrativa y el montaje.":
-               "4 licensed clips selected for this topic. Story and edit still need review."):
+           (locale==="ru"?"Подобраны 4 проверенных видеофрагмента по выбранной теме (в том числе возможна абстрактная анимация). Сюжет и монтаж ещё требуют проверки.":
+             locale==="es"?"4 clips verificados seleccionados por tema (pueden incluir animación abstracta). Falta revisar la narrativa y el montaje.":
+               "4 verified clips selected for this topic (may include abstract animation). Story and edit still need review."):
            (locale==="ru"?`По теме найдено ${topicMediaCoverage.candidateCount} из 4 нужных видеофрагментов. Показан общий символический монтаж, а не готовый тематический сюжет.`:
              locale==="es"?`Encontrados ${topicMediaCoverage.candidateCount} de 4 clips. Vista previa de montaje simbólico general, no un guion temático terminado.`:
                `${topicMediaCoverage.candidateCount} of 4 topic-matched clips. Showing general symbolic montage, not a finished topic-specific video.`)}

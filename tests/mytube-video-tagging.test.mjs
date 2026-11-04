@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import master from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
 import stock from "../data/video-catalog/free-stock-scenes.json" with {type:"json"};
 import {rankApprovedMyTubeScene,rankAllApprovedMyTubeScenes,
-  rankPublicMyTubeVideo,auditMyTubeSceneTagging,recommendMyTubeTopicStoryClips} from "../lib/mandala/mytube-video-tagging.mjs";
+  rankPublicMyTubeVideo,auditMyTubeSceneTagging,recommendMyTubeTopicStoryClips,exactOriginalMotionTopicHint} from "../lib/mandala/mytube-video-tagging.mjs";
 
 test("all 44 unique approved first-party movie scenes receive ranked primary and alternatives",()=>{
   const summary=auditMyTubeSceneTagging(master.scenes);
@@ -144,4 +144,35 @@ test("MyTube UI and director consume the same ranked selector and expose real co
   assert.match(director,/data-auto-video-topic-coverage/);
   assert.match(director,/data-scenario-source-coverage/);
   assert.match(director,/onApply\(chosen\.id,length/,"the user still confirms the real montage");
+});
+
+test("future project-original motion clips use exact canonical topic IDs only, never legacy alias guessing",()=>{
+  const videoId="motion-goals-money-goal-setting-v1";
+  const authenticMetadata={
+    id:videoId,sourceId:"goal-setting",collection:"original-motion-v1",
+    media:"original_motion_mp4",status:"approved",
+    rightsReference:{kind:"project_generated_original",thirdPartyFootage:false},
+    visualOrigin:"original_procedural_non_photographic",
+    video:"/videos/holistic-house/original-motion-v1/"+videoId+".mp4",
+    sha256:"a".repeat(64),tags:["goal-setting","horizon","abstract"],motifs:["horizon"],
+    theme:"goals",
+  };
+  assert.deepEqual(exactOriginalMotionTopicHint(authenticMetadata,"goal-setting"),{
+    topicId:"goal-setting",score:84,evidence:"exact_original_abstract_motion_source_id",
+  });
+  assert.equal(exactOriginalMotionTopicHint(authenticMetadata,"goal-follow-through"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,sourceId:"goal-achievement"},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,sourceId:"goal-achievement"},"goal-achievement"),null,
+    "legacy topic not present in current taxonomy must not become exact match");
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,media:"licensed_mp4"},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,visualOrigin:"photographed"},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,rightsReference:{kind:"dareful_cc_by_4_0"}},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,video:"https://other.example/x.mp4"},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,tags:["abstract"]},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,sha256:"not-a-hash"},"goal-setting"),null);
+  assert.equal(exactOriginalMotionTopicHint({...authenticMetadata,status:"candidate"},"goal-setting"),null);
+  const v10={...authenticMetadata,id:"motion-goals-money-goal-setting-v10",video:"/videos/holistic-house/original-motion-v1/motion-goals-money-goal-setting-v10.mp4"};
+  assert.equal(exactOriginalMotionTopicHint(v10,"goal-setting")?.topicId,"goal-setting");
+  assert.equal(exactOriginalMotionTopicHint({...v10,id:"motion-goals-money-goal-setting-v11",video:"/videos/holistic-house/original-motion-v1/motion-goals-money-goal-setting-v11.mp4"},"goal-setting"),null);
+
 });

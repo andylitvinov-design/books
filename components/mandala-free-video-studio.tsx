@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { createPortal, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
+import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v1.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 
@@ -35,8 +36,9 @@ import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
-import {clampTrackSecond,timedCaptionAt} from "@/lib/mandala/editable-timeline.mjs";
-import type {TimelineTextClip} from "./mandala-multitrack-timeline";
+import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
+import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
+import type {TimelineTextClip,TimelineTransition,TimelineLook} from "./mandala-multitrack-timeline";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -897,13 +899,18 @@ const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
     ]
   },
   ...(extraFreeFilmPresets.presets as FreeFilmPreset[]),
+  ...(originalMotionLibrary.presets as unknown as FreeFilmPreset[]),
 ] as const;
-const FREE_FILM_CATALOG = freeSceneTaxonomy.scenes;
+const ORIGINAL_MOTION_SCENES = originalMotionLibrary.scenes as unknown as typeof freeSceneTaxonomy.scenes;
+const FREE_FILM_CATALOG = [...freeSceneTaxonomy.scenes,...ORIGINAL_MOTION_SCENES];
 const FREE_FILM_CATALOG_BY_ID = new Map(FREE_FILM_CATALOG.map(scene=>[scene.id,scene]));
 const FREE_FILM_CLIP_THEMES:Record<string,VideoTheme> = Object.fromEntries(
   FREE_FILM_CATALOG.filter(scene=>scene.status==="approved").map(scene=>[scene.id,scene.theme])
 ) as Record<string,VideoTheme>;
 function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string}|null {
+  // Preserve photographed stock and expose original procedural motion separately.
+  const motion=ORIGINAL_MOTION_SCENES.find(s=>s.id===id&&s.theme===theme&&s.status==="approved");
+  if(motion)return {src:motion.video,poster:motion.poster};
   if(theme==="money")return getRealMoneyFilm(id as MoneySceneId)||getThemedRealFilm(theme,id as LocalSceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
@@ -1101,7 +1108,7 @@ function paint(
   const height = ctx.canvas.height;
   const adjustedTime = time * (speed === "dynamic" ? 1.45 : .76);
   if (theme !== "money") {
-    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 && getThemedRealFilm(theme, otherScene)) {
+    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 && firstPartyFilmFor(theme, otherScene)) {
       paintRealThemedVideoFrame(ctx,art,theme,adjustedTime,title,realVideo);
     } else {
       paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
@@ -1256,11 +1263,8 @@ function paintCinematicFrame(
     ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
   }
   ctx.restore();
-  const edge=Math.min(localTime,Math.max(0,shot.durationSeconds-localTime));
-  if(edge<.35){
-    ctx.fillStyle="rgba(17,36,30,"+(0.25*(1-edge/.35)).toFixed(3)+")";
-    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
-  }
+  // Non-destructive per-shot finishing: preview and encoded export use this Canvas.
+  paintCreativeTimelineShot(ctx,storyboard.shots,storyboard.shots.indexOf(shot),localTime);
 }
 /** Each authored caption is rendered locally on the same Canvas as MediaRecorder. */
 function paintStageCaptionOverlay(
@@ -1881,7 +1885,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return origin==="money"
       ?moneyTemplateLabels[id as MoneySceneId]?.[locale]||
         moneyScenes.find(scene=>scene.id===id)?.label[locale]||id
-      :origin?otherVideoScenes[origin].find(scene=>scene.id===id)?.label[locale]||id:id;
+      :origin?otherVideoScenes[origin].find(scene=>scene.id===id)?.label[locale]||FREE_FILM_CATALOG_BY_ID.get(id)?.label[locale]||id:id;
   };
   // These are the SAME original, source-backed scenes as the full gallery.
   // The compact Hypno video-design rail is a shortcut, not a second editor.
@@ -1938,7 +1942,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
     audioStartSeconds,timelineTextClips,caption,affirmations,hypnoLight,
-    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||""]),appliedStory]);
+    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
+       shot.transitionIn||"soft",shot.colorLook||"original"]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -3094,6 +3099,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     stopMovieSound();setPreviewPlaying(false);
   };
+  const changeTimelineShotEffect=(index:number,patch:{
+    transitionIn?:TimelineTransition;colorLook?:TimelineLook
+  })=>{
+    if(recording||preparing)return;
+    if(patch.transitionIn&&!CREATIVE_TRANSITIONS.includes(patch.transitionIn))return;
+    if(patch.colorLook&&!CREATIVE_LOOKS.includes(patch.colorLook))return;
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION||index<0||index>=current.shots.length)
+        return current;
+      const shots=current.shots.map((shot,i)=>i===index?{...shot,...patch}:shot);
+      return {...current,shots} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+  };
+  const splitTimelineText=(id:string,atSeconds:number)=>{
+    const newId="timeline-text-"+(++timelineTextSerial.current);
+    setTimelineTextClips(current=>splitTimelineCaption(current??timelineCaptions,id,
+      atSeconds,duration,newId));
+    stopMovieSound();setPreviewPlaying(false);return newId;
+  };
+  const duplicateTimelineText=(id:string)=>{
+    const newId="timeline-text-"+(++timelineTextSerial.current);
+    setTimelineTextClips(current=>duplicateTimelineCaption(current??timelineCaptions,id,
+      newId,duration));
+    stopMovieSound();setPreviewPlaying(false);return newId;
+  };
   const changeTimelineCaption=(id:string,patch:Partial<Omit<TimelineTextClip,"id">>)=>{
     setTimelineTextClips(current=>(current??timelineCaptions).map(clip=>{
       if(clip.id!==id)return clip;
@@ -3151,7 +3182,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
-      if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      if(preset.theme==="money")setMoneyScene(preset.id.startsWith("motion-film-")?null:preset.clips[0] as MoneySceneId);
       else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
       setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
       setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
@@ -4018,23 +4049,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
-  // Only the third workspace may portal the original tab rail ahead of Wave.
-  // All other workspaces keep the source-order hero -> tabs hierarchy.
-  const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
-  const [montageNavTarget,setMontageNavTarget]=useState<HTMLElement|null>(null);
-  useLayoutEffect(()=>{
-    const mobile=window.matchMedia("(max-width: 759px)");
-    const sync=()=>{
-      setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
-        ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
-      setMontageNavTarget(activeWorkspace==="editor"&&mobile.matches
-        ?document.querySelector<HTMLElement>("[data-video-montage-nav-slot]"):null);
-    };
-    sync();
-    mobile.addEventListener("change",sync);
-    return()=>mobile.removeEventListener("change",sync);
-  },[activeWorkspace]);
-
+  // The only workspace tab rail stays in the same place above the ONE player
+  // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode}
@@ -4062,9 +4078,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <UserRound size={20} aria-hidden="true"/>
           </Link>
         </nav>
+        {/* One in-flow six-tool rail: fixed above the shared video across all workspaces. */}
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        {workspaceTabs.map(item=><button type="button" key={item.id}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
+          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
+          onClick={()=>{
+            setActiveWorkspace(item.id);
+            if(item.id!=="practices")setIntroPlaying(false);
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
+          }}><item.Icon size={18} aria-hidden="true"/>
+          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
+          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
+        </button>)}
+      </nav>
         
-        {activeWorkspace==="editor"?<div className={videoStyles.montageNavSlot}
-          data-video-montage-nav-slot/>:null}
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -4213,7 +4244,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
-        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoNavSlot} data-video-hypno-nav-slot/> : null}
         {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
           data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
 
@@ -4221,30 +4251,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
           data-video-live-stage aria-labelledby="video-live-stage-title">
-        {(()=>{
-        const nav=(
-      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
-        {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
-          onClick={()=>{
-            setActiveWorkspace(item.id);
-            if(item.id!=="practices")setIntroPlaying(false);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/>
-          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
-          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
-        </button>)}
-      </nav>
-        );
-        return activeWorkspace==="effects"&&effectsNavTarget
-          ?createPortal(nav,effectsNavTarget)
-          :activeWorkspace==="editor"&&montageNavTarget
-            ?createPortal(nav,montageNavTarget):nav;
-      })()}
+
         <div className={videoStyles.previewStageHeading}>
             <div>
               <small>{locale==="ru"?"ВАШ ВИДЕОЭКРАН":locale==="es"?"TU PANTALLA DE VÍDEO":"YOUR VIDEO SCREEN"}</small>
@@ -5055,9 +5062,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div>
             <h3 id="free-film-catalog-title"><Film size={19} aria-hidden="true"/>
               {locale==="ru"?`${FREE_FILM_PRESETS.length} готовых видеосюжетов`:locale==="es"?`${FREE_FILM_PRESETS.length} historias de vídeo`:`${FREE_FILM_PRESETS.length} ready-to-edit films`}</h3>
-            <p>{locale==="ru"?"Каждый фильм — монтаж 4 разных MP4 из 44 лицензированных исходников. Система подбирает сцены по цели, тегам и ограничениям.":
-              locale==="es"?"Cada montaje combina 4 MP4 diferentes de 44 originales con licencia; elegidos por objetivo y etiquetas.":
-              "Each montage uses 4 distinct MP4 scenes from 44 licensed originals, matched to your goal and preferences."}</p>
+            <p>{locale==="ru"
+               ?`${freeSceneTaxonomy.scenes.length} лицензированных MP4 и ${ORIGINAL_MOTION_SCENES.length} оригинальных анимационных MP4. Каждый монтаж — 4 разных клипа. Анимации — не съёмка.`
+               :locale==="es"
+               ?`${freeSceneTaxonomy.scenes.length} vídeos con licencia y ${ORIGINAL_MOTION_SCENES.length} animaciones MP4 originales. Cuatro escenas diferentes por montaje.`
+               :`${freeSceneTaxonomy.scenes.length} licensed clips plus ${ORIGINAL_MOTION_SCENES.length} original abstract animation MP4s. Four distinct clips per montage; animation is not filmed footage.`}</p>
           </div>
           <button type="button" data-free-film-more disabled={recording||preparing}
             aria-expanded={showAllFreeFilms} onClick={()=>setShowAllFreeFilms(value=>!value)}>
@@ -5095,7 +5104,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 style={{width:"100%",height:"100%",objectFit:"cover"}}/> : null}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{preset.label[locale]}</span>
-              <span className={videoStyles.filmBadge}>4 MP4</span>
+              <span className={videoStyles.filmBadge}>{preset.id.startsWith("motion-film-")?(locale==="ru"?"АНИМАЦИЯ":locale==="es"?"ANIMACIÓN":"ANIMATION"):"4 MP4"}</span>
               {usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id?
                 <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
             </button>;
@@ -5233,7 +5242,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?cinematicPlan.shots.map(shot=>({
                 sceneId:shot.sceneId,title:freeFilmClipLabel(shot.sceneId),
                 poster:firstPartyFilmFor(shot.theme,shot.sceneId)?.poster,
-                startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds
+                startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds,
+                transitionIn:shot.transitionIn,colorLook:shot.colorLook
               }))
               :activeFilm?[{sceneId:theme==="money"?moneyScene||"golden-rain":otherScene,
                 title:sceneName,poster:activeFilm.poster,startSeconds:0,durationSeconds:duration}]:[]}
@@ -5267,7 +5277,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             onMoveShot={moveTimelineShot}
             onResizeShot={shiftFilmCut}
+            onSetShotEffect={usingFreeFilmCompilation?changeTimelineShotEffect:undefined}
             onAddCaption={addTimelineCaption}
+            onSplitCaption={splitTimelineText}
+            onDuplicateCaption={duplicateTimelineText}
             onSetCaption={changeTimelineCaption}
             onRemoveCaption={id=>{
               setTimelineTextClips(current=>(current??timelineCaptions).filter(clip=>clip.id!==id));

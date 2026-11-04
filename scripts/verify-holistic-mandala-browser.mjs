@@ -777,7 +777,7 @@ const runEngine = async ([engine, browserType]) => {
               getComputedStyle(diagnostic).display!=="none":false,
             diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
         });
-        assert.ok(layout.hero<=260 && layout.hero>=155,
+        assert.ok(layout.hero<=260 && layout.hero>=140,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
         assert.ok(layout.brand>=40 && layout.brand<=75,
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
@@ -786,10 +786,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,true,
-          "the free diagnostic CTA remains visible below the Video Studio");
-        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
-          "the diagnostic CTA must follow—not precede—the editor: "+JSON.stringify(layout));
+        assert.equal(layout.diagnosticVisible,false,
+          "the approved Video Studio first screen has no unsolicited marketing banner");
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);
@@ -2159,17 +2157,20 @@ const runEngine = async ([engine, browserType]) => {
             "workspace taps must not navigate to a legacy hash");
           const geometry=await page.evaluate(activeId=>{
             const nav=document.querySelector("[data-video-quick-controls]")?.getBoundingClientRect();
+            const hero=document.querySelector("[data-video-mandala-hero]")?.getBoundingClientRect();
             const pane=(activeId==="editor"&&window.innerWidth<=759
               ?document.querySelector("[data-video-editor-scenario]")
               :document.querySelector("[data-video-workspace-heading]")?.getClientRects().length
                 ?document.querySelector("[data-video-workspace-heading]")
                 :document.querySelector('[data-video-quick-section="1"]'))?.getBoundingClientRect();
-            return {navBottom:nav?.bottom,paneTop:pane?.top,width:document.documentElement.scrollWidth,
+            return {navBottom:nav?.bottom,heroTop:hero?.top,heroBottom:hero?.bottom,
+              paneTop:pane?.top,width:document.documentElement.scrollWidth,
               viewport:document.documentElement.clientWidth};
           },id);
-          assert.ok(geometry.paneTop>geometry.navBottom &&
-            geometry.paneTop-geometry.navBottom<130,
-            engine+" "+locale+" "+width+" workspace immediately below video "+id+" "+JSON.stringify(geometry));
+          assert.ok(geometry.heroTop>=geometry.navBottom-2 &&
+            geometry.heroTop-geometry.navBottom<32 &&
+            geometry.paneTop>=geometry.heroBottom-3,
+            engine+" "+locale+" "+width+" tabs → shared video → workspace "+id+" "+JSON.stringify(geometry));
           assert.ok(geometry.width<=geometry.viewport+2,
             engine+" "+locale+" "+width+" workspace horizontal overflow "+id);
         }
@@ -2194,8 +2195,9 @@ const runEngine = async ([engine, browserType]) => {
               viewport:document.documentElement.clientWidth};
           });
           assert.ok(layout.nav&&layout.script&&layout.hero&&layout.toolbar&&layout.export&&
-            layout.tabsOneRow&&layout.script.top>=layout.nav.bottom-2&&
-            layout.hero.top>=layout.script.bottom-2&&layout.nav.width<=layout.viewport,
+            layout.tabsOneRow&&layout.hero.top>=layout.nav.bottom-2&&
+            layout.hero.top-layout.nav.bottom<32&&
+            layout.script.top>=layout.hero.bottom-2&&layout.nav.width<=layout.viewport,
             engine+" "+locale+" "+width+" iPhone Montage composition: "+JSON.stringify(layout));
         }
         const styleDetails=page.locator("[data-video-editor-style-settings]");

@@ -116,3 +116,6 @@ test("49 Director questions truthfully expose local/free vs AI-only options with
  assert.match(optionUi,/<Crown/);
  assert.doesNotMatch(director,/fetch\(/);
 });
+
+// The existing focused Mandala job also verifies the optional original-motion library.
+import "./original-motion-library.test.mjs";

@@ -26,11 +26,11 @@ test("RU and EN YouTube destinations are different, no Russian audio on EN",()=>
   const stage=studio.indexOf('data-video-live-stage');
   const hero=studio.indexOf('id="video-hero"',stage);
   const original=studio.indexOf('data-video-preview-toggle',hero);
-  const nav=studio.indexOf('data-video-quick-controls',stage);
+  const nav=studio.indexOf('data-video-quick-controls');
   const dock=studio.indexOf('data-video-therapy-info',original);
   const promo=studio.indexOf('data-video-therapy-intro="playing"',dock);
-  assert.ok(stage>=0&&nav>stage&&hero>nav&&original>hero&&dock>original&&promo>dock,
-    "six tabs precede the original Canvas; intro still follows only in Practices");
+  assert.ok(nav>=0&&stage>nav&&hero>stage&&original>hero&&dock>original&&promo>dock,
+    "the one six-tab rail stays above the original Canvas; intro remains Practices-only");
   assert.doesNotMatch(studio.slice(hero,dock),/data-video-therapy-intro/,
     "no external YouTube chrome can obscure the creative editor");
   assert.match(studio,/<canvas key={aspect} ref={canvasRef}/);

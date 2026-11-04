@@ -1,5 +1,5 @@
 /* Screenshot 1: one translucent, bottom-anchored, rounded mobile dock. */
-.dock{position:fixed;z-index:58;bottom:max(0px,var(--hh-unified-viewport-inset,0px),calc(100vh - 100dvh));left:50%;transform:translate3d(-50%,0,0);
+.dock{position:fixed;z-index:58;bottom:var(--hh-unified-viewport-inset,0px);left:50%;transform:translate3d(-50%,0,0);
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch;
   width:min(100%,900px);min-height:77px;min-width:0;
   padding:8px max(4px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom))
