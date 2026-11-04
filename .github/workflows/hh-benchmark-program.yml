@@ -5,7 +5,6 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - 'tests/ci-pr-selective-workflows.test.mjs'
       - "docs/benchmarking/**"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"

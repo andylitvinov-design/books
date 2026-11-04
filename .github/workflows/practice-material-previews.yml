@@ -36,7 +36,6 @@ on:
       - 'tests/practice-material-preview-url.test.mjs'
       - 'tests/practice-course-materials-navigation.test.mjs'
       - 'tests/practitioner-approved-v4-ui.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
 permissions:
   contents: read
 concurrency:

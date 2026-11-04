@@ -52,7 +52,6 @@ on:
       - 'tests/library-compact-design.test.mjs'
       - 'tests/library-block-design.test.mjs'
       - 'tests/flat-book-catalog.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

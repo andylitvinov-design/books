@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: [codex/public-book-library]
     paths:
-      - 'tests/ci-pr-selective-workflows.test.mjs'
       - 'lib/personal-coaching/**'
       - 'lib/app/personal-coaching.js'
       - 'lib/app/personal-coaching-catalog.js'

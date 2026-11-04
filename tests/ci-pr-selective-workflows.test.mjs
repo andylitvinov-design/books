@@ -3,11 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-aggregate.mjs';
 
-// Deliberate one-time migration proof: changing this exact contract file
-// dispatches every affected specialist under both old and new BASE/HEAD manifests.
-// Most optional YAML self-edits run Core/actionlint/Guard without an extra
-// product matrix. Only the audited owner exceptions may retain their
-// independent browser/consent QA when their own security policy changes.
+// Optional owner suites run only when their owned source or tests change.
+// Editing this shared CI routing contract must run Core and Guard, not awaken
+// every product/browser workflow. Actionlint covers YAML configuration edits;
+// audited owner self-checks continue to validate selected high-risk YAML edits.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
   "dao-iching-library.yml",
@@ -59,12 +58,13 @@ test('optional workflow edits use actionlint unless their audited owner requires
   for(const name of auditedOwnerSelfChecks)assert.ok(ownerWorkflows.includes(name),name);
   for (const name of ownerWorkflows) {
     const routes = trigger(name);
-    assert.ok(routes?.paths?.includes(contractFile), name + ': shared migration contract absent');
+    assert.ok(routes?.paths && !routes.paths.includes(contractFile),
+      name + ': shared CI contract must not start unrelated product QA');
     const selfOwnerCheck=routes.paths.includes('.github/workflows/' + name);
     assert.ok(!selfOwnerCheck || auditedOwnerSelfChecks.has(name),
       name + ': unreviewed self-trigger risks costly product fanout');
-    assert.equal(matchesTrigger(routes, [contractFile], TARGET), true,
-      name + ': initial migration must still dispatch genuine exact-HEAD QA');
+    assert.equal(matchesTrigger(routes, [contractFile], TARGET), false,
+      name + ': contract-only update must not fan out to product suites');
     assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), selfOwnerCheck,
       name + ': GitHub PR trigger must match the actual BASE-owned self-check policy');
   }
