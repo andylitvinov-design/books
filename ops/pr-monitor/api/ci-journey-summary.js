@@ -18,15 +18,15 @@ function parse(comment){
  // treated as an Actions bot receipt or as a complete archive.
  const imported=comment?.user?.login==='andylitvinov-design'&&
    typeof comment.body==='string'&&
-   comment.body.startsWith('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\\n');
+   comment.body.startsWith('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\n');
  if(imported){
-   let old;try{old=JSON.parse(comment.body.slice('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\\n'.length));}
+   let old;try{old=JSON.parse(comment.body.slice('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\n'.length));}
    catch{return [];}
    if(old?.schema!=='HH_CORE_CI_JOURNEY_IMPORT_V1'||!Array.isArray(old.runs)||
       old.runs.length>25)return [];
    const bucket='2026-11-04T14-success';
    const fake={user:{login:'github-actions[bot]'},
-     body:PREFIX+bucket+' -->\\n'+JSON.stringify({schema:SCHEMA,bucket,runs:old.runs})};
+     body:PREFIX+bucket+' -->\n'+JSON.stringify({schema:SCHEMA,bucket,runs:old.runs})};
    return parse(fake).map(r=>({...r,partial_jobs:true,source:'VERIFIED_PARTIAL_HISTORICAL_IMPORT'}));
  }
  if(comment?.user?.login!=='github-actions[bot]'||typeof comment?.body!=='string'||
