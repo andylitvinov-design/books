@@ -25,7 +25,7 @@ on:
       - 'components/site-video-player.tsx'
       - 'data/service-video-library.ts'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
+      # The shared routing policy test runs in HH PR Sweep Guard, not Free Review.
   push:
     branches: ['codex/public-book-library']
     paths:
