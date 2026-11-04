@@ -11,6 +11,16 @@ const {POLICY,desiredLabels,priorityFor,rankedCandidates,MERGE_STAGES,SHA}=
 const PROD='codex/public-book-library';
 const DEFAULT='codex/bootstrap-books';
 const TARGETS=new Set([PROD,DEFAULT]);
+// The repository also has legitimate stacked PRs with a same-repo feature
+// branch as their base. Include them in metadata-only label bookkeeping.
+// This must NOT authorize CI bootstrap, repair, or merging into production.
+function trustedTarget(pr,owner,repo){
+ const branch=pr?.base?.ref;
+ return TARGETS.has(branch) ||
+   (typeof branch==='string' && branch.length>0 && branch.length<=255 &&
+    pr.base?.repo?.full_name===owner+'/'+repo &&
+    pr.head?.repo?.full_name===owner+'/'+repo);
+}
 const MAX_REQUESTS=115;
 const MIN_RATE_RESERVE=100;
 const MAX_WRITES=18;
@@ -163,7 +173,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   const {owner,repo}=context.repo;
   const log=message=>core.info('HH_DIRECTION_WATCHER: '+message);
   const summary={checkedAt:new Date(now).toISOString(),dryRun,
-    inventoried:0,production:0,defaultBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
+      inventoried:0,production:0,defaultBranchPRs:0,stackedBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
     recentCreated:0,recentClosed:0,closedPending:0,closedUpdated:0,recentReadError:false,
     pathProbes:0,createdLabels:0,blockedOverrides:0,
     byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},
@@ -218,12 +228,13 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     return finish();
   }
   summary.inventoried=all.length;
-  const inScope=all.filter(pr=>TARGETS.has(pr.base?.ref) &&
+  const inScope=all.filter(pr=>trustedTarget(pr,owner,repo) &&
     pr.head?.repo?.full_name===owner+'/'+repo &&
     Number.isSafeInteger(pr.number)&&SHA.test(pr.head?.sha||''));
   summary.inScope=inScope.length;
   summary.production=inScope.filter(pr=>pr.base?.ref===PROD).length;
   summary.defaultBranchPRs=inScope.filter(pr=>pr.base?.ref===DEFAULT).length;
+  summary.stackedBranchPRs=inScope.length-summary.production-summary.defaultBranchPRs;
   const missing=[];
   for(const pr of inScope){
     const result=desiredLabels(pr);
@@ -246,7 +257,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   }
   summary.recentCreated=recent.length;
   const recentClosed=recent.filter(pr=>pr.state==='closed'&&
-    TARGETS.has(pr.base?.ref)&&pr.head?.repo?.full_name===owner+'/'+repo&&
+    trustedTarget(pr,owner,repo)&&pr.head?.repo?.full_name===owner+'/'+repo&&
     Number.isSafeInteger(pr.number)&&SHA.test(pr.head?.sha||'')&&
     closedOutcome(pr,now)!==null);
   summary.recentClosed=recentClosed.length;
@@ -280,7 +291,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
       }));
       const live=response.data;
       if(live?.number!==initial.number||live.state!==initial.state||
-         !TARGETS.has(live.base?.ref)||live.base?.ref!==initial.base.ref||
+         !trustedTarget(live,owner,repo)||live.base?.ref!==initial.base.ref||
          live.head?.repo?.full_name!==owner+'/'+repo||
          live.head?.sha!==initial.head.sha)continue;
       const isClosed=initial.state==='closed';
