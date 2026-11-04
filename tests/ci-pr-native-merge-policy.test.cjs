@@ -83,6 +83,10 @@ test('conflicts, manual holds, changed heads and unverified mergeability fail cl
   ])assert.equal((await check(makeTestWorld({pr}))).reason,reason);
  assert.equal((await check(makeTestWorld({pr:{mergeable_state:'unstable'}}))).ok,true,
    'optional red checks do not override proven mandatory CI');
+ assert.equal((await check(makeTestWorld({pr:{mergeable_state:'blocked'}}))).ok,true,
+   'GitHub blocked is not a conflict; the coordinators prove required CI before native ARM');
+ assert.equal((await check(makeTestWorld({pr:{mergeable:false,mergeable_state:'blocked'}}))).ok,false,
+   'actual non-mergeability still blocks');
 });
 test('missing authoritative review policy or GraphQL evidence cannot authorize merge',async()=>{
  assert.equal((await check(makeTestWorld({ruleset:{enforcement:'disabled'}}))).reason,
