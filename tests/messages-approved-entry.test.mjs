@@ -44,7 +44,11 @@ test('new mobile labels and compact orders escape are correct for RU/EN/ES',()=>
   assert.match(css,/min-height:44px/)
   assert.match(css,/data-detail-open="true"/)
   assert.match(css,/data-thread-open="true"/)
-  assert.match(css,/input:focus,textarea:focus/)
+  // Safari may dismiss the keyboard without blur. Track the real visible keyboard,
+  // not :focus, so the shared dock returns when editing focus remains.
+  assert.match(css,/data-hh-mobile-keyboard-open="true"/)
+  assert.doesNotMatch(css,/:has\(input:focus,textarea:focus\)/)
+  assert.match(nav,/window\.innerHeight-visualBottom>115/)
   assert.match(css,/env\(safe-area-inset-bottom\)/)
 })
 test('page renders valid Next TSX and order branch remains explicit',()=>{
