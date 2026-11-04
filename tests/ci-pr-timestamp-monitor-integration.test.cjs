@@ -73,3 +73,34 @@ test('new data is visibly observational only: GitHub exact stage events remain u
  assert.match(source.pr_timestamp_inventory.stage_clock_kind,/NOT_ACTUAL_TRANSITION_TIME/);
  assert.ok(source.pr_timestamp_inventory.missing_fields_need_native_events.includes('runner_started_at'));
 });
+
+
+test('compact public issue preserves all 162 PR timestamps beside dense blocker history',()=>{
+ const snapshot=monitor.buildMonitorSnapshot(report(),ctx);
+ const {capture}=require('../scripts/ci-pr-timestamp-inventory.cjs');
+ snapshot.pr_timestamp_inventory=capture({prs,observedAt:at,
+   productionExpected:152,totalExpected:162});
+ snapshot.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+ snapshot.blocker_progress={schema:'HH_P0_BLOCKER_PROGRESS_V1',
+   cases:Array.from({length:36},(_,i)=>({
+     id:'HH-P0-CORE_REQUIRED_CHECK_FAILED-PR'+(350+i)+'-HEAD'+'a'.repeat(12),
+     pr_number:350+i,root_code:'CORE_REQUIRED_CHECK_FAILED',head_sha:'a'.repeat(40),
+     previous_head_sha:null,
+     source_pr:'https://github.com/andylitvinov-design/books/pull/'+(350+i),
+     source_run_url:'https://github.com/andylitvinov-design/books/actions/runs/'+(41900000000+i),
+     assigned_owner:null,owner_status:'UNVERIFIED',process_owner:':05 Shared / Core',
+     applied_fix:'UNVERIFIED_NOT_CLAIMED',source_fix_sha:null,ci_result:'FAILURE',
+     ci_scope:'OBSERVED_REQUIRED_OR_INDEPENDENT_FAILURE_NOT_ALL_CHECKS',
+     ci_head_sha:'a'.repeat(40),ci_freshness:'CURRENT_SAMPLE',
+     protected_merge_sha:null,production_deployment:null,functional_smoke:null,
+     state:'SAME_HEAD_STALLED'
+   }))};
+ const body=monitor.renderSnapshot(snapshot);
+ const previousPrettyLength=body.length-JSON.stringify(snapshot).length+
+   JSON.stringify(snapshot,null,2).length;
+ assert.ok(previousPrettyLength>58000,'reproduce the previous over-budget bug');
+ assert.ok(body.length<58000,'keep verified inventory without losing root history');
+ const restored=monitor.parseExisting(body);
+ assert.equal(rows(restored.pr_timestamp_inventory).size,162);
+ assert.equal(restored.blocker_progress.cases.length,36);
+});

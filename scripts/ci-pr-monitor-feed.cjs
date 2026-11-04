@@ -242,7 +242,9 @@ function renderSnapshot(snapshot){
   return [MARKER,'## Watchdog direct handoff — public snapshot',
     'CI wake timing comes from authenticated exact-task receipt timestamps in the bounded inspected CI sample, not a global PR cohort. Missing duration is null, not zero; a wake receipt does not prove Core runner execution.',
     'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
-    '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
+    // Compact serialization preserves all exact PR timestamps within the existing
+    // 58k public issue body budget; pretty JSON previously evicted the census.
+    '',fence+'json',JSON.stringify(snapshot),fence,'',
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
 }
