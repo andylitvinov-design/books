@@ -76,7 +76,7 @@
 
 /* 2026 services conversion system: clearer hierarchy, shared teal identity, and
    differentiated free-vs-paid actions. Keep the business page's approved navy palette. */
-.page{background:linear-gradient(180deg,#eaf7f4 0,#f8fbfa 570px,#fff 100%);color:#173d47}
+.page{background:linear-gradient(180deg,#fff5e7 0,var(--hh-light-canvas) 570px,var(--hh-light-surface) 100%);color:#173d47}
 .breadcrumb a{color:#176b72}
 .hero{background:radial-gradient(circle at 10% 10%,rgba(40,145,149,.23),transparent 51%),linear-gradient(125deg,#073c51,#075d68 77%,#0a7c81);box-shadow:0 20px 65px rgba(5,52,67,.18)}
 .hero h1{color:#fffefa}
@@ -153,7 +153,7 @@
 
 /* Immersive public-service story: one topic per viewport, photographic media on
    every scene, and a single opt-in CRM capture as the last actionable screen. */
-.page[data-personal-service]{background:#f6faf8;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+.page[data-personal-service]{background:var(--hh-light-canvas);padding-bottom:calc(78px + env(safe-area-inset-bottom))}
 .page[data-personal-service] .container{width:min(1120px,calc(100% - 28px))}
 .page[data-personal-service] .breadcrumb{padding:13px 2px 8px}
 .screen{

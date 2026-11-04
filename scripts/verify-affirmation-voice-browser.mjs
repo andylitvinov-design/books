@@ -431,6 +431,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"offline-remix-ready");
       assert.equal(payloads.filter(item=>item.mode==="affirmations").length,1,
         "remixing voice/music must not invoke voice generation again");
+      // Exercise the actual third-workspace Audio cards in real WebKit.
+      // The approved TTS track is already attached; both effects must render
+      // locally into a real stereo WAV before the movie export starts.
+      await page.locator('[data-video-quick-control="effects"]').click();
+      const audioGroup=page.locator('[data-hypno-group="audio"]');
+      await audioGroup.waitFor({state:"visible",timeout:10000});
+      const speechCard=audioGroup.locator("[data-hypno-card]").first();
+      await speechCard.locator("button").first().click();
+      await expect(audioGroup.locator("[data-hypno-speech-settings] [data-hypno-voice]"))
+        .toBeVisible({timeout:10000});
+      // Opening voice settings can start an async local preparation pass.
+      // Wait until the real busy indicator is gone and the switch is enabled;
+      // never force-click a disabled effect control.
+      await expect(page.locator("[data-hypno-audio-effect-busy]")).toHaveCount(0,{timeout:60000});
+      const whisperName=locale==="ru"?"Гипнозвук":locale==="es"?"Voz tenue":"Quiet speech";
+      const binauralName=locale==="ru"?"Бинауральные ритмы":locale==="es"?"Ritmos binaurales":"Binaural beats";
+      const whisperSwitch=audioGroup.getByRole("switch",{name:whisperName,exact:true});
+      const binauralSwitch=audioGroup.getByRole("switch",{name:binauralName,exact:true});
+      await expect(whisperSwitch).toHaveAttribute("aria-checked","false");
+      await expect(whisperSwitch).toBeEnabled({timeout:30000});
+      await whisperSwitch.click();
+      await expect(whisperSwitch).toHaveAttribute("aria-checked","true",{timeout:30000});
+      await binauralSwitch.click();
+      await expect(binauralSwitch).toHaveAttribute("aria-checked","true",{timeout:30000});
+      await expect(page.locator("[data-hypno-audio-effect-busy]")).toHaveCount(0);
+      phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
       const generate=page.locator("[data-video-quick-generate]");
@@ -499,12 +525,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
-        const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+        const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
-        const tracks=JSON.parse(probe.stdout).streams.map(row=>row.codec_type);
+        const streams=JSON.parse(probe.stdout).streams;
+        const tracks=streams.map(row=>row.codec_type);
         assert.ok(tracks.includes("video"),"real video stream present");
-        assert.ok(tracks.includes("audio"),"generated affirmation WAV survived into exported video");
+        const audioTrack=streams.find(row=>row.codec_type==="audio");
+        assert.ok(audioTrack,"generated affirmation WAV survived into exported video");
+        assert.equal(Number(audioTrack.channels),2,"real encoded audio track must remain stereo");
         const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
           "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
           {input:bytes,maxBuffer:1024*1024,timeout:20000});
@@ -527,10 +556,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
-      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
+      await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-hypno-audio.wav");
       // Unlike the unrelated edit, removing the phrase selected for actual
       // synthesis must invalidate the attached soundtrack before export.
-      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="1"]');
+      // Selection order may differ from candidate indices after toggling. Find
+      // the exact phrase used in the TTS request, not a positional lookalike.
+      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase]').filter({hasText:approved});
+      await expect(spokenPhrase).toHaveCount(1);
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
       await spokenPhrase.click();
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","false");
@@ -550,20 +582,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.ok(await page.locator("[data-video-narration-stale]").isVisible() ||
         await page.locator("[data-video-live-audio]").count()===0,
         "removed spoken phrase must block stale WAV reuse or detach it");
-      // The approved Video Studio puts narration in fifth Montage → Voice.
-      // Do not click the removed global voice disclosure in the first workspace.
+      // Phrase narration belongs to this workspace; verify revoked consent
+      // before switching to the separate cloud voice controls in Montage.
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
+      if(!await page.locator("[data-video-narration-stale]").isVisible())
+        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
-      // Consent for the previous transcript never carries over to new lines.
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
-      if(await page.locator("[data-video-narration-stale]").isVisible()){
-        await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
-      }else{
-        // A removed narration is no longer attached to the one canonical
-        // renderer; the visitor may still create a video without that voice.
-        await expect(page.locator("[data-video-live-audio]")).toHaveCount(0);
-        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
-      }
+      // The phrase warning is intentionally unmounted in Montage. If the
+      // old narration is still attached there, export must remain disabled;
+      // an independently selected soundtrack is not stale narration.
+      const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
+      const stillHasOldVoice=soundtrackLabels.some(label=>
+        label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
+      if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)
@@ -581,7 +613,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click();
       const customText=locale==="ru"?"Сегодня я выбираю спокойствие.":"Today I choose calm.";
       await studio.locator("textarea").fill(customText);
-      await studio.locator("input[type=checkbox]").check();
+      const studioConsent=studio.locator('input[type="checkbox"]');
+      await expect(studioConsent).not.toBeChecked({timeout:10000});
+      await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled();
+      await studioConsent.check();
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");

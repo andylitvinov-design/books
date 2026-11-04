@@ -39,6 +39,10 @@ export async function POST(request){
    }
    const audio=await receiveOwnerTelegramAudioWebhook(config,update)
   if(audio.handled){
+    if(audio.background)after(async()=>{
+      try{await audio.background()}
+      catch{console.error('HH_OWNER_AUDIO_DOT_AFTER_FAILED')}
+    })
     if(audio.retry)return NextResponse.json({ok:false},{status:503,headers:PRIVATE_HEADERS})
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }
