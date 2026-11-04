@@ -9,6 +9,16 @@ const SCHEMA='HH_PR_THREE_KPI_V1',HOST='andylitvinov-design/books';
 const SHARD='<!-- HH_CORE_CI_JOURNEY_SHARD_V1:',SHARD_SCHEMA='HH_CORE_CI_JOURNEY_SHARD_V1';
 const PROD='codex/public-book-library',SHA=/^[0-9a-f]{40}$/i;
 const M=60000,D=86400000;
+const TORONTO='America/Toronto';
+const PARTS=new Intl.DateTimeFormat('en-US',{timeZone:TORONTO,
+ year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',
+ minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+function zoneOffset(ms) {
+ const p=Object.fromEntries(PARTS.formatToParts(new Date(ms)).filter(x=>x.type!=='literal')
+  .map(x=>[x.type,Number(x.value)]));
+ const utc=Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,p.second);
+ return utc-Math.floor(ms/1000)*1000;
+}
 const REQUIRED=['core-lint-types-build','hh-specialist','hh-merge-check'];
 const FAIL=new Set(['failure','timed_out','startup_failure']);
 const ts=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:null};
@@ -16,8 +26,10 @@ const goodId=n=>Number.isSafeInteger(n)&&n>0;
 const round=n=>Math.round(n*100)/100;
 const window=(now,offsetDays=0)=>{
   if(!Number.isFinite(now))throw Error('INVALID_NOW');
-  const end=now-offsetDays*D;
-  return {from:new Date(end-D).toISOString(),to:new Date(end).toISOString()};
+  const approx=now-offsetDays*D;
+  // Align the same Toronto local clock across daylight-saving transitions.
+  const end=offsetDays===0?now:approx+zoneOffset(now)-zoneOffset(approx);
+  return {from:new Date(end-D).toISOString(),to:new Date(end).toISOString(),timezone:TORONTO};
 };
 const trusted=c=>c?.user?.id===41898282&&c.user.login==='github-actions[bot]'&&
   c.user.type==='Bot'&&c.performed_via_github_app?.id===15368&&
