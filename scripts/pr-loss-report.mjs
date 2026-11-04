@@ -4,7 +4,7 @@
 import {appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
-import {analyzePrLoss, summarizePrLoss} from '../lib/ci/pr-loss-metrics.mjs';
+import {analyzePrLoss, summarizePrLoss, connected} from '../lib/ci/pr-loss-metrics.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -73,10 +73,7 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
         event:'pull_request',branch:pr.head.ref,per_page:'100',page:'1'}));
       if(!Array.isArray(result.workflow_runs)||!Number.isSafeInteger(result.total_count))
         throw Error('INCOMPLETE_WORKFLOW_RUNS');
-      const matched=result.workflow_runs.filter(r=>r.event==='pull_request'&&
-        Array.isArray(r.pull_requests)&&r.pull_requests.length===1&&
-        r.pull_requests[0]?.number===pr.number&&
-        r.pull_requests[0]?.base?.ref===pr.base.ref);
+      const matched=result.workflow_runs.filter(r=>connected(r,pr));
       const selected=matched.slice(0,runLimit);
       if(result.total_count>100||matched.length>runLimit)searchTruncated=true;
       const jobRows={};
