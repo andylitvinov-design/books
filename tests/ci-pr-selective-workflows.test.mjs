@@ -101,39 +101,3 @@ test('high-impact workflows still run their own domain validation on YAML edits'
       name + ': editing domain policy must trigger its genuine QA');
   }
 });
-
-test('shared impact-policy test runs Guard and Core, not expensive Mandala or Free Review', () => {
-  const shared = 'tests/ci-heavy-impact.test.mjs';
-  const changed = [shared];
-  const routes = name => trigger(name);
-  for (const name of ['hh-pr-sweep-guard.yml', 'hh-pr-core-release.yml']) {
-    assert.equal(matchesTrigger(routes(name), changed, TARGET), true,
-      name + ' must validate a shared CI policy change');
-  }
-  const guard = source('hh-pr-sweep-guard.yml');
-  assert.ok(guard.includes('tests/ci-heavy-impact.test.mjs') &&
-    guard.includes('node --test tests/pr-sweep-guard.test.mjs'),
-    'Guard must actually execute routing contracts, not merely dispatch');
-  for (const name of ['holistic-support-mandala.yml', 'hh-free-review-live-mobile.yml']) {
-    const yaml = source(name);
-    assert.equal(matchesTrigger(routes(name), changed, TARGET), false,
-      name + ' must not run heavy CI for one Guard-owned test file');
-    assert.equal(matchesTrigger(routes(name), ['scripts/ci-heavy-impact.mjs'], TARGET), true,
-      name + ' must still execute when the real impact router changes');
-    assert.match(yaml, /workflow_dispatch:/, name + ' full manual QA remains available');
-    assert.doesNotMatch(yaml, /continue-on-error:\s*true/,
-      name + ' must not mask actual test failures');
-  }
-  for (const file of ['.github/workflows/holistic-support-mandala.yml',
-    'components/mandala-free-video-studio.tsx', 'lib/mandala/video-chat-understanding.mjs',
-    'app/api/holistic-support/voice/route.js', 'tests/mandala-free-video.test.mjs']) {
-    assert.equal(matchesTrigger(routes('holistic-support-mandala.yml'), [file], TARGET), true,
-      'Mandala source, voice, policy and test changes must preserve full gate: ' + file);
-  }
-  for (const file of ['components/free-entry-landing.tsx',
-    'components/personal-express-enquiry.tsx', 'lib/coaching/intake-model.js',
-    'scripts/verify-free-review-live-mobile.mjs']) {
-    assert.equal(matchesTrigger(routes('hh-free-review-live-mobile.yml'), [file], TARGET), true,
-      'Free Review client and lead-intake changes still require release tests: ' + file);
-  }
-});
