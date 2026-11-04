@@ -269,10 +269,10 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
       name+' must target production explicitly');
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
-    const expectedCancel = ['hh-app-r1.yml','hh-app-browser.yml'].includes(name)
-      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+    const expectedCancel = name === 'hh-app-r1.yml'
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"
       : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
-    assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
+    assert.ok(source.includes(expectedCancel), name + ': cancellation must remain scoped to this PR and an obsolete attempt');
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
     const jobs=source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobs,name+' has no jobs');
