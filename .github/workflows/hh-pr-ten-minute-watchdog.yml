@@ -134,6 +134,22 @@ jobs:
               String(context.payload.inputs?.dry_run??'false')==='true';
             const report=await run({github,core,context,repairGithub,
               hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true});
+            // A code push is ALREADY an inspection-only Watchdog run; capture
+            // first-seen timestamps into the existing issue without touching
+            // any PR, CI, runner, or Watchdog KPI clock.
+            if(dryRun&&context.eventName==='push'&&
+               report?.inventoryComplete===true&&!report?.apiRateLimited&&
+               Array.isArray(report.prInventorySnapshot)){
+              try{
+                const {publishTimestampInventoryOnly}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-monitor-feed.cjs');
+                const receipt=await publishTimestampInventoryOnly({github,context,watchdog:report});
+                core.info('HH_FULL_PR_TIMESTAMP_SEED '+JSON.stringify(receipt));
+              }catch(error){
+                core.warning('HH_FULL_PR_TIMESTAMP_SEED_UNAVAILABLE '+
+                  String(error?.message||'unknown').slice(0,150));
+              }
+            }
             // Reuse exactly this Watchdog's in-memory inventory. No second
             // all-open-PR read and no additional job, artifact or CI rerun.
             if(!dryRun&&report?.inventoryComplete===true&&!report?.apiRateLimited&&

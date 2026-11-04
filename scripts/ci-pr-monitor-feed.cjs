@@ -197,10 +197,16 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
        report.discovered!==inventorySnapshot.length||
        report.production>inventorySnapshot.length)
       throw Error('TIMESTAMP_NOT_FULL_WATCHDOG_INVENTORY');
-    next.pr_timestamp_inventory=capture({prs:inventorySnapshot,
-      observedAt:report.checkedAt,previous:priorValid?prior:null,
-      productionExpected:report.production,totalExpected:report.discovered});
-    next.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+    if(priorValid&&Date.parse(prior.observed_at)>=Date.parse(report.checkedAt)){
+      // A delayed scheduled run cannot rewind a newer verified push scan.
+      next.pr_timestamp_inventory=prior;
+      next.pr_timestamp_status='PRESERVED_NEWER_FULL_SCAN';
+    }else{
+      next.pr_timestamp_inventory=capture({prs:inventorySnapshot,
+        observedAt:report.checkedAt,previous:priorValid?prior:null,
+        productionExpected:report.production,totalExpected:report.discovered});
+      next.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+    }
   }else if(priorValid){
     next.pr_timestamp_inventory=prior;
     next.pr_timestamp_status='PRESERVED_PRIOR_FULL_SCAN';
@@ -216,4 +222,43 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
   await github.rest.issues.update({owner,repo,issue_number:ISSUE_NUMBER,body});
   return {status:'PUBLISHED',run_id:next.run_id,checked_at:next.checked_at};
 }
-module.exports={MARKER,SCHEMA,buildMonitorSnapshot,parseExisting,renderSnapshot,publishMonitorSnapshot};
+// A trusted control-code push already runs the Watchdog in inspection-only mode.
+// Reuse its verified, already-fetched FULL list to seed first-observed times
+// immediately, even when GitHub's scheduled Watchdog delivery is delayed.
+// Do NOT update the KPI checked_at/run_id with a dry-run or claim fresh CI.
+async function publishTimestampInventoryOnly({github,context,watchdog}){
+ if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
+    context.ref!=='refs/heads/codex/bootstrap-books'||
+    context.eventName!=='push'||watchdog?.dryRun!==true||
+    watchdog.inventoryComplete!==true||
+    watchdog.inventoryScope!=='ALL_OPEN_PRS'||
+    watchdog.apiRateLimited===true||
+    !Array.isArray(watchdog.prInventorySnapshot)||
+    watchdog.open!==watchdog.prInventorySnapshot.length)
+   return {status:'NOT_TRUSTED_FULL_INSPECTION'};
+ const {owner,repo}=context.repo;
+ const issue=(await github.rest.issues.get({owner,repo,issue_number:ISSUE_NUMBER})).data;
+ if(!issue||issue.state!=='open'||issue.pull_request)
+   throw Error('MONITOR_FEED_NOT_OPEN_ISSUE');
+ const previous=parseExisting(issue.body);
+ const existing=previous.pr_timestamp_inventory;
+ if(existing?.schema===TIMESTAMP_SCHEMA &&
+    timestampRows(existing).size===existing.total &&
+    Date.parse(existing.observed_at)>=Date.parse(watchdog.checkedAt))
+   return {status:'ALREADY_FRESHER',observed_at:existing.observed_at};
+ const record=capture({prs:watchdog.prInventorySnapshot,
+   observedAt:watchdog.checkedAt,
+   previous:existing?.schema===TIMESTAMP_SCHEMA&&
+     timestampRows(existing).size===existing.total?existing:null,
+   productionExpected:watchdog.production,totalExpected:watchdog.open});
+ const next={...previous,pr_timestamp_inventory:record,
+   pr_timestamp_status:'FRESH_ALL_OPEN_PR_OBSERVATIONS'};
+ const body=renderSnapshot(next);
+ if(body.length>58000)throw Error('TIMESTAMP_BODY_EXCEEDS_SAFE_LIMIT');
+ await github.rest.issues.update({owner,repo,issue_number:ISSUE_NUMBER,body});
+ return {status:'PUBLISHED_PR_TIMESTAMPS',observed_at:record.observed_at,
+   open:record.total,production:record.production};
+}
+module.exports={MARKER,SCHEMA,buildMonitorSnapshot,parseExisting,renderSnapshot,
+ publishMonitorSnapshot,publishTimestampInventoryOnly};
+
