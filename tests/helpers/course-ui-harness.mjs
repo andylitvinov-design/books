@@ -26,9 +26,11 @@ import * as oporaV5 from '../../lib/inner-growth/anti-stress-skills-v5.js'
 import * as oporaV6 from '../../lib/inner-growth/anti-stress-skills-v6.js'
 import * as oporaV7 from '../../lib/inner-growth/anti-stress-skills-v7.js'
 import * as antiStressBlueprint from '../../lib/inner-growth/anti-stress-blueprint.js'
+import { ENERGYWORK_REVIEW_MIN_CHARS } from '../../data/academy/energywork-ai-schema.js'
 
 const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'opora-first-week-invite', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
+sources['reiki-my-reviews'] = readFileSync(new URL('../../components/reiki-my-reviews.jsx', import.meta.url), 'utf8')
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findButton = (tree, label) => nodes(tree).find(node => node.type === 'button' && textOf(node).includes(label))
@@ -57,6 +59,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     useMemo(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) slots[i] = { value: fn(), deps }; return slots[i].value },
     useCallback(fn, deps) { return hooks.useMemo(() => fn, deps) },
     useEffect(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) pending.push(() => { slots[i]?.cleanup?.(); const cleanup = fn(); slots[i] = { deps, cleanup }; if (!effects.includes(i)) effects.push(i) }) },
+    useLayoutEffect(fn, deps) { return hooks.useEffect(fn, deps) },
   }
   const stub = name => Object.assign(() => null, { testName: name })
   const moduleFor = name => ({ __esModule: true, default: stub(name) })
@@ -66,6 +69,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'next/link': moduleFor('Link'), 'next/image': moduleFor('Image'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
     '@/lib/inner-growth/anti-stress-blueprint': antiStressBlueprint,
+    '@/data/academy/energywork-ai-schema.js': { ENERGYWORK_REVIEW_MIN_CHARS },
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
@@ -139,7 +143,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     if (renderOporaInvite) renderedChildren.add(modules['./opora-first-week-invite'].default)
   }
   const exported = loadComponent(name)
-  const component = exported.default || exported.AccountTestBattery
+  const component = exported.default || exported.AccountTestBattery || exported.ReikiMyReviews
   const render = (nextProps = props) => {
     props = nextProps; index = 0; pending = []; dirty = false
     tree = component(props)
@@ -148,6 +152,13 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     }
     pending.forEach(fn => fn())
     return tree
+  }
+  // Evaluate an abandoned render without committing effects or changing active ownership.
+  const speculate = nextProps => {
+    const previous = { index, pending, dirty }
+    index = 0; pending = []; dirty = false
+    try { return component(nextProps) }
+    finally { index = previous.index; pending = previous.pending; dirty = previous.dirty }
   }
   let enteredCourse = false
   const settle = async () => {
@@ -162,7 +173,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     return tree
   }
   render()
-  return { render, settle, calls, navigations, notified, get tree() { return tree },
+  return { render, speculate, settle, calls, navigations, notified, get tree() { return tree },
     async backTo(query) { url = new URL(query, url); listeners.get('popstate')?.(); await settle() },
     unmount() { effects.forEach(i => slots[i]?.cleanup?.()) },
   }
