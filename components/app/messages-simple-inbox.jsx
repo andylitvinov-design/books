@@ -9,6 +9,7 @@ import MessagesContactCard from './messages-contact-card'
 import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import PublicEnquiryReply from './public-enquiry-reply'
+import MessagesLeadMetrics from './messages-lead-metrics'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
 import {filterInboxRows,inMessagesTab,inboxSourceStatus,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
@@ -379,6 +380,9 @@ export default function MessagesSimpleInbox({
             title={locale==='ru'?'Только непрочитанные':locale==='es'?'Solo no leídos':'Unread only'}
             onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
         </div>
+        {crmEnabled&&(embedded||tab==='requests')&&
+          <MessagesLeadMetrics locale={locale} requests={requests}
+            businessEnquiries={businessEnquiries}/>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
           {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
