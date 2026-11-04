@@ -191,18 +191,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          # The PR merge + its two parents; bounded ancestry is validated below.
+          # Pin the event's immutable PR merge SHA. A moving pull/merge ref
+          # can change while queued; the exact event SHA must be the checkout.
+          ref: ${{ github.sha }}
+          # Fetch both parents when available; raw parent headers are still
+          # verified below even when the runner marks the depth boundary shallow.
           fetch-depth: 2
-      # actions/checkout registers safe.directory in a temporary HOME only;
-      # subsequent steps in Playwright's root-owned container lose that setting.
-      # Trust exactly this runner checkout path, never '*' or another repository.
-      - name: Trust exact container checkout for Git ancestry
+      # GitHub checkout marks this path safe for the host runner. This job runs
+      # in a separate Playwright container with a different Git HOME/owner.
+      # Trust ONLY GitHub's exact checkout workspace, never safe.directory=*.
+      - name: Trust checked-out workspace inside Public Services container
         run: |
           set -euo pipefail
-          [[ -n "${GITHUB_WORKSPACE:-}" ]] || { echo "::error::Missing checkout workspace"; exit 1; }
+          [[ -n "${GITHUB_WORKSPACE:-}" && -d "$GITHUB_WORKSPACE/.git" ]] || {
+            echo "::error::Missing checked-out GitHub workspace"; exit 1;
+          }
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           [[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]] || {
-            echo "::error::Unexpected Git checkout directory"; exit 1;
+            echo "::error::Checkout path does not match GitHub workspace"; exit 1;
           }
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
@@ -215,29 +221,38 @@ jobs:
         env:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_MERGE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::Invalid event source/base SHA"; exit 1;
+          [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_MERGE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "::error::Invalid event source/base/merge SHA"; exit 1;
           }
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]] || {
+            echo "::error::Checkout differs from the exact PR event merge SHA"; exit 1;
+          }
+          # Preserve production #3490's bounded shallow-history recovery. Raw
+          # header proof below still checks exact immutable parents independently.
           tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
           tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
-          # GitHub checkout occasionally keeps the exact PR merge shallow even
-          # at fetch-depth 2. Recover ONLY its missing history, never substitute
-          # an arbitrary PR head or mark an unverified checkout as passing.
           if [[ "$tested_head" != "$PR_HEAD_SHA" || ! "$tested_base" =~ ^[0-9a-f]{40}$ ]]; then
             actual_checkout="$(git rev-parse HEAD)"
             [[ "$actual_checkout" == "$GITHUB_SHA" && "$(git rev-parse --is-shallow-repository)" == true ]] || {
               echo "::error::Unexpected or non-shallow PR checkout; refusing recovery"; exit 1;
             }
-            # One bounded source-only deepening call, no full clone and no
-            # second workflow. All exact-parent and ancestry checks stay below.
             git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"
             tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
             tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
           fi
+          # The raw merge commit itself must contain exactly two parents,
+          # independent of whether shallow traversal can resolve HEAD^2.
+          mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
+          [[ "${#tested_parents[@]}" -eq 2 ]] || {
+            echo "::error::Exact event SHA is not a two-parent test merge"; exit 1;
+          }
+          tested_base="${tested_parents[0]}"
+          tested_head="${tested_parents[1]}"
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::Checkout is not the exact two-parent PR test merge"; exit 1;
+            echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
           if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
             for extra in 8 32; do
