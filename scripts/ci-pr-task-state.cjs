@@ -22,6 +22,10 @@ function laneOf(pr){
  // Retain a recovery lane only while stale CI queue hint still exists.
  // A confirmed undelivered wake can finish its two-label cleanup later.
  if(l.has('hh:ci-wake-unverified'))return l.has('hh:ci-needed')?'ci':null;
+ // A verified DIRTY merge conflict wins over stale source-repair labels.
+ // This classification permits conflict triage, never source writes.
+ if(l.has('hh:conflict-repair-needed')&&pr.mergeable===false&&
+    pr.mergeable_state==='dirty')return 'conflict';
  if(l.has('hh:repair-needed'))return 'repair';
  if(l.has('hh:ci-needed')&&!l.has('hh:ci-bootstrap-attempted'))return 'ci';
  if(l.has('hh:conflict-repair-needed'))return 'conflict';
