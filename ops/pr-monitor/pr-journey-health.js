@@ -58,7 +58,7 @@
 
  function liveForCohort(feed,cohort){
   if(feed?.schema!=='HH_PR_JOURNEY_LIVE_FEED_V1'||!Array.isArray(feed.rows)||!cohort)return null;
-  const eligible=new Map(cohort.mergedTimestamps||[] .map(x=>[x[0],x.slice(1)]));
+  const eligible=new Map((cohort.mergedTimestamps||[]).map(x=>[x[0],x.slice(1)]));
   const observed=[],createdLive=[],used=new Set();
   for(const row of feed.rows){
    const pair=eligible.get(row?.pr),cr=ms(row?.created_at),me=ms(row?.merged_at),at=ms(row?.live_at);
