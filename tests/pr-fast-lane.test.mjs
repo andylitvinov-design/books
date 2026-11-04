@@ -299,7 +299,14 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       GIT_AUTHOR_NAME: 'Synthetic', GIT_AUTHOR_EMAIL: 'synthetic@example.invalid',
       GIT_COMMITTER_NAME: 'Synthetic', GIT_COMMITTER_EMAIL: 'synthetic@example.invalid' };
     const run = (command, args, extra = {}, allowFailure = false) => {
-      const result = spawnSync(command, args, { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 });
+      const options = { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 };
+      let result = spawnSync(command, args, options);
+      // On a busy runner only an idempotent cold fixture initialization can retry.
+      // Never retry classifier checks, failed commits, or security assertions.
+      if (command === 'git' && args[2] === 'init' && result.error?.code === 'ETIMEDOUT') {
+        console.warn('Fast-lane fixture: cold git init timed out; retrying once');
+        result = spawnSync(command, args, { ...options, timeout: 30_000 });
+      }
       assert.ifError(result.error);
       if (allowFailure) return result;
       assert.equal(result.status, 0, `${command}: ${result.stderr}`);
