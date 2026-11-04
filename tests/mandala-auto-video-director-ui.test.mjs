@@ -312,10 +312,9 @@ test("MyTube cards display the original scenario, not the four generic archetype
  assert.match(director,/Scenario concept; matching footage is verified separately/);
 });
 
-test("owner correction: two independent subtopics selected, input last and style script shared",()=>{
+test("owner correction: two independent subtopics selected, prompt first and style script shared",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
  const goalBlock=goals.slice(0,goals.indexOf("const topicPanel="));
- const topicBlock=goals.slice(goals.indexOf("const topicPanel="));
  assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
  assert.match(goalBlock,/popularTopicOrder\[selectedCategoryId\]\.map/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
@@ -324,8 +323,8 @@ test("owner correction: two independent subtopics selected, input last and style
    "subtopics must refine, never silently replace, the selected parent video category");
  assert.match(director,/selectedGoalIds\.includes\(item\.id\)/);
  assert.match(director,/selectedGoalIds\.length>=2/);
- assert.ok(topicBlock.indexOf("data-auto-video-input")>topicBlock.indexOf("data-auto-video-popular-topics"),
-   "manual input is the final action of Describe your topic");
+ assert.match(director,/createPortal\(requestInput,requestTarget\)/,
+   "the single manual prompt remains in the production first-screen slot");
  assert.match(studio,/const selectedStyleScenario=timelineTextClips\?\.length/,
    "manual timed captions take precedence over the original film plan");
  assert.match(studio,/:cinematicPlan\?\.shots\.length[\s\S]*?\?cinematicPlan\.shots\.map/,
@@ -387,4 +386,56 @@ test("unrecognized video prompts retain only the source-backed preset, without i
  const source=readFileSync(new URL("../lib/mandala/prompt-shot-director.mjs",import.meta.url),"utf8");
  assert.doesNotMatch(source,/\bfetch\s*\(/);
  assert.doesNotMatch(source,/\b(?:localStorage|sessionStorage|paidRenderApproved)\b/);
+});
+
+
+test("approved first screen keeps six tabs above a real 16:9 Canvas and one right-side video rail",()=>{
+ const mobile=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ const nav=studio.indexOf("data-video-quick-controls");
+ const film=studio.indexOf('id="video-hero"');
+ assert.ok(nav>=0&&film>nav,"six tabs precede the first video frame in the same preview section");
+ assert.match(studio,/data-video-player-with-controls/);
+ assert.match(studio,/data-video-next-sample/);
+ assert.match(studio,/data-video-open-scenarios/);
+ assert.match(studio,/data-video-another-sample/);
+ assert.match(studio,/quickPickStyle\(\(quickStyleIndex\+1\)%quickStylePosters.length\)/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+ assert.match(mobile,/\.heroWithRail/);
+ assert.match(mobile,/\.previewStage \.heroWithRail>\.hero/);
+ assert.match(mobile,/aspect-ratio:16\/9!important/);
+});
+
+test("single prompt input precedes goal filters, topic chooser and four story candidates",()=>{
+ const prompt=studio.indexOf("data-video-request-prompt");
+ const goal=studio.indexOf("data-video-director-goal-controls");
+ const topic=studio.indexOf("data-video-director-topic-controls");
+ assert.ok(prompt>=0&&prompt<goal&&goal<topic);
+ assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.match(director,/createPortal\(requestInput,requestTarget\)/);
+ assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
+ assert.match(director,/createPortal\(topicPanel,topicTarget\)/);
+ assert.match(director,/data-auto-video-story-options/);
+});
+
+test("brief and detailed questionnaires choose from existing licensed clips without a second provider",()=>{
+ assert.match(studio,/data-video-profile-picker/);
+ assert.match(director,/data-video-profile-short/);
+ assert.match(director,/data-video-profile-extended/);
+ assert.match(director,/data-video-profile-apply/);
+ assert.match(director,/profileMode==="extended"/);
+ assert.match(director,/onClick=\{applyProfile\}/);
+ assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:nextGoal,goalId:profileFocus/);
+ assert.match(director,/onCategoryChange\?\.\(nextTheme\);onGoalChange\(nextGoal\)/);
+ assert.doesNotMatch(director,/fetch\(/);
+ assert.doesNotMatch(director,/localStorage|sessionStorage/);
+});
+
+
+test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
+ for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
+  const handler=director.slice(director.indexOf(start),director.indexOf(end));
+  assert.ok(handler.length>0,start+" exists");
+  for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
+   assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
+ }
 });

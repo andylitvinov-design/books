@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { createPortal, flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
@@ -4107,9 +4107,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal")}</h3>
+            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Опишите запрос или выберите цель":locale==="es"?"1. Describe tu petición o elige un objetivo":"1. Describe your request or choose a goal")}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
+          <p className={videoStyles.quickStepHint}>{locale==="ru"
+            ?"Напишите своими словами или подберите сценарий кнопками ниже."
+            :locale==="es"?"Escribe tu idea o selecciona los filtros de abajo."
+            :"Write your idea or choose the filters below."}</p>
+          <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
+          <div className={videoStyles.quickProfileHost} data-video-profile-picker/>
+          <h4 className={videoStyles.quickGoalLabel}>{locale==="ru"?"Выберите цель видео":
+            locale==="es"?"Elige el objetivo":"Choose your video goal"}</h4>
           <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
           <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
             <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
@@ -4139,7 +4147,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         <section className={videoStyles.quickSection} data-video-topic-section
           data-workspace-section="video" aria-label={
-            locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}>
+            locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
         </section>
         {/* Original verified AI Director from #2913: open only from the free-help
@@ -4213,7 +4221,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
           data-video-live-stage aria-labelledby="video-live-stage-title">
-          <div className={videoStyles.previewStageHeading}>
+        {(()=>{
+        const nav=(
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        {workspaceTabs.map(item=><button type="button" key={item.id}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
+          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-controls="video-workspace-panel" disabled={recording||preparing}
+          onClick={()=>{
+            setActiveWorkspace(item.id);
+            if(item.id!=="practices")setIntroPlaying(false);
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
+          }}><item.Icon size={18} aria-hidden="true"/>
+          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
+          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
+        </button>)}
+      </nav>
+        );
+        return activeWorkspace==="effects"&&effectsNavTarget
+          ?createPortal(nav,effectsNavTarget)
+          :activeWorkspace==="editor"&&montageNavTarget
+            ?createPortal(nav,montageNavTarget):nav;
+      })()}
+        <div className={videoStyles.previewStageHeading}>
             <div>
               <small>{locale==="ru"?"ВАШ ВИДЕОЭКРАН":locale==="es"?"TU PANTALLA DE VÍDEO":"YOUR VIDEO SCREEN"}</small>
               <h3 id="video-live-stage-title">{layout.therapyHeading}</h3>
@@ -4222,6 +4254,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>
             <span className={videoStyles.previewStageBadge}>{studioMode==="therapy"?"01 — 08":layout.previewCta}</span>
           </div>
+      <div className={videoStyles.heroWithRail} data-video-player-with-controls>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
         data-hero-promo={!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
@@ -4275,30 +4308,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
-      {(()=>{
-        const nav=(
-      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
-        {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={recording||preparing}
-          onClick={()=>{
-            setActiveWorkspace(item.id);
-            if(item.id!=="practices")setIntroPlaying(false);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/>
-          <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
-          <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
-        </button>)}
-      </nav>
-        );
-        return activeWorkspace==="effects"&&effectsNavTarget
-          ?createPortal(nav,effectsNavTarget)
-          :activeWorkspace==="editor"&&montageNavTarget
-            ?createPortal(nav,montageNavTarget):nav;
-      })()}
+      <aside className={videoStyles.heroRail} aria-label={locale==="ru"?"Видеопримеры":locale==="es"?"Ejemplos":"Video samples"}>
+        <button type="button" data-video-next-sample disabled={recording||preparing}
+          aria-label={locale==="ru"?"Следующий видеопример":locale==="es"?"Siguiente vídeo":"Next video"}
+          onClick={()=>quickPickStyle((quickStyleIndex+1)%quickStylePosters.length)}>
+          <ChevronRight size={22} aria-hidden="true"/>
+        </button>
+        <button type="button" data-video-open-scenarios
+          aria-label={locale==="ru"?"Посмотреть четыре сценария":locale==="es"?"Ver cuatro historias":"See four stories"}
+          onClick={()=>document.querySelector("[data-auto-video-story-options]")?.scrollIntoView({behavior:"smooth",block:"center"})}>
+          <ListVideo size={20} aria-hidden="true"/>
+        </button>
+        <button type="button" data-video-another-sample disabled={recording||preparing}
+          aria-label={locale==="ru"?"Другой видеопример":locale==="es"?"Otro vídeo":"Another example"}
+          onClick={()=>quickPickStyle((quickStyleIndex+2)%quickStylePosters.length)}>
+          <RefreshCw size={20} aria-hidden="true"/>
+        </button>
+      </aside>
+      </div>
+
       {/* Show the introductory film separately; the Canvas stays usable. */}
       {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
         data-workspace-section="practices" data-video-therapy-info>
