@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {listMyTubePlots} from '../lib/mandala/mytube-scenario-plots.mjs';
 import {
   listTelegramStoryCategories,listTelegramStorySubcategories,
   listTelegramStoryTopics,listTelegramStoryScenarios,listTelegramStoryPlots,
@@ -44,4 +45,35 @@ test('Invalid IDs never resolve to footage or another scenario',()=>{
     assert.deepEqual(listTelegramStoryPlots(id),[]);
     assert.equal(resolveTelegramStoryPlot(id),null);
   }
+});
+
+test('Telegram plot IDs, labels, synopsis and all four story beats equal the live MyTube website',async()=>{
+ let compared=0,languageVariants=0;
+ for(const lang of ['ru','en','es']){
+  for(const category of listTelegramStoryCategories(lang)){
+   for(const sub of listTelegramStorySubcategories(category.id,lang)){
+    for(const topic of listTelegramStoryTopics(category.id,sub.id,lang)){
+     for(const scenario of listTelegramStoryScenarios(topic.id,lang)){
+      const site=await listMyTubePlots(scenario.id,lang);
+      const bot=listTelegramStoryPlots(scenario.id,lang);
+      assert.equal(site.length,4,scenario.id);
+      assert.deepEqual(bot.map(p=>p.id),site.map(p=>p.id));
+      for(let i=0;i<4;i++){
+       assert.equal(bot[i].label,site[i].label);
+       assert.equal(bot[i].synopsis,site[i].synopsis);
+       assert.equal(bot[i].plotMode,site[i].plotMode);
+       assert.deepEqual(bot[i].visualBeats,site[i].beats);
+       assert.equal(bot[i].categoryId,site[i].categoryId);
+       assert.equal(bot[i].topicId,site[i].topicId);
+       assert.equal(bot[i].canExport,false);
+       languageVariants++;
+      }
+      compared++;
+     }
+    }
+   }
+  }
+ }
+ assert.equal(compared,256*3);
+ assert.equal(languageVariants,1024*3);
 });
