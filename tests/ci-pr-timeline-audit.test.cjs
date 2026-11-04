@@ -116,6 +116,23 @@ test('reject other branch and unverifiable timestamps',()=>{
 });
 
 
+test('native partial rerun proves green from latest successful required checks on unchanged HEAD',()=>{
+ const rerun=makeRun(101,B,54,2);
+ const list=[
+  makeJob(11,101,1,'core-lint-types-build',54,60,61,'success'),
+  makeJob(12,101,1,'hh-specialist',54,62,68,'failure'),
+  makeJob(13,101,1,'hh-merge-check',68,69,70,'failure'),
+  makeJob(14,101,2,'hh-specialist',74,75,77,'success'),
+  makeJob(15,101,2,'hh-merge-check',79,80,82,'success')
+ ];
+ const audit=analyzePrTimeline({pr,runs:[rerun],jobs:list,now:Date.parse(plus(100))});
+ assert.equal(audit.stage_totals_minutes.waiting_merge,8);
+ assert(audit.chronology.some(e=>e.kind==='ci_green'&&e.proof==='cumulative_rerun'));
+ assert(audit.intervals.some(x=>x.stage==='waiting_merge'&&x.evidence_urls.some(u=>u.endsWith('/job/15'))));
+ const broken=analyzePrTimeline({pr,runs:[rerun],jobs:list.map(j=>j.id===15?{...j,conclusion:'failure'}:j),now:Date.parse(plus(100))});
+ assert.equal(broken.stage_totals_minutes.waiting_merge,0);
+});
+
 test('incomplete workflow inventory never claims created → the real first CI',()=>{
   const r=analyzePrTimeline({pr,runs,jobs,events:repair,now:Date.parse(plus(100)),runInventoryComplete:false});
   assert.equal(r.stage_totals_minutes.created_to_first_ci,0);
