@@ -124,3 +124,25 @@ test('a previous source HEAD can never be paired with a newer merge',()=>{
  assert.equal(s.phase_minutes.stages.ci_green_to_merge.n,0);
  assert.equal(s.phase_minutes.stages.merged_to_live_verified.average_min,null);
 });
+
+test('trusted per-HEAD stage receipts measure discrete transitions without invented gaps',()=>{
+ const stage=(name,mins,task=KEY,head=SHA)=>({kind:'stage',stage:name,at:new Date(NOW-mins*60000).toISOString(),pr:7,head,task,source:'verified-bot'});
+ const rows=[stage('ready',50,null),stage('triage',45,null),stage('claimed',40),
+  stage('repair_started',35),stage('source_published',30)];
+ const s=summarizeWindow({events:rows,jobs:[],coverage:complete,now:NOW,windowMs:3600000}).phase_minutes.stages;
+ assert.equal(s.ready_to_triage.average_min,5);
+ assert.equal(s.triage_to_claimed.average_min,5);
+ assert.equal(s.claimed_to_repair_started.average_min,5);
+ assert.equal(s.repair_started_to_source_published.average_min,5);
+ assert.equal(s.created_to_ready.average_min,null);
+ assert.equal(s.ready_to_triage.coverage,'SAMPLE_NOT_TOTAL');
+});
+test('duplicate or cross-HEAD stage receipts are not mistaken for continuous work',()=>{
+ const stage=(name,mins,head=SHA)=>({kind:'stage',stage:name,at:new Date(NOW-mins*60000).toISOString(),pr:7,head,task:KEY});
+ const s=summarizeWindow({events:[stage('claimed',40),stage('repair_started',32),
+  stage('repair_started',30),stage('source_published',20),stage('ready',50,NEW),
+  stage('triage',40)],jobs:[],coverage:complete,now:NOW,windowMs:3600000}).phase_minutes.stages;
+ assert.equal(s.claimed_to_repair_started.n,0);
+ assert.equal(s.repair_started_to_source_published.n,0);
+ assert.equal(s.ready_to_triage.n,0);
+});
