@@ -105,3 +105,23 @@
     );
   }
 }
+
+/* A single mobile chat owns the visual viewport. All existing navigation
+   remains available outside editing/active private-conversation focus. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"]),
+ body:has(.hh-messages-page [data-hh-order-active-chat]){
+  overflow:hidden
+ }
+ body:has(.hh-messages-page [data-chat-editing="true"]) [data-hh-unified-dock],
+ body:has(.hh-messages-page [data-hh-order-active-chat]) [data-hh-unified-dock],
+ body:has(.hh-messages-page [data-simple-messages][data-detail-open="true"]) [data-hh-unified-dock]{
+  display:none!important
+ }
+ .hh-app.hh-messages-page:has([data-hh-order-active-chat]) .hh-mobile-app-nav{
+  display:none!important
+ }
+ .hh-app.hh-messages-page:has([data-chat-editing="true"]) .hh-mobile-app-nav{
+  display:none!important
+ }
+}

@@ -158,7 +158,28 @@ for(const browserType of [chromium,webkit]){
     const aiTab=root.getByRole('tab',{name:locale==='ru'?'ИИ':locale==='es'?'IA':'AI',exact:true})
     await aiTab.click()
     await root.locator('#hh-ai-panel').waitFor({state:'visible',timeout:15000})
-    sameShell(await shell(),'AI')
+    // The AI view is intentionally viewport-pinned; unlike list folders, its
+    // header must not be compared to the page-flow position of Orders.
+    const aiComposer=root.locator('#hh-ai-panel textarea').first()
+    await aiComposer.waitFor({state:'visible',timeout:15000})
+    const aiGeometry=await aiComposer.evaluate(el=>{
+      const r=el.getBoundingClientRect()
+      const hub=el.closest('[data-orders-clients-hub]').getBoundingClientRect()
+      return {composerBottom:r.bottom,hubBottom:hub.bottom,position:getComputedStyle(el.closest('[data-orders-clients-hub]')).position}
+    })
+    assert.equal(aiGeometry.position,'fixed',key+' AI chat viewport pinned')
+    assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
+      key+' visible composer '+JSON.stringify(aiGeometry))
+    const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
+    await firstQuick.click()
+    assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
+    assert.equal(await aiComposer.evaluate(el=>document.activeElement===el),false,
+      key+' quick action must not autofocus keyboard')
+    await aiComposer.fill('Synthetic unsent AI draft')
+    await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
+    await aiTab.click()
+    assert.equal(await aiComposer.inputValue(),'Synthetic unsent AI draft',
+      key+' AI draft survives switching folders')
     // Five approved AI actions stay on one horizontal row on each mobile width.
     const aiLayout=await page.evaluate(()=>{
       const rail=document.querySelector('[data-chat-menu-rail]')
@@ -174,6 +195,7 @@ for(const browserType of [chromium,webkit]){
     assert.ok(aiLayout.outerWidth>=width-32,key+' full width AI workspace '+JSON.stringify(aiLayout))
     await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
     await customer.waitFor({state:'visible',timeout:15000})
+    // The list header returns to its stable page-flow geometry after AI.
     sameShell(await shell(),'clients return')
     const clientWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
     assert.ok(clientWidth<=width+3,key+' clients overflow '+clientWidth)

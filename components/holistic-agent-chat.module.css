@@ -89,3 +89,61 @@
  border-color:#e2dfd7;background:#fff;line-height:1.45}
 :global(.hh-messages-page) .root[data-compact] .actions button[type=submit]{background:#067a67;border-color:#067a67;color:#fff}
 @media(max-width:354px){:global(.hh-messages-page) .root[data-compact] .thread{min-height:clamp(170px,25dvh,240px);max-height:40dvh}}
+
+/* Mobile Messages: pinned real chat composer and independently scrolling log. */
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact]{
+  flex:1;min-height:0;max-height:none;height:100%;overflow:hidden;
+  display:flex;flex-direction:column;gap:4px
+ }
+ :global(.hh-messages-page) .root[data-compact]>.compactDisclosure{
+  flex:none;margin:0;font-size:10px;line-height:1.25
+ }
+ :global(.hh-messages-page) .root[data-compact]>.compactSettings{
+  flex:none;margin:0;padding:0 8px
+ }
+ :global(.hh-messages-page) .root[data-compact]>.compactSettings>summary{
+  min-height:33px;padding:8px 2px;font-size:11px
+ }
+ :global(.hh-messages-page) .root[data-compact]>.thread{
+  order:1;flex:1 1 auto;min-height:48px;max-height:none;
+  overflow-y:auto;overscroll-behavior:contain;padding:9px
+ }
+ :global(.hh-messages-page) .root[data-compact]>.choices{
+  order:2;flex:none;max-height:22%;overflow-y:auto
+ }
+ :global(.hh-messages-page) .root[data-compact]>.programPanel{
+  order:3;flex:none;max-height:20%;overflow-y:auto
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form{
+  order:4;flex:none;min-height:0;gap:5px;margin:0;padding:7px 3px 2px;
+  border-top:1px solid #ece7dd;background:#fffdfa
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form textarea{
+  box-sizing:border-box;height:45px;min-height:45px;max-height:100px;
+  resize:vertical;font-size:16px;line-height:1.35;padding:10px 12px
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form .actions button{
+  min-height:40px
+ }
+ :global(.hh-messages-page) .root[data-compact][data-has-messages="true"]>.compactDisclosure{
+  display:none
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.compactDisclosure,
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.compactSettings,
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.programPanel{
+  display:none
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form{
+  grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions{
+  display:flex;align-items:center;gap:4px
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions button:first-child{
+  display:none
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form textarea{
+  height:44px;min-height:44px;max-height:92px
+ }
+}

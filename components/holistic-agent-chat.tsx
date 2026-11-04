@@ -117,13 +117,19 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [busy,setBusy]=useState(false);
   const controller=useRef<AbortController|null>(null);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  const threadRef=useRef<HTMLDivElement|null>(null);
+  const followTail=useRef(true);
   useEffect(()=>{
     if(!quickPrompt)return;
     setDraft(quickPrompt.text.slice(0,2000));
     if(quickPrompt.format)setFormat(quickPrompt.format);
     // The user explicitly selected a rail action: prepare, never auto-send it.
-    composerRef.current?.focus({preventScroll:true});
-  },[quickPrompt]);
+    if(!compact)composerRef.current?.focus({preventScroll:true});
+  },[quickPrompt,compact]);
+  useEffect(()=>{
+    const thread=threadRef.current;
+    if(thread&&followTail.current)thread.scrollTop=thread.scrollHeight;
+  },[messages.length]);
   const [previewFocus,setPreviewFocus]=useState<PreviewFocus>("");
   const [previewMinutes,setPreviewMinutes]=useState<8|12|20>(12);
   const [previewReady,setPreviewReady]=useState(false);
@@ -212,7 +218,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       setBusy(false);controller.current=null;
     }
   }
-  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}>
+  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
+    data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
@@ -257,7 +264,9 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       {t.consent}
     </label>}
     </details>
-    <div className={styles.thread} role="log" aria-live="polite">
+    <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
+      onScroll={event=>{const el=event.currentTarget;
+        followTail.current=el.scrollHeight-el.scrollTop-el.clientHeight<64}}>
       {!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
     </div>
@@ -279,7 +288,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     {status&&<p role="status">{status}</p>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
-        maxLength={2000} rows={compact?2:3} disabled={busy} aria-label={t.placeholder}/>
+        maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
         <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
