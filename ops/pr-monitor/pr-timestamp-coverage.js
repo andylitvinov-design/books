@@ -124,8 +124,12 @@
     inner.append(row);
    }
    inner.append(make('p','hh-pr-ts-note','HEAD: '+r[1]+'. Времена первого наблюдения — не даты фактического наступления этапа.'));
-   var link=make('a','','Открыть точную хронологию GitHub #'+r[0]);
-   link.href='/?pr='+r[0]+'#hh-pr-attribution';
+   var production=r[2]===1;
+   var link=make('a','',production?'Открыть аудит PR #'+r[0]:
+     'Открыть PR #'+r[0]+' в GitHub (другая base-ветка)');
+   link.href=production?'/?pr='+r[0]+'#hh-pr-attribution':
+     'https://github.com/andylitvinov-design/books/pull/'+r[0];
+   if(!production){link.target='_blank';link.rel='noopener noreferrer';}
    inner.append(link);block.append(inner);list.append(block);
   }
   rowsBox.append(list);
