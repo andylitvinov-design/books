@@ -7,6 +7,9 @@ test('watchdog has independent cron; failed Core is a direct event workflow',()=
   const s=read('hh-pr-ten-minute-watchdog');
   const direct=read('hh-pr-direct-core-failure');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
+  for(const tag of ['HH watchdog / dry run','HH watchdog / completion wake',
+    'HH watchdog / direct handoff','HH watchdog / reconcile'])
+    assert.ok(s.includes(tag),'Watchdog must distinguish real reconcile from no-op dispatch '+tag);
   assert.ok(!s.includes("      - 'HH PR core release gate'"));
   assert.ok(!s.includes("  failed-core-event-handoff:"));
   assert.ok(s.includes("      - 'HH PR source Repair Worker'"));

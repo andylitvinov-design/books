@@ -25,6 +25,34 @@ test('normal capacity and safe emergency rescue under global CI overload',()=>{
   assert.equal(admission(19,133,null,NOW),'WATCHDOG_HISTORY_UNVERIFIED');
   assert.equal(admission(19,133,[{event:'workflow_dispatch',status:'queued',created_at:new Date(NOW-90*60_000).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
 });
+test('non-reconcile Watchdog dispatches cannot block a genuine event-driven refill',()=>{
+ const modes=['HH watchdog / dry run','HH watchdog / completion wake',
+  'HH watchdog / direct handoff'];
+ for(const title of modes){
+  assert.equal(admission(0,0,[{
+   event:'workflow_dispatch',display_title:title,status:'in_progress',
+   created_at:new Date(NOW-30_000).toISOString()
+  }],NOW),'DISPATCH',title+' cannot occupy reconcile cooldown');
+  assert.equal(admission(0,0,[{
+   event:'workflow_dispatch',display_title:title,status:'completed',
+   created_at:new Date(NOW-60_000).toISOString()
+  }],NOW),'DISPATCH',title+' cannot mark reconcile recent');
+ }
+ assert.equal(admission(0,0,[{
+  event:'workflow_dispatch',display_title:'HH watchdog / reconcile',
+  status:'completed',created_at:new Date(NOW-30_000).toISOString()
+ }],NOW),'WATCHDOG_RECENT');
+ assert.equal(admission(0,0,[{
+  event:'workflow_dispatch',display_title:'HH PR 10-minute watchdog',
+  status:'queued',created_at:new Date(NOW-30_000).toISOString()
+ }],NOW),'WATCHDOG_ALREADY_ACTIVE',
+ 'legacy unlabelled dispatch remains conservative during rollout');
+ assert.equal(admission(0,0,[{
+  event:'schedule',display_title:'HH PR 10-minute watchdog',
+  status:'queued',created_at:new Date(NOW-30_000).toISOString()
+ }],NOW),'WATCHDOG_ALREADY_ACTIVE');
+});
+
 test('queued, running or just-completed watchdog prevents duplicate dispatch',()=>{
   assert.equal(admission(0,0,[{status:'queued',created_at:new Date(NOW-50000).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
   assert.equal(admission(0,0,[{status:'completed',created_at:new Date(NOW-100000).toISOString()}],NOW),'WATCHDOG_RECENT');

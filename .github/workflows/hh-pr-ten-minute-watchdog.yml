@@ -1,4 +1,14 @@
 name: HH PR 10-minute watchdog
+# The event's purpose is part of the immutable trusted workflow metadata.
+# A direct worker refill, completion relay or dry-run is not a reconciliation
+# and must not suppress the next genuine schedule/manual reconcile.
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch' &&
+      (inputs.dry_run && 'HH watchdog / dry run' ||
+       inputs.completion_wake && 'HH watchdog / completion wake' ||
+       inputs.direct_dispatch && 'HH watchdog / direct handoff' ||
+       'HH watchdog / reconcile') ||
+      'HH PR 10-minute watchdog' }}
 on:
   schedule:
     - cron: '6,16,26,36,46,56 * * * *'
