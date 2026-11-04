@@ -111,6 +111,40 @@ async function routeStart(cookies = [], intentId, continueTo = null, extra = {})
   for(const c of response.cookies.getAll()) { if(c.maxAge===0) jar.delete(c.name); else jar.set(c.name,c) }
   return {cookies:[...jar.values()], callback:new URL(url.searchParams.get('redirect_to')), challenge:url.searchParams.get('code_challenge')}
 }
+test('Telegram OIDC uses the real OAuth PKCE start, stays off by default and does not weaken Google',async()=>{
+  const original=process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+  async function call(body){
+    const req=new NextRequest(origin+'/api/app/auth/start',{
+      method:'POST',headers:{origin,'content-type':'application/json'},
+      body:JSON.stringify({locale:'en',...body}),
+    })
+    const response=await route.POST(req,{params:Promise.resolve({path:['auth','start']})})
+    return {status:response.status,data:await response.json(),cookies:response.cookies.getAll()}
+  }
+  try{
+    delete process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+    const blocked=await call({provider:'telegram'})
+    assert.equal(blocked.status,503)
+    assert.equal(blocked.data.error,'TELEGRAM_LOGIN_UNAVAILABLE')
+    const invalid=await call({provider:'not-a-provider'})
+    assert.equal(invalid.status,400)
+    assert.equal(invalid.data.error,'INVALID_AUTH_PROVIDER')
+    const google=await call({provider:'google'})
+    assert.equal(google.status,200)
+    assert.equal(new URL(google.data.redirectUrl).searchParams.get('provider'),'google')
+    process.env.HH_APP_TELEGRAM_OIDC_ENABLED='true'
+    const telegram=await call({provider:'telegram'})
+    assert.equal(telegram.status,200)
+    const url=new URL(telegram.data.redirectUrl)
+    assert.equal(url.searchParams.get('provider'),'custom:telegram')
+    assert.equal(url.searchParams.get('code_challenge_method'),'s256')
+    assert(telegram.cookies.some(item=>item.httpOnly && item.name.startsWith('hh-app-auth')))
+  }finally{
+    if(original===undefined)delete process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+    else process.env.HH_APP_TELEGRAM_OIDC_ENABLED=original
+  }
+})
+
 async function routeCallback(flow, cookies, options={}) {
   const url = new URL(flow.callback)
   if(options.cancelled) url.searchParams.set('error','access_denied')
