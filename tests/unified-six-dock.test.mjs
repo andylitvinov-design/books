@@ -62,7 +62,8 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/translate3d\(-50%,0,0\)/);
  assert.match(css,/bottom:var\(--hh-unified-viewport-inset,0px\)/);
  assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/);
- assert.match(dock,/viewport\.offsetTop \+ viewport\.height/);
+ assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
+ assert.ok(dock.includes('const visualBottom = visualOffsetTop + visualHeight'));
  assert.match(dock,/visualDockBottomCorrection\(/);
  assert.doesNotMatch(dock,/mobileVisualBottomGap\(/);
  assert.match(dock,/--hh-unified-viewport-inset/);

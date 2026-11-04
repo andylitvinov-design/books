@@ -41,7 +41,14 @@ concurrency:
 jobs:
   browser:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    # Official version-matched Playwright image eliminates the previously
+    # observed ~18m apt cold start on moving ubuntu-latest/26.04.
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -85,12 +92,24 @@ jobs:
           node --test tests/video-csp-navigation.test.mjs tests/tantra-video-lifecycle.test.mjs
           npx eslint middleware.ts components/tantra-reiki-testimonials.tsx components/tantra-video-testimonials.tsx
           if [[ "$GITHUB_EVENT_NAME" != 'pull_request' || "${GITHUB_BASE_REF:-}" != 'codex/public-book-library' ]]; then npx tsc --noEmit; fi
-      - name: Install isolated browser tools
+      - name: Verify version-matched preinstalled Chromium and WebKit
         if: github.event_name != 'pull_request' || steps.risk.outputs.full == 'true'
         run: |
-          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.64.0
+          set -euo pipefail
+          npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.64.0
           ln -s /tmp/tantra-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/tantra-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          [[ "${PLAYWRIGHT_BROWSERS_PATH:-}" == /ms-playwright ]] || {
+            echo 'Missing pinned preinstalled Playwright browser path' >&2
+            exit 1
+          }
+          node --input-type=module <<'NODE'
+          import { chromium, webkit } from '@playwright/test'
+          for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
+            const browser=await engine.launch({headless:true,timeout:15000})
+            await browser.close()
+            console.log('Verified real version-matched Playwright engine:',name)
+          }
+          NODE
       - name: Build proposed application
         if: github.event_name != 'pull_request' || steps.risk.outputs.full == 'true'
         run: npm run build

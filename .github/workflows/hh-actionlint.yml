@@ -46,12 +46,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Fail cheap, on ubuntu-slim: do not wait for the production Core
-          # runner to discover a deterministic unit-contract typo.
-          # These tests use only Node built-ins and do not run npm install.
-          if [[ -f tests/pr-fast-lane.test.mjs ]]; then
-            node --test tests/pr-fast-lane.test.mjs
-          fi
+          # On ubuntu-slim keep only the inexpensive worker contract. The
+          # synthetic Git topology suite in tests/pr-fast-lane.test.mjs already
+          # runs on mandatory Core (ubuntu-24.04); running it again here caused
+          # spawnSync git ETIMEDOUT under runner contention (PR #3497).
+          # YAML syntax and changed-workflow ShellCheck remain mandatory below.
           if [[ -f tests/ci-deterministic-eslint-repair.test.mjs ]]; then
             [[ -f scripts/ci-deterministic-eslint-repair.mjs ]] || {
               echo 'Repair contract exists but its worker source is missing' >&2

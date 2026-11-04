@@ -18,7 +18,6 @@ on:
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:
