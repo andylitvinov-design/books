@@ -107,15 +107,16 @@
    const a=samples[k],n=a.length,mean=n?a.reduce((sum,v)=>sum+v,0)/n:null;
    return [k,{measured_prs:n,cohort_prs:N,coverage_pct:n*100/N,
     mean_measured_min:mean,p50_min:pct(a,.5),p95_min:pct(a,.95),
-    contribution_mean_minutes:totals[k]/N/MILLIS}];
+    contribution_mean_minutes:n?totals[k]/N/MILLIS:null}];
   }));
   const KNOWN=['workflow_wait','runner_wait','checks'],
    UNKNOWN=['before_unknown','ci_wave_unknown','ci_other_unknown','after_unknown','no_archive_unknown'];
-  const top=KNOWN.map(key=>({stage:key,contribution_mean_minutes:totals[key]/N/MILLIS}))
-   .sort((a,b)=>b.contribution_mean_minutes-a.contribution_mean_minutes)[0];
+  const top=KNOWN.filter(key=>stage_kpis[key].measured_prs>0)
+   .map(key=>({stage:key,contribution_mean_minutes:totals[key]/N/MILLIS}))
+   .sort((a,b)=>b.contribution_mean_minutes-a.contribution_mean_minutes)[0]||null;
   const unattributed=UNKNOWN.reduce((sum,key)=>sum+totals[key],0)/N/MILLIS;
   const largest_delay={largest_measured_stage:top,unattributed_mean_minutes:unattributed,
-   status:top.contribution_mean_minutes>unattributed?
+   status:top&&top.contribution_mean_minutes>unattributed?
     'LARGEST_VERIFIED_INTERVAL_BOUNDED':'UNATTRIBUTED_TIME_MAY_DOMINATE',
    note:'Самая длинная подтверждённая категория, а не доказанная первопричина.'};
   return {schema:VERSION,period:{from:cohort.from,to:cohort.to},
