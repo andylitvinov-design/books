@@ -91,3 +91,23 @@
  .welcome h2{font-size:13px}
  .welcome p{font-size:11px}
 }
+
+/* Real chat-first workspace: only the thread scrolls, editor never leaves view. */
+@media(max-width:760px){
+ .layout{height:100%;min-height:0;overflow:hidden}
+ .rail{flex:none}
+ .rail button{min-height:47px;height:47px;border-radius:12px}
+ .rail button svg{width:17px;height:17px}
+ .content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:8px}
+ .welcome{flex:none;min-height:0;padding:6px 9px;gap:7px}
+ .welcome img{width:30px;height:30px}
+ .welcome h2{font-size:13px}
+ .welcome p{font-size:11px}
+ .prepared{flex:none;margin:3px 0;padding:5px 8px;font-size:11px}
+ .footer{flex:none;font-size:10px;padding:3px 0 0}
+ .layout:has([data-has-messages="true"]) .welcome{display:none}
+ [data-keyboard-open="true"] .rail,
+ [data-keyboard-open="true"] .welcome,
+ [data-keyboard-open="true"] .prepared,
+ [data-keyboard-open="true"] .footer{display:none}
+}

@@ -471,3 +471,47 @@
  .root .sections .count{right:0;top:-5px;min-width:18px;height:18px;font-size:10px}
  .root .introArt{width:48px;height:58px}
 }
+
+/* 4 Nov chat-first mobile layout: true pinned conversations, no nested dock. */
+.root [role="tabpanel"][hidden]{display:none!important}
+@media(max-width:760px){
+ .root[data-section="ai"]{
+  position:fixed;z-index:1200;left:0;right:0;top:var(--hh-messenger-top,0px);
+  width:100%;max-width:none;box-sizing:border-box;
+  height:var(--hh-messenger-height,calc(100dvh - 96px));min-height:0;
+  display:flex;flex-direction:column;overflow:hidden;padding:7px 9px 4px;
+  background:#fcfaf5;overscroll-behavior:contain
+ }
+ .root[data-section="ai"] .sections{flex:none}
+ .root[data-section="ai"] .head{flex:none}
+ .root[data-section="ai"] [data-hh-messenger-ai]{flex:1;min-height:0;overflow:hidden}
+ .root[data-section="ai"][data-chat-editing="true"] .head{
+  height:42px;min-height:42px;padding:5px 10px;margin-bottom:5px;border-radius:12px
+ }
+ .root[data-section="ai"][data-chat-editing="true"] .head h1{font-size:19px;margin:0}
+ .root[data-section="ai"][data-chat-editing="true"] .head p{display:none}
+ .root[data-section="ai"][data-chat-editing="true"] .sections{margin-bottom:5px}
+ .root[data-section="ai"][data-chat-editing="true"] .sections button,
+ .root[data-section="ai"][data-chat-editing="true"] .sections .aiTab{
+  height:42px;min-height:42px
+ }
+ .root[data-section="orders"] .conversation{
+  box-sizing:border-box;position:fixed;z-index:4000;
+  top:var(--hh-order-chat-top,0px);inset-inline:0;width:100%;
+  height:var(--hh-order-chat-height,100dvh);min-height:0;
+  display:flex;flex-direction:column;overflow:hidden;
+  padding:calc(5px + env(safe-area-inset-top)) 9px 5px;
+  border:0;border-radius:0;box-shadow:none;background:#fffdfa
+ }
+ .root[data-section="orders"] .conversation .chatBar{
+  flex:none;display:flex;align-items:center;gap:9px;
+  border-bottom:1px solid #e7e3da;margin-bottom:3px
+ }
+ .root[data-section="orders"] .conversation .chatBar h3{margin:0;font-size:13px}
+ .root[data-section="orders"] .conversation .chatBar .back{
+  flex:none;display:inline-flex;align-items:center;min-height:46px;margin:0
+ }
+ .root[data-section="orders"] .conversation>[data-inline="true"]{
+  flex:1;min-height:0;overflow:hidden
+ }
+}
