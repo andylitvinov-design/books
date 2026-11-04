@@ -352,6 +352,10 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
     stage_totals_minutes:Object.fromEntries(STAGES.map(key=>[key,minute(totals[key])])),
     accounted_percent:elapsed?round(100*(elapsed-totals.unattributed)/elapsed):100,
     unattributed_minutes:minute(totals.unattributed),
+    // Exact boundaries do not prove the cause of a delay.
+    reason_unproven_ms:totals.unattributed+totals.created_to_first_ci+totals.waiting_merge,
+    reason_unproven_minutes:minute(totals.unattributed+totals.created_to_first_ci+totals.waiting_merge),
+    reason_provenance:'TIME_BOUNDED_NOT_ROOT_CAUSE_VERIFIED',
     confirmed_runs:rs.length,confirmed_attempts:attempts.length,
     repeated_attempts:attempts.filter(a=>a!==firstAttempt).length,
     failures:failures.length,attempt_details:attemptsWithEvidence,
