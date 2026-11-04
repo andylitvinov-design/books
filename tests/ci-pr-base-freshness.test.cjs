@@ -8,6 +8,53 @@ const api=(path,status='modified',previous)=>({rest:{repos:{getBranch:async()=>(
 test('sensitive CI changes require CI against current production base',async()=>{
  assert.equal((await assessBaseFreshness({github:api('.github/workflows/gate.yml'),owner:'o',repo:'r',pr})).reason,'SENSITIVE_BASE_STALE');
 });
+
+test('current exact Core run base beats stale PR metadata without rerunning source tests',async()=>{
+ const result=await assessBaseFreshness({
+  github:api('.github/workflows/gate.yml'),owner:'o',repo:'r',pr,
+  verifiedRunBase:head,
+ });
+ assert.equal(result.ok,true);
+ assert.equal(result.reason,'SENSITIVE_BASE_VERIFIED');
+});
+
+test('only immutable isolated CI policy can reuse completed Core across narrow public-media source advance',async()=>{
+ const files=['components/mandala-free-video-studio.tsx',
+  'lib/mandala/free-film-source-loader.mjs',
+  'tests/free-film-source-loader.test.mjs',
+  'docs/MYTUBE_CAPCUT_TECHNOLOGY_PARITY_2026-11-04.md'];
+ const diff=paths=>({
+  status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+  base_commit:{sha:old},merge_base_commit:{sha:old},
+  commits:[{sha:head}],
+  files:paths.map(filename=>({filename,status:'modified'})),
+ });
+ const github=api('scripts/ci-specialist-aggregate.mjs');
+ let calls=0;
+ github.rest.repos.compareCommits=async args=>{
+  calls++;assert.equal(args.base,old);assert.equal(args.head,head);
+  return {data:diff(files)};
+ };
+ const checked=await assessBaseFreshness({
+  github,owner:'o',repo:'r',pr,verifiedRunBase:old,
+ });
+ assert.equal(checked.ok,true);
+ assert.equal(checked.reason,'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED');
+ assert.equal(calls,1,'one targeted read-only compare, no source rerun');
+ for(const path of [
+  '.github/workflows/core.yml','app/api/auth/route.ts',
+  'lib/ci/specialist-aggregate.mjs','package-lock.json',
+  'components/mandala-private-token.tsx',
+  'lib/mandala/payment-provider.mjs'
+ ]){
+  github.rest.repos.compareCommits=async()=>({data:diff([path])});
+  const bad=await assessBaseFreshness({github,owner:'o',repo:'r',pr,verifiedRunBase:old});
+  assert.equal(bad.reason,'SENSITIVE_COMPARE_UNSAFE',path);
+ }
+ github.rest.repos.compareCommits=async()=>({data:{...diff(files),status:'diverged'}});
+ assert.equal((await assessBaseFreshness({github,owner:'o',repo:'r',pr,verifiedRunBase:old})).ok,false);
+});
+
 test('ordinary documentation can stay behind without needless branch sync',async()=>{
  assert.equal((await assessBaseFreshness({github:api('docs/help.md'),owner:'o',repo:'r',pr})).ok,true);
 });
