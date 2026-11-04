@@ -768,3 +768,36 @@ test('IA WebKit host pins Ubuntu 24.04 and keeps full authenticated browser acce
   assert.match(source,/redis:\s*\n/);
   assert.match(source,/scripts\/verify-ia-v2\.mjs/);
 });
+
+
+test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual acceptance keeps it', () => {
+  const image = "image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}";
+  for (const [name, sourceContract, fullQA] of [
+    ['hh-app-browser.yml', 'node --test tests/ci-heavy-impact.test.mjs', 'Browser journey with protocol double, never Google or production'],
+    ['hh-portrait-mobile-browser.yml', 'node --test tests/portrait-report-actions.test.mjs', 'Five profile navigation with four scored sectors'],
+    ['hh-reiki-all-slides-browser.yml', 'node --test tests/reiki-referral-landing.test.mjs', 'Verify Chromium full 64 screens and Safari guest save-only checkpoint'],
+  ]) {
+    const workflow = read(name);
+    const postgres = workflow.split('    services:\n      postgres:\n')[1]?.split('    env:\n')[0];
+    assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
+    assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    assert.ok(workflow.includes(sourceContract), name + ' must still run its real PR source contract');
+    assert.ok(workflow.includes(fullQA), name + ' must preserve real-browser manual acceptance');
+    assert.match(workflow, /workflow_dispatch:/, name + ' manual QA must remain callable');
+    assert.doesNotMatch(workflow, /continue-on-error:\s*true/, name + ' cannot ignore real failures');
+  }
+});
+
+test('Messenger mobile Draft skips heavy runners and automatically rechecks on Ready', () => {
+  const workflow = read('hh-messenger-mobile-release.yml');
+  assert.match(workflow,
+    /^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(workflow.includes("  messenger-release:\n    # Draft staging skips costly source/security work; Ready/manual/push retain real contracts.\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'Draft should not allocate Messenger tests; Ready must still execute them');
+  for (const required of ['tests/app-auth-pkce.integration.mjs',
+    'tests/practitioner-direct-messages.test.mjs', 'tests/direct-message-media-transport.test.mjs',
+    'npm run build', 'workflow_dispatch:', '  push:']) {
+    assert.ok(workflow.includes(required), 'Messenger security and post-merge acceptance lost: ' + required);
+  }
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/, 'Real Messenger failures may never be advisory');
+});
