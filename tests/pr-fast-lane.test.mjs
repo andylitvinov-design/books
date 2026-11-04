@@ -1466,7 +1466,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
-  assert.match(specialist,/if: \$\{\{ !cancelled\(\) \}\}/);
+  assert.match(specialist,/if: \$\{\{ !cancelled\(\) && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
   assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -1484,7 +1484,7 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
   assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
-  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
