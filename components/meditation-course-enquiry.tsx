@@ -121,7 +121,14 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
         <div className={css.consent} data-meditation-course-consent>
           <input id={consentId} name="contactConsent" type="checkbox" checked={consent}
             onChange={event=>setConsent(event.target.checked)}/>
-          <label htmlFor={consentId}>
+          <label htmlFor={consentId} onClick={event=>{
+            // WebKit can drop the native label -> sibling input activation
+            // under the mobile dock. Handle exactly one label click, while the
+            // checkbox itself keeps native onChange and keyboard controls.
+            event.preventDefault();
+            if(busy)return;
+            setConsent(value=>!value);
+          }}>
             <span>{t.consent}</span>
           </label>
         </div>

@@ -3015,6 +3015,13 @@
    display:grid;width:100%;min-width:0;margin:0}
 }
 
+/* Compact mobile title for the unified six-button navigation flow. */
+.quickBrandMobileTitle{display:none}
+@media(max-width:759px){
+  .studio .quickBrandIdentity{display:none}
+  .studio .quickBrandMobileTitle{display:block;min-width:0;flex:1;color:#233c2c;
+    font:700 clamp(16px,4.4vw,20px)/1.1 Georgia,serif}
+}
 /* Owner 03 Nov: six real studio tools remain ONE row on iPhone.
    Full tab names stay accessible, compact labels keep 320px readable. */
 .quickNavCompact{display:none}
@@ -3298,6 +3305,7 @@
   .studio[data-active-workspace="video"] .heroEditorial h2{font-size:22px!important}
   .studio[data-active-workspace="video"] .heroEditorial p{font-size:12px!important}
   .studio[data-active-workspace="video"] .previewStage .heroPlay{left:82%;width:44px;height:44px}
+
 }
 
 

@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect,useMemo,useRef,useState} from "react";
+import Link from "next/link";
 import type {ChangeEvent,FormEvent} from "react";
 import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
@@ -618,6 +619,17 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
      <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
    </header>
+   <nav className={css.chatTabs} aria-label={
+     locale==="ru"?"ИИ, заказы и клиенты":locale==="es"?"IA, pedidos y clientes":"AI, orders and clients"}
+     data-video-chat-top-tabs>
+     <span aria-current="page">{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
+     <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}>
+       {locale==="ru"?"Заказы":locale==="es"?"Pedidos":"Orders"}
+     </Link>
+     <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}>
+       {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
+     </Link>
+   </nav>
    <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
      {lines.map(line=>line.role==="assistant"?<div key={line.id} className={css.assistantTurn}
          data-chat-assistant-turn={line.id}>

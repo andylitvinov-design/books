@@ -97,8 +97,9 @@ for (const engine of [chromium, webkit]) {
             const more = page.locator('[data-home-more-deferred="true"]');
             assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
               label + ': closed guidance must not inflate initial SSR/RSC');
-            for (const [key, path] of Object.entries({energy:'/explore/energy', love:'/explore/love',
-              business:'/explore/business', temple:'/temple-support', services:'/services', courses:'/academy'})) {
+            for (const [key, path] of Object.entries({'energy-confidence':'/explore/energy',
+              'love-relationships':'/explore/love', 'goals-money':'/explore/business',
+              'stress-anxiety':'/explore/stress', temple:'/temple-support', services:'/services', courses:'/academy'})) {
               assert.equal(await page.locator('[data-home-topic-filter="' + key + '"]').getAttribute('href'),
                 '/' + locale + path, label + ': existing topic route for ' + key);
             }

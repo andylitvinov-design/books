@@ -119,7 +119,7 @@ try {
         issues.push("all four published method stages must be visible without expanding details");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("fictional sample report link missing");
-      
+
       // Open, but never submit, the current user-invoked contact chooser.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');

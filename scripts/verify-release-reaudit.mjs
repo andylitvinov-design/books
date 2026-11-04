@@ -2,7 +2,7 @@ import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
-import { assertSyntheticLoopback, openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -364,109 +364,75 @@ async function exercise(engine, browserType, width) {
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
       await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        // Alchemy now has a dedicated form covered by verify-app-r1; retain the
-        // complete generic paid-selector contract on the actual imagery service.
         const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
         const paidPage = await context.newPage();
         try {
-        if (local) await paidPage.addInitScript(() => {
-          // Exercise the real private-browsing fallback: links stay on the page
-          // only when sessionStorage cannot persist the receipt. The request
-          // itself is mocked by the loopback-only consent helper below.
-          const set = Storage.prototype.setItem;
-          Storage.prototype.setItem = function(key, value) {
-            if (key === 'hh-service-enquiry-receipt:v1') throw new DOMException('blocked', 'SecurityError');
-            return set.call(this, key, value);
-          };
-        });
-        await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
-        const capture = paidPage.locator('[data-consultation-capture="service"]');
-        await expect(capture).toHaveCount(1);
-        const serviceChoices = capture.locator('[data-choice-layout="service"] > button');
-        await expect(serviceChoices).toHaveCount(3);
-        await expect(capture.locator('form')).toBeHidden();
-        await expect(capture.locator('[data-contact-channel-chooser] a[data-contact-channel]')).toHaveCount(0);
-        if (!local) {
-          await expect(serviceChoices.nth(0)).toContainText('€100');
-          await expect(serviceChoices.nth(1)).toContainText('€50');
-          await serviceChoices.nth(2).click();
-          const freeAction = capture.locator('[data-consultation-action]');
-          await expect(freeAction).toHaveAttribute('data-consultation-action', 'free');
-          assert.equal(new URL(await freeAction.getAttribute('href'), origin).href, origin + `/${locale}/services/free-situation-review`);
-          assert.equal(await freeAction.getAttribute('target'), null);
-          await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
-          return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
-        }
-        let chooser = await openRegisteredContactChannelChooser(capture, expect, paidPage);
-        const assertPaidUrl = async (choice, minutes, price) => {
-          const { whatsapp, telegram, whatsappUrl: target } = await assertPreparedContactChannels(chooser, expect);
-          await expect(chooser.locator('[data-consultation-action]')).toHaveCount(2);
-          for (const action of [whatsapp, telegram]) await expect(action).toHaveAttribute('data-consultation-action', choice);
-          const message = target.searchParams.get('text');
-          assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
-          assert.ok(message.includes(await capture.locator('[data-choice-layout="service"] [aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
-          return target;
-        };
-        const originalUrl = await assertPaidUrl('session', '60', '€100');
-        await serviceChoices.nth(1).click();
-        chooser = await openRegisteredContactChannelChooser(capture, expect, paidPage);
-        const changedUrl = await assertPaidUrl('questions', '30', '€50');
-        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
-        await serviceChoices.nth(2).click();
-        await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
-        const action = capture.locator('[data-consultation-action]');
-        await expect(action).toHaveCount(1);
-        await expect(action).toBeVisible();
-        await expect(action).toHaveAttribute('data-consultation-action', 'free');
-        assert.equal(await action.getAttribute('data-contact-channel'), null);
-        assert.equal(await action.getAttribute('target'), null);
-        const freeUrl = new URL(await action.getAttribute('href'), origin);
-        assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
-        await serviceChoices.nth(0).click();
-        chooser = await openRegisteredContactChannelChooser(capture, expect, paidPage);
-        assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
-        await expect(capture.locator('[data-contact-channel="telegram"]:not([data-consultation-action])')).toHaveCount(1);
-        return { messageSent: false, syntheticConsent: true, paidPricesVerified: true, bothChannelsVerified: true, freeAssessmentInternal: true, resetVerified: true };
+          await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
+          const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
+          await expect(capture).toHaveCount(1);
+          const form = capture.locator('form[data-compact-lead-form]');
+          await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
+          const formats = capture.locator('select');
+          await expect(formats).toHaveCount(1);
+          await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
+          await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
+          await formats.selectOption('60-min');
+          await expect(formats).toHaveValue('60-min');
+          await formats.selectOption('30-min');
+          await expect(formats).toHaveValue('30-min');
+          await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0);
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          const replyConsent = form.locator('input[type="checkbox"][required]');
+          const attribution = form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          await expect(replyConsent).toHaveCount(1);
+          await expect(replyConsent).not.toBeChecked();
+          await expect(attribution).toHaveCount(1);
+          await expect(attribution).not.toBeChecked();
+          if (!local) return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
+          assertSyntheticLoopback(paidPage.url());
+          let submissions = 0, submitted = null;
+          await paidPage.route('**/api/service-enquiries', async route => {
+            if (route.request().method() !== 'POST') return route.continue();
+            submissions++; submitted = route.request().postDataJSON();
+            await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
+          });
+          await paidPage.evaluate(() => {
+            window.__testNoExternalHandoff = [];
+            window.open = () => ({opener:null, closed:false, location:{replace:url => window.__testNoExternalHandoff.push(String(url))}, close:()=>{}});
+          });
+          await form.locator('input[name="contact"]').fill('enquiry-qa@example.test');
+          const submit = form.locator('button[data-compact-channel="whatsapp"]');
+          await submit.click();
+          await expect(form.locator('[role="alert"]')).toBeVisible();
+          assert.equal(submissions, 0, 'No enquiry without explicit reply consent');
+          await replyConsent.check();
+          await submit.click();
+          await expect(capture.locator('[data-lead-saved]')).toBeVisible();
+          assert.equal(submissions, 1);
+          assert.equal(submitted.contactConsent, true);
+          assert.equal(submitted.contact.email, 'enquiry-qa@example.test');
+          assert.equal(submitted.sourcePath, `/${locale}/services/imagery-therapy`);
+          assert.ok(submitted.description.includes('30-min'));
+          for (const channel of ['whatsapp','telegram']) {
+            const link = capture.locator(`a[data-compact-channel="${channel}"]`);
+            await expect(link).toHaveAttribute('target', '_blank');
+            await expect(link).toHaveAttribute('rel', /noopener/);
+            await expect(link).toHaveAttribute('rel', /noreferrer/);
+            const draft = new URL(await link.getAttribute('href'));
+            assert.equal(draft.origin, channel === 'whatsapp' ? 'https://wa.me' : 'https://t.me');
+            assert.equal(draft.pathname, channel === 'whatsapp' ? '/14376066502' : '/AndyTherapist');
+            assert.deepEqual([...draft.searchParams.keys()], ['text']);
+            assert.ok(draft.searchParams.get('text')?.includes('HH-ABCD1234EF56'));
+            assert.ok(draft.searchParams.get('text')?.includes('30-min'));
+            assert.ok(!draft.href.includes('enquiry-qa%40example.test'));
+          }
+          const handoffs = await paidPage.evaluate(() => window.__testNoExternalHandoff);
+          assert.equal(handoffs.length, 1);
+          assert.equal(new URL(handoffs[0]).origin, 'https://wa.me');
+          return {messageSent:false, syntheticConsent:true, paidPricesVerified:true, bothChannelsVerified:true, freeAssessmentInternal:true};
         } finally { await paidPage.close(); }
       });
-      if (['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname)) {
-        await check('paid-imagery-synthetic-receipt', { engine, width, locale }, async () => {
-          const receiptPage = await context.newPage();
-          let submitted = null, submissions = 0;
-          try {
-            await receiptPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
-            assertSyntheticLoopback(receiptPage.url());
-            await receiptPage.route('**/api/service-enquiries', async route => {
-              if (route.request().method() !== 'POST') return route.continue();
-              submissions++; submitted = route.request().postDataJSON();
-              await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
-            });
-            const chooser = receiptPage.locator('[data-consultation-capture="service"] [data-contact-channel-chooser]');
-            await expect(chooser.locator('[data-contact-channel]')).toHaveCount(0);
-            await receiptPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-            await chooser.locator('button[data-contact-order]').click();
-            const form = chooser.locator('form');
-            await expect(form).toBeVisible();
-            const submit = form.locator('button[type="submit"]');
-            await expect(submit).toBeDisabled();
-            await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
-            await expect(submit).toBeDisabled();
-            await receiptPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-            const replyConsent = form.locator('input[type="checkbox"][required]');
-            await expect(replyConsent).toHaveCount(1);
-            await replyConsent.check();
-            await expect(replyConsent).toBeChecked();
-            await expect(form.locator('input[type="checkbox"]:not([required])')).not.toBeChecked();
-            await submit.click();
-            await expect(receiptPage).toHaveURL(origin + `/${locale}/thank-you`);
-            await expect(receiptPage.locator('[data-service-thank-you]')).toContainText('HH-ABCD1234EF56');
-            assert.equal(submissions, 1);
-            assert.equal(submitted.contactConsent, true);
-            assert.equal(new URL(receiptPage.url()).search, '', 'No contact data in the receipt URL');
-            return {syntheticConsent:true, receiptVerified:true, externalSend:false};
-          } finally { await receiptPage.close(); }
-        });
-      }
     }
     if (width === 390) {
       if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {

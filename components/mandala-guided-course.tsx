@@ -424,9 +424,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     if(editorDetails instanceof HTMLDetailsElement){
       editorDetails.open=true;
       setPersonalOpened(true);
-      // Scroll BEFORE the next user interaction. An animation-frame callback
-      // can move WebKit under a subsequent enabled Create Programme tap,
-      // swallowing the event without invoking its handler.
+      // Scroll synchronously: a deferred smooth scroll can move Safari's page
+      // AFTER a visitor taps the next 'Create programme' control, swallowing
+      // that real tap while the on-screen button appears enabled.
+      // The editor details is already present and open at this point.
       editorDetails.scrollIntoView({behavior:"instant",block:"start"});
     }
   }
@@ -457,6 +458,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   const exploredSteps=currentProgramme?5:ritualReady?4:personalOpened?3:currentMeditation?2:focusReady?1:0;
   return <section className={css.panel} data-video-guided-course
+    data-guided-personal-opened={personalOpened ? "true" : "false"}
+    data-guided-plan-requested={planOpen ? "true" : "false"}
+    data-guided-plan-current={currentProgramme ? "true" : "false"}
     data-guided-focus-ready={focusReady?"true":"false"}
     data-guided-has-script={firstScript.trim().length>0?"true":"false"}
     data-guided-meditation-open={meditationOpen?"true":"false"}

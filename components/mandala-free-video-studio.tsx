@@ -1809,6 +1809,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
+  // A deferred opener must never override a later explicit "Do not add" choice.
+  const meditationDisclosureEpochRef=useRef(0);
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -4045,10 +4047,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
         <nav className={videoStyles.quickBrandBar} data-video-hypno-scroll-start aria-label="Holistic House">
-          <Link href={"/"+locale+"/"} prefetch={false} className={videoStyles.quickBrandBack}
+          <Link href={"/"+locale+"/holistic-support/mobile"} prefetch={false} className={videoStyles.quickBrandBack}
             aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
             <Leaf size={29} aria-hidden="true"/>
           </Link>
+          <span className={videoStyles.quickBrandMobileTitle}>{locale==="ru"?"Видео-мандала":locale==="es"?"Vídeo mandala":"Video mandala"}</span>
           <span className={videoStyles.quickBrandIdentity}><strong>Holistic House</strong>
             <small>{locale==="ru"?"Видеостудия · Создание видео":
               locale==="es"?"Estudio de vídeo · Crear":
@@ -4225,7 +4228,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {workspaceTabs.map(item=><button type="button" key={item.id}
           data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
           aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={recording||preparing}
+          aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           onClick={()=>{
             setActiveWorkspace(item.id);
             if(item.id!=="practices")setIntroPlaying(false);
@@ -4929,8 +4932,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
         onAddMeditation={script=>{
+          const epoch=++meditationDisclosureEpochRef.current;
           setCourseMeditationDraft(script);
           window.requestAnimationFrame(()=>{
+            if(epoch!==meditationDisclosureEpochRef.current)return;
             const details=document.querySelector("[data-video-therapy-meditation-audio]");
             if(details instanceof HTMLDetailsElement){
               details.open=true;
@@ -4939,12 +4944,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           });
         }}
         onOmitMeditation={()=>{
-          if(courseMeditationDraft){
-            setCourseMeditationDraft("");
-            setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
-          }
-          const details=document.querySelector("[data-video-therapy-meditation-audio]");
-          if(details instanceof HTMLDetailsElement)details.open=false;
+          const epoch=++meditationDisclosureEpochRef.current;
+          // Explicit omission always revokes the parent's seed and transient narration.
+          // Do not depend on a render-captured draft value: WebKit can re-open the
+          // same details before the previous state transition has committed.
+          setCourseMeditationDraft("");
+          setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
+          const closeDetails=()=>{
+            if(epoch!==meditationDisclosureEpochRef.current)return;
+            const details=document.querySelector("[data-video-therapy-meditation-audio]");
+            if(details instanceof HTMLDetailsElement)details.open=false;
+          };
+          closeDetails();
+          window.requestAnimationFrame(closeDetails);
         }}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
@@ -5534,11 +5546,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           </details>
           <details className={videoStyles.therapyAudioDetails} data-video-therapy-meditation-audio>
-            <summary>{locale==="ru"?"Настроить озвучку и добавить медитацию к видео":
+            <summary onClick={()=>{meditationDisclosureEpochRef.current++;}}>{locale==="ru"?"Настроить озвучку и добавить медитацию к видео":
               locale==="es"?"Configurar voz y añadir la meditación al vídeo":
               "Set up narration and add meditation to video"}<ChevronDown size={19} aria-hidden="true"/></summary>
             <div data-video-meditation-course-panel className={videoStyles.workspaceCourses}>
-              <MandalaPersonalMeditation coursePreview seedScript={courseMeditationDraft}
+              <MandalaPersonalMeditation key={courseMeditationDraft ? "guided-seeded" : "guided-empty"}
+                coursePreview seedScript={courseMeditationDraft}
                 locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
                 sound={attachedAudio?appliedAudioName:""}
                 audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
