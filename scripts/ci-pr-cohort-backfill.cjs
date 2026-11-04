@@ -140,7 +140,9 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
       start:j.started_at,end:j.completed_at,source:'github_actions_job',url,
       reason:'GitHub runner execution, concurrent jobs counted once'});
      if(j.name==='hh-merge-check'&&j.conclusion==='success'&&run.conclusion==='success'&&
-       (run.pull_requests||[]).some(x=>x.number===p.number&&x.head?.sha===p.head?.sha)){
+       ((run.pull_requests||[]).some(x=>x.number===p.number&&x.head?.sha===p.head?.sha)||
+        (Array.isArray(run.pull_requests)&&run.pull_requests.length===0&&
+         run.head_sha===p.head?.sha&&run.head_branch===p.head?.ref))){
       if(!lastGreen||ts(j.completed_at)>ts(lastGreen)){lastGreen=j.completed_at;lastGreenRun=run.id;}
      }
     }
