@@ -7,7 +7,10 @@ import {chromium,webkit,expect} from "@playwright/test";
 
 const origin=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 const scenarios=[["ru",320],["ru",390],["ru",430],["en",390],["es",390]];
-const engines=[["chromium",chromium],["webkit",webkit]];
+const requested=process.env.HH_LOVED_VOICES_BROWSER_ENGINE||"both";
+assert.ok(["both","chromium","webkit"].includes(requested),"invalid_browser_engine");
+const engines=[["chromium",chromium],["webkit",webkit]]
+  .filter(([name])=>requested==="both"||requested===name);
 for(const [name,kind] of engines){
   const browser=await kind.launch({headless:true});
   try {
