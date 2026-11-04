@@ -3,7 +3,7 @@
 
 import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
-import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut} from "lucide-react";
+import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2} from "lucide-react";
 import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-multitrack-timeline.module.css";
@@ -37,6 +37,10 @@ type Props={
   disabled:boolean;
   onSeek:(seconds:number)=>void;
   onTogglePlay:()=>void;
+  canUndo:boolean;
+  canRedo:boolean;
+  onUndo:()=>void;
+  onRedo:()=>void;
   onAddVideo:()=>void;
   onMoveShot:(from:number,to:number)=>void;
   onResizeShot:(index:number,direction:-1|1)=>void;
@@ -70,7 +74,7 @@ const copy={
     zoom:"Масштаб",snap:"Магнит",split:"Разрезать по курсору",duplicate:"Дублировать",
     transition:"Переход",look:"Цветовой стиль",soft:"Мягкий",cut:"Без перехода",
     fadeBlack:"Затемнение",flashWhite:"Белая вспышка",original:"Оригинал",warm:"Тёплый",
-    cool:"Прохладный",dream:"Мечта"},
+    cool:"Прохладный",dream:"Мечта",undo:"Отменить",redo:"Повторить"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -80,7 +84,7 @@ const copy={
     zoom:"Zoom",snap:"Snap",split:"Split at playhead",duplicate:"Duplicate",
     transition:"Transition",look:"Color look",soft:"Soft",cut:"Cut",
     fadeBlack:"Fade to black",flashWhite:"White flash",original:"Original",warm:"Warm",
-    cool:"Cool",dream:"Dream"},
+    cool:"Cool",dream:"Dream",undo:"Undo",redo:"Redo"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -90,12 +94,12 @@ const copy={
     zoom:"Zoom",snap:"Imán",split:"Cortar en el cursor",duplicate:"Duplicar",
     transition:"Transición",look:"Color de escena",soft:"Suave",cut:"Corte",
     fadeBlack:"Fundido negro",flashWhite:"Destello blanco",original:"Original",warm:"Cálido",
-    cool:"Frío",dream:"Sueño"}
+    cool:"Frío",dream:"Sueño",undo:"Deshacer",redo:"Rehacer"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
-  onSeek,onTogglePlay,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
+  onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
   onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,
   onOpenAudio,onChangeAudioStart
 }:Props){
@@ -164,13 +168,33 @@ export function MandalaMultiTrackTimeline({
     }
   };
   const addText=()=>setSelectedText(onAddCaption());
+  const handleEditorKeys=(event:ReactKeyboardEvent<HTMLElement>)=>{
+    if(disabled||!(event.metaKey||event.ctrlKey)||event.altKey)return;
+    // Do not steal the browser's undo stack from a caption input or select.
+    const target=event.target as HTMLElement;
+    if(target.closest("input,textarea,select,[contenteditable=true]"))return;
+    const key=event.key.toLowerCase();
+    if(key==="z"||(key==="y"&&!event.shiftKey)){
+      event.preventDefault();
+      if(event.shiftKey||key==="y"){if(canRedo)onRedo();}
+      else if(canUndo)onUndo();
+    }
+  };
 
   return <section className={css.editor} data-video-multitrack-timeline
-    aria-label={t.editor}>
+    aria-label={t.editor} onKeyDown={handleEditorKeys}>
     <div className={css.transport}>
       <strong><Scissors size={17} aria-hidden="true"/>{t.editor}</strong>
       <div className={css.transportActions}>
         <span className={css.clock}>{time(playheadSeconds)} <small>/ {time(seconds)}</small></span>
+        <button type="button" className={css.historyAction} data-video-timeline-undo
+          disabled={disabled||!canUndo} onClick={onUndo} title={t.undo} aria-label={t.undo}>
+          <Undo2 size={17} aria-hidden="true"/>
+        </button>
+        <button type="button" className={css.historyAction} data-video-timeline-redo
+          disabled={disabled||!canRedo} onClick={onRedo} title={t.redo} aria-label={t.redo}>
+          <Redo2 size={17} aria-hidden="true"/>
+        </button>
         <button type="button" onClick={onTogglePlay} disabled={disabled}
           aria-label={playing?t.pause:t.play} data-video-timeline-play>
           {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
