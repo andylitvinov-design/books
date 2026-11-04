@@ -4,6 +4,7 @@
 const SHA=/^[a-f0-9]{40}$/i,TASK=/^[a-f0-9]{32}$/i;
 const names=[
  'created_to_ready','ready_to_triage','triage_to_claimed',
+ 'claimed_to_repair_started','repair_started_to_source_published',
  'reserved_to_dispatched','dispatched_to_claimed','claimed_to_source_published',
  'source_published_to_ci_queued','core_job_queued_to_runner',
  'core_runner_to_job_completed','specialist_job_queued_to_runner',
@@ -22,7 +23,7 @@ function summarizePhaseMinutes({events,jobs,now,windowMs,coverage={}}){
  const start=now-windowMs,values=Object.fromEntries(names.map(k=>[k,[]]));
  const add=(k,a,b)=>{if(!Number.isFinite(a)||!Number.isFinite(b)||b<a||
   b<=start||b>now)return;values[k].push((b-a)/60000);};
- const tasks=new Map(),ambiguous=new Set(),greens=[],merges=[],lives=[];
+ const tasks=new Map(),ambiguous=new Set(),greens=[],merges=[],lives=[],stagesByHead=new Map();
  for(const event of events){
   if(!Number.isSafeInteger(event?.pr)||event.pr<1||!SHA.test(event.head||''))continue;
   const time=Date.parse(event.at||'');if(!Number.isFinite(time)||time>now)continue;
@@ -33,6 +34,11 @@ function summarizePhaseMinutes({events,jobs,now,windowMs,coverage={}}){
    const existing=tasks.get(key)||{};
    if(existing[e.kind])ambiguous.add(key);
    existing[e.kind]=e;tasks.set(key,existing);
+  }else if(e.kind==='stage'&&
+   ['ready','triage','claimed','repair_started','source_published'].includes(e.stage)){
+   const group=e.pr+':'+e.head;
+   if(!stagesByHead.has(group))stagesByHead.set(group,[]);
+   stagesByHead.get(group).push(e);
   }else if(e.kind==='ci_green')greens.push(e);
   else if(e.kind==='merged'&&e.production===true&&SHA.test(e.mergeSha||''))merges.push(e);
   else if(e.kind==='live_verified'&&e.production===true&&SHA.test(e.mergeSha||'')&&
@@ -44,6 +50,24 @@ function summarizePhaseMinutes({events,jobs,now,windowMs,coverage={}}){
   add('dispatched_to_claimed',t.dispatched?.time,t.claimed?.time);
   if(t.claimed?.lane==='repair'&&SHA.test(t.source_committed?.newHead||''))
    add('claimed_to_source_published',t.claimed.time,t.source_committed.time);
+ }
+ // Match only authenticated, exact-head stage receipts. Ambiguous repeats
+ // and missing phases are unmeasured, never assigned 0 minutes.
+ const once=(rows,stage,task)=>{const matches=rows.filter(e=>e.stage===stage&&
+  (task===undefined||e.task===task));return matches.length===1?matches[0]:null;};
+ for(const rows of stagesByHead.values()){
+  const ready=once(rows,'ready'),triage=once(rows,'triage');
+  add('ready_to_triage',ready?.time,triage?.time);
+  const claims=rows.filter(e=>e.stage==='claimed');
+  if(claims.length===1&&triage&&(!triage.task||triage.task===claims[0].task))
+   add('triage_to_claimed',triage.time,claims[0].time);
+  const taskKeys=new Set(rows.map(e=>e.task).filter(x=>TASK.test(x||'')));
+  for(const task of taskKeys){
+   const claim=once(rows,'claimed',task),started=once(rows,'repair_started',task),
+    published=once(rows,'source_published',task);
+   add('claimed_to_repair_started',claim?.time,started?.time);
+   add('repair_started_to_source_published',started?.time,published?.time);
+  }
  }
  const kinds={'core-lint-types-build':['core_job_queued_to_runner','core_runner_to_job_completed'],
   'hh-specialist':['specialist_job_queued_to_runner','specialist_runner_to_job_completed'],
