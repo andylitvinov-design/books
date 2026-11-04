@@ -824,3 +824,30 @@ test('Free Review runs for real lead/intake changes, not shared CI policy test-o
   assert.match(yaml,/^  push:/m);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
+
+test('Public Services shallow recovery never bypasses exact merged HEAD and ancestry proof', () => {
+  const workflow = read('hh-public-services-production.yml');
+  const preflight = workflow.split('      - name: Verify bounded Public Services PR ancestry before impact routing\n')[1]
+    ?.split('      - uses: actions/setup-node@v4')[0];
+  assert.ok(preflight, 'Public Services must validate the real synthetic merge before routing');
+  const required = [
+    'fetch-depth: 2',
+    'actual_checkout="$(git rev-parse HEAD)"',
+    '"$actual_checkout" == "$GITHUB_SHA"',
+    '"$(git rev-parse --is-shallow-repository)" == true',
+    'git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"',
+    'tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"',
+    'tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"',
+    '"$tested_head" == "$PR_HEAD_SHA"',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+  ];
+  for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
+    'Missing fail-closed checkout proof: ' + item);
+  assert.ok(preflight.indexOf('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"') <
+    preflight.lastIndexOf('[[ "$tested_head" == "$PR_HEAD_SHA"'),
+    'Limited recovery must precede repeated strict parent validation, not override it');
+  assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true/,
+    'No full clone or ignored failures allowed');
+  assert.ok(workflow.includes("  public-services:\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'Ready PR real browser source/security gating must remain enabled');
+});
