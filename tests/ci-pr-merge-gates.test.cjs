@@ -60,7 +60,10 @@ test('successful exact-head Core event arms promptly without waiting for optiona
 test('Core event refreshes a moving protected classifier and tolerates unknown mergeability',async()=>{
  const source=workflow('hh-native-auto-merge');
  const marker='      - name: Verify same-run unified gate and current sensitive production base';
- const start=source.indexOf(marker),end=source.indexOf('      - name: Enable native auto-merge for this exact head',start);
+ const start=source.indexOf(marker);
+ // Parse only this github-script step: the new review/lease preflight is a
+ // separate YAML step, not JavaScript in the freshness verifier.
+ const end=source.indexOf('      - name:',start+marker.length);
  assert.ok(start>0&&end>start);
  let script=source.slice(start,end).split('          script: |\n')[1];
  assert.ok(script);

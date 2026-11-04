@@ -54,6 +54,8 @@ on:
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
       - '.github/workflows/hh-native-auto-merge.yml'
       - 'scripts/ci-pr-base-freshness.cjs'
+      - 'scripts/ci-pr-native-merge-policy.cjs'
+      - 'tests/ci-pr-native-merge-policy.test.cjs'
       - 'tests/ci-pr-base-freshness.test.cjs'
       - 'tests/ci-pr-base-classifier-integration.test.cjs'
       - 'tests/ci-pr-merge-gates.test.cjs'
@@ -146,6 +148,8 @@ jobs:
           node --check tests/ci-pr-repair-deterministic.test.cjs
           node --check scripts/ci-pr-live-verifier.cjs
           node --check scripts/ci-pr-base-freshness.cjs
+          node --check scripts/ci-pr-native-merge-policy.cjs
+          node --check tests/ci-pr-native-merge-policy.test.cjs
           node --check tests/ci-pr-merge-gates.test.cjs
           node --check scripts/ci-pr-release-outcomes.cjs
           node --check scripts/ci-pr-served-release.cjs
@@ -163,7 +167,7 @@ jobs:
           node --check tests/ci-pr-repair-worker.test.cjs
           node --check tests/ci-pr-repair-source-proof.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-source-proof.test.cjs tests/ci-pr-runner-evidence.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-repair-free-agent.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-monitor-feed.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-event-snapshot-fastpath.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs tests/ci-pr-closed-run-cleanup.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-native-merge-policy.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-source-proof.test.cjs tests/ci-pr-runner-evidence.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-repair-free-agent.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-monitor-feed.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-event-snapshot-fastpath.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs tests/ci-pr-closed-run-cleanup.test.cjs
       - name: PR attribution timeline evidence contracts
         run: node --test tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs
       - name: Checkout protected production classifier for integration test
