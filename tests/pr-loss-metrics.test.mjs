@@ -1,0 +1,128 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers} from '../lib/ci/pr-loss-metrics.mjs';
+import {collectCohort, formatSummary, searchQuery} from '../scripts/pr-loss-report.mjs';
+
+const head='a'.repeat(40), old='b'.repeat(40);
+const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
+  merged_at:'2026-11-04T12:00:00Z',
+  base:{ref:'codex/public-book-library',repo:{full_name:'andylitvinov-design/books'}},
+  head:{sha:head,ref:'feature/99'},...overrides});
+const run=(id,start,end,opts={})=>({id,workflow_id:1,event:'pull_request',head_sha:head,
+  head_branch:'feature/99',created_at:start,updated_at:end,run_attempt:1,status:'completed',
+  conclusion:'success',pull_requests:[{number:99,base:{ref:'codex/public-book-library'},
+    head:{sha:head}}],...opts});
+const job=(id,name,created,started,completed,conclusion='success',extras={})=>({id,name,
+  created_at:created,started_at:started,completed_at:completed,status:'completed',
+  conclusion,...extras});
+const at=x=>'2026-11-04T'+x+':00Z';
+
+test('exact-head repeated workflow wave and actual runner start wait keep PR-minute units',()=>{
+  const runs=[run(1,at('10:01'),at('10:12')),
+    run(2,at('10:15'),at('10:20'))];
+  const jobs={1:{total_count:1,jobs:[job(101,'scope',at('10:01'),at('10:03'),at('10:11'))]},
+    2:{total_count:2,jobs:[job(201,'scope',at('10:15'),at('10:16'),at('10:19')),
+      job(202,'hh-merge-check',at('10:19'),at('10:19'),at('10:20'))]}};
+  const result=analyzePrLoss(pr(),runs,jobs,[],at('13:00'));
+  assert.equal(result.repeated_waves,1);
+  assert.equal(result.stages.green_to_merge.minutes,100);
+  assert.equal(result.stages.repeat_ci_wave.minutes,4);
+  assert.equal(result.stages.runner_start_wait.minutes,3);
+  assert.equal(result.stages.error_to_repair.minutes,0);
+  assert.equal(result.green_gate_verified,true);
+  const summary=summarizePrLoss([result],{cohort:{},observedAt:at('13:00'),sourceTotal:1});
+  assert.deepEqual(summary.top3.map(x=>x.stage),['green_to_merge','repeat_ci_wave','runner_start_wait']);
+  assert.equal(summary.partial,false);
+  assert.equal(summary.top3[0].p95_minutes,100);
+});
+
+test('never mistake parallel PR jobs or duplicate job intervals for additive PR minutes',()=>{
+  const s={green_to_merge:[{start:12*60_000,end:20*60_000,ref:'pass'}],
+    repeat_ci_wave:[{start:8*60_000,end:14*60_000,ref:'rerun'},
+      {start:9*60_000,end:13*60_000,ref:'rerun2'}],
+    runner_start_wait:[{start:7*60_000,end:10*60_000,ref:'wait'}]};
+  const result=exclusiveStageMinutes(s,0,20*60_000);
+  assert.equal(result.green_to_merge.minutes,8);
+  assert.equal(result.repeat_ci_wave.minutes,4);
+  assert.equal(result.runner_start_wait.minutes,1);
+  assert.ok(Object.values(result).reduce((sum,x)=>sum+x.minutes,0)<=20);
+});
+
+test('wrong PR linkage, wrong HEAD gate, missing jobs and ongoing checks never fake a Green pass',()=>{
+  const stranger=run(1,at('10:01'),at('10:02'),{pull_requests:[{number:123,base:{ref:'codex/public-book-library'}}]});
+  const mismatched=run(2,at('10:02'),at('10:10'),{head_sha:old,
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const jobs={1:{total_count:1,jobs:[job(1,'hh-merge-check',at('10:01'),at('10:01'),at('10:02'))]},
+    2:{total_count:2,jobs:[job(2,'hh-merge-check',at('10:02'),at('10:04'),at('10:10'))]}};
+  const result=analyzePrLoss(pr(),[stranger,mismatched],jobs,[],at('13:00'));
+  assert.equal(result.runs_considered,1);
+  assert.equal(result.green_gate_verified,false);
+  assert.deepEqual(result.missing_job_runs,[2]);
+  assert.equal(result.stages.green_to_merge.minutes,0);
+});
+
+test('Error → Repair requires explicit immutable marker and terminal failed job on same failed HEAD',()=>{
+  const failure=run(5,at('10:01'),at('10:10'),{conclusion:'failure'});
+  const jobs={5:{total_count:1,jobs:[job(50,'scope',at('10:01'),at('10:02'),at('10:10'),'failure')]}};
+  const marker={id:700,created_at:at('10:40'),
+    body:'<!-- HH_PR_REPAIR_STARTED_V1 -->\n'+JSON.stringify({
+      schema:'HH_PR_REPAIR_STARTED_V1',action:'repair_started',
+      failed_run_id:5,failed_head_sha:head})};
+  assert.equal(analyzePrLoss(pr(),[failure],jobs,[],at('13:00')).stages.error_to_repair.minutes,0);
+  assert.equal(analyzePrLoss(pr(),[failure],jobs,[marker],at('13:00')).stages.error_to_repair.minutes,30);
+  assert.equal(analyzePrLoss(pr(),[failure],jobs,[{...marker,body:marker.body.replace(head,old)}],at('13:00'))
+    .stages.error_to_repair.minutes,0);
+  assert.equal(readRepairMarkers([{...marker,body:marker.body.replace('repair_started','unknown')}]).length,0);
+});
+
+test('dependency timeout needs explicit named poll step and terminal timed_out; a slow/failing Specialist is not enough',()=>{
+  const timeout=run(9,at('10:01'),at('10:25'),{conclusion:'timed_out'});
+  const standard=job(90,'hh-specialist',at('10:01'),at('10:02'),at('10:25'),'timed_out');
+  const timeoutJob={...standard,steps:[{name:'specialist dependency timeout',conclusion:'timed_out'}]};
+  const normal=analyzePrLoss(pr(),[timeout],{9:{jobs:[standard],total_count:1}},[],at('13:00'));
+  const proof=analyzePrLoss(pr(),[timeout],{9:{jobs:[timeoutJob],total_count:1}},[],at('13:00'));
+  assert.equal(normal.stages.dependency_timeout.minutes,0);
+  assert.equal(proof.stages.dependency_timeout.minutes,23);
+  assert.equal(proof.stages.runner_start_wait.minutes,1);
+});
+
+test('same-run GitHub retry count is noted but not assigned invented first-attempt runtime',()=>{
+  const result=analyzePrLoss(pr(),[run(11,at('10:01'),at('10:20'),{run_attempt:3})],
+    {11:{total_count:1,jobs:[job(110,'scope',at('10:01'),at('10:02'),at('10:20'))]}},[],at('13:00'));
+  assert.equal(result.repeated_attempts_without_timeline,2);
+  assert.equal(result.stages.repeat_ci_wave.minutes,0);
+});
+
+test('bounded created-at cohort search retains true production base and declares partial coverage',async()=>{
+  const repo='andylitvinov-design/books', now=Date.parse('2026-11-04T20:00:00Z');
+  const q=searchQuery(repo,Date.parse('2026-11-03T20:00:00Z'),now);
+  assert.match(q,/search\/issues/);
+  const read=async(path)=>{
+    if(path.includes('/search/issues?'))return {total_count:2,items:[
+      {number:99,created_at:at('10:00')},{number:100,created_at:at('11:00')}]};
+    if(path.endsWith('/pulls/99'))return pr();
+    if(path.endsWith('/pulls/100'))return pr({number:100,
+      base:{ref:'main',repo:{full_name:repo}}});
+    if(path.includes('/actions/runs?'))return {total_count:1,workflow_runs:[
+      run(1,at('10:01'),at('10:12'))]};
+    if(path.includes('/actions/runs/1/jobs?'))return {total_count:1,
+      jobs:[job(101,'scope',at('10:01'),at('10:03'),at('10:12'))]};
+    throw Error('unexpected read '+path);
+  };
+  const result=await collectCohort(read,repo,{now,prLimit:5,runLimit:5});
+  assert.equal(result.sampled_prs,1);
+  assert.equal(result.cohort.inspected_prs,2);
+  assert.equal(result.cohort.source_coverage,'SAMPLE_NOT_ALL_PRs');
+  assert.equal(result.partial,true);
+  assert.match(formatSummary(result),/PARTIAL SAMPLE/);
+});
+test('production-push reporter is a step of existing job, not a new scheduled workflow or privileged PR code',()=>{
+  const wf=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  assert.match(wf,/node scripts\/pr-loss-report\.mjs/);
+  assert.match(wf,/if: github\.repository == 'andylitvinov-design\/books' && github\.event_name == 'push'/);
+  assert.doesNotMatch(wf,/^  schedule:/m);
+  assert.match(wf,/persist-credentials: false/);
+  const reporter=readFileSync('scripts/pr-loss-report.mjs','utf8');
+  assert.doesNotMatch(reporter,/\/cancel|\/dispatches|\/merge|method: 'POST'/);
+});
