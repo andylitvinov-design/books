@@ -27,6 +27,46 @@ function verifiedSample(raw,production){
   specialist_policy_holds:raw.specialistPolicyHolds,
   verified_blocked_lower_bound:lowerBound,checked_at:raw.checked_at};
 }
+// Existing control-tower issue already carries the full Watchdog snapshot.
+// Validate and expose the per-PR observation clock without any extra fetch.
+function timestampInventory(source,now) {
+ const raw=source?.pr_timestamp_inventory;
+ if(!raw)return {status:'NOT_COLLECTED',source_status:source?.pr_timestamp_status||null};
+ try{
+  if(raw.schema!=='HH_PR_TIMESTAMP_INVENTORY_V1'||
+     raw.scope!=='ALL_OPEN_PRS'||typeof raw.records!=='string'||
+     raw.records.length>100000||!valid(raw.total)||!valid(raw.production)||
+     raw.total<1||raw.total>350||raw.production>raw.total||
+     !Number.isFinite(Date.parse(raw.observed_at||''))||
+     Date.parse(raw.observed_at)>now+60000||
+     !raw.counts||raw.counts.created_exact!==raw.total||
+     raw.counts.updated_exact!==raw.total||raw.counts.head_exact!==raw.total||
+     raw.counts.draft+raw.counts.ready!==raw.total)throw Error('BAD_SUMMARY');
+  const parsed=JSON.parse(raw.records);
+  if(!Array.isArray(parsed)||parsed.length!==raw.total)throw Error('BAD_ROWS');
+  const unique=new Set();let prod=0;
+  for(const item of parsed){
+   if(!Array.isArray(item)||item.length!==16||
+      !Number.isSafeInteger(item[0])||item[0]<1||unique.has(item[0])||
+      !/^[a-f0-9]{40}$/i.test(item[1]||'')||![0,1].includes(item[2])||
+      !item.slice(3,6).every(x=>Number.isSafeInteger(x)&&x>0&&x<10000000000)||
+      !valid(item[6])||item[6]>1023||
+      item.slice(7).some(x=>x!==0&&(!Number.isSafeInteger(x)||x<1||x>=10000000000))
+   )throw Error('BAD_ROW');
+   unique.add(item[0]);prod+=item[2];
+  }
+  if(prod!==raw.production)throw Error('BAD_PRODUCTION_COUNT');
+  return {schema:raw.schema,status:'VERIFIED_OPEN_PR_METADATA_SNAPSHOT',
+   source_status:source.pr_timestamp_status||null,
+   observed_at:raw.observed_at,age_minutes:Math.max(0,Math.floor(
+     (now-Date.parse(raw.observed_at))/60000)),
+   total:raw.total,production:raw.production,counts:raw.counts,
+   event_time_coverage:raw.event_time_coverage,
+   stage_clock_kind:raw.stage_clock_kind,
+   missing_fields_need_native_events:raw.missing_fields_need_native_events,
+   rows_format:raw.rows_format,records:raw.records};
+ }catch{return {status:'INVALID_UNVERIFIED_TIMESTAMP_INVENTORY'};}
+}
 function normalize(source,now=Date.now()){
  if(!source||source.schema!==SCHEMA||source.source_dry_run!==false||
     source.source_schema!=='HH_CONTROL_DISPATCH_V1'||!valid(source.run_id)||
@@ -84,6 +124,7 @@ function normalize(source,now=Date.now()){
    run_url:'https://github.com/andylitvinov-design/books/actions/runs/'+source.run_id,
    source_issue:'https://github.com/andylitvinov-design/books/issues/3128',
    counts:normalizedCounts,queue_states:q,
+   pr_timestamps:timestampInventory(source,now),
    blocked_reasons,blocked_examples,
    blocked_reasons_complete:hasReasons,
    watchdog_sample:sample,watchdog_sample_status:sampleStatus,
@@ -119,6 +160,7 @@ async function handler(req,res){
    return res.status(503).json({schema:SCHEMA,error:'FEED_UNAVAILABLE',blocked_reasons_complete:false});
  }
 }
+handler.timestampInventory=timestampInventory;
 handler.normalize=normalize;
 handler.parseBody=parseBody;
 module.exports=handler;
