@@ -1,0 +1,33 @@
+.hh-pr-timestamp-observer{max-width:1020px;margin:16px auto;padding:14px;
+ background:#0c2033;border:1px solid #365571;border-radius:14px;color:#e4f2ff;
+ font-family:inherit}
+.hh-pr-ts-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hh-pr-ts-head h2{font-size:17px;margin:0;font-weight:800}
+.hh-pr-ts-head button,.hh-pr-ts-controls select{background:#183852;color:#dceeff;border:1px solid #587997;
+ border-radius:8px;padding:8px 11px;font-size:12px}
+.hh-pr-ts-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
+.hh-pr-ts-metric{display:flex;flex-direction:column;gap:4px;min-width:0;
+ padding:8px;border:1px solid #365775;background:#11293f;border-radius:9px}
+.hh-pr-ts-metric span{color:#a4bed2;font-size:10px;line-height:1.25}
+.hh-pr-ts-metric strong{font-size:21px;font-variant-numeric:tabular-nums;color:#9cddff}
+.hh-pr-ts-status,.hh-pr-ts-note{margin:8px 0;font-size:11px;line-height:1.45;color:#a9c3d8}
+.hh-pr-ts-note{color:#dfc697}
+.hh-pr-ts-controls{margin:10px 0}
+.hh-pr-ts-controls select{max-width:100%}
+.hh-pr-ts-list{max-height:70svh;overflow:auto;border:1px solid #37516b;border-radius:9px}
+.hh-pr-ts-pr{border-bottom:1px solid #2b465f}
+.hh-pr-ts-pr>summary{display:flex;align-items:center;gap:10px;padding:9px 11px;
+ cursor:pointer;font-size:11px;flex-wrap:wrap}
+.hh-pr-ts-pr>summary b{font-size:13px;color:#a4dfff}
+.hh-pr-ts-pr>summary small{margin-left:auto;color:#a3b8cc}
+.hh-pr-ts-pr-body{padding:8px 10px 12px;border-top:1px solid #294962}
+.hh-pr-ts-line{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+ padding:6px 0;border-bottom:1px solid #274258;font-size:11px}
+.hh-pr-ts-line span{color:#b3c9db}
+.hh-pr-ts-line strong{text-align:right;color:#e1f3ff;overflow-wrap:anywhere;font-size:11px}
+.hh-pr-ts-pr-body a{color:#91d4ff}
+@media(max-width:650px){
+ .hh-pr-timestamp-observer{margin:12px 7px;padding:10px}
+ .hh-pr-ts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hh-pr-ts-metric strong{font-size:20px}
+}

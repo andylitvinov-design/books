@@ -3,6 +3,7 @@
 // Public, source-attributed KPI receipt. An accepted dispatch is not a started runner,
 // and a sampled automation queue is not the entire production PR backlog.
 const REPO='andylitvinov-design/books';
+const {capture,rows:timestampRows,VERSION:TIMESTAMP_SCHEMA}=require('./ci-pr-timestamp-inventory.cjs');
 const ISSUE_NUMBER=3128;
 const MARKER='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
 const SCHEMA='HH_CONTROL_DISPATCH_METRICS_V1';
@@ -56,6 +57,7 @@ function buildMonitorSnapshot(report,context){
     throw Error('UNTRUSTED_MONITOR_CONTEXT');
   const blocked=cleanBlocked(report.blocked||{});
   const counts={
+    discovered_open_prs:validCount(report.discovered??report.production,'discovered'),
     production_prs:validCount(report.production,'production'),
     actionable_prs:validCount(report.actionable,'actionable'),
     candidates:validCount(report.candidates,'candidates'),
@@ -175,7 +177,7 @@ function renderSnapshot(snapshot){
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
 }
-async function publishMonitorSnapshot({github,context,report}){
+async function publishMonitorSnapshot({github,context,report,inventorySnapshot=null}){
   const next=buildMonitorSnapshot(report,context);
   const {owner,repo}=context.repo;
   const issue=(await github.rest.issues.get({owner,repo,issue_number:ISSUE_NUMBER})).data;
@@ -185,7 +187,32 @@ async function publishMonitorSnapshot({github,context,report}){
   // A late queue/old workflow must never replace a newer observed snapshot.
   if(Date.parse(previous.checked_at)>=Date.parse(next.checked_at))
     return {status:'OLDER_OR_DUPLICATE_DROPPED',prior_run_id:previous.run_id};
-  const body=renderSnapshot(next);
+  // Reuse the ALREADY-FETCHED full Watchdog PR list. This does not query GitHub
+  // again, trigger a CI run or post any per-PR comments.
+  const prior=previous.pr_timestamp_inventory;
+  const priorValid=prior?.schema===TIMESTAMP_SCHEMA&&
+    timestampRows(prior).size===prior.total;
+  if(inventorySnapshot!==null){
+    if(report.inventoryScope!=='WATCHDOG_SHARED_SNAPSHOT'||
+       report.discovered!==inventorySnapshot.length||
+       report.production>inventorySnapshot.length)
+      throw Error('TIMESTAMP_NOT_FULL_WATCHDOG_INVENTORY');
+    next.pr_timestamp_inventory=capture({prs:inventorySnapshot,
+      observedAt:report.checkedAt,previous:priorValid?prior:null,
+      productionExpected:report.production,totalExpected:report.discovered});
+    next.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+  }else if(priorValid){
+    next.pr_timestamp_inventory=prior;
+    next.pr_timestamp_status='PRESERVED_PRIOR_FULL_SCAN';
+  }else next.pr_timestamp_status='NO_FULL_PR_TIMESTAMP_SNAPSHOT';
+  let body=renderSnapshot(next);
+  // Keep this existing public issue below GitHub's body size budget. Never
+  // silently publish truncated PR coverage as a complete inventory.
+  if(body.length>58000){
+    delete next.pr_timestamp_inventory;
+    next.pr_timestamp_status='INVENTORY_EXCEEDS_SAFE_ISSUE_BODY_SIZE';
+    body=renderSnapshot(next);
+  }
   await github.rest.issues.update({owner,repo,issue_number:ISSUE_NUMBER,body});
   return {status:'PUBLISHED',run_id:next.run_id,checked_at:next.checked_at};
 }

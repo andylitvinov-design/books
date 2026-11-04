@@ -149,7 +149,8 @@ jobs:
               try{
                 const {publishMonitorSnapshot}=require(process.env.GITHUB_WORKSPACE+
                   '/scripts/ci-pr-monitor-feed.cjs');
-                const result=await publishMonitorSnapshot({github,context,report:routed});
+                const result=await publishMonitorSnapshot({github,context,report:routed,
+                  inventorySnapshot:report.prInventorySnapshot});
                 core.info('HH_SNAPSHOT_HANDOFF_MONITOR_'+result.status+
                   ' #3128'+(result.run_id?' run='+result.run_id:''));
               }catch(error){
