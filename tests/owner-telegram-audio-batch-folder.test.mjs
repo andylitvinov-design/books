@@ -94,7 +94,7 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/session\.batch_id!==event\.batchId/)
   assert.match(service,/result_folder=\$2,last_command_update_id=\$3/)
   assert.match(service,/status!=='collecting'\|\|session\.result_audio_id/)
-  assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,parts:ordered/)
+  assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,\s*parts:ordered,pauseSeconds:event\.pauseSeconds/)
   assert.match(service,/title,batch\.folder/)
   assert.doesNotMatch(service,/title,batch\.parts\[0\]\.folder/)
   assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher,saved\.id\)/)
