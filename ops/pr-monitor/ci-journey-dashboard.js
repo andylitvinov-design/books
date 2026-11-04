@@ -28,7 +28,7 @@
    if(!card)return;
    const strong=card.querySelector('strong'),small=card.querySelector('small');
    const n=data?.summary?.n;
-   if(strong)strong.textContent=n>0?fmtMin(data.summary.median_minutes):'—';
+   if(strong)strong.textContent=n>0?'≥ '+fmtMin(data.summary.median_minutes):'—';
    if(small)small.textContent=n>0?'n='+n+' PR · архив (выборка)':'Нет подтверждённых PR';
    card.title='Медиана первой сохранённой Core CI queued → последнего сохранённого Core job completed. Историческое покрытие неполное; 0 и отсутствие данных различаются.';
  }
@@ -44,8 +44,8 @@
    setCard(data);
    const header=el('div','hh-ci-cards');
    for(const [title,value] of [
-      ['Замерено CI путей',n+' PR'],['Медиана наблюдений',fmtMin(s.median_minutes)],
-      ['P90 наблюдений',fmtMin(s.p90_minutes)],
+      ['Замерено CI путей',n+' PR'],['Медиана наблюдений',n?'≥ '+fmtMin(s.median_minutes):'—'],
+      ['P90 наблюдений',n?'≥ '+fmtMin(s.p90_minutes):'—'],
       ['Повторных CI',String(s.repeats)] ]){
      const item=el('div','hh-ci-mini');
      item.append(el('span','',title),el('strong','',value));header.append(item);
@@ -114,7 +114,7 @@
      'Срез: '+dt(data.coverage.archive_fetched_at)+' Toronto · охват '+data.coverage.archived_prs+
      ' PR / '+data.coverage.archived_runs+' runs · '+(data.coverage.stale?'УСТАРЕВШИЙ СРЕЗ':'сохранён в GitHub')),
      source,el('span','',
-      'Выборка по последнему завершённому Core job в выбранном интервале. Полнота всей истории PR не доказана. Источник: authenticated GitHub Actions; пропуски ≠ ноль.'));
+      'Выборка по последнему завершённому Core job. Значок ≥ обозначает нижнюю границу времени из сохранённых запусков: более ранние CI могут отсутствовать. Пропуски ≠ ноль.'));
    exportBtn.disabled=!Array.isArray(data.rows)||!data.rows.length;
  }
  async function load(force=false){
