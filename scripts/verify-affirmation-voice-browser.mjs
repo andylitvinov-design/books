@@ -240,9 +240,40 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.ok(preview,"actual male sample request reaches the TTS route");
       assert.equal(preview.language,locale);
       assert.ok(!("text" in preview)&&!("consent" in preview),"fixed public samples contain no private script");
+      // Safari blocks autoplay after network completion. A second real tap
+      // must directly invoke native play() on the cached WAV, without TTS.
+      await expect(previewButton).toHaveAttribute("aria-busy","false");
+      await page.evaluate(()=>{
+        const el=document.querySelector('[data-video-affirmation-sample-ready] audio');
+        window.__hhPreviewReplayCount=0;
+        el.play=()=>{window.__hhPreviewReplayCount++;return Promise.resolve();};
+      });
+      const beforeReplay=payloads.length;
+      await previewButton.click();
+      await expect.poll(()=>page.evaluate(()=>window.__hhPreviewReplayCount)).toBe(1);
+      assert.equal(payloads.length,beforeReplay,"replay must not spend a second free TTS request");
       await chooserPending.locator('[data-video-affirmation-gender="female"]').click();
       await expect(page.locator("[data-video-affirmation-sample-ready]")).toHaveCount(0);
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      // A refused provider response must release all three choices and show
+      // the failure, rather than leaving the screenshot's frozen Loading UI.
+      const refuseSofia=async route=>{
+        const request=route.request();
+        if(request.method()==="POST"&&request.postDataJSON()?.mode==="sample"&&
+          request.postDataJSON()?.voiceId==="sofia"){
+          await route.fulfill({status:503,contentType:"application/json",
+            body:JSON.stringify({error:"TTS_PROVIDER_UNAVAILABLE"})});
+        }else await route.fallback();
+      };
+      await page.route("**/api/holistic-support/voice",refuseSofia);
+      const sofiaPreview=chooserPending.locator('[data-video-affirmation-voice-preview="sofia"]');
+      await sofiaPreview.click();
+      await expect(page.locator(".sampleStatus")).toHaveCount(0).catch(()=>{});
+      await expect(sofiaPreview).toHaveAttribute("aria-busy","false",{timeout:10000});
+      await expect(chooserPending.locator('[data-video-affirmation-voice-preview="maya"]')).toBeEnabled();
+      await expect(page.locator('[data-video-affirmation-voice-select] [role="status"]'))
+        .toContainText(locale==="ru"?"Не удалось прослушать":"Could not load");
+      await page.unroute("**/api/holistic-support/voice",refuseSofia);
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
       // WebKit can return from a click before React commits the visitor's
       // approved phrases. Wait for actual approved, selected transcript state,
