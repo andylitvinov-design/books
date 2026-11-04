@@ -80,3 +80,32 @@ test('malformed bot stage timestamp cannot be counted as complete evidence',asyn
  const x=await collectReceiptEvents({...args,github:fixture({rows:[row]}).github});
  assert.equal(x.complete,false);assert.equal(x.events.length,0);
 });
+
+test('verified LIVE receipt uses existing comment inventory plus same GraphQL PR batch; false LIVE rejected',async()=>{
+ const sha='b'.repeat(40),deployment='dpl_QWERTY1234567890';
+ const at='2026-11-01T22:35:00Z',posted='2026-11-01T22:35:25Z';
+ const body='<!-- HH_LIVE_VERIFIED_V1 sha='+sha+' deployment='+deployment+' -->\n'+
+  'LIVE observed at '+at+' for protected production merge commit '+sha+
+  '. This is a historical deployment observation, not a promise that the same SHA remains the latest version.\n\n'+
+  'Vercel production deployment: '+deployment+
+  '. Verified public alias: https://holistichouse.vercel.app/en. Method: PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT.\n\n'+
+  '- https://github.com/andylitvinov-design/books/commit/'+sha+'\n'+
+  '- https://vercel.com/super10/codex-public-book-library/'+deployment.slice(4)+'\n'+
+  '- https://holistichouse.vercel.app/api/public/release-evidence\n'+
+  '- https://holistichouse.vercel.app/en\n';
+ const note={...comment,id:55,body,created_at:posted,updated_at:posted};
+ const f=fixture({rows:[note]});
+ f.github.graphql=async()=>({rateLimit:{remaining:4000},repository:{p7:{
+  number:7,state:'MERGED',mergedAt:'2026-11-01T22:30:00Z',
+  baseRefName:'codex/public-book-library',mergeCommit:{oid:sha}}}});
+ const result=await collectReceiptEvents({...args,github:f.github,until:NOW});
+ assert.equal(result.complete,true);
+ assert.equal(result.events.length,1);
+ assert.equal(result.events[0].kind,'live_verified');
+ assert.equal(result.events[0].mergeSha,sha);
+ assert.equal(result.events[0].aliasVerified,true);
+ assert.deepEqual(f.stats().scans,2);
+ const forged={...note,user:{id:99,login:'human',type:'User'}};
+ const reject=await collectReceiptEvents({...args,github:fixture({rows:[forged]}).github,until:NOW});
+ assert.equal(reject.events.length,0);
+});
