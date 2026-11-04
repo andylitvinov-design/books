@@ -314,16 +314,36 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
       urls=unique(active.flatMap(x=>x.urls));
     }else {
       stageName='unattributed';substage='missing_evidence';
-      const lastMark=marks.filter(m=>Date.parse(m.at)<=from).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
+      const eventRank={ci_failed:20,ci_green:19,source_published:18,repair_started:17,
+        conflict_labeled:16,conflict_unlabeled:15,review_requested:14,job_completed:2,created:1};
+      const lastMark=marks.filter(m=>Date.parse(m.at)<=from).sort((a,b)=>
+        Date.parse(b.at)-Date.parse(a.at)+(eventRank[b.kind]||0)-(eventRank[a.kind]||0))[0];
+      const nextMark=marks.filter(m=>Date.parse(m.at)>=to).sort((a,b)=>
+        Date.parse(a.at)-Date.parse(b.at))[0];
       const lastConflict=marks.filter(m=>['conflict_labeled','conflict_unlabeled'].includes(m.kind)&&
         Date.parse(m.at)<=from).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
       const lastFailure=lastMark?.kind==='ci_failed'?failures.find(j=>j.url===lastMark.url):null;
       if(lastConflict?.kind==='conflict_labeled'){
-        reason='Ранее зарегистрирована метка конфликта; неизвестно, какая часть интервала занята ожиданием или исправлением';
-        urls=[lastConflict.url];
-      }else if(lastFailure){reason=`После ошибки ${lastFailure.name} отсутствуют доказательства, чем заполнен интервал`;
-        urls=[lastFailure.url];}
-      else {reason='Нет подтверждённой пары событий для отнесения времени к этапу';urls=[];}
+        substage='conflict_mark_to_next_event';
+        reason='От метки конфликта до следующего зафиксированного события; длительность фактического ремонта не доказана';
+      }else if(lastMark?.kind==='ci_failed'||lastFailure){
+        substage='failed_ci_to_next_event';reason='После провала CI до следующего подтверждённого события; ожидание ремонта не равно активному ремонту';
+      }else if(lastMark?.kind==='ci_green'){
+        substage='green_ci_to_next_event';reason='После зелёного CI до следующего события; причина ожидания не доказана';
+      }else if(lastMark?.kind==='source_published'||lastMark?.kind==='head_changed'){
+        substage='source_published_to_next_event';reason='После публикации кода до следующего подтверждённого события; состояние не равно runner queue';
+      }else if(lastMark?.kind==='repair_started'){
+        substage='repair_started_without_verified_publish';reason='После Repair Started без подтверждённого времени завершения; факт непрерывной работы неизвестен';
+      }else if(lastMark?.kind==='job_completed'){
+        substage='between_ci_events';reason='Между окончанием CI job и следующим зафиксированным событием';
+      }else if(lastMark?.kind==='created'){
+        substage='created_to_first_observed_event';reason='От создания PR до первого наблюдаемого события; могли быть новые коммиты/HEAD';
+      }else{
+        substage='between_pr_events';reason='Промежуток между GitHub-событиями, причина не подтверждена';
+      }
+      // Evidence identifies the BOUNDARIES only, not the hidden cause.
+      urls=unique([lastConflict?.kind==='conflict_labeled'?lastConflict.url:null,
+        lastMark?.url,nextMark?.url,p.url]);
     }
     slices.push({stage:stageName,substage,from,to,reason,urls});
   }
@@ -352,6 +372,14 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
     stage_totals_minutes:Object.fromEntries(STAGES.map(key=>[key,minute(totals[key])])),
     accounted_percent:elapsed?round(100*(elapsed-totals.unattributed)/elapsed):100,
     unattributed_minutes:minute(totals.unattributed),
+    // Backward compatible raw unknown count plus event-anchored observational
+    // buckets. These buckets sum to raw unattributed time exactly and never
+    // claim causal proof of idle time or runner scheduling.
+    gap_context_ms:Object.fromEntries(
+      [...new Set(timeline.filter(t=>t.stage==='unattributed').map(t=>t.substage||'unknown'))]
+      .map(key=>[key,timeline.filter(t=>t.stage==='unattributed'&&(t.substage||'unknown')===key)
+        .reduce((sum,t)=>sum+t.duration_ms,0)])),
+    gap_context_coverage:'EVENT_BOUNDARIES_NOT_CAUSES',
     confirmed_runs:rs.length,confirmed_attempts:attempts.length,
     repeated_attempts:attempts.filter(a=>a!==firstAttempt).length,
     failures:failures.length,attempt_details:attemptsWithEvidence,
