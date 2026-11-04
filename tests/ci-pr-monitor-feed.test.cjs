@@ -226,3 +226,54 @@ test('live monitor does not turn missing deep inspection into global zero blocke
  assert.match(ui,/specialist_policy_holds/);
  assert.match(ui,/sample\.verified_blocked_lower_bound/);
 });
+
+
+test('CI wake signed receipts expose reservation to escalation latency, not CI delivery',()=>{
+ const {signedCiWakeTiming}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const {commentBody}=require('../scripts/ci-pr-task-state.cjs');
+ const task={lane:'ci',pr_number:2277,head_sha:SHA,task_key:'b'.repeat(32)};
+ const bot={id:41898282,login:'github-actions[bot]',type:'Bot'};
+ const app={id:15368,slug:'github-actions'};
+ const signed=(state,fields)=>({user:bot,performed_via_github_app:app,
+  body:commentBody({...task,schema:'HH_PR_TASK_V1',state,...fields})});
+ const receipts=[
+  signed('RESERVED',{created_at:'2026-11-02T15:45:11.917Z'}),
+  signed('CLAIMED',{created_at:'2026-11-02T15:45:41.520Z'}),
+  signed('CI_WAKE_REQUESTED',{observed_at:'2026-11-02T15:45:45.897Z'}),
+  signed('CI_WAKE_UNDELIVERED',{created_at:'2026-11-03T04:38:38.776Z'})
+ ];
+ const timing=signedCiWakeTiming(task,receipts,Date.parse('2026-11-04T19:30:00Z'));
+ assert.equal(timing.state,'CI_WAKE_UNDELIVERED');
+ assert.equal(timing.duration_seconds.reserved_to_claim,30);
+ assert.equal(timing.duration_seconds.claim_to_wake,4);
+ assert.equal(timing.duration_seconds.wake_to_outcome,46373);
+ assert.equal(timing.duration_seconds.wake_pending_age,null);
+ const snapshot=buildMonitorSnapshot(report({actionable:1,candidates:1,
+  inspected:1,ciWakeTelemetry:[timing],blocked:{CI_WAKE_UNDELIVERED:1}}),context);
+ assert.equal(snapshot.ci_wake_handoff.scope,'INSPECTED_CI_TASKS_ONLY_NOT_ALL_OPEN_PRS');
+ assert.equal(snapshot.ci_wake_handoff.wake_to_outcome.n,1);
+ assert.equal(snapshot.ci_wake_handoff.wake_to_outcome.p95_seconds,46373);
+ assert.equal(snapshot.counts.worker_dispatches,0);
+ assert.deepEqual(parseExisting(renderSnapshot(snapshot)),snapshot);
+ assert.equal(signedCiWakeTiming(task,receipts.map(c=>({
+  ...c,user:{...bot,id:1}})),Date.now()),null);
+});
+test('CI wake absent terminal result stays censored and invalid cohorts fail closed',()=>{
+ const {signedCiWakeTiming}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const {commentBody}=require('../scripts/ci-pr-task-state.cjs');
+ const task={lane:'ci',pr_number:10,head_sha:SHA,task_key:'c'.repeat(32)};
+ const receipt={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody({...task,schema:'HH_PR_TASK_V1',state:'CI_WAKE_REQUESTED',
+   observed_at:'2026-11-03T13:00:00.000Z'})};
+ const timing=signedCiWakeTiming(task,[receipt],Date.parse('2026-11-03T13:25:00.000Z'));
+ assert.equal(timing.state,'WAKE_OUTCOME_NOT_YET_OBSERVED');
+ assert.equal(timing.duration_seconds.wake_pending_age,1500);
+ assert.equal(timing.duration_seconds.wake_to_outcome,null);
+ assert.equal(timing.duration_seconds.reserved_to_claim,null);
+ assert.throws(()=>buildMonitorSnapshot(report({inspected:0,ciWakeTelemetry:[timing]}),context),
+  /INVALID_CI_WAKE_TIMING_COHORT/);
+ assert.throws(()=>buildMonitorSnapshot(report({inspected:1,ciWakeTelemetry:[{
+  ...timing,duration_seconds:{...timing.duration_seconds,wake_pending_age:-1}
+ }]}),context),/INVALID_CI_WAKE_DURATION/);
+});
