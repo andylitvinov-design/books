@@ -193,6 +193,17 @@ jobs:
           persist-credentials: false
           # The PR merge + its two parents; bounded ancestry is validated below.
           fetch-depth: 2
+      # actions/checkout registers safe.directory in a temporary HOME only;
+      # subsequent steps in Playwright's root-owned container lose that setting.
+      # Trust exactly this runner checkout path, never '*' or another repository.
+      - name: Trust exact container checkout for Git ancestry
+        run: |
+          set -euo pipefail
+          [[ -n "${GITHUB_WORKSPACE:-}" ]] || { echo "::error::Missing checkout workspace"; exit 1; }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          [[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]] || {
+            echo "::error::Unexpected Git checkout directory"; exit 1;
+          }
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
