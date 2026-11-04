@@ -99,8 +99,8 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
   }
   assert.doesNotMatch(source,/fetch\(|postMessage\(|autoplay=|innerHTML|contentWindow|location\./,
     'No provider commands, automatic iframe playback or CSP mutation in this component');
-  assert.equal((source.match(/\.play\(/g)||[]).length,1,
-    'One bounded muted native-media retry is the ONLY possible programmatic play call');
+  assert.equal((source.match(/\.play\(/g)||[]).length,2,
+    'Only the bounded same-node recovery and one explicitly triggered fresh-decoder resume may call native play');
   const recovery=source.split('function onNativePlay(')[1]?.split('function discardRecovery(')[0];
   assert.ok(recovery,'The user-play observer must own the sole recovery');
   assert.match(recovery,/if \(video\.muted !== true \|\| video\.readyState < 2 \|\|/,
@@ -186,7 +186,9 @@ test('native explicit play observer never controls playback and media identity i
   el.props.onPlay({currentTarget:media,preventDefault(){assert.fail('cannot prevent play')}});
   assert.equal(el.props.onPlayCapture,undefined);assert.equal(el.props.onClickCapture,undefined);assert.equal(el.props.controls,true);
  }
- assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|setTimeout\(|setInterval\(/);
+ assert.doesNotMatch(source,/preventDefault\(|stopPropagation\(|setInterval\(/);
+ assert.match(source,/windowView\.setTimeout\(\(\) => \{[\s\S]*setFreshDecoder\(/,
+   'Only a bounded post-user-play stalled decoder may trigger a fresh native source');
  assert.equal((source.match(/\.load\(/g)||[]).length,1,'Only a demonstrated muted post-reopen stall may reconstruct the original decoder');
  assert.equal((source.match(/currentTime\s*=/g)||[]).length,3,'One exact-position restore is permitted after verified stall, plus the two existing authenticated paths');
  assert.match(source,/onPlay=\{onNativePlay\} onPlaying=\{onNativePlay\}/);

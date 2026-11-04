@@ -16,6 +16,9 @@ type Props = {
 /** Closing the native disclosure stops playback without a provider command. */
 export function TantraVideoTestimonials(props: Props) {
   const [youtubeSession, setYoutubeSession] = useState(0);
+  // Only after an explicitly played decoder demonstrably stalls can its
+  // original source be remounted. Reopening a disclosure alone never rebuilds.
+  const [freshDecoder, setFreshDecoder] = useState<{source:string;time:number;token:number}|null>(null);
 
   const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; restoreMutedOnOpen?: boolean }>());
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
@@ -257,6 +260,22 @@ export function TantraVideoTestimonials(props: Props) {
           // This fetches metadata only after a demonstrated stalled user Play.
           video.preload = "metadata";
           video.load();
+          // A same-element WebKit/GStreamer load may still keep the backend
+          // frozen. One bounded last resort mounts a truly fresh native video
+          // only after the original user's muted Play remains stalled. Never
+          // force a new play on disclosure open, an unmuted source, or a seek.
+          if (typeof windowView.setTimeout === "function") {
+            windowView.setTimeout(() => {
+              if (video.isConnected === false || video.currentSrc !== saved.source ||
+                  video.muted !== true || video.seeking || video.ended ||
+                  (disclosure !== null && !disclosure.open)) return;
+              if (Number.isFinite(video.currentTime) && video.currentTime > resumeAt + 0.22 &&
+                  video.readyState >= 2 &&
+                  (video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0) > 0) return;
+              setFreshDecoder(previous => previous?.source === saved.source ? previous :
+                {source:saved.source,time:resumeAt,token:Date.now()});
+            }, 6800);
+          }
         } catch { clear(); }
       };
       windowView.requestAnimationFrame(observeClock);
@@ -335,17 +354,41 @@ export function TantraVideoTestimonials(props: Props) {
       <summary onClickCapture={onSummaryClickCapture}>{props.summary}</summary>
       <p className="tantra-review-video-note">{props.language}</p>
       <div className="tantra-review-videos">
-        {props.videos.map((video, i) => (
+        {props.videos.map((video, i) => {
+          const replacement = freshDecoder?.source === video.src ? freshDecoder : null;
+          return (
           <figure className="tantra-review-video" key={video.src}>
-            <video controls playsInline preload="none" poster={video.poster ?? undefined}
-              onLoadStart={onNativeLoadStart} onLoadedMetadata={onNativeMetadata}
+            <video key={replacement ? `${video.src}:fresh-${replacement.token}` : video.src}
+              controls playsInline preload={replacement ? "auto" : "none"} poster={video.poster ?? undefined}
+              onLoadStart={onNativeLoadStart} onLoadedMetadata={event => {
+                if (!replacement) { onNativeMetadata(event); return; }
+                const player = event.currentTarget;
+                const disclosure = player.closest("details");
+                if (!player.isConnected || !disclosure?.open ||
+                    player.currentSrc !== replacement.source ||
+                    !Number.isFinite(player.duration) || replacement.time >= player.duration) return;
+                // Fresh source, same retained position, muted, and only after
+                // a proven stalled explicit Play. True frame/clock progress is
+                // still required by WebKit browser acceptance.
+                player.muted = true;
+                player.addEventListener("seeked", () => {
+                  if (!player.isConnected || !disclosure.open ||
+                      player.currentSrc !== replacement.source ||
+                      player.seeking || player.ended || !player.paused ||
+                      Math.abs(player.currentTime - replacement.time) > 0.35) return;
+                  void player.play().catch(() => {/* Native controls remain available. */});
+                }, {once:true});
+                try {player.currentTime = replacement.time;}
+                catch {/* Native controls remain available if a seek is rejected. */}
+              }}
               onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
               onKeyDown={onNativeKeyDown}>
               <source src={video.src} type={video.type} />
             </video>
             <figcaption>{props.nativeLabel} {i + 1}{props.nativeSuffix}</figcaption>
           </figure>
-        ))}
+          );
+        })}
         <figure className="tantra-review-video">
           <AcademyVideoPlayer key={youtubeSession} youtubeId="qM_nFUkYJ1k" title={props.youtubeTitle} />
           <figcaption>{props.youtubeTitle}</figcaption>
