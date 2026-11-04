@@ -372,6 +372,12 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
     stage_totals_minutes:Object.fromEntries(STAGES.map(key=>[key,minute(totals[key])])),
     accounted_percent:elapsed?round(100*(elapsed-totals.unattributed)/elapsed):100,
     unattributed_minutes:minute(totals.unattributed),
+    // Confirmed time boundaries are not causal explanations. In particular,
+    // time before first Core CI and Green->Merge waiting still has an
+    // unverified cause even if both endpoints are exactly timestamped.
+    reason_unproven_ms:totals.unattributed+totals.created_to_first_ci+totals.waiting_merge,
+    reason_unproven_minutes:minute(totals.unattributed+totals.created_to_first_ci+totals.waiting_merge),
+    reason_provenance:'TIME_BOUNDED_NOT_ROOT_CAUSE_VERIFIED',
     // Backward compatible raw unknown count plus event-anchored observational
     // buckets. These buckets sum to raw unattributed time exactly and never
     // claim causal proof of idle time or runner scheduling.

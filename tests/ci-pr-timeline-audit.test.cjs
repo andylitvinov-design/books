@@ -40,6 +40,10 @@ test('end-to-end wall clock: separate first CI, queue, jobs, repair, rerun, merg
   assert.equal(r.stage_totals_minutes.repeat_ci,19); // 54..60 queue + 60..70 + 72..75 checks
   assert.equal(r.stage_totals_minutes.waiting_merge,15);
   assert.equal(r.stage_totals_minutes.unattributed,17);
+  assert.equal(r.reason_unproven_minutes,42); // unknown 17 + before first Core 10 + green→merge 15
+  assert.equal(r.reason_unproven_ms,r.stage_totals_ms.unattributed+
+    r.stage_totals_ms.created_to_first_ci+r.stage_totals_ms.waiting_merge);
+  assert.equal(r.reason_provenance,'TIME_BOUNDED_NOT_ROOT_CAUSE_VERIFIED');
   assert.equal(r.repeated_attempts,1);
   assert.equal(r.failures,1);
   assert.equal(r.attempt_details[1].queue_minutes,6);

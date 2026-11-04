@@ -223,7 +223,9 @@ test('mobile UI displays event-bounded gap categories without rewriting causalit
 test('journey carries explicit checkpoint coverage with no invented READY or repair times',async()=>{
  const m=makeRequest();
  const x=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});
- assert.equal(x.journey?.checkpoint_coverage?.total,17);
+ assert.equal(x.journey?.checkpoint_coverage?.total,6);
+ assert.equal(x.journey?.checkpoint_coverage?.all_checkpoint_opportunities,17);
+ assert.equal(x.journey?.checkpoint_coverage?.scope,'CREATED_TO_MERGED_REQUIRED_MILESTONES_NOT_ALL_OPTIONAL_STAGES');
  assert.equal(x.journey?.checkpoints?.find(r=>r.key==='created')?.at,at(0));
  assert.equal(x.journey?.checkpoints?.find(r=>r.key==='runner_started')?.at,at(15));
  assert.equal(x.journey?.checkpoints?.find(r=>r.key==='repair_started')?.at,at(33));
