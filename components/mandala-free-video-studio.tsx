@@ -62,7 +62,7 @@ import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
-import { resolveLicensedSourceFrame, assessLicensedSourceFrame } from "@/lib/mandala/free-film-source-clock.mjs";
+import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -106,7 +106,8 @@ type EditorHistoryState={
 type ImportedEditorDraft={
   presetId:string;aspect:Aspect;durationSeconds:10|15|20|30|60;
   shots:{sceneId:string;startSeconds:number;durationSeconds:number;captionText:string;
-    transitionIn:TimelineTransition;colorLook:TimelineLook;motion?:MyTubeMotion|null}[];
+    transitionIn:TimelineTransition;colorLook:TimelineLook;motion?:MyTubeMotion|null;
+    sourcePhasePercent?:number;sourceSpeed?:number}[];
   captions:TimelineTextClip[]|null;audioStartSeconds:number;
 };
 // A selected sound is only a preview; attaching it is a separate, explicit step.
@@ -2038,6 +2039,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ...shot,transitionIn:draft.shots[index].transitionIn,
         colorLook:draft.shots[index].colorLook,
         motion:draft.shots[index].motion??null,
+        sourcePhasePercent:draft.shots[index].sourcePhasePercent??0,
+        sourceSpeed:draft.shots[index].sourceSpeed??1,
       }))} as CinematicStoryboard;
       resetEditorHistory();stopMovieSound();setPreviewPlaying(false);
       setTheme(preset.theme);setVideoCategory(preset.theme);
@@ -2229,7 +2232,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
     audioStartSeconds,timelineTextClips,caption,affirmations,hypnoLight,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
-       shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null]),appliedStory]);
+       shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
+       shot.sourcePhasePercent??0,shot.sourceSpeed??1]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -2537,6 +2541,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(framePosition.sceneId!==shot.sceneId)return null;
       frame=framePosition;
     }catch{return null;} // Missing media duration or invalid shot: no fabricated frame.
+    // Apply the selected speed on the licensed decoder for preview and export.
+    try{if(video.playbackRate!==frame.sourceSpeed)video.playbackRate=frame.sourceSpeed;}
+    catch{return null;}
     const assessment=assessLicensedSourceFrame(video,frame);
     if(assessment.status==="drift"&&!video.seeking&&(enteringShot||!advancePlayback)){
       // Stage entry is a *bounded* seek, not a seek on every encoded frame.
@@ -3527,6 +3534,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
       return {...current,shots:current.shots.map((shot,i)=>i===index?
         {...shot,motion:safe}:shot)} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+    setPreviewFrameRevision(value=>value+1);
+  };
+  const changeTimelineShotSourceTiming=(index:number,patch:{
+    sourcePhasePercent?:number;sourceSpeed?:number
+  })=>{
+    if(recording||preparing||!usingFreeFilmCompilation||!cinematicPlan||
+       index<0||index>=cinematicPlan.shots.length)return;
+    const shot=cinematicPlan.shots[index];
+    let safe;
+    try{
+      safe=validateLicensedSourcePlayback(
+        patch.sourcePhasePercent??shot.sourcePhasePercent??0,
+        patch.sourceSpeed??shot.sourceSpeed??1
+      );
+    }catch{return;}
+    if(safe.sourcePhasePercent===(shot.sourcePhasePercent??0)&&
+       safe.sourceSpeed===(shot.sourceSpeed??1))return;
+    recordBeforeEditorChange("source-timing:"+index);
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
+      return {...current,shots:current.shots.map((item,i)=>i===index?
+        {...item,...safe}:item)} as CinematicStoryboard;
     });
     stopMovieSound();setPreviewPlaying(false);
     setPreviewFrameRevision(value=>value+1);
@@ -5698,7 +5729,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 poster:firstPartyFilmFor(shot.theme,shot.sceneId)?.poster,
                 startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds,
                 transitionIn:shot.transitionIn,colorLook:shot.colorLook,
-                motion:shot.motion??null
+                motion:shot.motion??null,
+                sourcePhasePercent:shot.sourcePhasePercent??0,
+                sourceSpeed:shot.sourceSpeed??1
               }))
               :activeFilm?[{sceneId:theme==="money"?moneyScene||"golden-rain":otherScene,
                 title:sceneName,poster:activeFilm.poster,startSeconds:0,durationSeconds:duration}]:[]}
@@ -5734,6 +5767,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onResizeShot={shiftFilmCut}
             onSetShotEffect={usingFreeFilmCompilation?changeTimelineShotEffect:undefined}
             onSetShotMotion={usingFreeFilmCompilation?changeTimelineShotMotion:undefined}
+            onSetShotSourceTiming={usingFreeFilmCompilation?changeTimelineShotSourceTiming:undefined}
             onAddCaption={addTimelineCaption}
             onSplitCaption={splitTimelineText}
             onDuplicateCaption={duplicateTimelineText}
