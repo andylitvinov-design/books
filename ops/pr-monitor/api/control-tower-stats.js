@@ -67,6 +67,38 @@ function timestampInventory(source,now) {
    rows_format:raw.rows_format,records:raw.records};
  }catch{return {status:'INVALID_UNVERIFIED_TIMESTAMP_INVENTORY'};}
 }
+
+/** This is a signed, bounded sample, not an all-open-PR timeline. */
+function wakeHandoff(source){
+ const raw=source?.ci_wake_handoff;
+ const invalid=()=>({status:'UNVERIFIED',observed_tasks:null,example_records:[]});
+ if(!raw)return {status:'NOT_COLLECTED',observed_tasks:null,example_records:[]};
+ if(raw.scope!=='INSPECTED_CI_TASKS_ONLY_NOT_ALL_OPEN_PRS'||!valid(raw.observed_tasks)||
+  raw.observed_tasks>16||!Array.isArray(raw.example_records)||
+  raw.example_records.length>3||raw.example_records.length>raw.observed_tasks)return invalid();
+ const output={status:raw.observed_tasks?'SIGNED_BOUNDED_CI_SAMPLE':'NO_CI_TASKS_IN_SWEEP',
+  observed_tasks:raw.observed_tasks,example_records:[]};
+ for(const key of ['reserved_to_claim','claim_to_wake','wake_to_outcome','wake_pending_age']){
+  const row=raw[key];if(!row||!valid(row.n)||row.n>raw.observed_tasks)return invalid();
+  for(const field of ['mean_seconds','p50_seconds','p95_seconds']){
+   const v=row[field];if(v!=null&&(!valid(v)||v>2592000))return invalid();
+   if((row.n>0&&v==null)||(row.n===0&&v!=null))return invalid();
+  }
+  output[key]={n:row.n,mean_seconds:row.mean_seconds??null,
+   p50_seconds:row.p50_seconds??null,p95_seconds:row.p95_seconds??null};
+ }
+ const states=new Set(['CI_WAKE_UNDELIVERED','CI_CORE_CONFIRMED',
+  'WAKE_OUTCOME_NOT_YET_OBSERVED','CLAIMED_NO_WAKE_RECEIPT','RESERVED_NO_CLAIM_RECEIPT']);
+ for(const row of raw.example_records){
+  if(!Number.isSafeInteger(row?.pr_number)||row.pr_number<1||
+   !/^[a-f0-9]{12}$/i.test(row.head_sha||'')||!states.has(row.state)||
+   row.source!=='BOT_SIGNED_EXACT_TASK_RECEIPTS'||
+   !Number.isFinite(Date.parse(row.observed_at||'')))return invalid();
+  output.example_records.push({pr_number:row.pr_number,head_sha:row.head_sha,state:row.state});
+ }
+ return output;
+}
+
 function normalize(source,now=Date.now()){
  if(!source||source.schema!==SCHEMA||source.source_dry_run!==false||
     source.source_schema!=='HH_CONTROL_DISPATCH_V1'||!valid(source.run_id)||
@@ -125,6 +157,7 @@ function normalize(source,now=Date.now()){
    source_issue:'https://github.com/andylitvinov-design/books/issues/3128',
    counts:normalizedCounts,queue_states:q,
    pr_timestamps:timestampInventory(source,now),
+   ci_wake_handoff:wakeHandoff(source),
    blocked_reasons,blocked_examples,
    blocked_reasons_complete:hasReasons,
    watchdog_sample:sample,watchdog_sample_status:sampleStatus,
@@ -161,6 +194,7 @@ async function handler(req,res){
  }
 }
 handler.timestampInventory=timestampInventory;
+handler.wakeHandoff=wakeHandoff;
 handler.normalize=normalize;
 handler.parseBody=parseBody;
 module.exports=handler;

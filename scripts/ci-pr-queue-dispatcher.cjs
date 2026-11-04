@@ -165,6 +165,49 @@ function backlogLabelHints(prs){
  return result;
 }
 
+/**
+ * Diagnostic timestamps from bot-signed, exact PR/HEAD/task receipts already
+ * read during queue inspection. These are observed transitions, not proof of
+ * GitHub webhook delivery, source publication or a running Core job.
+ */
+function signedCiWakeTiming(task,comments,now){
+ if(task?.lane!=='ci'||!Array.isArray(comments)||!Number.isFinite(now))return null;
+ const signed=parseRecords(comments.filter(trustedControlComment));
+ if(!signed)return null;
+ const rows=signed.filter(r=>r.task_key===task.task_key&&
+  r.pr_number===task.pr_number&&r.head_sha===task.head_sha&&r.lane==='ci');
+ const parse=raw=>{const t=Date.parse(raw||'');return Number.isFinite(t)?t:null;};
+ const earliest=(state,key)=>rows.filter(r=>r.state===state)
+  .map(r=>({state,t:parse(r[key])})).filter(r=>r.t!==null)
+  .sort((a,b)=>a.t-b.t)[0]||null;
+ const reserved=earliest('RESERVED','created_at');
+ const claimed=earliest('CLAIMED','created_at');
+ const wake=earliest('CI_WAKE_REQUESTED','observed_at');
+ const outcomes=rows.filter(r=>['CI_WAKE_UNDELIVERED','CI_CORE_CONFIRMED'].includes(r.state))
+  .map(r=>({state:r.state,t:parse(r.created_at)}))
+  .filter(r=>r.t!==null&&wake&&r.t>=wake.t)
+  .sort((a,b)=>a.t-b.t);
+ const outcome=outcomes[0]||null;
+ if(!reserved&&!claimed&&!wake&&!outcome)return null;
+ const duration=(a,b)=>a!==null&&b!==null&&b>=a&&b-a<=30*86400000?
+   Math.round((b-a)/1000):null;
+ const iso=r=>r?new Date(r.t).toISOString():null;
+ return {
+  pr_number:task.pr_number,head_sha:task.head_sha.slice(0,12),task_key:task.task_key,
+  source:'BOT_SIGNED_EXACT_TASK_RECEIPTS',
+  state:outcome?.state||(wake?'WAKE_OUTCOME_NOT_YET_OBSERVED':
+   claimed?'CLAIMED_NO_WAKE_RECEIPT':'RESERVED_NO_CLAIM_RECEIPT'),
+  reserved_at:iso(reserved),claimed_at:iso(claimed),wake_requested_at:iso(wake),
+  outcome_at:iso(outcome),observed_at:new Date(now).toISOString(),
+  duration_seconds:{
+    reserved_to_claim:duration(reserved?.t??null,claimed?.t??null),
+    claim_to_wake:duration(claimed?.t??null,wake?.t??null),
+    wake_to_outcome:duration(wake?.t??null,outcome?.t??null),
+    wake_pending_age:outcome?null:duration(wake?.t??null,now)
+  }
+ };
+}
+
 // Bounded exact-run Watchdog inspection, not a repository-wide proof or
 // authorization to edit sources. Categories may overlap within the sample.
 function trustedWatchdogSample(evidence,productionCount){
@@ -223,7 +266,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
-  workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},
+  workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},ciWakeTelemetry:[],
   ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,ciHoldRecovered:0,
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
@@ -479,6 +522,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
+  if(task.lane==='ci'){
+   const sample=signedCiWakeTiming(task,comments,now);
+   if(sample)summary.ciWakeTelemetry.push(sample);
+  }
   const realRunner=verifiedRunnerReceipt(comments,task);
   if(realRunner){
    summary.runnerStartedConfirmed++;
@@ -981,4 +1028,5 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  log();return state;
 }
 module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
- DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints};
+ DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints,
+ signedCiWakeTiming};

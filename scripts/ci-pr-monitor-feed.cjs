@@ -71,6 +71,48 @@ function verifiedBoundedSample(input,productionCount){
  }
  return sample;
 }
+function ciWakeTimingSummary(rows,maxInspected){
+ if(!Array.isArray(rows)||rows.length>maxInspected)throw Error('INVALID_CI_WAKE_TIMING_COHORT');
+ const seen=new Set(),clean=[];
+ const states=new Set(['CI_WAKE_UNDELIVERED','CI_CORE_CONFIRMED','WAKE_OUTCOME_NOT_YET_OBSERVED',
+   'CLAIMED_NO_WAKE_RECEIPT','RESERVED_NO_CLAIM_RECEIPT']);
+ const fields=['reserved_to_claim','claim_to_wake','wake_to_outcome','wake_pending_age'];
+ for(const row of rows){
+  if(!row||!Number.isSafeInteger(row.pr_number)||row.pr_number<1||
+     !/^[a-f0-9]{12}$/i.test(row.head_sha||'')||
+     !/^[a-f0-9]{32}$/i.test(row.task_key||'')||
+     row.source!=='BOT_SIGNED_EXACT_TASK_RECEIPTS'||!states.has(row.state)||
+     !row.duration_seconds||seen.has(row.pr_number))throw Error('UNTRUSTED_CI_WAKE_TIMING');
+  seen.add(row.pr_number);
+  const durations={};
+  for(const field of fields){
+   const value=row.duration_seconds[field];
+   if(value!=null&&(!Number.isSafeInteger(value)||value<0||value>30*86400))
+    throw Error('INVALID_CI_WAKE_DURATION:'+field);
+   durations[field]=value??null;
+  }
+  clean.push({pr_number:row.pr_number,head_sha:row.head_sha,task_key:row.task_key,
+   state:row.state,source:row.source,reserved_at:row.reserved_at||null,
+   claimed_at:row.claimed_at||null,wake_requested_at:row.wake_requested_at||null,
+   outcome_at:row.outcome_at||null,observed_at:row.observed_at,
+   duration_seconds:durations});
+ }
+ const aggregate=field=>{
+  const list=clean.map(r=>r.duration_seconds[field]).filter(Number.isSafeInteger).sort((a,b)=>a-b);
+  const n=list.length, percentile=p=>n?list[Math.ceil(n*p)-1]:null;
+  return {n,mean_seconds:n?Math.round(list.reduce((a,b)=>a+b,0)/n):null,
+   p50_seconds:percentile(.5),p95_seconds:percentile(.95),
+   coverage_of_inspected_ci_tasks:clean.length?Math.round(100*n/clean.length):null};
+ };
+ return {scope:'INSPECTED_CI_TASKS_ONLY_NOT_ALL_OPEN_PRS',
+  observed_tasks:clean.length,example_records:clean.slice(0,3),
+  omitted_examples:Math.max(0,clean.length-3),
+  reserved_to_claim:aggregate('reserved_to_claim'),
+  claim_to_wake:aggregate('claim_to_wake'),
+  wake_to_outcome:aggregate('wake_to_outcome'),
+  wake_pending_age:aggregate('wake_pending_age')};
+}
+
 function buildMonitorSnapshot(report,context){
   if(report?.schema!=='HH_CONTROL_DISPATCH_V1'||report.dryRun!==false||
      !Number.isFinite(Date.parse(report.checkedAt||''))||
@@ -96,6 +138,7 @@ function buildMonitorSnapshot(report,context){
      counts.dispatch_requests_accepted>counts.inspected ||
      counts.worker_dispatches>counts.inspected)
     throw Error('MONITOR_COUNTS_INCONSISTENT');
+  const ciWakeHandoff=ciWakeTimingSummary(report.ciWakeTelemetry||[],counts.inspected);
   const queueStates={
     awaiting_core:validCount(report.ciWakePending||0,'awaiting_core'),
     core_confirmed:validCount(report.ciCoreConfirmed||0,'core_confirmed'),
@@ -177,7 +220,8 @@ function buildMonitorSnapshot(report,context){
     delivery_status:deliveryStatus,
     counts,queue_states:queueStates,backlog_label_hints:labelHints,
     watchdog_sample_status:watchdogSampleStatus,watchdog_sample:watchdogSample,
-    api_budget:apiBudget,blocked_reasons:blocked,
+    api_budget:apiBudget,ci_wake_handoff:ciWakeHandoff,
+    blocked_reasons:blocked,
     blocked_examples:blockedExamples,
     reason:typeof report.reason==='string'?report.reason.slice(0,100):null
   };
@@ -196,6 +240,7 @@ function parseExisting(body){
 function renderSnapshot(snapshot){
   const fence=String.fromCharCode(96).repeat(3);
   return [MARKER,'## Watchdog direct handoff — public snapshot',
+    'CI wake timing comes from authenticated exact-task receipt timestamps in the bounded inspected CI sample, not a global PR cohort. Missing duration is null, not zero; a wake receipt does not prove Core runner execution.',
     'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
     '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
@@ -292,6 +337,7 @@ async function publishTimestampInventoryOnly({github,context,watchdog}){
  return {status:'PUBLISHED_PR_TIMESTAMPS',observed_at:record.observed_at,
    open:record.total,production:record.production};
 }
-module.exports={MARKER,SCHEMA,buildMonitorSnapshot,parseExisting,renderSnapshot,
+module.exports={MARKER,SCHEMA,buildMonitorSnapshot,ciWakeTimingSummary,
+ parseExisting,renderSnapshot,
  publishMonitorSnapshot,publishTimestampInventoryOnly};
 

@@ -45,7 +45,15 @@
     const blockersList=document.createElement('div');
     blockersList.className='hh-ct-blocker-list';
     blockers.append(blockersTitle,blockersList);
-    panel.append(heading,grid,info,blockers,link);
+    const handoff=document.createElement('details');
+    handoff.className='hh-ct-handoff';
+    handoff.open=true;
+    const handoffTitle=document.createElement('summary');
+    handoffTitle.textContent='CI · задержка получения задачи и запуска';
+    const handoffList=document.createElement('div');
+    handoffList.className='hh-ct-blocker-list';
+    handoff.append(handoffTitle,handoffList);
+    panel.append(heading,grid,info,blockers,handoff,link);
     const after=section.querySelector('.hh-watchdog-meta');
     if(after)after.insertAdjacentElement('afterend',panel);
     else section.append(panel);
@@ -59,8 +67,8 @@
       '.hh-watchdog-control-meta{margin:7px 0 2px;color:#adc0d4;font-size:11px;line-height:1.45}'+
       '.hh-watchdog-control a{display:inline-block;margin:2px 0 4px;color:#99cfff;font-size:11px;text-decoration:underline}'+
       '.hh-watchdog-control a[hidden]{display:none}'+
-      '.hh-ct-blockers{border-top:1px solid #35516b;margin-top:10px;padding-top:9px}'+
-      '.hh-ct-blockers summary{font-size:13px;font-weight:730;color:#d8e6fa;cursor:pointer}'+
+      '.hh-ct-blockers,.hh-ct-handoff{border-top:1px solid #35516b;margin-top:10px;padding-top:9px}'+
+      '.hh-ct-blockers summary,.hh-ct-handoff summary{font-size:13px;font-weight:730;color:#d8e6fa;cursor:pointer}'+
       '.hh-ct-blocker-list{display:grid;gap:8px;margin-top:10px}'+
       '.hh-ct-blocker-item{border:1px solid #35516b;border-radius:10px;background:#101d31;padding:9px 11px;font-size:12px;color:#d4e5f9}'+
       '.hh-ct-blocker-item strong{float:right;color:#ff9da6;font-size:15px}'+
@@ -183,12 +191,55 @@
           }
           blockers.open=rows.length>0||Number.isSafeInteger(sample?.inspected);
         }
+
+        handoffList.replaceChildren();
+        const wake=data.ci_wake_handoff;
+        const confirmed=wake?.status==='SIGNED_BOUNDED_CI_SAMPLE';
+        handoffTitle.textContent='CI · задержки (проверено '+(confirmed?wake.observed_tasks:'—')+' задач)';
+        if(!confirmed){
+          const p=document.createElement('p');
+          p.textContent=wake?.status==='NO_CI_TASKS_IN_SWEEP'?
+            'CI-кандидаты не проверялись в этом срезе; отсутствие данных не равно нулевой задержке.':
+            'Пока нет проверенных временны́х меток передачи CI-задач.';
+          handoffList.append(p);
+        }else{
+          const fmt=s=>!Number.isSafeInteger(s)?'—':
+            s<60?s+' с':(Math.round(s/6)/10).toLocaleString('ru-RU')+' мин';
+          for(const [name,label] of [
+             ['reserved_to_claim','Задача зарезервирована → получена Worker'],
+             ['claim_to_wake','Worker получил → запросил Core CI'],
+             ['wake_to_outcome','Запрос Core CI → зарегистрированный итог'],
+             ['wake_pending_age','Возраст ещё не подтверждённого запроса']
+          ]){
+            const x=wake[name],item=document.createElement('div');
+            item.className='hh-ct-blocker-item';
+            item.textContent=label+' · n='+x.n+' · p50 '+fmt(x.p50_seconds)+
+              ' · p95 '+fmt(x.p95_seconds)+' · среднее '+fmt(x.mean_seconds);
+            handoffList.append(item);
+          }
+          const note=document.createElement('p');
+          note.textContent='Этапы измерены по подтверждённым записям в ограниченной выборке. '+
+            'Они не доказывают точное время доставки события GitHub или запуска Core runner.';
+          handoffList.append(note);
+          for(const record of wake.example_records){
+            const item=document.createElement('div');
+            item.className='hh-ct-blocker-item';
+            item.textContent=record.state+' · HEAD '+record.head_sha+' · ';
+            const a=document.createElement('a');
+            a.href='https://github.com/andylitvinov-design/books/pull/'+record.pr_number;
+            a.textContent='PR #'+record.pr_number;
+            a.rel='noopener noreferrer';a.target='_blank';item.append(a);
+            handoffList.append(item);
+          }
+        }
         last=Date.now();
       }catch{
         for(const node of Object.values(nodes)){node.textContent='—';node.setAttribute('aria-label','Данные недоступны');}
         info.textContent='Нет подтверждённых данных Control Tower. Нулём отсутствие отчёта не считается.';
         blockersTitle.textContent='Блокировки · отчёт недоступен';
         blockersList.replaceChildren();blockers.open=true;
+        handoffTitle.textContent='CI · подтверждённые задержки недоступны';
+        handoffList.replaceChildren();
         link.hidden=true;last=Date.now();
       }finally{loading=false;}
     }
