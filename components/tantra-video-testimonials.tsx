@@ -58,6 +58,15 @@ export function TantraVideoTestimonials(props: Props) {
   }
   function onNativePlay(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
+    // An explicit Play for another testimonial must release the competing
+    // native decoder before WebKit/GStreamer tries to buffer two MP4s.
+    // Never pause the selected video, seek, reload, autoplay, or touch its audio.
+    // The companion may be offscreen; we still stop its old playback only if
+    // it is actually running. This preserves its position for a later user Play.
+    const disclosure=typeof video.closest==="function"?video.closest("details"):null;
+    disclosure?.querySelectorAll("video").forEach(other=>{
+      if(other!==video&&!other.paused)other.pause();
+    });
     const saved = retained.current.get(video);
     if (!saved || saved.awaitingFrame) return;
     // Native disclosure opening never seeks or plays. User play/playing is

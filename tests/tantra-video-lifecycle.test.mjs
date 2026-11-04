@@ -141,6 +141,33 @@ test('closing a mixed native video section pauses only active media, once across
   assert.equal(model.updates(),2,'YouTube poster cleanup still runs on close');
 });
 
+test('user Play of second native MP4 pauses only the competing active decoder once',()=>{
+  const model=mount({...labels.en,videos,initiallyOpen:true});
+  const handlers=flatten(model.render()).filter(node=>node.type==='video').map(node=>node.props);
+  const players=[0,1].map(i=>({
+    paused:i===0?false:true,currentTime:12.5+i, calls:0,
+    pause(){this.calls++;this.paused=true;},
+  }));
+  const details={querySelectorAll(selector){
+    assert.equal(selector,'video');return players;
+  }};
+  for(const player of players)player.closest=selector=>{
+    assert.equal(selector,'details');return details;
+  };
+  // Starting video #2 must preserve video #1's seek position.
+  players[1].paused=false;
+  handlers[1].onPlay({currentTarget:players[1]});
+  handlers[1].onPlaying({currentTarget:players[1]});
+  assert.equal(players[0].calls,1,'A running companion is paused only once');
+  assert.equal(players[0].currentTime,12.5,'Companion position is unchanged');
+  assert.equal(players[1].paused,false,'User-selected player stays playing');
+  assert.equal(players[1].calls,0,'Selected decoder is never paused');
+  // A repeat event and already-paused companion must be no-ops.
+  handlers[1].onPlaying({currentTarget:players[1]});
+  assert.equal(players[0].calls,1);
+  assert.equal(model.updates(),0,'Switching native media never resets YouTube');
+  assert.equal(handlers[1].controls,true,'Native media controls remain enabled');
+});
 test('opening summary and absent ancestor never pause or reset any player', () => {
   const model=mount({...labels.en,videos,initiallyOpen:false});const summary=flatten(model.render()).find(x=>x.type==='summary');
   for(const details of [null,{open:false,querySelectorAll(){assert.fail('Opening must not access media')}}])summary.props.onClickCapture({currentTarget:{closest(){return details}}});
