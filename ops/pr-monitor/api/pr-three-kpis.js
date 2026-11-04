@@ -1,0 +1,123 @@
+'use strict';
+/* Single read-only Vercel endpoint. Reuses existing Core CI archive #3419.
+ * NO GitHub action, schedule, PR mutation, rerun, CI runner, paid provider.
+ */
+const model=require('../pr-three-kpi-model.cjs');
+const ROOT='https://api.github.com/repos/andylitvinov-design/books';
+const MAX_PAGES=4,MAX_REPAIR_PR_READS=5;
+const TTL=300000,DEEP_TTL=600000;
+let archiveCache=null,archiveAt=0,archivePromise=null;
+let deepCache=new Map();
+const t=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:null;};
+const headers=()=>{const h={Accept:'application/vnd.github+json',
+ 'X-GitHub-Api-Version':'2022-11-28','User-Agent':'HH-PR-KPI-Read-Only'};
+ const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;
+ if(token)h.Authorization='Bearer '+token;
+ return h;};
+async function gh(path) {
+ const response=await fetch(ROOT+path,{headers:headers(),
+  signal:AbortSignal.timeout(10000)});
+ const remain=response.headers.get('x-ratelimit-remaining');
+ if(remain!==null&&Number(remain)<5)throw Error('GITHUB_RATE_RESERVE');
+ if(!response.ok)throw Error('GITHUB_HTTP_'+response.status);
+ const data=await response.json();
+ return {data,remaining:remain===null?null:Number(remain)};
+}
+async function archive(now) {
+ if(archiveCache&&Date.now()-archiveAt<TTL)return {...archiveCache,cache_hit:true};
+ if(archivePromise)return archivePromise;
+ archivePromise=(async()=>{
+  const since=new Date(now-16*86400000-3600000).toISOString();
+  const rows=[];let pages=0,complete=false,remaining=null;
+  for(let page=1;page<=MAX_PAGES;page++) {
+   const result=await gh('/issues/3419/comments?per_page=100&page='+page+
+     '&since='+encodeURIComponent(since));
+   if(!Array.isArray(result.data)||result.data.length>100)throw Error('ARCHIVE_PAGE_INVALID');
+   rows.push(...result.data);pages=page;remaining=result.remaining;
+   if(result.data.length<100){complete=true;break;}
+   if(remaining!==null&&remaining<12)break;
+  }
+  const parsed=model.parseShards(rows);
+  const value={runs:parsed.runs,shard_comments:rows.length,shard_pages:pages,
+   archive_complete_read:complete,archive_conflicts:parsed.conflicts,
+   fetched_at:new Date().toISOString(),remaining,stale:false};
+  archiveCache=value;archiveAt=Date.now();return {...value,cache_hit:false};
+ })().catch(error=>{
+  if(archiveCache)return {...archiveCache,stale:true,stale_reason:String(error.message||error)};
+  throw error;
+ }).finally(()=>{archivePromise=null;});
+ return archivePromise;
+}
+async function readRepair(candidates) {
+ const seenPR=new Set(),chosen=[];
+ for(const item of candidates){
+  if(seenPR.has(item.pr))continue;
+  seenPR.add(item.pr);
+  chosen.push(item);if(chosen.length===MAX_REPAIR_PR_READS)break;
+ }
+ const result={};
+ let checked=0;
+ for(const c of chosen){
+  const entry=deepCache.get(c.pr),now=Date.now();
+  let comments;
+  if(entry&&now-entry.at<DEEP_TTL)comments=entry.comments;
+  else {
+   try{
+    const response=await gh('/issues/'+c.pr+'/comments?per_page=100');
+    if(!Array.isArray(response.data)||response.data.length>=100)continue;
+    comments=response.data;
+    deepCache.set(c.pr,{at:now,comments});
+    if(deepCache.size>25)deepCache.delete(deepCache.keys().next().value);
+   }catch(error){
+    if(String(error.message||error)==='GITHUB_RATE_RESERVE')break;
+    continue;
+   }
+  }
+  checked++;
+  const key=c.pr+':'+c.head_sha;
+  result[key]=model.parseRepairReceipts(comments,{pr:c.pr,head:c.head_sha});
+ }
+ return {proofs:result,checked};
+}
+async function main(req,res) {
+ res.setHeader('Content-Type','application/json; charset=utf-8');
+ res.setHeader('X-Content-Type-Options','nosniff');
+ res.setHeader('X-Robots-Tag','noindex,nofollow');
+ res.setHeader('Cache-Control','private, max-age=0, s-maxage=300');
+ if(req.method!=='GET'){res.setHeader('Allow','GET');res.statusCode=405;
+  return res.end(JSON.stringify({schema:model.SCHEMA,error:'METHOD_NOT_ALLOWED'}));}
+ const deep=req.query?.repair==='1';
+ const now=Date.now();
+ try {
+  const store=await archive(now);
+  let checked=0,proofs={};
+  if(deep){
+   // Manual, bounded verification only. Never query 100+ PR discussions or
+   // imply 5 inspected PRs represent the entire backlog.
+   const current=model.window(now,0);
+   const inputs=model.errors(store.runs,current,now);
+   const result=await readRepair(inputs);proofs=result.proofs;checked=result.checked;
+   res.setHeader('Cache-Control','private, no-store');
+  }
+  const report=model.report(store.runs,now,{partialArchive:!store.archive_complete_read,
+   repairProofs:proofs,repairChecked:checked});
+  report.coverage={source:'AUTHENTICATED_GITHUB_ACTIONS_ISSUE_3419',
+   fetched_at:store.fetched_at,archived_run_count:store.runs.length,
+   archive_complete_read:store.archive_complete_read,
+   archive_history_complete:false,
+   shard_conflicts:store.archive_conflicts,shard_comments:store.shard_comments,
+   shard_pages:store.shard_pages,stale:store.stale,
+   repair_read_budget:deep?MAX_REPAIR_PR_READS:0,
+   repair_prs_checked:checked};
+  report.notes=['A first SAVED Core run is not proven to be the first-ever CI wave.',
+   'Stage values from missing GitHub events are null, not zero.',
+   'Two weeks ago is aligned to Toronto local clock, including DST.',
+   'Historical October archive has no verifiable Core stage events.'];
+  res.statusCode=200;res.end(JSON.stringify(report));
+ }catch(error){
+  res.statusCode=503;res.end(JSON.stringify({schema:model.SCHEMA,
+   error:String(error.message||error).slice(0,110),missing_is_not_zero:true}));
+ }
+}
+module.exports=main;
+module.exports._test={archive,readRepair,gh};
