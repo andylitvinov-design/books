@@ -105,7 +105,59 @@ export function TantraVideoTestimonials(props: Props) {
           return;
         }
         retained.current.delete(video);
+        // The decoder may present two real frames after the saved-position
+        // seek and then freeze again (verified WebKit RU390 04 Nov artifact).
+        // Observe that second phase before calling playback genuinely healthy.
+        // This is only armed after the user's explicit native Play and after
+        // multiple actual preroll frames; never on disclosure opening.
+        const onRestoredSeeked=()=>{
+          const view=video.ownerDocument?.defaultView;
+          const disclosure=typeof video.closest==="function"?video.closest("details"):null;
+          if(!view || typeof view.requestAnimationFrame!=="function" ||
+              video.paused || video.seeking || video.isConnected===false ||
+              video.currentSrc!==saved.source || video.muted!==true ||
+              (disclosure!==null&&!disclosure.open) ||
+              Math.abs(video.currentTime-saved.time)>0.35)return;
+          let monitoring=true, healthy=false;
+          let startedAt:number|null=null,lastFrameAt:number|null=null;
+          let lastMediaTime=saved.time-0.1;
+          const frameAfterSeek:VideoFrameRequestCallback=(now,metadata)=>{
+            if(!monitoring||video.paused||video.currentSrc!==saved.source)return;
+            if(Number.isFinite(metadata.mediaTime)&&metadata.mediaTime>lastMediaTime+0.02){
+              lastMediaTime=metadata.mediaTime;
+              lastFrameAt=now;
+              if(lastMediaTime>=saved.time+1.4){healthy=true;monitoring=false;return;}
+            }
+            try{video.requestVideoFrameCallback(frameAfterSeek)}
+            catch{monitoring=false;}
+          };
+          const checkLateStall=(now:number)=>{
+            if(!monitoring||healthy)return;
+            if(video.paused||video.ended||video.isConnected===false ||
+               video.currentSrc!==saved.source||video.muted!==true ||
+               (disclosure!==null&&!disclosure.open)){monitoring=false;return;}
+            if(startedAt===null)startedAt=now;
+            if(now-startedAt>12000){monitoring=false;return;}
+            if(video.seeking){view.requestAnimationFrame(checkLateStall);return;}
+            if(lastFrameAt===null)lastFrameAt=now;
+            if(now-lastFrameAt<1700){view.requestAnimationFrame(checkLateStall);return;}
+            monitoring=false;
+            // Resume the existing ONE bounded same-source reconstruction, not
+            // a separate reload, another provider request or a retry loop.
+            retained.current.set(video,{...saved,awaitingFrame:false,
+              confirmedFrames:0,generation:(saved.generation??0)+1});
+            onNativePlay({currentTarget:video} as SyntheticEvent<HTMLVideoElement>);
+          };
+          try{
+            video.requestVideoFrameCallback(frameAfterSeek);
+            view.requestAnimationFrame(checkLateStall);
+          }catch{monitoring=false;}
+        };
+        const hasSeekEvents=typeof video.addEventListener==="function"&&
+          typeof video.removeEventListener==="function";
+        if(hasSeekEvents)video.addEventListener("seeked",onRestoredSeeked,{once:true});
         try { video.currentTime = saved.time; } catch {
+          if(hasSeekEvents)video.removeEventListener("seeked",onRestoredSeeked);
           // Refused native seek leaves native controls available.
         }
         return;

@@ -314,6 +314,38 @@ test('WebKit defers saved-position seek until an actual new decoded frame after 
   assert.equal(f.writes.length,1,'Never repeat a resolved native seek');
 });
 
+test('late WebKit freeze after real decoded post-seek frames gets one same-source muted recovery',()=>{
+  const animation=[],events=new Map();
+  let loads=0,plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){this.paused=true},
+    load(){loads++;this.paused=true;this.readyState=1},
+    play(){plays++;this.paused=false;return Promise.resolve()},
+    addEventListener(type,handler){events.set(type,handler)},
+    removeEventListener(type,handler){if(events.get(type)===handler)events.delete(type)},
+    ownerDocument:{defaultView:{performance:{now(){return 0}},
+      requestAnimationFrame(fn){animation.push(fn);return animation.length}}},
+  });
+  f.close();f.reopen();
+  assert.equal(loads,0,'Disclosure opening must never restart a decoder');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  for(const time of [0.066666,0.2,0.366666,0.533333])f.frame(time);
+  assert.deepEqual(f.writes,[5.391310898],'Real preroll frames permit one saved-position seek');
+  assert.equal(typeof events.get('seeked'),'function','Only the real internal seek arms follow-up');
+  events.get('seeked')();
+  f.frame(5.43);f.frame(5.63);
+  assert.equal(loads,0,'Two initial post-seek frames are not proof of sustained playback');
+  animation.shift()(0); // The first observer was safely invalidated by the seek.
+  animation.shift()(0); // Late-stall watchdog begins after real seeked.
+  animation.shift()(1800); // Decoded media froze: re-arm one existing recovery.
+  assert.equal(loads,0,'No decoder reload until the re-armed bounded 1.7s check');
+  animation.shift()(1800);
+  animation.shift()(3600);
+  assert.equal(loads,1,'A late WebKit decode freeze gets exactly one same-source reconstruction');
+  assert.equal(plays,0,'Never autoplay on disclosure/seek or before real metadata+seeked');
+  assert.equal(f.media.paused,true,'One recovery leaves the player paused until exact seeked');
+});
 test('reopened WebKit decoder cannot be sought by repeated unadvanced preroll frames',()=>{
   const f=deferredWebKitFixture();f.close();f.reopen();f.media.paused=false;
   f.handlers.onPlay(f.event);
