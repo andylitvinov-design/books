@@ -224,6 +224,19 @@ test('hourly native merge requires explicit verified release for modern active o
  assert.ok(!yml.includes('force:true'));
 });
 
+test('auto-merge pins production SHA for revalidated isolated CI policy, not only strict sensitive PRs',()=>{
+  const native=read('hh-native-auto-merge');
+  assert.ok(native.includes('freshness.reason==="SENSITIVE_BASE_VERIFIED" ||'));
+  assert.ok(native.includes('freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"'),
+    'independent policy/media proof must be checked again before ARM');
+  assert.ok(native.includes('core.setOutput("verified_base",freshness.base)'));
+  assert.ok(native.includes('PR_REQUIRES_CURRENT_BASE: ${{ steps.freshness.outputs.requires_current_base }}'));
+  assert.ok(native.includes('if [[ "$PR_REQUIRES_CURRENT_BASE" == true ]]; then'));
+  assert.ok(native.includes('if [[ "$current_base" != "$PR_VERIFIED_BASE" ]]; then'));
+  assert.ok(native.includes('--match-head-commit "$PR_HEAD"'),
+    'exact source HEAD remains mandatory on both routes');
+});
+
 test('staged single-release-check policy preserves legacy until proven administrative cutover',()=>{
   const auto=read('hh-native-auto-merge');
   assert.ok(auto.includes('const allowedRequiredSets = new Map(['));
