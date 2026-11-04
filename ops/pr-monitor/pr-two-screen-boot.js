@@ -5,7 +5,7 @@
 (async function () {
   var fallback=document.getElementById('hh2-boot-status');
   try {
-    var response=await fetch('/legacy.html',{cache:'no-store',headers:{Accept:'text/html'}});
+    var response=await fetch('/legacy.html',{cache:'default',headers:{Accept:'text/html'}});
     if(!response.ok)throw Error('Original monitor '+response.status);
     var html=await response.text();
     if(!/<\/head>/i.test(html)||!/<main\b/i.test(html))throw Error('Original monitor markup incomplete');
