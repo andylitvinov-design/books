@@ -514,7 +514,8 @@ export function RemoteEnergySupportBooking({
   return (
     <section className={mode === "inline" ? styles.page + " " + styles.inline + (compactFinder ? " " + styles.compactResults : "") : styles.page}
       aria-labelledby="remote-support-title" data-remote-support-intent-first
-      data-support-request-kind={requestKind}>
+      data-support-request-kind={requestKind}
+      data-public-visual-landing={compactFinder ? undefined : "remote-energy"}>
       {compactFinder ? <h2 id="remote-support-title" className={styles.srOnly}>{t.specialistsTitle}</h2> : <header className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{requestKind === "talisman" ? t.talismanTitle : t.title}</h1>
@@ -759,7 +760,7 @@ export function RemoteEnergySupportBooking({
                     </form>
                     {mode === "inline" && contactDraft?.serviceId === master.serviceId && (
                       <section id="remote-public-contact" className={styles.publicContact}
-                        data-remote-public-order-contact aria-label={t.send}>
+                        data-remote-public-order-contact data-remote-visual-screen="final-capture" aria-label={t.send}>
                         <h4>{locale === "ru" ? "Оформление заявки" : locale === "es" ? "Enviar solicitud" : "Request contact"}</h4>
                         <p>{locale === "ru"
                           ? "Укажите телефон или войдите через Google. После отправки с вашим согласием заявка появится в CRM. Время и оплата ещё не подтверждены."

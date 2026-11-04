@@ -55,28 +55,29 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-// Meaning is a separate fifth check-in; the published video topic engine
-// continues to use the original four-focus ranking.
+// Confidence keeps the established "meaning" data key; the published video topic
+// engine continues to use the existing four-focus ranking.
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
-type MeditationCategory = "energy" | "money" | "relationships" | "meaning" | "health" | "all";
+type MeditationCategory = "goals-money" | "love-relationships" | "energy-confidence" | "stress-anxiety" | "all";
 
 const meditationCategoryOptions = [
-  { id: "energy", Icon: Zap },
-  { id: "money", Icon: Coins },
-  { id: "relationships", Icon: Heart },
-  { id: "meaning", Icon: Flower2 },
-  { id: "health", Icon: HandHeart },
+  { id: "goals-money", Icon: Coins },
+  { id: "love-relationships", Icon: Heart },
+  { id: "energy-confidence", Icon: Zap },
+  { id: "stress-anxiety", Icon: HandHeart },
   { id: "all", Icon: Compass },
 ] as const;
-// Reuse the verified recording facets; Meaning has no dedicated recorded tag,
-// so only the general Sun originals appear, explicitly labelled as related.
-const meditationCategoryTopics: Partial<Record<MeditationCategory, MeditationTopic>> = {
-  energy: "energy", money: "business", relationships: "love", health: "health",
+// Bridge public categories to legacy, verified recording tags. Existing topic IDs stay stable.
+const meditationCategoryTopics: Partial<Record<MeditationCategory, readonly MeditationTopic[]>> = {
+  "goals-money": ["business"],
+  "love-relationships": ["love"],
+  "energy-confidence": ["energy", "health"],
+  "stress-anxiety": ["health"],
 };
 
 
@@ -121,7 +122,7 @@ const copy = {
         "energy": "Energy & wellbeing tests",
         "money": "Work & money reflection tests",
         "relationships": "Relationship tests",
-        "goals": "Meaning, focus & motivation tests"
+        "goals": "Confidence, focus & motivation tests"
       },
       "testHint": "Browse actual free questionnaires",
       "videoHint": "Published original recording",
@@ -158,15 +159,15 @@ const copy = {
     },
     goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
     goalExternalOnly: "Use the selected links above to explore these published formats.",
-    goalSector: { energy: "Energy", money: "Money", love: "Love", meaning: "Meaning" },
-    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore meaning and direction" },
+    goalSector: { energy: "Body & energy", money: "Money", love: "Love", meaning: "Confidence & harmony" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore confidence and inner harmony" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
     goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Meaning" },
+    foci: { energy: "Body & energy", money: "Money", relationships: "Relationships", goals: "Confidence" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
@@ -177,13 +178,13 @@ const copy = {
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
     meditationCategoriesTitle: "Meditations", meditationCategoryLead: "Choose a direction",
     meditationCategoryAll: "All categories", meditationCategoryMore: "More categories",
-    meditationCategoryNames: { energy: "Energy meditations", money: "Money & business meditations",
-      relationships: "Relationships & love", meaning: "Meaning & purpose", health: "Wellbeing", all: "All recordings" },
-    meditationCategoryShortNames: { energy: "Energy", money: "Money", relationships: "Love",
-      meaning: "Meaning", health: "Wellbeing", all: "All" },
-    meditationCategoryHero: { energy: "Restore your energy", money: "Explore money & work",
-      relationships: "Reconnect with love", meaning: "Explore your meaning",
-      health: "Take care of yourself", all: "Choose a meditation" },
+    meditationCategoryNames: { "goals-money": "Goals & development", "love-relationships": "Love & relationships",
+      "energy-confidence": "Energy & confidence", "stress-anxiety": "Stress & anxiety", all: "All recordings" },
+    meditationCategoryShortNames: { "goals-money": "Goals", "love-relationships": "Love",
+      "energy-confidence": "Energy", "stress-anxiety": "Stress", all: "All" },
+    meditationCategoryHero: { "goals-money": "Explore your purpose and goals", "love-relationships": "Reconnect with love",
+      "energy-confidence": "Build energy and confidence", "stress-anxiety": "Find support for stress and anxiety",
+      all: "Choose a meditation" },
     meditationCategoryRelated: "Related original Sun practices; no recording is specifically tagged with Meaning.",
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
@@ -234,7 +235,7 @@ const copy = {
         "energy": "Тесты: энергия и самочувствие",
         "money": "Тесты: работа и деньги",
         "relationships": "Тесты: отношения",
-        "goals": "Тесты: смыслы, фокус и мотивация"
+        "goals": "Тесты: уверенность, цели и мотивация"
       },
       "testHint": "Реальные бесплатные опросники",
       "videoHint": "Опубликованная авторская запись",
@@ -271,15 +272,15 @@ const copy = {
     },
     goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
     goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
-    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", meaning: "Смыслы" },
-    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Найди смыслы и направление" },
+    goalSector: { energy: "Тело и энергия", money: "Деньги", love: "Любовь", meaning: "Уверенность и гармония" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Исследуй уверенность и гармонию" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
     goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Смыслы" },
+    foci: { energy: "Тело и энергия", money: "Деньги", relationships: "Отношения", goals: "Уверенность" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
@@ -290,13 +291,13 @@ const copy = {
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
     meditationCategoriesTitle: "Медитации", meditationCategoryLead: "Выбери направление",
     meditationCategoryAll: "Все категории", meditationCategoryMore: "Другие категории",
-    meditationCategoryNames: { energy: "Медитации для энергии", money: "Деньги и дело",
-      relationships: "Отношения и любовь", meaning: "Смыслы и предназначение", health: "Самочувствие", all: "Все записи" },
-    meditationCategoryShortNames: { energy: "Энергия", money: "Деньги", relationships: "Любовь",
-      meaning: "Смыслы", health: "Здоровье", all: "Все" },
-    meditationCategoryHero: { energy: "Восстанови свою энергию", money: "Исследуй деньги и дело",
-      relationships: "Верни близость и тепло", meaning: "Исследуй свои смыслы",
-      health: "Позаботься о себе", all: "Выбери медитацию" },
+    meditationCategoryNames: { "goals-money": "Деньги и развитие", "love-relationships": "Любовь и отношения",
+      "energy-confidence": "Энергия и уверенность", "stress-anxiety": "Стресс и тревога", all: "Все записи" },
+    meditationCategoryShortNames: { "goals-money": "Развитие", "love-relationships": "Любовь",
+      "energy-confidence": "Энергия", "stress-anxiety": "Стресс", all: "Все" },
+    meditationCategoryHero: { "goals-money": "Раскрой предназначение и достигай целей", "love-relationships": "Верни близость и тепло",
+      "energy-confidence": "Восстанови энергию и уверенность", "stress-anxiety": "Найди поддержку при стрессе и тревоге",
+      all: "Выбери медитацию" },
     meditationCategoryRelated: "Близкие оригинальные практики Солнца: отдельной записи с темой «Смыслы» пока нет.",
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
@@ -347,7 +348,7 @@ const copy = {
         "energy": "Pruebas de energía y bienestar",
         "money": "Pruebas de trabajo y dinero",
         "relationships": "Pruebas de relaciones",
-        "goals": "Pruebas de sentido, atención y motivación"
+        "goals": "Pruebas de confianza, objetivos y motivación"
       },
       "testHint": "Cuestionarios gratuitos disponibles",
       "videoHint": "Grabación original publicada",
@@ -384,15 +385,15 @@ const copy = {
     },
     goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
     goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
-    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", meaning: "Sentido" },
-    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Encuentra sentido y dirección" },
+    goalSector: { energy: "Cuerpo y energía", money: "Dinero", love: "Amor", meaning: "Confianza y armonía" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Explora tu confianza y armonía" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
     goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Sentido" },
+    foci: { energy: "Cuerpo y energía", money: "Dinero", relationships: "Relaciones", goals: "Confianza" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
@@ -403,13 +404,13 @@ const copy = {
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
     meditationCategoriesTitle: "Meditaciones", meditationCategoryLead: "Elige una dirección",
     meditationCategoryAll: "Todas las categorías", meditationCategoryMore: "Más categorías",
-    meditationCategoryNames: { energy: "Meditaciones de energía", money: "Dinero y trabajo",
-      relationships: "Amor y relaciones", meaning: "Sentido y propósito", health: "Bienestar", all: "Todas las grabaciones" },
-    meditationCategoryShortNames: { energy: "Energía", money: "Dinero", relationships: "Amor",
-      meaning: "Sentido", health: "Bienestar", all: "Todas" },
-    meditationCategoryHero: { energy: "Recupera tu energía", money: "Explora el trabajo y el dinero",
-      relationships: "Conecta con el amor", meaning: "Explora tu propósito",
-      health: "Cuida de ti", all: "Elige una meditación" },
+    meditationCategoryNames: { "goals-money": "Metas y desarrollo", "love-relationships": "Amor y relaciones",
+      "energy-confidence": "Energía y confianza", "stress-anxiety": "Estrés y ansiedad", all: "Todas las grabaciones" },
+    meditationCategoryShortNames: { "goals-money": "Metas", "love-relationships": "Amor",
+      "energy-confidence": "Energía", "stress-anxiety": "Estrés", all: "Todas" },
+    meditationCategoryHero: { "goals-money": "Explora tu propósito y tus metas", "love-relationships": "Conecta con el amor",
+      "energy-confidence": "Recupera energía y confianza", "stress-anxiety": "Encuentra apoyo ante el estrés y la ansiedad",
+      all: "Elige una meditación" },
     meditationCategoryRelated: "Prácticas originales del Sol relacionadas; aún no hay una grabación etiquetada específicamente como Sentido.",
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
@@ -585,8 +586,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
     const categoryFiltered = choice !== "meditation" || meditationCategory === "all" ? filtered
-      : meditationCategory === "meaning" ? filtered.filter(video => video.program === "sun")
-      : filtered.filter(video => video.topics.includes(meditationCategoryTopics[meditationCategory]!));
+      : filtered.filter(video => (meditationCategoryTopics[meditationCategory] || [])
+        .some(topic => video.topics.includes(topic)));
     const eligible = theme !== "all" ? categoryFiltered.filter(video => video.topics.includes(theme)) : categoryFiltered;
     if (goalMatch && choice === "meditation") {
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
@@ -764,6 +765,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
           </button>
         </header>
+        <nav className={styles.practiceTabs} data-support-practice-tabs
+          aria-label={locale==="ru"?"Практика: разделы":locale==="es"?"Secciones de práctica":"Practice sections"}>
+          <button type="button" aria-pressed={choice==="pump"||choice==="meditation"}
+            onClick={()=>{changeChoice("pump");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}
+          </button>
+          <button type="button" aria-pressed={choice==="consultation"}
+            onClick={()=>{changeChoice("consultation");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Услуги":locale==="es"?"Servicios":"Services"}
+          </button>
+          <Link href={"/"+locale+"/temple-insights"} prefetch={false}>
+            {locale==="ru"?"Идеи":locale==="es"?"Ideas":"Ideas"}
+          </Link>
+        </nav>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
@@ -771,7 +786,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <div className={styles.scaleList}>
               {checkinOrder.map(id => {
                 const Icon = scoreIcons[id];
-                const label = id === "meaning" ? t.goalSector.meaning : t.foci[id];
+                const label = id === "meaning" ? t.foci.goals : t.foci[id];
                 return <label className={styles.scaleRow} key={id} data-support-scale={id}>
                   <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
                   <span className={styles.scaleDetail}>
@@ -915,7 +930,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                       <button type="button" key={id} className={styles.meditationCategoryCard}
                         data-support-meditation-category={id} data-category={id}
                         aria-pressed={meditationCategory === id}
-                        aria-label={t.meditationCategoryShortNames[id] === t.meditationCategoryNames[id]
+                        aria-label={String(t.meditationCategoryShortNames[id]) === String(t.meditationCategoryNames[id])
                           ? t.meditationCategoryNames[id]
                           : t.meditationCategoryShortNames[id] + " — " + t.meditationCategoryNames[id]}
                         title={t.meditationCategoryNames[id]} onClick={() => chooseMeditationCategory(id)}>
@@ -1015,8 +1030,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <p className={styles.gallerySelection} data-support-goal-basis role="status">
                     {t.goalSector[goalSelection.sector]}. {goalMatch.matchedVideo ? t.goalMatch : t.goalRelated}
                   </p> : null}
-                {choice === "meditation" && meditationCategory === "meaning" && !goalSelection ? <p className={styles.gallerySelection}
-                  data-support-meditation-category-related role="status">{t.meditationCategoryRelated}</p> : null}
                 {!goalSelection && suggested && choice === "meditation" ? <p className={styles.gallerySelection}
                   data-support-meditation-basis role="status">
                   {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}

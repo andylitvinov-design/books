@@ -40,7 +40,7 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   const enquiry = source("components/personal-express-enquiry.tsx");
   const enquiryCss = source("components/personal-express-enquiry.module.css");
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
-  assert.match(enquiry, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(enquiry, /data-express-reveal[^\n>]*aria-expanded=\{expanded\}/);
   assert.match(enquiry, /aria-controls="express-request-form"/);
   assert.match(enquiry, /data-express-inline-disclosure hidden=\{!expanded\}/);
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);

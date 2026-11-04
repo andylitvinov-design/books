@@ -52,10 +52,11 @@ test("mobile editor has real stage text inputs and uses one existing sound contr
   assert.match(ui,/maxLength=\{STAGE_CAPTION_LIMIT\}/);
   assert.match(ui,/captionTexts:stageCaptions/);
   assert.match(ui,/data-auto-video-sound-track/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,0,cinematicPlan\)/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameSecond,cinematicPlan\)/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameTime,cinematicPlan\)/);
-  assert.match(studio,/stageCaptionAt\(plan,cinematicPreviewSeconds\(plan,time\)\)/);
+  assert.match(studio,/paintStageCaptionOverlay\(ctx,0,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameSecond,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameTime,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/stageCaptionAt\(plan,cinematicPreviewSeconds\(plan!,time\)\)/);
+  assert.match(studio,/timedCaptionAt\(editedCaptions,time\)/,"manual text track also paints via the same Canvas");
   assert.match(studio,/shot\.overlayText/);
   assert.match(studio,/captionTexts:readonly string\[\]/);
   assert.match(types,/overlayText\?:string/);

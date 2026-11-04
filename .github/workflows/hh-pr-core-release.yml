@@ -218,6 +218,26 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+      # When full Mandala browser QA is advisory, Core retains a mandatory
+      # bounded, exact-tested-merge source gate for narration/privacy and codecs.
+      # The Specialist aggregator checks this trusted marker on BASE before
+      # treating Mandala's expensive independent workflow as diagnostic.
+      - name: Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # HEAD^1 is GitHub's checked production parent, already verified above.
+          files="$(git diff --name-only HEAD^1 HEAD)"
+          if printf '%s\n' "$files" | grep -Eq '^(components/mandala-|lib/mandala/|app/api/holistic-support/(voice|first-video|video|hypno)|tests/(mandala-|affirmation-voice|video-)|scripts/(verify-affirmation-voice-browser|benchmarking/first-video-live-export))'; then
+            node --test tests/affirmation-voice.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/mandala-audio-attach.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-video-phrase-catalog.test.mjs
+            if [[ -f tests/mandala-multitrack-timeline.test.mjs ]]; then
+              node --test tests/mandala-multitrack-timeline.test.mjs
+            fi
+            echo 'Core Mandala fast release contracts PASSED' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No Mandala media/voice changes; fast release contracts not applicable' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Verify Source Preflight unit contracts
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-source-preflight.test.mjs

@@ -13,42 +13,82 @@ export function context(env, event) {
     return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: null };
   }
   const pr = event?.pull_request;
-  // PR target workflow must execute BASE-owned script, never untrusted PR code.
-  // GitHub executes pull_request_target on the repository default ref even
-  // for PRs whose BASE is the protected nondefault production branch.
-  // Trust only those two known refs; the payload still proves exact PR,
-  // repository, base, same-repo HEAD and immutable synchronize before/after.
+  // PR-target jobs execute trusted default/base code, NEVER PR HEAD code.
   const trustedRunnerRef = env.GITHUB_REF === 'refs/heads/' + TARGET ||
     env.GITHUB_REF === 'refs/heads/codex/bootstrap-books';
-  if (env.GITHUB_EVENT_NAME === 'pull_request_target' && trustedRunnerRef &&
-      event?.action === 'synchronize' && event?.repository?.full_name === env.GITHUB_REPOSITORY &&
-      pr?.base?.ref === TARGET && pr?.head?.repo?.full_name === env.GITHUB_REPOSITORY &&
-      Number.isSafeInteger(pr?.number) && pr.number > 0 &&
-      /^[a-f0-9]{40}$/i.test(event.before || '') && /^[a-f0-9]{40}$/i.test(event.after || '') &&
+  const trustedPR = env.GITHUB_EVENT_NAME === 'pull_request_target' && trustedRunnerRef &&
+    event?.repository?.full_name === env.GITHUB_REPOSITORY &&
+    pr?.base?.ref === TARGET && pr?.head?.repo?.full_name === env.GITHUB_REPOSITORY &&
+    Number.isSafeInteger(pr?.number) && pr.number > 0 && sha40(pr?.head?.sha);
+  if (trustedPR && event.action === 'closed' && pr.state === 'closed') {
+    return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: pr.number,
+      closedHeadSha: pr.head.sha };
+  }
+  if (trustedPR && event.action === 'synchronize' &&
+      sha40(event.before) && sha40(event.after) &&
       event.before !== event.after && event.after === pr.head.sha) {
     return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: pr.number, headSha: event.after };
   }
-  throw Error('Not a trusted production push or verified same-repo synchronize');
+  throw Error('Not a trusted production push, PR synchronize, or PR close event');
 }
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
 const CORE_FORCE_PATH = '.github/workflows/hh-pr-core-release.yml';
+// Only browser-focused workflow execution is interruptible after a runner starts.
+// For closed-unmerged PRs, keep the separately proven exact-SHA cleanup policy.
+const IN_PROGRESS_BROWSER_WORKFLOWS = new Set([
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-messages-wellness-browser.yml',
+  '.github/workflows/practice-visual-browser.yml',
+]);
+const isRunningBrowserWorkflow = value => typeof value === 'string' &&
+  [...IN_PROGRESS_BROWSER_WORKFLOWS].some(file =>
+    value === file || value.startsWith(file + '@refs/'));
 const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
-  'hh-specialist', 'hh-merge-check', 'release-ready']);
+  'hh-specialist', 'hh-merge-check', 'hh-eslint-repair', 'release-ready']);
+
+// GitHub may erase workflow_runs[].pull_requests after PR closure.
+// Never infer ancestry from an unlinked run; only exact final SHA is provable.
+export function closedEvidence(run, pr) {
+  if (pr?.state !== 'closed' || !Array.isArray(run?.pull_requests) ||
+      run.pull_requests.length > 1 || run.head_sha !== pr.head?.sha) return false;
+  const created = Date.parse(run.created_at || '');
+  const opened = Date.parse(pr.created_at || '');
+  const closed = Date.parse(pr.closed_at || '');
+  if (![created, opened, closed].every(Number.isFinite) ||
+      created < opened || created > closed) return false;
+  if (run.pull_requests.length === 0) return true;
+  const linked = run.pull_requests[0];
+  return linked?.number === pr.number && linked?.base?.ref === TARGET &&
+    linked?.head?.ref === pr.head.ref && linked?.head?.sha === run.head_sha;
+}
 
 export function eligible(run, pr, ctx) {
   if (!run || run.event !== 'pull_request' ||
-      (run.status !== 'queued' && !(ctx.headSha && run.status === 'in_progress')) ||
-      run.pull_requests?.length !== 1 || run.pull_requests[0]?.number !== pr?.number ||
+      (run.status !== 'queued' && run.status !== 'in_progress') ||
+      (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha)) ||
+      !pr || !Number.isSafeInteger(pr.number) || pr.number < 1 ||
       (ctx.number && pr.number !== ctx.number) ||
-      run.pull_requests[0]?.base?.ref !== TARGET || pr.base?.ref !== TARGET ||
-      run.head_repository?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo ||
-      run.head_branch !== pr.head?.ref || run.pull_requests[0]?.head?.ref !== run.head_branch ||
-      !sha40(run.head_sha) || !sha40(run.pull_requests[0]?.head?.sha) || !sha40(pr.head?.sha)) return false;
-  // The association can report today's PR head, not the run's original head.
-  // A different run SHA is only a candidate: ancestry is proved before cancel.
-  return pr.state === 'open' && (!ctx.headSha || pr.head.sha === ctx.headSha) &&
-    run.head_sha.toLowerCase() !== pr.head.sha.toLowerCase();
+      pr.base?.ref !== TARGET || run.head_repository?.full_name !== ctx.repo ||
+      pr.head?.repo?.full_name !== ctx.repo || run.head_branch !== pr.head?.ref ||
+      !sha40(run.head_sha) || !sha40(pr.head?.sha)) return false;
+  if (pr.state === 'closed') {
+    return !ctx.headSha && (!ctx.number || (Boolean(ctx.closedHeadSha) && ctx.closedHeadSha === pr.head.sha)) &&
+      closedEvidence(run, pr);
+  }
+  if (pr.state !== 'open' || ctx.closedHeadSha ||
+      !Array.isArray(run.pull_requests) || run.pull_requests.length !== 1) return false;
+  // A stale open PR may cancel in-progress browser jobs only, never Core,
+  // Specialist, Repair or unrelated checks. Closed-PR cleanup remains separate.
+  if (run.status === 'in_progress' && !isRunningBrowserWorkflow(run.path)) return false;
+  const linked = run.pull_requests[0];
+  if (linked?.number !== pr.number || linked?.base?.ref !== TARGET ||
+      linked?.head?.ref !== run.head_branch || !sha40(linked?.head?.sha)) return false;
+  // Open PR HEADs must still be ancestor-proven separately, never guessed.
+  return (!ctx.headSha || pr.head.sha === ctx.headSha) && run.head_sha !== pr.head.sha;
 }
 
 export async function prune(api, ctx, { limit = 300, dryRun = false,
@@ -59,7 +99,7 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
   let truncated = false;
   // The event handler may cancel an already-running old HEAD; production push
   // cleanup remains queued-only. Current HEAD is guarded by an exact event lease.
-  const filters = ctx.headSha ? ['queued', 'in_progress'] : ['queued'];
+  const filters = (ctx.headSha || ctx.closedHeadSha) ? ['queued', 'in_progress'] : ['queued'];
   for (const status of filters) {
     for (let page = 1; page <= 10; page++) {
       const res = await api.list(page, current?.head?.ref, status);
@@ -70,7 +110,35 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     }
   }
   const cache = new Map(current ? [[ctx.number, current]] : []);
-  const summary = { scanned: found.length, candidates: 0, cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], partial: truncated };
+  let closedScanPartial = false;
+  const recentClosed = new Map();
+  // Production pushes sweep orphaned queued runs from recently closed PRs,
+  // including those that were closed before this event handler was installed.
+  if (!ctx.number && typeof api.closed === 'function' &&
+      found.some(run => run.event === 'pull_request' && run.status === 'queued' &&
+        Array.isArray(run.pull_requests) && run.pull_requests.length === 0)) {
+    try {
+      const earliest = Date.now() - 7 * 24 * 60 * 60_000;
+      for (let page = 1; page <= 3; page++) {
+        const rows = await api.closed(page);
+        if (!Array.isArray(rows)) throw Error('Invalid closed-PR response');
+        for (const pr of rows) {
+          const closed = Date.parse(pr.closed_at || '');
+          if (pr.state !== 'closed' || !Number.isFinite(closed) || closed < earliest ||
+              pr.base?.ref !== TARGET || pr.head?.repo?.full_name !== ctx.repo ||
+              !sha40(pr.head?.sha)) continue;
+          const key = pr.head.ref + ':' + pr.head.sha;
+          if (!recentClosed.has(key)) recentClosed.set(key, []);
+          recentClosed.get(key).push(pr);
+        }
+        if (rows.length < 100) break;
+        if (page === 3) closedScanPartial = true;
+      }
+    } catch { closedScanPartial = true; }
+  }
+  const summary = { scanned: found.length, candidates: 0, closedCandidates: 0,
+    cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [],
+    partial: truncated || closedScanPartial };
   const accepted = new Map();
   const baseWorkflows = new Map();
   const seen = new Set();
@@ -78,23 +146,38 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     if (summary.cancelled.length + summary.dryRun.length >= max) { summary.partial = true; break; }
     if (seen.has(run.id)) continue;
     seen.add(run.id);
-    if (run.event !== 'pull_request' || (run.status !== 'queued' && !(ctx.headSha && run.status === 'in_progress')) ||
-        run.pull_requests?.length !== 1 || !int(run.id)) continue;
-    const n = int(run.pull_requests[0].number);
-    if (!n || (ctx.number && n !== ctx.number)) continue;
+    if (run.event !== 'pull_request' ||
+        (run.status !== 'queued' && run.status !== 'in_progress') ||
+        (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha)) ||
+        !int(run.id) || !Array.isArray(run.pull_requests) || run.pull_requests.length > 1) continue;
+    let n;
+    if (ctx.number) {
+      n = ctx.number;
+    } else if (run.pull_requests.length === 1) {
+      n = int(run.pull_requests[0].number);
+    } else {
+      const matches = (recentClosed.get(run.head_branch + ':' + run.head_sha) || [])
+        .filter(pr => eligible(run, pr, ctx));
+      if (matches.length !== 1) { if (matches.length > 1) summary.partial = true; continue; }
+      n = matches[0].number;
+    }
+    if (!n) continue;
     let pr = cache.get(n);
     if (!pr) { pr = await api.pr(n); cache.set(n, pr); }
     if (!eligible(run, pr, ctx)) continue;
     summary.candidates++;
+    if (pr.state === 'closed') summary.closedCandidates++;
     // Read BOTH objects again before POST: a queued run may have started and a PR HEAD may have moved.
     const [freshRun, freshPR] = await Promise.all([api.run(run.id), api.pr(n)]);
     if (!eligible(freshRun, freshPR, ctx) || freshRun.head_sha !== run.head_sha) continue;
-    // Only an ancestor of the live branch HEAD is provably obsolete. Synthetic
-    // merge commits and rewritten histories are held unless ancestry proves it.
-    let relation;
-    try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
-    catch { summary.partial = true; continue; }
-    if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1) continue;
+    // A closed PR is obsolete on the exact final SHA. Open PRs still
+    // require independently verified ancestry.
+    if (freshPR.state === 'open') {
+      let relation;
+      try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
+      catch { summary.partial = true; continue; }
+      if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1) continue;
+    }
     // Re-read after the network compare: neither a new HEAD nor a started job
     // may be acted on using stale evidence.
     const [verifiedRun, verifiedPR] = await Promise.all([api.run(run.id), api.pr(n)]);
@@ -137,8 +220,13 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
           baseWorkflows.set(currentPR.base.sha, baseWorkflow);
           if (runWorkflow?.type !== 'file' || baseWorkflow?.type !== 'file' ||
               !sha40(runWorkflow.sha) || runWorkflow.sha !== baseWorkflow.sha) continue;
-          const relation = await api.compare(checked.head_sha, currentPR.head.sha);
-          if (relation?.status === 'ahead' && Number.isSafeInteger(relation.ahead_by) && relation.ahead_by > 0) {
+          let obsolete = currentPR.state === 'closed';
+          if (!obsolete) {
+            const relation = await api.compare(checked.head_sha, currentPR.head.sha);
+            obsolete = relation?.status === 'ahead' &&
+              Number.isSafeInteger(relation.ahead_by) && relation.ahead_by > 0;
+          }
+          if (obsolete) {
             const [lastRun, lastPR] = await Promise.all([api.run(id), api.pr(previous.number)]);
             if (eligible(lastRun, lastPR, ctx) && lastRun.path === CORE_FORCE_PATH && lastRun.head_sha === checked.head_sha &&
                 lastPR.head.sha === currentPR.head.sha && lastPR.base?.sha === currentPR.base.sha) {
@@ -227,6 +315,7 @@ export function client(repo, token, transport = fetch) {
   }
   return {
     pr: (n) => call('/pulls/' + n),
+    closed: page => call('/pulls?' + new URLSearchParams({state:'closed',sort:'updated',direction:'desc',per_page:'100',page:String(page)})),
     run: (id) => call('/actions/runs/' + id),
     cancel: (id) => call('/actions/runs/' + id + '/cancel', 'POST'),
     forceCancel: (id) => call('/actions/runs/' + id + '/force-cancel', 'POST'),
@@ -250,7 +339,7 @@ async function main() {
     limit: env.HH_CI_PRUNE_LIMIT, dryRun: env.HH_CI_PRUNE_DRY_RUN === 'true',
   });
   let m = null, metricError = null;
-  if (!ctx.headSha) {
+  if (!ctx.headSha && !ctx.closedHeadSha) {
     try {
       m = await observeCI(client(ctx.repo, env.GITHUB_TOKEN), {
         windowMinutes: int(env.HH_CI_WINDOW_MINUTES) || 60,
@@ -259,8 +348,8 @@ async function main() {
     } catch (e) { metricError = String(e.message || e).slice(0, 150); }
   }
   const fmt = ms => ms == null ? 'n/a' : (ms / 60000).toFixed(2) + ' min';
-  const msg = (ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
-    'scanned=' + s.scanned + ' eligible=' + s.candidates +
+  const msg = (ctx.closedHeadSha ? 'CI closed-PR cleanup: ' : ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
+    'scanned=' + s.scanned + ' eligible=' + s.candidates + ' closed_PR_eligible=' + s.closedCandidates +
     ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length + ' errors=' + s.errors.length +
     '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') + '\n' +
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +
@@ -275,7 +364,7 @@ async function main() {
     (metricError ? 'Metrics error: ' + metricError + '\n' : '');
   console.log(msg);
   console.log('HH_CI_QUEUE_METRICS ' + JSON.stringify({ at: new Date().toISOString(), scanned: s.scanned,
-    candidates: s.candidates, cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
+    candidates: s.candidates, closedCandidates: s.closedCandidates, cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
     partial: s.partial, errors: s.errors.length, snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
   if (s.errors.length) { console.error(s.errors); process.exitCode = 1; }

@@ -40,8 +40,8 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: app-r1-browser-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: app-r1-browser-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   browser:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -108,6 +108,13 @@ jobs:
           node --check scripts/verify-relationships-assessments.mjs
           node --test tests/ci-heavy-impact.test.mjs
           echo 'Temporary CI fast lane: full App R1 browser/database journey deferred to explicit manual QA; separate App R1 DB/unit, Core and specialist security checks remain.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore production-owned Playwright browsers (read-only)
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Isolated test tools
         if: github.event_name != 'pull_request'
         run: |

@@ -54,12 +54,15 @@ test("voice and music are consecutive, reuse canonical sound attach/play functio
   assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
 });
 
-test("single approved phrases workspace with voice/music before the final Create action",()=>{
+test("approved phrases retain reusable audio but Apply transitions to Montage without auto-render",()=>{
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
@@ -148,4 +151,28 @@ test("Wave retains the chosen idea when a filtered five-phrase list needs fallba
  assert.match(local,/const completed=\[\.\.\.phrases,\.\.\.fallbackPhrases\.filter\(line=>!phrases\.includes\(line\)\)\]\.slice\(0,5\)/);
  assert.match(local,/phrases:completed\.length===5\?completed:fallbackPhrases/);
  assert.match(phrases,/data-hypno-own-phrase aria-label=\{extra\.add\}/);
+});
+
+
+test("real WebKit voice acceptance expands the approved transcript before comparing selected speech",()=>{
+  const e2e=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.transcriptDisclosure\} data-video-affirmation-transcript-review>/);
+  assert.match(voice,/data-video-affirmation-spoken-text/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
+  assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
+});
+
+test("real WebKit voice acceptance expands advanced sound options before selecting a verified music bed",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced>/);
+  assert.match(voice,/data-video-affirmation-bed/);
+  assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
+  assert.match(browser,/assert\.ok\(tracks\.includes\("audio"\)/);
 });

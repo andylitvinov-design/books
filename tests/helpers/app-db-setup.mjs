@@ -33,13 +33,10 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019172000_hh_practitioner_article_folders.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017122000_hh_practitioner_service_funnel_daily.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017170000_hh_service_reviews.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261017182500_hh_service_offerings_public_photos.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017183000_hh_test_catalog_social_proof.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261028143352_hh_catalog_star_ratings_20261028.sql',import.meta.url),'utf8'))
- // Isolated-fixture parity with the existing production schema observed 2026-10-17 17:13 UTC.
- // No corresponding photos migration exists in the repository at source 2a059799.
- // This stays inside setup()'s loopback/isolated/empty-database guard, never production DDL.
- await db.query(`alter table app.service_offerings add column photos jsonb not null default '[]'::jsonb
-   constraint service_offerings_photos_check check (jsonb_typeof(photos)='array' and jsonb_array_length(photos)<=5)`)
+ // Apply the versioned additive migration once; do not duplicate the photos column.
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))

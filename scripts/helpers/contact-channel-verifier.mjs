@@ -104,11 +104,9 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(nameDisclosure).toHaveCount(1);
   await expect(nameDisclosure).not.toHaveAttribute('open', '');
   await nameDisclosure.locator('summary').click();
-  // A concurrent React refresh can replace the native disclosure immediately
-  // after its first click. Reopen it once if that actually happened.
-  if (!await name.isVisible() && !await nameDisclosure.evaluate(node => node.open)) {
-    await nameDisclosure.locator('summary').click();
-  }
+  // One genuine click must open the native disclosure; retrying it could
+  // mask an actual WebKit/hydration failure on the public consultation.
+  await expect(nameDisclosure).toHaveAttribute('open', '');
   await expect(name).toBeVisible();
   await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');

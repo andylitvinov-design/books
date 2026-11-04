@@ -1,9 +1,8 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    # Core AutoMerge remains CI-completed only; synchronize wakes only the
-    # isolated, least-privileged stale-HEAD cleanup job.
-    types: [opened, reopened, ready_for_review, synchronize]
+    # Core AutoMerge stays CI-completed; synchronize and close only wake the trusted janitor.
+    types: [opened, reopened, ready_for_review, synchronize, closed]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
@@ -24,6 +23,7 @@ jobs:
     if: >-
       (github.event_name == 'pull_request_target' &&
        github.event.action != 'synchronize' &&
+       github.event.action != 'closed' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_run' &&
@@ -313,7 +313,7 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["cancelled","timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -332,7 +332,7 @@ jobs:
             const {owner,repo} = context.repo;
             const event = context.payload.workflow_run;
             const fullRepo = owner + "/" + repo;
-            const retryConclusions = new Set(["cancelled","timed_out","startup_failure","failure"]);
+            const retryConclusions = new Set(["timed_out","startup_failure"]);
             const log = message => core.info("CORE_CI_RECOVERY: " + message);
             if (!event || event.name !== "HH PR core release gate" ||
                 event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
@@ -410,7 +410,7 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.event_name == 'pull_request_target' &&
-      github.event.action == 'synchronize' &&
+      (github.event.action == 'synchronize' || github.event.action == 'closed') &&
       github.event.pull_request.base.ref == 'codex/public-book-library' &&
       github.event.pull_request.head.repo.full_name == github.repository
     concurrency:

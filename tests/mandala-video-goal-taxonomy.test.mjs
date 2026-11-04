@@ -25,6 +25,38 @@ test("five categories, thirty specific topics, 120 different storyboards and 480
   assert.equal(VIDEO_GOAL_SCENARIOS.every(s=>s.visualMotifs.length===4&&s.sourceStatus==="unbound"),true);
 });
 
+test("every category branch has four globally unique localized scenarios",()=>{
+  const signatures=new Set();
+  for(const scenario of VIDEO_GOAL_SCENARIOS){
+    const signature=scenario.visualMotifs.join("|");
+    assert.equal(signatures.has(signature),false,"duplicated storyboard: "+scenario.id);
+    signatures.add(signature);
+  }
+  assert.equal(signatures.size,120);
+  for(const locale of ["ru","en","es"]){
+    const titles=new Map();
+    const categories=listVideoGoalCategories(locale);
+    assert.equal(categories.length,5);
+    for(const category of categories){
+      const topics=listVideoGoalTopics(category.id,locale);
+      assert.equal(topics.length,6);
+      for(const topic of topics){
+        const stories=listVideoGoalScenarios(topic.id,locale);
+        assert.equal(stories.length,4);
+        for(const story of stories){
+          const normalizedTitle=story.title.normalize("NFKC").trim().toLocaleLowerCase();
+          assert.ok(normalizedTitle,"empty title: "+story.id);
+          assert.equal(titles.has(normalizedTitle),false,
+            "duplicate "+locale+" title in "+story.id+" and "+titles.get(normalizedTitle));
+          titles.set(normalizedTitle,story.id);
+          assert.equal(story.storyboard.length,4);
+        }
+      }
+    }
+    assert.equal(titles.size,120,locale+" must have 120 unique scenario titles");
+  }
+});
+
 test("all ten preexisting profile discovery themes remain mapped, legacy themes unchanged",()=>{
   assert.deepEqual([...VIDEO_GOAL_LEGACY_PROFILE_TOPICS],[
     "business/money","business/work","energy_health/body","energy_health/emotions",

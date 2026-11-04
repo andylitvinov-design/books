@@ -5,7 +5,7 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'tools/video-feature-lab/**'
-      - '.github/workflows/hh-video-feature-lab.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:

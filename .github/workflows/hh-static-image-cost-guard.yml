@@ -3,7 +3,7 @@ name: Holistic House static image cost guard
 on:
   pull_request:
     paths:
-      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - "data/public-card-artwork*.json"
       - "lib/public-card-artwork.ts"
       - "scripts/build-public-card-artwork.mjs"
@@ -15,6 +15,9 @@ on:
       - "components/yggdrasil-program-landing.tsx"
       - "components/temple-studies.tsx"
       - "components/core-service-detail.tsx"
+      # Public MyTube media cards use the same pinned image pipeline.
+      - "components/video-discovery.tsx"
+      - "app/[locale]/mytube/page.tsx"
       - "next.config.ts"
       - "package.json"
   push:
@@ -32,6 +35,9 @@ on:
       - "components/yggdrasil-program-landing.tsx"
       - "components/temple-studies.tsx"
       - "components/core-service-detail.tsx"
+      # Public MyTube media cards use the same pinned image pipeline.
+      - "components/video-discovery.tsx"
+      - "app/[locale]/mytube/page.tsx"
       - "next.config.ts"
       - "package.json"
       # Keep shared caches fresh on the exact production input changes.

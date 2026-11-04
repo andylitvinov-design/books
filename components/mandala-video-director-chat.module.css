@@ -166,3 +166,11 @@
   .inlineAnswers .choices button{padding:9px;font-size:13px}
   .commandChoices button,.inlineFunctions button{padding:8px}
 }
+
+
+/* Original Video Director is the AI tab; Orders and Clients use the existing
+   protected messages hub rather than cloning private messaging data. */
+.chatTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex:none;padding:7px 10px;border-bottom:1px solid #dce9df;background:#f7fbf7}
+.chatTabs> :is(a,span){display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:7px 6px;border:1px solid #dae5dc;border-radius:12px;background:#fff;color:#466957;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none}
+.chatTabs>[aria-current="page"]{background:#dcf3e7;border-color:#a8d6bd;color:#087257}
+.chatTabs a:focus-visible{outline:3px solid #188968;outline-offset:2px}

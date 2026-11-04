@@ -5,6 +5,7 @@
  * This is complementary to the separate real encoded-media browser suite.
  */
 import assert from "node:assert/strict";
+import {expect} from "@playwright/test";
 import {mkdirSync} from "node:fs";
 import {join} from "node:path";
 
@@ -93,6 +94,10 @@ export async function verifyGuidedPractices({browser,base,engine}){
         null,{timeout:15000});
       assert.equal(await voice.locator("[data-meditation-script]").count(),0,
         "skipped narration stays absent after the Personal Meditation CTA reopens editor");
+      // The details element opens synchronously, but React may still be
+      // committing the preceding user action on headed iPhone WebKit.
+      // Wait for the REAL rendered step state, never a timer or a second click.
+      await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
       const programme=course.locator("[data-guided-eight-sessions]");
@@ -112,19 +117,46 @@ export async function verifyGuidedPractices({browser,base,engine}){
             selectedState:q('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state")??null,
             selectedVector:q('[data-guided-focus-vector][aria-pressed="true"]')?.getAttribute("data-guided-focus-vector")??null,
             journeyStep:q('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            personalOpened:root?.getAttribute("data-guided-personal-opened")??null,
+            planRequested:root?.getAttribute("data-guided-plan-requested")??null,
+            planCurrent:root?.getAttribute("data-guided-plan-current")??null,
+            planOpen:root?.getAttribute("data-guided-plan-open")??null,
+            planClickCount:root?.getAttribute("data-guided-plan-click-count")??null,
+            planSignatureMatch:root?.getAttribute("data-guided-plan-signature-match")??null,
+            programmeReady:root?.getAttribute("data-guided-programme-ready")??null,
             meditationPresent:Boolean(q("[data-guided-meditation-result]")),
             pagePath:location.pathname,
           };
         });
-        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify(snapshot),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify({...snapshot,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
       const enquiry=programme.locator("[data-meditation-course-order]");
       assert.equal(await enquiry.count(),1,"one consented course enquiry");
       await enquiry.click();
+      // Headed WebKit can resolve a click before React commits the disclosure.
+      // Verify both the control state and the mounted form; a missing form still
+      // fails the release gate rather than being treated as a successful click.
+      await page.waitForFunction(()=>{
+        const button=document.querySelector("[data-meditation-course-order]");
+        return button?.getAttribute("aria-expanded")==="true" &&
+          Boolean(document.querySelector("[data-meditation-course-contact]"));
+      },null,{timeout:15000});
       const form=programme.locator("[data-meditation-course-contact]");
-      await form.waitFor({state:"visible"});
+      try{
+        await form.waitFor({state:"visible",timeout:15000});
+      }catch(error){
+        const state=await programme.evaluate(root=>({
+          orderButtons:[...root.querySelectorAll("[data-meditation-course-order]")]
+            .map(button=>({expanded:button.getAttribute("aria-expanded"),text:button.textContent?.trim()})),
+          contactForms:root.querySelectorAll("[data-meditation-course-contact]").length,
+          formDisplay:[...root.querySelectorAll("[data-meditation-course-contact]")]
+            .map(node=>getComputedStyle(node).display),
+          programmeVisible:Boolean(root.getClientRects().length),
+        }));
+        throw new Error(engine+" "+locale+" "+width+"px course enquiry did not open: "+JSON.stringify(state),{cause:error});
+      }
       assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
         "one-off reply consent gates the real course enquiry");
       const geometry=await course.evaluate((el)=>{
@@ -155,16 +187,37 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // A WebKit click can resolve before React commits the selected direction.
+      // Wait for the actual accessible selection and enabled action, without
+      // a second click, sleep, or bypass of the real safety/validation gate.
+      await page.waitForFunction(()=>{
+        const course=document.querySelector("[data-video-guided-course]");
+        return course?.querySelector('[data-guided-focus-vector="goals"][aria-pressed="true"]') &&
+          course.getAttribute("data-guided-focus-ready")==="true" &&
+          course.querySelector("[data-guided-generate-meditation]")?.disabled===false;
+      },null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // In headed iOS/WebKit the DOM value may update before React's controlled
+      // textarea onChange commits. The Generate button was already enabled by
+      // the selected vector, so waiting for !disabled could click against a
+      // stale focus signature. Assert the real React render has consumed the
+      // synthetic text before clicking; no sleep or second-click workaround.
+      await page.waitForFunction(expectedLength=>{
+        const action=document.querySelector("[data-guided-generate-meditation]");
+        const input=document.querySelector("[data-video-key-difficulty]");
+        return action?.getAttribute("data-guided-context-committed-length")===String(expectedLength) &&
+          input?.value==="I feel rushed" && action?.disabled===false;
+      },"I feel rushed".length,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
         "switching from state invalidates previous eight-session outline");
       await generate.click();
       try{
+        await page.waitForFunction(()=>document.querySelector("[data-video-guided-course]")
+          ?.getAttribute("data-guided-meditation-ready")==="true",null,{timeout:15000});
         await result.waitFor({state:"visible",timeout:15000});
       }catch(error){
         const state=await course.evaluate(el=>({
@@ -174,8 +227,16 @@ export async function verifyGuidedPractices({browser,base,engine}){
           disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
           resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          focusReady:el.getAttribute('data-guided-focus-ready'),
+          hasScript:el.getAttribute('data-guided-has-script'),
+          meditationOpen:el.getAttribute('data-guided-meditation-open'),
+          meditationClickCount:el.getAttribute('data-guided-meditation-click-count'),
+          focusResetCount:el.getAttribute('data-guided-focus-reset-count'),
+          signatureMatch:el.getAttribute('data-guided-signature-match'),
+          meditationReady:el.getAttribute('data-guided-meditation-ready'),
+          committedLength:el.querySelector('[data-guided-generate-meditation]')?.getAttribute('data-guided-context-committed-length'),
         }));
-        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify({...state,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       await course.locator("[data-guided-create-plan]").click();
       await programme.waitFor({state:"visible"});

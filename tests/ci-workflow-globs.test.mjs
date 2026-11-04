@@ -240,3 +240,24 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
 });
+
+test('IA and Mandala browsers allocate expensive runners only after cheap exact-HEAD preflight', () => {
+  const ia = workflow('ia-v2.yml');
+  assert.match(ia, /^  browser_preflight:\n    if: .*draft == false/m);
+  assert.match(ia, /^  verify:\n    if: .*draft == false.*\n    needs: \[browser_preflight\]/m);
+  assert.match(ia, /node --test tests\/ia-v2-loopback-proxy\.test\.mjs tests\/ia-public-navigation-diagnostics\.test\.mjs/);
+  const mandala = workflow('holistic-support-mandala.yml');
+  const preflightGuard = mandala.match(/^  webkit_preflight:\n    if: (.+)$/m)?.[1];
+  const macosGuard = mandala.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1];
+  assert.equal(preflightGuard, "${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
+    'macOS WebKit must retain original video release guard');
+  assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
+  for (const source of [ia, mandala]) {
+    assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
+    assert.match(source, /git rev-parse HEAD\^2/);
+    assert.match(source, /git rev-parse HEAD\^1/);
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+});

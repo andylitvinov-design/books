@@ -15,7 +15,7 @@ on:
       - 'components/holistic-support-mobile.module.css'
       - 'tests/holistic-support-guided-recommendations.test.mjs'
       - 'scripts/verify-holistic-support-guided-card.mjs'
-      - '.github/workflows/hh-support-guided-recommendations.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:

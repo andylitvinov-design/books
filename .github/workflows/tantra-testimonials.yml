@@ -16,7 +16,6 @@ on:
       - 'public/images/tantra-reiki/**'
       - 'scripts/verify-tantra-testimonials.mjs'
       - 'tests/video-csp-navigation.test.mjs'
-      - '.github/workflows/tantra-testimonials.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
