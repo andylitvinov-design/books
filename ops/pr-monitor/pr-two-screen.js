@@ -407,6 +407,96 @@
     cells.live.querySelector('small').textContent='Нет полного набора LIVE-квитанций';
 
   }
+  var AUDIT_STAGES=[
+    ['created_to_first_ci','Создание → первый наблюдаемый Core CI'],
+    ['runner_wait','Ожидание runner'],
+    ['checks','Выполнение подтверждённых checks'],
+    ['repair_after_failure','Repair после сбоя'],
+    ['conflict_resolution','Исправление merge-конфликта'],
+    ['repeat_ci','Повторные CI'],
+    ['waiting_merge','Ожидание merge после зелёного gate'],
+    ['unattributed','Не распределено по подтверждённым событиям']
+  ];
+  function showAudit(data, mount) {
+    mount.replaceChildren();
+    if(data.schema!=='HH_PR_ATTRIBUTION_V1'||!Array.isArray(data.intervals)||
+      !valid(data.elapsed_minutes))throw Error('Неполная хронология PR');
+    var sum=AUDIT_STAGES.reduce(function(n,p){
+      return n+(valid(data.stage_totals_minutes?.[p[0]])?data.stage_totals_minutes[p[0]]:0);
+    },0);
+    if(Math.abs(sum-data.elapsed_minutes)>0.1)throw Error('Времена этапов не складываются в общую длительность');
+    var total=make('p','hh2-sample','PR #'+data.pr_number+' · всего '+duration(data.elapsed_minutes)+
+      ' · подтверждено '+(data.accounted_percent??'—')+'% · не распределено '+
+      duration(data.unattributed_minutes)+'. Этапы здесь по ОДНОМУ PR, без смешения выборок.');
+    mount.append(total);
+    for(var pair of AUDIT_STAGES) {
+      var key=pair[0],minutes=data.stage_totals_minutes?.[key],rows=data.intervals.filter(function(x){
+        return x.stage===key && valid(x.duration_minutes);
+      });
+      var block=make('details','hh2-stage-item');
+      if(key==='unattributed')block.open=true;
+      var headline=make('summary','hh2-stage-row');
+      headline.append(make('span','',pair[1]),make('strong','',''),
+        make('strong','',valid(minutes)?duration(minutes):'—'));
+      block.append(headline);
+      var body=make('div','hh2-detail');
+      if(!rows.length)body.append(make('p','hh2-inline-warning','Отдельный подтверждённый интервал отсутствует. Не означает нулевое время.'));
+      for(var part of rows) {
+        var line=make('div','hh2-substep');
+        var label=(part.substage&&part.substage!=='missing_evidence'?part.substage:pair[1]);
+        line.append(make('span','',label),make('strong','',duration(part.duration_minutes)));
+        line.append(make('small','',String(part.start_at||'')+' → '+String(part.end_at||'')+
+          ' · '+String(part.reason||'Причина не подтверждена')));
+        var url=(part.evidence_urls||[]).find(function(u){
+          return /^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull|actions|issues|commit)\//.test(u);
+        });
+        if(url){var a=make('a','hh2-substep-link','Источник события');a.href=url;
+          a.target='_blank';a.rel='noopener noreferrer';line.append(a);}
+        body.append(line);
+      }
+      block.append(body);mount.append(block);
+    }
+    if (data.journey?.created_to_live_minutes!==null &&
+        valid(data.journey?.created_to_live_minutes)) {
+      mount.append(make('p','hh2-sample','Проверено Created → LIVE: '+
+        duration(data.journey.created_to_live_minutes)+' · Merge → LIVE '+
+        duration(data.journey.merge_to_live_minutes)));
+    } else {
+      mount.append(make('p','hh2-inline-warning',
+        'LIVE-квитанции для этого PR нет среди проверенных источников. Merge ≠ LIVE.'));
+    }
+    var long=data.intervals.filter(function(i){return valid(i.duration_minutes);})
+      .sort(function(a,b){return b.duration_minutes-a.duration_minutes;})[0];
+    if(long)mount.prepend(make('p','hh2-diagnostic','Самый длинный доказанный / нераспределённый интервал: '+
+      duration(long.duration_minutes)+' · '+String(long.reason||'причина неизвестна')));
+  }
+  async function auditPR(n, mount, button) {
+    if(auditBusy)return;
+    if(auditCache.has(n)){
+      try{showAudit(auditCache.get(n),mount);}catch(e){mount.textContent=String(e.message||e);}return;
+    }
+    if(auditRequests>=3) {
+      mount.textContent='Лимит ручных аудитов этой страницы (3 PR), чтобы не расходовать запросы GitHub. Откройте сам PR или обновите страницу для нового сеанса.';
+      return;
+    }
+    auditRequests++;auditBusy=true;button.disabled=true;
+    mount.textContent='Читаю подтверждённые события PR #'+n+'…';
+    try {
+      // On click ONLY; existing audited endpoint has a bounded GitHub GET budget,
+      // server-side 15m cache and rate reserve guard.
+      var response=await fetch('/api/pr-attribution?pr='+encodeURIComponent(n),{
+        cache:'default',headers:{Accept:'application/json'}});
+      var data=await response.json();
+      if(!response.ok||!Array.isArray(data.intervals))throw Error(data.error||'HTTP '+response.status);
+      auditCache.set(n,data);showAudit(data,mount);
+    }catch(e){
+      mount.textContent='Не удалось подтвердить подэтапы PR #'+n+': '+
+        String(e.message||e).slice(0,140)+'. Отсутствие измерений не равно 0.';
+    }finally{
+      auditBusy=false;button.disabled=false;
+      button.textContent='Переоткрыть подэтапы PR';
+    }
+  }
   function fillPRs() {
     if (!baseline || !prList) return;
     prList.replaceChildren();
@@ -426,7 +516,12 @@
       var a=make('a','','Открыть PR в GitHub');
       a.href='https://github.com/andylitvinov-design/books/pull/'+p.number;
       a.target='_blank';a.rel='noopener noreferrer';
-      detail.append(a);entry.append(detail);prList.append(entry);
+      detail.append(a);
+      var action=make('button','hh2-audit-button','Показать подэтапы PR по GitHub');
+      action.type='button';
+      var timeline=make('div','hh2-pr-audit');
+      action.addEventListener('click',function(){void auditPR(p.number,timeline,action);});
+      detail.append(action,timeline);entry.append(detail);prList.append(entry);
     });
   }
   async function readHistorical() {
