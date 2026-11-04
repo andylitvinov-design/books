@@ -284,3 +284,60 @@ test('same branch and time never joins an earlier SHA from the wrong PR',async()
  assert.equal(row.core_ci_waves,null);
  assert.equal(row.core_ci_repeats,null);
 });
+
+
+test('empty PR links are recovered only by exact PR commit list',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const a='a'.repeat(40),b='b'.repeat(40);
+ const p={...pr(102,date+'00:00Z',date+'40:00Z',date+'40:00Z'),
+  head:{ref:'feature-102',sha:b,repo:{full_name:repo}},
+  base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const run=(id,sha,t)=>({id,name:'HH PR core release gate',
+  path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
+  head_branch:'feature-102',head_sha:sha,pull_requests:[],
+  repository:{full_name:repo},head_repository:{full_name:repo},
+  status:'completed',conclusion:'success',run_attempt:1,
+  created_at:date+t+':00Z'});
+ const earlier=run(10201,a,'04'),final=run(10202,b,'30');
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ let commitsReads=0;
+ const gh={rest:{
+  pulls:{list:async({state})=>ret(state==='closed'?[p]:[]),
+   listCommits:async()=>{commitsReads++;return ret([{sha:a},{sha:b}]);}},
+  actions:{listWorkflowRuns:async()=>ret({total_count:2,workflow_runs:[final,earlier]}),
+   listJobsForWorkflowRun:async()=>ret({total_count:0,jobs:[]})},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const result=await collect({github:gh,now:Date.parse('2026-11-04T13:55:00Z'),maxRequests:60});
+ assert.equal(commitsReads,1);
+ assert.equal(result.source.ci_runs_matched.latest,2);
+ assert.deepEqual(result.source.commit_history_recovered_prs,[{pr:102,runs:1}]);
+ assert.deepEqual(result.source.core_waves_by_pr[102].run_ids,[10201,10202]);
+ const row=analyze({...result,source:result.source}).windows[2].rows[0];
+ assert.equal(row.phases.created_to_first_ci,4);
+ assert.equal(row.core_ci_waves,2);
+});
+
+test('unlinked old SHA absent from PR commit history is not attributed',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const a='a'.repeat(40),b='b'.repeat(40);
+ const p={...pr(103,date+'00:00Z',date+'40:00Z'),
+  head:{ref:'feature-103',sha:b,repo:{full_name:repo}},
+  base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const old={id:10301,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
+  event:'pull_request',head_branch:'feature-103',head_sha:a,pull_requests:[],
+  repository:{full_name:repo},head_repository:{full_name:repo},status:'completed',
+  created_at:date+'04:00Z'};
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const gh={rest:{
+  pulls:{list:async({state})=>ret(state==='closed'?[p]:[]),listCommits:async()=>ret([{sha:b}])},
+  actions:{listWorkflowRuns:async()=>ret({total_count:1,workflow_runs:[old]})},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const result=await collect({github:gh,now:Date.parse('2026-11-04T13:55:00Z'),maxRequests:60});
+ assert.equal(result.source.ci_runs_matched.latest,0);
+ assert.equal(result.source.core_waves_by_pr?.[103],undefined);
+ const row=analyze({...result,source:result.source}).windows[2].rows[0];
+ assert.equal(row.core_ci_waves,null);
+ assert.equal(row.phases.created_to_first_ci,0);
+});

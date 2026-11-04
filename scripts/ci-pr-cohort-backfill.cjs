@@ -87,6 +87,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   // missing association is NOT permission to choose a PR by title or timing
   // alone: only exact final HEAD + branch + repository + PR lifetime is safe.
   const byPr=new Map(result.prs.map(p=>[p.number,[]])),seenRunIds=new Set();
+  const certifiedCommitHeads=new Map(),unattachedCoreRuns=[];
   const CORE_PATH='.github/workflows/'+WORKFLOW;
   function attachGlobalRun(run){
    const t=ts(run?.created_at),links=run?.pull_requests;
@@ -100,7 +101,8 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    const eligible=result.prs.filter(p=>{
     if(p.head?.repo?.full_name!==REPO||p.head?.ref!==run.head_branch||
        t<ts(p.created_at)||t>=ts(p.closed_at))return false;
-    if(links.length===0)return p.head.sha===run.head_sha;
+    if(links.length===0)return p.head.sha===run.head_sha||
+     certifiedCommitHeads.get(p.number)?.has(run.head_sha)===true;
     if(links.length!==1)return false;
     const link=links[0];
     return link.number===p.number&&link.base?.ref===p.base?.ref&&
@@ -126,9 +128,50 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    result.source.ci_runs_matched[window.key]=0;
    for(const run of hits){
     const at=ts(run?.created_at);
-    if(Number.isFinite(at)&&at>=start&&at<end&&attachGlobalRun(run))
-     result.source.ci_runs_matched[window.key]++;
+    if(Number.isFinite(at)&&at>=start&&at<end){
+      if(attachGlobalRun(run))result.source.ci_runs_matched[window.key]++;
+      else unattachedCoreRuns.push({run,windowKey:window.key});
+     }
    }
+  }
+  // Recover previous HEADs whose historical Core run has no pull_requests.
+  // A unique PR branch alone cannot prove this; the GitHub PR commit API
+  // must independently certify the exact source commit SHA. Bound work to
+  // the longest cohort cases and never add a recurring API scanner.
+  result.source.commit_history_recovered_prs=[];
+  result.source.commit_history_errors={};
+  const historySample=[];
+  for(const window of [...WINDOWS].reverse()){
+   const limit=window.key==='latest'?8:2;
+   historySample.push(...result.prs.filter(p=>ts(p.created_at)>=ts(window.start)&&
+      ts(p.created_at)<ts(window.end)&&ts(p.closed_at)>=ts(window.start)&&
+      ts(p.closed_at)<ts(window.end))
+    .sort((a,b)=>(ts(b.closed_at)-ts(b.created_at))-(ts(a.closed_at)-ts(a.created_at))).slice(0,limit));
+  }
+  for(const p of historySample){
+   if(gate.state.paused||typeof github.rest.pulls.listCommits!=='function')break;
+   const possible=unattachedCoreRuns.filter(({run})=>
+    run.head_branch===p.head?.ref&&run.repository?.full_name===REPO&&
+    run.head_repository?.full_name===REPO&&Array.isArray(run.pull_requests)&&
+    run.pull_requests.length===0&&run.head_sha!==p.head?.sha&&
+    /^[a-f0-9]{40}$/i.test(run.head_sha||'')&&
+    ts(run.created_at)>=ts(p.created_at)&&ts(run.created_at)<ts(p.closed_at));
+   if(!possible.length)continue;
+   try {
+    const commits=await gate.request('commits-'+p.number,()=>github.rest.pulls.listCommits({
+     owner:OWNER,repo:REPOSITORY,pull_number:p.number,per_page:100,page:1}));
+    // 100 results may conceal older commits; never assert complete history.
+    if(!Array.isArray(commits)||commits.length>=100)throw Error('COMMIT_HISTORY_NOT_COMPLETE');
+    const shas=new Set(commits.map(c=>c.sha).filter(s=>/^[a-f0-9]{40}$/i.test(s||'')));
+    if(!shas.has(p.head?.sha))throw Error('FINAL_HEAD_NOT_IN_PR_COMMITS');
+    certifiedCommitHeads.set(p.number,shas);
+    let recovered=0;
+    for(const item of possible)if(shas.has(item.run.head_sha)&&attachGlobalRun(item.run)){
+     result.source.ci_runs_matched[item.windowKey]++;
+     recovered++;
+    }
+    if(recovered)result.source.commit_history_recovered_prs.push({pr:p.number,runs:recovered});
+   } catch(e){result.source.commit_history_errors[p.number]=String(e?.message||e).slice(0,150);}
   }
   // First-CI evidence is usable only for a complete, date-scoped Core inventory.
   for(const p of result.prs){const window=WINDOWS.find(w=>ts(p.created_at)>=ts(w.start)&&ts(p.created_at)<ts(w.end));
