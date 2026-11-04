@@ -7,6 +7,9 @@ import {
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
+// Run the focused dependency state/timeout regressions inside the existing
+// Core CI-policy test step; no new hosted workflow or required status.
+import './ci-specialist-wait.test.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -1327,9 +1330,14 @@ test('unfinished running specialist times out and failed/cancelled runs never pa
   await assert.rejects(() => verify(api, ctx, sources,
     { maxWaitMs: 200_000, pollMs: 20_000, ...clock }), /SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
   assert.equal(clock.elapsed(), 200_000);
-  for (const conclusion of ['failure', 'cancelled', 'skipped', 'timed_out']) {
+  for (const [conclusion, category] of [
+    ['failure', 'SPECIALIST_FAILED'],
+    ['cancelled', 'SPECIALIST_DEPENDENCY_CANCELLED'],
+    ['skipped', 'SPECIALIST_DEPENDENCY_NOT_EXECUTED'],
+    ['timed_out', 'SPECIALIST_DEPENDENCY_INTERRUPTED'],
+  ]) {
     api.runs = async () => [run({ status: 'completed', conclusion })];
-    await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, ...clock }), /SPECIALIST_FAILED/);
+    await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, ...clock }), new RegExp(category));
   }
 });
 
