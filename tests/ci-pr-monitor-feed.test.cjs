@@ -273,7 +273,8 @@ test('CI wake absent terminal result stays censored and invalid cohorts fail clo
  assert.equal(timing.duration_seconds.reserved_to_claim,null);
  assert.throws(()=>buildMonitorSnapshot(report({inspected:0,ciWakeTelemetry:[timing]}),context),
   /INVALID_CI_WAKE_TIMING_COHORT/);
- assert.throws(()=>buildMonitorSnapshot(report({inspected:1,ciWakeTelemetry:[{
+ assert.throws(()=>buildMonitorSnapshot(report({actionable:1,candidates:1,
+  inspected:1,ciWakeTelemetry:[{
   ...timing,duration_seconds:{...timing.duration_seconds,wake_pending_age:-1}
  }]}),context),/INVALID_CI_WAKE_DURATION/);
 });
