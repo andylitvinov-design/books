@@ -29,6 +29,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/hh-pr3383-source"
           gh run download 41783128782 --repo andylitvinov-design/books --name hh-licensed-hd-editorial-drafts-20261104 --dir "$RUNNER_TEMP/hh-pr3383-source"
           test -f "$RUNNER_TEMP/hh-pr3383-source/report.json"
+      - name: Install system FFmpeg only when needed (free Ubuntu packages)
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
       - name: Check FFmpeg, original file digests, full video decode, rights and aspect
         run: |
           ffprobe -version | head -1
