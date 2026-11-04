@@ -9,7 +9,16 @@ test('the single authenticated Messages entry defaults to Orders / Clients, not 
  const design=source('docs/design/MESSAGES_WELLNESS_ORDERS_CLIENTS_20261029.md')
  assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
  assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
- assert.match(page,/<MessagesBottomNavigation locale=\{locale\}\/>/)
+ // The old per-page five-item dock was removed intentionally: one global dock serves Messages.
+ assert.doesNotMatch(page,/MessagesBottomNavigation/)
+ const layout=source('app/layout.tsx')
+ assert.match(layout,/<UnifiedMobileDock initialLocale=\{lang\}\s*\/>/)
+ // Verify the same real global mobile dock covers all supported Messenger locales.
+ for(const locale of ['en','ru','es']){
+   const dock=source('lib/unified-mobile-dock.mjs')
+   assert.match(dock,/isUnifiedMobileDockPath/)
+   assert.match(dock,/app\\\/\(\?:messages/)
+ }
  assert.doesNotMatch(page,/showOrders\?/)
  assert.doesNotMatch(page,/hh-messages-context-nav/)
  assert.match(design,/Page identity gate/)
