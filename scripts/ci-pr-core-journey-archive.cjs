@@ -88,7 +88,7 @@ async function archive({github,context,minRemaining=80}){
     return {status:'PR_IDENTITY_MISMATCH'};
  row.pr_created_at=created;row.merged_at=iso(pull?.merged_at);
  row.current_head=(pull.head.sha===row.source_head);
- const bucket=isoBucket(row.queued_at);
+ const bucket=isoBucket(row.queued_at)+'-'+(row.conclusion==='success'?'success':'failure');
  const since=new Date(Date.now()-96*3600000).toISOString();
  const comments=await github.rest.issues.listComments({
    owner,repo,issue_number:ISSUE,per_page:100,page:1,since
