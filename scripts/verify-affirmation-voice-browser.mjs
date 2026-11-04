@@ -17,6 +17,36 @@ function wav(seconds=3) {
   for(let i=0;i<n;i++)b.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*280/rate)*8000),44+i*2);
   return b;
 }
+// A first click must not be offered before React attaches the workspace handlers.
+// Hold only this fresh context's same-origin JS, then verify one real tap after
+// hydration. All writes and third-party requests remain blocked.
+async function verifyWorkspaceHydration(browser,locale){
+  const context=await browser.newContext({viewport:{width:390,height:840},isMobile:true,hasTouch:true,serviceWorkers:"block"});
+  let release;const hold=new Promise(resolve=>{release=resolve});let held=0;
+  try{
+    await context.route("**/*",async route=>{
+      const request=route.request(),url=new URL(request.url());
+      if(url.origin!==new URL(BASE).origin||!["GET","HEAD"].includes(request.method()))return route.abort();
+      if(url.pathname.includes("/_next/static/")&&url.pathname.endsWith(".js")){held++;await hold;}
+      return route.continue();
+    });
+    const page=await context.newPage();
+    await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"commit",timeout:90000});
+    const studio=page.locator('[data-video-studio-hydrated]');
+    const tabs=page.locator('[data-video-quick-controls] button');
+    await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
+    await expect(tabs).toHaveCount(6);
+    for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
+    release();
+    await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toBeEnabled();
+    await phrases.click();
+    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+  }finally{release();await context.close();}
+}
 // Linux WebKit often lacks Canvas capture codecs. Run the very same real
 // encoded video+audio acceptance on macOS WebKit and Linux Chromium.
 // The default still exercises BOTH engines for developer/manual runs.
@@ -53,6 +83,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   const browser=await browserType.launch({headless:!(engine==="webkit" && headedWebKit)});
   try {
     const locale=engine==="webkit"?"ru":"en";
+    phase(engine,"workspace-hydration");
+    await verifyWorkspaceHydration(browser,locale);
     const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
     // Playwright has no default action timeout: an obscured iPhone control can
     // otherwise hang until the six-minute process watchdog with no locator.

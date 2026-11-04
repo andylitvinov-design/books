@@ -120,13 +120,43 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         // an 18px box under the fixed iPhone dock. No force/check JS bypass.
         const consentLabel=form.locator("[data-meditation-course-consent] label");
         assert.equal(await consentLabel.count(),1,"one genuine opt-in label");
-        await consentLabel.click();
+        // Diagnostics record only trusted-event types, geometry and element identities;
+        // never capture contact values or replace/retry the real user click.
+        await page.evaluate(()=>{
+          const events=[];
+          const describe=node=>node instanceof Element?{tag:node.tagName,id:node.id||null,
+            consent:Boolean(node.closest("[data-meditation-course-consent]")),
+            dock:Boolean(node.closest(".mobile-bottom-navigation,[data-hh-unified-dock]"))}:null;
+          const record=event=>{if(events.length<24)events.push({type:event.type,trusted:event.isTrusted,
+            phase:event.eventPhase,target:describe(event.target),defaultPrevented:event.defaultPrevented});};
+          for(const type of ["pointerdown","pointerup","click","change"])document.addEventListener(type,record,true);
+          window.__hhConsentClickDiagnostic={events,record};
+        });
         const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
-        // React can commit the native WebKit label click after Playwright's
-        // click promise resolves. Wait for the real checkbox AND submit state;
-        // never force, check() or synthesize user consent in test code.
-        await expect(consentBox).toBeChecked({timeout:12000});
-        await expect(send).toBeEnabled({timeout:12000});
+        try{
+          await consentLabel.click();
+          // Await the actual checkbox AND submit state; no forced click or retry.
+          await expect(consentBox).toBeChecked({timeout:12000});
+          await expect(send).toBeEnabled({timeout:12000});
+        }catch(error){
+          const diagnostic=await page.evaluate(()=>{
+            const state=window.__hhConsentClickDiagnostic;
+            const label=document.querySelector("[data-meditation-course-contact] [data-meditation-course-consent] label");
+            const rect=label?.getBoundingClientRect();
+            const hit=rect?document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2):null;
+            return {events:state?.events||[],label:rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null,
+              hit:hit?{tag:hit.tagName,id:hit.id||null,consent:Boolean(hit.closest("[data-meditation-course-consent]")),
+                dock:Boolean(hit.closest(".mobile-bottom-navigation,[data-hh-unified-dock]"))}:null,
+              viewport:{width:innerWidth,height:innerHeight,scrollY}};
+          });
+          throw new Error(engine+" "+locale+" "+width+"px one-click consent failed: "+JSON.stringify(diagnostic),{cause:error});
+        }finally{
+          await page.evaluate(()=>{
+            const state=window.__hhConsentClickDiagnostic;
+            if(state)for(const type of ["pointerdown","pointerup","click","change"])document.removeEventListener(type,state.record,true);
+            delete window.__hhConsentClickDiagnostic;
+          });
+        }
         assert.equal(await consentBox.isChecked(),true,
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
