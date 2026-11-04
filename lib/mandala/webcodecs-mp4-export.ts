@@ -19,6 +19,7 @@ export type BrowserMovieAudio={
 };
 export type BrowserMovieOptions={
   canvas:HTMLCanvasElement;
+  allowProceduralBrowser?:boolean;
   seconds:number;
   frameRate:number;
   renderFrame:(seconds:number)=>boolean;
@@ -35,7 +36,11 @@ export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
   if(typeof window==="undefined"||typeof navigator==="undefined")return false;
   const ua=navigator.userAgent;
   return /AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua)&&
-    typeof VideoEncoder!=="undefined"&&
+    supportsProceduralWebCodecsMp4(needsAudio);
+}
+
+function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
+  return typeof VideoEncoder!=="undefined"&&
     typeof VideoEncoder.isConfigSupported==="function"&&
     typeof VideoFrame!=="undefined"&&
     (!needsAudio || (
@@ -100,7 +105,9 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
-  if(!supportsLocalWebCodecsMp4(Boolean(audio)))throw new Error("webcodecs_not_supported");
+  if(!(supportsLocalWebCodecsMp4(Boolean(audio))||
+    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(Boolean(audio)))))
+    throw new Error("webcodecs_not_supported");
   if(!Number.isFinite(seconds)||seconds<3||seconds>MAX_DURATION||
     !Number.isFinite(frameRate)||frameRate<6||frameRate>25||
     canvas.width<160||canvas.height<160||canvas.width*canvas.height>1920*1080)
