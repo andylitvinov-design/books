@@ -15,7 +15,7 @@ on:
       - 'tests/direct-message-video-notes.test.mjs'
       - 'tests/messages-private-media-pagination.test.mjs'
       - 'tests/ci-head-cancellation.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
 permissions:
   contents: read
 concurrency:
