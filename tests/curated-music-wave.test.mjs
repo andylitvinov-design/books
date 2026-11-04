@@ -61,11 +61,10 @@ test("lossy source is not misrepresented as a newly recorded original or a paid 
 
 test("if imported, physically verify five licensed MP3s: SHA-256, actual duration, 256 kbps and stereo",()=>{
   const entries=published.entries.filter(x=>x.id.startsWith("curated-"));
-  if(process.env.HH_CURATED_AUDIO_EXPECT_PUBLISHED!=="1"){
-    assert.ok(entries.length===0||entries.length===5,"only complete batch publication");
-    return;
-  }
-  assert.equal(entries.length,5);
+  // A source PR containing this published registry must prove its physical
+  // MP3 assets on every CI run; an optional env var must never hide missing,
+  // substituted or silent releases.
+  assert.equal(entries.length,5,"release requires all five reviewed physical MP3 masters");
   const ids=new Set(sources.entries.map(x=>x.id));
   for(const t of entries){
     assert.ok(ids.has(t.id));
