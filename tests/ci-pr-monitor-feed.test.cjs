@@ -20,6 +20,7 @@ test('zero eligible queue preserves 160 production PRs, never zero global backlo
   assert.equal(snapshot.delivery_status,'NO_AUTOMATION_ELIGIBLE_TASKS');
   assert.equal(snapshot.source_commit,SHA);
   assert.deepEqual(parseExisting(renderSnapshot(snapshot)),snapshot);
+  assert.match(renderSnapshot(snapshot), /issues\/3394/);
 });
 test('source proof and stacked parent are explicit, including exact public PR examples',()=>{
   const s=buildMonitorSnapshot(report({actionable:3,candidates:3,inspected:3,
