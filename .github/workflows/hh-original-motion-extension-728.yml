@@ -1,0 +1,43 @@
+name: HH extend original motion library to 728 - one time
+on:
+  push:
+    branches: [codex/original-motion-728-20261103]
+    paths:
+      - scripts/extend-original-motion-728.py
+permissions:
+  contents: write
+concurrency:
+  group: hh-original-motion-728-one-time
+  cancel-in-progress: false
+jobs:
+  create:
+    if: github.ref == 'refs/heads/codex/original-motion-728-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Install local-only render dependencies
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check --break-system-packages Pillow==11.3.0
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -hide_banner -version | head -1
+      - name: Extend existing 320 masters with exactly 364 new motion clips
+        run: python3 scripts/extend-original-motion-728.py --verify --max-mebibytes 95
+      - name: Check all 684 original motion MP4s, physical hashes and 128 presets
+        run: python3 scripts/extend-original-motion-728.py --check-only --verify --max-mebibytes 95
+      - name: Commit only generated additional original media on this branch
+        run: |
+          git config user.name "holistic-house-video-builder[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/video-catalog/original-motion-scenes-v1.json public/videos/holistic-house/original-motion-v1/
+          if git diff --cached --quiet; then
+            echo "No media changes"; exit 0
+          fi
+          git commit -m "feat(video): add 364 verified original motion masters and 64 editable films"
+          git push origin HEAD:codex/original-motion-728-20261103
