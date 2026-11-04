@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   if(document.getElementById('hh-pr-attribution'))return;
-  const host=document.getElementById('pr-stage-panel')||document.getElementById('pr-drilldown')||document.querySelector('main');
+  const host=document.querySelector('main'); // Persistent: stage dashboard rerenders its own children
   if(!host)return;
   const label={
     created_to_first_ci:'Создание → первый CI',runner_wait:'Ожидание runner',
@@ -14,6 +14,12 @@
   const fmtDate=x=>Number.isFinite(Date.parse(x||''))?showTime.format(new Date(x)):'Нет времени';
   const fmtMin=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0?
     (n>=60?`${Math.floor(n/60)} ч ${Math.round(n%60)} мин`:n>=1?`${Number(n.toFixed(1))} мин`:`${Math.round(n*60)} сек`):'—';
+  const fmtExactMs=v=>{
+    if(!Number.isFinite(v)||v<0)return '—';
+    const total=Math.round(v/1000),hours=Math.floor(total/3600);
+    const mins=Math.floor((total%3600)/60),seconds=total%60;
+    return (hours?hours+' ч ':'')+mins+' мин '+seconds+' сек';
+  };
   const elt=(tag,cls,value)=>{const node=document.createElement(tag);if(cls)node.className=cls;
     if(value!=null)node.textContent=String(value);return node;};
   const link=url=>{
@@ -35,7 +41,7 @@
   live.setAttribute('role','status');live.setAttribute('aria-live','polite');
   form.append(input,submit);panel.append(form,live);
   const result=elt('div','hh-pr-audit-result');panel.append(result);
-  host.insertAdjacentElement('afterend',panel);
+  host.append(panel);
   let active=null;
   function render(data){
     result.replaceChildren();
@@ -58,8 +64,8 @@
     const live=data.live_evidence;
     const proof=elt('div','hh-pr-audit-alert',live?
       'LIVE подтверждён '+fmtDate(live.live_at)+' · Merge → LIVE: '+
-        fmtMin(Math.round(live.merged_to_live_minutes*60000))+
-        ' · Created → LIVE: '+fmtMin(Math.round(live.created_to_live_minutes*60000))+
+        fmtExactMs(live.merge_to_live_ms)+
+        ' · Created → LIVE: '+fmtExactMs(live.created_to_live_ms)+
         '. Это историческое подтверждение, не текущий алиас.':
       'LIVE ещё не подтверждён доступными квитанциями. Отсутствие записи НЕ означает, что версия не опубликована.');
     if(live?.receipt_url){const proofLink=elt('a',null,'Квитанция GitHub LIVE');
