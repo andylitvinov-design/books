@@ -14,6 +14,21 @@ const safeRun=x=>typeof x==='string'&&/^https:\/\/github\.com\/andylitvinov-desi
 const msurl=id=>'https://github.com/andylitvinov-design/books/actions/runs/'+id;
 let cache=null,last=0,pending=null;
 function parse(comment){
+ // One-time historical, explicitly partial readback. Owner-authored, never
+ // treated as an Actions bot receipt or as a complete archive.
+ const imported=comment?.user?.login==='andylitvinov-design'&&
+   typeof comment.body==='string'&&
+   comment.body.startsWith('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\\n');
+ if(imported){
+   let old;try{old=JSON.parse(comment.body.slice('<!-- HH_CORE_CI_JOURNEY_IMPORT_V1 -->\\n'.length));}
+   catch{return [];}
+   if(old?.schema!=='HH_CORE_CI_JOURNEY_IMPORT_V1'||!Array.isArray(old.runs)||
+      old.runs.length>25)return [];
+   const bucket='2026-11-04T14-success';
+   const fake={user:{login:'github-actions[bot]'},
+     body:PREFIX+bucket+' -->\\n'+JSON.stringify({schema:SCHEMA,bucket,runs:old.runs})};
+   return parse(fake).map(r=>({...r,partial_jobs:true,source:'VERIFIED_PARTIAL_HISTORICAL_IMPORT'}));
+ }
  if(comment?.user?.login!=='github-actions[bot]'||typeof comment?.body!=='string'||
    !comment.body.startsWith(PREFIX)||comment.body.length>60000)return [];
  const i=comment.body.indexOf(' -->\n');
@@ -89,7 +104,10 @@ function summarizePR(pr,runs){
      add('runner_wait',q,s);
      add('checks',s,c);
    }
-   if(Number.isFinite(firstJob))add('workflow_wait',a,firstJob);
+   // In legacy imports job.created_at is unknown, so this interval is
+   // unattributed. Never mistake it for measured workflow/runner queue.
+   if(Number.isFinite(firstJob)&&r.source!=='VERIFIED_PARTIAL_HISTORICAL_IMPORT')
+     add('workflow_wait',a,firstJob);
  }
  const marks=[first,end,...intervals.flatMap(x=>[x.start,x.end])].sort((a,b)=>a-b);
  const stages={workflow_wait:0,runner_wait:0,checks:0,between_waves_unknown:0,other_unknown:0};
@@ -105,7 +123,7 @@ function summarizePR(pr,runs){
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
    runs:sorted.length,repeats:Math.max(0,sorted.length-1),
    distinct_heads:new Set(sorted.map(x=>x.source_head)).size,
-   failures:sorted.filter(x=>x.conclusion!=='success').length,
+   failures:sorted.filter(x=>['failure','timed_out','startup_failure'].includes(x.conclusion)).length,
    partial:sorted.some(x=>x.partial_jobs),
    created_at:sorted.map(x=>x.pr_created_at).find(x=>t(x)!==null)||null,
    merged_at:sorted.map(x=>x.merged_at).filter(x=>t(x)!==null).sort().at(-1)||null,
