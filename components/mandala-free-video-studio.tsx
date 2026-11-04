@@ -91,6 +91,8 @@ type EditorHistorySnapshot={
   plan:CinematicStoryboard|null;
   captions:TimelineTextClip[]|null;
   audioOffset:number;
+  aspect:Aspect;
+  duration:10|15|20|30|60;
 };
 type EditorHistoryState={
   past:EditorHistorySnapshot[];future:EditorHistorySnapshot[];
@@ -1823,6 +1825,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [timelineTextClips,setTimelineTextClips]=useState<TimelineTextClip[]|null>(null);
   const timelineTextSerial=useRef(0);
   const editorDraftInputRef=useRef<HTMLInputElement>(null);
+  const editorDraftEpochRef=useRef(0);
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
@@ -1901,18 +1904,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds}]
         :[]):[]);
   const currentEditorSnapshot=():EditorHistorySnapshot=>({
-    plan:cinematicPlan,captions:timelineTextClips,audioOffset:audioStartSeconds
+    plan:cinematicPlan,captions:timelineTextClips,audioOffset:audioStartSeconds,
+    aspect,duration
   });
   const syncEditorHistory=()=>{
     const h=localEditorHistoryRef.current;
     setEditorHistoryAvailability({undo:h.past.length>0,redo:h.future.length>0});
   };
   const resetEditorHistory=()=>{
+    editorDraftEpochRef.current++;
     localEditorHistoryRef.current=emptyMyTubeEditorHistory() as EditorHistoryState;
     setEditorHistoryAvailability({undo:false,redo:false});
   };
   const recordBeforeEditorChange=(kind:string)=>{
     if(recording||preparing||cinematicPlan?.version!==FREE_FILM_PLAN_VERSION)return;
+    editorDraftEpochRef.current++;
     localEditorHistoryRef.current=recordMyTubeEditorUndo(
       localEditorHistoryRef.current,currentEditorSnapshot(),kind,Date.now()
     ) as EditorHistoryState;
@@ -1922,6 +1928,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setCinematicPlan(snapshot.plan);
     setTimelineTextClips(snapshot.captions);
     setAudioStartSeconds(snapshot.audioOffset);
+    setAspect(snapshot.aspect);setDuration(snapshot.duration);
     stopMovieSound();setPreviewPlaying(false);
     setPreviewFrameRevision(value=>value+1);
   };
@@ -1970,10 +1977,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const importEditorDraft=async(file:File)=>{
     if(recording||preparing)return;
+    const epoch=++editorDraftEpochRef.current;
     try{
       if(file.size<2||file.size>MYTUBE_DRAFT_MAX_BYTES)throw Error("invalid_file_size");
       const json=await file.text();
-      if(recording||preparing)return;
+      if(recording||preparing||epoch!==editorDraftEpochRef.current)return;
       const draft=parseMyTubeEditorDraft(json,editorDraftAllowlist()) as ImportedEditorDraft;
       const preset=FREE_FILM_PRESETS.find(item=>item.id===draft.presetId);
       if(!preset)throw Error("unapproved_preset");
@@ -1990,13 +1998,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }))} as CinematicStoryboard;
       resetEditorHistory();stopMovieSound();setPreviewPlaying(false);
       setTheme(preset.theme);setVideoCategory(preset.theme);
+      if(preset.theme==="money"){
+        setMoneyScene(preset.id.startsWith("motion-film-")?null:preset.clips[0] as MoneySceneId);
+      }else{
+        setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);
+      }
+      setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
       setActiveFreeFilmPreset(preset.id);
       setCinematicPlan(plan);setTimelineTextClips(draft.captions);
       setAspect(draft.aspect);setDuration(draft.durationSeconds);
       setAudioStartSeconds(draft.audioStartSeconds);
       // A portable draft contains metadata only; previous narration/music must
       // never be misrepresented as attached to the newly imported film.
-      setAttachedAudio(null);setMusic("none");
+      setAttachedAudio(null);setMusic("none");setAudioAuto(false);
+      setAudioDurationInvalid(false);setMusicWarning("");
       setPreviewSeekSeconds(0);setPreviewPlayhead(0);
       setReadyFreeFilmKey("");setPreviewFrameRevision(value=>value+1);
       setActiveWorkspace("editor");
@@ -2015,7 +2030,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         locale==="es"?"Borrador inválido: solo se admiten escenas autorizadas y ajustes válidos.":
         "Invalid draft: only approved scenes and valid settings can be restored.");
     }finally{
-      if(editorDraftInputRef.current)editorDraftInputRef.current.value="";
+      if(epoch===editorDraftEpochRef.current&&editorDraftInputRef.current)
+        editorDraftInputRef.current.value="";
     }
   };
   const freeFilmClipLabel=(id:string)=>{
@@ -3153,11 +3169,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Goal-first Auto Director uses the existing consented Free MP4 renderer, not paid video AI.
   // Output framing changes must never discard a confirmed four-scene montage.
   const changeVideoAspect=(nextAspect:Aspect)=>{
-    if(recording||preparing)return;
+    if(recording||preparing||nextAspect===aspect)return;
+    recordBeforeEditorChange("aspect");
     setAspect(nextAspect);
     setCinematicPlan(plan=>plan?reframeCinematicPlan(plan,nextAspect) as CinematicStoryboard:null);
   };
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
+    if(seconds===duration)return;
+    recordBeforeEditorChange("duration");
     setDuration(seconds);
     setCinematicPlan(plan=>{
       if(plan?.version===FREE_FILM_PLAN_VERSION)
@@ -3186,6 +3205,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   // The final editor changes the same approved four-shot plan used by Canvas and MediaRecorder.
   const reorderFilmScene=(index:number,delta:-1|1)=>{
+    recordBeforeEditorChange("shot-reorder");
     setCinematicPlan(current=>{
       if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
       const nextIndex=index+delta;
@@ -5238,7 +5258,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onClick={()=>{
                 const nextDuration=duration;
                 const plan=compileFreeFilmPreset(preset,locale,nextDuration,aspect);
-                setActiveFreeFilmPreset(preset.id);
+                resetEditorHistory();setActiveFreeFilmPreset(preset.id);
                 selectScenarioMusic(preset.id);
                 setTheme(preset.theme);setVideoCategory(preset.theme);
                 setDuration(nextDuration);setCinematicPlan(plan);

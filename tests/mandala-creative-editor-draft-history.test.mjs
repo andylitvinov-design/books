@@ -90,6 +90,9 @@ test("real Studio wires editing actions to history and bounded local project imp
  assert.match(s,/recordMyTubeEditorUndo\(/);
  assert.match(s,/undoMyTubeEditor\(/);
  assert.match(s,/redoMyTubeEditor\(/);
+ assert.match(s,/setAspect\(snapshot\.aspect\);setDuration\(snapshot\.duration\)/);
+ assert.match(s,/epoch!==editorDraftEpochRef\.current/);
+ assert.match(s,/validateMontageClips/);
  assert.match(t,/data-video-timeline-undo/);
  assert.match(t,/data-video-timeline-redo/);
 });
