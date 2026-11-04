@@ -49,6 +49,15 @@ function admission(active,queued,runs,now=Date.now()) {
     // Successful Core callbacks create many no-op workflow_run wrappers.
     // Only a real scheduled/manual Watchdog reconcile occupies this slot.
     if(r?.event && !['schedule','workflow_dispatch'].includes(r.event))continue;
+    // A trusted run-name on the DEFAULT BRANCH distinguishes non-reconcile
+    // workflow_dispatch calls. They may finish workers or perform dry-run
+    // diagnostics, but must not create a false ten-minute reconcile cooldown.
+    // Older unlabelled dispatches remain conservatively treated as reconcile.
+    if(r?.event==='workflow_dispatch' && [
+      'HH watchdog / dry run',
+      'HH watchdog / completion wake',
+      'HH watchdog / direct handoff',
+    ].includes(r.display_title))continue;
     if(['queued','in_progress','pending','requested','waiting'].includes(r.status))return 'WATCHDOG_ALREADY_ACTIVE';
     const t=Date.parse(r.created_at||'');
     if(!Number.isFinite(t)||t>now+60_000)return 'WATCHDOG_HISTORY_UNVERIFIED';
