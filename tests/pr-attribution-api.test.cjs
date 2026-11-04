@@ -186,3 +186,37 @@ test('historical LIVE receipt is paired to exact merge SHA and adds Merge→LIVE
  assert.equal(api.verifiedLiveReceipt([{...receipt,created_at:at(90)}],prMerged),null);
  assert.equal(api.verifiedLiveReceipt([{...receipt,body:body.replace('PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT','UNTRUSTED')}],prMerged),null);
 });
+
+test('journey carries explicit checkpoint coverage with no invented READY or repair times',async()=>{
+ const m=makeRequest();
+ const x=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});
+ assert.equal(x.journey?.checkpoint_coverage?.total,17);
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='created')?.at,at(0));
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='runner_started')?.at,at(15));
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='repair_started')?.at,at(33));
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='deployment_ready')?.at,null);
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='live_verified')?.at,null);
+ assert.equal(x.journey?.checkpoints?.find(r=>r.key==='merge_gate_green')?.at,at(75));
+ assert.equal(x.source.reads,6);
+ assert.equal(x.elapsed_minutes,90);
+});
+
+test('period cohort exact created/merged times and closed-unmerged separate from pending',()=>{
+ const model=require('../ops/pr-monitor/pr-journey-health.js');
+ const t='2026-11-04T10:00:00Z';
+ const data={schema:'HH_PR_CREATED_COHORT_V1',generated_at:t,coverage:{complete:true},rows:[
+ {number:1,base:'codex/public-book-library',created_at:'2026-11-04T08:00:00Z',
+  merged_at:'2026-11-04T09:00:00Z',closed_at:'2026-11-04T09:00:00Z'},
+ {number:2,base:'codex/public-book-library',created_at:'2026-11-04T08:30:00Z',
+  merged_at:null,closed_at:null,draft:false},
+ {number:3,base:'codex/public-book-library',created_at:'2026-11-04T08:40:00Z',
+  merged_at:null,closed_at:'2026-11-04T09:10:00Z'},
+ {number:4,base:'codex/bootstrap-books',created_at:'2026-11-04T08:10:00Z',
+  merged_at:'2026-11-04T09:00:00Z',closed_at:'2026-11-04T09:00:00Z'}]};
+ const s=model.calculate(data,6,'production');
+ assert.equal(s.created,3);assert.equal(s.merged,1);assert.equal(s.pending,1);
+ assert.equal(s.closedUnmerged,1);assert.equal(s.mean,60);assert.equal(s.median,60);
+ assert.equal(s.coverage.knownMergedDurations,1);
+ assert.equal(model.calculate(data,6,'all').merged,2);
+ assert.equal(model.calculate(data,1,'production').merged,0);
+});
