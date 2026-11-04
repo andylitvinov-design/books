@@ -317,7 +317,7 @@ function analyzePrTimeline({pr, runs=[], jobs=[], events=[], now=Date.now(),runI
       const eventRank={ci_failed:20,ci_green:19,source_published:18,repair_started:17,
         conflict_labeled:16,conflict_unlabeled:15,review_requested:14,job_completed:2,created:1};
       const lastMark=marks.filter(m=>Date.parse(m.at)<=from).sort((a,b)=>
-        Date.parse(b.at)-Date.parse(a.at)+(eventRank[b.kind]||0)-(eventRank[a.kind]||0))[0];
+        Date.parse(b.at)-Date.parse(a.at) || (eventRank[b.kind]||0)-(eventRank[a.kind]||0))[0];
       const nextMark=marks.filter(m=>Date.parse(m.at)>=to).sort((a,b)=>
         Date.parse(a.at)-Date.parse(b.at))[0];
       const lastConflict=marks.filter(m=>['conflict_labeled','conflict_unlabeled'].includes(m.kind)&&
