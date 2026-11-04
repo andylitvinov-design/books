@@ -10,7 +10,7 @@ const ISOLATED_CI_ONLY=new Set([
  'tests/ci-specialist-wait.test.mjs',
 ]);
 const PUBLIC_MEDIA_ONLY=/^(?:components\/mandala-[a-z0-9._/-]+\.(?:tsx|jsx|css)|lib\/mandala\/[a-z0-9._/-]+\.(?:mjs|js|ts|tsx)|tests\/(?:mandala-|video-|free-film-)[a-z0-9._/-]+\.test\.mjs|docs\/[a-z0-9._-]+\.md)$/i;
-const FORBIDDEN_PUBLIC_MEDIA=/(?:^|[\/._-])(?:operations|policy|ci|workflow|security|privacy|auth|consent|secret|credential|payment|billing|rls|database|migration|supabase|api)(?:$|[\/._-])/i;
+const FORBIDDEN_PUBLIC_MEDIA=/(?:^|[\/._-])(?:operations|policy|ci|workflow|security|privacy|private|token|client|crm|message|medical|health|audio|voice|recording|codec|encoder|export|license|auth|consent|secret|credential|payment|billing|rls|database|migration|supabase|api)(?:$|[\/._-])/i;
 function verifiedDetachedCiMediaAdvance(compare,runBase,liveBase,rows){
  if(!SHA.test(runBase||'')||!SHA.test(liveBase||'')||runBase===liveBase||
     !Array.isArray(rows)||!rows.length||rows.length>ISOLATED_CI_ONLY.size||
