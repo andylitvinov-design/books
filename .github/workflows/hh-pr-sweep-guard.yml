@@ -25,6 +25,7 @@ on:
       - 'scripts/ci-heavy-impact.mjs'
       - 'tests/ci-heavy-impact.test.mjs'
       - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - '.github/workflows/hh-app-r1.yml'
       - '.github/workflows/holistic-support-mandala.yml'
       - '.github/workflows/hh-free-review-live-mobile.yml'

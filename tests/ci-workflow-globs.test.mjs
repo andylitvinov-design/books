@@ -34,6 +34,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
 });
 
+
+test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]
+    ?.split('      - name: Install checksum-verified actionlint')[0];
+  assert.ok(fast, 'fast deterministic ESLint contract must remain');
+  assert.match(fast, /node --test tests\/ci-deterministic-eslint-repair\.test\.mjs/);
+  assert.doesNotMatch(fast, /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'synthetic Git topology fixtures must run once under mandatory Core, not twice on ubuntu-slim');
+  assert.match(workflow('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'Core must retain the complete fail-closed topology regression');
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+  assert.doesNotMatch(lint, /continue-on-error:\s*true/);
+});
+
 test('deleted workflow-only changes cannot hide an unverified YAML removal', () => {
   const s = workflow('hh-actionlint.yml');
   assert.match(s, /git diff --no-renames --name-status -z/);
@@ -144,11 +160,17 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'for (const [name, engine] of engines)',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"
   ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  // Prebuilt version-matched browser images replace per-job apt installs,
+  // not genuine Chromium/WebKit launch and risk-scoped acceptance.
+  assert.match(s, /image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(s, /playwright@1\.63\.0/);
+  assert.match(s, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
+  assert.doesNotMatch(s, /playwright install --with-deps/);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 

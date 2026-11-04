@@ -198,3 +198,36 @@
  .mytube .goals button{min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){.mytube .filterToggle svg:last-child{transition:none}}
+
+
+/* MyTube 04-Nov owner correction: only a thin, collapsed 4-stage filter bar
+   occupies space above the video feed. Library and video editor stay unchanged. */
+.taxonomyPrimary{display:grid;gap:9px}
+.taxonomyPrimary[hidden]{display:none!important}
+.mytube .filterToggle{
+  display:flex;align-items:center;justify-content:flex-start;justify-self:stretch;
+  width:100%;max-width:none;min-height:44px;gap:11px;margin:0;
+  padding:8px 13px;border:1px solid #303030;border-radius:12px;
+  background:#191919;color:#f1f1f1;font:700 13px/1.2 Arial,Helvetica,sans-serif
+}
+.mytube .filterToggle:hover{background:#262626}
+.mytube .filterToggle svg{flex:none}
+.mytube .filterToggle svg:first-child{color:#ff0033}
+.mytube .filterToggle svg:last-child{margin-left:auto;color:#999}
+.mytube .filterToggleText{display:flex;flex:1;align-items:center;gap:11px;min-width:0;overflow:hidden;white-space:nowrap}
+.mytube .filterToggleText strong{flex:none;color:#f1f1f1;font-size:13px;font-weight:800}
+.mytube .filterSelection{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#a8a8a8;font-size:12px;font-weight:500}
+.mytube .taxonomyPrimary{display:grid;gap:9px;padding:11px 12px;
+  background:#181818;border:1px solid #303030;border-radius:12px}
+.mytube .taxonomyPrimary[hidden]{display:none!important}
+.mytube .taxonomyPrimary>.groupHeading{display:flex}
+.mytube .taxonomyPrimary .groupHeading strong{color:#d5d5d5}
+.mytube .areaSection{gap:8px}
+@media(max-width:640px){
+ .mytube .filterToggle{min-height:44px;padding:8px 11px;gap:9px}
+ .mytube .filterToggleText{gap:8px}
+ .mytube .filterToggleText strong{font-size:12px}
+ .mytube .filterSelection{font-size:11px}
+ .mytube .taxonomyPrimary{padding:10px 9px}
+}

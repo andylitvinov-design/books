@@ -322,6 +322,9 @@ try {
         assert.ok(formBox && buttonBox && buttonBox.width >= formBox.width * 0.92,
           "Find my options is full-width on mobile, not split with a second CTA");
       }
+      // The SSR control becomes interactive only when React has hydrated.
+      // Waiting for enabled prevents the real first-click loss before hydration.
+      await expect(freeOnly).toBeEnabled();
       await freeOnly.check();
       await expect(price).toHaveValue("free");
       await expect(findOptions).toBeEnabled();

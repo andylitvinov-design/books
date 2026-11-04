@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
-import { inspectJobs, trustedRequiredJobs } from '../lib/ci/specialist-aggregate.mjs';
+import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -58,7 +58,7 @@ test('a registered specialist can remain queued beyond three minutes and must su
   assert.equal(result.executed.length, 1);
 });
 
-test('registered queue beyond the previous 15-minute cap passes only after real execution', async () => {
+test('an explicitly extended queue budget permits a proven 20-minute hosted runner wait', async () => {
   let elapsed = 0, polls = 0, readJobs = 0;
   const api = {
     pr: async () => pr,
@@ -75,6 +75,7 @@ test('registered queue beyond the previous 15-minute cap passes only after real 
     },
   };
   const result = await verify(api, ctx, sources, {
+    queuedGraceMs: 25*60_000,
     now: () => elapsed,
     sleep: async ms => {
       assert.ok(ms > 0 && ms <= 30_000);
@@ -88,7 +89,7 @@ test('registered queue beyond the previous 15-minute cap passes only after real 
   assert.equal(result.executed.length, 1);
 });
 
-test('unresolved queued dependency fails closed only at the overall bounded deadline', async () => {
+test('unresolved queued dependency stops at the shorter ten-minute default, not thirty-five', async () => {
   let elapsed = 0, reads = 0;
   const api = {
     pr: async () => pr,
@@ -100,7 +101,7 @@ test('unresolved queued dependency fails closed only at the overall bounded dead
     now: () => elapsed,
     sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
   }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
-  assert.equal(elapsed, 35 * 60_000, 'global budget is hard capped');
+  assert.equal(elapsed, 10 * 60_000, 'default queue budget is shorter than running timeout');
   assert.ok(reads > 10, 'checks are polled, never silently waived');
   assert.equal(diagnoseAggregateError(
     new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+JSON.stringify({queued:[path+':queued']}))
@@ -285,4 +286,74 @@ test('missing required job fails closed after a bounded jobs-API grace',async()=
     now:()=>elapsed,sleep:async ms=>{elapsed+=ms;},pollMs:1_000}),/MISSING_REQUIRED_SPECIALIST_JOB/);
   assert.equal(elapsed,1_200);assert.equal(reads,3);
   assert.equal(diagnoseAggregateError(new Error('MISSING_REQUIRED_SPECIALIST_JOB:'+path+':test')).category,'REQUIRED_JOB_MISSING');
+});
+
+test('dependency phase classification preserves terminal cancellation without inventing a test failure', () => {
+  const expected = [path];
+  const from = (status, conclusion) => inspectWorkflowRuns({
+    expected, pr, runs: [run(status, conclusion)],
+  });
+  for (const status of ['queued', 'requested', 'waiting', 'pending']) {
+    const state = from(status, null);
+    assert.deepEqual(state.queued, [path + ':' + status]);
+    assert.deepEqual(state.running, []);
+    assert.deepEqual(state.failed, []);
+  }
+  assert.deepEqual(from('in_progress', null).running, [path + ':in_progress']);
+  assert.deepEqual(from('completed', 'failure').failed, [path + ':failure']);
+  assert.deepEqual(from('completed', 'cancelled').cancelled, [path + ':cancelled']);
+  assert.deepEqual(from('completed', 'timed_out').interrupted, [path + ':timed_out']);
+  assert.deepEqual(from('completed', 'skipped').notExecuted, [path + ':skipped']);
+  assert.deepEqual(from('completed', null).uncertain, [path + ':conclusion-unknown']);
+  assert.equal(from('completed', 'success').passed.length, 1);
+});
+
+test('cancelled, skipped and infrastructure-interrupted specialists block immediately with accurate reasons', async () => {
+  const clock = { maxWaitMs: 600_000, now: () => 0, sleep: async () => {
+    throw Error('Terminal dependency must not enter a polling loop');
+  } };
+  const api = {
+    pr: async () => pr, changed: async () => [{filename:'lib/crm/a.js'}],
+    jobs: async () => { throw Error('Terminal dependency has no green jobs'); },
+  };
+  for (const [conclusion, category] of [
+    ['cancelled', 'SPECIALIST_DEPENDENCY_CANCELLED'],
+    ['skipped', 'SPECIALIST_DEPENDENCY_NOT_EXECUTED'],
+    ['startup_failure', 'SPECIALIST_DEPENDENCY_INTERRUPTED'],
+    ['failure', 'SPECIALIST_FAILED'],
+  ]) {
+    api.runs = async () => [run('completed', conclusion)];
+    await assert.rejects(() => verify(api, ctx, sources, clock), new RegExp(category));
+    assert.equal(diagnoseAggregateError(new Error(category + ':' +
+      JSON.stringify({cancelled:[path + ':' + conclusion]}))).category,
+      category === 'SPECIALIST_FAILED' ? 'SPECIALIST_FAILED' : category.slice('SPECIALIST_'.length));
+  }
+});
+
+test('completed with unknown conclusion is retried briefly, not falsely marked source failure', async () => {
+  let elapsed = 0;
+  const api = {
+    pr: async () => pr, changed: async () => [{filename:'lib/crm/a.js'}],
+    runs: async () => [run('completed', null)],
+    jobs: async () => { throw Error('Incomplete run cannot supply verified jobs'); },
+  };
+  await assert.rejects(() => verify(api, ctx, sources, {
+    maxWaitMs: 120_000, now: () => elapsed, pollMs: 1000,
+    sleep: async ms => { elapsed += ms; },
+  }), /SPECIALIST_DEPENDENCY_INCOMPLETE/);
+  assert.equal(elapsed, 30_000, 'ambiguous GitHub result has an independent thirty-second cap');
+});
+
+test('completed workflow with an unfinished jobs API never masquerades as a failed source test', async () => {
+  let elapsed = 0;
+  const api = {
+    pr: async () => pr, changed: async () => [{filename:'lib/crm/a.js'}],
+    runs: async () => [run('completed','success')],
+    jobs: async () => [{name:'mobile',status:'in_progress',conclusion:null}],
+  };
+  await assert.rejects(() => verify(api, ctx, sources, {
+    maxWaitMs: 15_000, jobGraceMs: 1500, pollMs: 500,
+    now: () => elapsed, sleep: async ms => { elapsed += ms; },
+  }), /SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT/);
+  assert.equal(elapsed, 1500);
 });

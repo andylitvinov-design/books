@@ -84,8 +84,9 @@ async function handle(request){
           // after the reservation transaction but BEFORE the provider request.
           const dispatch=await repo.withOwner(actor,store=>store.checkMessengerReplyReady(reservation.id))
           if(!dispatch.allowed){
-            data=await repo.withOwner(actor,store=>
+            const blocked=await repo.withOwner(actor,store=>
               store.finalizeMessengerReply(reservation.id,reservation.channel,'blocked'))
+            data={...blocked,reason:dispatch.reason}
           }else{
             let status='unknown',providerId=null
             try{

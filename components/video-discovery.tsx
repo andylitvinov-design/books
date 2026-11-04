@@ -16,7 +16,7 @@ const labels={
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
-    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Уточнить подбор",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
+    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Фильтры",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
@@ -36,7 +36,7 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
-    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Refine",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
+    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Filters",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
@@ -56,7 +56,7 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
-    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Afinar selección",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
+    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Filtros",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
@@ -233,6 +233,15 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       .sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.item);
   },[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
     variant,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId]);
+  // The compact bar displays the current 4-level editorial path without
+  // occupying space needed by the video thumbnails. Only approved public
+  // videos are filtered; the 256 scenario concepts are not playable assets.
+  const activeMyTubePath=[
+    mytubeCategories.find(item=>item.id===mytubeCategoryId)?.label,
+    mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId)?.label,
+    mytubeTopics.find(item=>item.id===mytubeTopicId)?.label,
+    mytubeScenarios.find(item=>item.id===mytubeScenarioId)?.label,
+  ].filter(Boolean).join(" › ")||t.mytubeAny;
   const index=VIDEO_GOALS.indexOf(goal);
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
     {variant==="mytube" && <label className={styles.topSearch}>
@@ -248,6 +257,20 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         <p>{t.lead}</p>
       </div>}
       <div className={styles.areaSection} data-mytube-taxonomy="v2">
+        {variant==="mytube"&&<button type="button" data-mytube-filter-toggle
+          className={styles.filterToggle} aria-expanded={filtersOpen}
+          aria-controls="mytube-primary-controls mytube-refine-controls mytube-more-controls"
+          onClick={()=>setFiltersOpen(value=>!value)}>
+          <SlidersHorizontal size={17} aria-hidden="true"/>
+          <span className={styles.filterToggleText}>
+            <strong>{t.refine}</strong>
+            <span className={styles.filterSelection} title={activeMyTubePath}>{activeMyTubePath}</span>
+          </span>
+          <ChevronDown size={17} aria-hidden="true"/>
+        </button>}
+        <div className={styles.taxonomyPrimary}
+          id={variant==="mytube"?"mytube-primary-controls":undefined}
+          hidden={variant==="mytube"&&!filtersOpen}>
         <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
         <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
           <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
@@ -256,13 +279,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
             aria-pressed={mytubeCategoryId===item.id}
             onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
         </div>
-        {variant==="mytube"&&<button type="button" className={styles.filterToggle}
-          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
-          onClick={()=>setFiltersOpen(value=>!value)}>
-          <SlidersHorizontal size={16} aria-hidden="true"/>
-          {filtersOpen?t.collapse:t.refine}
-          <ChevronDown size={16} aria-hidden="true"/>
-        </button>}
+        </div>
         <div id={variant==="mytube"?"mytube-refine-controls":undefined}
           className={styles.refine} hidden={variant==="mytube"&&!filtersOpen}>
         {mytubeCategoryId!=="all"?<>

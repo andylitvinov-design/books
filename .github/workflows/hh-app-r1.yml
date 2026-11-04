@@ -55,19 +55,18 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
       - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
   pull-requests: read
 concurrency:
   group: app-r1-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   impact:
     name: route-expensive-app-suites
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     outputs:
       full_app: ${{ steps.choose.outputs.full_app }}
@@ -79,6 +78,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 2
+          # Verify exact synthetic merge with full git trees, not media blobs.
+          sparse-checkout: |
+            scripts
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - name: Classify exact-head changes, otherwise run all original jobs
@@ -156,9 +158,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+        # Both real browsers when needed; otherwise one fail-closed no-op job.
+        browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '["chromium","webkit"]' || '["none"]') }}
+    # Standard free runner; pin distro and launch the prebuilt browser image
+    # only in the actual browser step. The 'none' route stays lightweight.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
     steps:
@@ -180,16 +185,28 @@ jobs:
         with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.banner == 'true'
-      - name: Isolated synthetic browser tools
+      - name: Install isolated exact-version Playwright test tools (without browser downloads)
         if: needs.impact.outputs.banner == 'true'
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-course-banner-tools
-          npm install --prefix /tmp/hh-course-banner-tools --no-audit --no-fund @playwright/test@1.63.0
+          npm install --prefix /tmp/hh-course-banner-tools --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-course-banner-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
-      - name: EN/RU course disclosure, keyboard and narrow-screen acceptance
+      - name: EN/RU course disclosure, keyboard and narrow-screen acceptance in pinned browsers
         if: needs.impact.outputs.banner == 'true'
-        run: node tests/course-banner/browser.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only synthetic local DOM: no secrets or external network exposed.
+          # The image carries 1.63.0 Chromium/WebKit and system dependencies.
+          # No apt/playwright install --with-deps and no container pull on no-op.
+          docker run --rm --init --ipc=host --network none \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v /tmp/hh-course-banner-tools:/tmp/hh-course-banner-tools:ro \
+            -w "$GITHUB_WORKSPACE" \
+            -e HH_TEST_BROWSER="$HH_TEST_BROWSER" -e CI=true \
+            mcr.microsoft.com/playwright:v1.63.0-noble \
+            bash -lc 'test "${PLAYWRIGHT_BROWSERS_PATH:-}" = /ms-playwright && node tests/course-banner/browser.mjs'
       - uses: actions/upload-artifact@v4
         if: always() && needs.impact.outputs.banner == 'true'
         with:

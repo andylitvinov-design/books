@@ -199,6 +199,7 @@ function replyReason(reason,lang){
     REPLY_WINDOW_CLOSED:{en:'Response window closed',ru:'Окно ответа закрыто',es:'Ventana de respuesta cerrada'},
     CONTACT_BLOCKED:{en:'Contact opted out',ru:'Контакт заблокировал сообщения',es:'Contacto bloqueado'},
     CHANNEL_NOT_CONNECTED:{en:'Provider not connected',ru:'Канал ещё не подключён',es:'Canal no conectado'},
+    CONSENT_REQUIRED:{en:'Client must confirm /agree in Telegram. Refresh this chat afterward.',ru:'Клиенту нужно подтвердить /agree в Telegram. Затем обновите чат.',es:'El cliente debe confirmar /agree en Telegram. Actualiza el chat después.'},
   }
   return labels[reason]?.[lang]||reason||''
 }
@@ -209,6 +210,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [botCheck,setBotCheck]=useState(null)
   const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
+  const focusRefreshAt=useRef(0)
   const pendingNote=useRef(null)
   const pendingFollowup=useRef(null)
   const activeRef=useRef('')
@@ -279,6 +281,23 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     return ()=>ctrl.abort()
   },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
+  // One read on returning from Telegram, no background poll or paid service.
+  useEffect(()=>{
+    if(!accountId)return
+    const onVisible=()=>{
+      if(document.visibilityState!=='visible')return
+      const now=Date.now()
+      if(now-focusRefreshAt.current<4000)return
+      focusRefreshAt.current=now
+      void refresh(activeRef.current)
+    }
+    document.addEventListener('visibilitychange',onVisible)
+    window.addEventListener('focus',onVisible)
+    return()=>{
+      document.removeEventListener('visibilitychange',onVisible)
+      window.removeEventListener('focus',onVisible)
+    }
+  },[accountId,load])
   async function copyWebhook(channel){
     const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
     if(!url)return
@@ -410,7 +429,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       pendingRequest.current=null
       setStatus(t.accepted)
     }else if(result.status==='failed'||result.status==='blocked'){
-      setStatus(t.sendError)
+      // A terminal result can be retried with a new ID after the cause is fixed.
+      // Uncertain/queued results keep their ID to prevent duplicate delivery.
+      pendingRequest.current=null
+      setStatus(result.status==='blocked'?replyReason(result.reason,lang)||t.sendError:t.sendError)
     }else setStatus(t.unknown)
   }
 

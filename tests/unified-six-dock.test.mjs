@@ -62,7 +62,8 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/translate3d\(-50%,0,0\)/);
  assert.match(css,/bottom:var\(--hh-unified-viewport-inset,0px\)/);
  assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/);
- assert.match(dock,/viewport\.offsetTop \+ viewport\.height/);
+ assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
+ assert.ok(dock.includes('const visualBottom = visualOffsetTop + visualHeight'));
  assert.match(dock,/visualDockBottomCorrection\(/);
  assert.doesNotMatch(dock,/mobileVisualBottomGap\(/);
  assert.match(dock,/--hh-unified-viewport-inset/);
@@ -175,4 +176,28 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
  assert.match(originalDock,/data-mandala-legacy-header/);
  assert.match(global,/data-mandala-legacy-header/);
  assert.match(global,/data-mandala-support-bottom-nav/);
+});
+
+
+test("MyTube is black with a single slim collapsed filter bar containing the canonical category tree",()=>{
+ const page=read("app/[locale]/mytube/page.tsx");
+ const pageStyle=read("app/[locale]/mytube/mytube.module.css");
+ const discovery=read("components/video-discovery.tsx");
+ const discoveryStyle=read("components/video-discovery.module.css");
+ const acceptance=read("scripts/verify-unified-six-dock-browser.mjs");
+ assert.match(page,/themeColor:"#0f0f0f"/);
+ assert.match(pageStyle,/--mytube-bg:#0f0f0f/);
+ assert.match(discovery,/data-mytube-filter-toggle/);
+ assert.match(discovery,/aria-controls="mytube-primary-controls mytube-refine-controls mytube-more-controls"/);
+ assert.match(discovery,/hidden=\{variant==="mytube"&&!filtersOpen\}/);
+ assert.match(discovery,/filterSelection/);
+ assert.match(discovery,/listMyTubeScenarios\(mytubeTopicId,locale\)/);
+ for(const marker of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
+   assert.match(discovery,new RegExp(marker));
+ assert.match(discoveryStyle,/\.mytube \.filterToggle\{/);
+ assert.match(discoveryStyle,/min-height:44px/);
+ assert.match(discoveryStyle,/\.mytube \.taxonomyPrimary\[hidden\]\{display:none!important\}/);
+ assert.match(acceptance,/primaryTree\.isVisible\(\),false/);
+ assert.match(acceptance,/filterBounds\.height<=60/);
+ assert.match(acceptance,/moreFilters\.click\(\)/);
 });
