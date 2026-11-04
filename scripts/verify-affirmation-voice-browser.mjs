@@ -17,6 +17,36 @@ function wav(seconds=3) {
   for(let i=0;i<n;i++)b.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*280/rate)*8000),44+i*2);
   return b;
 }
+// A first click must not be offered before React attaches the workspace handlers.
+// Hold only this fresh context's same-origin JS, then verify one real tap after
+// hydration. All writes and third-party requests remain blocked.
+async function verifyWorkspaceHydration(browser,locale){
+  const context=await browser.newContext({viewport:{width:390,height:840},isMobile:true,hasTouch:true,serviceWorkers:"block"});
+  let release;const hold=new Promise(resolve=>{release=resolve});let held=0;
+  try{
+    await context.route("**/*",async route=>{
+      const request=route.request(),url=new URL(request.url());
+      if(url.origin!==new URL(BASE).origin||!["GET","HEAD"].includes(request.method()))return route.abort();
+      if(url.pathname.includes("/_next/static/")&&url.pathname.endsWith(".js")){held++;await hold;}
+      return route.continue();
+    });
+    const page=await context.newPage();
+    await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"commit",timeout:90000});
+    const studio=page.locator('[data-video-studio-hydrated]');
+    const tabs=page.locator('[data-video-quick-controls] button');
+    await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
+    await expect(tabs).toHaveCount(6);
+    for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
+    release();
+    await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toBeEnabled();
+    await phrases.click();
+    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+  }finally{release();await context.close();}
+}
 // Linux WebKit often lacks Canvas capture codecs. Run the very same real
 // encoded video+audio acceptance on macOS WebKit and Linux Chromium.
 // The default still exercises BOTH engines for developer/manual runs.
@@ -53,6 +83,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   const browser=await browserType.launch({headless:!(engine==="webkit" && headedWebKit)});
   try {
     const locale=engine==="webkit"?"ru":"en";
+    phase(engine,"workspace-hydration");
+    await verifyWorkspaceHydration(browser,locale);
     const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
     // Playwright has no default action timeout: an obscured iPhone control can
     // otherwise hang until the six-minute process watchdog with no locator.
@@ -93,23 +125,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"navigate");
       await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
+      // Next renders the workspace tabs before client event handlers hydrate.
+      // On Safari an early click can be swallowed and leave Montage hidden.
+      await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       phase(engine,"editor-ready");
-      // A real visitor sets duration in the visible Music panel, then moves to
-      // the visible Phrases workspace. The deprecated legacy disclosure is
-      // intentionally hidden; tests must not click an invisible summary.
-      await page.locator('[data-video-quick-control="video"]').click();
-      const advancedToggle=page.locator("[data-video-advanced-toggle]");
-      if(await advancedToggle.isVisible() && await advancedToggle.getAttribute("aria-expanded")==="false")
-        await advancedToggle.click();
-      const musicSettings=page.locator("[data-video-audio-details]");
-      await musicSettings.waitFor({state:"visible",timeout:25000});
-      // A previously opened disclosure must not be toggled closed. Exercise
-      // the actual visible 10 s control, not a hidden legacy copy.
-      if(await musicSettings.getAttribute("open")===null)
-        await musicSettings.locator(":scope > summary").click();
-      const lengthButton=musicSettings.locator('[data-video-audio-length="10"]');
+      // A real visitor sets duration using Montage → Music, then moves to
+      // Phrases. The retired Video quick-audio disclosure is intentionally
+      // hidden by the canonical six-workspace layout: do not bypass its CSS.
+      const editorTab=page.locator('[data-video-quick-control="editor"]');
+      await editorTab.click();
+      await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      const montageSettings=page.locator('[data-video-montage-settings]');
+      await montageSettings.waitFor({state:"visible",timeout:25000});
+      if(await montageSettings.getAttribute("open")===null)
+        await montageSettings.locator(":scope > summary").click();
+      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
+      await musicTab.waitFor({state:"visible",timeout:25000});
+      await musicTab.click();
+      await expect(musicTab).toHaveAttribute("aria-pressed","true");
+      const lengthButton=montageSettings.locator(
+        '[data-video-music-editor] [data-video-audio-length="10"]');
       await lengthButton.waitFor({state:"visible",timeout:25000});
       await lengthButton.click();
+      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -146,9 +184,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-sample-ready]")).toHaveCount(0);
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
-      // Only the explicit phrase approval unlocks private narration.
+      // WebKit can return from a click before React commits the visitor's
+      // approved phrases. Wait for actual approved, selected transcript state,
+      // not just the already-mounted voice panel. Keep consent and WAV proof.
       await page.locator("[data-hypno-approve]").click();
+      await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
+      await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
+      const speech=page.locator("[data-video-affirmation-spoken-text]");
+      await expect.poll(async()=> (await speech.textContent())?.trim().length||0,
+        {timeout:15000,message:"approved selected affirmations must reach voice text"})
+        .toBeGreaterThan(5);
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const phraseSelector=page.locator("[data-video-affirmation-phrase]");
       await phraseSelector.waitFor({state:"visible"});
@@ -156,20 +202,25 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         "the visitor can choose one of their approved phrases or all");
       await phraseSelector.selectOption("1");
       await expect(phraseSelector).toHaveValue("1");
-      // The approved transcript is inside a visitor-controlled native details.
-      // Open it with a real summary click; WebKit innerText on hidden content is
-      // empty even when the selected phrase is already the one sent to TTS.
       const transcriptDisclosure=page.locator("[data-video-affirmation-voice] details")
-        .filter({has:page.locator("[data-video-affirmation-spoken-text]")});
+        .filter({has:speech});
       if(await transcriptDisclosure.getAttribute("open")===null)
-        await transcriptDisclosure.locator("summary").click();
-      const spoken=page.locator("[data-video-affirmation-spoken-text]");
-      await expect(spoken).toBeVisible();
+        await transcriptDisclosure.locator(":scope > summary").click();
+      await expect(speech).toBeVisible();
       const approved=(await phraseSelector.locator('option[value="1"]').innerText())
         .replace(/^2\.\s*/,"").trim();
       const expectedSpeech=/[.!?…]$/u.test(approved)?approved:approved+".";
-      await expect(spoken).toHaveText(expectedSpeech);
-      const transcript=(await spoken.innerText()).trim();
+      await expect(speech).toHaveText(expectedSpeech);
+      const selectedSummary=page.locator("[data-video-affirmation-selected-phrase]");
+      await expect(selectedSummary).toHaveText(expectedSpeech);
+      await phraseSelector.selectOption("all");
+      await expect(phraseSelector).toHaveValue("all");
+      await expect.poll(async()=>((await selectedSummary.textContent())||"").trim().length).toBeGreaterThan(expectedSpeech.length);
+      assert.equal(((await selectedSummary.textContent())||"").trim(),((await speech.textContent())||"").trim(),
+        "the visible summary must match the full approved text actually sent");
+      await phraseSelector.selectOption("1");
+      await expect(selectedSummary).toHaveText(expectedSpeech);
+      const transcript=((await speech.textContent())||"").trim();
       assert.ok(transcript.length>5&&transcript.length<=45,"only one approved phrase is spoken");
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
@@ -178,12 +229,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
-      // Voice/music options are inside their own native disclosure. Open it
-      // with a real user click before using the visible first-party controls.
       const voiceOptions=page.locator("[data-video-affirmation-voice] details")
         .filter({has:page.locator("[data-video-affirmation-bed]")});
       if(await voiceOptions.getAttribute("open")===null)
-        await voiceOptions.locator("summary").click();
+        await voiceOptions.locator(":scope > summary").click();
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
@@ -348,7 +397,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-basic-tab="voice"]').click();
       // Consent for the previous transcript never carries over to new lines.
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
+      if(await page.locator("[data-video-narration-stale]").isVisible()){
+        await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
+      }else{
+        // A removed narration is no longer attached to the one canonical
+        // renderer; the visitor may still create a video without that voice.
+        await expect(page.locator("[data-video-live-audio]")).toHaveCount(0);
+        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
+      }
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)

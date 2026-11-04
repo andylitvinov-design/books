@@ -315,7 +315,7 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const css=read("components/mandala-video-mobile.module.css");
   const top=[
     "data-video-quick-builder",'data-video-quick-section="1"',
-    "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
+    "data-video-live-stage","data-video-quick-controls",'id="video-hero"',
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
     "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
@@ -484,7 +484,8 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/1\. Выберите цель видео/);
+  assert.match(studio,/1\. Опишите запрос или выберите цель/);
+  assert.ok(studio.indexOf("data-video-request-prompt") < studio.indexOf("data-video-director-goal-controls"), "the request precedes goal filters");
   assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
   assert.match(studio,/data-video-quick-generate/);
@@ -510,7 +511,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/data-video-quick-audio-track=\{id\}/);
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
-  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
@@ -529,4 +530,11 @@ test("video therapy exit does not unmount the clicked button during pointerup", 
   assert.doesNotMatch(opening,/onPointer(?:Down|Up)=/,"a pointer handler must not unmount the button before its native click");
   assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setActiveWorkspace\("video"\);/,"one click exits practices without discarding a confirmed video");
   assert.match(opening,/setTherapyJumpRequested\(false\);setNotice\(""\);/,"exit clears pending scroll and notice");
+});
+
+test("studio workspace buttons remain disabled until their real handlers hydrate",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),studio.indexOf('return activeWorkspace==="effects"'));
+  assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+  assert.match(nav,/onClick=\{\(\)=>\{/);
 });

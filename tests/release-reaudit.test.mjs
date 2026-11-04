@@ -229,9 +229,9 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
-  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(verifier, /Reset must restore the exact paid request/);
+  assert.match(verifier, /option\[value="30-min"\].*€50/);
+  assert.match(verifier, /option\[value="60-min"\].*€100/);
+  assert.match(verifier, /No enquiry without explicit reply consent/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
@@ -244,21 +244,23 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
-test('release audit scopes service choices and forbids messenger links in the free flow', () => {
+test('release audit verifies current compact paid capture and safe synthetic handoff', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
-  const capture = read('components/consultation-choice-capture.tsx');
-  assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
-  assert.ok(verifier.includes('const serviceChoices = capture.locator(\'[data-choice-layout="service"] > button\')'));
-  assert.ok(verifier.includes('assert.equal(await capture.locator(\'[data-contact-channel="telegram"]\').count(), 0)'));
-  assert.match(verifier, /await expect\(capture\.locator\('form'\)\)\.toBeHidden\(\)/);
-  assert.ok(verifier.includes('capture.locator(\'[data-contact-channel-chooser] a[data-contact-channel]\')'));
-  assert.match(verifier, /openRegisteredContactChannelChooser\(capture, expect, paidPage\)/);
-  assert.match(verifier, /if \(!local\) \{[\s\S]*?liveConsentSubmitted:false/);
-  assert.match(verifier, /check\('paid-imagery-synthetic-receipt'/);
-  assert.match(verifier, /assertSyntheticLoopback\(receiptPage\.url\(\)\)/);
-  assert.match(verifier, /contactConsent, true/);
-  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-safe-handoff'"), verifier.indexOf('if (width === 390)'));
+  assert.match(paid, /data-service-visual-screen="final-capture"/);
+  assert.match(paid, /data-compact-hydrated/);
+  assert.match(paid, /option\[value="30-min"\].*€50/);
+  assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /services\/free-situation-review/);
+  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
+  assert.match(paid, /attribution\)\.not\.toBeChecked/);
+  assert.match(paid, /assertSyntheticLoopback\(paidPage\.url\(\)\)/);
+  assert.match(paid, /assert\.equal\(submissions, 0/);
+  assert.match(paid, /assert\.equal\(submissions, 1/);
+  assert.match(paid, /submitted\.contactConsent, true/);
+  assert.match(paid, /data-lead-saved/);
+  assert.match(paid, /enquiry-qa%40example\.test/);
+  assert.match(paid, /liveConsentSubmitted:false/);
 });
 
 test('initial navigation effect and identical replay preserve preopened native menus', () => {

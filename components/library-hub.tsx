@@ -12,6 +12,8 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
+import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
+import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
@@ -298,17 +300,26 @@ export function buildLibraryFeedItems(
     }];
   });
   const topicPictures: Record<string,string> = {
-    stress: '/images/holistic-house/hero-olive-incense.webp',
-    relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-    business: '/images/holistic-house/course-focus-mountain-boy.webp',
-    energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
-    effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+    "goals-money": '/images/holistic-house/course-focus-mountain-boy.webp',
+    "love-relationships": '/images/holistic-house/video-posters/constellations-en-v1.webp',
+    "energy-confidence": '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+    "stress-anxiety": '/images/holistic-house/hero-olive-incense.webp',
   };
-  const growthFeed: LibraryFeedItem[] = ['stress','relationships','business','energy','effectiveness'].flatMap(theme => {
-    const guide = growthGuideFor(theme,locale);
+  // Canonical four directions, while preserving each existing public SEO route.
+  const categoryRoute: Record<string,string> = {
+    "goals-money":"business",
+    "love-relationships":"love",
+    "energy-confidence":"energy",
+    "stress-anxiety":"stress",
+  };
+  const growthFeed: LibraryFeedItem[] = listMyTubeCategories(locale).flatMap(category => {
+    const route=categoryRoute[category.id];
+    const guideKey=route==="love"?"relationships":route;
+    const guide=growthGuideFor(guideKey,locale);
     return guide ? [{
-      id:'public-growth-'+theme,kind:'guide' as const,title:guide.title,
-      description:guide.lead,image:topicPictures[theme],href:'/'+locale+'/explore/'+theme,
+      id:'public-growth-'+category.id,kind:'guide' as const,title:category.label,
+      description:guide.lead,image:topicPictures[category.id],
+      href:'/'+locale+'/explore/'+route,
     }] : [];
   });
   const guideFeed: LibraryFeedItem[] = guides.map(guide => ({
@@ -321,6 +332,39 @@ export function buildLibraryFeedItems(
   return { feedItems, guideFeed };
 }
 
+/** Shared public-only video source for Library and MyTube; no second catalog. */
+export function buildPublicVideoDiscoveryItems(
+  locale: PublicLocale,
+  publishedVideos: LibraryPublicVideo[] = [],
+  approvedMeditations: LibraryFeedItem[] = [],
+): LibraryFeedItem[] {
+  const { feedItems } = buildLibraryFeedItems(locale, publishedVideos, []);
+  // Preserve original numbered RU Greek series and all verified Academy sources.
+  const seriesItems: LibraryFeedItem[] = greekVideoSeries(locale)
+    .flatMap(series => series.lessons.map(lesson => ({
+      id: "source-series-" + series.id + "-" + lesson.id,
+      kind: "video" as const,
+      title: lesson.title,
+      description: series.title + " · выпуск " + lesson.order + " из " + series.lessons.length,
+      youtubeId: lesson.id,
+      href: "https://www.youtube.com/watch?v=" + lesson.id,
+      seriesId: series.id,
+      seriesTitle: series.title,
+      seriesOrder: lesson.order,
+      seriesHref: series.href,
+      audioLanguage: "ru" as const, curation: "verified" as const,
+      sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
+      topicTags: discoveryTags[series.logicalId] || ["practices"],
+    })));
+  // Every currently eligible public video gets deterministic topic/category rankings
+  // on read, including DB-backed additions. No writes, publishing or new copies.
+  return buildPublishedVideoIndex([...seriesItems,
+    ...approvedAcademyDiscoveryVideos(locale),
+    ...approvedMeditations,
+    ...feedItems.filter(item => item.kind === "video"),
+  ]).map(video => ({...video, ...rankPublicMyTubeVideo(video, {locale})}));
+}
+
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;
@@ -330,30 +374,8 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
 }) {
   const text = libraryCopy[locale];
   const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
-  // The RU Video Blogs view reuses the same verified Academy media, but groups
-  // the original Greek channel recordings by series rather than publication date.
-  const seriesItems: LibraryFeedItem[] = view === "videos"
-    ? greekVideoSeries(locale).flatMap(series => series.lessons.map(lesson => ({
-        id: "source-series-" + series.id + "-" + lesson.id,
-        kind: "video" as const,
-        title: lesson.title,
-        description: series.title + " · выпуск " + lesson.order + " из " + series.lessons.length,
-        youtubeId: lesson.id,
-        href: "https://www.youtube.com/watch?v=" + lesson.id,
-        seriesId: series.id,
-        seriesTitle: series.title,
-        seriesOrder: lesson.order,
-        seriesHref: series.href,
-        audioLanguage: "ru" as const, curation: "verified" as const,
-        sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
-        topicTags: discoveryTags[series.logicalId] || ["practices"],
-      })))
-    : [];
-  const videoItems = buildPublishedVideoIndex([...seriesItems,
-    ...approvedAcademyDiscoveryVideos(locale),
-    ...approvedMeditations,
-    ...feedItems.filter(item => item.kind === "video"),
-  ]);
+  const videoItems = view === "videos"
+    ? buildPublicVideoDiscoveryItems(locale, publishedVideos, approvedMeditations) : [];
 
   return (
     <main className="library-shell" lang={locale}>

@@ -107,8 +107,7 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
     const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
     assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
-    const cancelCondition = workflow === 'hh-crm-source-check.yml' ? syncOnlyFirstAttemptCancellation :
-      (attemptScoped ? firstAttemptCancellation : prOnlyCancellation);
+    const cancelCondition = attemptScoped ? syncOnlyFirstAttemptCancellation : prOnlyCancellation;
     assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -153,8 +152,7 @@ for (const name of draftStageWorkflows) {
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
     const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
-    const condition = name === 'hh-crm-source-check.yml' ? syncOnlyCondition :
-      (attemptScoped ? firstAttemptCondition : prOnlyCondition);
+    const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -237,7 +235,7 @@ test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-producti
   assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
   assert.ok(source.includes('npx --no-install tsc --noEmit'));
   assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
-  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.match(source,/^  workflow_dispatch:/m);
 });
 test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{

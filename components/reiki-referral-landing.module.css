@@ -139,3 +139,114 @@
   .mainCta { transition: none; }
   .mainCta:hover { transform: none; }
 }
+
+/* Each teaching point includes existing authentic photography. Course start is
+   still free and direct; the optional contact at the end is not an enrolment. */
+.page[data-public-visual-landing="reiki-referral"] .benefitGrid,
+.page[data-public-visual-landing="reiki-referral"] .steps{
+  display:grid;grid-template-columns:1fr;gap:12px;
+}
+.page[data-public-visual-landing="reiki-referral"] .benefit,
+.page[data-public-visual-landing="reiki-referral"] .steps>li,
+.page[data-public-visual-landing="reiki-referral"] .faq,
+.page[data-public-visual-landing="reiki-referral"] .bottomCta,
+.page[data-public-visual-landing="reiki-referral"] .finalCapture{
+  display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  align-items:stretch;gap:0;overflow:hidden;
+  min-height:min(610px,calc(100svh - 155px));
+  padding:0;margin:12px 0;border:1px solid #d4e8e0;
+  border-radius:21px;background:#fffcf7;
+  box-shadow:0 8px 30px rgba(18,72,68,.04);
+}
+.page[data-public-visual-landing="reiki-referral"] .scenePhoto{
+  position:relative;min-width:0;min-height:100%;overflow:hidden;
+  background:#d6e6d8;isolation:isolate;
+}
+.page[data-public-visual-landing="reiki-referral"] .scenePhoto img{
+  object-fit:cover;object-position:center;
+}
+.page[data-public-visual-landing="reiki-referral"] .sceneWords{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:0;padding:clamp(19px,3.8vw,45px);
+}
+.page[data-public-visual-landing="reiki-referral"] .sceneWords .benefitIcon{
+  display:grid;place-items:center;flex:none;margin:0 0 10px;
+}
+.page[data-public-visual-landing="reiki-referral"] .sceneWords h3{
+  margin:0 0 13px;color:#1e5157;
+  font:400 clamp(29px,3.25vw,43px)/1.13 Georgia,serif;
+  letter-spacing:-.025em;text-wrap:balance;
+}
+.page[data-public-visual-landing="reiki-referral"] .sceneWords p{
+  margin:0;color:#4b696c;font:clamp(14px,1.3vw,17px)/1.55 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="reiki-referral"] .how{
+  display:block;padding:18px;background:#f2faf7;
+}
+.page[data-public-visual-landing="reiki-referral"] .how .steps{
+  display:grid;grid-template-columns:1fr;margin:13px 0 0;
+}
+.page[data-public-visual-landing="reiki-referral"] .steps li .sceneWords .stepNumber{
+  display:inline-grid;place-items:center;margin:0 0 12px;
+}
+.page[data-public-visual-landing="reiki-referral"] .faq{
+  display:grid;margin-top:20px;min-height:0;
+}
+.page[data-public-visual-landing="reiki-referral"] .faq .faqItems{width:100%}
+.page[data-public-visual-landing="reiki-referral"] .faq .sceneWords h2{margin:0 0 14px}
+.page[data-public-visual-landing="reiki-referral"] .faq .faqItems summary{
+  min-height:44px;padding:12px 6px;font-size:14px;
+}
+.page[data-public-visual-landing="reiki-referral"] .bottomCta{
+  color:#fff;background:#113f50;min-height:0;
+}
+.page[data-public-visual-landing="reiki-referral"] .bottomCta .sceneWords h2{color:#fff}
+.page[data-public-visual-landing="reiki-referral"] .bottomCta .sceneWords p{color:#e2f5f1}
+.page[data-public-visual-landing="reiki-referral"] .bottomCta .mainCta{
+  width:100%;max-width:430px;margin-top:15px;
+}
+.page[data-public-visual-landing="reiki-referral"] .finalCapture{
+  grid-template-columns:minmax(0,.70fr) minmax(0,1.30fr);min-height:0;
+}
+.page[data-public-visual-landing="reiki-referral"] .finalCapture :global([data-inline-offer-form]){
+  width:100%;max-width:100%;align-self:center;margin:0;padding:clamp(18px,3vw,32px);
+  border:0;border-radius:0;background:#fffdfa;
+}
+@media(max-width:700px){
+ .page[data-public-visual-landing="reiki-referral"] .benefit,
+ .page[data-public-visual-landing="reiki-referral"] .steps>li,
+ .page[data-public-visual-landing="reiki-referral"] .faq,
+ .page[data-public-visual-landing="reiki-referral"] .bottomCta,
+ .page[data-public-visual-landing="reiki-referral"] .finalCapture{
+   display:flex;flex-direction:column;
+   min-height:min(605px,calc(100svh - 154px));
+   margin:9px 0;border-radius:17px;
+ }
+ .page[data-public-visual-landing="reiki-referral"] .scenePhoto{
+   flex:none;min-height:0;height:clamp(155px,26svh,220px);width:100%;
+ }
+ .page[data-public-visual-landing="reiki-referral"] .sceneWords{
+   flex:1;padding:17px 18px;
+ }
+ .page[data-public-visual-landing="reiki-referral"] .sceneWords h3{
+   font-size:clamp(25px,7vw,35px);
+ }
+ .page[data-public-visual-landing="reiki-referral"] .sceneWords p{
+   font-size:13px;line-height:1.45;
+ }
+ .page[data-public-visual-landing="reiki-referral"] .faq,
+ .page[data-public-visual-landing="reiki-referral"] .finalCapture{min-height:0}
+ .page[data-public-visual-landing="reiki-referral"] .faq .scenePhoto{
+   height:clamp(105px,18svh,157px);
+ }
+ .page[data-public-visual-landing="reiki-referral"] .finalCapture .scenePhoto{
+   height:clamp(105px,18svh,157px);
+ }
+ .page[data-public-visual-landing="reiki-referral"] .finalCapture :global([data-inline-offer-form]){
+   align-self:stretch;padding:12px;
+ }
+}
+@media(max-width:350px){
+ .page[data-public-visual-landing="reiki-referral"] .scenePhoto{height:145px}
+ .page[data-public-visual-landing="reiki-referral"] .finalCapture .scenePhoto{height:100px}
+}

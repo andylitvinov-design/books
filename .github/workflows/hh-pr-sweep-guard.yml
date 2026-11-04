@@ -24,6 +24,7 @@ on:
       - 'tests/ci-vercel-nonruntime.test.mjs'
       - 'scripts/ci-heavy-impact.mjs'
       - 'tests/ci-heavy-impact.test.mjs'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - '.github/workflows/hh-app-r1.yml'
       - '.github/workflows/holistic-support-mandala.yml'
       - '.github/workflows/hh-free-review-live-mobile.yml'
@@ -49,12 +50,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          # checkout@v4 uses a blobless fetch for sparse-checkout. The CI
+          # guard needs source/contracts, not the repository's large media.
+          # Keep every directory read by the existing guard suites.
+          sparse-checkout: |
+            .github
+            app
+            components
+            data
+            docs
+            lib
+            scripts
+            supabase
+            tests
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install locked parser without lifecycle scripts
         run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-specialist-conditional-job-eligibility.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-specialist-conditional-job-eligibility.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs tests/ci-pr-selective-workflows.test.mjs
 
       # Repo-wide conflict inventory is an operational diagnostic, not source
       # acceptance. Run it on explicit manual sweep only. The PR path still

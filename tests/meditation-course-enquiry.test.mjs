@@ -27,10 +27,18 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.match(src,/const consentId=formId\+"-contact-consent"/);
   assert.match(src,/id=\{consentId\} name="contactConsent" type="checkbox"/);
   assert.match(src,/label htmlFor=\{consentId\}/);
-  // Let the native input and label activate once, including in iPhone WebKit.
+  // Preserve the native checkbox path for direct tapping and keyboard use.
+  // In iPhone WebKit, the visible label also handles a real user tap because
+  // WebKit can fail to activate the separate input under a fixed dock.
+  // The browser acceptance independently checks that label click checks once.
   assert.match(src,/onChange=\{event=>setConsent\(event\.target\.checked\)\}/);
-  assert.match(src,/<label htmlFor=\{consentId\}>/);
-  assert.doesNotMatch(src,/preventDefault\(\);setConsent\(value=>!value\)/);
+  // The native checkbox handles direct taps/keyboard; a full-width label
+  // prevents WebKit's dropped sibling-input activation and toggles once.
+  assert.match(src,/<label htmlFor=\{consentId\} onClick=\{event=>\{/);
+  assert.match(src,/event\.preventDefault\(\);\s*if\(busy\)return;\s*setConsent\(value=>!value\);/);
+  assert.doesNotMatch(src,/onClick=\{[^}]*setConsent\(true\)/);
+  assert.match(src,/checked=\{consent\}/);
+  assert.doesNotMatch(src,/setConsent\(true\)/);
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
   assert.match(src,/crypto.randomUUID/);

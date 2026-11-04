@@ -4,9 +4,9 @@ import test from "node:test";
 
 const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
-test("voice browser opens the compact studio advanced audio controls before using them",()=>{
-  assert.match(source,/data-video-advanced-toggle/);
-  assert.match(source,/advancedToggle\.click\(\)[\s\S]*?musicSettings\.waitFor\(\{state:"visible"/);
+test("voice browser opens the real Montage music controls before using them",()=>{
+  assert.match(source,/data-video-quick-control="editor"/);
+  assert.match(source,/montageSettings\.waitFor\(\{state:"visible"[\s\S]*?montageSettings\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?musicTab\.click\(\)/);
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
@@ -16,13 +16,14 @@ test("voice browser selects the visible montage workspace before recording",()=>
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
   const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
-  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav"',generate);
+  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
   const render=source.indexOf('[data-video-quick-control="video"]',remix);
   assert.ok(phrase>=0&&generate>phrase&&expected>generate&&visible>expected&&remix>visible&&render>remix,
     "inspect the visible attached audio in the canonical video stage, then record the remixed movie");
-  assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
+  assert.match(source,/await expect\(speech\)\.toBeVisible\(\)[\s\S]*?await speech\.textContent\(\)/,"transcript must be visible before reading its text");
+  assert.match(source,/await expect\(page\.locator\("\[data-video-live-audio\]"\)\)\.toContainText\(expectedFileName\)/,"soundtrack evidence must remain visible");
 });
 
 test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
@@ -41,8 +42,12 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'tracks.includes("audio")',
     'pcm.stdout.some(value=>value!==0)',
     '[data-video-narration-stale]',
-    'assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true)',
+    'await expect(page.locator("[data-video-quick-generate]")).toBeDisabled()',
+    'await expect(page.locator("[data-video-live-audio]")).toHaveCount(0)',
+    'await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0)',
   ])assert.ok(source.includes(assertion),assertion);
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(editor,/onInvalidate=\{\(\)=>setAttachedAudio\(current=>\s*current\?\.kind==="file"&&current\.narration\?null:current\)\}/);
 });
 
 test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/macOS",()=>{
@@ -77,4 +82,26 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   assert.ok(source.includes('assert.equal(process.platform,"darwin"'));
   assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
   for(const requirement of ['tracks.includes("video")','tracks.includes("audio")','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
+});
+
+test("voice acceptance verifies one workspace click after delayed hydration",()=>{
+  assert.match(source,/async function verifyWorkspaceHydration\(browser,locale\)/);
+  assert.match(source,/await hold/);
+  assert.match(source,/expect\.poll\(\(\)=>held/);
+  assert.match(source,/tabs\.nth\(i\)\)\.toBeDisabled/);
+  assert.match(source,/data-video-studio-hydrated","true"/);
+  assert.match(source,/await phrases\.click\(\)/);
+  assert.match(source,/toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await verifyWorkspaceHydration\(browser,locale\)/);
+});
+
+test("consent click diagnostics retain one genuine click and never capture contact values",()=>{
+  const practices=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
+  const block=practices.slice(practices.indexOf('const consentLabel=form.locator'),practices.indexOf('assert.equal(await consentBox.isChecked()'));
+  assert.equal((block.match(/await consentLabel\.click\(\)/g)||[]).length,1);
+  assert.match(block,/toBeChecked\(\{timeout:12000\}\)/);
+  assert.match(block,/toBeEnabled\(\{timeout:12000\}\)/);
+  assert.match(block,/trusted:event\.isTrusted/);
+  assert.match(block,/elementFromPoint/);
+  assert.doesNotMatch(block,/\.check\(|force:\s*true|\.value\b/);
 });
