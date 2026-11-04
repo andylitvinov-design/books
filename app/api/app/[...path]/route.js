@@ -258,9 +258,10 @@ async function handle(request, { params }) {
         recipientSlug = url.searchParams.get('recipientSlug')
       const linkMode = url.searchParams.get('link')
       if (linkMode !== null && linkMode !== '1') throw new AppError('INVALID_LINK_FLOW',400)
-      const linkedAccount = linkMode === '1'
+      const linkProof = linkMode === '1'
         ? verifyIdentityLinkProof(request.cookies.get(IDENTITY_LINK_COOKIE)?.value,config)
         : null
+      const linkedAccount=linkProof?.accountId??null
       if (linkMode === '1' && !linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
       if (linkedAccount && (await auth.verified()).id !== linkedAccount)
         throw new AppError('INVALID_LINK_FLOW',403)
@@ -389,6 +390,13 @@ async function handle(request, { params }) {
         })
         return auth.clear(finishAuth(denied))
       }
+      if (linkProof) {
+        const {data:linkedIdentities,error:identityError}=await auth.client.auth.getUserIdentities()
+        if (identityError || !linkedIdentities?.identities?.some(item=>item.provider===linkProof.provider))
+          return finishAuth(NextResponse.redirect(`${origin}/${locale}/app/settings?identity=failed`,{
+            status:303,headers:PRIVATE_HEADERS,
+          }))
+      }
       const account=await createAppRepository(config).ensureAccount(actor)
       // On first Google sign-in, the client must finish explicit account
       // consent before a private thread is created. Keep the chosen master's
@@ -443,7 +451,7 @@ async function handle(request, { params }) {
       if (error || !data?.url || new URL(data.url).origin !== config.supabaseUrl)
         throw new AppError('IDENTITY_LINK_UNAVAILABLE',503)
       const response=json({redirectUrl:data.url})
-      response.cookies.set(IDENTITY_LINK_COOKIE,createIdentityLinkProof(actor.id,config),{
+      response.cookies.set(IDENTITY_LINK_COOKIE,createIdentityLinkProof(actor.id,selected.provider,config),{
         path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
       })
       return response
