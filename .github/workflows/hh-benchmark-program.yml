@@ -5,7 +5,7 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - 'tests/ci-pr-selective-workflows.test.mjs'
+      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - "docs/benchmarking/**"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"
