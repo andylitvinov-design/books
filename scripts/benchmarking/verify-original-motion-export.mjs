@@ -12,7 +12,7 @@ assert.ok(['chromium', 'webkit'].includes(engine));
 const { [engine]: browserType } = await import(pathToFileURL(process.env.HH_LIVE_VIDEO_PLAYWRIGHT).href);
 const ids = [1, 2, 3, 4].map(i => `motion-goals-money-goal-achievement-v${i}`);
 const dir = await mkdtemp(path.join(os.tmpdir(), 'hh-original-motion-'));
-const movie = path.join(dir, 'export.mp4');
+let movie = path.join(dir, 'export.mp4');
 const browser = await browserType.launch({ headless: engine !== 'webkit' });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, acceptDownloads: true, serviceWorkers: 'block' });
 await context.route('**/*', route => {
@@ -56,15 +56,22 @@ try {
   await generate.click();
   const save = page.locator('[data-mandala-video-download]');
   await save.waitFor({ state: 'visible', timeout: 150000 });
-  const download = page.waitForEvent('download', { timeout: 30000 });
+  const pendingDownload = page.waitForEvent('download', { timeout: 30000 });
   await save.click();
-  await (await download).saveAs(movie);
+  const downloaded = await pendingDownload;
+  const name = downloaded.suggestedFilename();
+  assert.match(name,/\.(mp4|webm)$/i,'download must disclose its true MP4/WebM container');
+  movie=path.join(dir,/\.webm$/i.test(name)?'export.webm':'export.mp4');
+  await downloaded.saveAs(movie);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));
   const video = probe.streams.find(s => s.codec_type === 'video');
   assert.ok(video && video.width === 1280 && video.height === 720);
-  assert.ok(probe.streams.some(s => s.codec_type === 'audio'));
+  assert.ok(movie.endsWith('.mp4')?video.codec_name==='h264':/^(vp8|vp9)$/.test(video.codec_name), 'verified encoded video codec');
+  const audioStream=probe.streams.find(s=>s.codec_type==='audio');
+  assert.ok(audioStream,'selected music must remain in downloaded movie');
+  assert.ok(movie.endsWith('.mp4')?audioStream.codec_name==='aac':audioStream.codec_name==='opus','verified audio codec');
   assert.ok(Number(probe.format.duration) >= 18 && Number(probe.format.duration) <= 23);
   const frame = (file, time) => execFileSync('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', 'scale=64:36:force_original_aspect_ratio=increase,crop=64:36', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 100000 });
   const corr = (a, b) => {

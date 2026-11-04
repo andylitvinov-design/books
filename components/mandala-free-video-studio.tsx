@@ -2377,9 +2377,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         typeof AudioEncoder.isConfigSupported==="function"&&typeof OfflineAudioContext!=="undefined"));
     const procedural=creationMode==="generated"&&Boolean(currentFreeVideoPlan);
     const explicitAvcMime=attachedAudio?'video/mp4;codecs="avc1.42E01E,mp4a.40.2"':"video/mp4;codecs=avc1.42E01E";
-    const nativeAvc=typeof MediaRecorder!=="undefined"&&typeof MediaRecorder.isTypeSupported==="function"&&
-      MediaRecorder.isTypeSupported(explicitAvcMime);
-    const proceduralRoute=proceduralMp4Route({nativeAvc,webCodecs:hasWebCodecs});
+    const explicitWebmMime=attachedAudio?'video/webm;codecs="vp8,opus"':"video/webm;codecs=vp8";
+    const hasRecorderMimes=typeof MediaRecorder!=="undefined"&&typeof MediaRecorder.isTypeSupported==="function";
+    const nativeAvc=hasRecorderMimes&&MediaRecorder.isTypeSupported(explicitAvcMime);
+    const nativeWebm=hasRecorderMimes&&MediaRecorder.isTypeSupported(explicitWebmMime);
+    // Prefer the real native VP8/Opus recording on Chromium when AVC/AAC
+    // recording is absent. iPhone Safari retains its WebCodecs MP4 path.
+    const proceduralRoute=proceduralMp4Route({nativeAvc,webCodecs:hasWebCodecs,nativeWebm,preferNativeWebm:!safariWebKit});
     const useWebCodecsMp4=hasWebCodecs&&(safariWebKit||(procedural&&proceduralRoute==="webcodecs"));
     if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
       setResult(null);setPlaybackStatus("checking");
@@ -2628,7 +2632,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (musicSession) stream.addTrack(musicSession.track);
 
       const mimeTypes = procedural
-        ? recordingMimes(Boolean(musicSession),false,true).filter(mime=>mime===explicitAvcMime)
+        ? proceduralRoute==="native-webm"
+          ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime===explicitWebmMime)
+          : recordingMimes(Boolean(musicSession),false,true).filter(mime=>mime===explicitAvcMime)
         : recordingMimes(Boolean(musicSession), preferWebm, forceMp4ForRetry);
       let mimeType = "";
       let recorder: MediaRecorder | null = null;
