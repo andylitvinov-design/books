@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from "react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 
 type Props = {
@@ -17,27 +17,159 @@ type Props = {
 export function TantraVideoTestimonials(props: Props) {
   const [youtubeSession, setYoutubeSession] = useState(0);
 
-  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean }>());
+  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; restoreMutedOnOpen?: boolean; restartUsed?: boolean }>());
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
-    video.pause();
+    // A native <details> close can notify us at both click-capture and toggle.
+    // Do not call pause() again on an already paused player: WebKit/GStreamer
+    // can demote its decoder after a redundant pause, leaving a later play()
+    // reporting "playing" with no advancing time or decoded frames.
+    if (!video.paused) video.pause();
     // Capture after pausing and before hiding. Repeated close notifications must
     // not replace the retained position with a backend's transient reset value.
-    if (retained.current.has(video)) return;
+    const existing = retained.current.get(video);
+    if (existing?.awaitingFrame) {
+      existing.awaitingFrame = false;
+      existing.generation = (existing.generation ?? 0) + 1;
+      existing.confirmedFrames = 0;
+    }
+    // WebKitGTK/GStreamer may suspend muted <video> when its <details>
+    // becomes invisible. Preserve the user-visible mute choice while hiding:
+    // pause FIRST, then unmute only the paused, same-source hidden player.
+    // Restore the original mute setting after the disclosure is visible.
+    const preserveDecoder = (saved: { source: string; restoreMutedOnOpen?: boolean }) => {
+      if (video.paused && video.muted === true && video.currentSrc === saved.source) {
+        saved.restoreMutedOnOpen = true;
+        video.muted = false;
+      }
+    };
+    if (existing) {
+      preserveDecoder(existing);
+      return;
+    }
     if (video.currentSrc && Number.isFinite(video.currentTime) && video.currentTime > 0
       && !video.ended && !video.seeking) {
-      retained.current.set(video, { source: video.currentSrc, time: video.currentTime, reconstructing: false });
+      const saved = { source: video.currentSrc, time: video.currentTime, reconstructing: false,
+        restoreMutedOnOpen: false };
+      retained.current.set(video, saved);
+      preserveDecoder(saved);
+    }
+  }
+  function onNativePlay(event: SyntheticEvent<HTMLVideoElement>) {
+    const video = event.currentTarget;
+    const saved = retained.current.get(video);
+    if (!saved || saved.awaitingFrame) return;
+    // Native disclosure opening never seeks or plays. User play/playing is
+    // the sole trigger for checking a retained, same-source decoder position.
+    if (video.paused || video.seeking || video.ended ||
+        video.currentSrc !== saved.source ||
+        !Number.isFinite(saved.time) || saved.time <= 0 ||
+        !Number.isFinite(video.duration) || saved.time >= video.duration ||
+        typeof video.requestVideoFrameCallback !== 'function') {
+      retained.current.delete(video);
+      return;
+    }
+    saved.awaitingFrame = true;
+    saved.confirmedFrames = 0;
+    const generation = saved.generation ?? 0;
+    const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
+      if (retained.current.get(video) !== saved ||
+          (saved.generation ?? 0) !== generation) return;
+      if (video.paused || video.seeking || video.ended ||
+          video.isConnected === false || video.currentSrc !== saved.source ||
+          !Number.isFinite(metadata.mediaTime)) {
+        retained.current.delete(video);
+        return;
+      }
+      if (metadata.mediaTime < saved.time - 0.25) {
+        // A hidden WebKit/GStreamer decoder can restart at frame zero.
+        // Its first post-reopen presented frame is still PREROLL: seeking at
+        // that instant was observed to leave WebKit seeking forever (ES390).
+        // Require several actual advancing decoded frames from the new
+        // pipeline before one same-source position restoration. No timer,
+        // autoplay, reload, blind retries or fake clock progress.
+        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+        if (saved.confirmedFrames < 4 || metadata.mediaTime < 0.5) {
+          try { video.requestVideoFrameCallback(onFrame); }
+          catch { retained.current.delete(video); }
+          return;
+        }
+        retained.current.delete(video);
+        try { video.currentTime = saved.time; } catch {
+          // Refused native seek leaves native controls available.
+        }
+        return;
+      }
+      saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+      if (saved.confirmedFrames >= 2) {
+        retained.current.delete(video); // native resume is genuinely healthy
+      } else {
+        try { video.requestVideoFrameCallback(onFrame); }
+        catch { retained.current.delete(video); }
+      }
+    };
+    try { video.requestVideoFrameCallback(onFrame); }
+    catch { retained.current.delete(video); }
+    // WebKit/GStreamer may report playing without a new decoded frame after
+    // hydration + disclosure reopen. A blind BACKWARD seek is unsafe (real
+    // artifact 13277168340: seeking without seeked). If a genuine user Play on
+    // a previously-muted, same-source ready decoder stalls for 1.7 seconds,
+    // The same-node pause/play already failed in real EN390 WebKit: GStreamer
+    // remained READY despite DOM 'playing'. Only after a genuine muted user
+    // Play stalls do we reset the decoder resource once, with fresh same-source
+    // metadata. No autoplay on disclosure open, backward suspended seek or
+    // unmuted retry. CI still proves real time and presented-frame advancement.
+    const windowView=video.ownerDocument?.defaultView;
+    if(windowView && typeof windowView.requestAnimationFrame==="function") {
+      const startedTime=video.currentTime;
+      let startAt:number|null=null;
+      const observeClock=(now:number)=>{
+        if(retained.current.get(video)!==saved || (saved.generation??0)!==generation ||
+          video.paused || video.seeking || video.ended || video.isConnected===false ||
+          video.currentSrc!==saved.source)return;
+        if(startAt===null)startAt=now;
+        if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
+        if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
+        if (saved.restartUsed || video.muted !== true || video.readyState < 2) {
+          retained.current.delete(video);
+          return;
+        }
+        saved.restartUsed = true; // one fresh resource selection per user Play
+        saved.awaitingFrame = false;
+        saved.confirmedFrames = 0;
+        saved.generation = (saved.generation ?? 0) + 1; // retire old observer
+        saved.reconstructing = false;
+        try {
+          video.pause();
+          video.load(); // same native source, newly selected decoder pipeline
+        } catch {
+          retained.current.delete(video);
+        }
+      };
+      windowView.requestAnimationFrame(observeClock);
     }
   }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
-    // Observation only: a newer user play/seek or control interaction always wins.
+    // Real user native seeking always overrides a pending frame recovery.
     retained.current.delete(event.currentTarget);
+  }
+  function onNativeKeyDown(event: KeyboardEvent<HTMLVideoElement>) {
+    // Keyboard seek overrides saved state; Space/Enter play keeps it.
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+      discardRecovery(event);
   }
   function onNativeLoadStart(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
     const saved = retained.current.get(video);
     if (!saved) return;
+    // A one-time explicit-user stalled recovery owns the load; its decoder
+    // must not get the regular paused-position seek before fresh frames.
+    if (saved.restartUsed) {
+      if (video.currentSrc && video.currentSrc !== saved.source)
+        retained.current.delete(video);
+      return;
+    }
     // Resource selection can temporarily clear currentSrc. Defer identity proof
     // until metadata, but reject a known different source immediately.
     if (!video.paused || (video.currentSrc && video.currentSrc !== saved.source)) retained.current.delete(video);
@@ -46,7 +178,26 @@ export function TantraVideoTestimonials(props: Props) {
   function onNativeMetadata(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
     const saved = retained.current.get(video);
-    if (!saved?.reconstructing) return;
+    if (!saved) return;
+    if (saved.restartUsed) {
+      // No autoplay from disclosure opening or background source changes.
+      if (!video.paused || video.seeking || video.ended || video.muted !== true ||
+          video.isConnected === false || video.currentSrc !== saved.source ||
+          video.closest("details")?.open !== true ||
+          !Number.isFinite(saved.time) || saved.time <= 0 ||
+          !Number.isFinite(video.duration) || saved.time >= video.duration) {
+        retained.current.delete(video);
+        return;
+      }
+      saved.reconstructing = false;
+      try {
+        void video.play().catch(() => { retained.current.delete(video); });
+      } catch {
+        retained.current.delete(video);
+      }
+      return;
+    }
+    if (!saved.reconstructing) return;
     retained.current.delete(video); // At most one recovery per captured close.
     if (!video.paused || video.seeking || video.ended || video.currentSrc !== saved.source
       || !Number.isFinite(saved.time) || saved.time <= 0
@@ -73,7 +224,18 @@ export function TantraVideoTestimonials(props: Props) {
 
   function onToggle(event: SyntheticEvent<HTMLDetailsElement>) {
     const details = event.currentTarget;
-    if (details.open) return;
+    if (details.open) {
+      // The user sees the same mute selection on reopening; never autoplay,
+      // seek, load, or replace an existing native media element.
+      details.querySelectorAll("video").forEach(video => {
+        const saved = retained.current.get(video);
+        if (saved?.restoreMutedOnOpen && video.currentSrc === saved.source && video.paused) {
+          video.muted = true;
+          saved.restoreMutedOnOpen = false;
+        }
+      });
+      return;
+    }
     // Native controls can open/play before hydration. The observed DOM state,
     // not initiallyOpen or a missed earlier toggle, decides whether to stop.
     // Keep native playback positions. Reset only the YouTube component, removing
@@ -91,8 +253,8 @@ export function TantraVideoTestimonials(props: Props) {
           <figure className="tantra-review-video" key={video.src}>
             <video controls playsInline preload="none" poster={video.poster ?? undefined}
               onLoadStart={onNativeLoadStart} onLoadedMetadata={onNativeMetadata}
-              onPlay={discardRecovery} onSeeking={discardRecovery}
-              onPointerDown={discardRecovery} onKeyDown={discardRecovery}>
+              onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
+              onKeyDown={onNativeKeyDown}>
               <source src={video.src} type={video.type} />
             </video>
             <figcaption>{props.nativeLabel} {i + 1}{props.nativeSuffix}</figcaption>
