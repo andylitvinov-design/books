@@ -72,6 +72,19 @@ test('coaching form is one page, text inputs plus up to eight user questions, no
   for (const locale of ['en', 'ru', 'es']) assert.match(form, new RegExp('^  ' + locale + ': \\{', 'm'))
 })
 
+test('public CRM questionnaire survives unrelated account sign-out', () => {
+  // Only the explicit ?private=1 personal-copy flow has an account session
+  // to invalidate. A broadcast from another tab must not erase guest answers.
+  const start = form.indexOf('const onSignOut = (event: MessageEvent) => {')
+  const end = form.indexOf('let channel: BroadcastChannel', start)
+  assert.ok(start >= 0 && end > start)
+  const handler = form.slice(start, end)
+  assert.match(handler, /if \(privateCopyRequested && event\.data === "signed-out"\)/)
+  assert.doesNotMatch(handler, /if \(event\.data === "signed-out"\)/)
+  assert.match(handler, /setDraft\(blank\(\)\)/)
+  assert.match(form, /if \(privateCopyRequested\) appFetch\("coaching-intake"\)/)
+})
+
 test('compact numbered rows: one editable answer per author question without multiple prompts in one field', () => {
   assert.match(form, /<ol className={styles.fields} start={COACHING_FIELDS.findIndex/)
   assert.match(form, /<li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>/)

@@ -296,7 +296,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     });
     else setAuth("guest");
     const onSignOut = (event: MessageEvent) => {
-      if (event.data === "signed-out") {
+      if (privateCopyRequested && event.data === "signed-out") {
         setSaved(null); setAuth("guest"); setDraft(blank()); setConsent(false); setDirty(false);
         setCollision(false); setNotice(""); setError("");
       }
