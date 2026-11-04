@@ -51,8 +51,16 @@ function verifiedAggregatePolicyHold(checks){
 
 }
 function trustedContext(context){
- if(context.repo?.owner+'/'+context.repo?.repo!==REPO||
-    context.ref!=='refs/heads/'+DEFAULT)return false;
+ if(context.repo?.owner+'/'+context.repo?.repo!==REPO)return false;
+ if(context.eventName==='pull_request_target'){
+  const pr=context.payload?.pull_request;
+  return context.ref==='refs/heads/'+PROD &&
+   ['opened','reopened','synchronize','ready_for_review'].includes(context.payload?.action) &&
+   Number.isSafeInteger(pr?.number)&&pr.number>0&&!pr.draft &&
+   pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&
+   SHA.test(pr.head?.sha||'');
+ }
+ if(context.ref!=='refs/heads/'+DEFAULT)return false;
  if(context.eventName==='workflow_run'){
   const w=context.payload?.workflow_run;
   const verifiedCoreFailure=w?.name==='HH PR core release gate' &&
@@ -171,6 +179,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
+ const conflictEvent=context.eventName==='pull_request_target';
+ if(conflictEvent&&(focusPrNumber===null||!focusPrSnapshot)){
+  summary.reason='CONFLICT_EVENT_REQUIRES_SNAPSHOT';return finish();
+ }
  const {owner,repo}=context.repo;
  const {createQuotaGuard,classify}=require('./ci-pr-api-quota.cjs');
  const quota=createQuotaGuard({maxCalls:MAX_API,minRemaining:MIN_RATE,
@@ -191,21 +203,28 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   if(focusPrNumber!==null){
    // The same trusted Core callback first diagnoses this PR in Watchdog.
    // Reuse its exact-HEAD snapshot; never list 150+ open PRs a second time.
-   const event=context.payload?.workflow_run;
-   if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
-      context.eventName!=='workflow_run'||!event?.head_branch)
+   const event=conflictEvent?context.payload?.pull_request:context.payload?.workflow_run;
+   const eventBranch=conflictEvent?event?.head?.ref:event?.head_branch;
+   if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||!eventBranch||
+      (conflictEvent?event?.number!==focusPrNumber:
+       context.eventName!=='workflow_run'))
     throw Error('EVENT_FOCUS_UNVERIFIED');
    if(focusPrSnapshot){
     if(focusPrSnapshot.number!==focusPrNumber||
-       focusPrSnapshot.head?.ref!==event.head_branch||
+       focusPrSnapshot.head?.ref!==eventBranch||
        focusPrSnapshot.base?.ref!==PROD||
        focusPrSnapshot.head?.repo?.full_name!==REPO)
      throw Error('EVENT_SNAPSHOT_MISMATCH');
+    if(conflictEvent&&(
+      focusPrSnapshot.head?.sha!==event.head?.sha||
+      focusPrSnapshot.mergeable!==false||
+      focusPrSnapshot.mergeable_state!=='dirty'))
+     throw Error('CONFLICT_SNAPSHOT_NOT_VERIFIED');
     prs=[focusPrSnapshot];
    }else{
     // Older producer: bounded branch-scoped query, never global pagination.
     const res=await limited('event-exact-branch',()=>github.rest.pulls.list({
-      owner,repo,state:'open',head:owner+':'+event.head_branch,per_page:2
+      owner,repo,state:'open',head:owner+':'+eventBranch,per_page:2
     }));
     if(!Array.isArray(res?.data)||res.data.length!==1||
        res.data[0].number!==focusPrNumber)throw Error('EVENT_BRANCH_AMBIGUOUS');
@@ -236,17 +255,27 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Watchdog verifies the corresponding merge commit's second parent.
  let focusedPR=null;
  if(focusPrNumber!==null){
-  const event=context.payload?.workflow_run;
   const selected=production.filter(pr=>pr.number===focusPrNumber && validPR(pr));
-  const associated=event?.pull_requests;
-  if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
-     context.eventName!=='workflow_run'||event?.name!=='HH PR core release gate'||
-     event?.status!=='completed'||event?.event!=='pull_request'||
-     !['failure','timed_out','startup_failure'].includes(event?.conclusion)||
-     selected.length!==1||event.head_branch!==selected[0].head?.ref||
-     (Array.isArray(associated)&&associated.length>0&&
-      !associated.some(link=>link.number===focusPrNumber))){
-   summary.reason='EVENT_FOCUS_UNVERIFIED';return finish();
+  if(conflictEvent){
+   const event=context.payload?.pull_request;
+   if(selected.length!==1||selected[0].head?.sha!==event?.head?.sha||
+      selected[0].head?.ref!==event?.head?.ref||
+      selected[0].mergeable!==false||
+      selected[0].mergeable_state!=='dirty'||
+      laneOf(selected[0])!=='conflict'){
+    summary.reason='CONFLICT_EVENT_FOCUS_UNVERIFIED';return finish();
+   }
+  }else{
+   const event=context.payload?.workflow_run,associated=event?.pull_requests;
+   if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
+      context.eventName!=='workflow_run'||event?.name!=='HH PR core release gate'||
+      event?.status!=='completed'||event?.event!=='pull_request'||
+      !['failure','timed_out','startup_failure'].includes(event?.conclusion)||
+      selected.length!==1||event.head_branch!==selected[0].head?.ref||
+      (Array.isArray(associated)&&associated.length>0&&
+       !associated.some(link=>link.number===focusPrNumber))){
+    summary.reason='EVENT_FOCUS_UNVERIFIED';return finish();
+   }
   }
   focusedPR=selected[0];
   summary.legacyCiRecovery={status:'SKIPPED_FOCUSED_EVENT'};
@@ -305,6 +334,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
+  if(conflictEvent&&task.lane!=='conflict'){
+   blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
+  }
   const worker=WORKFLOWS[task.lane];
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
