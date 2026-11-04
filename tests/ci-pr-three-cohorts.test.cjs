@@ -67,3 +67,20 @@ test('unavailable Core workflow inventory does not abort independently available
  assert.equal(r.source.sampled_timeline_prs[0],16);
  assert.equal(r.intervals.find(x=>x.phase==='merge_conflict')?.pr,16);
 });
+test('Core history uses the verified numeric workflow ID, not filename-only lookup on control default branch',async()=>{
+ const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ assert.equal(WORKFLOW_ID,400848212);
+ const now=Date.parse('2026-11-04T13:30:00Z');
+ const p={...pr(88),head:{ref:'feature-88',sha:'a'.repeat(40)},
+   base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ let seen=[];
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const gh={rest:{
+  pulls:{list:async args=>ret(args.state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async arg=>{seen.push(arg.workflow_id);return ret({total_count:0,workflow_runs:[]})}},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const output=await collect({github:gh,now,maxRequests:60,minRemaining:150});
+ assert.equal(output.source.closed_complete,true);
+ assert.deepEqual(seen,[WORKFLOW_ID,WORKFLOW_ID,WORKFLOW_ID]);
+});
