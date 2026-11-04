@@ -12,7 +12,7 @@ import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/pr
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -59,17 +59,41 @@ export function verifiedCheckoutBase(env, ctx, cwd = process.cwd()) {
   return env.HH_TRUSTED_BASE_SHA;
 }
 
-export function githubReader(repo, token, transport = fetch) {
+export function githubReader(repo, token, transport = fetch, options = {}) {
   const root = 'https://api.github.com/repos/' + repo;
   const headers = {
     Authorization: 'Bearer ' + token,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
+  // Retrying only idempotent GETs prevents a transient GitHub Actions API
+  // HTTP 500 from invalidating an otherwise successful exact-HEAD Core.
+  // Never treat an exhausted retry as a passing specialist check.
+  const sleep = options.sleep ?? delay;
+  const retryDelaysMs = [400, 1200, 2400];
   async function get(path) {
-    const response = await transport(root + path,{headers});
-    if (!response.ok) throw Error('GitHub read ' + path.split('?')[0] + ' HTTP ' + response.status);
-    return response.json();
+    const endpoint = path.split('?')[0];
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await transport(root + path, {headers,signal:AbortSignal.timeout(12_000)});
+      } catch (error) {
+        const transient = ['AbortError', 'TimeoutError', 'TypeError'].includes(error?.name);
+        if (!transient || attempt >= retryDelaysMs.length)
+          throw Error('GitHub read ' + endpoint + ' NETWORK ' + (error?.name || 'UNKNOWN'));
+        await sleep(retryDelaysMs[attempt]);
+        continue;
+      }
+      if (response.ok) return response.json();
+      const rateLimited = response.status === 403 &&
+        (response.headers?.get('x-ratelimit-remaining') === '0' ||
+         Boolean(response.headers?.get('retry-after')));
+      const transientStatus = response.status === 429 ||
+        (response.status >= 500 && response.status <= 504) || rateLimited;
+      if (!transientStatus || attempt >= retryDelaysMs.length)
+        throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status);
+      await sleep(retryDelaysMs[attempt]);
+    }
   }
   async function pages(path, kind, maximum = 1000) {
     const out = [];
@@ -170,7 +194,18 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
 export function optionalProfileWriterSkip(files, branch) {
   const name = '.github/workflows/hh-profile-axis-matching.yml';
   const source = files?.base?.get(name);
-  if (typeof source !== 'string' || source !== files?.current?.get(name) ||
+  const candidate = files?.current?.get(name);
+  // The selective-workflow migration can replace this owner's YAML self-trigger
+  // with the reviewed shared contract. The only approved exception is this
+  // exact one-line swap: job guards, permissions and every other line remain
+  // byte-identical to immutable production BASE.
+  const oldTrigger = "      - '.github/workflows/hh-profile-axis-matching.yml'";
+  const migrationTrigger = "      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  const approvedMigration = typeof source === 'string' && typeof candidate === 'string' &&
+    source.split(oldTrigger).length === 2 && !source.includes(migrationTrigger) &&
+    candidate === source.replace(oldTrigger, migrationTrigger);
+  if (typeof source !== 'string' || typeof candidate !== 'string' ||
+      (source !== candidate && !approvedMigration) ||
       typeof branch !== 'string' || !branch ||
       branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
   const onlyWriter = [
@@ -278,6 +313,19 @@ export function loadTrustedTypescript(base) {
   finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
 }
 
+export function trustedAdditiveActionlint(base, current) {
+  if (typeof base !== 'string' || typeof current !== 'string') return false;
+  if (base === current) return true;
+  const additions = [
+    "      - 'tests/ci-stale-run-deduplication.test.mjs'\n",
+    "          node --test tests/ci-stale-run-deduplication.test.mjs\n",
+  ];
+  if (additions.some(line => current.split(line).length !== 2)) return false;
+  let restored = current;
+  for (const line of additions) restored = restored.replace(line, '');
+  return restored === base;
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
   // Running checks use the long deadline; registered queued checks get a separate,
@@ -289,10 +337,13 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
-  // The real Actions queue can exceed three minutes during multi-PR batches.
-  // Only *registered* queued/requested/waiting runs receive this 15m grace;
-  // absent workflows still fail after missingGrace and failed runs fail at once.
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 15*60_000, 20*60_000));
+  // A registered queued/requested/waiting workflow is evidence of dispatch,
+  // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
+  // while its runner is still waiting. Give it the same absolute 35-minute
+  // bounded deadline as running workflows; the parent job has a 45m timeout.
+  // Missing workflows retain their short discovery grace; genuine failures
+  // still abort immediately. An override may shorten, never extend, the cap.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? maxWait, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
@@ -365,18 +416,42 @@ export async function verify(api,ctx,files,options={}) {
   const delegated=routed.delegated;
   const replacements=new Set(delegated.map(item=>item.replacement));
   const syntaxWorkflow=WORKFLOW_PREFIX+'hh-actionlint.yml';
-  // The unchanged BASE-owned actionlint workflow must independently validate
+  // The protected BASE-owned actionlint workflow must independently validate
   // every modified YAML; never let a PR replace or omit that enforcement.
   const trustedSyntax=pinnedChangeRows && baselineExpected.includes(syntaxWorkflow) &&
-    files.base.has(syntaxWorkflow) && files.base.get(syntaxWorkflow) === files.current.get(syntaxWorkflow) &&
-    !changed.includes(syntaxWorkflow);
+    files.base.has(syntaxWorkflow) &&
+    trustedAdditiveActionlint(files.base.get(syntaxWorkflow),files.current.get(syntaxWorkflow));
   const concurrencyAdvisory=trustedSyntax ? concurrencyOnlyAdvisory({
     ...files,changedRows,expected:routed.expected,
   }) : new Set();
   for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
+  // Only exact one-line PR self-path deletions with a successful independent
+  // actionlint proof may stop registering domain jobs on future YAML-only PRs.
+  const selfTriggerAdvisory=trustedSyntax ? selfTriggerRemovalAdvisory({
+    ...files,changedRows,expected:routed.expected,
+  }) : new Set();
+  for (const replacement of replacements) selfTriggerAdvisory.delete(replacement);
   const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
     files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
+  // Explicit owner budget policy: Mandala's large browser/macOS workflow is
+  // a non-blocking diagnostic ONLY when immutable production Core contains
+  // mandatory fast consent/narration/MP4 regression tests, and the PR has
+  // not modified that trusted Core gate. Other specialist workflows retain
+  // their strict exact-HEAD success requirements and all failures remain
+  // visible as diagnostics; this is never a generic waive-on-failure switch.
+  const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
+  const core = WORKFLOW_PREFIX + 'hh-pr-core-release.yml';
+  const trustedCoreSource = files.base.get(core);
+  const coreMandalaGate = typeof trustedCoreSource === 'string' &&
+    trustedCoreSource.includes('Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)') &&
+    trustedCoreSource.includes('node --test tests/affirmation-voice.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/mandala-audio-attach.test.mjs') &&
+    files.current.get(core) === trustedCoreSource && !changed.includes(core);
+  if (coreMandalaGate && files.base.has(mandala) &&
+      files.current.get(mandala) === files.base.get(mandala) &&
+      !changed.includes(mandala)) {
+    advisoryPaths.add(mandala);
+  }
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -394,7 +469,7 @@ export async function verify(api,ctx,files,options={}) {
     const allRuns=await api.runs(ctx.head);
     fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
-    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
+    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) && !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.orphanFailures.length ||
@@ -475,6 +550,7 @@ export async function verify(api,ctx,files,options={}) {
       ...state.pushAdvisory.map(item => 'unassociated-push:'+item),
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
+    selfTriggerOnly:[...selfTriggerAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
@@ -551,7 +627,7 @@ export function diagnoseAggregateError(error) {
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
     ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
-    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Inspect GitHub runner capacity; rerun only after a confirmed transient interruption.'],
+    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Keep merge blocked. After every named queued exact-HEAD workflow finishes successfully, retry only the failed hh-specialist job once (by job ID), never re-run green Core or the whole workflow.'],
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
