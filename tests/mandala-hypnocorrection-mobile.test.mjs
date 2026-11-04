@@ -134,15 +134,16 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);
 });
 
-test("effects moves the single original tab rail above Wave on mobile only",()=>{
+test("Effects shares the one compact in-flow tab rail and preserves the original video",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
-  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf('id="video-hero"'),
-    "six workspaces now precede the same original video hero; Effects still portals its rail");
-  assert.match(studio,/activeWorkspace==="effects"&&mobile\.matches/);
-  assert.match(studio,/data-video-hypno-nav-slot/);
-  assert.match(studio,/createPortal\(nav,effectsNavTarget\)/);
-  assert.match(css,/\.studio\[data-active-workspace="effects"\] \.quickBuilder>\.hypnoNavSlot/);
-  assert.match(css,/\.hypnoNavSlot\{display:none\}/);
+  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
+  assert.ok(studio.indexOf("data-video-live-stage")<studio.indexOf('id="video-hero"'));
+  assert.doesNotMatch(studio,/createPortal|effectsNavTarget|data-video-hypno-nav-slot/,
+    "Hypno cannot move tabs or place the Wave introduction ahead of the player");
+  const mobile=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
+  assert.match(mobile,/data-active-workspace="effects"/);
+  assert.match(mobile,/hypnoIntroSlot\s*\{\s*order:3!important/);
+  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
