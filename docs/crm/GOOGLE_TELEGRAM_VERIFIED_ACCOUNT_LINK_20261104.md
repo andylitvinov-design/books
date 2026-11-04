@@ -14,3 +14,15 @@ Clients keep their existing Google Auth and protected website chats. Telegram co
 No new bot, cron, schedule, paid API, WhatsApp broadcast, AI, Supabase project or subscription. Test original website/CRM channels, RLS, role separation, wrong account, bogus IDs, /stop, unlink, duplicate pairing, private storage, and EN/RU/ES layout.
 
 Required gates: source tests, exact-HEAD Core and Specialist, DB advisor, production merge, Vercel READY serving SHA, and a separate two-account real provider smoke. Synthetic tests or a READY deployment alone do NOT prove actual Telegram delivery.
+
+## Safe rollout when production migration is not installed
+
+The optional `crm_google_telegram_links` relation and `crm_google_link_verified_self`
+function may be absent while Vercel is deploying the code. Every owner inbox
+and client notification-settings read must continue working: identity shows
+unlinked/unavailable (never verified) until BOTH database objects exist.
+Link actions return `CRM_LINK_NOT_READY` rather than failing an unrelated
+conversation; unlink remains safe if the optional feature has not been installed.
+The additive security-sensitive schema must pass PostgreSQL/RLS, role, trigger
+and two-user consent tests before activation. Do not bypass the migration gate
+or treat absent schema as a reason to revoke an existing verified notification.
