@@ -1,6 +1,6 @@
-import type {Metadata} from "next";
+import type {Metadata, Viewport} from "next";
 import Link from "next/link";
-import {ArrowLeft, BookOpen, Clapperboard} from "lucide-react";
+import {ArrowLeft, BookOpen, Play} from "lucide-react";
 import {notFound} from "next/navigation";
 import {VideoDiscovery} from "@/components/video-discovery";
 import {buildPublicVideoDiscoveryItems} from "@/components/library-hub";
@@ -10,6 +10,7 @@ import {isPublicLocale} from "@/data/academy/catalog";
 import {metadataBaseFor} from "@/data/site-metadata";
 import styles from "./mytube.module.css";
 
+export const viewport:Viewport={themeColor:"#0f0f0f"};
 export const dynamic="force-dynamic";
 export const revalidate=0;
 type Props={params:Promise<{locale:string}>};
@@ -42,7 +43,7 @@ export default async function MyTubePage({params}:Props){
         <ArrowLeft size={22} aria-hidden="true"/><span>{copy.back}</span>
       </Link>
       <div className={styles.brand} aria-label="MyTube">
-        <span className={styles.playMark}><Clapperboard size={21} aria-hidden="true"/></span>
+        <span className={styles.playMark}><Play size={17} fill="currentColor" aria-hidden="true"/></span>
         <strong>My<span>Tube</span></strong>
       </div>
       <Link href={"/"+locale+"/library?view=videos"} prefetch={false}

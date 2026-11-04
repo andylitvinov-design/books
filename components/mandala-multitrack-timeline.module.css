@@ -60,3 +60,78 @@
   .audioOffset{order:8;}
   .hint{order:9;}
 }
+
+
+/* Creative timeline: one horizontally scrollable clock shared by all lanes. */
+.zoomBar{display:flex;align-items:center;justify-content:flex-end;gap:7px;font-size:11px;color:#536e62}
+.zoomBar label{display:inline-flex;align-items:center;gap:5px;margin-right:auto;font-weight:750;min-height:40px}
+.zoomBar input{width:17px;height:17px;accent-color:#07866b}
+.zoomBar button{display:grid;place-items:center;min-width:38px;min-height:38px;border:1px solid #c7dcd1;
+  border-radius:10px;background:#f6fbf8;color:#195c4b}
+.zoomBar button:disabled{opacity:.35}
+.zoomBar output{min-width:25px;text-align:center;color:#245747;font-weight:800;font-variant-numeric:tabular-nums}
+.timelineViewport{min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
+  border:1px solid #e0e9e2;border-radius:10px;padding:4px 2px}
+.timelineViewport:focus-visible{outline:2px solid #07866b;outline-offset:2px}
+.timelineContent{display:grid;gap:7px;min-width:100%}
+.captionTools{display:flex;gap:8px;flex-wrap:wrap}
+.captionTools button{display:inline-flex;align-items:center;gap:5px;min-height:38px;
+  padding:6px 10px;border:1px solid #c2dacc;border-radius:10px;background:#fff;color:#17644e;
+  font-size:12px;font-weight:750}
+.captionTools button:disabled{opacity:.42;cursor:not-allowed}
+.sceneInspector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  padding:10px;border-radius:12px;background:#f5f8f4}
+.sceneInspector label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:750}
+.sceneInspector select{min-height:42px;width:100%;min-width:0;border:1px solid #c4dacf;border-radius:9px;
+  padding:6px;background:#fff;color:#183f35;font:inherit;font-size:13px}
+.sceneInspector select:disabled{opacity:.45}
+@media (max-width:759px){
+  .zoomBar{order:1}
+  .timelineViewport{order:2}
+  .sceneInspector{order:8}
+  .audioOffset{order:9}
+  .hint{order:10}
+}
+
+
+/* Compact native edit history controls, readable on narrow iPhones. */
+.transportActions button.historyAction{
+  width:34px;height:34px;min-width:34px;
+  border:1px solid #d4e2d9;border-radius:10px;
+  background:#f6faf6;color:#245748;
+}
+.transportActions button.historyAction:disabled{
+  opacity:.35;cursor:not-allowed;
+}
+@media(max-width:359px){
+  .transportActions{gap:4px}
+  .transportActions button.historyAction{width:30px;height:30px;min-width:30px}
+}
+
+
+/* CapCut-class caption styling uses the same safe on-canvas composition. */
+.captionAppearance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.captionAppearance label{display:grid;gap:4px;min-width:0;font-size:11px;font-weight:750}
+.captionAppearance select{display:block;width:100%;min-width:0;min-height:42px;border:1px solid #cadcd1;
+  border-radius:10px;background:#fffdfa;color:#21483c;font-size:12px;padding:5px}
+.captionAppearance select:disabled{opacity:.42}
+@media(max-width:359px){
+  .captionAppearance{grid-template-columns:1fr 1fr}
+  .captionAppearance label:last-child{grid-column:1/-1}
+}
+
+
+/* Clip-local camera keyframes. Optional inspector; no duplicate video player. */
+.motionInspector{display:grid;gap:8px;padding:10px;border:1px solid #d4e4dc;
+  background:#f7faf7;border-radius:12px;color:#225346}
+.motionInspector>label{display:grid;gap:5px;font-size:12px;font-weight:750}
+.motionInspector select{width:100%;min-height:42px;padding:6px 10px;
+  background:#fffdfa;color:#183e33;border:1px solid #c3dacd;border-radius:9px}
+.motionInspector details{display:grid;gap:7px}
+.motionInspector summary{cursor:pointer;min-height:36px;font-size:12px;font-weight:800;
+  color:#26614d;display:list-item;padding:7px 3px}
+.motionSliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.motionSliders label{display:grid;gap:6px;font-size:11px;min-width:0;font-weight:650}
+.motionSliders input{width:100%;min-height:30px;accent-color:#0b9577}
+@media(max-width:359px){.motionSliders{grid-template-columns:1fr}}
+@media(max-width:759px){.motionInspector{order:9}.audioOffset{order:10}.hint{order:11}}

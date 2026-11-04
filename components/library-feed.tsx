@@ -229,6 +229,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             )}
           </div>
           <div className={styles.details}>
+            {videoLayout !== "mytube" && (
             <p className={styles.meta}>
               <span className={styles.kind}>{copy[item.kind]}</span>
               {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
@@ -236,6 +237,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
               {item.author && <span className={styles.author}>{item.author}</span>}
               {item.sourceLabel && <span className={styles.author}>{item.sourceLabel}</span>}
             </p>
+            )}
             <h2>{canPlay ? (
               <button type="button" className={styles.titleButton} onClick={() => setPlayingId(playing ? null : item.id)}>
                 {item.title}
@@ -250,6 +252,15 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
                   (locale === "ru" ? "Из видеотеки" : locale === "es" ? "De la biblioteca" : "From the library")}</span>
                 {item.audioLanguage && <small>{item.audioLanguage.toUpperCase()}</small>}
               </p>
+            )}
+            {videoLayout === "mytube" && (
+            <p className={styles.meta}>
+              <span className={styles.kind}>{copy[item.kind]}</span>
+              {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
+              {date && <span>{date}</span>}
+              {item.author && <span className={styles.author}>{item.author}</span>}
+              {item.sourceLabel && <span className={styles.author}>{item.sourceLabel}</span>}
+            </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
             {videoLayout==="mytube"&&matchingTopic&&<p className={styles.meta}

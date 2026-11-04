@@ -2,11 +2,11 @@
   --ink: #24362e;
   --deep: #073f37;
   --green: #078960;
-  --cream: #faf7ef;
+  --cream: var(--hh-light-canvas);
   min-height: 100svh;
   overflow-x: clip;
   color: var(--ink);
-  background: radial-gradient(ellipse at 50% 0%, #d9e9dd 0%, transparent 31%), linear-gradient(180deg, #f1f5ee, #fffbf3 54%, #f8f2e8);
+  background: radial-gradient(ellipse at 50% 0%, #fff1da 0%, transparent 31%), linear-gradient(180deg, var(--hh-light-canvas), var(--hh-light-surface) 54%, #f8eddd);
   font-family: Arial, Helvetica, sans-serif;
 }
 .page *, .page *::before, .page *::after { box-sizing: border-box; }
@@ -61,7 +61,7 @@
 .detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
 .detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
 .detailedAnalysisLink:hover { background: #e1f0e3; }
-.recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid #cddfca; border-radius: 20px; background: #f8fbf4; box-shadow: 0 6px 18px #1c54251a; }
+.recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid var(--hh-light-border); border-radius: 20px; background: var(--hh-light-surface-soft); box-shadow: var(--hh-light-shadow); }
 .recommendationLead h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: #164c37; font-size: clamp(19px, 2.4vw, 24px); line-height: 1.25; }
 .recommendationLead p { margin: 6px 0 0; color: #496353; font-size: 15px; line-height: 1.45; }
 .recommendationGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px; }
@@ -247,7 +247,7 @@
   .recommendButton { font-size: 14px; }
 }
 @media (max-width: 640px) {
-  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .page { background: linear-gradient(165deg,#fff2e0,var(--hh-light-canvas) 55%,#f8eddd); }
   .container { width: calc(100% - 12px); padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
   .compactAppHeader { display: none; }
   .topGrid { display: grid; grid-template-areas: "assessment profile tools";
@@ -1097,11 +1097,11 @@
 .meditationCategoryCard > span { display: block; max-width: 100%; overflow: hidden;
   white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; }
 .meditationCategoryCard:hover { filter: brightness(.97); }
-.meditationCategoryCard[data-category="energy-confidence"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
-.meditationCategoryCard[data-category="goals-money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
-.meditationCategoryCard[data-category="love-relationships"] { background: #fff3f5; color: #d94d73; border-color: #f3c0cc; }
-.meditationCategoryCard[data-category="stress-anxiety"] { background: #f1faf3; color: #198466; border-color: #cfe6d4; }
-.meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #3b8199; border-color: #cde2e7; }
+.meditationCategoryCard[data-category="energy-confidence"] { background: #faf5ff; color: #6c38b3; border-color: #e1c6f4; }
+.meditationCategoryCard[data-category="goals-money"] { background: #fff9eb; color: #8c6000; border-color: #f0d99e; }
+.meditationCategoryCard[data-category="love-relationships"] { background: #fff3f5; color: #b12e57; border-color: #f3c0cc; }
+.meditationCategoryCard[data-category="stress-anxiety"] { background: #f1faf3; color: #0f6a51; border-color: #cfe6d4; }
+.meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #28677b; border-color: #cde2e7; }
 .meditationCategoryCard[aria-pressed="true"] { border: 2px solid #8950d1;
   box-shadow: 0 0 0 2px #dac7f3, 0 4px 12px #6c42b22c; }
 .meditationCategoryNext { position: absolute; z-index: 5; top: 50%; right: -4px;

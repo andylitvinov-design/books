@@ -14,8 +14,8 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
-    "data-video-live-stage","data-video-quick-controls","data-video-mandala-hero",
+  const order=["data-video-quick-builder","data-video-quick-controls",
+    "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
@@ -261,8 +261,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.quickOrderBar\{position:static;/);
   assert.match(css,/@media\(max-width:379px\)\{[\s\S]*?\.quickFormatGrid\{grid-template-columns:minmax\(0,1fr\)\}/);
   assert.match(css,/\.quickBuilder \.quickThemeRail button\{min-height:112px/);
-  assert.match(css,/:global\(\[data-mandala-meditation-page\]\):has\(\.studio\) :global\(\[data-video-diagnostic-banner\]\)\{display:none\}/);
-  assert.doesNotMatch(pageCss,/@media\(max-width:640px\)\{\.slimDiagnostic\{display:none\}\}/);
+  const route=read("app/[locale]/holistic-support/mandala/page.tsx");
+  assert.doesNotMatch(route,/data-video-diagnostic-banner|slimDiagnostic/,
+    "the video workspace must not mount the unsolicited diagnostic promotion");
+  assert.doesNotMatch(pageCss,/\.slimDiagnostic\{/,
+    "removed promotion must not retain unused mobile rules");
+  assert.match(css,/04 Nov owner visual recovery:[^\n]*ONE stable header/);
   const heroSegment=source.slice(source.indexOf("data-video-quick-hero-play"),
     source.indexOf('data-video-quick-section="1"'));
   assert.ok(heroSegment.length>0);

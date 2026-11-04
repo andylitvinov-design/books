@@ -49,3 +49,21 @@ test('Reject invalid duration, arbitrary plot and excessive cuts',()=>{
   assert.equal(compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,scenes,targetCutMs:1000}).code,'CUT_LENGTH_INVALID');
   assert.equal(compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,scenes,allowRepetition:false}).code,'UNIQUE_SCENES_INSUFFICIENT');
 });
+
+test('four canonically ranked MyTube stage sources survive entire audio edit',()=>{
+ const ids=scenes.slice(0,4).map(s=>s.id);
+ const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,
+  scenes,stageClipIds:ids});
+ assert.equal(r.ok,true);
+ assert.deepEqual(r.stageClipIds,ids);
+ assert.equal(r.audioDurationMs,180000);
+ const first=[0,1,2,3].map(stage=>r.shots.find(shot=>shot.stage===stage)?.sceneId);
+ assert.deepEqual(first,ids);
+ assert.equal(r.shots.at(-1).startMs+r.shots.at(-1).durationMs,180000);
+ assert.equal(compileDotStoryCutPlan({plotId:plot.id,
+   audioDurationMs:60000,scenes,stageClipIds:[ids[0],ids[0],ids[2],ids[3]]}).code,
+  'PLOT_STAGE_SOURCE_INVALID');
+ assert.equal(compileDotStoryCutPlan({plotId:plot.id,
+   audioDurationMs:60000,scenes,stageClipIds:[ids[0],ids[1],ids[2],'unlicensed']}).code,
+  'PLOT_STAGE_SOURCE_INVALID');
+});

@@ -3,7 +3,10 @@
 
 import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
-import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors} from "lucide-react";
+import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2} from "lucide-react";
+import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
+import {motionPreset} from "@/lib/mandala/creative-editor-keyframes.mjs";
+import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-multitrack-timeline.module.css";
 
@@ -12,11 +15,19 @@ export type TimelineTextClip={
   text:string;
   startSeconds:number;
   durationSeconds:number;
+  styleId?:"classic"|"cinema"|"minimal"|"glow";
+  motionId?:"none"|"fade"|"slide_up"|"pop";
+  positionId?:"bottom"|"center"|"top";
 };
+export type TimelineTransition="soft"|"cut"|"fade_black"|"flash_white";
+export type TimelineLook="original"|"warm"|"cool"|"dream";
 export type TimelineShot={
   sceneId:string;
   title:string;
   poster?:string|null;
+  transitionIn?:TimelineTransition;
+  colorLook?:TimelineLook;
+  motion?:MyTubeMotion|null;
   startSeconds:number;
   durationSeconds:number;
 };
@@ -32,12 +43,20 @@ type Props={
   disabled:boolean;
   onSeek:(seconds:number)=>void;
   onTogglePlay:()=>void;
+  canUndo:boolean;
+  canRedo:boolean;
+  onUndo:()=>void;
+  onRedo:()=>void;
   onAddVideo:()=>void;
   onMoveShot:(from:number,to:number)=>void;
   onResizeShot:(index:number,direction:-1|1)=>void;
   onAddCaption:()=>string;
   onSetCaption:(id:string,patch:Partial<Omit<TimelineTextClip,"id">>)=>void;
   onRemoveCaption:(id:string)=>void;
+  onSplitCaption:(id:string,atSeconds:number)=>string;
+  onDuplicateCaption:(id:string)=>string;
+  onSetShotEffect?:(index:number,patch:{transitionIn?:TimelineTransition;colorLook?:TimelineLook})=>void;
+  onSetShotMotion?:(index:number,motion:MyTubeMotion|null)=>void;
   onOpenAudio:()=>void;
   onChangeAudioStart:(seconds:number)=>void;
 };
@@ -58,31 +77,79 @@ const copy={
     editor:"Монтажные дорожки",editText:"Настройка надписи",textValue:"Текст",start:"Начало, сек",
     length:"Длительность, сек",soundStart:"Начало звука",remove:"Удалить надпись",
     play:"Воспроизвести",pause:"Пауза",duration:"Время",shot:"Сцена",shift:"Переместить сцену",
-    shorten:"Укоротить на секунду",lengthen:"Удлинить на секунду",hint:"Перетащите блок или ползунок, чтобы изменить время."},
+    shorten:"Укоротить на секунду",lengthen:"Удлинить на секунду",hint:"Перетащите блок или ползунок, чтобы изменить время.",
+    zoom:"Масштаб",snap:"Магнит",split:"Разрезать по курсору",duplicate:"Дублировать",
+    transition:"Переход",look:"Цветовой стиль",soft:"Мягкий",cut:"Без перехода",
+    fadeBlack:"Затемнение",flashWhite:"Белая вспышка",original:"Оригинал",warm:"Тёплый",
+    cool:"Прохладный",dream:"Мечта",undo:"Отменить",redo:"Повторить",
+    textStyle:"Оформление",textMotion:"Анимация",textPosition:"Расположение",
+    classic:"Обычный",cinema:"Кино",minimal:"Минимализм",glowText:"Свечение",
+    noMotion:"Без анимации",fadeMotion:"Проявление",slideMotion:"Подъём",popMotion:"Появление",
+    top:"Вверху",center:"По центру",bottom:"Внизу",
+    motion:"Движение кадра",keyframes:"Ключевые кадры",
+    stillMotion:"Без движения",pushIn:"Приближение",pullOut:"Отдаление",
+    panLeft:"Панорама влево",panRight:"Панорама вправо",drift:"Плавное смещение",
+    tilt:"Лёгкий поворот",custom:"Вручную",startZoom:"Масштаб в начале",
+    endZoom:"Масштаб в конце",endPan:"Сдвиг в конце (X)",
+    endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
     length:"Duration, sec",soundStart:"Audio starts",remove:"Remove caption",
     play:"Play",pause:"Pause",duration:"Timeline",shot:"Shot",shift:"Move shot",
-    shorten:"Shorten by 1 second",lengthen:"Lengthen by 1 second",hint:"Drag a block or scrub the ruler to adjust timing."},
+    shorten:"Shorten by 1 second",lengthen:"Lengthen by 1 second",hint:"Drag a block or scrub the ruler to adjust timing.",
+    zoom:"Zoom",snap:"Snap",split:"Split at playhead",duplicate:"Duplicate",
+    transition:"Transition",look:"Color look",soft:"Soft",cut:"Cut",
+    fadeBlack:"Fade to black",flashWhite:"White flash",original:"Original",warm:"Warm",
+    cool:"Cool",dream:"Dream",undo:"Undo",redo:"Redo",
+    textStyle:"Caption style",textMotion:"Animation",textPosition:"Position",
+    classic:"Classic",cinema:"Cinema",minimal:"Minimal",glowText:"Glow",
+    noMotion:"None",fadeMotion:"Fade",slideMotion:"Slide up",popMotion:"Pop",
+    top:"Top",center:"Center",bottom:"Bottom",
+    motion:"Shot motion",keyframes:"Keyframes",
+    stillMotion:"Still",pushIn:"Zoom in",pullOut:"Zoom out",
+    panLeft:"Pan left",panRight:"Pan right",drift:"Gentle drift",
+    tilt:"Gentle tilt",custom:"Custom",startZoom:"Start zoom",
+    endZoom:"End zoom",endPan:"End horizontal pan",
+    endPanY:"End vertical pan",endRotation:"End rotation"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
     length:"Duración, seg",soundStart:"Inicio del audio",remove:"Quitar texto",
     play:"Reproducir",pause:"Pausa",duration:"Tiempo",shot:"Escena",shift:"Mover escena",
-    shorten:"Acortar un segundo",lengthen:"Ampliar un segundo",hint:"Arrastra un bloque o la regla para ajustar el tiempo."}
+    shorten:"Acortar un segundo",lengthen:"Ampliar un segundo",hint:"Arrastra un bloque o la regla para ajustar el tiempo.",
+    zoom:"Zoom",snap:"Imán",split:"Cortar en el cursor",duplicate:"Duplicar",
+    transition:"Transición",look:"Color de escena",soft:"Suave",cut:"Corte",
+    fadeBlack:"Fundido negro",flashWhite:"Destello blanco",original:"Original",warm:"Cálido",
+    cool:"Frío",dream:"Sueño",undo:"Deshacer",redo:"Rehacer",
+    textStyle:"Estilo",textMotion:"Animación",textPosition:"Posición",
+    classic:"Clásico",cinema:"Cine",minimal:"Mínimo",glowText:"Brillo",
+    noMotion:"Ninguna",fadeMotion:"Aparecer",slideMotion:"Subir",popMotion:"Salto",
+    top:"Arriba",center:"Centro",bottom:"Abajo",
+    motion:"Movimiento de escena",keyframes:"Fotogramas clave",
+    stillMotion:"Sin movimiento",pushIn:"Acercar",pullOut:"Alejar",
+    panLeft:"Panorámica izquierda",panRight:"Panorámica derecha",
+    drift:"Desplazamiento suave",tilt:"Giro suave",custom:"Personalizado",
+    startZoom:"Zoom inicial",endZoom:"Zoom final",endPan:"Panorámica X final",
+    endPanY:"Panorámica Y final",endRotation:"Rotación final"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
-  onSeek,onTogglePlay,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
-  onSetCaption,onRemoveCaption,onOpenAudio,onChangeAudioStart
+  onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
+  onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,onSetShotMotion,
+  onOpenAudio,onChangeAudioStart
 }:Props){
   const t=copy[locale];
   const drag=useRef<Drag|null>(null);
   const [selectedText,setSelectedText]=useState<string|null>(null);
   const [selectedShot,setSelectedShot]=useState<number|null>(null);
+  const [zoom,setZoom]=useState(1);
+  const [snapEnabled,setSnapEnabled]=useState(true);
   const chosen=captions.find(clip=>clip.id===selectedText);
+  const cutMarks=[0,seconds,...shots.map(shot=>shot.startSeconds)];
+  const snapPosition=(at:number,max=seconds)=>snapEnabled
+    ?snapTimelineSecond(at,cutMarks,max):clamp(round(at),0,max);
   const percent=(start:number)=>String(clamp(start/Math.max(seconds,.1)*100,0,100))+"%";
   const width=(duration:number)=>String(clamp(duration/Math.max(seconds,.1)*100,0,100))+"%";
   const position=(clientX:number,element:HTMLElement)=>{
@@ -108,11 +175,12 @@ export function MandalaMultiTrackTimeline({
     if(Math.abs(event.clientX-active.startX)>4)active.moved=true;
     if(active.kind==="ruler")onSeek(position(event.clientX,lane));
     if(active.kind==="audio"&&audio)
-      onChangeAudioStart(round(clamp(active.startSeconds+delta,0,Math.max(0,seconds-.1))));
+      onChangeAudioStart(snapPosition(round(clamp(active.startSeconds+delta,0,
+        Math.max(0,seconds-.1))),Math.max(0,seconds-.1)));
     if(active.kind==="text"&&active.id){
       const item=captions.find(clip=>clip.id===active.id);
-      if(item)onSetCaption(active.id,{startSeconds:round(clamp(active.startSeconds+delta,0,
-        Math.max(0,seconds-item.durationSeconds)))});
+      if(item)onSetCaption(active.id,{startSeconds:snapPosition(round(clamp(active.startSeconds+delta,0,
+        Math.max(0,seconds-item.durationSeconds))),Math.max(0,seconds-item.durationSeconds))});
     }
   };
   const end=(event:ReactPointerEvent<HTMLElement>)=>{
@@ -137,19 +205,53 @@ export function MandalaMultiTrackTimeline({
     }
   };
   const addText=()=>setSelectedText(onAddCaption());
+  const handleEditorKeys=(event:ReactKeyboardEvent<HTMLElement>)=>{
+    if(disabled||!(event.metaKey||event.ctrlKey)||event.altKey)return;
+    // Do not steal the browser's undo stack from a caption input or select.
+    const target=event.target as HTMLElement;
+    if(target.closest("input,textarea,select,[contenteditable=true]"))return;
+    const key=event.key.toLowerCase();
+    if(key==="z"||(key==="y"&&!event.shiftKey)){
+      event.preventDefault();
+      if(event.shiftKey||key==="y"){if(canRedo)onRedo();}
+      else if(canUndo)onUndo();
+    }
+  };
 
   return <section className={css.editor} data-video-multitrack-timeline
-    aria-label={t.editor}>
+    aria-label={t.editor} onKeyDown={handleEditorKeys}>
     <div className={css.transport}>
       <strong><Scissors size={17} aria-hidden="true"/>{t.editor}</strong>
       <div className={css.transportActions}>
         <span className={css.clock}>{time(playheadSeconds)} <small>/ {time(seconds)}</small></span>
+        <button type="button" className={css.historyAction} data-video-timeline-undo
+          disabled={disabled||!canUndo} onClick={onUndo} title={t.undo} aria-label={t.undo}>
+          <Undo2 size={17} aria-hidden="true"/>
+        </button>
+        <button type="button" className={css.historyAction} data-video-timeline-redo
+          disabled={disabled||!canRedo} onClick={onRedo} title={t.redo} aria-label={t.redo}>
+          <Redo2 size={17} aria-hidden="true"/>
+        </button>
         <button type="button" onClick={onTogglePlay} disabled={disabled}
           aria-label={playing?t.pause:t.play} data-video-timeline-play>
           {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
         </button>
       </div>
     </div>
+    <div className={css.zoomBar}>
+      <label data-video-timeline-snap><Magnet size={14} aria-hidden="true"/>
+        <input type="checkbox" checked={snapEnabled} disabled={disabled}
+          onChange={event=>setSnapEnabled(event.currentTarget.checked)}/>{t.snap}</label>
+      <span>{t.zoom}</span>
+      <button type="button" onClick={()=>setZoom(Math.max(1,zoom/2))}
+        disabled={disabled||zoom<=1} aria-label={t.zoom+" −"}><ZoomOut size={16}/></button>
+      <output data-video-timeline-zoom>{zoom}×</output>
+      <button type="button" onClick={()=>setZoom(Math.min(4,zoom*2))}
+        disabled={disabled||zoom>=4} aria-label={t.zoom+" +"}><ZoomIn size={16}/></button>
+    </div>
+    <div className={css.timelineViewport} data-video-timeline-viewport tabIndex={0}
+      role="region" aria-label={t.editor}>
+    <div className={css.timelineContent} style={{width:String(zoom*100)+"%"}}>
     <div className={css.rulerRow}>
       <span className={css.laneName} aria-hidden="true">{t.duration}</span>
       <button type="button" className={css.ruler} disabled={disabled}
@@ -208,6 +310,8 @@ export function MandalaMultiTrackTimeline({
         <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>
       </div>
     </div>
+    </div>
+    </div>
     <div className={css.addBar}>
       <button type="button" disabled={disabled} onClick={onAddVideo}
         data-video-timeline-add-video><Plus size={16}/><Film size={15}/>{t.addVideo}</button>
@@ -234,6 +338,49 @@ export function MandalaMultiTrackTimeline({
               durationSeconds:Number(e.currentTarget.value)})}/>
         </label>
       </div>
+      <div className={css.captionAppearance}>
+        <label>{t.textStyle}
+          <select data-video-caption-style value={chosen.styleId??"classic"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              styleId:e.currentTarget.value as NonNullable<TimelineTextClip["styleId"]>})}>
+            <option value="classic">{t.classic}</option>
+            <option value="cinema">{t.cinema}</option>
+            <option value="minimal">{t.minimal}</option>
+            <option value="glow">{t.glowText}</option>
+          </select>
+        </label>
+        <label>{t.textMotion}
+          <select data-video-caption-motion value={chosen.motionId??"none"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              motionId:e.currentTarget.value as NonNullable<TimelineTextClip["motionId"]>})}>
+            <option value="none">{t.noMotion}</option>
+            <option value="fade">{t.fadeMotion}</option>
+            <option value="slide_up">{t.slideMotion}</option>
+            <option value="pop">{t.popMotion}</option>
+          </select>
+        </label>
+        <label>{t.textPosition}
+          <select data-video-caption-position value={chosen.positionId??"bottom"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              positionId:e.currentTarget.value as NonNullable<TimelineTextClip["positionId"]>})}>
+            <option value="bottom">{t.bottom}</option>
+            <option value="center">{t.center}</option>
+            <option value="top">{t.top}</option>
+          </select>
+        </label>
+      </div>
+      <div className={css.captionTools}>
+        <button type="button" disabled={disabled||captions.length>=16||
+          playheadSeconds<chosen.startSeconds+.2||
+          playheadSeconds>chosen.startSeconds+chosen.durationSeconds-.2}
+          data-video-timeline-split-caption
+          onClick={()=>setSelectedText(onSplitCaption(chosen.id,playheadSeconds))}>
+          <Scissors size={15}/>{t.split}</button>
+        <button type="button" disabled={disabled||captions.length>=16}
+          data-video-timeline-duplicate-caption
+          onClick={()=>setSelectedText(onDuplicateCaption(chosen.id))}>
+          <Copy size={15}/>{t.duplicate}</button>
+      </div>
       <button type="button" className={css.remove} disabled={disabled}
         onClick={()=>{onRemoveCaption(chosen.id);setSelectedText(null);}}>
         <Trash2 size={15}/>{t.remove}</button>
@@ -250,6 +397,79 @@ export function MandalaMultiTrackTimeline({
       <button type="button" aria-label={t.lengthen} disabled={disabled||selectedShot===shots.length-1||
         shots[selectedShot+1].durationSeconds<=2} onClick={()=>onResizeShot(selectedShot,1)}>+1s</button>
     </div>:null}
+    {selectedShot!==null&&shots[selectedShot]&&onSetShotEffect?
+      <div className={css.sceneInspector} data-video-timeline-shot-effects>
+        <label>{t.transition}
+          <select data-video-timeline-transition
+            value={shots[selectedShot].transitionIn??"soft"}
+            disabled={disabled||selectedShot===0}
+            onChange={event=>onSetShotEffect(selectedShot,{
+              transitionIn:event.currentTarget.value as TimelineTransition})}>
+            <option value="soft">{t.soft}</option>
+            <option value="cut">{t.cut}</option>
+            <option value="fade_black">{t.fadeBlack}</option>
+            <option value="flash_white">{t.flashWhite}</option>
+          </select>
+        </label>
+        <label>{t.look}
+          <select data-video-timeline-look
+            value={shots[selectedShot].colorLook??"original"} disabled={disabled}
+            onChange={event=>onSetShotEffect(selectedShot,{
+              colorLook:event.currentTarget.value as TimelineLook})}>
+            <option value="original">{t.original}</option>
+            <option value="warm">{t.warm}</option>
+            <option value="cool">{t.cool}</option>
+            <option value="dream">{t.dream}</option>
+          </select>
+        </label>
+      </div>:null}
+    {selectedShot!==null&&shots[selectedShot]&&onSetShotMotion?
+      <div className={css.motionInspector} data-video-timeline-keyframes>
+        <label>{t.motion}
+          <select data-video-timeline-motion-preset
+            value={shots[selectedShot].motion?.preset??"none"} disabled={disabled}
+            onChange={event=>onSetShotMotion(selectedShot,motionPreset(event.currentTarget.value))}>
+            <option value="none">{t.stillMotion}</option>
+            <option value="push-in">{t.pushIn}</option>
+            <option value="pull-out">{t.pullOut}</option>
+            <option value="pan-left">{t.panLeft}</option>
+            <option value="pan-right">{t.panRight}</option>
+            <option value="drift">{t.drift}</option>
+            <option value="tilt">{t.tilt}</option>
+            <option value="custom">{t.custom}</option>
+          </select>
+        </label>
+        {shots[selectedShot].motion?<details>
+          <summary>{t.keyframes}</summary>
+          <div className={css.motionSliders}>
+            {([
+              {id:"start-zoom",label:t.startZoom,at:"from",key:"zoom",min:1,max:1.6,step:.01},
+              {id:"end-zoom",label:t.endZoom,at:"to",key:"zoom",min:1,max:1.6,step:.01},
+              {id:"end-pan",label:t.endPan,at:"to",key:"x",min:-.16,max:.16,step:.01},
+              {id:"end-pan-y",label:t.endPanY,at:"to",key:"y",min:-.16,max:.16,step:.01},
+              {id:"end-rotation",label:t.endRotation,at:"to",key:"rotation",min:-6,max:6,step:.5}
+            ] as const).map(control=>{
+              const current=shots[selectedShot].motion!;
+              return <label key={control.id}>
+                <span>{control.label}: {current[control.at][control.key].toFixed(2)}</span>
+                <input type="range" min={control.min} max={control.max}
+                  step={control.step} value={current[control.at][control.key]}
+                  data-video-timeline-keyframe-end-zoom={control.id==="end-zoom"?true:undefined}
+                  data-video-timeline-keyframe-end-pan={control.id==="end-pan"?true:undefined}
+                  disabled={disabled}
+                  onChange={event=>{
+                    const baseline=shots[selectedShot].motion??motionPreset("push-in")!;
+                    onSetShotMotion(selectedShot,{
+                      ...baseline,preset:"custom",
+                      [control.at]:{...baseline[control.at],
+                        [control.key]:Number(event.currentTarget.value)}
+                    });
+                  }}/>
+              </label>;
+            })}
+          </div>
+        </details>:null}
+      </div>:null}
     {audio?<label className={css.audioOffset} data-video-timeline-audio-start>
       <span>{t.soundStart}: {audio.startSeconds.toFixed(1)}s</span>
       <input type="range" min={0} max={Math.max(0,seconds-.1)} step={.1}

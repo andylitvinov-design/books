@@ -74,8 +74,8 @@ test("one original video preview and export share the selected symbolic layer",(
     "WebCodecs must actually paint each frame, not substitute a catalog source");
   assert.match(s,/paintStoryMotifs\(ctx,time,appliedStory\)/,
     "WebCodecs exported frames must preserve approved story layers");
-  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory/,
-    "film scene, cut positions and character overlay all invalidate the previous export");
+  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|"",\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null\]\),appliedStory/,
+    "film scene, cut positions, transition, color treatment and character overlay invalidate the previous export");
   assert.match(s,/cinematicPlan,\s*usingFreeFilmCompilation,\s*freeFilmReady,\s*appliedStory,\s*timelineTextClips,stopMovieSound,duration,previewFrameRevision\]\);/,
      "video and text/audio timing changes must invalidate the same Canvas preview and exported output");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);

@@ -8,7 +8,7 @@ import css from './messenger-ai-workspace.module.css'
 const COPY={
  ru:{
    title:'Ваш ИИ-ассистент Holistic House',
-   subtitle:'Опишите свою цель или выберите одну из пяти подсказок слева.',
+   subtitle:'Опишите свою цель или выберите одно из пяти направлений выше.',
    rail:'Быстрые запросы к ИИ',ready:'Запрос подготовлен — уточните его и отправьте.',
    actual:'ИИ подбирает рекомендации. Готовое видео появится только после реальной генерации.',
    videoLink:'Открыть видеорежиссёр',
@@ -20,7 +20,7 @@ const COPY={
     {id:'ritual',name:'Ритуал',prompt:'Помоги подобрать простой безопасный ритуал с добровольным участием и ясными границами.'}
    ]},
  en:{
-   title:'Your Holistic House AI assistant',subtitle:'Describe your goal or choose a shortcut on the left.',
+   title:'Your Holistic House AI assistant',subtitle:'Describe your goal or choose one of the five options above.',
    rail:'AI quick requests',ready:'Request prepared — customize it and send.',
    actual:'AI suggests a plan. A completed video appears only after actual rendering.',
    videoLink:'Open video director',
@@ -32,7 +32,7 @@ const COPY={
     {id:'ritual',name:'Ritual',prompt:'Help me choose a simple safe ritual with voluntary participation and clear boundaries.'}
    ]},
  es:{
-   title:'Tu asistente de IA Holistic House',subtitle:'Describe tu objetivo o elige un acceso rápido a la izquierda.',
+   title:'Tu asistente de IA Holistic House',subtitle:'Describe tu objetivo o elige una de las cinco opciones arriba.',
    rail:'Peticiones rápidas',ready:'Solicitud preparada: revísala y envíala.',
    actual:'La IA propone un plan; el vídeo solo estará listo después de su creación real.',
    videoLink:'Abrir director de vídeo',

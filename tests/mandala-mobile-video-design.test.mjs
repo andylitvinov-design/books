@@ -314,8 +314,8 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const top=[
-    "data-video-quick-builder",'data-video-quick-section="1"',
-    "data-video-live-stage","data-video-quick-controls",'id="video-hero"',
+    "data-video-quick-builder","data-video-quick-controls",
+    'data-video-quick-section="1"',"data-video-live-stage",'id="video-hero"',
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
     "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
@@ -449,14 +449,14 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
   assert.match(browser, /exactly one Support dock/);
 });
 
-test("iPhone release layout has slim diagnostic bar, Picks, visible Support header and active-only green therapy", () => {
+test("iPhone release layout has no unsolicited diagnostic banner, with Picks and active-only green therapy", () => {
   const route=read("app/[locale]/holistic-support/mandala/page.tsx");
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const pageCss=read("components/mandala-meditation.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(route,/data-video-diagnostic-banner/);
-  assert.match(pageCss,/\.slimDiagnostic\{[^}]*min-height:48px/);
+  assert.doesNotMatch(route,/data-video-diagnostic-banner/);
+  assert.doesNotMatch(pageCss,/\.slimDiagnostic\{/);
   assert.match(studio,/data-video-daily-picks/);
   for (const destination of ["/client/tests?focus=","/holistic-support/mobile?view=meditation",
     "/services/free-situation-review","/courses"]) assert.ok(studio.includes(destination),destination);
@@ -534,7 +534,8 @@ test("video therapy exit does not unmount the clicked button during pointerup", 
 
 test("studio workspace buttons remain disabled until their real handlers hydrate",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
-  const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),studio.indexOf('return activeWorkspace==="effects"'));
+  const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),
+    studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.quickVideoNav}')));
   assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
   assert.match(nav,/onClick=\{\(\)=>\{/);
 });
