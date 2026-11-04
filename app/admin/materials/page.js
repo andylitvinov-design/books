@@ -27,6 +27,7 @@ export default async function MaterialsPage(){
       <Link href="/admin/materials/telegram"><Headphones aria-hidden="true"/>{ru?'Из Telegram':'From Telegram'}</Link>
       <Link href="/admin/materials/coaching"><FolderOpen aria-hidden="true"/>{ru?'Коучинг':'Coaching'}</Link>
       <Link href={workspace+'videos'}><Film aria-hidden="true"/>{ru?'Видео':'Video'}</Link>
+      <Link href="/admin/youtube-upload?import=telegramCut"><Film aria-hidden="true"/>{ru?'В YouTube':'To YouTube'}</Link>
     </nav>
     <AdminTelegramVideos locale={ru?'ru':'en'}/>
     <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-course-folder>

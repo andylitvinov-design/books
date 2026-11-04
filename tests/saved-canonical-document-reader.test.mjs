@@ -37,7 +37,11 @@ test('Google Cabinet opens the full canonical report via an account-verified ser
   assert.match(recommendation, /canonical-report-analysis/)
   assert.match(recommendation, /canonical-report-notes/)
   assert.match(recommendation, /canonical-progress/)
-  assert.match(recommendation, /canonical-remedy-profiles/)
+  // Unified disclosure keeps the actual remedy profile and print appendix.
+  assert.match(recommendation, /canonical-remedy-profile-disclosure/)
+  assert.match(recommendation, /selectedProfiles = document\.items\.map/)
+  assert.match(recommendation, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
+  assert.match(recommendation, /<ReportAppendixPrintExpander \/>/)
   assert.match(recommendation, /fullSource/)
   assert.match(recommendation, /includeDistanceHomeopathy/)
   assert.match(receipt, /embedded = false/)

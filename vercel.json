@@ -6,6 +6,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/internal/direct-message-push",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/internal/revenue-ideas-telegram",
       "schedule": "0 13,14 * * *"
     },
@@ -16,6 +20,10 @@
     {
       "path": "/api/internal/council-archive-telegram",
       "schedule": "0 16,17 * * *"
+    },
+    {
+      "path": "/api/internal/market-intel-telegram",
+      "schedule": "0 18,19 * * *"
     }
   ],
   "git": {

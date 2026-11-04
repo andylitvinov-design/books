@@ -1,10 +1,11 @@
-import {NextResponse} from 'next/server'
+import {NextResponse,after} from 'next/server'
 import {getAppConfig,requestOrigin,requireSameOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {readBody,safeError,PRIVATE_HEADERS} from '@/lib/app/http'
 import {AppError,onlyKeys} from '@/lib/assessments/contracts'
 import {createDirectMessages} from '@/lib/practitioners/direct-messages'
+import {dispatchDirectMessagePush} from '@/lib/app/direct-message-push'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -65,6 +66,13 @@ async function handler(request) {
           data=await store.changePublication(actor,body);break
         default:throw new AppError('INVALID_ACTION',400)
       }
+      // Only after a new, committed participant message. Never on a duplicate
+      // POST, read action, attachment staging, or a guest Google login alone.
+      if(body.action==='send'&&data.saved===true&&data.duplicate===false)
+        after(async()=>{
+          try{await dispatchDirectMessagePush(config,data.id)}
+          catch{console.error('HH_DIRECT_PUSH_DISPATCH_UNCONFIRMED')}
+        })
     }
     return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}))
   }catch(error){

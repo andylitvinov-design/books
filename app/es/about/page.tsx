@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { PublicPathwayStrip } from '@/components/public-pathway-strip';
+import refreshStyles from '@/components/public-journey-refresh.module.css';
 import { PersonalConsultationForm } from '@/components/personal-consultation-form';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { SiteVideoPlayer } from '@/components/site-video-player';
@@ -17,10 +19,11 @@ const explore = [ { label: 'Libros', href: '/es/books' }, { label: 'Remedios', h
 export default async function SpanishAboutPage() {
   // An independent Spanish publication: hiding it never restores English audio.
   const intro = await getPublishedSiteVideo('about-intro:es');
-  return <main className="about-shell" lang="es">
+  return <main className={"about-shell " + refreshStyles.page} lang="es" data-public-design-migration="wave1">
     <PublicSiteHeader locale="es" />
     {intro && <section className="site-video-block" data-video-slot="about-intro" data-video-locale="es" aria-label={intro.title}><SiteVideoPlayer video={intro} locale="es" textLanguage="es" minimal posterPriority internalOnly /></section>}
     <section className="about-introduction" aria-labelledby="about-title"><div className="about-portrait"><StaticPortrait alt={aboutEs.photoAlt} fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 56vw, 660px" src="/images/holistic-house/andy-about.png" /></div><div className="about-introduction-copy"><p className="about-kicker">{aboutEs.eyebrow}</p><h1 id="about-title">Andrey Litvinov</h1>{aboutEs.intro.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div></section>
+    <PublicPathwayStrip locale="es" />
     <article className="about-biography">{aboutEs.sections.map(section => <section key={section.heading}><h2>{section.heading}</h2>{section.items && <ul>{section.items.map(item => <li key={item}>{item}</li>)}</ul>}{section.paragraphs?.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</section>)}</article>
     <section className="about-explore" aria-labelledby="about-explore-title"><p className="about-kicker">Holistic House</p><h2 id="about-explore-title">{aboutEs.explore.heading}</h2><nav aria-label={aboutEs.explore.heading}>{explore.map(link => <Link href={link.href} key={link.href}>{link.label}<span aria-hidden="true">→</span></Link>)}</nav></section>
     <PersonalTestimonials locale="es" variant="about" />
