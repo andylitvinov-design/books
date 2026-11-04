@@ -45,3 +45,20 @@ test("second wave references four additional licensed sources and explicit new t
    assert.ok(source.visualMotif);
  }
 });
+
+test("third wave adds eight different, individually sourced but unapproved motion candidates",()=>{
+ const wave3=JSON.parse(readFileSync(new URL("../data/video-catalog/dareful-verified-candidate-wave3-20261103.json",import.meta.url),"utf8"));
+ const wave2=JSON.parse(readFileSync(new URL("../data/video-catalog/dareful-verified-candidate-wave2-20261101.json",import.meta.url),"utf8"));
+ assert.equal(validateCandidateManifest(wave3),true);
+ assert.equal(wave3.sources.length,8);
+ assert.equal(wave3.approvedForPublication,false);
+ const known=new Set([...manifest.sources,...wave2.sources].map(s=>s.sourcePage));
+ for(const source of wave3.sources){
+   assert.ok(!known.has(source.sourcePage));
+   assert.equal(source.visualReviewRequired,true);
+   assert.ok(source.suggestedNames.ru&&source.suggestedNames.en&&source.suggestedNames.es);
+ }
+ const previewer=readFileSync(new URL("../scripts/preview-dareful-candidates.mjs",import.meta.url),"utf8");
+ assert.match(previewer,/--wave3/);
+ assert.match(previewer,/PREVIEW_ONLY_NOT_IMPORTED/);
+});
