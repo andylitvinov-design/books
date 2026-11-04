@@ -294,7 +294,7 @@ jobs:
           # Repeat the check against the tested two-parent merge, then execute
           # every modified unit contract. Never infer success from zero tests.
           while IFS= read -r -d '' status && IFS= read -r -d '' file; do
-            [[ "$status" == M && "$file" =~ ^tests/(holistic-|alchemy-|remote-|direction-|public-service)[a-zA-Z0-9._-]*\\.test\\.mjs$ ]] || exit 1
+            [[ "$status" == M && "$file" =~ ^tests/(holistic-|alchemy-|remote-|direction-|public-service)[a-zA-Z0-9._-]*\.test\.mjs$ ]] || exit 1
             [[ -f "$file" ]] || exit 1
             files+=("$file")
           done < <(git diff --no-renames --name-status -z HEAD^1 HEAD -- tests/)
