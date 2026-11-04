@@ -20,6 +20,8 @@ async function inspect(browserType,locale,width){
  try{
   await page.goto(origin+"/"+locale+"/mytube",{waitUntil:"domcontentloaded",timeout:75000});
   await page.locator("[data-mytube-page]").waitFor({timeout:45000});
+  assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
+    id+" video feed must not display the global free-review promotion");
   const dock=page.locator("[data-hh-unified-dock]");
   await dock.waitFor({state:"visible",timeout:20000});
   await page.waitForFunction(()=>{
