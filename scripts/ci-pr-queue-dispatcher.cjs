@@ -133,7 +133,7 @@ function planCandidates(prs,now){
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -150,7 +150,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,ciHoldRecovered:0,
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
-  eventFocused:focusPrNumber!==null,reason:null};
+  eventFocused:focusPrNumber!==null,
+  inventoryScope:focusPrNumber!==null?'EVENT_SINGLE_PR':'ALL_OPEN_PRS',reason:null};
  // An accepted dispatch is NOT execution: only a signed real-runner
  // receipt contributes to the separate confirmation count.
  summary.runnerStartedConfirmed=0;
@@ -187,12 +188,37 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  let prs=[];
  try{
-  for(let page=1;page<=6;page++){
-   const res=await limited('list-pulls',()=>github.rest.pulls.list({owner,repo,state:'open',per_page:100,page}));
-   if(!Array.isArray(res?.data))throw Error('INCOMPLETE_PR_INVENTORY');
-   prs.push(...res.data);
-   if(res.data.length<100)break;
-   if(page===6)throw Error('PR_PAGINATION_LIMIT');
+  if(focusPrNumber!==null){
+   // The same trusted Core callback first diagnoses this PR in Watchdog.
+   // Reuse its exact-HEAD snapshot; never list 150+ open PRs a second time.
+   const event=context.payload?.workflow_run;
+   if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
+      context.eventName!=='workflow_run'||!event?.head_branch)
+    throw Error('EVENT_FOCUS_UNVERIFIED');
+   if(focusPrSnapshot){
+    if(focusPrSnapshot.number!==focusPrNumber||
+       focusPrSnapshot.head?.ref!==event.head_branch||
+       focusPrSnapshot.base?.ref!==PROD||
+       focusPrSnapshot.head?.repo?.full_name!==REPO)
+     throw Error('EVENT_SNAPSHOT_MISMATCH');
+    prs=[focusPrSnapshot];
+   }else{
+    // Older producer: bounded branch-scoped query, never global pagination.
+    const res=await limited('event-exact-branch',()=>github.rest.pulls.list({
+      owner,repo,state:'open',head:owner+':'+event.head_branch,per_page:2
+    }));
+    if(!Array.isArray(res?.data)||res.data.length!==1||
+       res.data[0].number!==focusPrNumber)throw Error('EVENT_BRANCH_AMBIGUOUS');
+    prs=res.data;
+   }
+  }else{
+   for(let page=1;page<=6;page++){
+    const res=await limited('list-pulls',()=>github.rest.pulls.list({owner,repo,state:'open',per_page:100,page}));
+    if(!Array.isArray(res?.data))throw Error('INCOMPLETE_PR_INVENTORY');
+    prs.push(...res.data);
+    if(res.data.length<100)break;
+    if(page===6)throw Error('PR_PAGINATION_LIMIT');
+   }
   }
  }catch(err){summary.reason=quota.state.paused?'API_PAUSED_INVENTORY':'INVENTORY_UNVERIFIED: '+err.message;return finish();}
  if(quota.state.paused){summary.reason='API_PAUSED_INVENTORY';return finish();}
@@ -282,14 +308,31 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const worker=WORKFLOWS[task.lane];
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
-  const dependentPrs=prs.filter(pr=>pr.number!==task.pr_number&&
+  let children=prs,heads=prs;
+  if(focusPrNumber!==null){
+   // A single PR cannot prove whether its source branch is shared or
+   // children depend on it: scoped reads preserve the existing safety gates.
+   try{
+    const byBase=await limited('event-children-by-base',()=>github.rest.pulls.list({
+     owner,repo,state:'open',base:task.head_ref,per_page:100
+    }));
+    const byHead=await limited('event-shared-head',()=>github.rest.pulls.list({
+     owner,repo,state:'open',head:owner+':'+task.head_ref,per_page:100
+    }));
+    if(!Array.isArray(byBase.data)||byBase.data.length>=100||
+       !Array.isArray(byHead.data)||byHead.data.length>=100)
+     throw Error('RELATED_PR_INVENTORY_INCOMPLETE');
+    children=byBase.data;heads=byHead.data;
+   }catch(error){blocked('RELATED_PR_INVENTORY_UNVERIFIED');continue;}
+  }
+  const dependentPrs=children.filter(pr=>pr.number!==task.pr_number&&
     pr.state==='open'&&pr.base?.ref===task.head_ref&&
     pr.head?.repo?.full_name===REPO&&Number.isSafeInteger(pr.number)&&
     SHA.test(pr.head?.sha||'')).map(pr=>({
       number:pr.number,head_sha:pr.head.sha
     }));
-  // A shared *source* ref would permit two PRs to race the same branch.
-  if(prs.some(pr=>pr.number!==task.pr_number&&pr.state==='open'&&
+  // Two PRs must never reserve separate writers for the same source ref.
+  if(heads.some(pr=>pr.number!==task.pr_number&&pr.state==='open'&&
      pr.head?.repo?.full_name===REPO&&pr.head?.ref===task.head_ref)){
    blocked('SHARED_HEAD_BRANCH');continue;
   }
