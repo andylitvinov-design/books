@@ -1,6 +1,8 @@
 'use strict';
 const {summarizeWindow}=require('./ci-pr-kpi.cjs');
 const {summarizeCancellationWindow}=require('./ci-pr-kpi-cancellations.cjs');
+const {audit:createdWallClock}=require('./ci-pr-kpi-created-wall-clock.cjs');
+const PROD='codex/public-book-library';
 const WINDOWS={'1h':3600000,'12h':43200000,'24h':86400000,'7d':604800000};
 function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellations={},taskHistoryVerified=false}){
  if(!Number.isFinite(now)||![backlog,receipts,merges,actions,dispatch,ci].every(x=>x&&typeof x==='object'))
@@ -24,6 +26,22 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
   }
   return result;
  };
+ // Derive the created-at/merged-by cohort from the SAME verified merge
+ // inventory and Actions samples already collected. No REST calls or jobs.
+ const createdCohort=(start,end)=>{
+  const prs=(merges.events||[]).filter(x=>x.kind==='merged'&&x.production===true)
+   .map(x=>({number:x.pr,created_at:x.created_at,merged_at:x.at,
+    base:{ref:PROD},head:{sha:x.head,ref:x.head_ref},
+    html_url:'https://github.com/andylitvinov-design/books/pull/'+x.pr}));
+  const result=createdWallClock({prs,runs:Array.isArray(actions.workflowRuns)?actions.workflowRuns:[],
+   jobs,start:new Date(start).toISOString(),end:new Date(end).toISOString()});
+  const fullRows=result.rows.length,slowest=result.rows.slice()
+   .sort((a,b)=>b.full_minutes-a.full_minutes||a.pr-b.pr).slice(0,12);
+  return {...result,rows:slowest,rows_returned:slowest.length,rows_total:fullRows,
+   coverage:{merge_inventory_complete:covers(merges,start),
+    actions_inventory_complete:covers(actions,start),
+    label:covers(merges,start)&&covers(actions,start)?'COMPLETE_NON_ATOMIC':'SAMPLE_NOT_TOTAL'}};
+ };
  const windows={};
  for(const [name,width] of Object.entries(WINDOWS)){
   const current=summarizeWindow({events,jobs,coverage:coverageAt(now-width),now,windowMs:width});
@@ -32,6 +50,7 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
   const cancellationPrevious=summarizeCancellationWindow({source:cancellations,now:now-width,windowMs:width});
   const delta=(a,b,verified)=>verified?a-b:null;
   windows[name]={current,previous,
+   created_to_merged:createdCohort(now-width,now),
    cancellation_reasons:{current:cancellationCurrent,previous:cancellationPrevious},
    trend:{production_merges:delta(current.observed.merged,previous.observed.merged,current.coverage.merges&&previous.coverage.merges),
     source_committed:delta(current.observed.source_committed,previous.observed.source_committed,current.coverage.tasks&&previous.coverage.tasks),
@@ -51,6 +70,7 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
    'Receipt coverage describes available authenticated records, not proof every worker emitted a receipt.',
    'Missing historical receipt or job coverage remains partial; samples are not totals.',
    'Cancelled and failed workflow reasons and discarded runner minutes are bounded observed samples; never billing amounts or complete totals.',
-   'LIVE conversion requires feature-specific smoke evidence for each comparable production merge.'],windows};
+   'LIVE conversion requires feature-specific smoke evidence for each comparable production merge.',
+   'Created→Merged cohort accounts for verified final HEAD workflow intervals only; missing or older-HEAD history remains explicitly unallocated.'],windows};
 }
 module.exports={buildReport,WINDOWS};

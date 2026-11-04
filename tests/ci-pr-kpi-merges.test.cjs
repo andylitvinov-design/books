@@ -3,11 +3,11 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {collectMergeEvents}=require('../scripts/ci-pr-kpi-merges.cjs');
 const SHA='a'.repeat(40),MERGE='b'.repeat(40),NOW=Date.parse('2026-11-01T23:00:00Z'),AT='2026-11-01T22:30:00Z';
 const headers={'x-ratelimit-remaining':'4000'};
-const pr=(number,base='codex/public-book-library')=>({number,state:'closed',updated_at:AT,closed_at:AT,merged_at:AT,merge_commit_sha:MERGE,head:{sha:SHA},base:{ref:base}});
+const pr=(number,base='codex/public-book-library')=>({number,state:'closed',updated_at:AT,created_at:'2026-11-01T21:45:00Z',closed_at:AT,merged_at:AT,merge_commit_sha:MERGE,head:{sha:SHA,ref:'feature/'+number},base:{ref:base}});
 function fixture(items,{moving=false}={}){
  let scans=0;
  const issue=x=>({number:x.number,state:'closed',updated_at:x.updated_at,closed_at:x.closed_at,pull_request:{}});
- const node=x=>({number:x.number,state:x.merged_at?'MERGED':'CLOSED',closedAt:x.closed_at,mergedAt:x.merged_at,headRefOid:x.head.sha,baseRefName:x.base.ref,mergeCommit:x.merge_commit_sha?{oid:x.merge_commit_sha}:null});
+ const node=x=>({number:x.number,state:x.merged_at?'MERGED':'CLOSED',closedAt:x.closed_at,mergedAt:x.merged_at,headRefOid:x.head.sha,headRefName:x.head.ref,createdAt:x.created_at,baseRefName:x.base.ref,mergeCommit:x.merge_commit_sha?{oid:x.merge_commit_sha}:null});
  return {github:{graphql:async()=>({rateLimit:{remaining:4000},repository:Object.fromEntries(items.map(x=>['p'+x.number,node(x)]))}),rest:{issues:{listForRepo:async()=>({headers,data:((++scans===2&&moving)?items.slice(1):items).map(issue)})}}}};
 }
 test('reads stable production and default merges separately',async()=>{
@@ -50,4 +50,11 @@ test('limits GraphQL detail batches to fifty PRs',async()=>{
  const original=f.github.graphql;f.github.graphql=async query=>{calls++;assert.ok((query.match(/:pullRequest\(number:/g)||[]).length<=50);return original(query)};
  const r=await collectMergeEvents({github:f.github,owner:'andylitvinov-design',repo:'books',since:NOW-3600000});
  assert.equal(r.complete,true);assert.equal(r.events.length,51);assert.equal(calls,2);
+});
+
+test('created-at and original head branch are reused from existing GraphQL batch for cohort metrics',async()=>{
+ const r=await collectMergeEvents({github:fixture([pr(1)]).github,owner:'andylitvinov-design',repo:'books',since:NOW-3600000});
+ assert.equal(r.complete,true);
+ assert.equal(r.events[0].created_at,'2026-11-01T21:45:00Z');
+ assert.equal(r.events[0].head_ref,'feature/1');
 });
