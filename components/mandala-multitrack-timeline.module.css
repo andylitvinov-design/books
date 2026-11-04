@@ -119,3 +119,19 @@
   .captionAppearance{grid-template-columns:1fr 1fr}
   .captionAppearance label:last-child{grid-column:1/-1}
 }
+
+
+/* Clip-local camera keyframes. Optional inspector; no duplicate video player. */
+.motionInspector{display:grid;gap:8px;padding:10px;border:1px solid #d4e4dc;
+  background:#f7faf7;border-radius:12px;color:#225346}
+.motionInspector>label{display:grid;gap:5px;font-size:12px;font-weight:750}
+.motionInspector select{width:100%;min-height:42px;padding:6px 10px;
+  background:#fffdfa;color:#183e33;border:1px solid #c3dacd;border-radius:9px}
+.motionInspector details{display:grid;gap:7px}
+.motionInspector summary{cursor:pointer;min-height:36px;font-size:12px;font-weight:800;
+  color:#26614d;display:list-item;padding:7px 3px}
+.motionSliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.motionSliders label{display:grid;gap:6px;font-size:11px;min-width:0;font-weight:650}
+.motionSliders input{width:100%;min-height:30px;accent-color:#0b9577}
+@media(max-width:359px){.motionSliders{grid-template-columns:1fr}}
+@media(max-width:759px){.motionInspector{order:9}.audioOffset{order:10}.hint{order:11}}

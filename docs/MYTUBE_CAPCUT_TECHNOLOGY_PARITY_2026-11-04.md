@@ -25,7 +25,7 @@ Date: 2026-11-04. This is an original, clean-room implementation: *no CapCut cod
 | Text animation (fade / slide / pop), style, position | New in this change, real Canvas overlay | Timeline keyframe animation editor not implemented |
 | Mix narration/music, optional local file | Existing local audio engine and per-selected voice/track options | Advanced independent voice/music/SFX buses and ducking |
 | Photo composition, scenes, aspect ratios | Existing | AI subject-aware reframing not implemented |
-| Keyframes (position/scale/opacity/rotation) | Not implemented | Versioned per-track keyframe interpolation, iOS-proof export |
+| Keyframes for approved video shots (zoom/pan/rotation) | Two-point per-shot keyframe presets in PR #PENDING | Full editable keyframe curves/independent layers/opacity still pending |
 | Mask, PIP, green screen / chroma key | Not implemented | Canvas shader/effects with bounded memory |
 | Stabilization | Not implemented | Optical flow or deterministic device-side stabilization |
 | Noise/voice cleanup | Not implemented | Consent-based local DSP or owner-approved speech model |
@@ -65,3 +65,32 @@ SRT import/export of client-authored subtitles, 16 items maximum (fail closed ra
 3. Local optional transcription, voice cleanup and automatic pause cut when model, privacy and device capability are verified.
 4. Color curves, speed ramp and tracker; true two-source effects, export quality guard.
 5. Template system, edit agents and optional collaborative project persistence with authorization.
+
+
+## 2026-11-04 original per-shot camera keyframe release candidate
+
+The *existing* four approved licensed scenes may now receive real start/end camera frames:
+zoom 1–1.6×, ±16% horizontal/vertical pan and ±6° rotation. Built-in effects:
+push in, pull out, pan left/right, drift and subtle tilt; user may edit
+start/end zoom and end pan/rotation. The scene's local 0..duration clock drives
+bounded smooth/linear interpolation. Camera transforms run **inside the same
+Canvas compositor** before user-approved caption overlays, and therefore
+travel with the actual local MP4/WebM export rather than being CSS-only.
+
+Frames are re-rendered deterministically without adding an uploaded image,
+external AI model or paid provider. A color backdrop prevents stale previous
+frames showing at rotated corners; visual framing near the edge can reveal a
+dark background on intentionally rotated edits. Mobile performance and
+final encoded video playback must be verified before promotion.
+
+The metadata-only JSON draft now accepts strictly validated optional
+motion settings; older drafts remain valid, undo/redo coalesces continuous
+motion slider gestures, and every edit invalidates the previous binary export.
+This is deliberately **not** a general multi-layer keyframe compositor:
+arbitrary independent video layers, opacity keyframes, masks, motion tracking,
+chroma key, and real two-video cross dissolves remain outstanding.
+
+Acceptance is the exact branch's Core/Specialist checks plus an actual
+iPhone/WebKit clip with a visible zoom/pan across 4 approved scenes, valid
+audio, synchronized captions and decodable MP4; protected merge → Vercel
+READY exact SHA, with no additional paid services.

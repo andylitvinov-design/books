@@ -133,7 +133,9 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   'SitewideLeadCapture',
   'AnalyticsConsent',
   'PublicPageTraffic',
-  'MobileBottomNavigation'
+  'MobileBottomNavigation',
+  // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
+  'UnifiedMobileDock'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
  assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false,
    'Delete obsolete notice rather than remounting or renaming its popup')
