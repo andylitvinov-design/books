@@ -55,6 +55,7 @@ jobs:
             const {owner, repo} = context.repo;
             const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
+            const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
             const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             const {selectDeepScan,isRateLimitError}=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-api-budget.cjs");
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
@@ -302,6 +303,13 @@ jobs:
                  verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
                    check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")})});
                if(!freshness.ok){skip(freshness.reason);continue;}
+               // Shared review/thread and exact-HEAD owner-lease safety is
+               // mandatory for the hourly fallback, too. The read-only guard
+               // rechecks current ownership after the prior inventory pass.
+               const safe=await mergeSafety.auditNativeMerge({
+                 github,owner,repo,number:c.number,expectedHead:c.head,expectedBase:c.base
+               });
+               if(!safe.ok){skip("MERGE_SAFETY_"+safe.reason);continue;}
                attempts++;
                const result=await exec.getExecOutput("gh",[
                  "pr","merge",String(c.number),"--repo",fullRepo,"--auto",
