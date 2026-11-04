@@ -20,8 +20,20 @@ async function inspect(browserType,locale,width){
  try{
   await page.goto(origin+"/"+locale+"/mytube",{waitUntil:"domcontentloaded",timeout:75000});
   await page.locator("[data-mytube-page]").waitFor({timeout:45000});
+  assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
+    id+" video feed must not display the global free-review promotion");
   const dock=page.locator("[data-hh-unified-dock]");
   await dock.waitFor({state:"visible",timeout:20000});
+  await page.waitForFunction(()=>{
+    const page=document.querySelector("[data-mytube-page]");
+    return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
+  },null,{timeout:20000});
+  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
+    id+" dark dock applies only to MyTube");
+  const moreFilters=page.locator('button[aria-controls~="mytube-refine-controls"]');
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
+    id+" video-first feed starts with secondary filters collapsed");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
   const bounds=await links.evaluateAll(els=>els.map(el=>{
@@ -67,10 +79,17 @@ async function inspect(browserType,locale,width){
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
+  if(browserType===webkit&&locale==="ru"&&width===390){
+   await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
+   await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
+  }
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
+    id+" visible refine action reveals secondary taxonomy");
   const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
@@ -119,7 +138,7 @@ async function inspect(browserType,locale,width){
     playerClick=true;
   }
   if(browserType===webkit&&locale==="ru"&&width===390)
-   await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
+   await page.screenshot({path:folder+"/mytube-webkit-ru-390-filtered.png",fullPage:false});
   results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
     overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
  }finally{await context.close();await browser.close();}
