@@ -31,9 +31,15 @@ async function inspect(browserType,locale,width){
   const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.match(dockBackground,/^rgba?\(15, 15, 15/,
     id+" dark dock applies only to MyTube");
-  const moreFilters=page.locator('button[aria-controls~="mytube-refine-controls"]');
+  const moreFilters=page.locator("[data-mytube-filter-toggle]");
+  const primaryTree=page.locator("#mytube-primary-controls");
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
-    id+" video-first feed starts with secondary filters collapsed");
+    id+" video-first feed starts with all taxonomy levels collapsed");
+  assert.equal(await primaryTree.isVisible(),false,
+    id+" categories must not consume space above video cards initially");
+  const filterBounds=await moreFilters.boundingBox();
+  assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
+    id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
   const bounds=await links.evaluateAll(els=>els.map(el=>{
@@ -83,13 +89,15 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
+    id+" one filter action reveals the complete four-stage taxonomy");
+  assert.equal(await primaryTree.isVisible(),true,
+    id+" expanded category choices are visible");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
-  await moreFilters.click();
-  assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
-    id+" visible refine action reveals secondary taxonomy");
   const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
@@ -104,6 +112,11 @@ async function inspect(browserType,locale,width){
   await page.locator('[data-mytube-category="all"]').click();
   await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
     null,{timeout:15000});
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
+    id+" closing filters restores the compact video-first layout");
+  assert.equal(await primaryTree.isVisible(),false,
+    id+" category chips are fully hidden after collapse");
   const cards=page.locator('[data-video-layout="mytube"] article');
   const publishedCount=await cards.count();
   // A local CI server without approved database content must show an honest
