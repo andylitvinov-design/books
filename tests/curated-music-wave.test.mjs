@@ -121,3 +121,17 @@ test('curated rights review cannot be reused for an unreviewed recording in the 
     {...track,repositoryFilename:'Unreviewed recording.mp3',gitBlobSha:'a'.repeat(40)}:track)};
   assert.throws(()=>validateAcquisitionManifest(altered));
 });
+
+test('source acquisition rejects a real recording below its minimum duration',async()=>{
+  const {mkdtempSync,rmSync}=await import('node:fs');
+  const {tmpdir}=await import('node:os');
+  const {join}=await import('node:path');
+  const {probeOriginal}=await import('../scripts/acquire-curated-music-wave.mjs');
+  const dir=mkdtempSync(join(tmpdir(),'hh-curated-source-'));
+  try{
+    const file=join(dir,'short.mp3');
+    const made=spawnSync('ffmpeg',['-v','error','-f','lavfi','-i','sine=frequency=440:duration=2','-codec:a','libmp3lame',file],{encoding:'utf8'});
+    assert.equal(made.status,0,made.stderr);
+    assert.throws(()=>probeOriginal(file),/source_recording_invalid_codec_or_duration/);
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});

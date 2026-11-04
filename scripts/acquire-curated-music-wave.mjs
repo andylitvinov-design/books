@@ -78,7 +78,7 @@ export function gitBlobId(bytes){
     .update(bytes).digest("hex");
 }
 
-function probeOriginal(path){
+export function probeOriginal(path){
   const result=spawnSync("ffprobe",[
     "-v","error","-show_entries",
     "format=duration:stream=codec_name,codec_type,channels,sample_rate",
