@@ -26,6 +26,12 @@ test("free-only activation requires three separate operator attestations",()=>{
   assert.equal(lovedVoiceKey({...env,HH_LOVED_VOICES_GEMINI_API_KEY:undefined}),null);
 });
 test("Google verbatim consent text in RU/EN/ES; 18+ recorded consent is mandatory",()=>{
+  assert.equal(LOVED_VOICE_CONSENT_PHRASES.ru,
+    "Я являюсь владельцем этого голоса и дал согласие на создание синтетической модели моего голоса с использованием Google Cloud.");
+  assert.equal(LOVED_VOICE_CONSENT_PHRASES.en,
+    "I am the owner of this voice and have consented to the creation of a synthetic model of my voice through the use of Google Cloud.");
+  assert.equal(LOVED_VOICE_CONSENT_PHRASES.es,
+    "Soy el propietario de esta voz y he consentido la creación de un modelo sintético de mi voz mediante el uso de Google Cloud.");
   for(const lang of ["ru","en","es"]) assert.ok(LOVED_VOICE_CONSENT_PHRASES[lang].length>50);
   assert.equal(LOVED_VOICE_MODEL,"gemini-3.8-flash-lite-tts");
 });
