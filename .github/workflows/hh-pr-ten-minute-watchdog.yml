@@ -217,12 +217,26 @@ jobs:
       - name: Verify scoped event adapter syntax
         run: |
           node --check scripts/ci-pr-conflict-event-handoff.cjs
+          node --check scripts/ci-pr-direction-event-label.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
       - name: Route only the current verified dirty PR to Conflict Repair
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
           script: |
+            // Piggyback on THIS existing trusted event job; do not start
+            // a separate workflow, CI check, queue scan or scheduled task.
+            const {run:seedDirection}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-direction-event-label.cjs');
+            try {
+              const seeded=await seedDirection({github,context});
+              core.info('HH_PR_DIRECTION_EVENT_SEED '+JSON.stringify(seeded));
+            }catch(error){
+              // Labels are informational: failure must NEVER block the
+              // independent exact-HEAD conflict handoff or CI pipeline.
+              core.warning('HH_PR_DIRECTION_EVENT_SEED_UNAVAILABLE '+
+                String(error?.message||error).slice(0,150));
+            }
             const {run}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-conflict-event-handoff.cjs');
             const result=await run({github,core,context,dryRun:false});
