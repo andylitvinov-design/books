@@ -6,6 +6,25 @@ import test from 'node:test';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+const verifyPinnedPublicBrowsers = src => {
+  // Preinstalled Chromium/WebKit on the exact container: every required run
+  // must still launch the real engines before sensitive public acceptance.
+  for(const token of [
+    'image: mcr.microsoft.com/playwright:v1.63.0-noble',
+    'Verify preinstalled Chromium and WebKit for isolated public acceptance',
+    "HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}",
+    "steps.scope.outputs.browser == 'true'",
+    "steps.scope.outputs.pr_heavy == 'true'",
+    'playwright@1.63.0',
+    'await engine.launch({ headless: true, timeout: 15000 })',
+    "['chromium', chromium]",
+    "['webkit', webkit]",
+    'Production build and public browser acceptance',
+  ])assert.ok(src.includes(token),'missing required real browser guarantee: '+token);
+  assert.doesNotMatch(src,/playwright install --with-deps/,
+    'pinned container must not repeat OS browser installation');
+};
+
 const pathsOf = name => {
   const pr = workflow(name).split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0] || '';
   return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
@@ -132,7 +151,7 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
     'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
-  assert.match(source, /playwright install --with-deps chromium webkit/);
+  verifyPinnedPublicBrowsers(source);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -604,8 +623,7 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
   for (const [name, output] of [
-    ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
-    ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Verify preinstalled Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
@@ -614,6 +632,7 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
       'sensitive PR browser and build must remain blocking: ' + name);
   }
   assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  verifyPinnedPublicBrowsers(src);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
   assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
@@ -739,7 +758,7 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  verifyPinnedPublicBrowsers(yml);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
   assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
@@ -790,8 +809,7 @@ test('common public display changes use only relevant browser cases, not unrelat
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/HH_PUBLIC_BROWSER_ENGINES/);
   assert.match(yml,/steps\.scope\.outputs\.engines/);
-  assert.match(yml,/playwright install --with-deps chromium\n/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  verifyPinnedPublicBrowsers(yml);
 });
 
 test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
@@ -1271,12 +1289,14 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
     'actions/cache/save@v4',
     'hh-public-next-',
     'steps.public_acceptance.outputs.build_ok',
-    'playwright install chromium',
-    'smoke_engines',
-    'playwright install --with-deps chromium webkit',
+    'image: mcr.microsoft.com/playwright:v1.63.0-noble',
+    'Verify preinstalled Chromium and WebKit for isolated public acceptance',
+    'HH_PUBLIC_BROWSER_ENGINES',
+    'await engine.launch({ headless: true, timeout: 15000 })',
     './node_modules/.bin/next build',
   ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
-  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.ok(src.includes('github.event.pull_request.number'), 'Next compiler cache must be PR-local');
+  verifyPinnedPublicBrowsers(src);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
   for (const unsafe of ['app/api/payments/checkout/route.js',
     'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
@@ -1307,14 +1327,16 @@ test('Core-only PR fast-lane regression cannot summon unrelated public browser E
   }
 });
 
-test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+test('production-only browser seed remains isolated; PR runs pinned Playwright container', () => {
   const serviceWorkflow=workflow('hh-public-services-production.yml');
   const seed=workflow('hh-public-playwright-cache.yml');
   const key='hh-public-browser-blobs-';
   assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
   assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
     'pull-request jobs must not publish cross-PR browser caches');
-  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  assert.ok(!serviceWorkflow.includes(key) && seed.includes(key),
+    'PR must use the pinned image; binary seed remains production-only');
+  verifyPinnedPublicBrowsers(serviceWorkflow);
   assert.match(seed, /^  push:\s*$/m);
   assert.ok(seed.includes("branches: ['codex/public-book-library']"));
   assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
