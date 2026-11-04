@@ -1,0 +1,46 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {WINDOWS,stats,analyze,splitIntervals,classify,renderMarkdown}=require('../scripts/ci-pr-three-cohorts.cjs');
+const repo='andylitvinov-design/books',date='2026-11-03T13:';
+const pr=(number,created_at=date+'00:00Z',closed_at=date+'40:00Z',merged_at=null,extra={})=>
+ ({number,title:'PR #'+number,created_at,closed_at,merged_at,base:{ref:'codex/public-book-library'},...extra});
+const ev=(pr,phase,a,b,extra={})=>({pr,phase,start:date+a+':00Z',end:date+b+':00Z',source:'github_actions_job',url:`https://github.com/${repo}/actions/runs/3/job/4`,...extra});
+test('three equal local Toronto 24h windows, including DST transition',()=>{
+ assert.deepEqual(WINDOWS.map(x=>Date.parse(x.end)-Date.parse(x.start)),[86400000,86400000,86400000]);
+ assert.equal(WINDOWS[0].start,'2026-10-20T11:27:00.000Z');
+ assert.equal(WINDOWS[2].start,'2026-11-03T12:27:00.000Z');
+});
+test('merged, unmerged, and explicit replaced are distinct, including feature-branch PRs',()=>{
+ const prs=[pr(1,date+'00:00Z',date+'10:00Z',date+'10:00Z'),
+ pr(2,date+'00:00Z',date+'20:00Z'),pr(3,date+'00:00Z',date+'30:00Z',null,{base:{ref:'feat/stacked'},replacement:{pr:4,source:'github_pr',url:`https://github.com/${repo}/pull/4`}}),
+ pr(4,date+'00:00Z',null),pr(5,'2026-11-02T23:59:00Z',date+'35:00Z')];
+ const a=analyze({prs,openPRs:[prs[3]]});const x=a.windows[2];
+ assert.equal(x.count,3);assert.deepEqual(x.outcomes,{merged:1,replaced:1,closed_without_merge:1});
+ assert.equal(x.total.average_min,20);assert.equal(a.open_backlog.total,1);
+ assert.ok(x.rows.some(r=>r.pr===3&&r.base==='feat/stacked'));
+ assert.equal(classify(pr(8,date+'00:00Z',date+'15:00Z',null,{replacement:{pr:999}})),'closed_without_merge');
+});
+test('overlapping CI jobs are unioned, unknown remains explicitly unallocated',()=>{
+ const p=pr(5,date+'00:00Z',date+'40:00Z');
+ const a=splitIntervals(p,[ev(5,'runner_queue','05','10'),ev(5,'ci_initial_execution','10','22'),
+ ev(5,'ci_initial_execution','12','28'),ev(5,'green_to_merge','30','38',{green_verified:true})]);
+ assert.equal(a.minutes.runner_queue,5);assert.equal(a.minutes.ci_initial_execution,18);
+ assert.equal(a.minutes.green_to_merge,8);assert.equal(a.minutes.unknown,9);
+ assert.equal(Object.values(a.minutes).reduce((s,x)=>s+x,0),40);
+ const b=analyze({prs:[p],intervals:[ev(5,'source_repair','00','40')]});
+ assert.equal(b.windows[2].phases.unknown.contribution_to_cohort_mean,40);
+});
+test('provenance rejects fake source repair, missing first CI inventory, post-close timestamps',()=>{
+ const a=analyze({prs:[pr(9)],intervals:[
+ ev(9,'created_to_first_ci','00','08',{source:'github_actions_run'}),
+ ev(9,'merge_conflict','08','10'),ev(9,'source_repair','12','14'),ev(9,'ci_repeat_execution','14','49')
+ ]});assert.equal(a.windows[2].rows[0].known_pct,0);
+});
+test('p90, median, positive evidence coverage and rendered per-PR drilldown',()=>{
+ const a=analyze({prs:[pr(10),pr(11,date+'00:00Z',date+'20:00Z')],intervals:[ev(10,'runner_queue','05','10')]});
+ assert.equal(a.windows[2].total.median_min,30);
+ assert.equal(a.windows[2].phases.runner_queue.covered_prs,1);
+ assert.equal(a.windows[2].phases.runner_queue.coverage_pct,50);
+ assert.match(renderMarkdown(a),/Not recovered/);assert.match(renderMarkdown(a),/2026-11-03T13:00:00Z/);
+ assert.deepEqual(stats([]),{n:0,average_min:null,median_min:null,p90_min:null});
+});
