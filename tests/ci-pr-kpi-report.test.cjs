@@ -71,3 +71,41 @@ test('six cancellation reasons and runner-cost sample are visible without claimi
  assert.equal(current.runner_minutes_observed.REAL_FAILURE,0);
  assert.equal(current.label,'SAMPLE_NOT_TOTAL');
 });
+
+test('created-at PR cohort is partitioned from existing merge+Actions evidence without new API reads',()=>{
+ const input=data(),when=mins=>new Date(NOW-mins*60000).toISOString();
+ const p1={kind:'merged',at:when(10),pr:1,head:SHA,mergeSha:MERGE,production:true,
+  created_at:when(40),head_ref:'feature/1'};
+ const p2={kind:'merged',at:when(8),pr:2,head:SHA,mergeSha:MERGE,production:true,
+  created_at:when(70),head_ref:'feature/2'};
+ input.merges.events=[p1,p2];
+ input.actions.workflowRuns=[{
+  id:900,name:'HH PR core release gate',event:'pull_request',run_attempt:1,
+  path:'.github/workflows/hh-pr-core-release.yml@refs/pull/1/merge',
+  repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},
+  head_branch:'feature/1',head_sha:SHA,status:'completed',conclusion:'success',created_at:when(30),
+  pull_requests:[{number:1,head:{sha:SHA},base:{ref:'codex/public-book-library'}}]
+ }];
+ const job=(id,name,q,s,e)=>({id,run_id:900,run_attempt:1,name,status:'completed',conclusion:'success',
+  created_at:when(q),started_at:when(s),completed_at:when(e)});
+ input.actions.jobs=[job(31,'core-lint-types-build',30,29,26),
+  job(32,'hh-specialist',30,29,23),job(33,'hh-merge-check',22,21,19)];
+ const report=buildReport(input),cohort=report.windows['1h'].created_to_merged;
+ // PR 2 created before the 1h window, and must not contaminate this cohort.
+ assert.equal(cohort.cohort.merged,1);
+ assert.equal(cohort.cohort.verified,1);
+ assert.equal(cohort.total.mean,30);
+ assert.equal(cohort.reconstruction.reconciled,true);
+ assert.equal(cohort.unknown_contribution_mean_minutes,0);
+ const longer=report.windows['12h'].created_to_merged;
+ assert.equal(longer.cohort.merged,2);
+ assert.equal(longer.cohort.verified,1);
+ assert.ok(longer.unknown_contribution_mean_minutes>0);
+ assert.equal(longer.reconstruction.reconciled,true);
+ assert.equal(longer.coverage.label,'SAMPLE_NOT_TOTAL');
+});
+test('created cohort metadata missing remains unknown rather than a zero-duration fake',()=>{
+ const result=buildReport(data()).windows['1h'].created_to_merged;
+ assert.equal(result.cohort.merged,0);assert.equal(result.total.mean,null);
+ assert.equal(result.rows_returned,0);
+});
