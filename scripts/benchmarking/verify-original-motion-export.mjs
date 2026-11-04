@@ -28,8 +28,16 @@ try {
   await page.locator('[data-auto-video-all-scenes]').click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
-  if (!await preset.isVisible()) await page.locator('[data-free-film-more]').click();
-  await preset.click();
+  const allFilms=page.locator('[data-free-film-more]');
+  // A temporarily hidden preset does not imply the catalog is collapsed.
+  // Never toggle an already-expanded catalog closed.
+  if(await allFilms.getAttribute('aria-expanded')!=='true')await allFilms.click();
+  try { await preset.click({timeout:30000}); }
+  catch(error) {
+    const state={expanded:await allFilms.getAttribute('aria-expanded'),
+      presetCount:await preset.count(),catalogCount:await page.locator('[data-free-film-preset]').count(),errors};
+    throw new Error('ORIGINAL_MOTION_PRESET_UNAVAILABLE: '+JSON.stringify(state),{cause:error});
+  }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();

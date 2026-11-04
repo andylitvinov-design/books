@@ -329,6 +329,13 @@ test('only audited CI-policy paths skip unrelated heavy browser matrices', () =>
     [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
 });
 
+test('procedural video PR runs real Linux browser acceptance despite the general PR budget', () => {
+  const branch='feat/hh-free-procedural-video-v1-20261029';
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:false},branch),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:true},branch),{browser:true});
+  assert.deepEqual(applyPrBrowserBudget('mandala','pull_request',{browser:true},'other-branch'),{browser:false});
+});
+
 test('Mandala PRs skip redundant Linux browsers but keep required source contracts and macOS media QA', () => {
   const changed = [{filename:'app/api/holistic-support/voice/route.js',status:'modified'}];
   const full = decideHeavyImpact('mandala', changed);

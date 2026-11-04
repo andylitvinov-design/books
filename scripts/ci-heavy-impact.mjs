@@ -47,8 +47,13 @@ const MANDALA_UNIT = new Set([
 // release branches. Do not run a THIRD Next build plus two Linux browsers in
 // the Mandala PR job. Full Chromium/WebKit workspace QA remains manual-only.
 // All mandatory focused source/consent/codec tests stay enabled on PRs.
-export function applyPrBrowserBudget(mode, eventName, impact) {
+export function applyPrBrowserBudget(mode, eventName, impact, headRef = '') {
   if (mode === 'mandala' && eventName === 'pull_request') {
+    // This PR changes the procedural renderer itself. Its downloaded movie
+    // must be exercised in Chromium and WebKit, even when the generic PR
+    // budget would otherwise suppress the Linux browser job.
+    if (headRef === 'feat/hh-free-procedural-video-v1-20261029')
+      return { ...impact, browser: true };
     return { ...impact, browser: false };
   }
   return impact;
@@ -180,7 +185,8 @@ async function main() {
       files = null;
     }
   }
-  const result = applyPrBrowserBudget(mode, process.env.GITHUB_EVENT_NAME, decideHeavyImpact(mode, files));
+  const result = applyPrBrowserBudget(mode, process.env.GITHUB_EVENT_NAME,
+    decideHeavyImpact(mode, files), process.env.GITHUB_HEAD_REF);
   console.log(mode + ' ' + reason + ' ' + JSON.stringify(result));
   if (!process.env.GITHUB_OUTPUT) throw Error('MISSING_GITHUB_OUTPUT');
   for (const [name, enabled] of Object.entries(result)) {
