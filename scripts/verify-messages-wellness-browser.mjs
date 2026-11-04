@@ -175,6 +175,16 @@ for(const browserType of [chromium,webkit]){
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
     assert.equal(await aiComposer.evaluate(el=>document.activeElement===el),false,
       key+' quick action must not autofocus keyboard')
+    await aiComposer.fill('One line\\n'.repeat(12))
+    const multiline=await aiComposer.evaluate(el=>({
+      height:el.getBoundingClientRect().height,
+      bottom:el.getBoundingClientRect().bottom,
+      visualBottom:(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||window.innerHeight)
+    }))
+    assert.ok(multiline.height>44&&multiline.height<=102,
+      key+' multiline composer grows within cap '+JSON.stringify(multiline))
+    assert.ok(multiline.bottom<=multiline.visualBottom+3,
+      key+' editable field stays in viewport '+JSON.stringify(multiline))
     await aiComposer.fill('Synthetic unsent AI draft')
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
     await aiTab.click()

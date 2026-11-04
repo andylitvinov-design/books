@@ -8,7 +8,7 @@ import styles from './messages-contact-card.module.css'
 import {mediaFromMessages,mergeMediaPages} from '@/lib/app/messenger-private-media.mjs'
 
 const COPY={
- en:{reference:'Reference',service:'Service',page:'Source page',unverified:'Visitor-submitted contact is unverified and for replying to this enquiry only.',title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
+ en:{reference:'Reference',service:'Service',page:'Source page',landing:'First landing page',traffic:'Traffic source',campaign:'Campaign',previous:'Previous page',unverified:'Visitor-submitted contact is unverified and for replying to this enquiry only.',title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
    status:'Status',source:'Channel',date:'Received',photos:'Conversation attachments',
    hint:'Private photos and recordings are linked to this conversation; nothing is copied into a different client profile.',
    none:'No attachments in the loaded history.',loading:'Opening private client details…',
@@ -18,7 +18,7 @@ const COPY={
    empty:'No other verified details yet.',privacy:'CRM contacts, private client records and master profiles are linked only after identity verification.',
    video:'Videos from the private client case are available through its protected case link, not from this messenger archive.',
    photo:'Photo',audio:'Audio',movie:'Video'},
- ru:{reference:'Номер заявки',service:'Услуга',page:'Страница заявки',unverified:'Контакт посетителя не подтверждён. Используйте его только для ответа на эту заявку.',title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
+ ru:{reference:'Номер заявки',service:'Услуга',page:'Страница заявки',landing:'Первая страница входа',traffic:'Источник трафика',campaign:'Кампания',previous:'Предыдущая страница',unverified:'Контакт посетителя не подтверждён. Используйте его только для ответа на эту заявку.',title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
    status:'Статус',source:'Канал',date:'Получена',photos:'Материалы переписки',
    hint:'Приватные фотографии и записи привязаны к диалогу. В другой профиль клиента ничего не копируется.',
    none:'В загруженной истории вложений нет.',loading:'Открываю защищённую карточку…',
@@ -28,7 +28,7 @@ const COPY={
    empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные клиентские записи и профили мастеров связываются только после проверки личности.',
    video:'Видео из личного дела доступны через защищённую заявку, а не через общий архив мессенджера.',
    photo:'Фото',audio:'Аудио',movie:'Видео'},
- es:{reference:'Referencia',service:'Servicio',page:'Página de origen',unverified:'Contacto no verificado. Úsalo solo para responder a esta solicitud.',title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
+ es:{reference:'Referencia',service:'Servicio',page:'Página de origen',landing:'Primera página de entrada',traffic:'Origen del tráfico',campaign:'Campaña',previous:'Página anterior',unverified:'Contacto no verificado. Úsalo solo para responder a esta solicitud.',title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
    status:'Estado',source:'Canal',date:'Recibida',photos:'Adjuntos de la conversación',
    hint:'Fotos y grabaciones privadas pertenecen a esta conversación y no se copian a otras fichas.',
    none:'No hay adjuntos en el historial cargado.',loading:'Abriendo ficha privada…',
@@ -131,6 +131,13 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
  // An assigned master sees only the redacted contact alias. Platform owner
  // CRM access is a separate audited operator workflow, never a shared card field.
  const publicRequest=kind==='request'&&item.item?.requestKind==='public'
+ // Only pre-consented and bounded attribution supplied by the protected CRM
+ // may be rendered. Never reconstruct referrers, personal URLs or click IDs.
+ const attribution=publicRequest?item.item?.attribution:null
+ const landing=field(attribution,'landingPath')
+ const traffic=field(attribution,'trafficSource')
+ const campaign=field(attribution,'campaign')
+ const previous=field(attribution,'previousPath')
  const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:
    kind==='business'?item.item:null
  // Defense in depth: even if a future upstream public request gains contact
@@ -159,6 +166,10 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
        {publicRequest&&item.item?.referenceCode&&<div><dt>{t.reference}</dt><dd>{item.item.referenceCode}</dd></div>}
        {publicRequest&&item.item?.serviceTitle&&<div><dt>{t.service}</dt><dd>{item.item.serviceTitle}</dd></div>}
        {publicRequest&&item.item?.sourcePath&&<div><dt>{t.page}</dt><dd>{item.item.sourcePath}</dd></div>}
+       {landing&&<div><dt>{t.landing}</dt><dd>{landing}</dd></div>}
+       {traffic&&<div><dt>{t.traffic}</dt><dd>{traffic}</dd></div>}
+       {previous&&<div><dt>{t.previous}</dt><dd>{previous}</dd></div>}
+       {campaign&&<div><dt>{t.campaign}</dt><dd>{campaign}</dd></div>}
      </dl>
      {publicRequest&&<p className={styles.muted}>{t.unverified}</p>}
      {!email&&!phone&&!status&&!view.loading&&!view.error&&<p className={styles.muted}>{t.empty}</p>}
