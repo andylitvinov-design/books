@@ -141,7 +141,7 @@ jobs:
               const {run:dispatch}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-queue-dispatcher.cjs');
               const routed=await dispatch({github,core,context,dryRun:false,
-                inventorySnapshot:report.prInventorySnapshot});
+                inventorySnapshot:report.prInventorySnapshot,watchdogEvidence:report});
               core.info('HH_WATCHDOG_SNAPSHOT_HANDOFF '+JSON.stringify({
                 inventoryScope:routed.inventoryScope,candidates:routed.candidates,
                 dispatched:routed.dispatchAccepted,blocked:routed.blocked,reason:routed.reason
