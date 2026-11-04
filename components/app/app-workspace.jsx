@@ -284,6 +284,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       const result = await appFetch('auth/start', {
         locale,
         provider: providerChoice === 'telegram' ? 'telegram' : 'google',
+        ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
