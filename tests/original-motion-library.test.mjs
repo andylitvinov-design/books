@@ -62,16 +62,18 @@ test("Auto Video Director can propose a real four-clip original motion preset wi
  assert.equal(plan.paidRenderApproved,false);
  assert.equal(plan.noExternalClientData,true);
 });
-test("production abstract motion library contains 320 individually encoded H264 source records",()=>{
+test("production original-motion library contains 684 real MP4s with immutable hash proofs",()=>{
  // Fail closed: CI must never release an empty placeholder, partial library,
- // or an editorial-only record pretending to be 320 real encoded MP4s.
+ // or an editorial-only record pretending to be 684 real encoded MP4s.
  assert.notEqual(source.status,"awaiting_one_time_encoded_media");
  assert.equal(source.status,"generated_and_technical_verified");
- assert.equal(source.count,320);
- assert.equal(source.scenes.length,320);
- assert.equal(source.presets.length,64);
- assert.equal(new Set(source.scenes.map(s=>s.id)).size,320);
- assert.equal(new Set(source.scenes.map(s=>s.sha256)).size,320);
+ assert.equal(source.count,684);
+ assert.equal(source.firstWaveOriginalMasters,320);
+ assert.equal(source.secondWaveAdditionalMasters,364);
+ assert.equal(source.scenes.length,684);
+ assert.equal(source.presets.length,128);
+ assert.equal(new Set(source.scenes.map(s=>s.id)).size,684);
+ assert.equal(new Set(source.scenes.map(s=>s.sha256)).size,684);
  for(const scene of source.scenes){
     assert.equal(isApprovedMontageScene(scene),true);
     assert.equal(scene.visualOrigin,"original_procedural_non_photographic");
@@ -93,7 +95,7 @@ test("production abstract motion library contains 320 individually encoded H264 
 
 // The user's four public categories are editorial. Legacy renderer themes
 // must reflect the individual topic: goals != money; sleep != energy.
-test("new 320 animation presets follow topic-level legacy themes, not broad 4-category buckets",()=>{
+test("all 684 animations follow precise topic-level themes, not broad categories",()=>{
  const expected={
   "goals-discipline": "goals",
   "purpose-choice": "life",
@@ -119,10 +121,40 @@ test("new 320 animation presets follow topic-level legacy themes, not broad 4-ca
    assert.equal(scene.categories[0],scene.theme,scene.id);
    counts[scene.theme]=(counts[scene.theme]||0)+1;
  }
- assert.deepEqual(counts,{goals:20,life:20,money:40,relationships:80,health:120,energy:40});
+ assert.deepEqual(counts,{goals:40,life:40,money:80,relationships:176,health:260,energy:88});
  for(const preset of source.presets){
    const matching=preset.clips.map(id=>byId.get(id));
    assert.ok(matching.every(Boolean),preset.id);
    assert.ok(matching.every(scene=>scene.theme===preset.theme),preset.id);
  }
+});
+
+test("new 364 MP4s are genuinely additional with v6-v10 for 64 topics and 44 prioritized v11",()=>{
+ const first=source.scenes.slice(0,320);
+ const extra=source.scenes.slice(320);
+ assert.equal(first.length,320);
+ assert.equal(extra.length,364);
+ assert.ok(first.every(scene=>/\-v[1-5]$/.test(scene.id)));
+ assert.ok(extra.every(scene=>/\-v(?:[6-9]|10|11)$/.test(scene.id)));
+ assert.ok(extra.every(scene=>scene.labelsMatchOriginalAbstractArt===true));
+ assert.ok(extra.every(scene=>["aurora","orbit","bloom","sunburst","ripple","path"].includes(scene.visualFamily)));
+ const perTopic=new Map();
+ for(const scene of source.scenes){
+   const rows=perTopic.get(scene.sourceId)||[];
+   rows.push(scene);
+   perTopic.set(scene.sourceId,rows);
+ }
+ assert.equal(perTopic.size,64);
+ assert.equal([...perTopic.values()].filter(group=>group.length===11).length,44);
+ assert.equal([...perTopic.values()].filter(group=>group.length===10).length,20);
+ for(const group of perTopic.values()){
+   const versions=group.map(s=>Number(s.id.match(/-v(\d+)$/)?.[1])).sort((a,b)=>a-b);
+   assert.deepEqual(versions,Array.from({length:group.length},(_,i)=>i+1));
+   assert.equal(new Set(group.map(s=>s.sha256)).size,group.length);
+ }
+ const firstPresets=source.presets.filter(p=>!p.id.endsWith("-alternative"));
+ const alternatives=source.presets.filter(p=>p.id.endsWith("-alternative"));
+ assert.equal(firstPresets.length,64);
+ assert.equal(alternatives.length,64);
+ assert.ok(alternatives.every(p=>p.clips.every(id=>/-v[6-9]$/.test(id))));
 });

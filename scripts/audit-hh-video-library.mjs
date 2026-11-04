@@ -6,7 +6,7 @@
  * No network/download/AI API/scheduler/paid operation.
  *
  * node scripts/audit-hh-video-library.mjs             // summary only
- * node scripts/audit-hh-video-library.mjs --strict    // require all 320 new encoded masters
+ * node scripts/audit-hh-video-library.mjs --strict    // require all 684 encoded original masters and 44 licensed clips
  */
 import {readFileSync,existsSync,statSync} from "node:fs";
 import {createHash} from "node:crypto";
@@ -24,8 +24,8 @@ if(!Array.isArray(licensed.scenes)||licensed.scenes.length!==licensed.count||
   throw Error("invalid_licensed_video_catalog");
 if(!Array.isArray(animation.scenes)||animation.scenes.length!==animation.count)
   throw Error("invalid_original_motion_manifest");
-if(strict&&(animation.count!==320||animation.status!=="generated_and_technical_verified"||
-   !Array.isArray(animation.presets)||animation.presets.length!==64))
+if(strict&&(animation.count!==684||licensed.count<44||animation.status!=="generated_and_technical_verified"||
+   !Array.isArray(animation.presets)||animation.presets.length!==128))
   throw Error("original_motion_library_not_built_and_verified");
 const all=[...licensed.scenes,...animation.scenes];
 const paths=new Set(),ids=new Set(),hashes=new Set(),rejected=[];
@@ -62,11 +62,14 @@ for(const scene of all){
 }
 const out={
   schemaVersion:"hh-dual-media-physical-inventory-v1",
-  status:rejected.length===0&&(!strict||animation.count===320)?"pass":"fail",
+  status:rejected.length===0&&(!strict||(animation.count===684&&licensed.count>=44))?"pass":"fail",
   licensedMasterCatalogCount:licensed.scenes.length,
   // Previous licensed catalog records can carry collection-level licence scope,
   // so the words 'verified individual rights' are deliberately NOT inferred.
   projectOriginalAnimatedVideos:animation.scenes.length,
+  addedInSecondWave:animation.secondWaveAdditionalMasters||0,
+  minimumTargetSourceRecords:728,
+  reachesTarget:all.length-rejected.length>=728,
   combinedPlayableCatalogRecords:all.length-rejected.length,
   originalMotionPresets:Array.isArray(animation.presets)?animation.presets.length:0,
   frameKindDistinction:"licensed_footage_vs_original_procedural_animation",
