@@ -220,3 +220,26 @@ test('period cohort exact created/merged times and closed-unmerged separate from
  assert.equal(model.calculate(data,6,'all').merged,2);
  assert.equal(model.calculate(data,1,'production').merged,0);
 });
+
+test('historical LIVE durations preserve original millisecond precision',async()=>{
+ const pr={number:7,base:{ref:'codex/public-book-library'},state:'closed',
+  created_at:'2026-11-03T13:24:21.000Z',merged_at:'2026-11-04T02:42:44.000Z',
+  merge_commit_sha:'689f2a16ac3a2f4c682e0ae47c84978a8885a84f'};
+ const deploy='dpl_7u7Z7eGGhEh8R1v61YwjNPT2dDj1',sha=pr.merge_commit_sha;
+ const at='2026-11-04T02:50:30.273Z';
+ const body='<!-- HH_LIVE_VERIFIED_V1 sha='+sha+' deployment='+deploy+' -->\n'+
+  'LIVE observed at '+at+' for protected production merge commit '+sha+'.\n'+
+  'Vercel production deployment: '+deploy+
+  '. Verified public alias: https://holistichouse.vercel.app/en. Method: PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY.\n'+
+  '- https://github.com/andylitvinov-design/books/commit/'+sha+'\n'+
+  '- https://vercel.com/super10/codex-public-book-library/'+deploy.slice(4)+'\n'+
+  '- https://holistichouse.vercel.app/api/public/release-evidence\n'+
+  '- https://holistichouse.vercel.app/en\n';
+ const c={id:1,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  created_at:'2026-11-04T02:50:54Z',
+  html_url:'https://github.com/andylitvinov-design/books/pull/7#issuecomment-1',body};
+ const proof=api.verifiedLiveReceipt([c],pr);
+ assert.equal(proof.merge_to_live_ms,466273);
+ assert.equal(proof.created_to_live_ms,48369273);
+});
