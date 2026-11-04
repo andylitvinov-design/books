@@ -132,7 +132,16 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
     'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
-  assert.match(source, /playwright install --with-deps chromium webkit/);
+  // The pinned Playwright container already includes Chromium/WebKit OS deps.
+  // Accept either reviewed setup, without weakening any real browser cases.
+  const pinnedBrowsers=/container:\\s*\\n\\s*image:\\s*mcr\\.microsoft\\.com\\/playwright:v1\\.63\\.0-noble/.test(source);
+  const installedBrowsers=/playwright install --with-deps chromium webkit/.test(source);
+  assert.ok(pinnedBrowsers||installedBrowsers,
+    'Chromium + WebKit require the pinned image or real dependency install');
+  if(pinnedBrowsers){
+    assert.match(source,/HH_PLAYWRIGHT_PACKAGE: \\/tmp\\/hh-public-services-tools\\/node_modules\\/playwright/);
+    assert.match(source,/timeout-minutes: 20/);
+  }
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
