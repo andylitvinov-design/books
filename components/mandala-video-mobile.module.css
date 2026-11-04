@@ -3708,3 +3708,19 @@
   .studio[data-active-workspace] .quickBuilder>.quickVideoNav { gap:3px; }
   .studio[data-active-workspace] .quickVideoNav button { padding:5px 0!important; }
 }
+
+/* Portable metadata-only draft actions for the one on-device montage engine. */
+.editorDraftTools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 2px}
+.editorDraftTools button{
+  display:inline-flex;justify-content:center;align-items:center;gap:6px;
+  min-height:38px;min-width:0;padding:7px 12px;
+  border:1px solid #cbd9cd;border-radius:11px;background:#fffaf1;
+  color:#28584b;font-size:12px;font-weight:750;
+}
+.editorDraftTools button:disabled{opacity:.45;cursor:not-allowed}
+.editorDraftTools input{display:none}
+.editorDraftNote{margin:0 0 9px;color:#6d7869;font-size:11px;line-height:1.4}
+@media(max-width:360px){
+  .editorDraftTools{gap:5px}
+  .editorDraftTools button{font-size:11px;padding:7px 9px}
+}
