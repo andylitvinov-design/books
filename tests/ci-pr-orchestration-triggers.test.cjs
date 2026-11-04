@@ -307,3 +307,16 @@ test('interrupted Core recovery never resubmits intentional cancellation or a st
   assert.ok(recover.includes('parents[1]?.sha !== live.head.sha'));
   assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));
 });
+
+test('successful Core CI refills capacity through the direct event runner without waiting for Watchdog',()=>{
+ const direct=read('hh-pr-direct-core-failure');
+ const watchdog=read('hh-pr-ten-minute-watchdog');
+ assert.ok(direct.includes('  core-slot-wakeup:'));
+ assert.ok(direct.includes('group: hh-pr-core-slot-wakeup'));
+ assert.ok(direct.includes("github.event.workflow_run.conclusion == 'success'"));
+ assert.ok(direct.includes('scripts/ci-pr-slot-wakeup.cjs'));
+ assert.ok(direct.includes("HH PR core release gate"));
+ assert.ok(watchdog.includes('  direct-handoff:'));
+ assert.ok(watchdog.includes('  reconcile:'));
+ assert.ok(!watchdog.includes("      - 'HH PR core release gate'"));
+});
