@@ -87,6 +87,27 @@ test('dependency timeout needs explicit named poll step and terminal timed_out; 
   assert.equal(proof.stages.runner_start_wait.minutes,1);
 });
 
+test('merged final-HEAD run without GitHub PR links remains verifiable by exact SHA, repository and lifetime',()=>{
+  const merged=pr({head:{sha:head,ref:'feature/99',repo:{full_name:'andylitvinov-design/books'}}});
+  const published=run(81,at('10:01'),at('10:20'),{
+    pull_requests:[],head_repository:{full_name:'andylitvinov-design/books'}
+  });
+  const evidence={81:{total_count:1,jobs:[
+    job(811,'hh-merge-check',at('10:01'),at('10:02'),at('10:20'))
+  ]}};
+  const actual=analyzePrLoss(merged,[published],evidence,at('13:00'));
+  assert.equal(actual.green_gate_verified,true);
+  assert.equal(actual.runs_considered,1);
+  assert.equal(actual.stages.green_to_merge.minutes,100);
+  for(const bad of [
+    {head_repository:{full_name:'someone/other'}},
+    {head_sha:old},
+    {head_branch:'another-branch'},
+    {created_at:at('13:00')}
+  ])assert.equal(analyzePrLoss(merged,[{...published,...bad}],evidence,[],at('13:00')).runs_considered,0);
+  assert.equal(analyzePrLoss(pr({merged_at:null,head:merged.head}),[published],evidence,[],at('13:00')).runs_considered,0);
+});
+
 test('same-run GitHub retry count is noted but not assigned invented first-attempt runtime',()=>{
   const result=analyzePrLoss(pr(),[run(11,at('10:01'),at('10:20'),{run_attempt:3})],
     {11:{total_count:1,jobs:[job(110,'scope',at('10:01'),at('10:02'),at('10:20'))]}},[],at('13:00'));
