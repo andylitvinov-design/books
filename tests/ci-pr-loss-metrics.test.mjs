@@ -144,6 +144,6 @@ test('production-push reporter is a step of existing job, not a new scheduled wo
   assert.match(wf,/if: github\.repository == 'andylitvinov-design\/books' && github\.event_name == 'push'/);
   assert.doesNotMatch(wf,/^  schedule:/m);
   assert.match(wf,/persist-credentials: false/);
-  const reporter=readFileSync('scripts/pr-loss-report.mjs','utf8');
+  const reporter=readFileSync('scripts/ci-pr-loss-report.mjs','utf8');
   assert.doesNotMatch(reporter,/\/cancel|\/dispatches|\/merge|method: 'POST'/);
 });
