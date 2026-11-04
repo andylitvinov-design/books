@@ -66,6 +66,28 @@
       proofLink.href=live.receipt_url;proofLink.target='_blank';proofLink.rel='noopener noreferrer';
       proof.append(' ',proofLink);}
     result.append(proof);
+
+    const cps=data.journey?.checkpoints;
+    if(Array.isArray(cps)&&cps.length){
+      const rows=elt('details','hh-pr-audit-events');
+      const confirmed=cps.filter(x=>x.evidence==='GITHUB_VERIFIED_EVENT').length;
+      rows.append(elt('summary',null,'Контрольные точки PR: '+confirmed+' / '+cps.length+
+       ' подтверждены · показать все этапы'));
+      const list=elt('ol','hh-pr-audit-event-list');
+      for(const cp of cps){
+        const li=elt('li');
+        li.append(elt('span',null,cp.label),
+         elt('time',null,cp.at?fmtDate(cp.at):'Нет подтверждения'));
+        const url=link(cp.url);
+        if(url){const a=elt('a',null,'Источник');a.href=url;a.target='_blank';
+          a.rel='noopener noreferrer';li.append(a);}
+        list.append(li);
+      }
+      rows.append(list,elt('p','hh-pr-audit-foot',
+       'Нет подтверждения ≠ ноль минут или неисправность. READY deployment измеряется отдельно от LIVE.'));
+      result.append(rows);
+    }
+
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',
         'История источников неполная: временные промежутки без записей остаются нераспределёнными.'));
