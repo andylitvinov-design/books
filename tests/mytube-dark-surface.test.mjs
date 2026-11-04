@@ -52,7 +52,7 @@ test("MyTube hides secondary filter groups until the visitor explicitly refines"
 
 test("MyTube excludes the global free-review ribbon without altering other routes",()=>{
  const banner=read("components/sitewide-antistress-banner.tsx");
- const mytubeRoute=String.raw`/^\\/(?:ru|en|es)\\/mytube\\/?$/.test(pathname)`;
+ const mytubeRoute=String.raw`/^\/(?:ru|en|es)\/mytube\/?$/.test(pathname)`;
  assert.ok(banner.includes(mytubeRoute),"dedicated MyTube no-promo rule");
- assert.match(banner,/isDistractionSensitivePage\\(pathname\\)/);
+ assert.match(banner,/isDistractionSensitivePage\(pathname\)/);
 });
