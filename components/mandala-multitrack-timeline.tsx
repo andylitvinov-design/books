@@ -28,6 +28,8 @@ export type TimelineShot={
   transitionIn?:TimelineTransition;
   colorLook?:TimelineLook;
   motion?:MyTubeMotion|null;
+  sourcePhasePercent?:number;
+  sourceSpeed?:number;
   startSeconds:number;
   durationSeconds:number;
 };
@@ -57,6 +59,7 @@ type Props={
   onDuplicateCaption:(id:string)=>string;
   onSetShotEffect?:(index:number,patch:{transitionIn?:TimelineTransition;colorLook?:TimelineLook})=>void;
   onSetShotMotion?:(index:number,motion:MyTubeMotion|null)=>void;
+  onSetShotSourceTiming?:(index:number,patch:{sourcePhasePercent?:number;sourceSpeed?:number})=>void;
   onOpenAudio:()=>void;
   onChangeAudioStart:(seconds:number)=>void;
 };
@@ -91,7 +94,9 @@ const copy={
     panLeft:"Панорама влево",panRight:"Панорама вправо",drift:"Плавное смещение",
     tilt:"Лёгкий поворот",custom:"Вручную",startZoom:"Масштаб в начале",
     endZoom:"Масштаб в конце",endPan:"Сдвиг в конце (X)",
-    endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце"},
+    endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце",
+    sourceTiming:"Монтаж исходника",sourcePhase:"Начальная позиция видео",
+    sourceSpeed:"Скорость видеокадров",sourceNote:"Длительность видео, звук и надписи не меняются."},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -111,7 +116,9 @@ const copy={
     panLeft:"Pan left",panRight:"Pan right",drift:"Gentle drift",
     tilt:"Gentle tilt",custom:"Custom",startZoom:"Start zoom",
     endZoom:"End zoom",endPan:"End horizontal pan",
-    endPanY:"End vertical pan",endRotation:"End rotation"},
+    endPanY:"End vertical pan",endRotation:"End rotation",
+    sourceTiming:"Source editing",sourcePhase:"Video starting position",
+    sourceSpeed:"Source playback speed",sourceNote:"Film length, soundtrack and captions stay unchanged."},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -131,14 +138,16 @@ const copy={
     panLeft:"Panorámica izquierda",panRight:"Panorámica derecha",
     drift:"Desplazamiento suave",tilt:"Giro suave",custom:"Personalizado",
     startZoom:"Zoom inicial",endZoom:"Zoom final",endPan:"Panorámica X final",
-    endPanY:"Panorámica Y final",endRotation:"Rotación final"}
+    endPanY:"Panorámica Y final",endRotation:"Rotación final",
+    sourceTiming:"Editar origen",sourcePhase:"Posición inicial",
+    sourceSpeed:"Velocidad de la escena",sourceNote:"No cambia la duración, el audio ni los subtítulos."}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
   onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
   onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,onSetShotMotion,
-  onOpenAudio,onChangeAudioStart
+  onSetShotSourceTiming,onOpenAudio,onChangeAudioStart
 }:Props){
   const t=copy[locale];
   const drag=useRef<Drag|null>(null);
@@ -469,6 +478,29 @@ export function MandalaMultiTrackTimeline({
             })}
           </div>
         </details>:null}
+      </div>:null}
+    {selectedShot!==null&&shots[selectedShot]&&onSetShotSourceTiming?
+      <div className={css.sourceTimingInspector} data-video-timeline-source-editor>
+        <strong>{t.sourceTiming}</strong>
+        <label>{t.sourcePhase}: {shots[selectedShot].sourcePhasePercent??0}%
+          <input type="range" min={0} max={95} step={5}
+            data-video-timeline-source-phase
+            value={shots[selectedShot].sourcePhasePercent??0} disabled={disabled}
+            onChange={event=>onSetShotSourceTiming(selectedShot,{
+              sourcePhasePercent:Number(event.currentTarget.value)})}/>
+        </label>
+        <label>{t.sourceSpeed}
+          <select data-video-timeline-source-speed
+            value={shots[selectedShot].sourceSpeed??1} disabled={disabled}
+            onChange={event=>onSetShotSourceTiming(selectedShot,{
+              sourceSpeed:Number(event.currentTarget.value)})}>
+            <option value={.75}>0.75×</option>
+            <option value={1}>1×</option>
+            <option value={1.25}>1.25×</option>
+            <option value={1.5}>1.5×</option>
+          </select>
+        </label>
+        <small>{t.sourceNote}</small>
       </div>:null}
     {audio?<label className={css.audioOffset} data-video-timeline-audio-start>
       <span>{t.soundStart}: {audio.startSeconds.toFixed(1)}s</span>
