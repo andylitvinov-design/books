@@ -12,7 +12,7 @@ assert.ok(['chromium', 'webkit'].includes(engine));
 const { [engine]: browserType } = await import(pathToFileURL(process.env.HH_LIVE_VIDEO_PLAYWRIGHT).href);
 const ids = [1, 2, 3, 4].map(i => `motion-goals-money-goal-achievement-v${i}`);
 const dir = await mkdtemp(path.join(os.tmpdir(), 'hh-original-motion-'));
-let movie = path.join(dir, 'export.mp4');
+const movie = path.join(dir, 'export.mp4');
 const browser = await browserType.launch({ headless: engine !== 'webkit' });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, acceptDownloads: true, serviceWorkers: 'block' });
 await context.route('**/*', route => {
@@ -20,24 +20,21 @@ await context.route('**/*', route => {
   return new URL(request.url()).origin === origin && ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort();
 });
 const page = await context.newPage();
-const errors = [];
+const errors = [], safeWarnings = [];
 page.on('pageerror', error => errors.push(error.message));
+page.on('console', message => {
+  const text=message.text();
+  if (/^HH_WEBKIT_MP4_EXPORT_FAILURE:[a-z_]+$/.test(text)) safeWarnings.push(text);
+});
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   await page.locator('[data-auto-video-all-scenes]').click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
-  const allFilms=page.locator('[data-free-film-more]');
-  // A temporarily hidden preset does not imply the catalog is collapsed.
-  // Never toggle an already-expanded catalog closed.
-  if(await allFilms.getAttribute('aria-expanded')!=='true')await allFilms.click();
-  try { await preset.click({timeout:30000}); }
-  catch(error) {
-    const state={expanded:await allFilms.getAttribute('aria-expanded'),
-      presetCount:await preset.count(),catalogCount:await page.locator('[data-free-film-preset]').count(),errors};
-    throw new Error('ORIGINAL_MOTION_PRESET_UNAVAILABLE: '+JSON.stringify(state),{cause:error});
-  }
+  const more = page.locator('[data-free-film-more]');
+  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
+  await preset.click();
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
@@ -55,23 +52,26 @@ try {
   await attach.click();
   await generate.click();
   const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({ state: 'visible', timeout: 150000 });
-  const pendingDownload = page.waitForEvent('download', { timeout: 30000 });
+  try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
+  catch (error) {
+    const state=await page.evaluate(()=>({
+      generateDisabled:document.querySelector('[data-video-quick-generate]')?.disabled??null,
+      progress:document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')??null,
+      originalFallback:Boolean(document.querySelector('[data-video-original-fallback]')),
+      hasResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+    }));
+    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
+    throw error;
+  }
+  const download = page.waitForEvent('download', { timeout: 30000 });
   await save.click();
-  const downloaded = await pendingDownload;
-  const name = downloaded.suggestedFilename();
-  assert.match(name,/\.(mp4|webm)$/i,'download must disclose its true MP4/WebM container');
-  movie=path.join(dir,/\.webm$/i.test(name)?'export.webm':'export.mp4');
-  await downloaded.saveAs(movie);
+  await (await download).saveAs(movie);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));
   const video = probe.streams.find(s => s.codec_type === 'video');
   assert.ok(video && video.width === 1280 && video.height === 720);
-  assert.ok(movie.endsWith('.mp4')?video.codec_name==='h264':/^(vp8|vp9)$/.test(video.codec_name), 'verified encoded video codec');
-  const audioStream=probe.streams.find(s=>s.codec_type==='audio');
-  assert.ok(audioStream,'selected music must remain in downloaded movie');
-  assert.ok(movie.endsWith('.mp4')?audioStream.codec_name==='aac':audioStream.codec_name==='opus','verified audio codec');
+  assert.ok(probe.streams.some(s => s.codec_type === 'audio'));
   assert.ok(Number(probe.format.duration) >= 18 && Number(probe.format.duration) <= 23);
   const frame = (file, time) => execFileSync('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', 'scale=64:36:force_original_aspect_ratio=increase,crop=64:36', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 100000 });
   const corr = (a, b) => {

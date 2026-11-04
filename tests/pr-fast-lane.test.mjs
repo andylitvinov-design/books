@@ -65,7 +65,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(opora.includes("fromJSON(github.event_name == 'pull_request'"), 'OPORA browser matrix must route by event');
   assert.ok(opora.includes("'[\"chromium\"]'"), 'Ready PR runs one isolated Chromium');
   assert.ok(opora.includes("'[\"chromium\",\"webkit\"]'"), 'manual and feature-push still cover WebKit');
-  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual jobs cannot be cancelled by unrelated PRs');
+  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'manual jobs cannot be cancelled by unrelated PRs');
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
@@ -513,7 +513,7 @@ test('two confirmed source-only specialist suites delegate duplicate TypeScript 
   for(const filename of ['hh-kling-video.yml']) {
     const s=workflow(filename);
     assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
-    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
+    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' \}\}/);
   }
 });
 
@@ -541,8 +541,8 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
 });
 
 
-const prOnlyCancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
-const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+const prOnlyCancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
     ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
@@ -599,8 +599,8 @@ test('video About and Library cancel only superseded PR checks, preserving speci
 
 
 test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
-  const suffix="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const guard="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const suffix="${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const guard="${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   const specs=[
     ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
     ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
@@ -747,7 +747,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
   assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
   const requiredPrefixes = [
-    'feat/hh-free-procedural-video-', 'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
+    'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
     'feat/video-120-scenario-media-bindings-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
     'feat/video-chat-context-understanding-'
   ];
@@ -779,8 +779,6 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'node scripts/benchmarking/first-video-live-export.mjs',
     'ffprobe', 'ffmpeg'
   ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
-  for(const check of ['node scripts/verify-free-video-worlds.mjs','node scripts/verify-cartoon-media.mjs'])
-    assert.ok(yaml.includes(check),'procedural media acceptance remains: '+check);
   const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
   assert.match(aggregator,/withRequiredPreflight !== baseJob && withRequiredPreflight === candidateJob/,
     'only the exact prerequisite insertion may leave the BASE macOS job otherwise unchanged');

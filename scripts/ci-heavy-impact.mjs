@@ -49,8 +49,9 @@ const MANDALA_UNIT = new Set([
 // All mandatory focused source/consent/codec tests stay enabled on PRs.
 export function applyPrBrowserBudget(mode, eventName, impact, headRef = '') {
   if (mode === 'mandala' && eventName === 'pull_request') {
-    // Both source-review and procedural release branches require browser acceptance.
-    if (headRef === 'feat/video-120-scenario-media-bindings-20261102' || headRef === 'feat/hh-free-procedural-video-v1-20261029')
+    // Scenario source review changes require real browser acceptance rather
+    // than the generic PR budget's source-only classification.
+    if (headRef === 'feat/video-120-scenario-media-bindings-20261102' || headRef === 'feat/video-owner-review-20261102')
       return { ...impact, browser: true };
     return { ...impact, browser: false };
   }

@@ -3,7 +3,7 @@
 
 import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
-import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut} from "lucide-react";
+import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2} from "lucide-react";
 import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-multitrack-timeline.module.css";
@@ -13,6 +13,9 @@ export type TimelineTextClip={
   text:string;
   startSeconds:number;
   durationSeconds:number;
+  styleId?:"classic"|"cinema"|"minimal"|"glow";
+  motionId?:"none"|"fade"|"slide_up"|"pop";
+  positionId?:"bottom"|"center"|"top";
 };
 export type TimelineTransition="soft"|"cut"|"fade_black"|"flash_white";
 export type TimelineLook="original"|"warm"|"cool"|"dream";
@@ -37,6 +40,10 @@ type Props={
   disabled:boolean;
   onSeek:(seconds:number)=>void;
   onTogglePlay:()=>void;
+  canUndo:boolean;
+  canRedo:boolean;
+  onUndo:()=>void;
+  onRedo:()=>void;
   onAddVideo:()=>void;
   onMoveShot:(from:number,to:number)=>void;
   onResizeShot:(index:number,direction:-1|1)=>void;
@@ -70,7 +77,11 @@ const copy={
     zoom:"Масштаб",snap:"Магнит",split:"Разрезать по курсору",duplicate:"Дублировать",
     transition:"Переход",look:"Цветовой стиль",soft:"Мягкий",cut:"Без перехода",
     fadeBlack:"Затемнение",flashWhite:"Белая вспышка",original:"Оригинал",warm:"Тёплый",
-    cool:"Прохладный",dream:"Мечта"},
+    cool:"Прохладный",dream:"Мечта",undo:"Отменить",redo:"Повторить",
+    textStyle:"Оформление",textMotion:"Анимация",textPosition:"Расположение",
+    classic:"Обычный",cinema:"Кино",minimal:"Минимализм",glowText:"Свечение",
+    noMotion:"Без анимации",fadeMotion:"Проявление",slideMotion:"Подъём",popMotion:"Появление",
+    top:"Вверху",center:"По центру",bottom:"Внизу"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -80,7 +91,11 @@ const copy={
     zoom:"Zoom",snap:"Snap",split:"Split at playhead",duplicate:"Duplicate",
     transition:"Transition",look:"Color look",soft:"Soft",cut:"Cut",
     fadeBlack:"Fade to black",flashWhite:"White flash",original:"Original",warm:"Warm",
-    cool:"Cool",dream:"Dream"},
+    cool:"Cool",dream:"Dream",undo:"Undo",redo:"Redo",
+    textStyle:"Caption style",textMotion:"Animation",textPosition:"Position",
+    classic:"Classic",cinema:"Cinema",minimal:"Minimal",glowText:"Glow",
+    noMotion:"None",fadeMotion:"Fade",slideMotion:"Slide up",popMotion:"Pop",
+    top:"Top",center:"Center",bottom:"Bottom"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -90,12 +105,16 @@ const copy={
     zoom:"Zoom",snap:"Imán",split:"Cortar en el cursor",duplicate:"Duplicar",
     transition:"Transición",look:"Color de escena",soft:"Suave",cut:"Corte",
     fadeBlack:"Fundido negro",flashWhite:"Destello blanco",original:"Original",warm:"Cálido",
-    cool:"Frío",dream:"Sueño"}
+    cool:"Frío",dream:"Sueño",undo:"Deshacer",redo:"Rehacer",
+    textStyle:"Estilo",textMotion:"Animación",textPosition:"Posición",
+    classic:"Clásico",cinema:"Cine",minimal:"Mínimo",glowText:"Brillo",
+    noMotion:"Ninguna",fadeMotion:"Aparecer",slideMotion:"Subir",popMotion:"Salto",
+    top:"Arriba",center:"Centro",bottom:"Abajo"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
-  onSeek,onTogglePlay,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
+  onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
   onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,
   onOpenAudio,onChangeAudioStart
 }:Props){
@@ -164,13 +183,33 @@ export function MandalaMultiTrackTimeline({
     }
   };
   const addText=()=>setSelectedText(onAddCaption());
+  const handleEditorKeys=(event:ReactKeyboardEvent<HTMLElement>)=>{
+    if(disabled||!(event.metaKey||event.ctrlKey)||event.altKey)return;
+    // Do not steal the browser's undo stack from a caption input or select.
+    const target=event.target as HTMLElement;
+    if(target.closest("input,textarea,select,[contenteditable=true]"))return;
+    const key=event.key.toLowerCase();
+    if(key==="z"||(key==="y"&&!event.shiftKey)){
+      event.preventDefault();
+      if(event.shiftKey||key==="y"){if(canRedo)onRedo();}
+      else if(canUndo)onUndo();
+    }
+  };
 
   return <section className={css.editor} data-video-multitrack-timeline
-    aria-label={t.editor}>
+    aria-label={t.editor} onKeyDown={handleEditorKeys}>
     <div className={css.transport}>
       <strong><Scissors size={17} aria-hidden="true"/>{t.editor}</strong>
       <div className={css.transportActions}>
         <span className={css.clock}>{time(playheadSeconds)} <small>/ {time(seconds)}</small></span>
+        <button type="button" className={css.historyAction} data-video-timeline-undo
+          disabled={disabled||!canUndo} onClick={onUndo} title={t.undo} aria-label={t.undo}>
+          <Undo2 size={17} aria-hidden="true"/>
+        </button>
+        <button type="button" className={css.historyAction} data-video-timeline-redo
+          disabled={disabled||!canRedo} onClick={onRedo} title={t.redo} aria-label={t.redo}>
+          <Redo2 size={17} aria-hidden="true"/>
+        </button>
         <button type="button" onClick={onTogglePlay} disabled={disabled}
           aria-label={playing?t.pause:t.play} data-video-timeline-play>
           {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
@@ -275,6 +314,37 @@ export function MandalaMultiTrackTimeline({
           <input type="number" min={.1} max={seconds} step={.1} disabled={disabled}
             value={chosen.durationSeconds} onChange={e=>onSetCaption(chosen.id,{
               durationSeconds:Number(e.currentTarget.value)})}/>
+        </label>
+      </div>
+      <div className={css.captionAppearance}>
+        <label>{t.textStyle}
+          <select data-video-caption-style value={chosen.styleId??"classic"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              styleId:e.currentTarget.value as NonNullable<TimelineTextClip["styleId"]>})}>
+            <option value="classic">{t.classic}</option>
+            <option value="cinema">{t.cinema}</option>
+            <option value="minimal">{t.minimal}</option>
+            <option value="glow">{t.glowText}</option>
+          </select>
+        </label>
+        <label>{t.textMotion}
+          <select data-video-caption-motion value={chosen.motionId??"none"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              motionId:e.currentTarget.value as NonNullable<TimelineTextClip["motionId"]>})}>
+            <option value="none">{t.noMotion}</option>
+            <option value="fade">{t.fadeMotion}</option>
+            <option value="slide_up">{t.slideMotion}</option>
+            <option value="pop">{t.popMotion}</option>
+          </select>
+        </label>
+        <label>{t.textPosition}
+          <select data-video-caption-position value={chosen.positionId??"bottom"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              positionId:e.currentTarget.value as NonNullable<TimelineTextClip["positionId"]>})}>
+            <option value="bottom">{t.bottom}</option>
+            <option value="center">{t.center}</option>
+            <option value="top">{t.top}</option>
+          </select>
         </label>
       </div>
       <div className={css.captionTools}>
