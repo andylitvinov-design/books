@@ -39,7 +39,7 @@ on:
       - 'app/api/reiki-course-reviews/**'
       - 'tests/reiki-course-reviews-public.test.mjs'
       - 'tests/reiki-review-owner-lifetime.test.mjs'
-      - '.github/workflows/hh-energywork-ai.yml'
+      # YAML-only edits remain guarded by Core + actionlint; avoid redundant Energywork build.
       - 'supabase/migrations/20261019031800_hh_reiki_course_public_reviews.sql'
       - 'app/admin/reiki-leads/**'
       - 'tests/reiki-crm-leads.test.mjs'
