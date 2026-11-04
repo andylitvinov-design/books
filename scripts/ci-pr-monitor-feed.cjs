@@ -49,7 +49,7 @@ function verifiedBoundedSample(input,productionCount){
  // This optional evidence contains no extra API calls and no fixes/merge
  // claims. Reject arbitrary PRs, unknown roots, malformed HEADs and duplicates.
  if(input.blockerCases!==undefined){
-  if(!Array.isArray(input.blockerCases)||input.blockerCases.length>16)
+  if(!Array.isArray(input.blockerCases)||input.blockerCases.length>32)
    throw Error('INVALID_MONITOR_BLOCKER_CASES');
   const roots=new Set(['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
    'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD']);
@@ -241,6 +241,9 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
   next.blocker_progress=reconcileBlockerProgress({
     previous:previous.blocker_progress,watchdogSample:next.watchdog_sample,
     inventorySnapshot,observedAt:next.checked_at});
+  // Blocker cases are already represented in the canonical progress ledger;
+  // do not store the raw duplicate and risk evicting full PR timestamps.
+  if(next.watchdog_sample)delete next.watchdog_sample.blocker_cases;
   let body=renderSnapshot(next);
   // Keep this existing public issue below GitHub's body size budget. Never
   // silently publish truncated PR coverage as a complete inventory.

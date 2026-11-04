@@ -696,7 +696,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
          'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD'].includes(root))
       return;
     if(summary.blockerCases.some(c=>c.pr_number===pr.number&&c.root_code===root)||
-       summary.blockerCases.length>=16)return;
+       summary.blockerCases.length>=32)return;
     const row={pr_number:pr.number,head_sha:pr.head.sha.toLowerCase(),
       root_code:root,ci_result:ciResult};
     if(Number.isSafeInteger(sourceRunId)&&sourceRunId>0)

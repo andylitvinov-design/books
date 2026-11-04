@@ -5,7 +5,7 @@ const SCHEMA='HH_P0_BLOCKER_PROGRESS_V1';
 const ROOTS=new Set(['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
   'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD']);
 const SHA=/^[a-f0-9]{40}$/i;
-const MAX=16;
+const MAX=32;
 const PR_URL='https://github.com/andylitvinov-design/books/pull/';
 const RUN_URL='https://github.com/andylitvinov-design/books/actions/runs/';
 const PROCESS={

@@ -189,7 +189,7 @@ function trustedWatchdogSample(evidence,productionCount){
  // Only the trusted same-run Watchdog supplies these exact-HEAD samples.
  // Historical labels and pending checks cannot masquerade as root cases.
  if(evidence.blockerCases!==undefined){
-  if(!Array.isArray(evidence.blockerCases)||evidence.blockerCases.length>16)return null;
+  if(!Array.isArray(evidence.blockerCases)||evidence.blockerCases.length>32)return null;
   const roots=new Set(['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
    'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD']);
   const seen=new Set(),cases=[];
