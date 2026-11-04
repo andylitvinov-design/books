@@ -47,6 +47,41 @@ test('normal GET uses existing archive only, with historical not fabricated',asy
   assert.match(paths[0],/\/issues\/3419\/comments/);
  }finally{global.fetch=old;}
 });
+test('bounded GitHub merge read joins saved green Core with later real merge',async()=>{
+ const old=global.fetch,paths=[];
+ const created=new Date(Date.now()-7200000).toISOString();
+ const merged=new Date(Date.now()-60000).toISOString();
+ const close={number:102,state:'closed',created_at:created,merged_at:merged,
+  updated_at:merged,merge_commit_sha:'b'.repeat(40),
+  base:{ref:'codex/public-book-library'},head:{sha:head}};
+ const success={pr:102,run_id:102,attempt:1,source_head:head,
+  base:'codex/public-book-library',queued_at:before,completed_at:at,
+  pr_created_at:created,conclusion:'success',partial_jobs:false,current_head:true,
+  merged_at:null,jobs:[job(21,'core-lint-types-build','success'),
+    job(22,'hh-specialist','success'),job(23,'hh-merge-check','success')]};
+ const bucket='2026-11-04T18-success';
+ const shards=[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- HH_CORE_CI_JOURNEY_SHARD_V1:'+bucket+' -->\n'+JSON.stringify({
+   schema:'HH_CORE_CI_JOURNEY_SHARD_V1',bucket,runs:[success]})}];
+ try{
+  global.fetch=async uri=>{
+   paths.push(uri);
+   if(uri.includes('/issues/3419/comments'))return response(shards);
+   if(uri.includes('/pulls?state=closed'))return response([close]);
+   throw Error('UNEXPECTED_ENDPOINT');
+  };
+  delete require.cache[require.resolve('../ops/pr-monitor/api/pr-three-kpis.js')];
+  const h=require('../ops/pr-monitor/api/pr-three-kpis.js'),res=fakeRes();
+  await h({method:'GET',query:{}},res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.payload.windows.last_24h.green_to_merge.n,1);
+  assert.equal(res.payload.windows.last_24h.green_to_merge.exact_head_merge_proofs,1);
+  assert.equal(res.payload.coverage.merge_lookup.status,'COMPLETE_LATEST_25H');
+  assert.equal(paths.length,2,'cached bounded issue read and one PR page');
+  assert.ok(paths[1].includes('/pulls?state=closed'));
+ }finally{global.fetch=old;}
+});
 test('POST never calls GitHub or starts CI',async()=>{
  const old=global.fetch;let reads=0;
  try{

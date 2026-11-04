@@ -125,28 +125,58 @@ function firstPass(runs,w,now) {
     actual_first_pass_percent:null,history_complete:false,
     examples};
 }
-function gateToMerge(runs,w,now) {
-  const from=ts(w.from),to=ts(w.to),by=new Map();
+// Core completion is often BEFORE the merge. Its immutable archive cannot
+// contain a future merged_at; join later GitHub evidence by exact final HEAD.
+function verifyMergeProof(p,r,now) {
+  if(!p||p.number!==r.pr||p.base?.ref!==PROD||p.state!=='closed'||
+     p.head?.sha?.toLowerCase()!==r.source_head?.toLowerCase()||
+     !SHA.test(p.merge_commit_sha||'')||
+     ts(p.created_at)===null||ts(p.merged_at)===null||
+     ts(p.created_at)>ts(p.merged_at)||ts(p.merged_at)>now+60000||
+     (ts(r.pr_created_at)!==null&&ts(r.pr_created_at)!==ts(p.created_at)))return null;
+  return {merged_at:p.merged_at,merge_sha:p.merge_commit_sha,
+    source:'GITHUB_MERGED_PR_EXACT_HEAD'};
+}
+function gateToMerge(runs,w,now,mergeProofs=[]) {
+  const from=ts(w.from),to=ts(w.to),by=new Map(),proofMap=new Map();
+  if(!Array.isArray(mergeProofs)||mergeProofs.length>250)throw Error('INVALID_MERGE_PROOFS');
+  for(const p of mergeProofs) {
+    if(!goodId(p?.number))continue;
+    // Conflicting duplicate snapshots are excluded, never silently selected.
+    if(proofMap.has(p.number))proofMap.set(p.number,null);
+    else proofMap.set(p.number,p);
+  }
   for(const r of runs) {
-    if(!validRunWindow(r,now)||r.current_head!==true||r.conclusion!=='success'||
-       ts(r.merged_at)===null||ts(r.merged_at)<=from||ts(r.merged_at)>to)continue;
+    if(!validRunWindow(r,now)||r.conclusion!=='success')continue;
+    const hasNewProof=proofMap.has(r.pr);
+    const verified=hasNewProof?verifyMergeProof(proofMap.get(r.pr),r,now):null;
+    // Contemporaneous archive is an independent fallback when no later
+    // GitHub snapshot exists. Contradictory final HEAD must fail closed.
+    const merge=verified||(hasNewProof||r.current_head!==true||ts(r.merged_at)===null?
+      null:{merged_at:r.merged_at,merge_sha:null,source:'ARCHIVED_MERGE_OBSERVED'});
+    const merged=ts(merge?.merged_at);
+    if(merged===null||merged<=from||merged>to)continue;
     const required=getRequired(r);
     if(!required||runOutcome(r)!=='PASS')continue;
     const core=ts(required.get('core-lint-types-build').completed_at);
     const special=ts(required.get('hh-specialist').completed_at);
-    const gate=required.get('hh-merge-check'),green=ts(gate.completed_at),merged=ts(r.merged_at);
+    const gate=required.get('hh-merge-check'),green=ts(gate.completed_at);
     if(core===null||special===null||green===null||green<Math.max(core,special)||
       green>merged)continue;
-    const entry={pr:r.pr,gate_completed_at:gate.completed_at,merged_at:r.merged_at,
+    const entry={pr:r.pr,gate_completed_at:gate.completed_at,merged_at:merge.merged_at,
+      merge_sha:merge.merge_sha,merge_proof:merge.source,
       minutes:(merged-green)/M,job_url:gate.url||null,run_url:r.workflow_url||null,
       head_sha:r.source_head};
-    const old=by.get(r.pr);if(!old||ts(entry.gate_completed_at)>ts(old.gate_completed_at))by.set(r.pr,entry);
+    const old=by.get(r.pr);
+    if(!old||ts(entry.gate_completed_at)>ts(old.gate_completed_at))by.set(r.pr,entry);
   }
   const rows=[...by.values()].sort((a,b)=>a.pr-b.pr);
   return {schema:'HH_FINAL_REQUIRED_PASS_TO_MERGE_SAMPLE_V1',
     scope:'EXACT_PR_HEAD_CONFIRMED_MERGE_AND_THREE_REQUIRED_JOB_PASS',
     ...summarize(rows.map(x=>x.minutes)),
     observed_merged_prs:rows.length,history_complete:false,
+    exact_head_merge_proofs:rows.filter(r=>r.merge_proof==='GITHUB_MERGED_PR_EXACT_HEAD').length,
+    archived_merge_proofs:rows.filter(r=>r.merge_proof==='ARCHIVED_MERGE_OBSERVED').length,
     rows:rows.slice(0,30).map(x=>({...x,minutes:round(x.minutes)}))};
 }
 function errors(runs,w,now) {
@@ -205,13 +235,13 @@ function repairSample(candidates,proofs,w,checked) {
     history_complete:false,
     rows:rows.slice(0,20).map(x=>({...x,minutes:round(x.minutes)}))};
 }
-function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0}={}) {
+function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0,mergeProofs=[]}={}) {
   const windows={last_24h:window(now,0),two_weeks_ago:window(now,14)};
   const obj={};
   for(const [key,w] of Object.entries(windows)){
     const candidates=errors(runs,w,now);
     const repair=repairSample(candidates,repairProofs,w,repairChecked);
-    const first=firstPass(runs,w,now),green=gateToMerge(runs,w,now);
+    const first=firstPass(runs,w,now),green=gateToMerge(runs,w,now,mergeProofs);
     obj[key]={period:w,error_to_repair:repair,ci_first_pass:first,green_to_merge:green,
       evidence_status:green.n||first.measured||repair.n?
         'VERIFIED_PARTIAL_SAMPLE':'NO_VERIFIED_KPI_PAIRS',
@@ -228,5 +258,5 @@ function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0}={
     historical_notice:'Cohort 20–21 Oct has no attributable Core CI in #3394. It is a different clock window; do not substitute its totals for these KPI values.',
     windows:obj};
 }
-module.exports={SCHEMA,window,parseShards,firstPass,gateToMerge,errors,
+module.exports={SCHEMA,window,parseShards,firstPass,gateToMerge,verifyMergeProof,errors,
   parseRepairReceipts,repairSample,report,summarize,runOutcome,REQUIRED};

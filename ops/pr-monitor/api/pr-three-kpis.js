@@ -4,10 +4,11 @@
  */
 const model=require('../pr-three-kpi-model.cjs');
 const ROOT='https://api.github.com/repos/andylitvinov-design/books';
-const MAX_PAGES=4,MAX_REPAIR_PR_READS=5;
-const TTL=300000,DEEP_TTL=600000;
+const MAX_PAGES=4,MAX_REPAIR_PR_READS=5,MAX_MERGE_PAGES=2;
+const TTL=300000,DEEP_TTL=600000,MERGE_TTL=600000;
 let archiveCache=null,archiveAt=0,archivePromise=null;
 let deepCache=new Map();
+let mergeCache=null,mergeAt=0,mergePromise=null;
 const t=v=>{const n=Date.parse(v||'');return Number.isFinite(n)?n:null;};
 const headers=()=>{const h={Accept:'application/vnd.github+json',
  'X-GitHub-Api-Version':'2022-11-28','User-Agent':'HH-PR-KPI-Read-Only'};
@@ -47,6 +48,40 @@ async function archive(now) {
   throw error;
  }).finally(()=>{archivePromise=null;});
  return archivePromise;
+}
+// A successful Core run is usually recorded before its PR is merged.
+// Recover the actual later merge with ONE bounded, cached GitHub read path.
+// No cron, new runner, PR mutation, cross-service API or paid integration.
+async function recentMerges(now) {
+ if(mergeCache&&Date.now()-mergeAt<MERGE_TTL)return {...mergeCache,cache_hit:true};
+ if(mergePromise)return mergePromise;
+ mergePromise=(async()=>{
+  const rows=[],seen=new Set();let pages=0,complete=false,remaining=null;
+  const cutoff=now-25*3600000;
+  for(let page=1;page<=MAX_MERGE_PAGES;page++){
+   const r=await gh('/pulls?state=closed&base=codex%2Fpublic-book-library'+
+    '&sort=updated&direction=desc&per_page=100&page='+page);
+   if(!Array.isArray(r.data)||r.data.length>100)throw Error('MERGE_PAGE_INVALID');
+   pages=page;remaining=r.remaining;
+   for(const pr of r.data){
+    if(!Number.isSafeInteger(pr?.number)||pr.number<=0||seen.has(pr.number))continue;
+    seen.add(pr.number);
+    if(pr.merged_at&&pr.base?.ref==='codex/public-book-library')rows.push({
+      number:pr.number,created_at:pr.created_at,merged_at:pr.merged_at,
+      merge_commit_sha:pr.merge_commit_sha,head:{sha:pr.head?.sha},
+      base:{ref:pr.base.ref},state:pr.state});
+   }
+   // updated_at cannot predate merged_at; once every row is older than
+   // the relevant window, no more current-period merges can follow.
+   if(r.data.length<100||r.data.every(pr=>t(pr.updated_at)!==null&&
+      t(pr.updated_at)<cutoff)){complete=true;break;}
+   if(remaining!==null&&remaining<12)break;
+  }
+  const value={prs:rows,pages,complete,remaining,scope:'LATEST_25H_MERGE_JOIN',
+    retrieved_at:new Date().toISOString()};
+  mergeCache=value;mergeAt=Date.now();return {...value,cache_hit:false};
+ })().finally(()=>{mergePromise=null});
+ return mergePromise;
 }
 async function readRepair(candidates) {
  const seenPR=new Set(),chosen=[];
@@ -99,8 +134,16 @@ async function main(req,res) {
    const result=await readRepair(inputs);proofs=result.proofs;checked=result.checked;
    res.setHeader('Cache-Control','private, no-store');
   }
+  let merges={prs:[],pages:0,complete:false,scope:'LATEST_25H_MERGE_JOIN'},mergeError=null;
+  // Failure-only archives need no lookup; success receipts with no merged_at
+  // are the exact gap this bounded GitHub query is designed to repair.
+  if(store.runs.some(r=>r.conclusion==='success'&&!r.merged_at)) {
+   try{merges=await recentMerges(now);}catch(error){
+    mergeError=String(error.message||error).slice(0,90);
+   }
+  }
   const report=model.report(store.runs,now,{partialArchive:!store.archive_complete_read,
-   repairProofs:proofs,repairChecked:checked});
+   repairProofs:proofs,repairChecked:checked,mergeProofs:merges.prs});
   report.coverage={source:'AUTHENTICATED_GITHUB_ACTIONS_ISSUE_3419',
    fetched_at:store.fetched_at,archived_run_count:store.runs.length,
    archive_complete_read:store.archive_complete_read,
@@ -108,11 +151,18 @@ async function main(req,res) {
    shard_conflicts:store.archive_conflicts,shard_comments:store.shard_comments,
    shard_pages:store.shard_pages,stale:store.stale,
    repair_read_budget:deep?MAX_REPAIR_PR_READS:0,
-   repair_prs_checked:checked};
+   repair_prs_checked:checked,
+   merge_lookup:{status:mergeError?'UNAVAILABLE':merges.pages?
+     (merges.complete?'COMPLETE_LATEST_25H':'BOUNDED_PARTIAL'):'NOT_NEEDED',
+    scope:merges.scope,returned_merged_prs:merges.prs.length,
+    pages:merges.pages,max_pages:MAX_MERGE_PAGES,
+    reason:mergeError,cache_hit:merges.cache_hit===true}};
   report.notes=['A first SAVED Core run is not proven to be the first-ever CI wave.',
    'Stage values from missing GitHub events are null, not zero.',
    'Two weeks ago is aligned to Toronto local clock, including DST.',
-   'Historical October archive has no verifiable Core stage events.'];
+   'Historical October archive has no verifiable Core stage events.',
+   'Post-Core merged_at is joined only by exact GitHub PR number and final HEAD, from a bounded recent snapshot.',
+   'Historical and unobserved stages remain unknown, not zero; no complete all-PR bottleneck ranking is claimed.'];
   res.statusCode=200;res.end(JSON.stringify(report));
  }catch(error){
   res.statusCode=503;res.end(JSON.stringify({schema:model.SCHEMA,
@@ -120,4 +170,4 @@ async function main(req,res) {
  }
 }
 module.exports=main;
-module.exports._test={archive,readRepair,gh};
+module.exports._test={archive,readRepair,recentMerges,gh};
