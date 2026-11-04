@@ -259,3 +259,23 @@ test('old 12 batch entries with three re-forwarded duplicates become exactly nin
   assert.match(service,/console\.error\('HH_OWNER_AUDIO_COMBINE_FAILED',reason,stage\)/)
   assert.match(service,/Код: '\+reason/)
 })
+
+test('confirmed Telegram document receipts are durable before private originals are cleaned',()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  const migration=source('../supabase/migrations/20261027011919_hh_owner_audio_delivery_receipt.sql')
+  assert.match(migration,/add column if not exists telegram_delivery_message_id bigint/)
+  assert.match(migration,/add column if not exists delivered_at timestamptz/)
+  assert.match(migration,/hh_owner_audio_delivery_receipt_check/)
+  assert.match(service,/Number.isSafeInteger\(messageId\)/)
+  assert.match(service,/telegram_delivery_message_id=coalesce\(telegram_delivery_message_id,\$3\)/)
+  assert.match(service,/delivered_at=coalesce\(delivered_at,now\(\)\)/)
+  const resend=service.slice(service.indexOf('async function resendSavedCombined'),service.indexOf('async function finishAudioCombine'))
+  const build=service.slice(service.indexOf('async function buildAudioCombine'),service.indexOf('async function updateFolderFromBot'))
+  for(const scope of [resend,build]){
+    const sent=scope.indexOf('const delivered=await sendCombinedDocument(')
+    const persisted=scope.indexOf('await recordCombinedDocumentDelivery(')
+    const cleanup=scope.indexOf('await deleteTemporaryAudioParts(')
+    assert.ok(sent>=0 && persisted>sent && cleanup>persisted,'accept document, persist receipt, then cleanup')
+  }
+  assert.doesNotMatch(service,/fetch\([^\n]*telegram_delivery_message_id/)
+})
