@@ -5,6 +5,8 @@ import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
 import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2} from "lucide-react";
 import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
+import {motionPreset} from "@/lib/mandala/creative-editor-keyframes.mjs";
+import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-multitrack-timeline.module.css";
 
@@ -25,6 +27,7 @@ export type TimelineShot={
   poster?:string|null;
   transitionIn?:TimelineTransition;
   colorLook?:TimelineLook;
+  motion?:MyTubeMotion|null;
   startSeconds:number;
   durationSeconds:number;
 };
@@ -53,6 +56,7 @@ type Props={
   onSplitCaption:(id:string,atSeconds:number)=>string;
   onDuplicateCaption:(id:string)=>string;
   onSetShotEffect?:(index:number,patch:{transitionIn?:TimelineTransition;colorLook?:TimelineLook})=>void;
+  onSetShotMotion?:(index:number,motion:MyTubeMotion|null)=>void;
   onOpenAudio:()=>void;
   onChangeAudioStart:(seconds:number)=>void;
 };
@@ -81,7 +85,13 @@ const copy={
     textStyle:"Оформление",textMotion:"Анимация",textPosition:"Расположение",
     classic:"Обычный",cinema:"Кино",minimal:"Минимализм",glowText:"Свечение",
     noMotion:"Без анимации",fadeMotion:"Проявление",slideMotion:"Подъём",popMotion:"Появление",
-    top:"Вверху",center:"По центру",bottom:"Внизу"},
+    top:"Вверху",center:"По центру",bottom:"Внизу",
+    motion:"Движение кадра",keyframes:"Ключевые кадры",
+    noMotion:"Без движения",pushIn:"Приближение",pullOut:"Отдаление",
+    panLeft:"Панорама влево",panRight:"Панорама вправо",drift:"Плавное смещение",
+    tilt:"Лёгкий поворот",custom:"Вручную",startZoom:"Масштаб в начале",
+    endZoom:"Масштаб в конце",endPan:"Сдвиг в конце (X)",
+    endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -95,7 +105,13 @@ const copy={
     textStyle:"Caption style",textMotion:"Animation",textPosition:"Position",
     classic:"Classic",cinema:"Cinema",minimal:"Minimal",glowText:"Glow",
     noMotion:"None",fadeMotion:"Fade",slideMotion:"Slide up",popMotion:"Pop",
-    top:"Top",center:"Center",bottom:"Bottom"},
+    top:"Top",center:"Center",bottom:"Bottom",
+    motion:"Shot motion",keyframes:"Keyframes",
+    noMotion:"Still",pushIn:"Zoom in",pullOut:"Zoom out",
+    panLeft:"Pan left",panRight:"Pan right",drift:"Gentle drift",
+    tilt:"Gentle tilt",custom:"Custom",startZoom:"Start zoom",
+    endZoom:"End zoom",endPan:"End horizontal pan",
+    endPanY:"End vertical pan",endRotation:"End rotation"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -109,13 +125,19 @@ const copy={
     textStyle:"Estilo",textMotion:"Animación",textPosition:"Posición",
     classic:"Clásico",cinema:"Cine",minimal:"Mínimo",glowText:"Brillo",
     noMotion:"Ninguna",fadeMotion:"Aparecer",slideMotion:"Subir",popMotion:"Salto",
-    top:"Arriba",center:"Centro",bottom:"Abajo"}
+    top:"Arriba",center:"Centro",bottom:"Abajo",
+    motion:"Movimiento de escena",keyframes:"Fotogramas clave",
+    noMotion:"Sin movimiento",pushIn:"Acercar",pullOut:"Alejar",
+    panLeft:"Panorámica izquierda",panRight:"Panorámica derecha",
+    drift:"Desplazamiento suave",tilt:"Giro suave",custom:"Personalizado",
+    startZoom:"Zoom inicial",endZoom:"Zoom final",endPan:"Panorámica X final",
+    endPanY:"Panorámica Y final",endRotation:"Rotación final"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
   onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
-  onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,
+  onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,onSetShotMotion,
   onOpenAudio,onChangeAudioStart
 }:Props){
   const t=copy[locale];
@@ -400,6 +422,53 @@ export function MandalaMultiTrackTimeline({
             <option value="dream">{t.dream}</option>
           </select>
         </label>
+      </div>:null}
+    {selectedShot!==null&&shots[selectedShot]&&onSetShotMotion?
+      <div className={css.motionInspector} data-video-timeline-keyframes>
+        <label>{t.motion}
+          <select data-video-timeline-motion-preset
+            value={shots[selectedShot].motion?.preset??"none"} disabled={disabled}
+            onChange={event=>onSetShotMotion(selectedShot,motionPreset(event.currentTarget.value))}>
+            <option value="none">{t.noMotion}</option>
+            <option value="push-in">{t.pushIn}</option>
+            <option value="pull-out">{t.pullOut}</option>
+            <option value="pan-left">{t.panLeft}</option>
+            <option value="pan-right">{t.panRight}</option>
+            <option value="drift">{t.drift}</option>
+            <option value="tilt">{t.tilt}</option>
+            <option value="custom">{t.custom}</option>
+          </select>
+        </label>
+        {shots[selectedShot].motion?<details>
+          <summary>{t.keyframes}</summary>
+          <div className={css.motionSliders}>
+            {([
+              {id:"start-zoom",label:t.startZoom,at:"from",key:"zoom",min:1,max:1.6,step:.01},
+              {id:"end-zoom",label:t.endZoom,at:"to",key:"zoom",min:1,max:1.6,step:.01},
+              {id:"end-pan",label:t.endPan,at:"to",key:"x",min:-.16,max:.16,step:.01},
+              {id:"end-pan-y",label:t.endPanY,at:"to",key:"y",min:-.16,max:.16,step:.01},
+              {id:"end-rotation",label:t.endRotation,at:"to",key:"rotation",min:-6,max:6,step:.5}
+            ] as const).map(control=>{
+              const current=shots[selectedShot].motion!;
+              return <label key={control.id}>
+                <span>{control.label}: {current[control.at][control.key].toFixed(2)}</span>
+                <input type="range" min={control.min} max={control.max}
+                  step={control.step} value={current[control.at][control.key]}
+                  data-video-timeline-keyframe-end-zoom={control.id==="end-zoom"?true:undefined}
+                  data-video-timeline-keyframe-end-pan={control.id==="end-pan"?true:undefined}
+                  disabled={disabled}
+                  onChange={event=>{
+                    const baseline=shots[selectedShot].motion??motionPreset("push-in")!;
+                    onSetShotMotion(selectedShot,{
+                      ...baseline,preset:"custom",
+                      [control.at]:{...baseline[control.at],
+                        [control.key]:Number(event.currentTarget.value)}
+                    });
+                  }}/>
+              </label>;
+            })}
+          </div>
+        </details>:null}
       </div>:null}
     {audio?<label className={css.audioOffset} data-video-timeline-audio-start>
       <span>{t.soundStart}: {audio.startSeconds.toFixed(1)}s</span>
