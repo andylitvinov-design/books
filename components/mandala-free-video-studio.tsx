@@ -2554,6 +2554,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try{if(video.playbackRate!==frame.sourceSpeed)video.playbackRate=frame.sourceSpeed;}
     catch{return null;}
     const assessment=assessLicensedSourceFrame(video,frame);
+    if(assessment.status==="unavailable"&&advancePlayback){
+      // Safari may evict the next muted hidden MP4 after the Create preflight.
+      // Re-prime only on explicit preview/export intent; the bounded encoder
+      // retries must still observe a REAL decoded frame before drawing.
+      try{
+        video.muted=true;video.playsInline=true;
+        if(video.networkState===0)video.load();
+        if(video.paused)void video.play().catch(()=>{});
+      }catch{/* Decoder wait below fails closed if re-priming cannot recover. */}
+      return null;
+    }
     if(assessment.status==="drift"&&!video.seeking&&(enteringShot||!advancePlayback)){
       // Stage entry is a *bounded* seek, not a seek on every encoded frame.
       // Rendering waits for the native decoder to finish, else the existing
