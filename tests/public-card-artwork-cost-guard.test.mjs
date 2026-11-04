@@ -124,7 +124,7 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   // Unified protected gate replaces the obsolete release-ready wrapper.
   // The unified Scope job owns Core checks; the aggregate consumes Scope and Specialist results.
   assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);
-  assert.match(core.split(/^  hh-merge-check:/m)[1], /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(core.split(/^  hh-merge-check:/m)[1], /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m, 'Draft must not generate a false-red Core status, while Ready still requires real Scope and Specialist');
   assert.match(core, /- name: Require real Core and specialist results from this workflow/);
   assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
   assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
