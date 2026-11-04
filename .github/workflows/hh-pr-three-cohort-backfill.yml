@@ -8,8 +8,10 @@ on:
       - 'scripts/ci-pr-three-cohorts.cjs'
       - 'scripts/ci-pr-cohort-backfill.cjs'
       - 'scripts/ci-pr-cohort-compact.cjs'
+      - 'scripts/ci-pr-gap-attribution.cjs'
       - 'tests/ci-pr-three-cohorts.test.cjs'
       - 'tests/ci-pr-cohort-compact.test.cjs'
+      - 'tests/ci-pr-gap-attribution.test.cjs'
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
@@ -17,8 +19,10 @@ on:
       - 'scripts/ci-pr-three-cohorts.cjs'
       - 'scripts/ci-pr-cohort-backfill.cjs'
       - 'scripts/ci-pr-cohort-compact.cjs'
+      - 'scripts/ci-pr-gap-attribution.cjs'
       - 'tests/ci-pr-three-cohorts.test.cjs'
       - 'tests/ci-pr-cohort-compact.test.cjs'
+      - 'tests/ci-pr-gap-attribution.test.cjs'
 permissions:
   contents: read
 jobs:
@@ -34,7 +38,8 @@ jobs:
           node --check scripts/ci-pr-three-cohorts.cjs
           node --check scripts/ci-pr-cohort-backfill.cjs
           node --check scripts/ci-pr-cohort-compact.cjs
-          node --test tests/ci-pr-three-cohorts.test.cjs tests/ci-pr-cohort-compact.test.cjs
+          node --check scripts/ci-pr-gap-attribution.cjs
+          node --test tests/ci-pr-three-cohorts.test.cjs tests/ci-pr-cohort-compact.test.cjs tests/ci-pr-gap-attribution.test.cjs
   backfill:
     # One-off, bounded readback after protected merge, or explicit manual run.
     # No schedule, no source mutation, no CI rerun, no extra Vercel work.
