@@ -14,7 +14,7 @@ const MAX_DURATION=60;
 const MAX_BYTES=80*1024*1024;
 
 export type BrowserMovieAudio={
-  files: readonly ({file:File|Blob;loop:boolean}|{preset:string;loop:true})[];
+  files: readonly ({file:File|Blob;loop:boolean;startSeconds?:number}|{preset:string;loop:true;startSeconds?:number})[];
   volume:number;
 };
 export type BrowserMovieOptions={
@@ -72,20 +72,24 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     const decoded=await offline.decodeAudioData(await file.arrayBuffer());
     if(!decoded.length||!Number.isFinite(decoded.duration)||decoded.duration>180)
       throw new Error("audio_decode_invalid");
-    if(!entry.loop && "file" in entry && decoded.duration > seconds + .10)
+    const startSeconds=Number.isFinite(entry.startSeconds)
+      ?Math.max(0,Math.min(seconds-.1,entry.startSeconds||0)):0;
+    if(!entry.loop && "file" in entry && decoded.duration > seconds-startSeconds + .10)
       throw new Error("narration_longer_than_video");
     const source=offline.createBufferSource();
     source.buffer=decoded;
     source.loop=entry.loop;
     const gain=offline.createGain();
     // Smooth music edges; narration's short fade-in preserves first syllables.
-    const fadeIn=entry.loop ? 0.25 : 0.035, fadeOut=entry.loop ? 0.7 : 0.10;
+    const available=seconds-startSeconds;
+    const fadeIn=Math.min(available,entry.loop?.25:.035),fadeOut=Math.min(available,entry.loop?.7:.10);
     gain.gain.setValueAtTime(0,0);
-    gain.gain.linearRampToValueAtTime(gainValue,fadeIn);
-    gain.gain.setValueAtTime(gainValue,Math.max(fadeIn,seconds-fadeOut));
+    gain.gain.setValueAtTime(0,startSeconds);
+    gain.gain.linearRampToValueAtTime(gainValue,startSeconds+fadeIn);
+    gain.gain.setValueAtTime(gainValue,Math.max(startSeconds+fadeIn,seconds-fadeOut));
     gain.gain.linearRampToValueAtTime(0,seconds);
     source.connect(gain).connect(offline.destination);
-    source.start(0);
+    source.start(startSeconds);
   }
   const rendered=await offline.startRendering();
   if(!rendered.length||rendered.duration<seconds-.01)

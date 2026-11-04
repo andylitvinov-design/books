@@ -30,3 +30,14 @@ test("second candidate wave remains owner-unapproved and limited to trusted Dare
    assert.equal(source.visualReviewRequired,true);
  }
 });
+
+test("wave three can only produce unpublished draft MP4s and is not trusted as a render source",()=>{
+ const wave3=JSON.parse(read("data/video-catalog/dareful-verified-candidate-wave3-20261103.json"));
+ assert.equal(wave3.approvedForPublication,false);
+ assert.equal(wave3.sources.length,8);
+ for(const item of wave3.sources)assert.equal(validateDraftMediaSource(item,wave3),true);
+ const renderer=read("scripts/render-dareful-candidate-masters.mjs");
+ assert.match(renderer,/--wave3/);
+ assert.match(renderer,/DRAFT_REAL_MOVING_VIDEO_NOT_PUBLISHED/);
+ assert.doesNotMatch(renderer,/importFreeStockScene|create_pull_request|update_ref/);
+});

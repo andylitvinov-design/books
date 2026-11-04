@@ -468,7 +468,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </section>
     </div>}
 
-    <nav className={styles.bottomNav} aria-label={t.practice}>
+    <nav className={styles.bottomNav} data-legacy-practice-bottom-nav aria-label={t.practice}>
       {TABS.map(({key, label, Icon}) =>
         <button key={key} type="button" className={styles.navItem + (key === 'practice' ? ' ' + styles.navActive : '')}
           onClick={() => void openAction(key)} aria-current={key === 'practice' ? 'page' : undefined}>

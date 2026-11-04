@@ -54,12 +54,14 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(showcase.includes('TOOLS.map('))
 })
 
-test('approved mock owns its five-tab navigation without the sitewide promo', () => {
+test('approved practice keeps functional internal actions but adopts one shared six-tab mobile dock', () => {
   assert.ok(promoBanner.includes('The standalone practitioner mockup'))
   assert.ok(promoBanner.includes('/practice'))
   assert.ok(siteBottomNavigation.includes('The public practitioner showcase'))
-  assert.ok(siteBottomNavigation.includes('/practice'))
-  assert.ok(showcase.includes('className={styles.bottomNav}'))
+  assert.ok(siteBottomNavigation.includes('practice|mytube|temple-insights'))
+  assert.ok(rootLayout.includes('<UnifiedMobileDock initialLocale={lang} />'))
+  assert.ok(read('app/unified-mobile-dock.css').includes('data-legacy-practice-bottom-nav'))
+  assert.ok(showcase.includes('data-legacy-practice-bottom-nav'))
   assert.ok(showcase.includes('TABS.map('))
   assert.ok(!showcase.includes('className={styles.eyebrow}'))
   assert.ok(!showcase.includes('<h2>{t.creations}</h2>'))

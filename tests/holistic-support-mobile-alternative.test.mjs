@@ -30,6 +30,12 @@ test("personal scores stay local; iPhone photos are previewed locally and saved 
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
   assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  // SSR file pickers cannot act before React installs the actual decoder.
+  assert.match(client,/const \[photoHydrated,setPhotoHydrated\] = useState\(false\)/);
+  assert.match(client,/useEffect\(\(\)=>setPhotoHydrated\(true\),\[\]\)/);
+  assert.match(client,/data-support-photo-hydrated=\{photoHydrated\?"true":"false"\}/);
+  assert.match(client,/disabled=\{!photoHydrated\|\|photoBusy\}/);
+  assert.doesNotMatch(client,/disabled=\{photoBusy\} aria-label=\{photoUrl/);
   assert.match(photoHelper, /SUPPORT_PHOTO_ACCEPT = "image\/\*,\.heic,\.heif,\.jpg,\.jpeg,\.png,\.webp"/);
   assert.match(photoHelper, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
   assert.match(photoHelper, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
@@ -106,9 +112,10 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
   for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
     assert.ok(client.includes(pair), pair);
-  // The tab query is critical: without it the existing route initially shows
-  // Orders, not the already-approved person-by-person conversations.
-  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  // Legacy ?tab=chats still opens protected client conversations, while
+  // new direct Messenger visits intentionally open the owner-approved AI tab.
+  assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
+  assert.ok(orders.includes("requested==='orders'||q.has('order')?'orders':'ai'"));
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
   assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
