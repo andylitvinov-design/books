@@ -54,3 +54,24 @@ The previous RU-English-video section is historical, not current behavior. Do no
 - One card has `height: calc(100svh - …)` accounting for header and bottom navigation. Oversized accessibility text scrolls **inside** the card; no controls or source disclosure is clipped. No horizontal overflow or silently hidden original material.
 - Existing English one-video vs Russian seven-video separation and source-backed 96s instrumental audio are preserved. No private My Materials or fabricated soundtrack.
 - Gates: focused meditation/first-screen/hub test; TypeScript lint/build; WebKit/Chromium 320/375/390/430 and real playable YouTube, Vercel READY SHA + canonical alias. Treat these as pending until evidence is collected.
+
+## 27 October 2026 — thematic meditation library and mobile playback redesign
+
+This update **supersedes the equal-height, two-viewport-card layout** documented above. Owner's 27 Oct iPhone screenshot shows the existing 16:9 video surrounded by an oversized screen and generic course controls. The goal is an actual meditation *library*, not a course with “Lesson 1 of 1”.
+
+- Replace the generic video course playlist only on the public Holistic Support meditation section with `HolisticMeditationGallery`. Keep `AcademyCourseVideoPlaylist` unchanged for actual courses.
+- Add accessible, non-persistent theme filters **All / Business / Love / Energy / Health**, EN/RU/ES. These themes are *navigation hints* for verified existing recordings, not specialist new productions or health claims. Business and Love intentionally reuse relevant Sun reflections; Energy and Health offer additional Russian archive practices.
+- Source policy unchanged: **EN/ES** present the confirmed original English Sun video only, no dubbed audio; **RU** presents exactly seven unique original Russian recordings. No fabricated topic-specific video or YouTube ID, no extracting MP3 from videos.
+- Select a recording from compact thumbnails with a lazy YouTube privacy-enhanced inline iframe only after a click. Changing video or theme unmounts the old iframe. Keep original YouTube link visible as a fallback.
+- Remove viewport-height constraints, cropped content, “Lesson 1 of 1”, and Previous/Next buttons on the meditation section. A native 96-second WAV remains in a **compact audio strip** below the videos; missing standalone source recordings disclosed through accessible details.
+- Preserve privacy: no tracking pixels, account requirements, paid API, outbound publishing or private user materials. All filter state local to the page.
+- Release evidence: focused contract + selector tests, TypeScript/lint/build, responsive 320/375/390/430 checks, Vercel READY and SHA/production alias, real video-play on a browser if accessible. Without actual browser playback, report it as not verified rather than “done”.
+
+## 27 October 2026 — owner decision: video-only meditation section
+
+This supersedes the compact-audio-strip part of the earlier 27 October design. Until original independent audio recordings are approved, Holistic Support shows **video recordings only** in EN/RU/ES.
+
+- Removed the separate 96-second instrumental WAV player, the “soft waves and melody” audio card, the missing-MP3 explanatory accordion, audio-only locale strings and obsolete styles from the Holistic Support UI. No public media asset is deleted, and other Academy courses are unchanged.
+- Section headings say **Videos / Видео / Vídeos** and preserve themed video gallery, poster-first YouTube player, topic filters, Russian archive link and Academy link. The video soundtrack/language identification remains legitimate video metadata, not a separate audio block.
+- Regression tests assert no standalone audio player or audio card in any locale. Privacy, payment and other content unchanged.
+- Release gates: focused tests, TypeScript, lint, PR checks, Vercel READY, exact canonical SHA/alias and independent mobile/video-click validation.

@@ -248,14 +248,14 @@ export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
   const [lessonIndex, setLessonIndex] = useState(0);
   const [expandedOffer, setExpandedOffer] = useState<OfferKey | null>(null);
   const appLocale = locale === "es" ? "en" : locale;
-  const practiceRoot = "/" + appLocale + "/app/practice";
+  // Professional entry always shows the approved, publicly browseable dashboard.
+  // The safe start code opens Google only after the person chooses a tool.
+  const practiceRoot = "/" + locale + "/practice";
   const publicRoot = "/" + locale;
   const mastersHref = publicRoot + "/masters?view=mentors";
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
-  const profileHref = practiceRoot + "?panel=profile";
-  const editorHref = (key: OfferKey) => key === "meditation"
-    ? practiceRoot + "?panel=materials&materialTab=courses&create=1"
-    : practiceRoot + "?panel=services&create=1&starter=" + key;
+  const profileHref = practiceRoot + "?start=profile";
+  const editorHref = (key: OfferKey) => practiceRoot + "?start=" + key;
 
   return (
     <main className={"house-home house-home--services " + styles.page} lang={locale} data-profi-page={locale}>
@@ -407,6 +407,14 @@ export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
                 <h2 id="profi-practice-title">{t.proChoice}</h2>
                  <h3 className={styles.sectionSubtitle}>{t.proTitle}</h3>
                 <p>{t.proLead}</p>
+                <Link href={"/"+locale+"/practice"} className={styles.practiceShowcaseEntry}
+                  prefetch={false} data-profi-practice-showcase-entry>
+                  <Rocket size={19} aria-hidden="true"/>
+                  <span>{locale==="ru"?"Открыть новый кабинет практика":locale==="es"?"Abrir espacio profesional":"Open practitioner workspace"}
+                    <small>{locale==="ru"?"Сначала посмотрите дизайн без входа через Google":locale==="es"?"Explora el diseño antes de iniciar sesión":"Explore the full design without signing in"}</small>
+                  </span>
+                  <ArrowRight size={19} aria-hidden="true"/>
+                </Link>
               </div>
               <div className={styles.offerStudio}>
                 <div className={styles.offerChoices}>

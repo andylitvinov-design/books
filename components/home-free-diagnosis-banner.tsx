@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, CheckCircle2, ChevronDown, MessageCircle, Send } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp, whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -334,6 +335,7 @@ export function HomeFreeDiagnosisBanner({ locale, context }: { locale: PublicLoc
                   }} />
                 <label htmlFor={consentId}>{t.consent}</label>
               </div>
+              <EnquiryAttributionChoice locale={locale} disabled={busy !== null} />
             </div>
           )}
           <div className={styles.channels}>

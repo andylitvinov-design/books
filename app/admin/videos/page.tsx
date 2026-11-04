@@ -1,9 +1,12 @@
 import "@/app/site-video-admin.css";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { SiteVideoManager } from "@/components/site-video-manager";
+import { KlingSceneStudio } from "@/components/kling-scene-studio";
+import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
@@ -18,7 +21,9 @@ export const metadata = { title: "Website videos — Holistic House", robots: { 
 
 export default async function SiteVideosPage() {
   if (!await requireAdminRequest()) redirect("/admin/login");
-  const initialLocale = (await cookies()).get(uiLocaleCookie)?.value === "en" ? "en" : "ru";
+  const cookieLocale = (await cookies()).get(uiLocaleCookie)?.value;
+  const klingLocale = cookieLocale === "es" ? "es" : cookieLocale === "en" ? "en" : "ru";
+  const initialLocale = klingLocale === "es" ? "en" : klingLocale;
   let records: SiteVideoRecord[] = [];
   let storageReady = false;
   try {
@@ -42,7 +47,23 @@ export default async function SiteVideosPage() {
         title={{ en: "Website videos", ru: "Видео сайта" }}
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
+      <section className="site-video-review-entry" aria-label="Storyboard review">
+        <div><strong>{klingLocale === "ru" ? "Редакторская проверка 120 сценариев" : "Review 120 video storyboards"}</strong>
+          <p>{klingLocale === "ru" ? "Просмотрите реальные 44 MP4, подберите четыре кадра и сохраните черновик без публикации." : "Inspect the 44 verified MP4 sources and save private storyboard review notes without publishing."}</p></div>
+        <Link href="/admin/videos/scenario-review">{klingLocale === "ru" ? "Открыть проверку сцен" : "Open scene review"}</Link>
+      </section>
       <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} />
+      <KlingSceneStudio
+        initialLocale={klingLocale}
+        configured={Boolean(process.env.KLING_API_KEY)}
+        enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true"}
+        premiumEnabled={process.env.HH_KLING_PREMIUM_RENDER_ENABLED === "true"}
+      />
+      <KlingAvatarStudio
+        initialLocale={klingLocale}
+        configured={Boolean(process.env.KLING_API_KEY)}
+        enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true" && process.env.HH_KLING_AVATAR_PAID_ENABLED === "true"}
+      />
     </main>
   );
 }

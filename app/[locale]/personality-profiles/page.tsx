@@ -69,12 +69,16 @@ export default async function PersonalityProfilesPage({ params }: Props) {
       entry.explicitOptIn !== true && entry.scaleGuide?.measurementAxes?.length)
     .map(entry => ({
       key: entry.key,
+      version: entry.definition?.version || entry.version,
       title: entry.title,
       axes: [...new Set((entry.scaleGuide.measurementAxes as unknown[])
         .filter((axis): axis is string => typeof axis === "string" && axis.length > 0))],
       minutes: entry.durationMinutes || null,
       questions: entry.questionCount || null,
       testKind: entry.testKind,
+      // Catalogue interests help place a real scored axis in its appropriate topic.
+      // They never change the axis or assert a different measurement.
+      topics: (entry.topics || []).filter((topic: string) => typeof topic === "string" && topic.length > 0),
       // Server-declared scales only. Source-question count is published only
       // when the actual scoring items can be identified without guessing.
       scales: (entry.scaleGuide?.scales || []).filter((scale: { key: string; label: string; axis: string }) =>

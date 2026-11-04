@@ -7,7 +7,7 @@ const COPY = {
     title: 'My saved scenarios', info: 'Private encrypted drafts · preview approval is NOT publication to visitors.',
     loading: 'Loading saved scenarios…', unavailable: 'Draft storage is not yet available. Use Copy JSON until it is enabled.',
     select: 'Saved scenario', new: 'New draft (current template)', save: 'Save draft',
-    approve: 'Approve preview version', pause: 'Pause preview', revision: 'Revision',
+    approve: 'Approve preview version', pause: 'Pause internal flow', activate: 'Activate internal CRM event workflow', activated: 'Active for consented events. Only internal owner records are created; NO visitor messages.', revision: 'Revision',
     version: 'Version', restore: 'Load selected draft', none: 'No saved drafts yet.',
     saved: 'Saved securely. No customer message was sent.',
     approved: 'Preview version approved. No bot has been activated.',
@@ -16,13 +16,13 @@ const COPY = {
     dirty: 'Changes are not saved. Save before approving a preview version.',
     conflict: 'The scenario changed in another tab. Refresh and reload it before saving.',
     error: 'Could not save. No changes were confirmed.',
-    refresh: 'Refresh list', status: {draft:'Draft',approved_preview:'Preview approved',paused:'Paused'},
+    refresh: 'Refresh list', status: {draft:'Draft',approved_preview:'Preview approved',paused:'Paused',active_internal:'Internal CRM active'},
   },
   ru: {
     title: 'Мои сохранённые сценарии', info: 'Зашифрованные черновики · одобрение предпросмотра НЕ включает бота для посетителей.',
     loading: 'Загружаем сценарии…', unavailable: 'Хранение черновиков пока недоступно. Можно скопировать JSON.',
     select: 'Сохранённый сценарий', new: 'Новый черновик (текущий шаблон)', save: 'Сохранить черновик',
-    approve: 'Утвердить версию предпросмотра', pause: 'Остановить предпросмотр', revision: 'Редакция',
+    approve: 'Утвердить предпросмотр', pause: 'Остановить внутренний сценарий', activate: 'Включить сценарий для согласованных событий CRM', activated: 'Внутренний сценарий включён. Клиентам ничего автоматически не отправляется.', revision: 'Редакция',
     version: 'Версия', restore: 'Загрузить черновик', none: 'Пока нет сохранённых сценариев.',
     saved: 'Черновик сохранён. Сообщения клиентам не отправлены.',
     approved: 'Версия предпросмотра утверждена. Бот не активирован.',
@@ -31,13 +31,13 @@ const COPY = {
     dirty: 'Текст изменён, но ещё не сохранён. Сохраните перед одобрением.',
     conflict: 'Сценарий изменился в другой вкладке. Обновите список и откройте заново.',
     error: 'Сохранить не удалось. Изменения не подтверждены.',
-    refresh: 'Обновить список', status: {draft:'Черновик',approved_preview:'Предпросмотр одобрен',paused:'Остановлено'},
+    refresh: 'Обновить список', status: {draft:'Черновик',approved_preview:'Предпросмотр одобрен',paused:'Остановлено',active_internal:'Внутренний CRM активен'},
   },
   es: {
     title: 'Mis escenarios guardados', info: 'Borradores privados cifrados. Aprobar una vista previa NO activa un bot público.',
     loading: 'Cargando escenarios…', unavailable: 'Todavía no se pueden guardar borradores. Puedes copiar el JSON.',
     select: 'Escenario guardado', new: 'Nuevo borrador (plantilla actual)', save: 'Guardar borrador',
-    approve: 'Aprobar versión de prueba', pause: 'Pausar vista previa', revision: 'Revisión',
+    approve: 'Aprobar versión de prueba', pause: 'Pausar flujo interno', activate: 'Activar flujo para eventos del CRM', activated: 'Flujo interno activo. No se envían mensajes automáticos a clientes.', revision: 'Revisión',
     version: 'Versión', restore: 'Abrir borrador', none: 'Aún no hay escenarios.',
     saved: 'Guardado de forma segura. No se enviaron mensajes.',
     approved: 'Vista previa aprobada. El bot no está activo.',
@@ -46,7 +46,7 @@ const COPY = {
     dirty: 'Hay cambios sin guardar. Guarda antes de aprobar.',
     conflict: 'El escenario cambió en otra pestaña. Actualiza y vuelve a cargar.',
     error: 'No se guardó el borrador.',
-    refresh: 'Actualizar', status: {draft:'Borrador',approved_preview:'Vista previa aprobada',paused:'Pausado'},
+    refresh: 'Actualizar', status: {draft:'Borrador',approved_preview:'Vista previa aprobada',paused:'Pausado',active_internal:'CRM interno activo'},
   },
 }
 
@@ -154,7 +154,7 @@ export default function CrmSalesbotDraftControls({ accountId, locale = 'en', flo
       setItems(previous => [next, ...previous.filter(row => row.id !== next.id)])
       setSelectedId(next.id)
       if (data.flow) onRestore(data.flow)
-      setNotice(action === 'save' ? t.saved : action === 'approve_preview' ? t.approved : t.paused)
+      setNotice(action === 'save' ? t.saved : action === 'approve_preview' ? t.approved : action === 'activate_internal' ? t.activated : t.paused)
     } catch {
       if (session === sessionRef.current && !session.controller.signal.aborted)
         setNotice(t.error)
@@ -192,10 +192,13 @@ export default function CrmSalesbotDraftControls({ accountId, locale = 'en', flo
       <button type="button" disabled={busy || loading || !available || !!(selected && !dirty)}
         onClick={() => void mutate('save')}>{busy ? '…' : t.save}</button>
       <button type="button" className={styles.secondary}
-        disabled={busy || loading || !available || !selected || dirty || selected.status === 'approved_preview'}
+        disabled={busy || loading || !available || !selected || dirty || ['approved_preview','active_internal'].includes(selected.status)}
         onClick={() => void mutate('approve_preview')}>{t.approve}</button>
       <button type="button" className={styles.secondary}
-        disabled={busy || loading || !available || !selected || selected.status !== 'approved_preview'}
+        disabled={busy || loading || !available || !selected || dirty || selected.status !== 'approved_preview'}
+        onClick={() => void mutate('activate_internal')}>{t.activate}</button>
+      <button type="button" className={styles.secondary}
+        disabled={busy || loading || !available || !selected || !['approved_preview','active_internal'].includes(selected.status)}
         onClick={() => void mutate('pause')}>{t.pause}</button>
     </div>
     {notice && <p role={available ? 'status' : 'alert'} className={styles.note}>{notice}</p>}

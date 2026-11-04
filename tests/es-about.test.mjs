@@ -47,3 +47,17 @@ test('Spanish preview is the exact small frame extracted from the archived Spani
   assert.equal(createHash('sha256').update(poster).digest('hex'), '53646820605fbd228ec1511b11f9701cbba6127b8b79fb7863a101ee7ad5347c');
   assert.doesNotMatch(source('components/site-video-player.tsx'), /Expires=|Signature=|\.mp4\?/);
 });
+
+
+test('ES browser acceptance verifies current intro and all ten authentic testimonials without masking RU audio',()=>{
+  const suite=source('scripts/verify-es-about.mjs');
+  assert.match(suite, /data-video-slot="about-intro"/);
+  assert.match(suite, /data-personal-testimonials="about"/);
+  assert.match(suite, /toHaveCount\(10\)/);
+  assert.match(suite, /site-video-caption \[lang="ru"\]/);
+  assert.match(suite, /site-video-caption \[lang="en"\]/);
+  assert.match(suite, /spanishCopy\.join/);
+  assert.match(suite, /await intro\.getByRole\('button'/);
+  assert.match(suite, /intro\.locator\('iframe'\)/);
+  assert.doesNotMatch(suite, /about-video-grid/);
+});

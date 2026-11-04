@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, BriefcaseBusiness, Heart, HeartPulse } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { HolisticInlineSupportOrder } from "./holistic-inline-support-order";
+import type { SupportRequestKind } from "./remote-energy-support-booking";
 import styles from "./holistic-support-topic-filter.module.css";
 
 type Topic = "business" | "love" | "health";
@@ -29,7 +31,7 @@ const copy = {
     title: "What matters to you today?",
     lead: "Choose a theme to explore existing meditation recordings, symbolic talisman studies and personal energy support.",
     select: "Choose a theme",
-    actions: { meditation: "Watch & listen", talisman: "Explore talismans", expert: "Request a session" },
+    actions: { meditation: "Watch & listen", talisman: "Order a talisman", expert: "Book energy support" },
     archiveNote: "Your uploaded talismans stay private; historical Academy learning materials remain available separately.",
     topics: {
       business: {
@@ -63,7 +65,7 @@ const copy = {
     title: "Какая тема вам сейчас важна?",
     lead: "Выберите направление: подходящие медитативные практики из существующего архива, символика талисманов и личная энергетическая поддержка.",
     select: "Выберите тему",
-    actions: { meditation: "Смотреть и слушать", talisman: "Изучить талисманы", expert: "Запросить сессию" },
+    actions: { meditation: "Смотреть и слушать", talisman: "Заказать талисман", expert: "Заказать энергоподдержку" },
     archiveNote: "Ваши загруженные талисманы остаются приватными; исторические материалы Академии доступны отдельно.",
     topics: {
       business: {
@@ -97,7 +99,7 @@ const copy = {
     title: "¿Qué es importante para ti hoy?",
     lead: "Elige un tema y descubre meditaciones existentes, estudios simbólicos sobre talismanes y apoyo energético personal.",
     select: "Elige un tema",
-    actions: { meditation: "Ver y escuchar", talisman: "Explorar talismanes", expert: "Solicitar sesión" },
+    actions: { meditation: "Ver y escuchar", talisman: "Encargar un talismán", expert: "Solicitar apoyo energético" },
     archiveNote: "Los talismanes que subas son privados; el material histórico de la Academia permanece disponible por separado.",
     topics: {
       business: {
@@ -128,14 +130,35 @@ const copy = {
   },
 } as const;
 
-function offerHref(locale: PublicLocale, offer: Offer) {
-  if (offer === "meditation") return "#meditation-practices";
-  if (offer === "talisman") return "#talismans";
-  return "/" + locale + "/services/remote-energy-support";
-}
-
 export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale }) {
   const [activeTopic, setActiveTopic] = useState<Topic>("business");
+  const [orderKind, setOrderKind] = useState<SupportRequestKind | null>(null);
+  useEffect(() => {
+    const onOtherOrder = (event: Event) => {
+      if ((event as CustomEvent<{source?: string}>).detail?.source !== "topics") setOrderKind(null);
+    };
+    window.addEventListener("hh-support-order-open", onOtherOrder);
+    return () => window.removeEventListener("hh-support-order-open", onOtherOrder);
+  }, []);
+  const openOrder = (value: SupportRequestKind) => {
+    window.dispatchEvent(new CustomEvent("hh-support-order-open", {detail:{source:"topics"}}));
+    setOrderKind(value);
+  };
+  const initialGoal: Record<Topic, string> = {
+    business: "Work and money",
+    love: "Connection and relationships",
+    health: "Inner balance and calm",
+  };
+  useEffect(() => {
+    if (!orderKind) return;
+    const panel = document.getElementById("holistic-inline-order");
+    if (!panel) return;
+    panel.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+    panel.querySelector<HTMLElement>("#holistic-inline-order-title")?.focus({ preventScroll: true });
+  }, [orderKind, activeTopic]);
   const t = copy[locale];
   const selected = t.topics[activeTopic];
 
@@ -184,15 +207,37 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
                 <Image src={image} alt="" fill sizes="(max-width:720px) 112px, 360px" />
               </div>
               <div className={styles.cardBody}>
-                <h3>{selected.cards[id].title}</h3>
+                <h3>{id === "meditation" ? selected.cards[id].title : (
+                  <button type="button" className={styles.titleButton}
+                    aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
+                    aria-controls="holistic-inline-order"
+                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
+                    {selected.cards[id].title}
+                  </button>
+                )}</h3>
                 <p>{selected.cards[id].body}</p>
-                <Link href={offerHref(locale, id)} prefetch={false} className={styles.action}>
-                  {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
-                </Link>
+                {id === "meditation" ? (
+                  <Link href="#meditation-practices" prefetch={false} className={styles.action}>
+                    {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <button type="button" className={styles.action}
+                    data-holistic-order-trigger={id}
+                    aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
+                    aria-controls="holistic-inline-order"
+                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
+                    {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
+                  </button>
+                )}
               </div>
             </article>
           ))}
         </div>
+        {orderKind && (
+          <HolisticInlineSupportOrder locale={locale} kind={orderKind}
+            initialGoal={initialGoal[activeTopic]} onKindChange={setOrderKind}
+            onClose={() => setOrderKind(null)} />
+        )}
         <p className={styles.archiveNote} role="note">{t.archiveNote}</p>
       </div>
     </section>

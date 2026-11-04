@@ -7,6 +7,8 @@ import { PersonalConsultationForm } from "@/components/personal-consultation-for
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PageVideo } from "@/components/page-video";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PublicPathwayStrip } from "@/components/public-pathway-strip";
+import refreshStyles from "@/components/public-journey-refresh.module.css";
 import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { existingAboutIntroVideo } from "@/lib/site-videos/defaults";
@@ -64,7 +66,7 @@ export default async function AboutPage({ params }: PageProps) {
   const aboutIntro = await getPublishedSiteVideo(videoKey("about-intro", typedLocale));
 
   return (
-    <main className="about-shell" lang={typedLocale}>
+    <main className={"about-shell " + refreshStyles.page} lang={typedLocale} data-public-design-migration="wave1">
       <PublicSiteHeader locale={typedLocale} />
 
       {aboutIntro && (typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId
@@ -81,6 +83,8 @@ export default async function AboutPage({ params }: PageProps) {
           {current.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </div>
       </section>
+
+      <PublicPathwayStrip locale={typedLocale} />
 
       <article className="about-biography">
         {current.sections.map((section) => (

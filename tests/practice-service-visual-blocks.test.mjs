@@ -56,7 +56,7 @@ test('the real photo uploader is used in the first card and blocks save during m
  assert.match(photo,/fetch\('\/api\/app\/practice\/photos'/)
  assert.match(photo,/Public only after approval/)
  assert.match(editor,/data-service-photo-tools/)
- assert.match(editor,/value=\{draft\.videoPresentation\}/)
+ assert.match(editor,/<PracticeVideoField locale=\{locale\} introductions=\{draft\.serviceIntroductions\|\|\[\]\}/)
  assert.match(editor,/onBusyChange=\{value=>\{setVideoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
 })
 

@@ -101,3 +101,14 @@
 .importPanel textarea{margin:8px 0;min-height:80px;font:500 11px/1.4 ui-monospace,monospace}
 .importPanel .actionButton{width:100%}
 @media(max-width:360px){.graphTools{padding:9px}.choiceEdit .secondary{width:100%}}
+
+/* The actual owner-approved Telegram V2 script is first; generic CRM dry-runs
+   are secondary, visibly separate and closed by default on phone and desktop. */
+.extraTemplates{margin-top:13px;min-width:0;border:1px solid #dfd0be;border-radius:13px;background:#fffcf8;overflow:visible}
+.extraSummary{display:block;cursor:pointer;list-style:disclosure-closed;min-height:44px;padding:13px 14px;font:750 13px/1.5 system-ui,sans-serif;color:#645149;overflow-wrap:anywhere}
+.extraTemplates[open]>.extraSummary{border-bottom:1px solid #e6d8c9}
+.extraSummary::-webkit-details-marker{display:none}
+.extraSummary::before{content:'▸';display:inline-block;margin-right:8px;color:#286c66}
+.extraTemplates[open]>.extraSummary::before{content:'▾'}
+.extraBody{min-width:0;padding:14px}
+@media(max-width:430px){.extraBody{padding:9px}.extraSummary{padding:12px 9px}}

@@ -35,3 +35,17 @@
  .bottomActions{padding:17px;display:grid;gap:9px;}
  .bottomPrimary{width:100%;font-size:14px;}
 }
+
+/* Moderated Reiki variants: no client data and no automatic booking. */
+.reikiOffers{display:grid;gap:14px;max-width:1120px;margin:24px auto;padding:clamp(15px,3vw,25px);
+ border:1px solid #e4d3be;border-radius:19px;background:linear-gradient(155deg,#fffdf9,#f6ede1);color:#49382d}
+.reikiOffers h2{margin:0 0 6px;font:500 clamp(1.3rem,2.6vw,1.8rem)/1.2 Georgia,serif}
+.reikiOffers p{margin:0;color:#756356;font-size:.86rem;line-height:1.5}
+.reikiOfferGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:9px}
+.reikiOfferCard{display:grid;gap:7px;padding:13px;border:1px solid #e4d4c2;border-radius:12px;background:#fffaf4}
+.reikiOfferCard strong{color:#4f3b30;font-size:.88rem}
+.reikiOfferCard span{color:#655448;font-size:.82rem;line-height:1.4}
+.reikiOfferCard small{color:#6f7361;font-size:.74rem}
+.reikiOfferCard b{justify-self:start;font-size:1.03rem;color:#1d7166}
+.reikiOffers .reikiOfferFootnote{font-size:.75rem;color:#6d655d}
+@media(max-width:430px){.reikiOffers{margin:15px 8px;padding:12px}.reikiOfferGrid{grid-template-columns:1fr}.reikiOfferCard{padding:11px}}

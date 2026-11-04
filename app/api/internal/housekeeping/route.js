@@ -7,7 +7,6 @@ import { runHousekeepingCron } from '@/lib/app/housekeeping-cron'
 import { purgeExpiredGoalPhotos } from '@/lib/practitioners/remote-goal-photo'
 import { purgeExpiredFreeExpressMedia } from '@/lib/practitioners/free-express-media'
 import { purgeOldPublicTraffic } from '@/lib/analytics/public-traffic-retention'
-import {recoverOwnerAudioBatchFromCron} from '@/lib/practitioners/owner-telegram-audio-service'
 import {
   recordAppHousekeepingFailure,
   runAppHousekeeping,
@@ -16,7 +15,7 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const maxDuration = 120
+export const maxDuration = 90
 
 export async function GET(request) {
   try {
@@ -24,18 +23,6 @@ export async function GET(request) {
       run: async () => {
         const config = getAppConfig()
         try {
-          // Exactly one historical owner batch, through the existing CRON_SECRET gate.
-          // Never block housekeeping or expose private audio/IDs in responses.
-          try{
-            const recovery=await recoverOwnerAudioBatchFromCron(config)
-            if(recovery.status==='provider_confirmed')
-              console.info('HH_OWNER_AUDIO_RECOVERY_PROVIDER_CONFIRMED')
-            else if(['telegram_not_confirmed','provider_accepted_receipt_not_persisted',
-              'owner_not_configured','telegram_identity_unavailable',
-              'telegram_identity_unverified','unverified_sources','unexpected_parts',
-              'inactive'].includes(recovery.status))
-              console.error('HH_OWNER_AUDIO_RECOVERY_NEEDS_REVIEW',recovery.status)
-          }catch{console.error('HH_OWNER_AUDIO_RECOVERY_ATTEMPT_FAILED')}
           const result = await runAppHousekeeping(config)
           // Existing daily authorized cron also refreshes non-identifying
           // guide clarification priorities; failure does not block maintenance.
@@ -48,6 +35,24 @@ export async function GET(request) {
           catch { console.error('HH_FREE_EXPRESS_MEDIA_RETENTION_FAILED') }
           try { await purgeOldPublicTraffic(config) }
           catch { console.error('HH_PUBLIC_TRAFFIC_RETENTION_FAILED') }
+          // Reuse this existing CRON_SECRET-protected daily task as a
+          // no-cost safety net when YouTube accepted an owner-approved MP4
+          // but processing outlasted the upload request. This is *only*
+          // a read-only check of the already recorded provider video ID.
+          if(process.env.HH_OWNER_VIDEO_ENABLED==='true'){
+            try{
+              const {reconcilePendingOwnerYoutubeVideo}=await import(
+                '@/lib/practitioners/owner-telegram-video-service')
+              await reconcilePendingOwnerYoutubeVideo(config)
+            }catch{console.error('HH_OWNER_YOUTUBE_READBACK_RECONCILE_FAILED')}
+            // Up to three owner-approved cabinet videos with provider IDs.
+            // Never attempt another upload or inspect unconsented material.
+            try{
+              const {reconcileOwnerYoutubePublications}=await import(
+                '@/lib/youtube/owner-publication-service')
+              await reconcileOwnerYoutubePublications(config)
+            }catch{console.error('HH_OWNER_PUBLICATIONS_RECONCILE_FAILED')}
+          }
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})

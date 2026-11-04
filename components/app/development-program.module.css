@@ -324,3 +324,17 @@
   .profileInvitationFooter{margin-top:9px}
 }
 @media(prefers-reduced-motion:reduce){.profileTestCard,.profileTestMore>summary svg,.root .profileDomainTab{transition:none}}
+
+/* Goal Profile is an optional PRIVATE three-item check-in, never a clinical score. */
+.goalCheckin{min-width:0;margin:0 0 16px;padding:13px;border:1px solid #b8d6cb;border-radius:13px;background:#f6faf7;color:#28463f}
+.goalCheckin legend{padding:0 6px;font-weight:750;font-size:.94rem;color:#215e53}
+.goalCheckin p{font-size:.8rem;line-height:1.45;margin:2px 0 10px;overflow-wrap:anywhere}
+.goalRatingGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.goalRatingRow{display:flex;flex-direction:column;justify-content:space-between;min-width:0;gap:8px;padding:10px;border:1px solid #cbded6;border-radius:10px;background:#fff}
+.goalRatingRow span{min-width:0;font-size:.83rem;line-height:1.28;font-weight:680;overflow-wrap:anywhere}
+.goalRatingRow select{min-width:0;width:100%;min-height:44px;padding:7px;color:#173f37;background:#fff;border:1px solid #a6c4ba;border-radius:8px;font:inherit;cursor:pointer}
+.goalRatingRow select:focus-visible,.goalCheckinFooter button:focus-visible{outline:3px solid #24796b;outline-offset:2px}
+.goalCheckinFooter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.goalCheckinFooter small{font-size:.73rem;line-height:1.4;flex:1 1 190px}
+.goalCheckinFooter button{min-height:44px;border:1px solid #b9d1c8;border-radius:9px;padding:7px 10px;color:#225b50;background:#fff;cursor:pointer}
+@media(max-width:650px){.goalRatingGrid{grid-template-columns:1fr}.goalRatingRow{flex-direction:row;align-items:center}.goalRatingRow span{flex:1}.goalRatingRow select{max-width:145px}}

@@ -1,0 +1,170 @@
+/* One compact cream/emerald module in the existing video editor — iPhone first. */
+.panel {
+  min-width: 0;
+  margin: 12px 0;
+  padding: clamp(10px, 2.8vw, 15px);
+  border: 1px solid #cfe4d7;
+  border-radius: 19px;
+  background: #fffdf6;
+  color: #234d40;
+  box-shadow: 0 4px 15px rgb(22 77 58 / 4%);
+}
+.heading { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 6px; }
+.titleGroup { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.titleGroup h3 { margin: 0; min-width: 0; font: 800 clamp(17px, 4vw, 21px)/1.2 Arial,Helvetica,sans-serif; letter-spacing: -.02em; color: #174e3c; }
+.emblem { display: grid; place-items: center; flex: none; width: 29px; height: 29px; border: 1px solid #abd7c4; border-radius: 10px; background: #e7f5e9; color: #008c67; }
+.enable { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 38px; padding: 5px 9px; border: 1px solid #c2dfd1; border-radius: 99px; background: #edf7ef; color: #196a4e; font: 800 11px/1.2 Arial,Helvetica,sans-serif; white-space: nowrap; cursor: pointer; }
+.enable input, .visibilityChoices input { flex: none; width: 17px; height: 17px; margin: 0; accent-color: #009b73; }
+.description { margin: 5px 0 9px; color: #507062; font-size: 12px; line-height: 1.35; }
+.controls { display: grid; gap: 7px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.controls:disabled { opacity: .7; }
+.sectionLabel { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 0; margin: 0; color: #225342; font-size: 13px; font-weight: 800; line-height: 1.3; }
+.sectionLabel small { color: #567966; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.suggestions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; min-width: 0; }
+.suggestion { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; min-height: 51px; padding: 8px 8px; border: 1px solid #d2dfd5; border-radius: 11px; background: #f8faf5; color: #345649; text-align: left; font: 750 12.5px/1.25 Arial,Helvetica,sans-serif; overflow-wrap: anywhere; cursor: pointer; }
+.suggestion[aria-pressed="true"] { border: 1.5px solid #059a73; padding: 7.5px; background: #e7f5eb; color: #126549; }
+.suggestion span:first-child { min-width: 0; }
+.tick { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border: 1px solid #bed2c6; border-radius: 50%; background: #fff; color: transparent; }
+.suggestion[aria-pressed="true"] .tick { border-color: #059a73; background: #059a73; color: #fff; }
+.customDetails,.settingsDetails { min-width: 0; border: 1px solid #d5e5d8; border-radius: 12px; background: #f8faf5; }
+.customDetails summary,.settingsDetails summary { display: grid; grid-template-columns: 18px minmax(0,1fr) auto 9px; align-items: center; column-gap: 7px; min-height: 43px; padding: 9px 10px; list-style: none; color: #22634e; font-size: 12px; font-weight: 800; cursor: pointer; }
+.customDetails summary::-webkit-details-marker,.settingsDetails summary::-webkit-details-marker { display: none; }
+.customDetails summary svg,.settingsDetails summary svg { color: #098b68; }
+.customDetails summary small,.settingsDetails summary small { color: #537d68; font-size: 10px; font-weight: 650; }
+.customDetails summary::after,.settingsDetails summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid #46836e; border-bottom: 2px solid #46836e; transform: rotate(45deg); grid-column: 4; transition: transform .15s; }
+.customDetails[open] summary::after,.settingsDetails[open] summary::after { transform: rotate(225deg); }
+.settingsDetails summary small { grid-column: 2 / 4; grid-row: 2; justify-self: start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.settingsDetails summary::after { grid-row: 1; }
+.customBody,.settingsBody { padding: 0 10px 10px; }
+.smallHint { display: block; margin: 0 0 5px; color: #577a69; font-size: 10.5px; }
+.controls textarea { display: block; width: 100%; min-width: 0; min-height: 64px; resize: vertical; padding: 9px; border: 1px solid #d0e0d4; border-radius: 10px; background: #fff; color: #204539; font: 500 13px/1.45 Arial,Helvetica,sans-serif; }
+.controls textarea::placeholder { color: #718d7e; }
+.modeGrid { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+.modeGroup { min-width: 0; }
+.modeHeading { display: flex; align-items: center; gap: 6px; margin: 3px 0 6px; color: #275849; font-size: 11.5px; font-weight: 800; line-height: 1.3; }
+.modeHeading svg { flex: none; color: #078c69; }
+.density,.frequencyChoices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.density button,.frequencyChoices button { min-width: 0; min-height: 44px; padding: 5px; border: 1px solid #d9e2d8; border-radius: 10px; background: #fffcf6; color: #4d6c5d; font: 750 12px/1.2 Arial,Helvetica,sans-serif; cursor: pointer; }
+.density button[aria-pressed="true"],.frequencyChoices button[aria-pressed="true"] { background: #087f5e; border-color: #087f5e; color: #fff; }
+.visibility { margin-top: 10px; }
+.visibilityChoices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.visibilityChoices label { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 46px; padding: 5px; border: 1px solid #d4e6d8; border-radius: 10px; background: #fffefa; color: #285543; font-size: 11px; line-height: 1.2; font-weight: 750; text-align: center; cursor: pointer; }
+.visibilityChoices label:has(input:checked) { background: #e9f6ee; border-color: #8bd0b6; }
+.visibilityChoices input { width: 16px; height: 16px; }
+.frameNote { margin: 8px 1px 0; color: #705c34; font-size: 10.5px; line-height: 1.35; }
+.preview { display: grid; gap: 4px; min-width: 0; margin-top: 8px; padding: 9px 10px; border: 1px solid #bfdcc9; border-radius: 11px; background: linear-gradient(115deg,#e9f4ea,#f9f2e2); }
+.previewTitle { display: flex; align-items: center; gap: 6px; color: #25765b; font-size: 11px; font-weight: 800; }
+.previewState { margin-left: auto; color: #177958; font-size: 10px; font-weight: 800; }
+.previewState[data-active="false"] { color: #6e766b; }
+.previewText { color: #17533f; font-size: 17px; line-height: 1.2; font-weight: 800; overflow-wrap: anywhere; }
+.preview small { color: #5c7d6d; font-size: 10px; }
+.privacy { margin: 7px 1px 0; color: #507262; font-size: 10.5px; line-height: 1.35; }
+.controls textarea:focus-visible,.suggestion:focus-visible,.enable input:focus-visible,
+.density button:focus-visible,.frequencyChoices button:focus-visible,
+.visibilityChoices input:focus-visible,.customDetails summary:focus-visible,
+.settingsDetails summary:focus-visible { outline: 3px solid #51bc9d; outline-offset: 2px; }
+@media (min-width: 680px) {
+  .suggestions { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .modeGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 360px) {
+  .panel { padding: 10px; }
+  .titleGroup h3 { font-size: 17px; }
+  .suggestion { font-size: 12px; }
+  .enable { padding-inline: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customDetails summary::after,.settingsDetails summary::after { transition: none; }
+}
+
+/* Personal suggestions and explicit goal accents: same cream/emerald editor. */
+.personalFocus { display: grid; gap: 7px; min-width: 0; margin: 7px 0 10px; }
+.personalButtons { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.personalButtons button { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 0; width: 100%; min-height: 46px; padding: 7px 5px; border-radius: 11px; font: 800 12px/1.3 Arial,Helvetica,sans-serif; text-align: center; cursor: pointer; }
+.personalButtons svg { flex: none; }
+.personalSuggest { border: 1px solid #0d9d75; background: #0d9d75; color: #fff; }
+.goalsToggle { border: 1px solid #abd5be; background: #fffdf6; color: #136345; }
+.personalButtons button:disabled { opacity: .65; cursor: wait; }
+.goalsFilter { padding: 12px; border: 1px solid #c6dfce; border-radius: 15px; background: #eff8f0; min-width: 0; }
+.goalsFilter h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 5px; color: #1a6048; font-size: 14px; }
+.goalsFilter p { margin: 0 0 10px; color: #4d705c; font-size: 12px; line-height: 1.45; }
+.goalChips { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.goalChips button { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; border: 1px solid #c5d9ca; border-radius: 11px; padding: 8px; background: #fffefa; color: #285b44; font-size: 12px; font-weight: 730; line-height: 1.3; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.goalChips button[aria-pressed="true"] { border-color: #009e74; background: #e2f4e9; }
+.goalChips button b { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #0d9d75; color: #fff; font-size: 11px; }
+.goalApply { min-height: 44px; margin-top: 10px; padding: 8px 12px; width: 100%; border: 0; border-radius: 12px; background: #0d9d75; color: #fff; font-weight: 800; cursor: pointer; }
+.goalApply:disabled { opacity: .55; cursor: default; }
+.personalMessage { display: grid; gap: 5px; padding: 10px; border-radius: 11px; background: #f3f7e8; color: #305942; font-size: 12px; line-height: 1.4; }
+.personalMessage a { color: #087956; text-decoration: underline; font-weight: 800; }
+.personalButtons button:focus-visible, .goalChips button:focus-visible, .goalApply:focus-visible { outline: 3px solid #51bc9d; outline-offset: 2px; }
+@media (max-width: 360px) { .personalButtons button { font-size: 12px; } .goalChips button { font-size: 11px; } }
+
+
+/* Hypnoaffirmations: clear two-path introduction in the canonical cream/emerald
+   editor. No second page; short labels remain touch-friendly at 320–430px. */
+.titleGroup h3 { font-size: clamp(16px, 3.6vw, 21px); letter-spacing: -.028em; }
+.hypnoIntro {
+  padding: 10px 11px;
+  margin: 9px 0 11px;
+  border: 1px solid #d9e7d8;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #f1f8ee, #fffcf4);
+}
+.hypnoIntro .description { margin: 0; font-size: 12px; font-weight: 610; line-height: 1.45; color: #315b49; }
+.scienceNote { margin: 6px 0 0; font-size: 10.5px; line-height: 1.35; color: #6b715e; }
+.personalFocus { margin: 0 0 10px; gap: 7px; }
+.choiceBar { display: flex; align-items: center; justify-content: space-between; gap: 7px; min-width: 0; }
+.chooseHeading { margin: 0; min-width: 0; color: #1c5a43; font-size: 13px; line-height: 1.25; font-weight: 800; }
+.personalButtons { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+.personalButtons button { min-width: 0; min-height: 61px; padding: 8px 7px; font-size: 12px; line-height: 1.23; text-wrap: balance; }
+.personalManual, .personalSuggest {
+  background: #f0f8ef;
+  border: 1px solid #b5d9c4;
+  border-radius: 12px;
+  color: #175b45;
+}
+.personalSuggest { background: #e8f5ed; border-color: #91ccb4; color: #126449; }
+.personalButtons button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #00956e, #087b60);
+  border-color: #087b60;
+  color: #fff;
+  box-shadow: 0 2px 8px rgb(10 101 75 / 12%);
+}
+.goalsToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  gap: 6px;
+  width: auto;
+  min-height: 34px;
+  padding: 5px 11px;
+  border: 1px solid #c7ddcf;
+  border-radius: 99px;
+  background: #fffdf6;
+  color: #26705a;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.goalsToggle[aria-expanded="true"] { background: #eaf7ee; border-color: #83c7a9; }
+.goalsToggle svg { flex: none; }
+/* The extra explanation exceeded the 650px compact-panel gate at 390px
+   (CI measured 690px), not just at 320px. Share the proven narrow spacing
+   through 430px without hiding explanations or shrinking 44px tap targets. */
+@media (max-width: 430px) {
+  .panel { padding: 8px; margin: 8px 0; }
+  .titleGroup h3 { font-size: 16px; }
+  .hypnoIntro { padding: 7px 8px; margin: 5px 0 6px; }
+  .hypnoIntro .description { font-size: 11.3px; line-height: 1.28; }
+  .scienceNote { margin-top: 4px; font-size: 10.2px; line-height: 1.25; }
+  .personalFocus { gap: 5px; margin-bottom: 5px; }
+  .chooseHeading { font-size: 12px; }
+  .personalButtons button { font-size: 11.3px; line-height: 1.17; min-height: 44px; padding: 6px 5px; }
+  .controls { gap: 5px; }
+  .suggestions { gap: 5px; }
+  .suggestion { min-height: 44px; padding: 5px 6px; font-size: 11.5px; line-height: 1.15; }
+  .suggestion[aria-pressed="true"] { padding: 4.5px 5.5px; }
+  .preview { margin-top: 5px; padding: 7px 8px; }
+  .privacy { margin-top: 4px; }
+}

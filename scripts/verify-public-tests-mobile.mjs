@@ -1,12 +1,25 @@
 // Read-only production browser QA for public SEO entry pages. No login,
 // form submission, client identifiers or private URL navigation.
 // Run: node scripts/verify-public-tests-mobile.mjs
-import { chromium } from "@playwright/test";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.HH_SEO_PLAYWRIGHT_PACKAGE || "playwright");
 import { mkdir, writeFile } from "node:fs/promises";
 
-const origin = (process.env.HH_SEO_AUDIT_ORIGIN || "https://holistichouse.vercel.app").replace(/\/$/, "");
+const canonicalOrigin = "https://holistichouse.vercel.app";
+const origin = (process.env.HH_SEO_AUDIT_ORIGIN || canonicalOrigin).replace(/\/$/, "");
+// PR runs may only target an isolated loopback server; release/dispatch checks the canonical public site.
+if (origin !== canonicalOrigin && !/^http:\/\/(?:127\.0\.0\.1|localhost):\d{2,5}$/.test(origin)) {
+  throw new Error("SEO browser QA accepts only canonical production or isolated loopback");
+}
+// The full 3x3 responsive matrix is still mandatory on production push / manual audit.
+// A PR exercises all locales at 390px on the isolated exact-head candidate only.
+const fastPr = process.env.HH_SEO_QA_FAST_PR === "1";
+if (fastPr && origin === canonicalOrigin) {
+  throw new Error("Focused PR SEO browser matrix must test an isolated PR candidate");
+}
 const locales = ["en", "ru", "es"];
-const widths = [320, 390, 430];
+const widths = fastPr ? [390] : [320, 390, 430];
 const height = 844;
 const results = [];
 const failures = [];
@@ -72,12 +85,12 @@ try {
         check(snapshot.title.length >= 20, "Short/empty title");
         check(snapshot.description.length >= 80 && snapshot.description.length <= 170,
           "Description missing or too long: " + snapshot.description.length);
-        check(snapshot.canonical === origin + path, "Canonical not self-referencing");
+        check(snapshot.canonical === canonicalOrigin + path, "Canonical not self-referencing");
         check(!/\bnoindex\b/i.test(snapshot.robots) &&
           !/\bnoindex\b/i.test(response?.headers()["x-robots-tag"] || ""),
           "Public landing unexpectedly noindex");
         for (const language of [...locales, "x-default"]) {
-          const expected = origin + "/" + (language === "x-default" ? "en" : language) + "/tests";
+          const expected = canonicalOrigin + "/" + (language === "x-default" ? "en" : language) + "/tests";
           check(snapshot.alternates[language] === expected,
             "Wrong " + language + " alternate: " + (snapshot.alternates[language] || "missing"));
         }
@@ -110,6 +123,7 @@ const output = {
   origin,
   commit: process.env.GITHUB_SHA || null,
   tested: results.length,
+  matrix: fastPr ? "focused-PR-3" : "full-release-9",
   passed: failures.length === 0,
   failures,
   results,
