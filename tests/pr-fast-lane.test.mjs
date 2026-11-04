@@ -1602,3 +1602,35 @@ test('Public Services planner/source test stay in the narrow Core CI-only lane',
   assert.match(core, /name: hh-merge-check/, 'required protected gate is not optional');
   assert.match(core, /needs: \[scope, hh-specialist\]/, 'real Specialist remains mandatory');
 });
+
+test('App R1 banner matrix runs REAL preinstalled Playwright only when applicable, never repeated apt install',()=>{
+  const source=workflow('hh-app-r1.yml');
+  const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
+  assert.ok(section,'course-banner-browser must exist');
+  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/timeout-minutes: 15/);
+  assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(section,/docker run --rm --init --ipc=host --network none/);
+  assert.match(section,/-e HH_TEST_BROWSER="\$HH_TEST_BROWSER"/);
+  assert.match(section,/node tests\/course-banner\/browser\.mjs/);
+  assert.match(section,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.doesNotMatch(section,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(section,/continue-on-error:\s*true/);
+});
+test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Noble image',()=>{
+  const s=workflow('tantra-testimonials.yml');
+  assert.match(s,/runs-on: ubuntu-24\.04/);
+  assert.match(s,/image: mcr\.microsoft\.com\/playwright:v1\.64\.0-noble/);
+  assert.match(s,/defaults:\s*\n\s*run:\s*\n\s*shell: bash/);
+  assert.match(s,/@playwright\/test@1\.64\.0/);
+  assert.match(s,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.match(s,/for \(const \[name, engine\] of \[\['chromium', chromium\], \['webkit', webkit\]\]\)/);
+  assert.match(s,/await engine\.launch\(\{headless:true,timeout:15000\}\)/);
+  assert.match(s,/node scripts\/verify-tantra-testimonials\.mjs/);
+  assert.match(s,/npm run build/);
+  assert.doesNotMatch(s,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
