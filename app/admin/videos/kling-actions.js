@@ -2,6 +2,7 @@
 
 import { requireAdminRequest } from '@/lib/prescriptions/admin';
 import { KlingInputError, normalizeKlingScene, queryKlingScene, submitKlingScene } from '@/lib/kling-video.mjs';
+import {buildKlingPromptFromHandoff} from '@/lib/mandala/cinematic-kling-handoff.mjs';
 
 function config() {
   return {
@@ -24,7 +25,19 @@ export async function generateKlingSceneAction(input) {
   if (!enabled) return { ok: false, error: 'disabled' };
   if (!apiKey) return { ok: false, error: 'not_configured' };
   try {
-    const scene = normalizeKlingScene(input);
+    // Imported client choices are never sent as arbitrary text. Rebuild the
+    // exact approved fictional-art prompt on the trusted server and reject
+    // altered text, different cost settings or hidden image inputs.
+    let request=input;
+    if(Object.hasOwn(input||{},'cinematicPacket')){
+      const safe=buildKlingPromptFromHandoff(input.cinematicPacket);
+      if(input.mode!=='text'||input.prompt!==safe.prompt||
+         input.duration!==safe.duration||input.aspectRatio!==safe.aspectRatio||
+         input.resolution!=='720p'||input.imageUrl||input.publicImageApproved===true)
+        return {ok:false,error:'validation'};
+      request={...input,prompt:safe.prompt};
+    }
+    const scene = normalizeKlingScene(request);
     // Cheapest verified presets by modality: text 3.0 3s silent or
     // approved public image 2.5 Turbo 5s, both at 720p.
     // Premium 1080p/longer clips require a separate, OFF-by-default flag.

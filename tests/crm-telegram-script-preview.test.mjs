@@ -35,6 +35,7 @@ test('CRM shows exactly the six outgoing Telegram V2 texts and buttons, no dupli
     assert.deepEqual(steps.map(x=>x.stage),['consent','focus','photo','question','drawing','done'])
     assert.deepEqual(steps.map(x=>x.text),out.map(x=>x.reply))
     assert.deepEqual(steps.map(x=>x.buttons),out.map(x=>x.keyboard.flat()))
+    assert.deepEqual(steps[0].buttons,[choices.yes],lang+' shows a single start button')
     assert.equal(steps[5].link,telegramV2CoachingLink(lang,topic))
     assert.equal(steps[4].buttons.length,1)
     assert.equal(steps[5].buttons.length,0)

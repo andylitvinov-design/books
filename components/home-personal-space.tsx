@@ -253,7 +253,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   const masterActions = [
     { href: "/" + activeLocale + "/masters", label: t.findMaster, Icon: Users },
     { href: "/" + activeLocale + "/pro#profi-learning", label: t.trainMaster, Icon: GraduationCap },
-    { href: root + "/practice", label: t.myPractice, Icon: UserRound },
+    { href: "/" + activeLocale + "/practice", label: t.myPractice, Icon: UserRound },
     { href: root + "/practice?panel=services", label: t.publishService, Icon: BriefcaseBusiness },
     { href: root + "/practice?panel=materials&materialTab=courses", label: t.createCourse, Icon: GraduationCap },
   ];
@@ -338,10 +338,9 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                     </Link>
                   </nav>
                   <p className={styles.masterNote}>{t.masterSteps}</p>
-                  <button type="button" className={styles.masterAction} disabled={signingIn}
-                    onClick={() => void startGoogleSignIn("my-practice")}>
+                  <Link className={styles.masterAction} href={"/" + activeLocale + "/practice"} prefetch={false} onClick={closePanel}>
                     {t.offerMaster}<ArrowRight size={15} aria-hidden="true" />
-                  </button>
+                  </Link>
                 </section>
               </div>
               <p className={styles.helper}>{t.googleNote}</p>
@@ -394,7 +393,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                       </Link>
                     </nav>
                     <p className={styles.masterNote}>{t.masterSteps}</p>
-                    <Link className={styles.masterAction} href={root + "/practice"} prefetch={false} onClick={closePanel}>
+                    <Link className={styles.masterAction} href={"/" + activeLocale + "/practice"} prefetch={false} onClick={closePanel}>
                       {t.offerMaster}<ArrowRight size={15} aria-hidden="true" />
                     </Link>
                   </>}

@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { toPublishedProfessionalSource } from "@/lib/mandala/professional-public-source.mjs";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { getAppConfig } from "@/lib/app/config";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { MeditationWriterPreview } from "@/components/meditation-writer-preview";
+import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "@/components/mandala-meditation.module.css";
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ pro?: string; master?: string; service?: string }> };
 
 const meta = {
   en: {
@@ -45,13 +50,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function MandalaMeditationPage({ params }: Props) {
+export default async function MandalaMeditationPage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  const query = await searchParams;
+  const publishedSlug = (value:unknown): value is string =>
+    typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,89}$/.test(value);
+  // Only a SERVER-confirmed published service is serialized into the Studio.
+  // Auth tokens, unpublished practitioner drafts, assessment answers and
+  // client CRM rows are never passed to the browser or any video provider.
+  let professionalSource = null;
+  if (publishedSlug(query?.master) && publishedSlug(query?.service)) {
+    try {
+      const detail = await createPractitionerRepository(getAppConfig())
+        .getPublicService(query.master,query.service,locale);
+      professionalSource = toPublishedProfessionalSource(detail,locale);
+    } catch {
+      // Invalid, hidden or unavailable service -> no offer and no booking CTA.
+    }
+  }
+  const professionalMode = query?.pro === "1" || Boolean(professionalSource);
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
-      <PublicSiteHeader locale={locale} />
-      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+      <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
+
+      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
+        professionalSource={professionalSource} professionalMode={professionalMode} />
+      {process.env.HH_MEDITATION_WRITER_BRIEF_ENABLED === "true" &&
+        (process.env.VERCEL_ENV !== "production" ||
+         process.env.HH_MEDITATION_WRITER_PRODUCTION_APPROVED === "true") ?
+          <MeditationWriterPreview locale={locale} /> : null}
+      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }

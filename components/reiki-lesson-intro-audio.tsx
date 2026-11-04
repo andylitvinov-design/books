@@ -7,7 +7,9 @@ type Locale = "en" | "ru";
 type Lesson = "flight" | "tantra" | "kundalini" | "yggdrasil" | "initiation";
 type PublishedAudio = { src: string; publishedAt: string };
 
-export function ReikiLessonIntroAudio({ lesson, locale }: { lesson: Lesson; locale: Locale }) {
+export function ReikiLessonIntroAudio({ lesson, locale, showEmpty = false }: {
+  lesson: Lesson; locale: Locale; showEmpty?: boolean
+}) {
   const [audio, setAudio] = useState<PublishedAudio | null>(null);
 
   useEffect(() => {
@@ -30,9 +32,20 @@ export function ReikiLessonIntroAudio({ lesson, locale }: { lesson: Lesson; loca
 
   // Do not advertise an unpublished recording or show a placeholder on the opening slide.
   // Publishing audio in the existing owner workflow reveals the player automatically.
-  if (!audio) return null;
-
   const ru = locale === "ru";
+  if (!audio) return showEmpty ? (
+    <div className="reiki-intro-audio" data-reiki-lesson-intro-audio={lesson}
+      data-reiki-audio-unpublished role="note">
+      <div className="reiki-intro-audio-heading">
+        <Headphones size={18} aria-hidden="true" />
+        <strong>{ru ? "Аудиовведение ещё не опубликовано" : "Audio welcome not published yet"}</strong>
+      </div>
+      <small>{ru
+        ? "Этот шаг необязателен: можно сразу перейти к медитации."
+        : "This step is optional. You can continue to the meditation."}</small>
+    </div>
+  ) : null;
+
   return (
     <div className="reiki-intro-audio" data-reiki-lesson-intro-audio={lesson}>
       <div className="reiki-intro-audio-heading">

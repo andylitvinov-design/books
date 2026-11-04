@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 
+// Synthetic submissions must never target a deployed service, even if browser
+// interception fails or a service worker takes over a request.
+export function assertSyntheticLoopback(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error('SYNTHETIC_LOOPBACK_REQUIRED'); }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+    throw new Error('SYNTHETIC_LOOPBACK_REQUIRED');
+  }
+}
+
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
   await expect(chooser).toHaveCount(1);
@@ -55,6 +66,17 @@ export async function openContactChannelChooser(scope, expect) {
  * A messenger link cannot exist until an explicitly consented enquiry is saved.
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
+  // Next can paint SSR buttons before its event handlers hydrate on WebKit.
+  // A click before hydration is swallowed even though the button is visible.
+  // Fail closed if hydration never happens; do not retry an unanswered click.
+  await expect.poll(
+    () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+    { timeout: 15000, message: 'Next public consultation must hydrate before a synthetic enquiry click' }
+  ).toBe(true);
+  // Choice changes reset the form in a React passive effect. Let that real
+  // rendering cycle settle before opening it, especially on mobile WebKit.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -75,10 +97,26 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
-  await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
+  // Name is optional and lives in a collapsed disclosure on current mobile UI.
+  // Exercise the real disclosure before typing; never force-fill a hidden input.
+  const nameDisclosure = form.locator('details:has(input[autocomplete="name"])');
+  const name = nameDisclosure.locator('input[autocomplete="name"]');
+  await expect(nameDisclosure).toHaveCount(1);
+  await expect(nameDisclosure).not.toHaveAttribute('open', '');
+  await nameDisclosure.locator('summary').click();
+  // One genuine click must open the native disclosure; retrying it could
+  // mask an actual WebKit/hydration failure on the public consultation.
+  await expect(nameDisclosure).toHaveAttribute('open', '');
+  await expect(name).toBeVisible();
+  await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
-  await form.locator('input[type="checkbox"]').check();
+  const replyConsent=form.locator('input[type="checkbox"][required]');
+   await expect(replyConsent).toHaveCount(1);
+   const sourceConsent=form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+   await expect(sourceConsent).toHaveCount(1);
+   await expect(sourceConsent).not.toBeChecked();
+   await replyConsent.check();
   await submit.click();
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
   assert.equal(submissions.length,1,'Exactly one explicitly consented synthetic registration');
@@ -104,6 +142,7 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
  * in-memory route; no production CRM write or external WhatsApp/Telegram call.
  */
 export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
   const chooser = scope.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -134,7 +173,12 @@ export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   await expect(form.locator('input[type="email"]')).toHaveCount(0);
   await form.locator('[data-phone-country-input] input[type="tel"]').fill('4165550123');
-  await form.locator('input[type="checkbox"]').check();
+  const replyConsent=form.locator('input[type="checkbox"][required]');
+   await expect(replyConsent).toHaveCount(1);
+   const sourceConsent=form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+   await expect(sourceConsent).toHaveCount(1);
+   await expect(sourceConsent).not.toBeChecked();
+   await replyConsent.check();
   await form.locator('button[data-contact-channel-submit="whatsapp"]').click();
 
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);

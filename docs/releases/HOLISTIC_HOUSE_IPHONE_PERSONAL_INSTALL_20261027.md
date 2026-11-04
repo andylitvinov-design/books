@@ -11,10 +11,16 @@ The GitHub Actions workflow `.github/workflows/holistic-house-native.yml` now bu
 - **Unsigned IPA cannot be installed directly through Safari or a link**, and it must **never** be presented as a signed Apple release, TestFlight download or independently verified E2E app.
 - GitHub's private-to-the-owner Actions artifact expires after **14 days**, so this is *not* a stable public download endpoint.
 
+## Рекомендуемый для бесплатного Apple Account вариант — Lite
+
+A separate **hardware iPhoneOS, arm64** archive `Holistic-House-iPhone-Personal-Lite-Unsigned` is produced from a *copy* of the same validated `com.holistichouse.app` device bundle. Only the optional `HHCourseWidget.appex` is removed from the copy, to avoid using another personal App ID and reduce sideload extension/signing failures; the main native executable, allowed HTTPS origin and OAuth routing remain intact. CI verifies SHA256 and that the Lite IPA contains no extensions. The main regular IPA is retained unchanged.
+
+For the owner's personal iPhone, prefer extracting `Holistic-House-iPhone-Personal-Lite-Unsigned.ipa` from the successful [Native Installers](https://github.com/andylitvinov-design/books/actions/workflows/holistic-house-native.yml) run. Free Apple personal provisioning still requires **AltServer or Xcode signing**, a physically trusted iPhone, and renewal about every 7 days; this is **not** a Safari-installable signed release. Native Google OAuth/private messages remain unverified until physical device testing. Never use a third-party public IPA signing website with the owner's Apple account.
+
 ## Получение файла и бесплатная установка на свой iPhone
 
 1. Open [Holistic House Native Installers](https://github.com/andylitvinov-design/books/actions/workflows/holistic-house-native.yml) on GitHub while signed in; choose a **successful** run containing an **iPhone arm64** build (not `iOS-Simulator-Only`).
-2. Under **Artifacts**, download `Holistic-House-iPhone-Unsigned-IPA-Personal-Only`. Extract the artifact ZIP. Inside is the `Holistic-House-Unsigned-iPhone.ipa`; verify SHA256 before installing.
+2. Under **Artifacts**, prefer `Holistic-House-iPhone-Personal-Lite-Unsigned`; extract `Holistic-House-iPhone-Personal-Lite-Unsigned.ipa` and verify the bundled SHA256. The original `Holistic-House-iPhone-Unsigned-IPA-Personal-Only` remains a separate fallback, but includes the optional widget and may require extra Apple provisioning.
 3. On an authorized Mac or Windows computer install **AltStore Classic + AltServer** using only the official vendor site [altstore.io](https://altstore.io/) and its [macOS](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos) or [Windows](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows) instructions. Keep your Apple Account credentials **out of ChatGPT, GitHub and Holistic House**.
 4. Connect/unlock the iPhone once and trust the computer. Use AltServer to install AltStore. iOS 16+ also needs **Developer Mode** enabled in Settings → Privacy & Security. Inside AltStore → My Apps → **+**, select the IPA from Files, and have AltStore sign it with the owner's Apple Account.
 5. Start the new **Holistic House** app from its own Home Screen icon; confirm launch, Google OAuth→native callback, logout, correct signed-in account and nonclinical test message on the physical device. Real OAuth/message/push E2E **has not yet passed**. Do not use real patient health data until QA gates pass. Native APNs remain disabled without the approved Apple Developer entitlement and keys.

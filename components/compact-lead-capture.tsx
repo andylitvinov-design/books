@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
@@ -110,6 +111,9 @@ export function CompactLeadCapture({
   const t = copy[locale];
   const pathname = usePathname();
   const [localAddress, setLocalAddress] = useState("");
+  const formRef = useRef<HTMLFormElement | null>(null);
+  // The server renders this form before its client-side event handlers exist.
+  useEffect(() => { formRef.current?.setAttribute("data-compact-hydrated", "true"); }, []);
   const address = contactValue ?? localAddress;
   const [internalFormat, setInternalFormat] = useState(formatOptions?.[0]?.value || "");
   const selectedFormat = selectedFormatValue ?? internalFormat;
@@ -244,7 +248,7 @@ export function CompactLeadCapture({
           </div>
         </div>
       ) : (
-        <form className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
+        <form className={styles.form} data-compact-lead-form ref={formRef} onSubmit={event => event.preventDefault()}>
           {variant !== "diagnosis" && formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
@@ -266,6 +270,7 @@ export function CompactLeadCapture({
               onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <EnquiryAttributionChoice locale={locale} disabled={busy !== null} />
           <div className={styles.channelHeading}>
             <strong>{t.channelsTitle}</strong>
             <span>{t.channelsHint}</span>

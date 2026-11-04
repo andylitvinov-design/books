@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ArrowLeft, Download, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Expand, Headphones, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
@@ -29,6 +29,17 @@ const templates = [
   { id: "stone", names: { en: "Stone mosaic", ru: "Каменная мозаика", es: "Mosaico de piedra" }, back: "#e5d9cb", ink: "#423d35", soft: "#b6a899" },
 ] as const;
 
+export type MandalaProfessionalSource = {
+  publicOffer: {
+    id:string;kind:string;published:boolean;publicSnapshot:boolean;
+    practitionerId:string;locale:string;title:string;
+    publicDescription:string;href:string;
+  };
+  publicPractitioner: {
+    id:string;practitionerId:string;published:boolean;publicSnapshot:boolean;
+    displayName:string;professionalTitle:string;credentialVerified:boolean;
+  };
+};
 type Template = (typeof templates)[number];
 type Topic = MeditationTopic | "all";
 const topics: Topic[] = ["all", "business", "love", "energy", "health"];
@@ -177,7 +188,11 @@ function MandalaArt({ option }: { option: Template }) {
   );
 }
 
-export function MandalaMeditationClient({ locale, videos }: { locale: PublicLocale; videos: MeditationVideo[] }) {
+export function MandalaMeditationClient({ locale, videos, professionalSource = null, professionalMode = false }: {
+  locale: PublicLocale; videos: MeditationVideo[];
+  professionalSource?: MandalaProfessionalSource | null;
+  professionalMode?: boolean;
+}) {
   const t = copy[locale];
   const [templateId, setTemplateId] = useState<Template["id"]>("client");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -196,6 +211,10 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const closeButton = useRef<HTMLButtonElement | null>(null);
+  // Let the native button click represent one activation for mouse, touch,
+  // keyboard and assistive technology. Toggling on pointerup can re-layout the
+  // WebKit target *before* the following click, causing a second transition.
+  function toggleFocusMode() { setFocusMode(value => !value); }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
 
@@ -295,15 +314,20 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
         className={styles.hiddenPhotoInput} onChange={handleImage}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
-        onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
+        onPickPhoto={() => fileInput.current?.click()} photoError={imageError}
+        professionalSource={professionalSource} professionalMode={professionalMode} />
+      <Link className={styles.voiceStudioLink} href={'/'+locale+'/holistic-support/voice-studio'} prefetch={false}>
+        <Headphones size={18} aria-hidden="true" />
+        {locale==='ru'?'Выбрать голос · 6 голосов RU/EN':locale==='es'?'Elegir voz · 6 voces en ruso e inglés':'Choose a voice · 6 RU/EN voices'}
+      </Link>
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
-        <Link href={"/" + locale + "/holistic-support#meditation-practices"} className={styles.back} prefetch={false}>
+        <Link href={"/" + locale + "/holistic-support/mobile?view=meditation#support-mobile-experience"} className={styles.back} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}
-          aria-pressed={focusMode} onClick={() => setFocusMode(value => !value)}>
+          aria-pressed={focusMode} onClick={toggleFocusMode}>
           {focusMode ? <Minimize2 size={18} aria-hidden="true" /> : <Expand size={18} aria-hidden="true" />}
           {focusMode ? t.leave : t.focus}
         </button>

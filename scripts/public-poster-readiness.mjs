@@ -1,6 +1,30 @@
+// Browser lazy loading does not fetch images hidden by a closed disclosure.
+// Open every closed ancestor from outside in through its real summary control.
+export async function openPosterDisclosures(image) {
+  for (let depth = 0; depth < 20; depth++) {
+    const candidate = await image.evaluateHandle(el => {
+      const closed = [];
+      for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+        if (parent.tagName === 'DETAILS' && !parent.open) closed.push(parent);
+      }
+      return closed.at(-1) || null;
+    });
+    const details = candidate.asElement();
+    if (!details) { await candidate.dispose(); return; }
+    try {
+      const summary = await details.$(':scope > summary');
+      if (!summary) throw new Error('Poster disclosure has no summary');
+      try { await summary.click(); } finally { await summary.dispose(); }
+      if (!await details.evaluate(el => el.open)) throw new Error('Poster disclosure did not open');
+    } finally { await candidate.dispose(); }
+  }
+  throw new Error('Poster disclosure nesting exceeds limit');
+}
+
 export async function decodeReadyPoster(image, expect) {
   if (!image) throw new Error('Poster element is absent');
   try {
+    await openPosterDisclosures(image);
     const source = await image.evaluate(el => ({ src: el.getAttribute('src'), srcset: el.getAttribute('srcset') }));
     await image.scrollIntoViewIfNeeded({ timeout: 7000 });
     let selected;

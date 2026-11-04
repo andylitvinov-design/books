@@ -41,22 +41,22 @@ const ruTitles = [
   "Вопрос 5 из 5 · Цель и применение",
 ]
 
-test("Five lesson course retains Sun meditation and has 64 slides", () => {
+test("Five lesson course retains Sun meditation and has 68 slides", () => {
   const sequence = energyworkSequence()
   assert.equal(ENERGYWORK_VERSION, "2026-10-20.p10")
-  assert.deepEqual(sequence.slice(3, 10), [
-    "flight-01", "flight-02", "flight-voices", "flight-05",
+  assert.deepEqual(sequence.slice(3, 11), [
+    "flight-01", "flight-audio", "flight-02", "flight-voices", "flight-05",
     "flight-04", "flight-03", "flight-done",
   ])
-  assert.equal(sequence.length, 64)
-  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [7, 15, 17, 15, 7])
+  assert.equal(sequence.length, 68)
+  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [8, 16, 18, 16, 7])
 })
 
 test("Tantra has exactly five required screens in the established order", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
   assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
-    "tan-01", "tan-intro-video", "tan-02", "tan-voices", "tan-04", "tan-05",
+    "tan-01", "tan-intro-video", "tan-audio", "tan-02", "tan-voices", "tan-04", "tan-05",
     ...quizOrder, "presence-01", "presence-04", "tan-03", "tan-done",
   ])
   assert.deepEqual([...ENERGYWORK_TANTRA_STUDY_QUESTION_IDS], quizOrder)

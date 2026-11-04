@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, CheckCircle2, ChevronDown, List, Sparkles } from 'lucide-react'
 import { ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_MODULE_GOALS, recommendAntistressModule } from '@/lib/inner-growth/antistress-module-router'
 import styles from './antistress-module-finder.module.css'
@@ -69,6 +69,44 @@ export default function AntiStressModuleFinder({ locale = 'en', profile, busy = 
   const language = ['en', 'ru', 'es'].includes(locale) ? locale : 'en'
   const t = words[language]
   const [chosenRoute, setChosenRoute] = useState(null)
+  const rootRef = useRef(null)
+  const [visibleHeight, setVisibleHeight] = useState(null)
+
+  // The cabinet header and fixed six-item bottom bar occupy real Safari space.
+  // Measure their positions rather than guessing a device-specific 100vh offset.
+  useEffect(() => {
+    let frame = 0
+    const nav = document.querySelector('.hh-mobile-app-nav')
+    const header = document.querySelector('.hh-header')
+    const measure = () => {
+      const root = rootRef.current
+      if (!root) return
+      if (!window.matchMedia('(max-width: 520px)').matches) {
+        setVisibleHeight(null)
+        return
+      }
+      const navTop = nav?.getBoundingClientRect().top ?? window.innerHeight
+      const available = Math.floor(Math.min(navTop, window.innerHeight) -
+        Math.max(0, root.getBoundingClientRect().top) - 6)
+      setVisibleHeight(previous => previous === available ? previous : Math.max(0, available))
+    }
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
+    }
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(scheduleMeasure) : null
+    if (header) observer?.observe(header)
+    if (nav) observer?.observe(nav)
+    window.addEventListener('resize', scheduleMeasure)
+    window.visualViewport?.addEventListener('resize', scheduleMeasure)
+    scheduleMeasure()
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      window.removeEventListener('resize', scheduleMeasure)
+      window.visualViewport?.removeEventListener('resize', scheduleMeasure)
+    }
+  }, [])
   const weekly = useMemo(() => savedWeekly(profile), [profile])
   // The recommendation is stable when the user explores alternative blocks.
   const recommendation = useMemo(() => recommendAntistressModule({ weekly: weekly || {}, answers: {} }), [weekly])
@@ -87,8 +125,9 @@ export default function AntiStressModuleFinder({ locale = 'en', profile, busy = 
   }
 
   return (
-    <section className={styles.root} data-course-module-finder data-course-welcome-screen data-course-unified-entry
-      data-opora-route-version={recommendation.version}>
+    <section ref={rootRef} className={styles.root} data-course-module-finder data-course-welcome-screen data-course-unified-entry
+      data-opora-route-version={recommendation.version}
+      style={visibleHeight === null ? undefined : { '--course-ready-available': String(visibleHeight) + 'px' }}>
       <div className={styles.card}>
         <div className={styles.heroArt}>
           <img src="/images/holistic-house/course-focus-mountain-boy.webp" width="705" height="411"

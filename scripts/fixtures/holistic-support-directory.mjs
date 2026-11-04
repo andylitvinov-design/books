@@ -7,11 +7,15 @@ export function qaSupportDirectoryResponse(locale, kind) {
       { serviceId: "qa-intro", title: locale === "ru" ? "Пробная консультация" : "Intro consultation",
         practitionerName: "QA Master One", description: "Public synthetic fixture",
         areaKey: "coaching", pricingMode: "free", price: 0, currency: "EUR",
-        href: "/" + locale + "/services" },
+        href: "/" + locale + "/services",
+        photos: ["/images/holistic-house/distance-homeopathy.webp", "/images/holistic-house/homeopathy-still-life.svg"],
+        presentations: [], deliveryFormat: "online" },
       { serviceId: "qa-session", title: locale === "ru" ? "Личная сессия" : "Personal session",
         practitionerName: "QA Master Two", description: "Public synthetic fixture",
         areaKey: "consultation", pricingMode: "fixed", price: 50, currency: "EUR",
-        href: "/" + locale + "/services" },
+        href: "/" + locale + "/services",
+        photos: ["/images/holistic-house/books-library.webp", "/images/holistic-house/hero-olive-incense.webp"],
+        presentations: [], deliveryFormat: "hybrid" },
     ],
   };
   const base = {

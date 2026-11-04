@@ -3,6 +3,7 @@ import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl, ty
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import yggdrasilCurriculum from "@/data/academy/yggdrasil-curriculum.json";
 import type { PublicLocale } from "@/lib/public-locales";
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 
 const validVideoId = /^[A-Za-z0-9_-]{11}$/;
 
@@ -10,6 +11,10 @@ const labels = {
   en: {
     tantra: "Tantra Reiki",
     yggdrasil: "Reiki Yggdrasil",
+    kundalini: "Kundalini Reiki",
+    tantraIntro: "Free Tantra Reiki lesson: presence and connection. Original video in English.",
+    kundaliniIntro: "Free Kundalini Reiki lesson: grounding and reflection. Original video in English.",
+    yggdrasilIntro: "Free Reiki Yggdrasil lesson: World Tree imagery. Original video in English.",
     temple: "Temple Studies",
     energy: "Energy practices",
     levelOne: "Level 1 · guided meditation",
@@ -29,6 +34,10 @@ const labels = {
   ru: {
     tantra: "Тантра Рейки",
     yggdrasil: "Рейки Иггдрасиль",
+    kundalini: "Кундалини Рейки",
+    tantraIntro: "Бесплатный урок Тантра Рейки: присутствие и контакт. Видео на английском.",
+    kundaliniIntro: "Бесплатный урок Кундалини Рейки: опора и энергия. Видео на английском.",
+    yggdrasilIntro: "Бесплатный урок Рейки Иггдрасиль: Древо Миров. Видео на английском.",
     temple: "Temple Studies · Храмовые традиции",
     energy: "Энергетические практики",
     levelOne: "1 ступень · медитация",
@@ -48,6 +57,10 @@ const labels = {
   es: {
     tantra: "Tantra Reiki",
     yggdrasil: "Reiki Yggdrasil",
+    kundalini: "Kundalini Reiki",
+    tantraIntro: "Lección gratis de Tantra Reiki. Vídeo en inglés.",
+    kundaliniIntro: "Lección gratis de Kundalini Reiki. Vídeo en inglés.",
+    yggdrasilIntro: "Lección gratis de Reiki Yggdrasil. Vídeo en inglés.",
     temple: "Temple Studies · Tradiciones del templo",
     energy: "Prácticas energéticas",
     levelOne: "Nivel 1 · meditación guiada",
@@ -163,12 +176,14 @@ function englishPrograms(locale: PublicLocale): AcademyVideoProgram[] {
   const t = labels[locale];
   const practice = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const classVideo = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
+  const kundaliniVideo = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
 
   const englishCourse = (
     source: typeof practice,
     id: string,
     title: string,
     href: string,
+    description: string,
   ): AcademyVideoCourse[] => {
     if (!source?.youtubeId || !validVideoId.test(source.youtubeId)) return [];
     return [{
@@ -177,6 +192,8 @@ function englishPrograms(locale: PublicLocale): AcademyVideoProgram[] {
       category: t.recordings,
       poster: titleImage(source.youtubeId),
       href,
+      description,
+      freeCourseHref: REIKI_FREE_COURSE_PATH.replace(/^\/en\//, "/" + locale + "/"),
       chapters: [{
         id: id + "-guided",
         title: "",
@@ -190,14 +207,22 @@ function englishPrograms(locale: PublicLocale): AcademyVideoProgram[] {
       title: t.tantra,
       href: "/" + locale + "/academy/reiki/tantra-reiki",
       poster: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
-      courses: englishCourse(practice, "tantra-level-1", t.levelOne, "/" + locale + "/academy/reiki/tantra-reiki"),
+      courses: englishCourse(practice, "tantra-level-1", t.levelOne, "/" + locale + "/academy/reiki/tantra-reiki", t.tantraIntro),
     },
     {
       id: "english-reiki-yggdrasil",
       title: t.yggdrasil,
       href: "/" + locale + "/academy/reiki/yggdrasil",
       poster: "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
-      courses: englishCourse(classVideo, "yggdrasil-english-practice", t.guidedClass, "/" + locale + "/academy/reiki/yggdrasil"),
+      courses: englishCourse(classVideo, "yggdrasil-english-practice", t.guidedClass, "/" + locale + "/academy/reiki/yggdrasil", t.yggdrasilIntro),
+    },
+    {
+      id: "english-kundalini-reiki",
+      title: t.kundalini,
+      href: "/" + locale + "/academy/reiki/kundalini-reiki",
+      poster: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
+      courses: englishCourse(kundaliniVideo, "kundalini-level-1", t.levelOne,
+        "/" + locale + "/academy/reiki/kundalini-reiki", t.kundaliniIntro),
     },
   ].filter((program) => program.courses.length > 0);
 }
