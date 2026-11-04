@@ -22,7 +22,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
  if(!github?.rest?.pulls?.list||!Number.isFinite(now))throw Error('INVALID_COLLECTOR');
  const gate=budget({maxRequests,minRemaining});const oldest=ts(WINDOWS[0].start);
  const result={prs:[],intervals:[],openPRs:[],source:{checked_at:new Date(now).toISOString(),reads:0,coverage:'PARTIAL',
-  closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
+  closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},branch_core_queries:[],sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
  let closedFinished=false,allClosed=[],error=null;
  try{
   // A single creation-sorted REST sweep avoids Search's incomplete-index sample.
@@ -98,19 +98,53 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   // Target the eight longest recent cases and a small, fair earlier sample.
   const prioritized=[];
   for(const w of [...WINDOWS].reverse()){
-   const limit=w.key==='latest'?8:4;
+   const limit=w.key==='latest'?8:2;
    prioritized.push(...result.prs.filter(p=>ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)<ts(w.end)&&
       ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)>=ts(w.start))
      .sort((a,b)=>(ts(b.closed_at)-ts(b.created_at))-(ts(a.closed_at)-ts(a.created_at))).slice(0,limit));
   }
   for(const p of prioritized){
    if(gate.state.paused)break;
-   const runs=byPr.get(p.number).filter(r=>r.status==='completed').sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+   let runs=byPr.get(p.number).filter(r=>r.status==='completed').sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+   // GitHub often omits pull_requests on historical synthetic-merge runs.
+   // Bounded per-branch fallback identifies only one live historical PR at
+   // the same time; it never scans hundreds of unrelated workflows/checks.
+   if(!runs.length && !gate.state.paused){
+    try{
+     const history=await gate.request('branch-core-'+p.number,()=>github.rest.actions.listWorkflowRunsForRepo({
+      owner:OWNER,repo:REPOSITORY,event:'pull_request',branch:p.head?.ref,
+      created:`${p.created_at.slice(0,10)}..${p.closed_at.slice(0,10)}`,per_page:100,page:1}));
+     const sibling=successors.some(other=>other.number!==p.number&&
+      other.head?.ref===p.head?.ref&&other.base?.repo?.full_name===REPO&&
+      ts(other.created_at)<=ts(p.closed_at)&&(!other.closed_at||ts(other.closed_at)>=ts(p.created_at)));
+     const total=history?.total_count;
+     const complete=Number.isSafeInteger(total)&&total>=0&&total<=100&&
+      Array.isArray(history.workflow_runs)&&history.workflow_runs.length===total;
+     if(complete&&!sibling){
+      runs=history.workflow_runs.filter(r=>r.name==='HH PR core release gate'&&
+       r.path?.split('@')[0]==='.github/workflows/'+WORKFLOW&&
+       r.event==='pull_request'&&r.head_branch===p.head?.ref&&
+       r.repository?.full_name===REPO&&r.head_repository?.full_name===REPO&&
+       Array.isArray(r.pull_requests)&&
+       (!r.pull_requests.length||r.pull_requests.some(x=>x.number===p.number))&&
+       ts(r.created_at)>=ts(p.created_at)&&ts(r.created_at)<ts(p.closed_at))
+       .sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+      if(runs.length){
+       result.source.branch_core_queries.push(p.number);
+       if(!result.intervals.some(i=>i.pr===p.number&&i.phase==='created_to_first_ci'))
+        result.intervals.push({pr:p.number,phase:'created_to_first_ci',start:p.created_at,
+         end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),
+         inventory_complete:true,reason:'complete unique branch-scoped Core run history'});
+      }
+     }
+    }catch(e){result.source.ci_runs_errors['branch_'+p.number]=String(e?.message||e).slice(0,120);}
+   }
    let successfullySampled=false,previousEnd=null,previousFailure=false,lastGreen=null,lastGreenRun=null;
    for(const run of runs.slice(-2)){
     if(gate.state.paused)break;
-    const jobsData=await gate.request('core-run-jobs-'+run.id,()=>github.rest.actions.listJobsForWorkflowRun({
-     owner:OWNER,repo:REPOSITORY,run_id:run.id,per_page:100,filter:'latest'}));
+    let jobsData;try{jobsData=await gate.request('core-run-jobs-'+run.id,()=>github.rest.actions.listJobsForWorkflowRun({
+     owner:OWNER,repo:REPOSITORY,run_id:run.id,per_page:100,filter:'latest'}));}
+    catch(e){result.source.ci_runs_errors['jobs_'+p.number]=String(e?.message||e).slice(0,120);continue;}
     if(!Array.isArray(jobsData?.jobs)||jobsData.total_count>100)continue;
     const jobs=jobsData.jobs.filter(j=>j.status==='completed'&&Number.isFinite(ts(j.created_at))&&
       Number.isFinite(ts(j.started_at))&&Number.isFinite(ts(j.completed_at))&&
