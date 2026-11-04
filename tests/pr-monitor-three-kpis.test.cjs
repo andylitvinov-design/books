@@ -83,7 +83,7 @@ test('Error→Repair requires authenticated same PR same HEAD start timestamp af
  const proofs=k.parseRepairReceipts(comments,{pr:12,head:sha});
  assert.equal(proofs.length,1);
  assert.equal(k.parseRepairReceipts(comments,{pr:13,head:sha}).length,0);
- const joined=k.repairSample(candidates,{'12:'+sha:proofs},k.window(now,0),1);
+ const joined=k.repairSample(candidates,{['12:'+sha]:proofs},k.window(now,0),1);
  assert.equal(joined.n,1);assert.ok(joined.mean_min>=0);
  const empty=k.repairSample(candidates,{},k.window(now,0),0);
  assert.equal(empty.n,0);assert.equal(empty.mean_min,null);
