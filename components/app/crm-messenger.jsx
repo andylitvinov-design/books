@@ -208,6 +208,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const [botCheck,setBotCheck]=useState(null)
+  const [noticeBusy,setNoticeBusy]=useState(false)
+  const [noticeFeedback,setNoticeFeedback]=useState('')
   const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
   const focusRefreshAt=useRef(0)
@@ -476,6 +478,48 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     if(result&&activeRef.current===threadId)setStatus(w.completed)
   }
+  // Explicit owner action; do not poll, auto-replay uncertain sends or
+  // reactivate a disabled provider behind the owner's back.
+  async function recoverPendingNotices(){
+    if(noticeBusy||busy)return
+    const messages={
+      ru:{button:'Проверить уведомления о заявках',busy:'Проверяю…',
+        clear:'Новых уведомлений без попытки отправки нет.',
+        unavailable:'Не удалось проверить уведомления.',
+        disabled:'Есть заявки без уведомления, но отправка Telegram сейчас не разрешена.',
+        result:(accepted,attempted)=>'Telegram принял '+accepted+' из '+attempted+' попыток. Это не подтверждение прочтения.'},
+      en:{button:'Recover unsent enquiry alerts',busy:'Checking…',
+        clear:'No enquiries with a missing dispatch attempt.',
+        unavailable:'Could not check pending alerts.',
+        disabled:'Unnotified enquiries exist, but Telegram delivery is not currently approved.',
+        result:(accepted,attempted)=>'Telegram accepted '+accepted+' of '+attempted+' attempts. This is not a read receipt.'},
+      es:{button:'Revisar avisos pendientes',busy:'Comprobando…',
+        clear:'No hay solicitudes sin intento de aviso.',
+        unavailable:'No se pudieron revisar los avisos.',
+        disabled:'Hay solicitudes sin aviso, pero Telegram no está habilitado.',
+        result:(accepted,attempted)=>'Telegram aceptó '+accepted+' de '+attempted+' intentos. No confirma lectura.'},
+    }[lang]
+    setNoticeBusy(true);setNoticeFeedback('')
+    try{
+      const response=await fetch('/api/app/crm/notification-recovery',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'X-HH-Account-Id':accountId},
+      })
+      if(!response.ok)throw new Error('NOTICE_RECOVERY_UNAVAILABLE')
+      const result=await response.json()
+      const scanned=Number(result.scanned)||0
+      const attempted=Number(result.attempted)||0
+      const accepted=Number(result.accepted)||0
+      setNoticeFeedback(scanned===0?messages.clear:
+        attempted===0?messages.disabled:messages.result(accepted,attempted))
+    }catch{setNoticeFeedback(messages.unavailable)}
+    finally{setNoticeBusy(false)}
+  }
+  const noticeActions={
+    ru:{button:'Проверить уведомления о заявках',busy:'Проверяю…'},
+    en:{button:'Recover unsent enquiry alerts',busy:'Checking…'},
+    es:{button:'Revisar avisos pendientes',busy:'Comprobando…'},
+  }[lang]
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
@@ -497,12 +541,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           <Settings2 size={16} aria-hidden="true"/>{t.channels}
           <span>{data?.accounts?.filter(item=>item.connected).length||0}/4</span>
         </button>}
+        {!compact&&<button type="button" className={styles.plainButton}
+          disabled={busy||noticeBusy||!data} onClick={recoverPendingNotices}
+          aria-label={noticeActions.button}>
+          {noticeBusy?noticeActions.busy:noticeActions.button}
+        </button>}
         <button type="button" aria-label={t.refresh} className={styles.plainButton}
           disabled={busy} onClick={()=>refresh()}>
           {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
         </button>
       </div>
     </header>}
+    {!conversationOnly&&noticeFeedback&&<p className={styles.notice} role="status">{noticeFeedback}</p>}
     {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
     {!conversationOnly&&(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
