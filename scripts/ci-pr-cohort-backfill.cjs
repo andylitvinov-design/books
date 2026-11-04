@@ -21,7 +21,7 @@ function budget({maxRequests=MAX_REQUESTS,minRemaining=MIN_REMAINING}={}){
 async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemaining=MIN_REMAINING}={}){
  if(!github?.rest?.pulls?.list||!Number.isFinite(now))throw Error('INVALID_COLLECTOR');
  const gate=budget({maxRequests,minRemaining});const oldest=ts(WINDOWS[0].start);
- const result={prs:[],intervals:[],openPRs:[],source:{checked_at:new Date(now).toISOString(),reads:0,coverage:'PARTIAL',
+ const result={prs:[],intervals:[],observations:[],openPRs:[],source:{checked_at:new Date(now).toISOString(),reads:0,coverage:'PARTIAL',
   closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},ci_runs_seen:{},ci_runs_matched:{},branch_core_queries:[],sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
  let closedFinished=false,allClosed=[],error=null;
  try{
@@ -101,7 +101,9 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
      (!links.length||links.length===1&&links[0].number===p.number&&
       links[0].base?.ref===p.base?.ref));
    if(eligible.length!==1)return false;
-   seenRunIds.add(run.id);byPr.get(eligible[0].number).push(run);return true;
+   seenRunIds.add(run.id);byPr.get(eligible[0].number).push(run);
+   result.observations.push({pr:eligible[0].number,kind:'ci_queued',at:run.created_at,
+    source:'github_actions_run',url:coreUrl(run.id),head_sha:run.head_sha});return true;
   }
   for(const window of WINDOWS){
    const hits=[],start=ts(window.start),end=ts(window.end);let complete=false;
@@ -134,7 +136,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   // Target the eight longest recent cases and a small, fair earlier sample.
   const prioritized=[];
   for(const w of [...WINDOWS].reverse()){
-   const limit=w.key==='latest'?8:2;
+   const limit=w.key==='latest'?8:6; // bounded earlier-cohort sampling, no cron
    prioritized.push(...result.prs.filter(p=>ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)<ts(w.end)&&
       ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)>=ts(w.start))
      .sort((a,b)=>(ts(b.closed_at)-ts(b.created_at))-(ts(a.closed_at)-ts(a.created_at))).slice(0,limit));
@@ -170,6 +172,8 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
        .sort((a,b)=>ts(a.created_at)-ts(b.created_at));
       if(runs.length){
        result.source.branch_core_queries.push(p.number);
+       for(const run of runs)result.observations.push({pr:p.number,kind:'ci_queued',at:run.created_at,
+        source:'github_actions_run',url:coreUrl(run.id),head_sha:run.head_sha});
        if(!result.intervals.some(i=>i.pr===p.number&&i.phase==='created_to_first_ci'))
         result.intervals.push({pr:p.number,phase:'created_to_first_ci',start:p.created_at,
          end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),head_sha:runs[0].head_sha,
@@ -190,10 +194,17 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
       ts(j.created_at)<=ts(j.started_at)&&ts(j.started_at)<=ts(j.completed_at)&&
       ts(j.created_at)>=ts(p.created_at)&&ts(j.completed_at)<=ts(p.closed_at));
     if(!jobs.length)continue;successfullySampled=true;
+    result.observations.push({pr:p.number,kind:'ci_queued',at:run.created_at,
+     source:'github_actions_run',url:coreUrl(run.id),head_sha:run.head_sha});
     if(previousFailure&&previousEnd!==null&&previousEnd<=ts(run.created_at))result.intervals.push({
      pr:p.number,phase:'after_failed_ci_unattributed',start:new Date(previousEnd).toISOString(),end:run.created_at,
      source:'github_actions_run',url:coreUrl(run.id),head_sha:run.head_sha,reason:'gap after red CI; cause not attributable'});
     for(const j of jobs){const url=coreUrl(run.id)+'/job/'+j.id;
+     result.observations.push({pr:p.number,kind:'ci_started',at:j.started_at,
+      source:'github_actions_job',url,head_sha:run.head_sha});
+     result.observations.push({pr:p.number,kind:j.name==='hh-merge-check'&&j.conclusion==='success'&&run.conclusion==='success'?'ci_green':
+      ['failure','timed_out','startup_failure'].includes(j.conclusion)?'ci_failed':'ci_completed',at:j.completed_at,
+      source:'github_actions_job',url,head_sha:run.head_sha});
      result.intervals.push({pr:p.number,phase:'runner_queue',start:j.created_at,end:j.started_at,
       source:'github_actions_job',url,head_sha:run.head_sha,reason:'GitHub queued → runner start'});
      result.intervals.push({pr:p.number,phase:run.id===runs[0]?.id&&run.run_attempt===1?'ci_initial_execution':'ci_repeat_execution',
@@ -220,9 +231,24 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));}catch(e){result.source.reason||='TIMELINE_PARTIAL: '+String(e.message||e).slice(0,100);}
    if(Array.isArray(timeline)&&timeline.length<100){
     result.source.sampled_timeline_prs.push(p.number);
+    const supported={'ready_for_review':'pr_ready','review_requested':'review_requested',
+      'reviewed':'review_approved','head_ref_force_pushed':'head_changed','synchronize':'head_changed',
+      'committed':'source_commit','base_ref_changed':'base_changed'};
+    for(const event of timeline){
+     const at=ts(event?.created_at),kind=supported[event?.event];
+     if(!kind||!Number.isFinite(at)||at<ts(p.created_at)||at>ts(p.closed_at))continue;
+     if(event.event==='reviewed'&&event.state!=='approved')continue;
+     result.observations.push({pr:p.number,kind,at:event.created_at,source:'github_issue_timeline',
+      url:`https://github.com/${REPO}/pull/${p.number}`,head_sha:null});
+    }
     const labels=timeline.filter(e=>['labeled','unlabeled'].includes(e.event)&&
       e.label?.name==='hh:conflict-repair-needed').sort((a,b)=>ts(a.created_at)-ts(b.created_at));
-    let open=null;for(const e of labels){if(e.event==='labeled')open=e;
+    let open=null;for(const e of labels){
+     const kind=e.event==='labeled'?'conflict_started':'conflict_resolved';
+     if(Number.isFinite(ts(e.created_at))&&ts(e.created_at)>=ts(p.created_at)&&ts(e.created_at)<=ts(p.closed_at))
+      result.observations.push({pr:p.number,kind,at:e.created_at,source:'github_issue_timeline',
+       url:`https://github.com/${REPO}/pull/${p.number}`});
+     if(e.event==='labeled')open=e;
      if(e.event==='unlabeled'&&open&&ts(e.created_at)>ts(open.created_at)&&
        ts(open.created_at)>=ts(p.created_at)&&ts(e.created_at)<=ts(p.closed_at)){
       result.intervals.push({pr:p.number,phase:'merge_conflict',start:open.created_at,end:e.created_at,
@@ -234,6 +260,11 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    let comments;try{comments=await gate.request('stage-comments-'+p.number,()=>github.rest.issues.listComments({
     owner:OWNER,repo:REPOSITORY,issue_number:p.number,per_page:100,page:1}));}catch(e){result.source.reason||='RECEIPTS_PARTIAL: '+String(e.message||e).slice(0,100);}
    if(Array.isArray(comments)&&comments.length<100){const receipts=comments.flatMap(c=>parseComment(c,{number:p.number}));
+    const stageKinds={ready:'pr_ready',triage:'triage',claimed:'repair_claimed',
+     repair_started:'repair_started',source_published:'source_published'};
+    for(const item of receipts){const kind=stageKinds[item.stage];if(kind&&ts(item.at)>=ts(p.created_at)&&ts(item.at)<=ts(p.closed_at))
+     result.observations.push({pr:p.number,kind,at:item.at,source:'authenticated_stage_receipt',
+      url:`https://github.com/${REPO}/pull/${p.number}`,head_sha:item.head_sha});}
     const started=receipts.filter(x=>x.stage==='repair_started');
     for(const s of started){const matches=receipts.filter(x=>x.stage==='source_published'&&
       x.task_key===s.task_key&&x.head_sha===s.head_sha&&ts(x.at)>=ts(s.at));
