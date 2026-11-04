@@ -55,5 +55,7 @@ test('metrics live inside list only and never displace an opened mobile composer
  assert.ok(view.indexOf('className={styles.peopleScroll}')>view.indexOf('<MessagesLeadMetrics'))
  assert.match(view,/crmEnabled&&\(embedded\|\|tab==='requests'\)/)
  assert.match(ui,/loaded_rows_only|caveat/)
- assert.doesNotMatch(ui,/fetch\(|localStorage|navigator\.sendBeacon|dataLayer\.push|gtag\(/)
+ assert.match(ui,/if\(!opened\|\|!accountId\)return/)
+ assert.match(ui,/fetch\('\/api\/app\/crm\/enquiry-analytics\?period='/)
+ assert.doesNotMatch(ui,/setInterval|localStorage|navigator\.sendBeacon|dataLayer\.push|gtag\(/)
 })
