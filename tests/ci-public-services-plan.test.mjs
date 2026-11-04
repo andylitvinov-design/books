@@ -612,11 +612,16 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
-  for (const [name, output] of [
+  const pinnedImage=src.includes('image: mcr.microsoft.com/playwright:v1.63.0-noble');
+  const scopedSteps=pinnedImage ? [
+    ['Verify preinstalled Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Production build and public browser acceptance', 'build'],
+  ] : [
     ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
     ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
-  ]) {
+  ];
+  for (const [name, output] of scopedSteps) {
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
     assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
@@ -748,7 +753,8 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  assert.match(yml,/image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(yml,/await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
   assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
@@ -799,8 +805,9 @@ test('common public display changes use only relevant browser cases, not unrelat
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/HH_PUBLIC_BROWSER_ENGINES/);
   assert.match(yml,/steps\.scope\.outputs\.engines/);
-  assert.match(yml,/playwright install --with-deps chromium\n/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  assert.match(yml,/image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(yml,/\[\['chromium', chromium\], \['webkit', webkit\]\]/);
+  assert.match(yml,/await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
 });
 
 test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
