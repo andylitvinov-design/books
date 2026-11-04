@@ -12,7 +12,7 @@ import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPubl
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, contractMarkerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -471,6 +471,12 @@ export async function verify(api,ctx,files,options={}) {
     ...files,changedRows,expected:routed.expected,
   }) : new Set();
   for (const replacement of replacements) selfTriggerAdvisory.delete(replacement);
+  // Independent actionlint plus exact immutable BASE-to-HEAD one-line diff
+  // permits omitting obsolete contract-only product fanout on this migration.
+  const contractAdvisory=trustedSyntax ? contractMarkerRemovalAdvisory({
+    ...files,changedRows,expected:routed.expected,
+  }) : new Set();
+  for (const replacement of replacements) contractAdvisory.delete(replacement);
   const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
     files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
   // The workflow's protected BASE/HEAD path triggers determine whether it is
@@ -478,7 +484,7 @@ export async function verify(api,ctx,files,options={}) {
   // release workflow, regardless of filename or route classification.
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name) && !contractAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -516,7 +522,8 @@ export async function verify(api,ctx,files,options={}) {
     const eligibleRuns = rows => rows.filter(run =>
       !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
-      !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
+      !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory) &&
+      !isConcurrencyAdvisoryRun(run,pr,contractAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
     if (state.missing.length && now() - start >= missingGrace &&
         typeof api.runsForWorkflow === 'function') {
