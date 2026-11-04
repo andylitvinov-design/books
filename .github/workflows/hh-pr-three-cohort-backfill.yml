@@ -7,14 +7,18 @@ on:
       - '.github/workflows/hh-pr-three-cohort-backfill.yml'
       - 'scripts/ci-pr-three-cohorts.cjs'
       - 'scripts/ci-pr-cohort-backfill.cjs'
+      - 'scripts/ci-pr-cohort-compact.cjs'
       - 'tests/ci-pr-three-cohorts.test.cjs'
+      - 'tests/ci-pr-cohort-compact.test.cjs'
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
       - '.github/workflows/hh-pr-three-cohort-backfill.yml'
       - 'scripts/ci-pr-three-cohorts.cjs'
       - 'scripts/ci-pr-cohort-backfill.cjs'
+      - 'scripts/ci-pr-cohort-compact.cjs'
       - 'tests/ci-pr-three-cohorts.test.cjs'
+      - 'tests/ci-pr-cohort-compact.test.cjs'
 permissions:
   contents: read
 jobs:
@@ -29,7 +33,8 @@ jobs:
         run: |
           node --check scripts/ci-pr-three-cohorts.cjs
           node --check scripts/ci-pr-cohort-backfill.cjs
-          node --test tests/ci-pr-three-cohorts.test.cjs
+          node --check scripts/ci-pr-cohort-compact.cjs
+          node --test tests/ci-pr-three-cohorts.test.cjs tests/ci-pr-cohort-compact.test.cjs
   backfill:
     # One-off, bounded readback after protected merge, or explicit manual run.
     # No schedule, no source mutation, no CI rerun, no extra Vercel work.
@@ -61,6 +66,7 @@ jobs:
             const fs=require('node:fs');
             const {collect}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-cohort-backfill.cjs');
             const {analyze,renderMarkdown}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-three-cohorts.cjs');
+            const {renderCompact}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-cohort-compact.cjs');
             const data=await collect({github,maxRequests:95,minRemaining:150});
             core.info('HH_THREE_COHORT_EVIDENCE '+JSON.stringify({
               source:data.source,prs:data.prs.length,intervals:data.intervals.length,
@@ -73,13 +79,10 @@ jobs:
             const report=analyze({...data,source:data.source});
             const full=renderMarkdown(report);
             fs.writeFileSync('pr-three-cohorts.json',JSON.stringify(report,null,2));
-            let issueBody=full;
-            if(issueBody.length>60000){
-              const cut=full.indexOf('## Evidence drill-down');
-              issueBody=full.slice(0,cut)+
-                '\n\nFull per-PR timelines (all three cohorts) are in the **pr-three-cohort-evidence** artifact of this workflow run.\n'+
-                `Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n`;
-            }
+            // Preserve the top eight timelines and a clickable breakdown for
+            // each stage. Never truncate all drilldowns when full 302-PR
+            // Markdown exceeds GitHub issue limits; JSON artifact stays full.
+            const issueBody=full.length>60000?renderCompact(report,{runId:context.runId}):full;
             const issueNumber=3394;
             const {owner,repo}=context.repo;
             const issue=(await github.rest.issues.get({owner,repo,issue_number:issueNumber})).data;
