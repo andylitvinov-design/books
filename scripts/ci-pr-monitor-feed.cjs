@@ -197,10 +197,16 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
        report.discovered!==inventorySnapshot.length||
        report.production>inventorySnapshot.length)
       throw Error('TIMESTAMP_NOT_FULL_WATCHDOG_INVENTORY');
-    next.pr_timestamp_inventory=capture({prs:inventorySnapshot,
-      observedAt:report.checkedAt,previous:priorValid?prior:null,
-      productionExpected:report.production,totalExpected:report.discovered});
-    next.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+    if(priorValid&&Date.parse(prior.observed_at)>=Date.parse(report.checkedAt)){
+      // A delayed scheduled run cannot rewind a newer verified push scan.
+      next.pr_timestamp_inventory=prior;
+      next.pr_timestamp_status='PRESERVED_NEWER_FULL_SCAN';
+    }else{
+      next.pr_timestamp_inventory=capture({prs:inventorySnapshot,
+        observedAt:report.checkedAt,previous:priorValid?prior:null,
+        productionExpected:report.production,totalExpected:report.discovered});
+      next.pr_timestamp_status='FRESH_ALL_OPEN_PR_OBSERVATIONS';
+    }
   }else if(priorValid){
     next.pr_timestamp_inventory=prior;
     next.pr_timestamp_status='PRESERVED_PRIOR_FULL_SCAN';
