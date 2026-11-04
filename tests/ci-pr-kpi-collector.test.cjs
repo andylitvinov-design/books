@@ -59,3 +59,24 @@ test('an older comment edited after the cutoff prevents a complete snapshot',asy
  const f=fixture({rows:[{...comment,updated_at:new Date(NOW+1000).toISOString()}]});
  const r=await collectReceiptEvents({...args,until:NOW,github:f.github});assert.equal(r.complete,false);assert.equal(r.reason,'COMMENT_CHANGED_AFTER_CUTOFF');
 });
+
+test('authenticated stage receipts join repository comment inventory with no extra REST reads',async()=>{
+ const {stageLine}=require('../scripts/ci-pr-stage-receipts.cjs');
+ const stage={stage:'ready',pr_number:7,head_sha:SHA,run_id:'7',at:AT,source:'pr_opened_ready'};
+ const note={...comment,id:56,body:stageLine(stage)};
+ const f=fixture({rows:[note]});
+ const result=await collectReceiptEvents({...args,github:f.github});
+ assert.equal(result.complete,true);
+ assert.deepEqual(result.events.map(e=>e.kind),['stage']);
+ assert.equal(result.events[0].stage,'ready');
+ assert.equal(result.events[0].head,SHA);
+ assert.deepEqual(f.stats(),{scans:2,batches:1});
+ const forged=fixture({rows:[{...note,user:{id:77,login:'human',type:'User'}}]});
+ const ignored=await collectReceiptEvents({...args,github:forged.github});
+ assert.equal(ignored.complete,true);assert.equal(ignored.events.length,0);
+});
+test('malformed bot stage timestamp cannot be counted as complete evidence',async()=>{
+ const row={...comment,id:56,body:'<!-- HH_PR_STAGE_V1 {"stage":"ready","pr_number":7} -->'};
+ const x=await collectReceiptEvents({...args,github:fixture({rows:[row]}).github});
+ assert.equal(x.complete,false);assert.equal(x.events.length,0);
+});

@@ -1,6 +1,8 @@
 'use strict';
 const {createHash}=require('node:crypto');
 const {normalizeReceipts}=require('./ci-pr-kpi-receipts.cjs');
+const {parseComment}=require('./ci-pr-stage-receipts.cjs');
+const STAGE_MARKER='<!-- HH_PR_STAGE_V1 ';
 const {MARKER}=require('./ci-pr-task-state.cjs');
 // Repository comment inventory avoids one read per PR while retaining the
 // Actions bot/app provenance check and independently verifying PR identity.
@@ -50,9 +52,19 @@ async function collectReceiptEvents({github,owner,repo,since,until=Date.now(),ma
     if(updated>until)throw Error('COMMENT_CHANGED_AFTER_CUTOFF');
     const fingerprint=createHash('sha256').update(JSON.stringify([c.id,c.updated_at,c.issue_url,c.body,c.user?.id,c.user?.login,c.user?.type,c.performed_via_github_app?.id,c.performed_via_github_app?.slug])).digest('hex');
     rows.set(c.id,fingerprint);
-    if(collect&&c.body.includes(MARKER)){
-     const normalized=normalizeReceipts(number,[c]);if(!normalized.complete)sound=false;
-     if(normalized.events.length)pending.push({number,events:normalized.events});
+    if(collect&&(c.body.includes(MARKER)||c.body.includes(STAGE_MARKER))){
+     const normalized=c.body.includes(MARKER)?normalizeReceipts(number,[c]):{events:[],complete:true};
+     if(!normalized.complete)sound=false;
+     // Stage receipts are authenticated by the same GitHub Actions bot/app
+     // and already present in this inventory: no extra GitHub calls.
+     const hasStage=c.body.includes(STAGE_MARKER);
+     const verifiedStage=hasStage?parseComment(c,{number}):[];
+     if(hasStage&&c.user?.id===41898282&&!verifiedStage.length)sound=false;
+     const events=[...normalized.events,...verifiedStage.map(x=>({
+      kind:'stage',stage:x.stage,at:x.at,pr:number,head:x.head_sha,
+      task:x.task_key||null,newHead:x.new_sha||null,source:x.source
+     }))];
+     if(events.length)pending.push({number,events});
     }
    }
    if(collect&&pending.length){
