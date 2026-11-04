@@ -56,6 +56,7 @@ import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import AccountLoginMethods from '@/components/app/account-login-methods'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
 import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
@@ -142,6 +143,14 @@ export default function AppWorkspace({ locale, path = [] }) {
     [nativeApp,setNativeApp] = useState(false),
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
   const [savedInstallContext,setSavedInstallContext]=useState(false)
+  const [telegramAvailable,setTelegramAvailable]=useState(false)
+  useEffect(()=>{
+    const controller=new AbortController()
+    appFetch('auth/providers',undefined,undefined,{signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setTelegramAvailable(value.telegram===true)})
+      .catch(()=>{/* Fail closed: Google remains available when Telegram is not ready. */})
+    return ()=>controller.abort()
+  },[])
   // Ephemeral account-scoped handoff: no private Save or report URL in storage.
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
@@ -250,7 +259,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     savedExitDestination.current=null
     if(destination)router.replace(destination)
   }
-  async function signin() {
+  async function signin(providerChoice = 'google') {
     signinAttempted.current = true
     setBusy(true)
     setError(null)
@@ -274,6 +283,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
+        provider: providerChoice === 'telegram' ? 'telegram' : 'google',
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
@@ -529,7 +539,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     return (
       <main className="hh-app hh-app--cabinet-guest">
         <CabinetGuestOverview
-          locale={locale} busy={busy} onSignin={signin}
+          locale={locale} busy={busy} onSignin={()=>signin('google')}
+          onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
           unavailable={state === 'unavailable'}
           onRetry={state === 'error' ? load : undefined}
           sessionNotice={state === 'error'}
@@ -555,9 +566,20 @@ export default function AppWorkspace({ locale, path = [] }) {
                 : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
-            <button className="hh-primary" onClick={signin} disabled={busy}>
-              {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
-            </button>
+            <>
+              {telegramAvailable && <button className="hh-primary" data-telegram-auth="login"
+                onClick={()=>signin('telegram')} disabled={busy}>
+                {locale==='ru'?'Войти через Telegram':locale==='es'?'Entrar con Telegram':'Continue with Telegram'}
+              </button>}
+              <button className="hh-primary" onClick={()=>signin('google')} disabled={busy}>
+                {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
+              </button>
+              {telegramAvailable && <p className="hh-muted">
+                {locale==='ru'?'Уже есть Google-кабинет? Войдите через Google и привяжите Telegram в настройках.':
+                  locale==='es'?'¿Ya usas Google? Entra con Google y vincula Telegram en Ajustes.':
+                  'Existing Google Cabinet? Sign in with Google first and link Telegram in Settings.'}
+              </p>}
+            </>
           )}
           {page === 'course' && (stressSignup
             ? <Course14DayOverview locale={locale} programId="stress" compact />
@@ -796,6 +818,8 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                accountId={data.account.id} locale={locale}/>}
               <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
