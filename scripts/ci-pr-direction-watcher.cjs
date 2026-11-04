@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * HH Direction Watcher: zero-new-service classifier for ALL open production
- * PRs. Classifies by five strategic directions and ten operational ranks,
- * then reconciles the current queue stage. It NEVER changes PR code,
- * branch, reviewers, checks or actual merge status.
+ * HH Direction Watcher: zero-new-service classifier for open PRs, plus
+ * bounded recent-closed catch-up when fast merges outrun scheduled labeling.
+ * A closed PR gets a factual outcome, never a retroactive queue-stage label.
+ * It NEVER changes PR code, checks, reviewers, branches or merge status.
  */
 const {POLICY,desiredLabels,priorityFor,rankedCandidates,MERGE_STAGES,SHA}=
   require('./ci-pr-priority.cjs');
@@ -15,6 +15,8 @@ const MAX_REQUESTS=115;
 const MIN_RATE_RESERVE=100;
 const MAX_WRITES=18;
 const MAX_PATH_READS=5;
+const MAX_RECENT_CREATED=30;
+const MAX_RECENT_CLOSED_WRITES=10;
 // A single trusted bootstrap dispatch can drain the historical PR inventory
 // even when GitHub's schedule event is temporarily unobserved. At most 12
 // serial runs, 18 metadata-only updates each; never recursive from cron/push.
@@ -38,7 +40,11 @@ const LABELS=[
   ...MERGE_STAGES.map(stage=>({
     name:'hh:merge-stage:'+stage,color:'ededed',
     description:'Current queue stage: '+stage+' (informational only)'
-  }))
+  })),
+  {name:'hh:outcome:merged',color:'0e8a16',
+    description:'GitHub verified merge timestamp; not production LIVE'},
+  {name:'hh:outcome:closed-unmerged',color:'d4c5f9',
+    description:'PR closed without GitHub merge; not a CI failure claim'}
 ];
 // GitHub REST create-label rejects descriptions >100 characters with HTTP 422.
 // Validate the WHOLE catalog once, so invalid policy can never create
@@ -60,6 +66,47 @@ async function readOpenPRs(github,owner,repo,limited){
     if(response.data.length<100)return all;
   }
   throw Error('HH_DIRECTION_TOO_MANY_PRS');
+}
+// One extra read in the PRE-EXISTING scheduled job. No new workflow, runner
+// or webhook; created sort catches PRs that merged in seconds.
+async function readRecentCreatedPRs(github,owner,repo,limited){
+  const response=await limited('recent-created-prs',()=>github.rest.pulls.list({
+    owner,repo,state:'all',sort:'created',direction:'desc',
+    per_page:MAX_RECENT_CREATED,page:1
+  }));
+  if(!Array.isArray(response.data)||response.data.length>MAX_RECENT_CREATED)
+    throw Error('HH_DIRECTION_RECENT_INVENTORY_INVALID');
+  return response.data;
+}
+function closedOutcome(pr,now=Date.now()){
+  if(pr?.state!=='closed')return null;
+  const created=Date.parse(pr.created_at||''),closed=Date.parse(pr.closed_at||'');
+  if(!Number.isFinite(created)||!Number.isFinite(closed)||
+    closed<created||closed>now+60000)return null;
+  if(pr.merged_at!=null){
+    const merged=Date.parse(pr.merged_at);
+    if(!Number.isFinite(merged)||merged<created||merged>closed+60000||
+       pr.merged===false)return null;
+    return 'merged';
+  }
+  if(pr.merged===true)return null;
+  return 'closed-unmerged';
+}
+function desiredClosedLabels(pr,now=Date.now()){
+  const outcome=closedOutcome(pr,now);
+  if(!outcome)return null;
+  const classification=desiredLabels(pr);
+  if(classification.conflicted)return classification;
+  const desired=classification.desired.filter(name=>!name.startsWith('hh:merge-stage:'));
+  desired.push('hh:outcome:'+outcome);
+  const current=(pr.labels||[]).map(x=>typeof x==='string'?x:x?.name)
+    .filter(x=>typeof x==='string');
+  const obsolete=[...new Set([...classification.obsolete,
+    ...current.filter(name=>name.startsWith('hh:merge-stage:')||
+      name.startsWith('hh:outcome:')&&!desired.includes(name))])]
+    .filter(name=>!desired.includes(name));
+  return {...classification,outcome,stage:'closed',desired,obsolete,
+    needsSync:desired.some(name=>!current.includes(name))||obsolete.length>0};
 }
 async function ensureKnownLabels(github,owner,repo,limited,dryRun,log){
   const known=new Set();
@@ -117,6 +164,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   const log=message=>core.info('HH_DIRECTION_WATCHER: '+message);
   const summary={checkedAt:new Date(now).toISOString(),dryRun,
     inventoried:0,production:0,defaultBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
+    recentCreated:0,recentClosed:0,closedPending:0,closedUpdated:0,recentReadError:false,
     pathProbes:0,createdLabels:0,blockedOverrides:0,
     byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},
     byMergePriority:Object.fromEntries(Array.from({length:10},
@@ -187,8 +235,31 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     if(result.needsSync)missing.push(pr);
     else summary.synced++;
   }
-  summary.pending=missing.length;
-  if(!missing.length)return finish();
+  // The open-only scan missed fast completions. Reconcile recent created
+  // PRs including control-plane; never infer a missing historic CI timestamp.
+  // An unavailable recent-cohort read must not stop open PR classification.
+  let recent=[];
+  try{recent=await readRecentCreatedPRs(github,owner,repo,limited);}
+  catch(error){
+    summary.recentReadError=true;
+    log('Recent closed read unavailable: '+String(error.message).slice(0,150));
+  }
+  summary.recentCreated=recent.length;
+  const recentClosed=recent.filter(pr=>pr.state==='closed'&&
+    TARGETS.has(pr.base?.ref)&&pr.head?.repo?.full_name===owner+'/'+repo&&
+    Number.isSafeInteger(pr.number)&&SHA.test(pr.head?.sha||'')&&
+    closedOutcome(pr,now)!==null);
+  summary.recentClosed=recentClosed.length;
+  const closedMissing=recentClosed.filter(pr=>{
+    const classification=desiredClosedLabels(pr,now);
+    if(classification?.conflicted){summary.blockedOverrides++;return false;}
+    if(!classification)return false;
+    if(!classification.needsSync){summary.synced++;return false;}
+    return true;
+  });
+  summary.closedPending=closedMissing.length;
+  summary.pending=missing.length+closedMissing.length;
+  if(!summary.pending)return finish();
   try{
     summary.createdLabels=await ensureKnownLabels(
       github,owner,repo,limited,dryRun,log);
@@ -197,7 +268,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     log(summary.reason+': '+error.message);
     return finish();
   }
-  const chosen=selectReclassification(missing,now,maxUpdates);
+  const closedSlots=Math.min(maxUpdates,MAX_RECENT_CLOSED_WRITES,closedMissing.length);
+  const openSlots=maxUpdates-closedSlots;
+  const chosen=[...closedMissing.slice(0,closedSlots),
+    ...(openSlots?selectReclassification(missing,now,openSlots):[])];
   for(const initial of chosen){
     if(summary.paused)break;
     try{
@@ -205,16 +279,17 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
         owner,repo,pull_number:initial.number
       }));
       const live=response.data;
-      if(live?.number!==initial.number||live.state!=='open'||
+      if(live?.number!==initial.number||live.state!==initial.state||
          !TARGETS.has(live.base?.ref)||live.base?.ref!==initial.base.ref||
          live.head?.repo?.full_name!==owner+'/'+repo||
          live.head?.sha!==initial.head.sha)continue;
-
-      let classification=desiredLabels(live);
+      const isClosed=initial.state==='closed';
+      if(isClosed&&closedOutcome(live,now)!==closedOutcome(initial,now))continue;
+      let classification=isClosed?desiredClosedLabels(live,now):desiredLabels(live);
       // A vague or generic PR title is insufficient to identify a direction.
       // Probe a small bounded number of changed-path lists; never inspect
       // patch content, PR scripts or private user data.
-      if(classification.id==='other'&&summary.pathProbes<MAX_PATH_READS){
+      if(classification?.id==='other'&&!isClosed&&summary.pathProbes<MAX_PATH_READS){
         const paths=await limited('changed-paths',()=>github.rest.pulls.listFiles({
           owner,repo,pull_number:live.number,per_page:100,page:1
         }));
@@ -223,13 +298,14 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
           classification=desiredLabels(live,paths.data.map(f=>f.filename));
         }
       }
+      if(!classification)continue;
       if(classification.conflicted){summary.blockedOverrides++;continue;}
       if(!classification.needsSync)continue;
 
       summary.selected.push({
         number:live.number,direction:classification.id,level:classification.level,
         rank:classification.rank,stage:classification.stage,
-        source:classification.source
+        outcome:classification.outcome||null,source:classification.source
       });
       if(dryRun)continue;
       const present=new Set((live.labels||[]).map(l=>l.name));
@@ -249,9 +325,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
         }catch(error){if(error.status!==404)throw error;}
       }
       summary.updated++;
+      if(isClosed)summary.closedUpdated++;
       log('#'+live.number+' -> '+classification.id+' P'+classification.level+
         ' R'+String(classification.rank).padStart(2,'0')+
-        ' stage='+classification.stage);
+        (isClosed?' outcome='+classification.outcome:' stage='+classification.stage));
     }catch(error){
       if(summary.paused||error.message?.startsWith('HH_DIRECTION_API_BUDGET_PAUSE')){
         summary.paused=true;break;
@@ -294,4 +371,5 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   }
   return finish();
 }
-module.exports={run,readOpenPRs,ensureKnownLabels,selectReclassification,LABELS,PROD,DEFAULT,TARGETS};
+module.exports={run,readOpenPRs,readRecentCreatedPRs,closedOutcome,desiredClosedLabels,
+  ensureKnownLabels,selectReclassification,LABELS,PROD,DEFAULT,TARGETS};

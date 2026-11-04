@@ -65,3 +65,28 @@ A workflow created by `pull_request.synchronize` is not itself a bug: it is requ
 **Prediction, not an observed gain:** In a similar case with ten *avoidable* post-opening intermediate commits, one coherent initial publication could turn eleven initial/rework waves into one; a verified corrective batch would make two. This is not guaranteed: real failed checks, urgent correctness fixes and mandatory final-HEAD verification may still require further waves.
 
 **No additional cost or reduced coverage:** The change modifies control-plane agent instructions only. It does not remove or weaken Core/Specialist/Guard, introduce delays, cron, runners, storage, paid APIs or Vercel deployments. Verify eventual impact using existing :20 run evidence and comparable PR cohorts; do not claim success from a documentation merge alone.
+
+## Second frozen created-time cohort — 2026-11-04 21:55 UTC
+
+Scope: ten most recently created PRs at observation, #3519, #3520, #3521, #3522, #3523, #3524, #3525, #3526, #3528, #3529. The earlier #3500–#3509 cohort above remains frozen and must not be silently replaced.
+
+| PR | Created UTC | Disposition UTC | Status | Wall clock | Routing labels at observation |
+| --- | --- | --- | --- | --- | --- |
+| #3519 | 21:07:56 | 21:12:27 | closed unmerged, superseded by #3516 | 4m31s | missing |
+| #3520 | 21:08:34 | 21:12:42 | closed unmerged, superseded by #3521 | 4m08s | present |
+| #3521 | 21:12:28 | 21:14:57 | merged control | 2m29s | present |
+| #3522 | 21:12:30 | 21:20:22 | merged control | 7m52s | present |
+| #3523 | 21:26:52 | 21:27:28 | merged control | 36s | missing |
+| #3524 | 21:28:08 | 21:33:37 | merged production | 5m29s | missing, has deployment label |
+| #3525 | 21:28:21 | 21:30:01 | closed unmerged, duplicate of #3524 | 1m40s | missing |
+| #3526 | 21:30:01 | 21:32:17 | merged production | 2m16s | missing |
+| #3528 | 21:43:39 | 21:44:02 | merged control | 23s | missing |
+| #3529 | 21:47:05 | 21:47:20 | merged control | 15s | missing |
+
+Grounded status: 7 merged, 3 closed unmerged (duplicates or superseded), no open PR among these ten. Seven of ten lacked route/priority/rank labels. PRs #3528 and #3529 merged within 23s / 15s, much sooner than the open-only scheduled classifier; production pull_request_target event label seed also does not cover control-plane PRs. Only #3524 and #3526 had independently observed HEAD-scoped HH_PR_STAGE_V1 ready comments. All other receipt phases are UNKNOWN, not zero duration.
+
+Exact-HEAD CI anchors: #3524 Core https://github.com/andylitvinov-design/books/actions/runs/41916371014 queued 21:28:12, started 21:28:16, Core job ended 21:32:33 (4m17s execution); mandatory final gate green 21:33:08, merged 21:33:37 (29s green-to-merge). #3526 https://github.com/andylitvinov-design/books/actions/runs/41916657659 Core queued 21:30:06, started 21:30:35 (29s runner wait), final gate green 21:31:51, merged 21:32:17 (26s). #3521 Watchdog https://github.com/andylitvinov-design/books/actions/runs/41913906775 queued 21:12:32, started 21:13:24 (52s wait), ended 21:14:27, merged 21:14:57. #3522 final-head Watchdog https://github.com/andylitvinov-design/books/actions/runs/41914900040 queued 21:18:48, ended 21:19:30, merged 21:20:22. #3522 had 3 commits; the earlier 6m18s is UNATTRIBUTED, not proof of runner delay. Abandoned #3519 and #3525 spawned cancelled Core work, while another PR supplied the intended fix.
+
+Fix under consideration: reuse existing Direction Watcher and its budget; one recent-created read per already scheduled run; classify closed PRs in both target branches with exact-HEAD readback and immutable disposition; backfill direction/P/rank and factual merged-vs-closed outcome, but never fabricate a historical queue-stage label or stage time. Do not change required CI or product LIVE processes. This source-only control-plane fix needs protected merge and an observed subsequent Watcher classification before its behavior is called active.
+
+PR merge, Vercel deployment/alias and feature-level HH_FUNCTIONAL_SMOKE_V1 are separate clocks. The HH_LIVE_VERIFIED_V1 comment on #3524 provides an observed deployment/alias link, not a feature smoke for this cohort. Complete repair-start and merge-to-functional-LIVE timing coverage is still UNKNOWN. Next actions: pre-PR deduplication to prevent abandoned waves; preserve one-publish rule; profile exact-HEAD Core/runner dependency waits without weakening mandatory checks or introducing additional cost.

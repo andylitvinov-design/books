@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {run,selectReclassification,LABELS}=require('../scripts/ci-pr-direction-watcher.cjs');
+const {run,selectReclassification,LABELS,closedOutcome,desiredClosedLabels}=
+  require('../scripts/ci-pr-direction-watcher.cjs');
 const HEAD='a'.repeat(40);
 const NOW=Date.parse('2026-11-01T18:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
@@ -19,9 +20,12 @@ function fixture(items,opts={}){
   const counts={adds:[],removes:[],creates:[],gets:[],pathReads:0};
   const github={rest:{
     pulls:{
-      list:async ({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'1500'}}),
+      list:async ({page,state})=>({data:page!==1?[]:
+        state==='all'?(opts.recentCreated||[]):items,
+        headers:{'x-ratelimit-remaining':'1500'}}),
       get:async ({pull_number})=>{counts.gets.push(pull_number);
-        return {data:items.find(x=>x.number===pull_number)};},
+        return {data:items.find(x=>x.number===pull_number)||
+          (opts.recentCreated||[]).find(x=>x.number===pull_number)};},
       listFiles:async()=>{counts.pathReads++;
         return {data:[{filename:'src/services/voice/output.ts'}]};}
     },
@@ -247,4 +251,71 @@ test('ten-rank watcher updates work stage idempotently without replacing unrelat
   assert.equal(result.updated,1);
   assert.deepEqual(f.counts.adds[0].labels,['hh:merge-stage:repair']);
   assert.deepEqual(f.counts.removes,['hh:merge-stage:inspect']);
+});
+
+test('recent closed PRs get factual outcome, not a fabricated queue stage',async()=>{
+  const closed=pr(3529,'docs(agents): global PR policy',{
+    state:'closed',created_at:'2026-11-01T17:55:00Z',
+    closed_at:'2026-11-01T17:56:00Z',merged_at:'2026-11-01T17:56:00Z'
+  });
+  const f=fixture([],{recentCreated:[closed]});
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.updated,1);
+  assert.equal(result.closedUpdated,1);
+  assert.equal(result.recentClosed,1);
+  assert.ok(f.counts.adds[0].labels.includes('hh:outcome:merged'));
+  assert.ok(f.counts.adds[0].labels.some(x=>x.startsWith('hh:direction:')));
+  assert.ok(f.counts.adds[0].labels.some(x=>x.startsWith('hh:priority:')));
+  assert.ok(f.counts.adds[0].labels.some(x=>x.startsWith('hh:merge-priority:')));
+  assert.ok(!f.counts.adds[0].labels.some(x=>x.startsWith('hh:merge-stage:')));
+});
+test('closed unmerged PR loses stale inspect label but keeps owner hold',async()=>{
+  const closed=pr(3525,'fix(ci): duplicate source fix',{
+    state:'closed',created_at:'2026-11-01T17:55:00Z',
+    closed_at:'2026-11-01T17:56:00Z',merged_at:null,
+    labels:[{name:'hh:merge-stage:inspect'},{name:'hh:hold'}]
+  });
+  const f=fixture([],{recentCreated:[closed]});
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.closedUpdated,1);
+  assert.ok(f.counts.adds[0].labels.includes('hh:outcome:closed-unmerged'));
+  assert.deepEqual(f.counts.removes,['hh:merge-stage:inspect']);
+});
+test('closed PR with invalid timestamps or foreign source is not labeled',async()=>{
+  const invalid=pr(81,'fix(ci): malformed',{
+    state:'closed',created_at:'2026-11-01T17:55:00Z',
+    closed_at:null,merged_at:'2026-11-01T17:56:00Z'
+  });
+  const foreign=pr(82,'fix(ci): fork',{
+    state:'closed',created_at:'2026-11-01T17:55:00Z',
+    closed_at:'2026-11-01T17:56:00Z',merged_at:null,
+    head:{ref:'fork',sha:HEAD,repo:{full_name:'other-user/books'}}
+  });
+  const f=fixture([],{recentCreated:[invalid,foreign]});
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.closedUpdated,0);
+  assert.equal(f.counts.adds.length,0);
+});
+test('recent cohort failure does not strand open classification',async()=>{
+  const active=pr(100,'fix(ci): trusted active');
+  const f=fixture([active]);
+  f.github.rest.pulls.list=async({state})=>{
+    if(state==='all')throw Error('Temporary discovery error');
+    return {data:[active],headers:{'x-ratelimit-remaining':'1500'}};
+  };
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.recentReadError,true);
+  assert.equal(result.updated,1);
+});
+test('closed classifier rejects contradictory merge facts and is idempotent',()=>{
+  const base=pr(9,'fix(ci): good',{
+    state:'closed',created_at:'2026-11-01T17:55:00Z',
+    closed_at:'2026-11-01T17:56:00Z',merged_at:'2026-11-01T17:56:00Z'
+  });
+  assert.equal(closedOutcome({...base,merged:false},NOW),null);
+  assert.equal(closedOutcome({...base,closed_at:null},NOW),null);
+  const first=desiredClosedLabels(base,NOW);
+  assert.ok(first.needsSync);
+  const synced=desiredClosedLabels({...base,labels:first.desired.map(name=>({name}))},NOW);
+  assert.equal(synced.needsSync,false);
 });
