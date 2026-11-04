@@ -48,3 +48,18 @@ test("quality tie-breaker never overrides goal relevance or creates source URLs"
   assert.equal(chosen.sourceClipIds.length,4);
   assert.equal(chosen.paidRenderApproved,false);
 });
+test("legacy licensed collection metadata is ranked without an invented personal QA approval",()=>{
+  const v2=scene("source-v2",{
+    collection:"film-collection-v2",media:"licensed_mp4",
+    video:"/videos/holistic-house/film-collection-v2/source-v2.mp4",
+    rightsReference:{kind:"existing_approved_first_party_master"},width:undefined,height:undefined,fps:undefined
+  });
+  const v1={...v2,id:"source-v1",collection:"money-films-v1",
+    video:"/videos/holistic-house/money-films-v1/source-v1.mp4"};
+  const full=videoQualityEvidence(v2),hd=videoQualityEvidence(v1);
+  assert.equal(full.tier,"collection_reported_fullhd");
+  assert.equal(hd.tier,"collection_reported_hd_unknown_fps");
+  assert.equal(full.weight,2);
+  assert.equal(hd.weight,1);
+  assert.notEqual(full.tier,"editorially_reviewed_fullhd");
+});
