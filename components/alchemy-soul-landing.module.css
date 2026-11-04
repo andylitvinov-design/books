@@ -73,7 +73,7 @@
 /* One full-width testimonial row per person, stacked vertically. Preserve all 12
    source-backed videos but bound this chapter to one screen, with an accessible
    internal scroll rather than a 4,000px mobile page section. */
-.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px;max-height:clamp(280px,48svh,520px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;min-width:0;width:100%;max-width:750px;max-height:clamp(280px,48svh,520px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .reviewStack:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
 .reviewCard{display:grid;grid-template-columns:minmax(132px,160px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
 .reviewVideo{min-width:0;position:relative;border-radius:11px;overflow:hidden;align-self:center;background:#e7f4f1}
@@ -619,7 +619,7 @@
 .reviewSection .reviewInfo h3{margin:5px 0 8px;font-size:clamp(18px,2vw,22px);line-height:1.25}
 .reviewSection .reviewNote{width:100%;max-width:760px;margin:14px auto 0;line-height:1.5}
 @media(max-width:680px){
-  .reviewSection{display:block;min-height:0;height:auto;width:calc(100% + 28px);margin-inline:-14px;padding:15px 10px 18px;border-radius:18px;justify-content:flex-start}
+  .reviewSection{display:block;min-height:0;height:auto;width:calc(100% + 20px);margin-inline:-10px;padding:15px 10px 18px;border-radius:18px;justify-content:flex-start}
   .reviewSection .sectionHeading{margin:0 auto 13px;padding-inline:3px}
   .reviewSection .reviewStack{width:100%;max-width:none;gap:12px}
   .reviewSection .reviewCard{display:block;width:100%;padding:0;border-radius:15px}
