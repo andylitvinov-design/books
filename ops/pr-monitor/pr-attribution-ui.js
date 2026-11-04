@@ -136,7 +136,7 @@
           const subgroup=elt('details','hh-pr-audit-stage');
           const subgroupTitle=elt('summary');
           subgroupTitle.append(elt('span',null,gapLabels[kind]||'Неидентифицированные события'),
-            elt('b',null,fmtMin(ms)));
+            elt('b',null,fmtExactMs(ms)));
           subgroup.append(subgroupTitle);
           for(const row of relevant.filter(x=>(x.substage||'unknown')===kind)){
             const item=elt('div','hh-pr-audit-interval');
