@@ -1,0 +1,142 @@
+'use strict';
+// Recover only a proven, stale protected production base after real Core source
+// tests passed. Native update-branch creates a new PR HEAD and triggers the
+// normal exact-HEAD Core/Specialist suite. Never mark an old run green.
+const {externalOwnerLeaseStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
+const SHA=/^[0-9a-f]{40}$/i;
+const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
+const ERROR='PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED';
+const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed','hh:direction-override:invalid']);
+
+function isTrustedFailure(context,now=Date.now()){
+ const e=context?.payload?.workflow_run;
+ const age=now-Date.parse(e?.created_at||'');
+ return context?.eventName==='workflow_run' &&
+  context.ref==='refs/heads/codex/bootstrap-books' &&
+  context.repo?.owner+'/'+context.repo?.repo===REPO &&
+  e?.name==='HH PR core release gate' &&
+  String(e.path||'').split('@')[0]===CORE_PATH &&
+  e.event==='pull_request' && e.status==='completed' && e.conclusion==='failure' &&
+  e.repository?.full_name===REPO && e.head_repository?.full_name===REPO &&
+  Number.isSafeInteger(e.id) && e.id>0 &&
+  Number.isSafeInteger(e.run_attempt) && e.run_attempt>0 &&
+  SHA.test(e.head_sha||'') &&
+  Number.isFinite(age) && age>=0 && age<=6*60*60*1000;
+}
+function validatedJobEvidence(data){
+ const jobs=data?.jobs;
+ if(!Array.isArray(jobs)||!Number.isSafeInteger(data.total_count) ||
+    data.total_count!==jobs.length||jobs.length<3||jobs.length>100)return null;
+ const exact=name=>{
+  const matches=jobs.filter(job=>job?.name===name);
+  return matches.length===1?matches[0]:null;
+ };
+ const core=exact('core-lint-types-build'),specialist=exact('hh-specialist'),
+  merge=exact('hh-merge-check');
+ if(!core||!specialist||!merge||!Number.isSafeInteger(specialist.id)||
+    core.status!=='completed'||core.conclusion!=='success'||
+    specialist.status!=='completed'||specialist.conclusion!=='failure'||
+    merge.status!=='completed'||merge.conclusion!=='failure'||
+    jobs.some(job=>job.conclusion==='failure'&&job!==specialist&&job!==merge))return null;
+ return specialist.id;
+}
+function isActualBaseAdvancedLog(raw){
+ const log=typeof raw==='string'?raw:
+  raw instanceof Uint8Array?Buffer.from(raw).toString('utf8'):null;
+ if(!log||log.length>2_000_000)return false;
+ // Both markers come from the trusted BASE-owned specialist validator.
+ return log.split(/\r?\n/).some(line=>
+   /(?:^|\s)(?:##\[error\])?BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED\s*$/.test(line)) &&
+   log.includes('CI_SPECIALIST_FAIL_CLOSED: '+ERROR);
+}
+function isVerifiedAdvance(diff,tested,live){
+ return SHA.test(tested||'')&&SHA.test(live||'')&&tested!==live&&
+  diff?.status==='ahead'&&diff.base_commit?.sha===tested&&
+  diff.merge_base_commit?.sha===tested&&diff.behind_by===0&&
+  Number.isInteger(diff.ahead_by)&&diff.ahead_by>0&&diff.ahead_by<=100&&
+  diff.total_commits===diff.ahead_by&&
+  Array.isArray(diff.commits)&&diff.commits.length===diff.ahead_by&&
+  diff.commits.at(-1)?.sha===live;
+}
+function sameSource(pr,source,head){
+ return pr?.state==='open'&&!pr.draft&&pr.base?.ref===PROD&&
+  pr.head?.repo?.full_name===REPO&&pr.head.ref===source&&pr.head.sha===head&&
+  pr.mergeable===true&&pr.mergeable_state!=='dirty' &&
+  !['conflicting','dirty'].includes(pr.mergeable_state) &&
+  !(pr.labels||[]).some(l=>HOLDS.has(typeof l==='string'?l:l?.name));
+}
+async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.now()}){
+ const outcome=(status,reason,number=null)=>({status,reason,prNumber:number,mergeAuthorized:false});
+ if(!isTrustedFailure(context,now))return outcome('SKIPPED','UNTRUSTED_OR_NON_BASE_FAILURE');
+ // GitHub Actions' ephemeral GITHUB_TOKEN suppresses subsequent push CI.
+ // Without the already configured owner token, changing HEAD would strand CI.
+ if(!hasOwnerToken)return outcome('SKIPPED','OWNER_TOKEN_REQUIRED_FOR_NEW_CI');
+ const e=context.payload.workflow_run;
+ const refs=(e.pull_requests||[]).filter(x=>Number.isSafeInteger(x?.number)&&x.number>0&&
+  x.base?.ref===PROD&&SHA.test(x.base.sha||'')&&
+  x.head?.sha===e.head_sha&&x.head?.ref===e.head_branch);
+ if(refs.length!==1)return outcome('SKIPPED','AMBIGUOUS_IMMUTABLE_PR_ASSOCIATION');
+ const ref=refs[0],number=ref.number;
+ try{
+  const {owner,repo}=context.repo;
+  const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:e.id})).data;
+  if(run?.id!==e.id||run.run_attempt!==e.run_attempt||
+     run.status!=='completed'||run.conclusion!=='failure'||
+     run.head_sha!==e.head_sha||run.head_branch!==e.head_branch||
+     run.path?.split('@')[0]!==CORE_PATH)return outcome('SKIPPED','RUN_CHANGED',number);
+  const jobData=(await github.rest.actions.listJobsForWorkflowRun({
+   owner,repo,run_id:e.id,per_page:100,filter:'latest'
+  })).data;
+  const specialistJobId=validatedJobEvidence(jobData);
+  if(!specialistJobId)return outcome('SKIPPED','CORE_OR_SPECIALIST_FAILURE_UNVERIFIED',number);
+  const logs=(await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',{
+   owner,repo,job_id:specialistJobId
+  })).data;
+  if(!isActualBaseAdvancedLog(logs))
+   return outcome('SKIPPED','NO_TRUSTED_BASE_ADVANCED_MARKER',number);
+  let pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+  if(pr?.mergeable===null){
+   await new Promise(resolve=>setTimeout(resolve,2000));
+   pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+  }
+  if(!sameSource(pr,e.head_branch,e.head_sha))
+   return outcome('SKIPPED','PR_SOURCE_CHANGED_DRAFT_HELD_OR_CONFLICT',number);
+  const liveBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+  const live=liveBranch?.commit?.sha,old=ref.base.sha;
+  if(liveBranch?.protected!==true||!SHA.test(live||'')||old===live)
+   return outcome('SKIPPED','NO_VERIFIED_PROTECTED_BASE_ADVANCE',number);
+  const diff=(await github.rest.repos.compareCommits({
+   owner,repo,base:old,head:live,per_page:100
+  })).data;
+  if(!isVerifiedAdvance(diff,old,live))
+   return outcome('SKIPPED','BASE_ANCESTRY_UNVERIFIED',number);
+  // Native update-branch is non-force and rejects a conflict. Do not overwrite
+  // another owner/Repair worker's concurrent head while it holds a lease.
+  let pages=0;
+  const comments=await readCompleteIssueComments(github,owner,repo,number,
+   async (_kind,call)=>{if(++pages>10)throw Error('LEASE_HISTORY_PAGE_LIMIT');return call();});
+  if(!Array.isArray(comments)||externalOwnerLeaseStatus(comments,e.head_sha,now)!=='FREE')
+   return outcome('SKIPPED','ACTIVE_OR_UNVERIFIED_SOURCE_LEASE',number);
+  const [fresh,production]=await Promise.all([
+   github.rest.pulls.get({owner,repo,pull_number:number}),
+   github.rest.repos.getBranch({owner,repo,branch:PROD})
+  ]);
+  if(!sameSource(fresh.data,e.head_branch,e.head_sha)||
+     production.data?.protected!==true||production.data?.commit?.sha!==live)
+   return outcome('SKIPPED','HEAD_OR_BASE_CHANGED_BEFORE_UPDATE',number);
+  // A normal merge of protected production into the PR head. GitHub performs
+  // the expected_head_sha lease atomically; synchronize triggers genuine CI.
+  const update=await github.request(
+   'PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch',{
+    owner,repo,pull_number:number,expected_head_sha:e.head_sha
+   });
+  if(update?.status!==202)return outcome('SKIPPED','UPDATE_NOT_ACCEPTED',number);
+  return outcome('UPDATED','PROTECTED_BASE_SYNC_REQUESTED_NEW_HEAD_REQUIRES_REAL_CI',number);
+ }catch(error){
+  const code=Number(error?.status||0);
+  return outcome('SKIPPED',code?'GITHUB_API_'+code:'BASE_RECOVERY_EVIDENCE_UNAVAILABLE',number);
+ }
+}
+module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
+ isVerifiedAdvance,sameSource,recoverBaseAdvanced};
