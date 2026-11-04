@@ -30,11 +30,11 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
  // inventory and Actions samples already collected. No REST calls or jobs.
  const createdCohort=(start,end)=>{
   const prs=(merges.events||[]).filter(x=>x.kind==='merged'&&x.production===true)
-   .map(x=>({number:x.pr,created_at:x.created_at,merged_at:x.at,
+   .map(x=>({number:x.pr,created_at:x.created_at,merged_at:x.at,mergeSha:x.mergeSha,
     base:{ref:PROD},head:{sha:x.head,ref:x.head_ref},
     html_url:'https://github.com/andylitvinov-design/books/pull/'+x.pr}));
   const result=createdWallClock({prs,runs:Array.isArray(actions.workflowRuns)?actions.workflowRuns:[],
-   jobs,start:new Date(start).toISOString(),end:new Date(end).toISOString()});
+   jobs,events,start:new Date(start).toISOString(),end:new Date(end).toISOString()});
   const fullRows=result.rows.length,slowest=result.rows.slice()
    .sort((a,b)=>b.full_minutes-a.full_minutes||a.pr-b.pr).slice(0,12);
   return {...result,rows:slowest,rows_returned:slowest.length,rows_total:fullRows,
@@ -75,6 +75,7 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
    'Missing historical receipt or job coverage remains partial; samples are not totals.',
    'Cancelled and failed workflow reasons and discarded runner minutes are bounded observed samples; never billing amounts or complete totals.',
    'LIVE conversion requires feature-specific smoke evidence for each comparable production merge.',
-   'Created→Merged cohort accounts for verified final HEAD workflow intervals only; missing or older-HEAD history remains explicitly unallocated.'],windows};
+   'Created→Merged cohort accounts for verified final HEAD workflow intervals only; missing or older-HEAD history remains explicitly unallocated.',
+   'Detailed stages share exactly one created-and-merged cohort; P50/P95 use reported n/N, and overlapping jobs do not add to wall time.'],windows};
 }
 module.exports={buildReport,WINDOWS};
