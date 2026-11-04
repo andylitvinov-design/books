@@ -335,13 +335,13 @@ jobs:
         run: npm run build
   hh-specialist:
     name: hh-specialist
-    # Queue specialist alongside scope, not after a delayed scope runner.
-    # Independently verify exact HEAD and use ONLY immutable tested-BASE routing.
-    # hh-merge-check still requires successful real scope, Core and Specialist.
-    # Draft and non-PR workflows must not allocate a Specialist runner.
-    # The protected hh-merge-check remains fail-closed on Draft or non-PR.
-    # Ready-for-review / synchronize starts real exact-HEAD validation again.
-    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
+    # Wait for real Core success before polling independent exact-HEAD specialists.
+    # Prevent premature missing-workflow false negatives during GitHub run indexing.
+    # Do not occupy a polling runner or consume API quota if Core already failed.
+    # Specialist still uses immutable tested-BASE policy, never candidate policy.
+    # hh-merge-check still blocks Draft/failed Core/skipped or failed specialists.
+    needs: [scope]
+    if: ${{ !cancelled() && needs.scope.result == 'success' && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
