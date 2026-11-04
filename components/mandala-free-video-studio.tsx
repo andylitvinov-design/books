@@ -5632,16 +5632,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               aria-pressed={usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id}
               disabled={recording||preparing} className={videoStyles.templateTile}
               onClick={()=>{
-                const nextDuration=duration;
-                const plan=compileFreeFilmPreset(preset,locale,nextDuration,aspect);
-                resetEditorHistory();setActiveFreeFilmPreset(preset.id);
-                selectScenarioMusic(preset.id);
-                setTheme(preset.theme);setVideoCategory(preset.theme);
-                setDuration(nextDuration);setCinematicPlan(plan);
-                setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);
-                setPreviewPlaying(false);setSuggestion("");
-                document.getElementById("video-hero")?.scrollIntoView({
-                  behavior:"smooth",block:"nearest"});
+                // Every catalogue entry must enter the exact same verified
+                // catalogue mode as Auto Director. The previous inline handler
+                // left creationMode="generated" active after free-animation use,
+                // so the chosen preset never became a renderable four-MP4 plan.
+                applyAutoFilm(preset.id,duration,undefined,aspect);
               }}>
               {poster ? <img src={poster} alt="" loading="lazy"
                 style={{width:"100%",height:"100%",objectFit:"cover"}}/> : null}
