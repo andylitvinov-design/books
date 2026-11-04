@@ -2,6 +2,7 @@ name: Holistic House Messenger Mobile Release
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'app/\[locale\]/app/messages/**'
@@ -41,6 +42,8 @@ concurrency:
 
 jobs:
   messenger-release:
+    # Draft staging skips costly source/security work; Ready/manual/push retain real contracts.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
