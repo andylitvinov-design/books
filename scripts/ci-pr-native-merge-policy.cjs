@@ -32,10 +32,12 @@ function sameHead(pr,{owner,repo,number,expectedHead,expectedBase}){
   pr.head.repo?.full_name===owner+'/'+repo;
 }
 function mergeable(pr){
- // Native GitHub protection remains authoritative for optional checks.
- // An optional red check can report "unstable", which is NOT a conflict.
+ // "blocked" is a GitHub protection/review/required-check state, NOT a
+ // merge conflict. Both callers already demand successful mandatory CI;
+ // the shared preflight separately verifies review/lease/HEAD. Native --auto
+ // remains subject to all hosted rules. Null/dirty/conflicting stay denied.
  return pr?.mergeable===true&&
-  ['clean','behind','unstable'].includes(pr.mergeable_state);
+  ['clean','behind','unstable','blocked'].includes(pr.mergeable_state);
 }
 function held(pr){
  const labels=(pr?.labels||[]).map(l=>typeof l==='string'?l:l?.name);
