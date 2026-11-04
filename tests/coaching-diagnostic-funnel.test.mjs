@@ -75,3 +75,23 @@ test('mobile-first landing has 2 direct routes; private responses never go to me
   assert.match(style,/@media\(max-width:350px\)/)
   assert.doesNotMatch(intake,/gtag\(|dataLayer\.push|whatsappEnquiryUrl|telegramEnquiryUrl/)
 })
+
+test('coaching intake reuses consented attribution and existing owner-only notification',()=>{
+  const route=read('app/api/coaching-diagnostic/route.js')
+  const standard=read('app/api/service-enquiries/route.js')
+  const notice=read('lib/app/public-enquiry-telegram.js')
+  // No new analytics provider or implicit tracking: the same cookie parser
+  // returns null when the visitor has not consented to source attribution.
+  assert.match(route,/readPublicEnquiryAttribution\(request\)/)
+  assert.match(standard,/readPublicEnquiryAttribution\(request\)/)
+  assert.match(route,/createPublicServiceEnquiry\(config, input, readPublicEnquiryAttribution\(request\)\)/)
+  // The message is sent only after a successful encrypted CRM commit. The
+  // provider failure must not convert a saved lead into a failed submission.
+  assert.match(route,/result\.saved === true/)
+  assert.match(route,/after\(async \(\) => \{/)
+  assert.match(route,/dispatchPublicServiceEnquiryTelegram\(config, result\.id, input\.operationId\)/)
+  assert.match(notice,/telegramOwnerPilotReady\(env\)/)
+  assert.match(notice,/notification_tg_public_enquiry_claim/)
+  assert.doesNotMatch(route,/sendOneMessengerMessage|sendBulk|setInterval|marketing/i)
+  assert.doesNotMatch(notice,/description_ciphertext|contact_ciphertext\s+as/i)
+})

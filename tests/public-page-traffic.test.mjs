@@ -134,8 +134,7 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   'AnalyticsConsent',
   'PublicPageTraffic',
   'MobileBottomNavigation',
-  // Owner-requested six-button MyTube navigation is already live and passed
-  // mobile route/keyboard checks. Any NEW global mount still fails this list.
+  // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
   'UnifiedMobileDock'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
  const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')

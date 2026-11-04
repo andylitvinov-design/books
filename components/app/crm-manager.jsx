@@ -17,6 +17,7 @@ import CrmMessagesNavigation from './crm-messages-navigation'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmOpportunities from './crm-opportunities'
 import CrmMarketingPanel from './crm-marketing'
+import CrmTelegramCampaigns from './crm-telegram-campaigns'
 import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
 import CrmLeadTriage from './crm-lead-triage'
 import styles from './crm-manager.module.css'
@@ -585,7 +586,8 @@ export default function CrmManager({ locale = 'en', accountId, publicEnquiries =
         </select>
         <p>{CRM_TEMPLATES[templateId][language].body}</p>
         <button disabled={busy} type="button" onClick={()=>save('create_draft',{templateId,locale:language,channel:'email',segment:'all_opted_in'})}>{c.saveDraft}</button>
-        <h3>{c.drafts}</h3><ul>{data.drafts?.map(draft=><li key={draft.id}>{CRM_TEMPLATES[draft.definition?.templateId]?.[draft.definition?.locale]?.subject||draft.status}</li>)}</ul>
+        <h3>{c.drafts}</h3><ul>{data.drafts?.filter(draft=>draft.definition?.channel==='email').map(draft=><li key={draft.id}>{CRM_TEMPLATES[draft.definition?.templateId]?.[draft.definition?.locale]?.subject||draft.status}</li>)}</ul>
+        <CrmTelegramCampaigns accountId={accountId} locale={language}/>
       </details>
       </>}
     </>}
