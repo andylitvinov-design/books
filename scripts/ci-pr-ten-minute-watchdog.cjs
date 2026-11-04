@@ -565,7 +565,7 @@ function assessCronHealth(history,now,graceMinutes) {
     last,ageMinutes:Math.max(0,Math.floor(age/60_000))};
 }
 
-async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, eventFastPath=false, now=Date.now()}) {
+async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, eventFastPath=false, directHandoffLocal=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
   const {createQuotaGuard}=require('./ci-pr-api-quota.cjs');
@@ -685,6 +685,13 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     verifiedSourceFailures:0,failedCoreCronState,cronBackstop,
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
 
+  // Share only newly verified queue labels with the same-run dispatcher.
+  const addedQueueLabels=new Map();
+  const noteQueueLabel=(number,name)=>{
+    if(dryRun)return;
+    const names=addedQueueLabels.get(number)||new Set();
+    names.add(name);addedQueueLabels.set(number,names);
+  };
   // Reconcile only labels, never substitute evidence or alter protected CI.
   // The exact-HEAD release gates remain red until the real cause is fixed.
   const routeVerifiedSpecialist=async live=>{
@@ -869,6 +876,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         if (created) {
           conflictHandoffs++;
           summary.conflictLabelsQueued++;
+          noteQueueLabel(live.number,CONFLICT_LABEL);
           log((dryRun ? 'WOULD_QUEUE' : 'QUEUED') +
             ' conflict repair #' + live.number + ' HEAD ' + live.head.sha.slice(0,12));
         }
@@ -1013,6 +1021,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
           '0e8a16',dryRun,limited,log);
         if (queued) {
           summary.ciBootstrapQueued++;
+          noteQueueLabel(live.number,CI_BOOTSTRAP_LABEL);
           log((dryRun?'WOULD_QUEUE':'QUEUED')+
             ' legacy Core CI worker for #'+live.number+' HEAD '+live.head.sha.slice(0,12));
         }
@@ -1134,7 +1143,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
       } else if(handoffs < MAX_HANDOFFS) {
         summary.verifiedSourceFailures++;
-        try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
+        try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {
+          handoffs++;summary.sourceRepairQueued++;
+          noteQueueLabel(pr.number,REPAIR_LABEL);
+         } }
         catch(e){log(`#${pr.number} repair handoff unavailable: status=${e.status || 'unknown'} accepted=${e.response?.headers?.['x-accepted-github-permissions'] || 'not-reported'} ${e.message}`);}
       }
     }
@@ -1192,7 +1204,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Wake the trusted single-writer directly only if the durable queues need it.
   // Event handoff calls the focused dispatcher in this same runner.
   // Waking the general control tower here creates a redundant second hop.
-  if (centralDispatch && !eventFastPath && !budget.exhausted) {
+  if (centralDispatch && !eventFastPath && !directHandoffLocal && !budget.exhausted) {
     summary.controlTowerWake=await notifyControlTower({github,owner,repo,
       summary,enabled:centralDispatch,hasToken:hasMergeToken,dryRun,
       limited,log,now});
@@ -1216,6 +1228,18 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.apiRateLimited=budget.exhausted;
   summary.apiRemaining=budget.remaining;
   summary.apiBudgetReason=budget.reason;
+  if(!eventFastPath&&!budget.exhausted&&summary.inventoryComplete&&directHandoffLocal){
+    // Same-run memory only: no artifact, token, PR body or snapshot in logs.
+    // The dispatcher still rechecks live HEAD/owner proof before mutations.
+    const shared=all.map(pr=>{
+      const queued=addedQueueLabels.get(pr.number);
+      if(!queued||!queued.size)return pr;
+      const oldNames=new Set((pr.labels||[]).map(x=>x.name));
+      return {...pr,labels:[...(pr.labels||[]),
+        ...[...queued].filter(name=>!oldNames.has(name)).map(name=>({name}))]};
+    });
+    Object.defineProperty(summary,'prInventorySnapshot',{value:shared,enumerable:false});
+  }
    // Reuse Watchdog's verified one-PR snapshot in the dispatcher.
    // Non-enumerable: no second API inventory and no PR body in telemetry.
    if(eventFastPath&&!dryRun&&!budget.exhausted&&all.length===1&&
