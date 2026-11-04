@@ -22,11 +22,19 @@ function renderCompact(report,{runId,maxPerStage=6}={}){
    else{
     out.push('','| PR | Time (min) | UTC evidence interval | Event and reason |','|---|---:|---|---|');
     for(const row of rows.slice(0,maxPerStage)){
-     const segment=(row.segments||[]).filter(s=>s.phase===phase).sort((a,b)=>Date.parse(b.end)-Date.parse(a.end))[0];
-     const time=segment?`${clean(segment.start)} → ${clean(segment.end)}`:'No confirmed event';
-     const evidence=segment?.url?`[GitHub](${segment.url})`:'[PR]('+row.url+')';
-     const reason=clean(segment?.reason|| (phase==='unknown'?'No attributable event':'Verified interval'));
-     out.push(`| [#${row.pr}](${row.url}) | ${row.phases[phase]} | ${time} | ${evidence} · ${reason} |`);
+     // The stage total may span multiple disjoint intervals. Never print its
+     // sum beside only the last interval (that makes genuine evidence seem false).
+     // Preserve the full evidence in the workflow artifact; cap UI slices here.
+     const segments=(row.segments||[]).filter(s=>s.phase===phase)
+       .sort((a,b)=>Date.parse(a.start)-Date.parse(b.start));
+     const shown=segments.slice(0,3);
+     const intervals=shown.map(s=>`${clean(s.start)} → ${clean(s.end)} (≈${Math.round((Date.parse(s.end)-Date.parse(s.start))/600)/100} min)`).join(' ; ');
+     const omitted=segments.length-shown.length;
+     const time=segments.length?intervals+(omitted?` ; +${omitted} more in artifact`:''):'No confirmed event';
+     const evidence=[...new Set(shown.map(s=>s.url?`[GitHub](${s.url})`:'[PR]('+row.url+')'))].join(' ');
+     const reason=segments.length>1?`Total across ${segments.length} disjoint intervals (rounded)`:
+       clean(segments[0]?.reason|| (phase==='unknown'?'No attributable event':'Verified interval'));
+     out.push(`| [#${row.pr}](${row.url}) | ${row.phases[phase]} | ${time} | ${evidence||'[PR]('+row.url+')'} · ${reason} |`);
     }
    }
    out.push('','</details>');
