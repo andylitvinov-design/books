@@ -13,6 +13,9 @@ export type TimelineTextClip={
   text:string;
   startSeconds:number;
   durationSeconds:number;
+  styleId?:"classic"|"cinema"|"minimal"|"glow";
+  motionId?:"none"|"fade"|"slide_up"|"pop";
+  positionId?:"bottom"|"center"|"top";
 };
 export type TimelineTransition="soft"|"cut"|"fade_black"|"flash_white";
 export type TimelineLook="original"|"warm"|"cool"|"dream";
@@ -74,7 +77,11 @@ const copy={
     zoom:"Масштаб",snap:"Магнит",split:"Разрезать по курсору",duplicate:"Дублировать",
     transition:"Переход",look:"Цветовой стиль",soft:"Мягкий",cut:"Без перехода",
     fadeBlack:"Затемнение",flashWhite:"Белая вспышка",original:"Оригинал",warm:"Тёплый",
-    cool:"Прохладный",dream:"Мечта",undo:"Отменить",redo:"Повторить"},
+    cool:"Прохладный",dream:"Мечта",undo:"Отменить",redo:"Повторить",
+    textStyle:"Оформление",textMotion:"Анимация",textPosition:"Расположение",
+    classic:"Обычный",cinema:"Кино",minimal:"Минимализм",glowText:"Свечение",
+    noMotion:"Без анимации",fadeMotion:"Проявление",slideMotion:"Подъём",popMotion:"Появление",
+    top:"Вверху",center:"По центру",bottom:"Внизу"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -84,7 +91,11 @@ const copy={
     zoom:"Zoom",snap:"Snap",split:"Split at playhead",duplicate:"Duplicate",
     transition:"Transition",look:"Color look",soft:"Soft",cut:"Cut",
     fadeBlack:"Fade to black",flashWhite:"White flash",original:"Original",warm:"Warm",
-    cool:"Cool",dream:"Dream",undo:"Undo",redo:"Redo"},
+    cool:"Cool",dream:"Dream",undo:"Undo",redo:"Redo",
+    textStyle:"Caption style",textMotion:"Animation",textPosition:"Position",
+    classic:"Classic",cinema:"Cinema",minimal:"Minimal",glowText:"Glow",
+    noMotion:"None",fadeMotion:"Fade",slideMotion:"Slide up",popMotion:"Pop",
+    top:"Top",center:"Center",bottom:"Bottom"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -94,7 +105,11 @@ const copy={
     zoom:"Zoom",snap:"Imán",split:"Cortar en el cursor",duplicate:"Duplicar",
     transition:"Transición",look:"Color de escena",soft:"Suave",cut:"Corte",
     fadeBlack:"Fundido negro",flashWhite:"Destello blanco",original:"Original",warm:"Cálido",
-    cool:"Frío",dream:"Sueño",undo:"Deshacer",redo:"Rehacer"}
+    cool:"Frío",dream:"Sueño",undo:"Deshacer",redo:"Rehacer",
+    textStyle:"Estilo",textMotion:"Animación",textPosition:"Posición",
+    classic:"Clásico",cinema:"Cine",minimal:"Mínimo",glowText:"Brillo",
+    noMotion:"Ninguna",fadeMotion:"Aparecer",slideMotion:"Subir",popMotion:"Salto",
+    top:"Arriba",center:"Centro",bottom:"Abajo"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
@@ -299,6 +314,37 @@ export function MandalaMultiTrackTimeline({
           <input type="number" min={.1} max={seconds} step={.1} disabled={disabled}
             value={chosen.durationSeconds} onChange={e=>onSetCaption(chosen.id,{
               durationSeconds:Number(e.currentTarget.value)})}/>
+        </label>
+      </div>
+      <div className={css.captionAppearance}>
+        <label>{t.textStyle}
+          <select data-video-caption-style value={chosen.styleId??"classic"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              styleId:e.currentTarget.value as NonNullable<TimelineTextClip["styleId"]>})}>
+            <option value="classic">{t.classic}</option>
+            <option value="cinema">{t.cinema}</option>
+            <option value="minimal">{t.minimal}</option>
+            <option value="glow">{t.glowText}</option>
+          </select>
+        </label>
+        <label>{t.textMotion}
+          <select data-video-caption-motion value={chosen.motionId??"none"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              motionId:e.currentTarget.value as NonNullable<TimelineTextClip["motionId"]>})}>
+            <option value="none">{t.noMotion}</option>
+            <option value="fade">{t.fadeMotion}</option>
+            <option value="slide_up">{t.slideMotion}</option>
+            <option value="pop">{t.popMotion}</option>
+          </select>
+        </label>
+        <label>{t.textPosition}
+          <select data-video-caption-position value={chosen.positionId??"bottom"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{
+              positionId:e.currentTarget.value as NonNullable<TimelineTextClip["positionId"]>})}>
+            <option value="bottom">{t.bottom}</option>
+            <option value="center">{t.center}</option>
+            <option value="top">{t.top}</option>
+          </select>
         </label>
       </div>
       <div className={css.captionTools}>

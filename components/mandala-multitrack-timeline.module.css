@@ -107,3 +107,15 @@
   .transportActions{gap:4px}
   .transportActions button.historyAction{width:30px;height:30px;min-width:30px}
 }
+
+
+/* CapCut-class caption styling uses the same safe on-canvas composition. */
+.captionAppearance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.captionAppearance label{display:grid;gap:4px;min-width:0;font-size:11px;font-weight:750}
+.captionAppearance select{display:block;width:100%;min-width:0;min-height:42px;border:1px solid #cadcd1;
+  border-radius:10px;background:#fffdfa;color:#21483c;font-size:12px;padding:5px}
+.captionAppearance select:disabled{opacity:.42}
+@media(max-width:359px){
+  .captionAppearance{grid-template-columns:1fr 1fr}
+  .captionAppearance label:last-child{grid-column:1/-1}
+}

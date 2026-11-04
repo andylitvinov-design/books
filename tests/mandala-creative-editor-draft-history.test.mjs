@@ -1,4 +1,6 @@
 import test from "node:test";
+import "./mandala-smart-captions.test.mjs"; // Reuse the existing Mandala specialist job; no new CI runner.
+
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "../lib/mandala/creative-editor-draft.mjs";
@@ -95,4 +97,13 @@ test("real Studio wires editing actions to history and bounded local project imp
  assert.match(s,/validateMontageClips/);
  assert.match(t,/data-video-timeline-undo/);
  assert.match(t,/data-video-timeline-redo/);
+});
+
+test("portable draft retains user-selected animated subtitle appearance safely",()=>{
+  const styled={...base(),captions:[{id:"caption-1",text:"Hello",startSeconds:1,
+    durationSeconds:4,styleId:"cinema",motionId:"slide_up",positionId:"center"}]};
+  const encoded=createMyTubeEditorDraft(styled,allowlists);
+  assert.equal(parseMyTubeEditorDraft(encoded,allowlists).captions[0].motionId,"slide_up");
+  assert.throws(()=>decode({...JSON.parse(encoded),
+    captions:[{...JSON.parse(encoded).captions[0],styleId:"<img src=x>"}]}),/caption/);
 });
