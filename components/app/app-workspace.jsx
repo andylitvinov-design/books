@@ -144,13 +144,15 @@ export default function AppWorkspace({ locale, path = [] }) {
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
   const [savedInstallContext,setSavedInstallContext]=useState(false)
   const [telegramAvailable,setTelegramAvailable]=useState(false)
+  // No extra auth discovery request on the private Cabinet bootstrap.
   useEffect(()=>{
+    if(state==='loading'||state==='ready'||state==='unavailable')return
     const controller=new AbortController()
     appFetch('auth/providers',undefined,undefined,{signal:controller.signal})
       .then(value=>{if(!controller.signal.aborted)setTelegramAvailable(value.telegram===true)})
       .catch(()=>{/* Fail closed: Google remains available when Telegram is not ready. */})
     return ()=>controller.abort()
-  },[])
+  },[state])
   // Ephemeral account-scoped handoff: no private Save or report URL in storage.
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
