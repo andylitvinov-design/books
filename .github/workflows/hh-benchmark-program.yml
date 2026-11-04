@@ -5,7 +5,7 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - ".github/workflows/hh-benchmark-program.yml"
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - "docs/benchmarking/**"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"

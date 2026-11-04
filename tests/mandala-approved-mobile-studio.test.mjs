@@ -14,8 +14,8 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
-    "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
+  const order=["data-video-quick-builder","data-video-quick-controls",
+    "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
@@ -33,7 +33,10 @@ test("the existing public editor retains one real video renderer and the new com
       "video studio hierarchy changed at "+order[i]);
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
-  assert.match(source,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{activeWorkspace==="video" \? deepCharacterPhotoPane : null\}/);
+  assert.equal((source.match(/<details className=\{videoStyles\.previewCoverOptions\} data-video-cover-options/g)||[]).length,1,
+    "the same original photo/consent widget is reused in basic settings");
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
@@ -97,7 +100,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
 test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(s,/data-video-goal-summary/);
+  assert.match(s,/data-video-basic-editor/);
+  const fifth=s.slice(s.indexOf('data-video-basic-editor'),s.indexOf('data-video-quick-personal'));
+  assert.doesNotMatch(fifth,/data-video-goal-summary/,
+    "goal was already supplied earlier; Montage must not ask it twice");
   const auto=read("components/mandala-auto-video-director.tsx");
   assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
     "approved goal comes from the single local wish state");
@@ -105,12 +111,15 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "the same personal goal retains its strict 160-character browser limit");
   assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
-  assert.match(s,/data-video-personal-affirmations/);
-  assert.match(s,/enabled:!current\.enabled/);
+  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
+    "phrases supply the existing shared narration source");
+  assert.match(s,/setAffirmations\(/,
+    "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
-    "selected sound must reveal real attachment controls after mobile collapse");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
+    "missing audio opens the original fifth-tab attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
@@ -252,8 +261,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.quickOrderBar\{position:static;/);
   assert.match(css,/@media\(max-width:379px\)\{[\s\S]*?\.quickFormatGrid\{grid-template-columns:minmax\(0,1fr\)\}/);
   assert.match(css,/\.quickBuilder \.quickThemeRail button\{min-height:112px/);
-  assert.match(css,/:global\(\[data-mandala-meditation-page\]\):has\(\.studio\) :global\(\[data-video-diagnostic-banner\]\)\{display:none\}/);
-  assert.doesNotMatch(pageCss,/@media\(max-width:640px\)\{\.slimDiagnostic\{display:none\}\}/);
+  const route=read("app/[locale]/holistic-support/mandala/page.tsx");
+  assert.doesNotMatch(route,/data-video-diagnostic-banner|slimDiagnostic/,
+    "the video workspace must not mount the unsolicited diagnostic promotion");
+  assert.doesNotMatch(pageCss,/\.slimDiagnostic\{/,
+    "removed promotion must not retain unused mobile rules");
+  assert.match(css,/04 Nov owner visual recovery:[^\n]*ONE stable header/);
   const heroSegment=source.slice(source.indexOf("data-video-quick-hero-play"),
     source.indexOf('data-video-quick-section="1"'));
   assert.ok(heroSegment.length>0);

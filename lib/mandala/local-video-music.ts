@@ -4,7 +4,7 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type ExpandedAudioPreset = "soft-piano" | "kalimba" | "harp" | "flute" | "celesta" | "strings" | "marimba" | "lullaby" | "handpan" | "forest" | "stream" | "waterfall" | "fireplace" | "night" | "birdsong" | "singing-bowl" | "wind-chimes" | "crystal" | "cosmos" | "soft-beat" | "earth-drum";
-export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path";
+export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path" | "ode-to-joy" | "greensleeves";
 /** Individually mastered first-party MP3 for each approved video scenario. */
 export type ScenarioAudioPreset = `score-${string}-${1|2|3|4}` |
   "classic-ode-to-joy" | "classic-fur-elise" | "classic-greensleeves" | "classic-twinkle";
@@ -32,6 +32,7 @@ export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
 export type AmbientSession = {
   track: MediaStreamTrack;
   close: () => void;
+  begin?: () => void;
   fadeOut: () => void;
   setVolume: (value: number) => void;
 };
@@ -75,6 +76,8 @@ const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset | CuratedA
   "heart-harmony":[174.61,220.00,261.63,329.63],
   "quiet-stars":[146.83,174.61,220.00,293.66],
   "bright-path":[164.81,196.00,246.94,329.63],
+  "ode-to-joy":[130.81,164.81,196.00,261.63],
+  "greensleeves":[110.00,164.81,220.00,261.63],
 };
 
 // On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
@@ -401,12 +404,13 @@ export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">
  */
 export function startPresetAudio(
   preset: Exclude<AmbientMusic, "none">, volume = 75,
+  options: {startSeconds?:number;deferStart?:boolean} = {},
 ): Promise<AmbientSession | null> {
   // For authored melodies, record the same static WAV heard in the browser.
-  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume);
+  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume,options);
   const wave = createAmbientPreviewWav(preset);
   const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
-  return startUploadedAudio(file, volume);
+  return startUploadedAudio(file, volume, options);
 }
 
 /** Export one user-supplied audio recording alongside the canvas stream.
@@ -414,7 +418,7 @@ export function startPresetAudio(
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
 export async function startUploadedAudio(
-  file: File, volume = 80, options: { loop?: boolean } = {},
+  file: File, volume = 80, options: { loop?: boolean; startSeconds?:number; deferStart?:boolean } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -446,10 +450,17 @@ export async function startUploadedAudio(
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No decoded audio output track");
-    source.start();
-    let closed = false, faded = false;
+    let closed = false, faded = false, started = false;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const offset=Number.isFinite(options.startSeconds)
+        ?Math.max(0,Math.min(60,options.startSeconds||0)):0;
+      source?.start(context.currentTime+offset);
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume: (value: number) => {
         if (closed || faded) return;
         const now = context.currentTime;
@@ -508,12 +519,15 @@ export const ORIGINAL_MELODY_IDS = [
   "marimba",
   "lullaby",
   "handpan",
+  "ode-to-joy",
+  "greensleeves",
 ] as const;
 export function isMelodyPreset(preset: AmbientMusic): boolean {
   return isScenarioAudioPreset(preset) || isCuratedAudioPreset(preset) || ORIGINAL_MELODY_IDS.some(id => id===preset);
 }
 export async function startPresetMixAudio(
   ids: readonly Exclude<AmbientMusic,"none">[], volume=75,
+  options: {startSeconds?:number;deferStart?:boolean} = {},
 ): Promise<AmbientSession | null> {
   if(typeof window==="undefined"||ids.length<1||ids.length>3||new Set(ids).size!==ids.length)return null;
   const AudioCtor=window.AudioContext ||
@@ -546,10 +560,17 @@ export async function startPresetMixAudio(
       const player=context.createBufferSource();
       player.buffer=buffer;player.loop=true;player.connect(master);sources.push(player);
     }
-    sources.forEach(player=>player.start());
-    let closed=false,faded=false;
+    let closed=false,faded=false,started=false;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const offset=Number.isFinite(options.startSeconds)
+        ?Math.max(0,Math.min(60,options.startSeconds||0)):0;
+      sources.forEach(player=>player.start(context.currentTime+offset));
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume(value:number){
         if(closed||faded)return;
         const now=context.currentTime;

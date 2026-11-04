@@ -117,12 +117,12 @@ export function setFirstPartyConsent(allow: boolean) {
   window.dispatchEvent(new Event(publicStatsChoiceEvent));
 }
 
-/** Separate, explicit consent for anonymous first-party counters.
+/** Automatic anonymous aggregates with an opt-out; enquiry attribution remains a separate explicit consent.
  * The Google/Meta safety hold above is never lifted by this preference. */
 export function FirstPartyStatsPreferences() {
   const pathname = usePathname() || "";
   const [attributionLanguage, setAttributionLanguage] = useState<"en" | "ru" | "es">("en");
-  const [allowed, setAllowed] = useState(false);
+  const [allowed, setAllowed] = useState(true);
   const [attributionAllowed, setAttributionAllowed] = useState(false);
   const [excluded, setExcluded] = useState(false);
 
@@ -131,7 +131,7 @@ export function FirstPartyStatsPreferences() {
     const language = pathLanguage || document.documentElement.lang;
     setAttributionLanguage(language === "ru" || language === "es" ? language : "en");
     const sync = () => {
-      setAllowed(firstPartyCookie(publicStatsCookie) === "v1");
+      setAllowed(firstPartyCookie(publicStatsCookie) !== "denied");
       setAttributionAllowed(firstPartyCookie(enquiryAttributionConsent) === "v1");
       setExcluded(firstPartyCookie("hh_public_stats_skip") === "1");
     };
@@ -167,20 +167,21 @@ export function FirstPartyStatsPreferences() {
   return (
     <section data-first-party-consent className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Anonymous website statistics">
       <p className="m-0 text-sm text-stone-800">
-        Optional first-party website statistics record public page entrances, page views,
-        button/link clicks and coarse traffic sources (such as Google, Instagram or direct).
-        We never store visitor IDs, IP addresses, full referring URLs, search queries,
-        private account pages, health answers or message texts in these statistics.
-        Aggregated counts are deleted after 90 days. Google and Meta tracking remain off.
+        Automatic first-party aggregate counts cover public-page entrances, page views,
+        and button/link clicks using coarse sources such as Google or direct.
+        Statistics store no visitor/session IDs, IP addresses, full referring URLs,
+        search queries, private account pages, health answers or message texts.
+        No tracking cookie is needed to count a visit. We delete aggregates after
+        90 days. You can opt out of future counts here. Google and Meta tracking remain off.
       </p>
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Anonymous website statistics consent">
         <button type="button" onClick={() => decide(true)} aria-pressed={allowed}
           className="min-h-11 rounded-full border border-amber-800 bg-white px-4 py-2 text-sm text-amber-950">
-          Allow anonymous page counts
+          Resume anonymous page counts
         </button>
         <button type="button" onClick={() => decide(false)} aria-pressed={!allowed}
           className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800">
-          Do not count my visit
+          Stop counting my visits
         </button>
       </div>
       <p className="mb-0 mt-4 text-sm text-stone-800">{attributionCopy.description}</p>
@@ -196,7 +197,7 @@ export function FirstPartyStatsPreferences() {
         Exclude visits and clicks from this browser, even after signing out
       </label>
       <p className="mb-0 mt-2 text-xs text-stone-700" aria-live="polite">
-        Anonymous counts: {allowed ? "allowed" : "off"} · This browser: {excluded ? "excluded" : "not excluded"}.
+        Anonymous counts: {allowed ? "on by default" : "off by choice"} · This browser: {excluded ? "excluded" : "not excluded"}.
         Signed-in website owner visits are always excluded.
       </p>
     </section>

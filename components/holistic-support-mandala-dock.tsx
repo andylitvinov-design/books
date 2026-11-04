@@ -19,7 +19,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <>
-      <header className={styles.mandalaAppHeader} data-support-app-header>
+      <header className={styles.mandalaAppHeader} data-support-app-header data-mandala-legacy-header>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}
           aria-label={locale === "ru" ? "Назад к поддержке" : locale === "es" ? "Volver al apoyo" : "Back to Support"}>
           <ArrowLeft size={20} aria-hidden="true" />

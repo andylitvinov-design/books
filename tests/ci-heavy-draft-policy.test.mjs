@@ -35,7 +35,10 @@ for (const name of workflows) {
     }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
-    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+    const expectedCancel = name === 'site-video-browser.yml'
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+      : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+    assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -69,21 +72,25 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
  assert.match(core,/^  hh-specialist:/m);
  assert.match(core,/^  hh-merge-check:/m);
  assert.doesNotMatch(core,/^  release-ready:|^  hh-core-verified:/m);
- const scope=core.split('  scope:')[1]?.split('  code:')[0];
+ const scope=core.split('  scope:')[1]?.split('  hh-specialist:')[0];
  assert.ok(scope?.includes("github.event.pull_request.draft == false"));
  const specialist=core.split('  hh-specialist:')[1]?.split('  hh-merge-check:')[0];
  assert.ok(specialist.includes('ci-specialist-aggregate.mjs'));
  assert.ok(specialist.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
- assert.ok(specialist.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+ assert.ok(specialist.includes('if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then'), 'draft specialist checks stay fail-closed');
+ assert.ok(specialist.includes('[[ "$EVENT_NAME" == pull_request ]] || {'), 'non-PR specialist checks stay fail-closed');
  const merged=core.split('  hh-merge-check:')[1];
  assert.match(merged,/PR_DRAFT/);
  assert.match(merged,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
- assert.match(merged,/\[\[ "\$CODE_RESULT" == success \]\]/);
+ assert.match(merged,/Unified Core gate passed/);
  assert.match(core,/run: npm run build/);
 });
 
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
   ['practice-google-browser.yml', 'hh-practice-google'],
@@ -98,8 +105,10 @@ for (const [workflow, key] of supersededRunWorkflows) {
     assert.match(source, /^  pull_request:/m);
     assert.match(source, /^jobs:/m);
     assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
-    assert.ok(source.includes('group: ' + key + '-' + runGroupSuffix));
-    assert.ok(source.includes('cancel-in-progress: ' + prOnlyCancellation));
+    const attemptScoped = ['hh-crm-source-check.yml','hh-private-audio-e2e.yml','practice-visual-browser.yml'].includes(workflow);
+    assert.ok(source.includes('group: ' + key + '-' + (attemptScoped ? firstAttemptGroupSuffix : runGroupSuffix)));
+    const cancelCondition = attemptScoped ? syncOnlyFirstAttemptCancellation : prOnlyCancellation;
+    assert.ok(source.includes('cancel-in-progress: ' + cancelCondition));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -139,7 +148,12 @@ for (const name of draftStageWorkflows) {
       assert.ok(jobs.includes('  ' + job + ':\n' + stage), 'Draft gate missing: ' + name + '/' + job);
     }
     assert.match(source, /^concurrency:\s*\n  group:/m);
-    assert.ok(source.includes("  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+    const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
+    const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
+    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const prOnlyCondition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
+    assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -221,7 +235,7 @@ test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-producti
   assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
   assert.ok(source.includes('npx --no-install tsc --noEmit'));
   assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
-  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.match(source,/^  workflow_dispatch:/m);
 });
 test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{
@@ -255,7 +269,10 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
       name+' must target production explicitly');
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
-    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+    const expectedCancel = ['hh-app-r1.yml','hh-app-browser.yml'].includes(name)
+      ? "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+      : "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+    assert.ok(source.includes(expectedCancel), name + ': cancellation is scoped to this PR synchronize');
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
     const jobs=source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobs,name+' has no jobs');
@@ -397,13 +414,26 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(browserGate, 'real browser Build guard missing');
   for(const clause of ["steps.impact.outputs.browser == 'true'", "github.event_name == 'workflow_dispatch'",
     "github.event_name == 'pull_request'", "startsWith(github.head_ref, 'fix/video-')",
-    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
+    "startsWith(github.head_ref, 'fix/webkit-')", "startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-')", "startsWith(github.head_ref, 'feat/meditation-writer-')", "startsWith(github.head_ref, 'feat/video-chat-context-understanding-')"])
     assert.ok(browserGate.includes(clause), 'real browser guard lost '+clause);
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual runs cannot be cancelled by unrelated PRs');
+  assert.ok(source.includes('tests/video-scenario-bindings.test.mjs'), 'scenario candidate contracts remain in the focused suite');
+  assert.ok(source.includes('      - name: Audit 120 scenario physical candidates without auto-publication\n        ' + browserGate), '120 scenario audit must share the protected real-media gate');
+  assert.ok(source.includes('group: >-') && source.includes("holistic-support-mandala-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), 'PR runs share a PR-scoped group and manual attempts stay run-scoped');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only superseded first-attempt PR runs are cancelled');
+  assert.ok(source.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
+  assert.ok(source.includes("HH_VOICE_SKIP_GUIDED_PRACTICES: ${{ startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') && '1' || '0' }}"), 'only this CI acceleration PR skips the unrelated full Practices UX matrix');
+  assert.ok(source.includes("HH_PRACTICES_BROWSER_ENGINE=webkit HH_PRACTICES_CONSENT_ONLY=1"), 'the real consent-label WebKit test remains mandatory');
+  assert.ok(source.includes("node scripts/benchmarking/first-video-live-export.mjs"), 'the real encoded WebKit media test remains mandatory');
+  const voiceSource=readFileSync('scripts/verify-affirmation-voice-browser.mjs','utf8');
+  assert.ok(voiceSource.includes('HH_VOICE_SKIP_GUIDED_PRACTICES==="1"'), 'the opt-out is explicit and CI-only');
+  assert.ok(source.includes('Restore Next.js build cache') && source.includes('Restore pinned Playwright WebKit browser'));
+  const macosGuard=source.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1] || '';
+  assert.ok(macosGuard.includes("startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-')"));
+  assert.ok(!browserGate.includes("codex/mandala-cancel-stale-head-cache-"), 'CI-only PR does not trigger Linux product browser matrix');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -532,6 +562,28 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
+test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {
+  const proof = {
+    status: 'ahead',
+    base_sha: earlyLive.base.sha,
+    head_sha: earlyLive.head.sha,
+    merge_base_sha: earlyLive.base.sha,
+  };
+  const staleDirty = { ...earlyLive, mergeable: false, mergeable_state: 'dirty' };
+  assert.equal(assessPrReadiness(earlyEvent, staleDirty, earlyRepo, proof).ready, true);
+  const mutations = [
+    [{ ...proof, status: 'diverged' }, 'diverged'],
+    [{ ...proof, base_sha: 'c'.repeat(40) }, 'wrong-base'],
+    [{ ...proof, head_sha: 'c'.repeat(40) }, 'wrong-head'],
+    [{ ...proof, merge_base_sha: 'c'.repeat(40) }, 'not-fast-forward'],
+  ];
+  for (const [candidate, label] of mutations) {
+    const result = assessPrReadiness(earlyEvent, staleDirty, earlyRepo, candidate);
+    assert.equal(result.ready, false, label);
+    assert.equal(result.code, 'conflict', label);
+  }
+});
+
 test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
   const mutations = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
@@ -577,12 +629,12 @@ test('existing heavy jobs preflight before dependency install; core release gate
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
   const core = read('hh-pr-core-release.yml');
-  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  const scope = core.split('  scope:')[1]?.split('  hh-specialist:')[0];
   assert.ok(scope && scope.includes('run: node scripts/ci-pr-readiness.mjs'));
   assert.ok(scope.indexOf('run: node scripts/ci-pr-readiness.mjs') <
     scope.indexOf('name: Classify strictly documentation-only PRs'));
   assert.ok(core.includes('scripts/ci-pr-readiness.mjs|\\'));
-  assert.ok(core.includes('needs: scope'));
+  assert.doesNotMatch(scope,/^\s+needs:/m);
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /run: npm run build/);
   assert.ok(read('hh-pr-sweep-guard.yml').includes("'scripts/ci-pr-readiness.mjs'"));
@@ -679,23 +731,39 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
 });
 
-test('Core SHA-scoped concurrency prevents older reruns from cancelling current valid builds',()=>{
+test('Core auto first attempts supersede old HEAD but manual reruns cannot evict current',()=>{
   const core=read('hh-pr-core-release.yml');
-  assert.ok(core.includes('group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}'),
-    'old and new SHA must never contend for one Core concurrency group');
-  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
-    'keep same-SHA redundant-synchronize cancellation');
+  assert.ok(core.includes("group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  assert.ok(!core.includes('github.event.pull_request.head.sha || github.sha'));
   assert.match(core,/^  hh-merge-check:/m);
   assert.doesNotMatch(core,/^  release-ready:/m);
 });
 
-test('source-head concurrency also covers WebKit and Guard, not just Core',()=>{
-  for(const file of ['hh-pr-core-release.yml','holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
-    const workflow=read(file);
-    assert.ok(workflow.includes('group: '), file);
-    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
-      file+' older PR rerun must never cancel a newer source HEAD');
-    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
-      file+' retains exact same-head cancellation and no weakened gates');
-  }
+test('manual Core retries remain isolated, WebKit keeps its SHA lease and Guard cancels stale first attempts',()=>{
+  const core=read('hh-pr-core-release.yml');
+  assert.ok(core.includes('github.run_attempt == 1'));
+  assert.ok(core.includes("format('run-{0}', github.run_id)"));
+  const webkit=read('holistic-support-mandala.yml');
+  assert.ok(webkit.includes("HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"));
+  assert.ok(webkit.includes("format('pr-{0}', github.event.pull_request.number)"));
+  assert.ok(webkit.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  const guard=read('hh-pr-sweep-guard.yml');
+  assert.ok(!guard.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+    'Guard first-attempt concurrency must not isolate obsolete HEADs');
+  assert.ok(guard.includes("group: hh-pr-sweep-guard-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(guard.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+});
+
+// Playwright's pinned WebKit build needs ICU 74 / libxml2.so.2. The moving
+// ubuntu-latest image can lose these ABIs while JS and Chromium suites stay green.
+// Keep REAL WebKit acceptance: pin the compatible runner instead of skipping it.
+test('IA WebKit host pins Ubuntu 24.04 and keeps full authenticated browser acceptance',()=>{
+  const source=read('ia-v2.yml');
+  assert.match(source,/runs-on: ubuntu-24\.04/);
+  assert.doesNotMatch(source,/runs-on: ubuntu-latest/);
+  assert.match(source,/playwright install --with-deps chromium webkit/);
+  assert.match(source,/postgres:\s*\n/);
+  assert.match(source,/redis:\s*\n/);
+  assert.match(source,/scripts\/verify-ia-v2\.mjs/);
 });

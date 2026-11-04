@@ -34,3 +34,38 @@
 ## WebKit focus-change race correction · 2 Nov 2026
 - The deferred `useEffect` that observes `journeySignature` previously cleared `approvedSignature` and `programmeSignature` after fresh user clicks on WebKit. That was observed in macOS WebKit at ES/430 after successful RU/320 and EN/390. Retain precise signature gating during React render, and clear approval *only* in explicit focus editing handlers or profile consent changes; the observer still revokes an included old narration but no longer dismisses a new script.
 - Do not replace the real browser assertion with sleeps, retries, or a loose presence check. The same Chromium and WebKit lifecycle suite must pass on the final PR HEAD.
+
+## Post-merge mobile E2E hardening (2026-11-02)
+- Existing Chromium/WebKit acceptance `scripts/verify-practices-mobile-browser.mjs` exercises RU 320/390/430, EN/ES 390, state/vector, text, distinct practices, eight-session previews and the consented CRM enquiry without submitting.
+- Guest browser checks cannot verify a real CRM submission, provider audio/video delivery, payments, signed-in account or physical iPhone.
+
+## Four-screen visual continuation · owner-approved 2 Nov 2026
+
+- Reference identity: `/ru/holistic-support/mandala#guided-video-series`, public guest, existing `practices` workspace, mirrored EN/ES. Reference is four-phone owner-approved mockup for screens 02–05, not new app or private dashboard.
+- 02 Meditation: original local generator, actual text, explicit reversible Add to video/Do not add; no auto audio/render.
+- 03 Personal meditation: ivory focus/now/desired summary, 3 benefits, green CTA opens the one already existing `[data-video-therapy-meditation-audio]` composer. No second editor or stored private content.
+- 04 Ritual: existing first-party sunrise + lotus icon, four moment choices, actual `selectResourcePractice` action, ritual/exercise/daily selector and variant refresh; no diagnosis/clinical promise.
+- 05 Eight sessions: 2-column eight-stage preview, three realistic benefits, green generate, then real eight session cards and existing first-film editor handoff; seven further videos are only proposals. One consented `MeditationCourseEnquiry` request, no implied payment or video delivery.
+- Visual targets: warm ivory `#fffefa`, emerald `#078361`, 15–22px rounded cards, touch controls >=44px, font 14–19px at 320/354/390/430, EN/RU/ES, accessible focus and overflow.
+- Real browser screenshot/overlay QA of this exact route/state/viewport remains required; synthetic guest tests cannot prove signed-in CRM, iPhone Safari, paid provider delivery or clinical outcomes.
+
+
+## Focus step 01 visual correction · owner screenshots 2 Nov 2026
+
+The owner compared production screenshots in both modes and correctly identified that the previously shipped implementation was only partial: steps 03–05 had the new layout, but step 01 still had two large free-text fields in Vector mode and only four fixed choices in State mode.
+
+**Required replacement**
+- Keep the existing two mode choices: State and Development direction.
+- State mode presents six warm ivory choice cards: Calm & sleep, Inner support, Energy, Closeness & warmth, Self-confidence, Clarity & harmony.
+- Development mode presents six areas from the existing theme taxonomy: Energy/body, Money/work, Relationships, Goals/confidence, Meaning, Self-care.
+- Selecting a card sets the real desired direction and maps it to the same six existing course themes, which feed the current first-party meditation and eight-session builder.
+- Replace both former large blank textareas with one optional short context note. It is never required to generate once a desired card has been selected.
+- Keep the goals drawer, optional up-to-three detailed goal selection, source-verified saved-test opt-in, on-device preview, safety gate, invalidation of stale scripts, and explicit rendering/payment separation.
+- Mobile uses two columns (three rows) at 320–430px. Wider viewports use three columns; never four columns.
+
+**Acceptance evidence required**
+- Chromium and WebKit both confirm exactly six State and six Vector cards in RU/EN/ES.
+- Each card actually selects and enables the local meditation flow; the generated script includes the selected theme label.
+- The single note is optional. No second goal textarea or mandatory two-endpoint questionnaire remains.
+- Changing the selected direction invalidates the prior meditation and eight-session plan.
+- All eight course sessions, privacy protections and existing enquiry flow remain unchanged.

@@ -9,13 +9,11 @@ on:
       - 'app/ia-v2.css'
       - 'app/es/library/page.tsx'
       - 'components/dao-*'
-      - 'components/library-hub.tsx'
       - 'data/dao-*'
       - 'data/dao-hexagrams-editorial/**'
       - 'lib/dao-divination.*'
-      - 'lib/public-locales.ts'
       - 'tests/dao-*.test.mjs'
-      - '.github/workflows/dao-iching-library.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

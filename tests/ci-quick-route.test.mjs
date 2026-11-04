@@ -48,6 +48,21 @@ test('fast router requires exact, nonempty, NUL-delimited Git statuses',()=>{
     assert.throws(()=>parseChangedRows(source),source);
   }
 });
+test('650 real media changes use bounded safe full checks rather than INVALID_DIFF_ROWS',()=>{
+  const items=Array.from({length:650},(_,i)=>image(
+    'public/videos/holistic-house/original-motion-v1/motion-clip-'+i+
+    (i%2===0?'.jpg':'.mp4'),'A'));
+  const diff=items.map(r=>r.status+'\\0'+r.filename+'\\0').join('');
+  // The real Git name-status format is NUL-delimited: one status/path pair.
+  const parsed=parseChangedRows(diff.replaceAll('\\0','\0'));
+  assert.equal(parsed.length,650);
+  assert.deepEqual(parsed,items);
+  assert.equal(decideRoute(parsed,()=>{throw Error('classifier_must_not_run');}),'FULL');
+  assert.throws(()=>parseChangedRows(
+    Array.from({length:2049},(_,i)=>'A\0public/too-many-'+i+'.jpg\0').join('')),
+    /INVALID_DIFF_ROWS/);
+});
+
 test('image-only routes skip Core only when EVERY changed file is a trusted public raster',()=>{
   assert.equal(decideRoute([image('public/images/home.webp'),image('public/images/cover.png','A')],trusted),'ASSETS');
   for(const changed of [
@@ -76,6 +91,29 @@ test('public JSX is only a candidate until BASE-pinned #2777 proof succeeds',()=
     'components/remote-energy-landing.tsx',
   ])assert.notEqual(decideRoute([row(risk)],trusted,()=>{}),'TEXT_CANDIDATE');
 });
+test('exact four-file Mobile Dock routes only to DOCK; every scope extension fails closed',()=>{
+  const dock=[
+    row('app/[locale]/app/[[...path]]/workspace.css'),
+    row('app/[locale]/app/messages/messages-page.css'),
+    row('components/app/messages-bottom-navigation.jsx'),
+    row('lib/mobile-visual-bottom.mjs'),
+  ];
+  assert.equal(decideRoute(dock,trusted),'DOCK');
+  const unsafe=[
+    [...dock,row('tests/mobile-visual-dock.test.mjs')],
+    [...dock,row('tests/messages-iphone-keyboard-layout.test.mjs')],
+    [...dock,row('app/api/app/messages/route.js')],
+    [...dock.slice(0,3),row('lib/mobile-visual-bottom.mjs','A')],
+    [...dock.slice(0,3),row('lib/mobile-visual-bottom.mjs','D')],
+    [dock[0],dock[1],dock[2]],
+  ];
+  for(const changed of unsafe) assert.notEqual(decideRoute(changed,trusted),'DOCK',JSON.stringify(changed));
+  const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  assert.match(workflow,/ASSETS\|TEXT\|DOCK\|CORE\|FULL/);
+  assert.match(workflow,/Mobile Dock Core geometry and iPhone keyboard contracts/);
+  assert.match(workflow,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
+});
+
 test('sensitive changes always demand full Core and specialist route',()=>{
   const paths=[
     'app/api/payment/route.ts','app/[locale]/client/page.tsx',
@@ -112,14 +150,23 @@ test('images do not allow active SVG, executable extension or truncated media',(
   assert.throws(()=>validateImage('public/banner.avif',bytes),/AVIF_/);
   assert.throws(()=>validateImage('public/icon.ico',bytes),/ICO_/);
 });
-test('Core workflow never accepts a skipped job on FULL or CORE',()=>{
+test('Core workflow keeps source checks on FULL/CORE/DOCK and only DOCK skips Next build',()=>{
   const w=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.match(w,/route: \${{ steps\.fast\.outputs\.route }}/);
-  assert.match(w,/needs\.scope\.outputs\.route != 'ASSETS'/);
-  assert.match(w,/needs\.scope\.outputs\.route != 'TEXT'/);
-  assert.match(w,/\$ROUTE" == ASSETS/);
-  assert.match(w,/\$ROUTE" == TEXT/);
-  assert.match(w,/\$CODE_RESULT" == success/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
+  assert.match(w,/case "\$route" in ASSETS\|TEXT\|DOCK\|CORE\|FULL/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'DOCK'/);
+  assert.match(w,/Mobile Dock Core geometry and iPhone keyboard contracts/);
+  const preflight=w.split('name: Source Preflight — syntax and TypeScript before costly Next build')[1]?.split('      - name:')[0]??'';
+  const changedLint=w.split('name: Lint changed JS/TS sources on PR')[1]?.split('      - name:')[0]??'';
+  assert.ok(preflight && changedLint);
+  assert.doesNotMatch(preflight,/route != 'DOCK'/,'TypeScript source preflight remains mandatory');
+  assert.doesNotMatch(changedLint,/route != 'DOCK'/,'changed-file ESLint remains mandatory');
+  assert.match(w,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
+  assert.match(w,/npm run build/);
   assert.match(w,/git show "\$tested_base:scripts\/ci-quick-route\.mjs"/);
   assert.match(w,/HH_HEAD_SHA: \${{ github\.event\.pull_request\.head\.sha }}/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
@@ -194,8 +241,9 @@ test('temporary backlog route leaves private, policy and unknown changes on full
     assert.equal(decideRoute([row(path)],trusted),'CORE',path);
   assert.equal(decideRoute([row('components/public-greeting.jsx','D')],trusted),'FULL');
   const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
-  assert.match(gate,/needs\.scope\.outputs\.route == 'FULL'/);
-  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
+  assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/^  hh-merge-check:/m);
   assert.doesNotMatch(gate,/^  release-ready:/m);
 });
