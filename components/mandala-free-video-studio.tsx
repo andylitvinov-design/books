@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X, Save, FolderOpen } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v1.json";
@@ -38,6 +38,8 @@ import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
 import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
+import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyTubeEditor} from "@/lib/mandala/creative-editor-history.mjs";
+import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import type {TimelineTextClip,TimelineTransition,TimelineLook} from "./mandala-multitrack-timeline";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -85,6 +87,21 @@ type StudioWorkspace = "video" | "phrases" | "effects" | "practices" | "pro" | "
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
+type EditorHistorySnapshot={
+  plan:CinematicStoryboard|null;
+  captions:TimelineTextClip[]|null;
+  audioOffset:number;
+};
+type EditorHistoryState={
+  past:EditorHistorySnapshot[];future:EditorHistorySnapshot[];
+  lastKind:string|null;lastAt:number;
+};
+type ImportedEditorDraft={
+  presetId:string;aspect:Aspect;durationSeconds:10|15|20|30|60;
+  shots:{sceneId:string;startSeconds:number;durationSeconds:number;captionText:string;
+    transitionIn:TimelineTransition;colorLook:TimelineLook}[];
+  captions:TimelineTextClip[]|null;audioStartSeconds:number;
+};
 // A selected sound is only a preview; attaching it is a separate, explicit step.
 type PresetId = Exclude<AmbientMusic,"none">;
 type AttachedAudio = {kind:"preset";id:PresetId} | {kind:"presets";ids:PresetId[]} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;voiceId?:string;language?:string;bed?:string};
@@ -1805,6 +1822,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Null preserves original stage captions until the visitor edits the independent text lane.
   const [timelineTextClips,setTimelineTextClips]=useState<TimelineTextClip[]|null>(null);
   const timelineTextSerial=useRef(0);
+  const editorDraftInputRef=useRef<HTMLInputElement>(null);
+  const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
+  const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
   const [goalTreeAudioScenarioId,setGoalTreeAudioScenarioId] = useState<string|null>(null);
@@ -1880,6 +1900,124 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ?[{id:"stage-"+index,text:normalizeStageCaption(shot.overlayText),
           startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds}]
         :[]):[]);
+  const currentEditorSnapshot=():EditorHistorySnapshot=>({
+    plan:cinematicPlan,captions:timelineTextClips,audioOffset:audioStartSeconds
+  });
+  const syncEditorHistory=()=>{
+    const h=localEditorHistoryRef.current;
+    setEditorHistoryAvailability({undo:h.past.length>0,redo:h.future.length>0});
+  };
+  const resetEditorHistory=()=>{
+    localEditorHistoryRef.current=emptyMyTubeEditorHistory() as EditorHistoryState;
+    setEditorHistoryAvailability({undo:false,redo:false});
+  };
+  const recordBeforeEditorChange=(kind:string)=>{
+    if(recording||preparing||cinematicPlan?.version!==FREE_FILM_PLAN_VERSION)return;
+    localEditorHistoryRef.current=recordMyTubeEditorUndo(
+      localEditorHistoryRef.current,currentEditorSnapshot(),kind,Date.now()
+    ) as EditorHistoryState;
+    syncEditorHistory();
+  };
+  const restoreEditorSnapshot=(snapshot:EditorHistorySnapshot)=>{
+    setCinematicPlan(snapshot.plan);
+    setTimelineTextClips(snapshot.captions);
+    setAudioStartSeconds(snapshot.audioOffset);
+    stopMovieSound();setPreviewPlaying(false);
+    setPreviewFrameRevision(value=>value+1);
+  };
+  const undoEditorChange=()=>{
+    if(recording||preparing||!usingFreeFilmCompilation)return;
+    const result=undoMyTubeEditor(localEditorHistoryRef.current,currentEditorSnapshot()) as {
+      history:EditorHistoryState;snapshot:EditorHistorySnapshot|null};
+    if(!result.snapshot)return;
+    localEditorHistoryRef.current=result.history;
+    restoreEditorSnapshot(result.snapshot);syncEditorHistory();
+  };
+  const redoEditorChange=()=>{
+    if(recording||preparing||!usingFreeFilmCompilation)return;
+    const result=redoMyTubeEditor(localEditorHistoryRef.current,currentEditorSnapshot()) as {
+      history:EditorHistoryState;snapshot:EditorHistorySnapshot|null};
+    if(!result.snapshot)return;
+    localEditorHistoryRef.current=result.history;
+    restoreEditorSnapshot(result.snapshot);syncEditorHistory();
+  };
+  const editorDraftAllowlist=()=>{
+    return {approvedSceneIds:FREE_FILM_CATALOG.filter(scene=>scene.status==="approved")
+      .map(scene=>scene.id),
+      approvedPresetIds:FREE_FILM_PRESETS.map(preset=>preset.id)};
+  };
+  const saveEditorDraft=()=>{
+    if(recording||preparing||!usingFreeFilmCompilation||!cinematicPlan||!activeFreeFilmPreset)
+      return;
+    try{
+      const json=createMyTubeEditorDraft({
+        presetId:activeFreeFilmPreset,aspect,durationSeconds:duration,
+        shots:cinematicPlan.shots,captions:timelineTextClips,
+        audioStartSeconds:effectiveAudioStartSeconds,
+      },editorDraftAllowlist());
+      const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+      const link=document.createElement("a");
+      link.href=url;link.download="mytube-video-draft.json";
+      document.body.appendChild(link);link.click();link.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url),5000);
+      setNotice(locale==="ru"?"Черновик сохранён на устройстве. Фото и аудиофайлы в него не включаются.":
+        locale==="es"?"Borrador guardado localmente; no incluye fotos ni archivos de audio.":
+        "Draft saved on your device, without photo or audio files.");
+    }catch{
+      setNotice(locale==="ru"?"Не удалось сохранить черновик монтажа.":
+        locale==="es"?"No se pudo guardar el borrador.":"Could not save the montage draft.");
+    }
+  };
+  const importEditorDraft=async(file:File)=>{
+    if(recording||preparing)return;
+    try{
+      if(file.size<2||file.size>MYTUBE_DRAFT_MAX_BYTES)throw Error("invalid_file_size");
+      const json=await file.text();
+      if(recording||preparing)return;
+      const draft=parseMyTubeEditorDraft(json,editorDraftAllowlist()) as ImportedEditorDraft;
+      const preset=FREE_FILM_PRESETS.find(item=>item.id===draft.presetId);
+      if(!preset)throw Error("unapproved_preset");
+      // The real licensed-source compiler is mandatory: JSON cannot introduce
+      // new MP4 paths, third-party media, unlicensed effects or provider prompts.
+      const clean=compileFreeFilmPreset(preset,locale,draft.durationSeconds,draft.aspect,{
+        clipIds:draft.shots.map(shot=>shot.sceneId),
+        durationSecondsByStage:draft.shots.map(shot=>shot.durationSeconds),
+        captionTexts:draft.shots.map(shot=>shot.captionText),
+      });
+      const plan={...clean,shots:clean.shots.map((shot,index)=>({
+        ...shot,transitionIn:draft.shots[index].transitionIn,
+        colorLook:draft.shots[index].colorLook,
+      }))} as CinematicStoryboard;
+      resetEditorHistory();stopMovieSound();setPreviewPlaying(false);
+      setTheme(preset.theme);setVideoCategory(preset.theme);
+      setActiveFreeFilmPreset(preset.id);
+      setCinematicPlan(plan);setTimelineTextClips(draft.captions);
+      setAspect(draft.aspect);setDuration(draft.durationSeconds);
+      setAudioStartSeconds(draft.audioStartSeconds);
+      // A portable draft contains metadata only; previous narration/music must
+      // never be misrepresented as attached to the newly imported film.
+      setAttachedAudio(null);setMusic("none");
+      setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+      setReadyFreeFilmKey("");setPreviewFrameRevision(value=>value+1);
+      setActiveWorkspace("editor");
+      for(const clip of draft.captions??[]){
+        const match=clip.id.match(/^timeline-text-(\d+)$/);
+        if(match){
+          const serial=Number(match[1]);
+          if(Number.isSafeInteger(serial))timelineTextSerial.current=Math.max(timelineTextSerial.current,serial);
+        }
+      }
+      setNotice(locale==="ru"?"Монтаж восстановлен. Фото, голос и музыка не входят в файл черновика — при необходимости добавьте их снова.":
+        locale==="es"?"Montaje restaurado. Vuelve a adjuntar la foto, voz y música si las necesitas.":
+        "Montage restored. Reattach photo, voice or music as needed; media is not stored in the draft.");
+    }catch{
+      setNotice(locale==="ru"?"Черновик не подходит: разрешены только сохранённые здесь лицензированные сцены и корректные параметры.":
+        locale==="es"?"Borrador inválido: solo se admiten escenas autorizadas y ajustes válidos.":
+        "Invalid draft: only approved scenes and valid settings can be restored.");
+    }finally{
+      if(editorDraftInputRef.current)editorDraftInputRef.current.value="";
+    }
+  };
   const freeFilmClipLabel=(id:string)=>{
     const origin=FREE_FILM_CLIP_THEMES[id];
     return origin==="money"
@@ -3067,6 +3205,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopMovieSound();setPreviewPlaying(false);
   };
   const shiftFilmCut=(index:number,direction:-1|1)=>{
+    recordBeforeEditorChange("shot-trim");
     setCinematicPlan(current=>{
       if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
       const durations=current.shots.map(shot=>shot.durationSeconds);
@@ -3083,7 +3222,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   // Reorder source-backed scenes in the existing Canvas/MediaRecorder plan.
   const moveTimelineShot=(from:number,to:number)=>{
-    if(recording||preparing)return;
+    if(recording||preparing||from===to)return;
+    recordBeforeEditorChange("shot-reorder");
     setCinematicPlan(current=>{
       if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4||
         from<0||from>=4||to<0||to>=4||from===to)return current;
@@ -3105,6 +3245,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing)return;
     if(patch.transitionIn&&!CREATIVE_TRANSITIONS.includes(patch.transitionIn))return;
     if(patch.colorLook&&!CREATIVE_LOOKS.includes(patch.colorLook))return;
+    recordBeforeEditorChange("shot-look:"+index);
     setCinematicPlan(current=>{
       if(current?.version!==FREE_FILM_PLAN_VERSION||index<0||index>=current.shots.length)
         return current;
@@ -3114,18 +3255,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopMovieSound();setPreviewPlaying(false);
   };
   const splitTimelineText=(id:string,atSeconds:number)=>{
+    recordBeforeEditorChange("caption-split");
     const newId="timeline-text-"+(++timelineTextSerial.current);
     setTimelineTextClips(current=>splitTimelineCaption(current??timelineCaptions,id,
       atSeconds,duration,newId));
     stopMovieSound();setPreviewPlaying(false);return newId;
   };
   const duplicateTimelineText=(id:string)=>{
+    recordBeforeEditorChange("caption-duplicate");
     const newId="timeline-text-"+(++timelineTextSerial.current);
     setTimelineTextClips(current=>duplicateTimelineCaption(current??timelineCaptions,id,
       newId,duration));
     stopMovieSound();setPreviewPlaying(false);return newId;
   };
   const changeTimelineCaption=(id:string,patch:Partial<Omit<TimelineTextClip,"id">>)=>{
+    recordBeforeEditorChange("caption:"+id);
     setTimelineTextClips(current=>(current??timelineCaptions).map(clip=>{
       if(clip.id!==id)return clip;
       const startSeconds=clampTrackSecond(patch.startSeconds??clip.startSeconds,Math.max(0,duration-.1));
@@ -3137,6 +3281,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setPreviewPlaying(false);stopMovieSound();
   };
   const addTimelineCaption=()=>{
+    recordBeforeEditorChange("caption-add");
     const id="timeline-text-"+(++timelineTextSerial.current);
     const startSeconds=clampTrackSecond(previewSeekSeconds,Math.max(0,duration-1));
     setTimelineTextClips(current=>[...(current??timelineCaptions),{
@@ -3179,6 +3324,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
+      resetEditorHistory();
       setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
@@ -3203,6 +3349,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
   };
   const selectCategory=(next:VideoCategory)=>{
+    resetEditorHistory();
     setCinematicPlan(null);setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);setIntroPlaying(false);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     // Keep the client's approved wording when selecting another video theme;
@@ -5209,6 +5356,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const lines=montageScriptText.split(/\r?\n/).map(line=>
                   line.replace(/^\s*\d+\.\s*/,"").trim()).filter(Boolean);
                 if(!lines.length)return;
+                recordBeforeEditorChange("script-update");
                 if(timelineTextClips?.length){
                   // Editing the script must never erase deliberately moved captions:
                   // retain each clip ID, start and duration, updating its text only.
@@ -5238,6 +5386,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-label={locale==="ru"?"Монтажные дорожки":locale==="es"?"Pistas de montaje":"Editing tracks"}>
           <MandalaMultiTrackTimeline locale={locale} seconds={duration}
             disabled={recording||preparing}
+            canUndo={usingFreeFilmCompilation&&editorHistoryAvailability.undo}
+            canRedo={usingFreeFilmCompilation&&editorHistoryAvailability.redo}
+            onUndo={undoEditorChange} onRedo={redoEditorChange}
             shots={usingFreeFilmCompilation&&cinematicPlan
               ?cinematicPlan.shots.map(shot=>({
                 sceneId:shot.sceneId,title:freeFilmClipLabel(shot.sceneId),
@@ -5283,6 +5434,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onDuplicateCaption={duplicateTimelineText}
             onSetCaption={changeTimelineCaption}
             onRemoveCaption={id=>{
+              recordBeforeEditorChange("caption-remove");
               setTimelineTextClips(current=>(current??timelineCaptions).filter(clip=>clip.id!==id));
               stopMovieSound();setPreviewPlaying(false);
             }}
@@ -5294,10 +5446,38 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
             }}
             onChangeAudioStart={seconds=>{
+              recordBeforeEditorChange("audio-offset");
               setAudioStartSeconds(clampTrackSecond(seconds,Math.max(0,duration-.1)));
               stopMovieSound();setPreviewPlaying(false);
             }}/>
 
+          <div className={videoStyles.editorDraftTools} data-video-editor-draft-tools>
+            <button type="button" data-video-editor-draft-save
+              disabled={recording||preparing||!usingFreeFilmCompilation||!activeFreeFilmPreset}
+              onClick={saveEditorDraft}>
+              <Save size={16} aria-hidden="true"/>
+              {locale==="ru"?"Сохранить черновик":locale==="es"?"Guardar borrador":"Save draft"}
+            </button>
+            <button type="button" data-video-editor-draft-open
+              disabled={recording||preparing} onClick={()=>editorDraftInputRef.current?.click()}>
+              <FolderOpen size={16} aria-hidden="true"/>
+              {locale==="ru"?"Открыть черновик":locale==="es"?"Abrir borrador":"Open draft"}
+            </button>
+            <input type="file" accept=".json,application/json" ref={editorDraftInputRef}
+              aria-label={locale==="ru"?"Выберите файл проекта MyTube":locale==="es"?
+                "Archivo del proyecto MyTube":"Choose MyTube project file"}
+              onChange={event=>{
+                const file=event.currentTarget.files?.[0];
+                if(file)void importEditorDraft(file);
+              }}/>
+          </div>
+          <p className={videoStyles.editorDraftNote}>
+            {locale==="ru"
+              ?"Черновик хранится только в вашем файле: видеосцены и надписи сохраняются, исходные фото и аудиофайлы — нет."
+              :locale==="es"
+                ?"Borrador local: guarda el montaje y los textos, no fotos ni audio."
+                :"Local draft: montage and captions are saved; original photos and audio are not."}
+          </p>
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Инструменты монтажа":locale==="es"?"Herramientas de montaje":"Montage tools"}>
             <button type="button" disabled={recording||preparing} onClick={()=>{
