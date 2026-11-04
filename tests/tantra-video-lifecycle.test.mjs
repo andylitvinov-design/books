@@ -102,10 +102,12 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
     'One bounded muted native-media retry is the ONLY possible programmatic play call');
   const recovery=source.split('function onNativePlay(')[1]?.split('function discardRecovery(')[0];
   assert.ok(recovery,'The user-play observer must own the sole recovery');
-  assert.match(recovery,/if \(video\.muted === true && video\.readyState >= 2\)/,
-    'Explicit user play, retained same source, ready decoder and mute are all required');
-  assert.match(recovery,/video\.pause\(\);[\s\S]*video\.play\(\)/,
-    'Only an explicit already-started stalled muted pipeline can re-enter PLAYING once');
+  assert.match(recovery,/if \(video\.muted !== true \|\| video\.readyState < 2 \|\|/,
+    'Fail closed unless a muted ready decoder stalls after explicit Play');
+  assert.match(recovery,/const onSeeked = \(\) => \{[\s\S]*void video\.play\(\)\.catch/,
+    'Only exact source and native seeked can resume muted user-requested playback');
+  assert.match(recovery,/video\.pause\(\);[\s\S]*video\.preload = "metadata";[\s\S]*video\.load\(\);/,
+    'Only one guarded same-source metadata reconstruction is allowed after proven stall');
   assert.match(source, /<summary onClickCapture=\{onSummaryClickCapture\}>\{props.summary\}<\/summary>/);
   assert.match(source, /onToggle=\{onToggle\}/);
 });
