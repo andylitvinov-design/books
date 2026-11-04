@@ -219,7 +219,12 @@
         duration(item.mean):'—';
       st.current.title=item?'Средний вклад на ВСЕ '+N+' PR (известен по '+item.n+
         ' PR); отсутствие архива не приравнивается нулю.':'Подтверждённых меток нет';
-      if(st.name)st.name.title=item?'Наблюдаемые Core events: '+item.n+' из '+N:'Нет измерений';
+      if(st.name){
+        const label=STAGES.find(function(p){return p[0]===key;})?.[1]||key;
+        st.name.replaceChildren(document.createTextNode(label),
+          make('small','hh2-stage-coverage',item?'n='+item.n+'/'+N:'n=0/'+N));
+        st.name.title=item?'Наблюдаемые Core events: '+item.n+' из '+N:'Нет проверенных меток времени';
+      }
       st.history.textContent='—';
       st.history.title='Нет сопоставимых подтверждённых CI events за 2 недели назад';
       if(key==='merge_to_live')continue;
@@ -333,7 +338,7 @@
     head2.append(title2,back);two.append(head2);
     comparison = make('div','hh2-compare');
     var compareTitle = make('div','hh2-stage-head');
-    compareTitle.append(make('strong','','Этап'),make('strong','','Сейчас'),make('strong','','2 недели назад'));
+    compareTitle.append(make('strong','','Этап · n/N'),make('strong','','Среднее / PR'),make('strong','','2 недели назад'));
     comparison.append(compareTitle);
     STAGES.forEach(function (spec) {
       var detail = make('details','hh2-stage-item');
@@ -356,14 +361,14 @@
     two.append(comparison);
     diagnostics=make('p','hh2-diagnostic','Проверяю охват подэтапов и сопоставимость периодов…');
     two.append(diagnostics);
-    archiveNote=make('p','hh2-meta','Core CI архив загружается при открытии второго экрана, без новых расписаний.');
+    archiveNote=make('p','hh2-meta','Архив Core CI читается при открытии этого экрана; новых CI-запусков нет.');
     two.append(archiveNote);
     coverage = make('p','hh2-meta','Сравнение по подтверждённым снимкам; этапы без исторических receipts остаются неизвестными.');
     two.append(coverage);
     var actions = make('div','hh2-actions');
-    var verify = make('button','hh2-button','Ручная глубокая проверка этапов');
+    var verify = make('button','hh2-button','Обновить сохранённые CI-метки');
     verify.type='button';
-    verify.addEventListener('click',function () { void readDetailed(verify); });
+    verify.addEventListener('click',function () { archive=null; void readArchive(); });
     actions.append(verify); two.append(actions);
     var prs = make('details','hh2-prs');
     var prTitle = make('summary','','Каждый PR · общее время и хронология');
