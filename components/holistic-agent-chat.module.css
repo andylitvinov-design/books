@@ -83,9 +83,9 @@
 
 
 /* Real agent chat: more conversation space, no fake mic/Send buttons. */
-.hh-messages-page .root[data-compact] .thread{min-height:clamp(180px,27dvh,290px);
+:global(.hh-messages-page) .root[data-compact] .thread{min-height:clamp(180px,27dvh,290px);
  max-height:min(43dvh,430px);overflow-y:auto;background:#fffdfb;border-color:#eee6e4}
-.hh-messages-page .root[data-compact] .form textarea{min-height:74px;border-radius:16px;
+:global(.hh-messages-page) .root[data-compact] .form textarea{min-height:74px;border-radius:16px;
  border-color:#e2dfd7;background:#fff;line-height:1.45}
-.hh-messages-page .root[data-compact] .actions button[type=submit]{background:#067a67;border-color:#067a67;color:#fff}
-@media(max-width:354px){.hh-messages-page .root[data-compact] .thread{min-height:clamp(170px,25dvh,240px);max-height:40dvh}}
+:global(.hh-messages-page) .root[data-compact] .actions button[type=submit]{background:#067a67;border-color:#067a67;color:#fff}
+@media(max-width:354px){:global(.hh-messages-page) .root[data-compact] .thread{min-height:clamp(170px,25dvh,240px);max-height:40dvh}}

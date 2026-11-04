@@ -225,3 +225,11 @@ test('owner Messenger top switcher and real five horizontal AI prompt actions',(
  assert.match(ui,/data-free-order-offers/)
  assert.match(ui,/PracticeRequestConversation key=\{selected.id\}/)
 })
+
+
+test('compact chat CSS scopes to the actual global Messages route, not a CSS-module-local class',()=>{
+ const css=source('components/holistic-agent-chat.module.css')
+ assert.match(css,/:global\(\.hh-messages-page\) \.root\[data-compact\] \.thread/)
+ assert.match(css,/:global\(\.hh-messages-page\) \.root\[data-compact\] \.form textarea/)
+ assert.doesNotMatch(css,/(?:^|\n)\.hh-messages-page \.root\[data-compact\]/)
+})
