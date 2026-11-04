@@ -559,7 +559,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-hypno-audio.wav");
       // Unlike the unrelated edit, removing the phrase selected for actual
       // synthesis must invalidate the attached soundtrack before export.
-      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="1"]');
+      // Selection order may differ from candidate indices after toggling. Find
+      // the exact phrase used in the TTS request, not a positional lookalike.
+      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase]').filter({hasText:approved});
+      await expect(spokenPhrase).toHaveCount(1);
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
       await spokenPhrase.click();
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","false");
