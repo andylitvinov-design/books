@@ -17,7 +17,8 @@ test("meditation-course workspace opens the existing working composer within the
   assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
     "the course composer belongs to the existing six-tab Video Studio");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/<MandalaPersonalMeditation coursePreview/);
+  assert.match(studio,/<MandalaPersonalMeditation\b[\s\S]*?\bcoursePreview\b[\s\S]*?onNarrationReady=/,
+    "the existing meditation composer receives the generated course preview and narration callback");
   assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="practices"/,
     "do not mount two visible personal meditation editors");
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
@@ -77,4 +78,87 @@ test("crisis text returns support only and must never expose the course offer",(
   const ui=read("components/mandala-personal-meditation.tsx");
   assert.match(ui,/if\(coursePreview&&!safetyResponse&&plan\)/);
   assert.match(ui,/else if\(coursePreview\)\{\s*setCourseDays\(\[\]\)/);
+});
+
+test("WebKit duplicate blur must not erase an already approved local meditation",()=>{
+  const studio=read("components/mandala-guided-course.tsx");
+  const contextStart=studio.indexOf('data-video-key-difficulty value={keyDifficulty}');
+  assert.ok(contextStart>0,"original controlled guided-course focus is retained");
+  const context=studio.slice(contextStart,contextStart+800);
+  assert.match(context,/const next=event\.currentTarget\.value;/);
+  // React may deliver stale blur callbacks after the approved script is saved.
+  // Compare against the most recent ref, not a captured render closure.
+  assert.match(studio,/const committedDifficultyRef=useRef\(keyDifficulty\);/);
+  assert.doesNotMatch(studio,/committedDifficultyRef\.current=keyDifficulty;/,
+    "unrelated React renders cannot rewind the last handled WebKit input");
+  assert.ok(studio.includes('committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();'),
+    "explicit mode reset must keep its ref and controlled input in sync");
+  assert.match(studio,/data-guided-meditation-click-count=\{meditationActionCount\}/,
+    "real Safari Generate taps are observable without collecting private text");
+  assert.match(context,/if\(next===committedDifficultyRef\.current\)return;/,
+    "duplicate WebKit input events cannot revoke a just-generated script");
+  assert.match(context,/committedDifficultyRef\.current=next;/,
+    "a new typed value becomes the latest committed input before invalidation");
+  assert.match(context,/setKeyDifficulty\(next\);/,
+    "real text edits must update the controlled input");
+  assert.doesNotMatch(context,/setKeyDifficulty\(next\);\s*resetGeneratedMeditation\(\)/,
+    "a late Safari textarea event cannot undo a newer Generate click");
+  assert.match(studio,/const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;/,
+    "old generated narration remains hidden after a real focus edit");
+  assert.match(studio,/includedSignatureRef\.current!==journeySignature[\s\S]*?onOmitMeditation\?\.\(\)/,
+    "an edited focus still revokes previously attached audio");
+  assert.match(studio,/data-guided-signature-match=\{approvedSignature===journeySignature\?"true":"false"\}/,
+    "the exact signature remains observable for real WebKit failure diagnostics");
+});
+
+test("reselecting the same guided focus is idempotent, but new input invalidates the old approval",()=>{
+  const source=read("components/mandala-guided-course.tsx");
+  const state=source.slice(source.indexOf("const selectState="),source.indexOf("const selectVector="));
+  const vector=source.slice(source.indexOf("const selectVector="),source.indexOf("useEffect(()=>()=>{profileRequestRef"));
+  assert.match(state,/if\(focusMode==="state"&&selectedState===id&&goals\.length===1&&goals\[0\]===goalTheme/);
+  assert.match(vector,/if\(focusMode==="vector"&&selectedState==="vector-"\+id&&goals\.length===1&&goals\[0\]===goalTheme/);
+  assert.match(state,/setSelectedState\(id\);setGoals\(\[goalTheme\]\);setKeyGoal/);
+  assert.match(vector,/setSelectedState\("vector-"\+id\);setGoals\(\[goalTheme\]\);setKeyGoal/);
+  assert.match(state,/resetGeneratedMeditation\(\)/);
+  assert.match(vector,/resetGeneratedMeditation\(\)/);
+  assert.match(source,/data-guided-focus-reset-count=\{focusResetCountRef\.current\}/);
+});
+
+test("WebKit guided-course diagnostics never read Node closures inside browser evaluate",()=>{
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ const begin=browser.indexOf("const state=await course.evaluate(el=>({");
+ const end=browser.indexOf("}));",begin);
+ assert.ok(begin>=0&&end>begin,"real guided-course WebKit state inspection remains");
+ assert.doesNotMatch(browser.slice(begin,end),/\bpageErrors\b/,
+   "Playwright page.evaluate must not reference Node-only pageErrors");
+ assert.match(browser,/data-guided-meditation-click-count/,
+   "Safari failure logs distinguish missing taps from post-tap invalidation");
+ assert.match(browser,/JSON\.stringify\(\{\.\.\.state,pageErrors:pageErrors\.slice\(-5\)\}\)/,
+   "diagnostics include guest console errors outside the browser context");
+});
+
+test("iPhone guided-course create-plan handler has a one-tap state receipt without animated-scroll race",()=>{
+ const guided=read("components/mandala-guided-course.tsx");
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ assert.match(guided,/data-guided-plan-open=\{planOpen\?"true":"false"\}/);
+ assert.match(guided,/data-guided-plan-click-count=\{planActionCount\}/);
+ assert.match(guided,/data-guided-plan-signature-match=\{programmeSignature===journeySignature\?"true":"false"\}/);
+ assert.match(guided,/setPlanActionCount\(count=>count\+1\);\s*setProgrammeSignature\(journeySignature\);/);
+ assert.match(guided,/scrollIntoView\(\{behavior:"instant",block:"start"\}\)/,
+   "personal editor focus must not leave a smooth-scroll animation over the next user click");
+ assert.doesNotMatch(guided.slice(guided.indexOf("function openPersonalMeditation()"),
+   guided.indexOf("function createProgramme()")),/requestAnimationFrame/,
+   "no deferred scrolling may race the real create-programme tap");
+ assert.match(browser,/planClickCount:root\?\.getAttribute\("data-guided-plan-click-count"\)/);
+ assert.match(browser,/planSignatureMatch:root\?\.getAttribute\("data-guided-plan-signature-match"\)/);
+});
+
+test("Safari first-click eight-session programme uses one committed approval, not two racing state values",()=>{
+  const guided=read("components/mandala-guided-course.tsx");
+  assert.match(guided,/const planOpen=programmeSignature\.length>0/);
+  assert.doesNotMatch(guided,/\bsetPlanOpen\b|\[planOpen,setPlanOpen\]/);
+  assert.match(guided,/setProgrammeSignature\(journeySignature\)/);
+  assert.match(guided,/const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;/);
+  assert.match(guided,/setApprovedSignature\(""\);setProgrammeSignature\(""\);/,
+    "real goal changes must still invalidate the approved course");
 });

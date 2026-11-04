@@ -182,8 +182,8 @@
 .root .sections button>svg{width:22px;height:22px}
 .root .sections button>span{display:block;min-width:0}
 .root .sections button strong{font:760 14px/1.25 system-ui,sans-serif}
-.root .sections .count{display:inline-grid;place-items:center;position:static;
- min-width:25px;height:25px;padding:0 6px;background:#e1f2e8;color:#18664c;
+.root .sections .count{display:inline-grid;place-items:center;position:absolute;right:3px;top:-6px;
+ min-width:20px;height:20px;padding:0 5px;background:#e1f2e8;color:#18664c;
  font:760 12px/1 system-ui,sans-serif;border-radius:99px}
 .root .sections button:not([aria-selected="true"]) .count{background:#eae5dc;color:#756c61}
 .root .panel{padding:0;background:transparent;border:0;min-height:0;border-radius:0}
@@ -363,7 +363,7 @@
 .root .emptyHint small{font:510 12px/1.42 system-ui,sans-serif;color:#6b7e70}
 @media(max-width:700px){
  .root .head h1{font-size:28px;line-height:1.1}
- .root .introCard{min-height:86px;padding:11px 12px;gap:10px;margin-bottom:12px}
+ .root .introCard{min-height:72px;padding:10px 12px;gap:10px;margin-bottom:12px}
  .root .introIcon{width:43px;height:43px;border-radius:14px}
  .root .introCopy{gap:4px}
  .root .introCopy strong{font-size:13px;line-height:1.3}
@@ -385,4 +385,89 @@
  .root .freeOffer img{width:69px;height:76px}
  .root .emptyHint strong{font-size:13px}
  .root .emptyHint small{font-size:11px}
+}
+
+
+/* Three honest chat destinations, using pre-existing protected Orders/Clients. */
+.root .sections{grid-template-columns:repeat(3,minmax(0,1fr))}
+.root .sections .aiTab{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:49px;
+ padding:8px 6px;border:1px solid #e7dfd2;border-radius:12px;background:#fffefa;color:#567265;
+ text-decoration:none;box-sizing:border-box}
+.root .sections .aiTab strong{font:760 13px/1.25 system-ui,sans-serif}
+.root .sections .aiTab svg{flex:none}
+.root .sections .aiTab:focus-visible{outline:3px solid #087f60;outline-offset:2px}
+@media(max-width:354px){.root .sections .aiTab{gap:3px;padding:7px 3px}.root .sections .aiTab strong{font-size:12px}.root .sections .aiTab svg{width:17px;height:17px}}
+
+
+/* Owner-approved compact five-function AI rail (2 November): only one bottom dock. */
+.root .head{height:92px;min-height:92px;box-sizing:border-box;padding:12px 15px 13px;align-items:center;margin-bottom:9px;
+ border:1px solid #f0e6dc;border-radius:20px;
+ background:linear-gradient(90deg,rgba(255,251,245,.98) 0%,rgba(255,249,243,.87) 57%,rgba(255,243,225,.14) 100%),
+ url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat}
+.root .head h1{font-size:clamp(27px,3.5vw,32px);color:#134537}
+.root .sections{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.root .sections button,.root .sections .aiTab{height:52px;min-height:52px;box-sizing:border-box;min-width:0;padding:7px 5px;gap:6px;border-radius:99px}
+.root .sections .aiTab[aria-selected="true"]{background:linear-gradient(115deg,#f5e2ff,#faf2ff);
+ color:#772bd2;border-color:#c5a2ec;box-shadow:0 3px 12px #9350d521}
+.root .sections .aiTab svg{width:18px;height:18px}
+.root .sections .aiTab strong{font-size:13px}
+.root .sections .count{min-width:20px;height:20px;font-size:11px}
+@media(max-width:700px){
+ .root .head{height:84px;min-height:84px;padding:10px 11px}
+ .root .head h1{font-size:27px}
+ .root .head p{font-size:11px}
+ .root .sections button,.root .sections .aiTab{height:52px;min-height:52px;padding:6px 4px;gap:4px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:12px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:18px;height:18px}
+}
+@media(max-width:350px){
+ .root .head{height:84px;min-height:84px}
+ .root .head h1{font-size:25px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:16px;height:16px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:11px}
+ .root .sections button{gap:3px}
+}
+
+
+/* Owner-approved 4 Nov: stable TOP switcher, compact shared header, warm cards.
+   Keeps real protected orders, empty free links, CRM, auth and existing dock. */
+.root{--hh-order-ink:#143d3a;--hh-order-line:#e7e3da;--hh-order-cream:#fcf9f2}
+.root .sections{margin:0 0 9px;gap:6px}
+.root .sections button{background:linear-gradient(130deg,#fffefa,#f9f5ef);
+ border-color:#ebe4da;color:#655f5a;box-shadow:0 3px 12px #4d403014}
+.root .sections button[aria-selected="true"]{background:linear-gradient(112deg,#168d72,#067a67);
+ border-color:#067a67;color:#fff;box-shadow:0 5px 14px #077b6225}
+.root .sections .aiTab[aria-selected="true"]{background:linear-gradient(115deg,#f4e5fd,#faf3ff);
+ color:#762ab4;border-color:#caa4ea;box-shadow:0 3px 12px #9350d521}
+.root .head{height:80px;min-height:80px;padding:9px 14px;margin-bottom:9px;
+ background:linear-gradient(90deg,#fffcf7 0%,#fffaf1ed 55%,#fff0da43 100%),
+ url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat}
+.root .head h1{font-size:clamp(24px,3.5vw,30px)}
+.root .head p{font-size:12px}
+.root .introCard{background:linear-gradient(112deg,#fffefa,#eaf5ec);
+ border-color:#e5e7dd;box-shadow:0 4px 14px #3847350d}
+.root .freeOffer,.root .order{background:#fffefa;border-color:#e8e3db}
+.root .freeOffer:nth-child(1){background:linear-gradient(112deg,#fffefa,#eaf5ed)}
+.root .freeOffer:nth-child(2){background:linear-gradient(112deg,#fffdfa,#fbf2e7)}
+@media(max-width:700px){
+ .root .head{height:74px;min-height:74px;padding:8px 11px;margin:0 0 9px;border-radius:19px}
+ .root .head h1{font-size:25px;line-height:1.05;margin:0 0 4px}
+ .root .head p{font-size:11px;line-height:1.25}
+ .root .sections{gap:5px;margin:0 0 9px}
+ .root .sections button,.root .sections .aiTab{height:50px;min-height:50px;
+  padding:6px 5px;gap:4px;box-sizing:border-box;border-radius:999px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:12px;line-height:1.15}
+ .root .sections button>svg,.root .sections .aiTab svg{width:18px;height:18px}
+ .root .introCard{min-height:70px;margin:0 0 9px;padding:9px 11px;border-radius:18px}
+ .root .introArt{width:65px;height:68px}
+ .root .freeOffer,.root .order{border-radius:18px}
+}
+@media(max-width:354px){
+ .root .head{height:70px;min-height:70px;padding:7px 9px}
+ .root .head h1{font-size:23px}
+ .root .sections{gap:4px}
+ .root .sections button,.root .sections .aiTab{padding:6px 3px;gap:3px}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:11px}
+ .root .sections .count{right:0;top:-5px;min-width:18px;height:18px;font-size:10px}
+ .root .introArt{width:48px;height:58px}
 }

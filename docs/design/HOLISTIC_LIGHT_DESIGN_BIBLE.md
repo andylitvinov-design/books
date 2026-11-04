@@ -22,13 +22,13 @@ The reference is a visual model, not a guarantee that credits, media, health out
 
 | Purpose | Token/value |
 | --- | --- |
-| Canvas | #FCF9F2 |
-| White surface | #FFFFFF |
-| Soft surface | #F8F5EF |
+| Canvas | #FBF5E9 |
+| White surface | #FFFCF7 (near-white); #FFFFFF for elevated media surfaces |
+| Soft surface | #F5ECDC |
 | Primary text | #143D3A |
 | Editorial navy (optional) | #17334B |
 | Secondary text | #5D6A71 |
-| Border | #E7E3DA, 1px |
+| Border | #E9DFD1, 1px |
 | Main CTA | #067A67 / white |
 | Focus ring | #176E6E / 3px |
 | Selected | #E6F6F1 + 2px border/check |
@@ -42,6 +42,11 @@ The reference is a visual model, not a guarantee that credits, media, health out
 | Anti-stress | #EAF8EF / icon #08736B |
 
 Regular text WCAG AA contrast >=4.5:1, large text/icons >=3:1; choice colors must have additional textual/check or radio state markers.
+
+
+### Sunlit-neutral rollout · owner decision, 4 November 2026
+
+Across ordinary Holistic House **neutral page canvases**, use `--hh-light-canvas: #FBF5E9`, near-white cards `--hh-light-surface: #FFFCF7`, and secondary neutral panels `--hh-light-surface-soft: #F5ECDC`. Reuse the existing tokens instead of hardcoding a cool gray/mint gradient for a whole page. This replaces the older #FCF9F2 canvas and pure-white ordinary surfaces. Keep emerald/teal CTA, category color coding, focus/selection states, existing Studio Warm Peach page variant (#FFF7F3), warm-sunrise variant, Business wood and My Course teal explicitly; do **not** globally override intentional color states, media frames, PDFs, or print white. QA requires the same route/state/mobile width and runtime screenshot, not CSS-source checks alone.
 
 ## 3. Typography, shape, space
 

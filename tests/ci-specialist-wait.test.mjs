@@ -58,6 +58,55 @@ test('a registered specialist can remain queued beyond three minutes and must su
   assert.equal(result.executed.length, 1);
 });
 
+test('registered queue beyond the previous 15-minute cap passes only after real execution', async () => {
+  let elapsed = 0, polls = 0, readJobs = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{filename: 'lib/crm/a.js'}],
+    runs: async () => {
+      polls++;
+      if (elapsed < 19 * 60_000) return [run('queued', null)];
+      if (elapsed < 20 * 60_000) return [run('in_progress', null)];
+      return [run('completed', 'success')];
+    },
+    jobs: async () => {
+      readJobs++;
+      return [{name:'mobile',status:'completed',conclusion:'success'}];
+    },
+  };
+  const result = await verify(api, ctx, sources, {
+    now: () => elapsed,
+    sleep: async ms => {
+      assert.ok(ms > 0 && ms <= 30_000);
+      elapsed += ms;
+    },
+  });
+  assert.ok(elapsed >= 20 * 60_000, 'queue alone is never passing CI');
+  assert.ok(elapsed < 35 * 60_000, 'completion stays within global budget');
+  assert.ok(polls > 30);
+  assert.equal(readJobs, 1);
+  assert.equal(result.executed.length, 1);
+});
+
+test('unresolved queued dependency fails closed only at the overall bounded deadline', async () => {
+  let elapsed = 0, reads = 0;
+  const api = {
+    pr: async () => pr,
+    changed: async () => [{filename: 'lib/crm/a.js'}],
+    runs: async () => { reads++; return [run('queued', null)]; },
+    jobs: async () => { throw Error('queued workflow must never be accepted as success'); },
+  };
+  await assert.rejects(() => verify(api, ctx, sources, {
+    now: () => elapsed,
+    sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
+  }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
+  assert.equal(elapsed, 35 * 60_000, 'global budget is hard capped');
+  assert.ok(reads > 10, 'checks are polled, never silently waived');
+  assert.equal(diagnoseAggregateError(
+    new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+JSON.stringify({queued:[path+':queued']}))
+  ).category, 'RUNNER_QUEUE');
+});
+
 test('registered queue still fails closed after a bounded startup budget', async () => {
   let elapsed = 0;
   const api = {

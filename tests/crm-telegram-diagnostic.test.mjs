@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs'
 import {
   parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
   transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
+  telegramReplyConsentTimestamp,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -267,4 +268,13 @@ test('owner Telegram proxy blocks inflated, malformed, unsafe-path and invalid c
     await assert.rejects(retrievePrivateTelegramPhoto(photoId,env),{code:'PHOTO_UNAVAILABLE',status:404})
     assert.deepEqual(calls,['metadata','download'])
   })
+})
+
+test('reply-only consent survives a Telegram questionnaire restart, but not STOP',()=>{
+  const prior={consent_at:'2026-10-26T15:00:00Z'},now='2026-11-04T13:42:42Z'
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'consent'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'drawing'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'focus',consent:true},now),now)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'stopped',stop:true},now),null)
+  assert.equal(telegramReplyConsentTimestamp(null,{stage:'consent'},now),null)
 })

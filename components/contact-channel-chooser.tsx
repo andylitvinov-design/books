@@ -51,7 +51,7 @@ const copy = {
     quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
     compactConsent: "I agree to a personal reply about this request only. No marketing.",
     compactPhoneLabel: "Phone number", compactPhoneError: "Enter your international phone number.",
-    compactSaved: "Request saved. Review the message and tap Send in your chat.",
+    compactSaved: "Request saved. A messenger message is optional.", compactSave: "Save request without a messenger",
     compactHandoff: "Chat did not open automatically. Use a button below.",
     expressQuestion: "What would you like to explore? (optional)",
     expressHint: "One or two sentences. Please avoid medical records, symptoms, or test results.",
@@ -88,7 +88,7 @@ const copy = {
     quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
     compactConsent: "Согласен(на) на личный ответ по заявке. Без рекламы.",
     compactPhoneLabel: "Номер телефона", compactPhoneError: "Введите номер телефона с кодом страны.",
-    compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
+    compactSaved: "Заявка сохранена. Писать в мессенджер необязательно.", compactSave: "Сохранить заявку без мессенджера",
     compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
     expressQuestion: "В чём суть вашего вопроса? (необязательно)",
     expressHint: "Одно-два предложения. Не указывайте симптомы, анализы и результаты тестов.",
@@ -125,7 +125,7 @@ const copy = {
     quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
     compactConsent: "Acepto recibir una respuesta personal sobre esta solicitud. Sin publicidad.",
     compactPhoneLabel: "Número de teléfono", compactPhoneError: "Introduce tu teléfono con prefijo internacional.",
-    compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
+    compactSaved: "Solicitud guardada. La mensajería es opcional.", compactSave: "Guardar solicitud sin mensajería",
     compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
     expressQuestion: "¿Cuál es tu consulta? (opcional)",
     expressHint: "Una o dos frases. Evita síntomas, informes médicos y resultados de pruebas.",
@@ -176,8 +176,6 @@ export function ContactChannelChooser({
   // Preserve a user-opened private note through React updates and WebKit hydration.
   const [noteOpen, setNoteOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  // Keep the optional disclosure stable across WebKit hydration.
-  const [nameOpen, setNameOpen] = useState(false);
   const [method, setMethod] = useState<"email" | "phone">(cartContact ? "phone" : "email");
   const [googleReady, setGoogleReady] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -244,7 +242,6 @@ export function ContactChannelChooser({
     setOpen(false);
     setDescription("");
     setNoteOpen(false);
-    setNameOpen(false);
     setDisplayName("");
     setMethod(cartContact ? "phone" : "email");
     setGoogleReady(false);
@@ -667,7 +664,7 @@ export function ContactChannelChooser({
         <div ref={panelRef} id={panelId} className={compactTrigger ? styles.compactTogglePanel : undefined}
           hidden={!interactive || (compactTrigger && !open)}>
           {!saved ? (
-          <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
+          <form className={styles.compactPhoneForm} onSubmit={event => { event.preventDefault(); void saveEnquiry(); }}>
             <div className={styles.compactPhoneField}>
               <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
               <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
@@ -694,6 +691,11 @@ export function ContactChannelChooser({
               Website <input type="text" tabIndex={-1} autoComplete="off"
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
+            <button type="submit" className={styles.compactSave}
+              disabled={busy || !interactive || !consent || !phone.trim()}
+              data-contact-save-without-messenger>
+              {busy ? c.sending : c.compactSave}
+            </button>
             <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
               <button type="button" className={styles.whatsapp} disabled={busy || !interactive}
                 data-contact-channel-submit="whatsapp" onClick={() => { void saveEnquiry("whatsapp"); }}>
@@ -788,12 +790,8 @@ export function ContactChannelChooser({
                 </div>
               )}
             </div>
-            {!quick && <><details className={styles.optionalName} open={nameOpen}>
-              <summary onClick={event => {
-                // One real click, React-controlled; no native WebKit toggle race.
-                event.preventDefault();
-                if (interactive && !busy && !googleBusy) setNameOpen(value => !value);
-              }}>{c.nameOptional}</summary>
+            {!quick && <><details key={resetSignature} className={styles.optionalName}>
+              <summary>{c.nameOptional}</summary>
               <label>{c.name}
                 <input type="text" autoComplete="name" minLength={2} maxLength={120}
                   disabled={busy || googleBusy || !interactive} value={displayName} onChange={event => {
@@ -863,7 +861,7 @@ export function ContactChannelChooser({
               </AcquisitionEventLink>
             </div>
             <button type="button" className={styles.again} onClick={() => {
-              setSaved(null); setDescription(""); setNoteOpen(false); setNameOpen(false); setDisplayName(""); setEmail("");
+              setSaved(null); setDescription(""); setNoteOpen(false); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
               setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>

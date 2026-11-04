@@ -2,12 +2,13 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
+import MessengerAiWorkspace from './messenger-ai-workspace'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
- en:{title:'Messages',subtitle:'Orders and conversations in one place.',
+ en:{title:'Messages',subtitle:'AI · Orders · Clients',
   introOrders:'Your orders and conversations with practitioners',introOrdersBody:'Status, messages and materials together.',introClients:'Your incoming client messages',introClientsBody:'Answer requests through existing protected conversations.',searchOrders:'Search orders, services or practitioners',filterOrders:'Filter by status',chatIndicator:'Order conversation',
   orders:'My orders',clients:'My clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
   all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',emptyHelp:'Your order status and conversation with a practitioner will appear here.',
@@ -24,7 +25,7 @@ const TEXT={
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
   notifyTitle:'Do not miss your practitioner’s reply',notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',notifyAction:'Notification settings'},
- ru:{title:'Сообщения',subtitle:'Заказы и общение',
+ ru:{title:'Сообщения',subtitle:'ИИ · Заказы · Клиенты',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
   all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',emptyHelp:'После оформления здесь появятся статус заказа и переписка с мастером.',
@@ -41,7 +42,7 @@ const TEXT={
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
   notifyTitle:'Не пропустите ответ мастера',notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',notifyAction:'Настроить уведомления'},
- es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
+ es:{title:'Mensajes',subtitle:'IA · Pedidos · Clientes',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
   all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',emptyHelp:'Aquí verás el estado de tus pedidos y el chat con el profesional.',
@@ -91,7 +92,11 @@ function priceOf(order,t){
 export default function MessagesOrdersClients({locale='en',children}){
   const searchParams=useSearchParams()
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
-  const [section,setSection]=useState('orders')
+  const [section,setSection]=useState(()=>{
+    const requested=searchParams.get('section')
+    return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
+      requested==='orders'||searchParams.has('order')?'orders':'ai'
+  })
   const [ordersData,setOrdersData]=useState(null)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(true)
@@ -106,7 +111,9 @@ export default function MessagesOrdersClients({locale='en',children}){
   const orderChatRef=useRef(null)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
-    setSection(q.get('section')==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':'orders')
+    const requested=q.get('section')
+    setSection(requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':
+      requested==='orders'||q.has('order')?'orders':'ai')
     const id=q.get('order')
     setSelectedId(id&&/^[0-9a-f-]{36}$/i.test(id)?id:'')
   },[searchParams])
@@ -146,7 +153,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       }
       const viewport=window.visualViewport
       const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight
-      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const nav=sharedDock&&getComputedStyle(sharedDock).display!=='none'
+        ?sharedDock:document.querySelector('.hh-messages-page .hh-mobile-app-nav')
       const editing=pane.contains(document.activeElement)&&
         /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
       const navTop=nav&&!editing&&getComputedStyle(nav).display!=='none'
@@ -178,12 +187,16 @@ export default function MessagesOrdersClients({locale='en',children}){
     }
   },[section,selectedId,ordersData?.accountId])
   function chooseSection(value){
+    if(!['ai','orders','clients'].includes(value))return
     setSection(value)
     const url=new URL(window.location.href)
-    if(value==='orders')url.searchParams.set('section','orders')
-    else url.searchParams.set('section','clients')
-    if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to');url.searchParams.delete('requestId')}
-    if(value==='clients'){url.searchParams.delete('order');setSelectedId('')}
+    url.searchParams.set('section',value)
+    if(value!=='clients'){
+      url.searchParams.delete('tab')
+      url.searchParams.delete('to')
+      url.searchParams.delete('requestId')
+    }
+    if(value!=='orders'){url.searchParams.delete('order');setSelectedId('')}
     setClientDetailOpen(false)
     window.history.replaceState(window.history.state,'',url)
   }
@@ -196,11 +209,39 @@ export default function MessagesOrdersClients({locale='en',children}){
   }
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
   const detailMode=Boolean(selected)||(section==='clients'&&clientDetailOpen)
+  // Load-dependent helper lives inside the active panel, not above the tabs.
+  const listHelper=section!=='ai'&&!detailMode&&!loading&&!error&&Boolean(ordersData)&&(
+    <div className={styles.introCard} data-messenger-list-helper>
+      <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
+      <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
+        <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
+      <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
+        loading="lazy" width="118" height="104" className={styles.introArt}/>
+    </div>
+  )
   return <section className={styles.root} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
+    <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
+      <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
+        className={styles.aiTab} onClick={()=>chooseSection('ai')}>
+        <Sparkles size={21} aria-hidden="true"/><span><strong>{
+          locale==="ru"?"ИИ":locale==="es"?"IA":"AI"
+        }</strong></span>
+      </button>
+      <button type="button" role="tab" aria-controls="hh-orders-panel" aria-selected={section==='orders'}
+        onClick={()=>chooseSection('orders')}><ShoppingBag size={23} aria-hidden="true"/>
+        <span><strong>{t.orders}</strong></span>
+        {!loading&&orders.length>0&&<b className={styles.count} aria-label={t.orders}>
+          {orders.length>99?'99+':orders.length}</b>}
+      </button>
+      <button type="button" role="tab" aria-controls="hh-clients-panel" aria-selected={section==='clients'}
+        onClick={()=>chooseSection('clients')}><UsersRound size={22} aria-hidden="true"/>
+        <span><strong>{clientTab}</strong></span>
+        {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
+      </button>
+    </div>
     <header className={styles.head}>
-      <div><h1>{t.title}</h1><p>{section==='clients'&&ordersData?.hasPractice?
-        (locale==='ru'?'Клиенты и входящие':locale==='es'?'Clientes y mensajes':'Clients and messages'):t.subtitle}</p></div>
+      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
       <span className={styles.headerActions}>
         <Link prefetch={false} className={styles.notificationSettings}
           href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
@@ -214,27 +255,11 @@ export default function MessagesOrdersClients({locale='en',children}){
         </button>
       </span>
     </header>
-    {!detailMode&&!loading&&!error&&ordersData&&<div className={styles.introCard}>
-      <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
-      <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
-        <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
-      <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
-        loading="lazy" width="118" height="104" className={styles.introArt}/>
+    {section==='ai'&&<div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai>
+      <MessengerAiWorkspace locale={locale}/>
     </div>}
-    <div className={styles.sections} role="tablist" aria-label={t.title}>
-      <button type="button" role="tab" aria-controls="hh-orders-panel" aria-selected={section==='orders'}
-        onClick={()=>chooseSection('orders')}><ShoppingBag size={23} aria-hidden="true"/>
-        <span><strong>{t.orders}</strong></span>
-        {!loading&&orders.length>0&&<b className={styles.count} aria-label={t.orders}>
-          {orders.length>99?'99+':orders.length}</b>}
-      </button>
-      <button type="button" role="tab" aria-controls="hh-clients-panel" aria-selected={section==='clients'}
-        onClick={()=>chooseSection('clients')}><UsersRound size={22} aria-hidden="true"/>
-        <span><strong>{clientTab}</strong></span>
-        {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
-      </button>
-    </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
+      {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&
         <aside className={styles.notifyInvite}>
           <Bell size={19} aria-hidden="true"/>
@@ -346,6 +371,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       </div>}
     </div>}
     {section==='clients'&&<div id="hh-clients-panel" role="tabpanel" className={styles.clients}>
+      {listHelper}
       {isValidElement(children)?cloneElement(children,{
         onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children}
     </div>}

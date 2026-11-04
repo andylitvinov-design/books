@@ -10,9 +10,14 @@ const voice=source("components/mandala-affirmation-voice.tsx");
 const recorder=source("components/mandala-local-voice-tracks.tsx");
 
 test("approved six Studio tabs lead the wide video preview on mobile",()=>{
-  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\{id:"editor",Icon:Scissors\},\{id:"phrases",Icon:Heart\}/);
-  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.quickBuilder>\.quickVideoNav\{[\s\S]*?order:1!important/);
-  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.previewStage \.hero\{[\s\S]*?aspect-ratio:16\/9!important/);
+  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
+  assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
+  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
+  assert.doesNotMatch(studio,/createPortal\(nav|effectsNavTarget|montageNavTarget/);
+  const latest=studioCss.slice(studioCss.lastIndexOf("/* 04 Nov owner visual recovery"));
+  assert.match(latest,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1!important/);
+  assert.match(latest,/quickBuilder>\.previewStage\s*\{[^}]*order:2!important/);
+  assert.match(latest,/aspect-ratio:16\/9!important/);
   assert.match(studio,/Как работают фразы поддержки/);
 });
 

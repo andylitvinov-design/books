@@ -72,7 +72,7 @@ on:
       - 'docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md'
       - 'public/images/holistic-house/reiki-practitioner-sunrise.webp'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
-      - '.github/workflows/hh-energywork-ai.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -80,8 +80,8 @@ permissions:
 
 # Only cancel obsolete PR-head runs; never cancel manual/release verification.
 concurrency:
-  group: hh-energywork-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-energywork-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   verify:

@@ -18,20 +18,17 @@ test('free express mobile theme legend spans two equal choices instead of occupy
 
 test('no anonymous analytics popup blocks public/mobile forms; preferences stay on Privacy page',()=>{
  const layout=read('app/layout.tsx')
- const notice=read('components/first-party-stats-notice.tsx')
  const choice=read('components/analytics-consent.tsx')
  const privacy=read('app/privacy/page.tsx')
  const css=read('components/personal-express-enquiry.module.css')
- assert.match(layout,/<PublicPageTraffic \/>[\s\S]*<FirstPartyStatsNotice \/>/)
- assert.match(notice,/safePublicPagePath\(pathname\)/)
- assert.match(notice,/window\.location\.hostname === "holistichouse\.vercel\.app"/)
- assert.match(notice,/!hasRecordedChoice\(\)/)
- assert.match(notice,/setFirstPartyConsent\(allow\)/)
- assert.match(notice,/No, thanks/)
- assert.match(notice,/No, gracias/)
- assert.match(notice,/!visible\) return null/)
- assert.match(layout,/<PublicPageTraffic \/>/)
+ // The public notice was intentionally retired. Consent is never solicited
+ // with an interrupting banner; visitors can change it on the Privacy page.
+ assert.match(layout,/<AnalyticsConsent \/>[\s\S]*<PublicPageTraffic \/>/)
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice|<FirstPartyStatsPreferences\s*\/>/)
+ assert.match(choice,/export function AnalyticsConsent\(\)/)
+ assert.match(choice,/export function FirstPartyStatsPreferences\(\)/)
  assert.match(privacy,/<FirstPartyStatsPreferences \/>/)
+ assert.match(privacy,/<AnalyticsPreferences \/>/)
  assert.match(choice,/setFirstPartyConsent\(allow\)/)
  assert.doesNotMatch(choice,/setFirstPartyConsent\(true\)/)
  assert.match(choice,/allow \? "v1" : "denied"/)

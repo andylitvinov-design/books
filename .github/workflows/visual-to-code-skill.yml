@@ -4,7 +4,6 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'AGENTS.md'
-      - 'app/layout.tsx'
       - 'app/holistic-light-tokens.css'
       - 'docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md'
       - 'scripts/holistic-light-design-qa.mjs'

@@ -32,7 +32,16 @@
     ],
     "medicalContentIsSupportiveNotDiagnostic": true,
     "scenarioSourceStatus": "editorial_only_unbound",
-    "exportRequiresVerifiedMediaBindings": true
+    "exportRequiresVerifiedMediaBindings": true,
+    "editorialPrimaryTree": [
+      "goals-money",
+      "love-relationships",
+      "energy-confidence",
+      "stress-recovery"
+    ],
+    "subcategoryChoicePolicy": "Use the primary user need, not a contributing factor. Low energy and fatigue recovery are in Energy & Confidence; overload and burnout are in Stress & Anxiety. Relationship anxiety belongs to Love when the issue is the relationship; generalized anxiety belongs to Stress & Anxiety.",
+    "scenarioCardsMustBeTopicSpecific": true,
+    "scenarioCardsMustNotUseGenericCategoryTitles": true
   },
   "classificationPrinciples": [
     "Classify by the user's primary intent, not by every related feeling.",
@@ -77,352 +86,17 @@
     {
       "id": "goals-money",
       "label": {
-        "ru": "Цели и деньги",
+        "ru": "Деньги и развитие",
         "en": "Goals & Money",
-        "es": "Metas y dinero"
+        "es": "Dinero y desarrollo"
       },
       "subcategories": [
         {
-          "id": "goals-discipline",
-          "label": {
-            "ru": "Цели и дисциплина",
-            "en": "Goals & Discipline",
-            "es": "Metas y disciplina"
-          },
-          "topics": [
-            {
-              "id": "goal-achievement",
-              "label": {
-                "ru": "Достижение целей",
-                "en": "Goal Achievement",
-                "es": "Logro de objetivos"
-              },
-              "searchIntent": {
-                "ru": [
-                  "достичь цели",
-                  "поставить цель"
-                ],
-                "en": [
-                  "achieve goals",
-                  "set goals"
-                ],
-                "es": [
-                  "alcanzar metas",
-                  "establecer objetivos"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "goal-achievement-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Достижение целей: Путь",
-                    "en": "Goal Achievement: Path",
-                    "es": "Logro de objetivos: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Достижение целей»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Goal Achievement.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Logro de objetivos."
-                  }
-                },
-                {
-                  "id": "goal-achievement-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Достижение целей: Опора",
-                    "en": "Goal Achievement: Support",
-                    "es": "Logro de objetivos: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Достижение целей»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Goal Achievement.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Logro de objetivos."
-                  }
-                },
-                {
-                  "id": "goal-achievement-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Достижение целей: Новый взгляд",
-                    "en": "Goal Achievement: New Perspective",
-                    "es": "Logro de objetivos: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Достижение целей»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Goal Achievement.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Logro de objetivos."
-                  }
-                },
-                {
-                  "id": "goal-achievement-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Достижение целей: Новый шаг",
-                    "en": "Goal Achievement: Integration",
-                    "es": "Logro de objetivos: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Достижение целей»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Goal Achievement.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Logro de objetivos."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "procrastination",
-              "label": {
-                "ru": "Прокрастинация",
-                "en": "Procrastination",
-                "es": "Procrastinación"
-              },
-              "searchIntent": {
-                "ru": [
-                  "откладываю дела",
-                  "не могу начать"
-                ],
-                "en": [
-                  "procrastination",
-                  "can't get started"
-                ],
-                "es": [
-                  "procrastinación",
-                  "no puedo empezar"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "procrastination-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Прокрастинация: Путь",
-                    "en": "Procrastination: Path",
-                    "es": "Procrastinación: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Прокрастинация»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Procrastination.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Procrastinación."
-                  }
-                },
-                {
-                  "id": "procrastination-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Прокрастинация: Опора",
-                    "en": "Procrastination: Support",
-                    "es": "Procrastinación: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Прокрастинация»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Procrastination.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Procrastinación."
-                  }
-                },
-                {
-                  "id": "procrastination-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Прокрастинация: Новый взгляд",
-                    "en": "Procrastination: New Perspective",
-                    "es": "Procrastinación: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Прокрастинация»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Procrastination.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Procrastinación."
-                  }
-                },
-                {
-                  "id": "procrastination-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Прокрастинация: Новый шаг",
-                    "en": "Procrastination: Integration",
-                    "es": "Procrastinación: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Прокрастинация»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Procrastination.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Procrastinación."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "self-discipline",
-              "label": {
-                "ru": "Самодисциплина",
-                "en": "Self-Discipline",
-                "es": "Autodisciplina"
-              },
-              "searchIntent": {
-                "ru": [
-                  "самодисциплина",
-                  "сила воли"
-                ],
-                "en": [
-                  "self-discipline",
-                  "willpower"
-                ],
-                "es": [
-                  "autodisciplina",
-                  "fuerza de voluntad"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "self-discipline-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Самодисциплина: Путь",
-                    "en": "Self-Discipline: Path",
-                    "es": "Autodisciplina: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Самодисциплина»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Self-Discipline.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Autodisciplina."
-                  }
-                },
-                {
-                  "id": "self-discipline-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Самодисциплина: Опора",
-                    "en": "Self-Discipline: Support",
-                    "es": "Autodisciplina: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Самодисциплина»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Self-Discipline.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Autodisciplina."
-                  }
-                },
-                {
-                  "id": "self-discipline-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Самодисциплина: Новый взгляд",
-                    "en": "Self-Discipline: New Perspective",
-                    "es": "Autodisciplina: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Самодисциплина»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Self-Discipline.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Autodisciplina."
-                  }
-                },
-                {
-                  "id": "self-discipline-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Самодисциплина: Новый шаг",
-                    "en": "Self-Discipline: Integration",
-                    "es": "Autodisciplina: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Самодисциплина»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Self-Discipline.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Autodisciplina."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "focus",
-              "label": {
-                "ru": "Концентрация внимания",
-                "en": "Focus & Concentration",
-                "es": "Enfoque y concentración"
-              },
-              "searchIntent": {
-                "ru": [
-                  "концентрация",
-                  "сосредоточиться"
-                ],
-                "en": [
-                  "focus",
-                  "concentration"
-                ],
-                "es": [
-                  "enfoque",
-                  "concentración"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "focus-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Концентрация внимания: Путь",
-                    "en": "Focus & Concentration: Path",
-                    "es": "Enfoque y concentración: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Focus & Concentration.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Enfoque y concentración."
-                  }
-                },
-                {
-                  "id": "focus-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Концентрация внимания: Опора",
-                    "en": "Focus & Concentration: Support",
-                    "es": "Enfoque y concentración: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Focus & Concentration.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Enfoque y concentración."
-                  }
-                },
-                {
-                  "id": "focus-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Концентрация внимания: Новый взгляд",
-                    "en": "Focus & Concentration: New Perspective",
-                    "es": "Enfoque y concentración: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Focus & Concentration.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Enfoque y concentración."
-                  }
-                },
-                {
-                  "id": "focus-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Концентрация внимания: Новый шаг",
-                    "en": "Focus & Concentration: Integration",
-                    "es": "Enfoque y concentración: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Focus & Concentration.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Enfoque y concentración."
-                  }
-                }
-              ]
-            }
-          ],
-          "chooseWhen": {
-            "ru": "Нужно лучше планировать и завершать дела.",
-            "en": "You want to plan better and finish tasks.",
-            "es": "Quieres planificar mejor y terminar tus tareas."
-          }
-        },
-        {
           "id": "purpose-choice",
           "label": {
-            "ru": "Предназначение и выбор",
-            "en": "Purpose & Direction",
-            "es": "Propósito y dirección"
+            "ru": "Предназначение и развитие",
+            "en": "Purpose & Growth",
+            "es": "Propósito y desarrollo"
           },
           "topics": [
             {
@@ -753,11 +427,346 @@
           }
         },
         {
+          "id": "goals-discipline",
+          "label": {
+            "ru": "Достижение целей",
+            "en": "Goal Achievement",
+            "es": "Logro de objetivos"
+          },
+          "topics": [
+            {
+              "id": "goal-achievement",
+              "label": {
+                "ru": "Достижение целей",
+                "en": "Goal Achievement",
+                "es": "Logro de objetivos"
+              },
+              "searchIntent": {
+                "ru": [
+                  "достичь цели",
+                  "поставить цель"
+                ],
+                "en": [
+                  "achieve goals",
+                  "set goals"
+                ],
+                "es": [
+                  "alcanzar metas",
+                  "establecer objetivos"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "goal-achievement-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Достижение целей: Путь",
+                    "en": "Goal Achievement: Path",
+                    "es": "Logro de objetivos: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Достижение целей»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Goal Achievement.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Logro de objetivos."
+                  }
+                },
+                {
+                  "id": "goal-achievement-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Достижение целей: Опора",
+                    "en": "Goal Achievement: Support",
+                    "es": "Logro de objetivos: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Достижение целей»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Goal Achievement.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Logro de objetivos."
+                  }
+                },
+                {
+                  "id": "goal-achievement-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Достижение целей: Новый взгляд",
+                    "en": "Goal Achievement: New Perspective",
+                    "es": "Logro de objetivos: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Достижение целей»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Goal Achievement.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Logro de objetivos."
+                  }
+                },
+                {
+                  "id": "goal-achievement-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Достижение целей: Новый шаг",
+                    "en": "Goal Achievement: Integration",
+                    "es": "Logro de objetivos: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Достижение целей»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Goal Achievement.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Logro de objetivos."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "procrastination",
+              "label": {
+                "ru": "Прокрастинация",
+                "en": "Procrastination",
+                "es": "Procrastinación"
+              },
+              "searchIntent": {
+                "ru": [
+                  "откладываю дела",
+                  "не могу начать"
+                ],
+                "en": [
+                  "procrastination",
+                  "can't get started"
+                ],
+                "es": [
+                  "procrastinación",
+                  "no puedo empezar"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "procrastination-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Прокрастинация: Путь",
+                    "en": "Procrastination: Path",
+                    "es": "Procrastinación: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Прокрастинация»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Procrastination.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Procrastinación."
+                  }
+                },
+                {
+                  "id": "procrastination-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Прокрастинация: Опора",
+                    "en": "Procrastination: Support",
+                    "es": "Procrastinación: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Прокрастинация»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Procrastination.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Procrastinación."
+                  }
+                },
+                {
+                  "id": "procrastination-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Прокрастинация: Новый взгляд",
+                    "en": "Procrastination: New Perspective",
+                    "es": "Procrastinación: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Прокрастинация»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Procrastination.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Procrastinación."
+                  }
+                },
+                {
+                  "id": "procrastination-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Прокрастинация: Новый шаг",
+                    "en": "Procrastination: Integration",
+                    "es": "Procrastinación: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Прокрастинация»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Procrastination.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Procrastinación."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "self-discipline",
+              "label": {
+                "ru": "Самодисциплина",
+                "en": "Self-Discipline",
+                "es": "Autodisciplina"
+              },
+              "searchIntent": {
+                "ru": [
+                  "самодисциплина",
+                  "сила воли"
+                ],
+                "en": [
+                  "self-discipline",
+                  "willpower"
+                ],
+                "es": [
+                  "autodisciplina",
+                  "fuerza de voluntad"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "self-discipline-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Самодисциплина: Путь",
+                    "en": "Self-Discipline: Path",
+                    "es": "Autodisciplina: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Самодисциплина»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Self-Discipline.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Autodisciplina."
+                  }
+                },
+                {
+                  "id": "self-discipline-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Самодисциплина: Опора",
+                    "en": "Self-Discipline: Support",
+                    "es": "Autodisciplina: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Самодисциплина»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Self-Discipline.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Autodisciplina."
+                  }
+                },
+                {
+                  "id": "self-discipline-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Самодисциплина: Новый взгляд",
+                    "en": "Self-Discipline: New Perspective",
+                    "es": "Autodisciplina: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Самодисциплина»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Self-Discipline.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Autodisciplina."
+                  }
+                },
+                {
+                  "id": "self-discipline-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Самодисциплина: Новый шаг",
+                    "en": "Self-Discipline: Integration",
+                    "es": "Autodisciplina: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Самодисциплина»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Self-Discipline.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Autodisciplina."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "focus",
+              "label": {
+                "ru": "Концентрация внимания",
+                "en": "Focus & Concentration",
+                "es": "Enfoque y concentración"
+              },
+              "searchIntent": {
+                "ru": [
+                  "концентрация",
+                  "сосредоточиться"
+                ],
+                "en": [
+                  "focus",
+                  "concentration"
+                ],
+                "es": [
+                  "enfoque",
+                  "concentración"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "focus-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Концентрация внимания: Путь",
+                    "en": "Focus & Concentration: Path",
+                    "es": "Enfoque y concentración: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Focus & Concentration.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Enfoque y concentración."
+                  }
+                },
+                {
+                  "id": "focus-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Концентрация внимания: Опора",
+                    "en": "Focus & Concentration: Support",
+                    "es": "Enfoque y concentración: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Focus & Concentration.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Enfoque y concentración."
+                  }
+                },
+                {
+                  "id": "focus-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Концентрация внимания: Новый взгляд",
+                    "en": "Focus & Concentration: New Perspective",
+                    "es": "Enfoque y concentración: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Focus & Concentration.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Enfoque y concentración."
+                  }
+                },
+                {
+                  "id": "focus-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Концентрация внимания: Новый шаг",
+                    "en": "Focus & Concentration: Integration",
+                    "es": "Enfoque y concentración: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Концентрация внимания»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Focus & Concentration.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Enfoque y concentración."
+                  }
+                }
+              ]
+            }
+          ],
+          "chooseWhen": {
+            "ru": "Нужно лучше планировать и завершать дела.",
+            "en": "You want to plan better and finish tasks.",
+            "es": "Quieres planificar mejor y terminar tus tareas."
+          }
+        },
+        {
           "id": "money-mindset",
           "label": {
-            "ru": "Деньги и установки",
-            "en": "Money & Mindset",
-            "es": "Dinero y mentalidad"
+            "ru": "Деньги и изобилие",
+            "en": "Money & Abundance",
+            "es": "Dinero y abundancia"
           },
           "topics": [
             {
@@ -1433,6 +1442,341 @@
       },
       "subcategories": [
         {
+          "id": "loneliness-breakups",
+          "label": {
+            "ru": "Одиночество и расставание",
+            "en": "Loneliness & Breakups",
+            "es": "Soledad y rupturas"
+          },
+          "topics": [
+            {
+              "id": "loneliness",
+              "label": {
+                "ru": "Одиночество",
+                "en": "Loneliness",
+                "es": "Soledad"
+              },
+              "searchIntent": {
+                "ru": [
+                  "одиночество",
+                  "чувствую себя одиноко"
+                ],
+                "en": [
+                  "loneliness",
+                  "feeling lonely"
+                ],
+                "es": [
+                  "soledad",
+                  "sentirse solo"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "loneliness-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Одиночество: Путь",
+                    "en": "Loneliness: Path",
+                    "es": "Soledad: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Одиночество»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Loneliness.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Soledad."
+                  }
+                },
+                {
+                  "id": "loneliness-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Одиночество: Опора",
+                    "en": "Loneliness: Support",
+                    "es": "Soledad: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Одиночество»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Loneliness.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Soledad."
+                  }
+                },
+                {
+                  "id": "loneliness-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Одиночество: Новый взгляд",
+                    "en": "Loneliness: New Perspective",
+                    "es": "Soledad: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Одиночество»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Loneliness.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Soledad."
+                  }
+                },
+                {
+                  "id": "loneliness-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Одиночество: Новый шаг",
+                    "en": "Loneliness: Integration",
+                    "es": "Soledad: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Одиночество»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Loneliness.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Soledad."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "fear-alone",
+              "label": {
+                "ru": "Страх остаться одному",
+                "en": "Fear of Being Alone",
+                "es": "Miedo a quedarse solo"
+              },
+              "searchIntent": {
+                "ru": [
+                  "страх одиночества",
+                  "боюсь остаться один"
+                ],
+                "en": [
+                  "fear of being alone",
+                  "fear of loneliness"
+                ],
+                "es": [
+                  "miedo a quedarse solo",
+                  "miedo a la soledad"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "fear-alone-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Страх остаться одному: Путь",
+                    "en": "Fear of Being Alone: Path",
+                    "es": "Miedo a quedarse solo: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Fear of Being Alone.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Miedo a quedarse solo."
+                  }
+                },
+                {
+                  "id": "fear-alone-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Страх остаться одному: Опора",
+                    "en": "Fear of Being Alone: Support",
+                    "es": "Miedo a quedarse solo: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Fear of Being Alone.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Miedo a quedarse solo."
+                  }
+                },
+                {
+                  "id": "fear-alone-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Страх остаться одному: Новый взгляд",
+                    "en": "Fear of Being Alone: New Perspective",
+                    "es": "Miedo a quedarse solo: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Fear of Being Alone.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Miedo a quedarse solo."
+                  }
+                },
+                {
+                  "id": "fear-alone-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Страх остаться одному: Новый шаг",
+                    "en": "Fear of Being Alone: Integration",
+                    "es": "Miedo a quedarse solo: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Fear of Being Alone.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Miedo a quedarse solo."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "breakup-recovery",
+              "label": {
+                "ru": "Пережить расставание",
+                "en": "Breakup Recovery",
+                "es": "Superar una ruptura"
+              },
+              "searchIntent": {
+                "ru": [
+                  "как пережить расставание",
+                  "боль после разрыва"
+                ],
+                "en": [
+                  "get over a breakup",
+                  "breakup pain"
+                ],
+                "es": [
+                  "superar una ruptura",
+                  "dolor por ruptura"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "breakup-recovery-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Пережить расставание: Путь",
+                    "en": "Breakup Recovery: Path",
+                    "es": "Superar una ruptura: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Пережить расставание»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Breakup Recovery.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Superar una ruptura."
+                  }
+                },
+                {
+                  "id": "breakup-recovery-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Пережить расставание: Опора",
+                    "en": "Breakup Recovery: Support",
+                    "es": "Superar una ruptura: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Пережить расставание»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Breakup Recovery.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Superar una ruptura."
+                  }
+                },
+                {
+                  "id": "breakup-recovery-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Пережить расставание: Новый взгляд",
+                    "en": "Breakup Recovery: New Perspective",
+                    "es": "Superar una ruptura: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Пережить расставание»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Breakup Recovery.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Superar una ruptura."
+                  }
+                },
+                {
+                  "id": "breakup-recovery-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Пережить расставание: Новый шаг",
+                    "en": "Breakup Recovery: Integration",
+                    "es": "Superar una ruptura: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Пережить расставание»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Breakup Recovery.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Superar una ruptura."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "unrequited-love",
+              "label": {
+                "ru": "Неразделённая любовь",
+                "en": "Unrequited Love",
+                "es": "Amor no correspondido"
+              },
+              "searchIntent": {
+                "ru": [
+                  "неразделённая любовь",
+                  "любовь без ответа"
+                ],
+                "en": [
+                  "unrequited love",
+                  "one-sided love"
+                ],
+                "es": [
+                  "amor no correspondido",
+                  "amor unilateral"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "unrequited-love-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Неразделённая любовь: Путь",
+                    "en": "Unrequited Love: Path",
+                    "es": "Amor no correspondido: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Unrequited Love.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Amor no correspondido."
+                  }
+                },
+                {
+                  "id": "unrequited-love-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Неразделённая любовь: Опора",
+                    "en": "Unrequited Love: Support",
+                    "es": "Amor no correspondido: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Unrequited Love.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Amor no correspondido."
+                  }
+                },
+                {
+                  "id": "unrequited-love-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Неразделённая любовь: Новый взгляд",
+                    "en": "Unrequited Love: New Perspective",
+                    "es": "Amor no correspondido: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Unrequited Love.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Amor no correspondido."
+                  }
+                },
+                {
+                  "id": "unrequited-love-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Неразделённая любовь: Новый шаг",
+                    "en": "Unrequited Love: Integration",
+                    "es": "Amor no correspondido: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Unrequited Love.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Amor no correspondido."
+                  }
+                }
+              ]
+            }
+          ],
+          "chooseWhen": {
+            "ru": "Переживаете одиночество или завершение отношений.",
+            "en": "You are dealing with loneliness or a breakup.",
+            "es": "Estás viviendo soledad o una ruptura."
+          }
+        },
+        {
           "id": "finding-love",
           "label": {
             "ru": "Поиск любви",
@@ -2103,341 +2447,6 @@
           }
         },
         {
-          "id": "loneliness-breakups",
-          "label": {
-            "ru": "Одиночество и расставание",
-            "en": "Loneliness & Breakups",
-            "es": "Soledad y rupturas"
-          },
-          "topics": [
-            {
-              "id": "loneliness",
-              "label": {
-                "ru": "Одиночество",
-                "en": "Loneliness",
-                "es": "Soledad"
-              },
-              "searchIntent": {
-                "ru": [
-                  "одиночество",
-                  "чувствую себя одиноко"
-                ],
-                "en": [
-                  "loneliness",
-                  "feeling lonely"
-                ],
-                "es": [
-                  "soledad",
-                  "sentirse solo"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "loneliness-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Одиночество: Путь",
-                    "en": "Loneliness: Path",
-                    "es": "Soledad: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Одиночество»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Loneliness.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Soledad."
-                  }
-                },
-                {
-                  "id": "loneliness-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Одиночество: Опора",
-                    "en": "Loneliness: Support",
-                    "es": "Soledad: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Одиночество»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Loneliness.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Soledad."
-                  }
-                },
-                {
-                  "id": "loneliness-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Одиночество: Новый взгляд",
-                    "en": "Loneliness: New Perspective",
-                    "es": "Soledad: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Одиночество»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Loneliness.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Soledad."
-                  }
-                },
-                {
-                  "id": "loneliness-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Одиночество: Новый шаг",
-                    "en": "Loneliness: Integration",
-                    "es": "Soledad: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Одиночество»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Loneliness.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Soledad."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "fear-alone",
-              "label": {
-                "ru": "Страх остаться одному",
-                "en": "Fear of Being Alone",
-                "es": "Miedo a quedarse solo"
-              },
-              "searchIntent": {
-                "ru": [
-                  "страх одиночества",
-                  "боюсь остаться один"
-                ],
-                "en": [
-                  "fear of being alone",
-                  "fear of loneliness"
-                ],
-                "es": [
-                  "miedo a quedarse solo",
-                  "miedo a la soledad"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "fear-alone-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Страх остаться одному: Путь",
-                    "en": "Fear of Being Alone: Path",
-                    "es": "Miedo a quedarse solo: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Fear of Being Alone.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Miedo a quedarse solo."
-                  }
-                },
-                {
-                  "id": "fear-alone-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Страх остаться одному: Опора",
-                    "en": "Fear of Being Alone: Support",
-                    "es": "Miedo a quedarse solo: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Fear of Being Alone.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Miedo a quedarse solo."
-                  }
-                },
-                {
-                  "id": "fear-alone-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Страх остаться одному: Новый взгляд",
-                    "en": "Fear of Being Alone: New Perspective",
-                    "es": "Miedo a quedarse solo: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Fear of Being Alone.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Miedo a quedarse solo."
-                  }
-                },
-                {
-                  "id": "fear-alone-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Страх остаться одному: Новый шаг",
-                    "en": "Fear of Being Alone: Integration",
-                    "es": "Miedo a quedarse solo: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Страх остаться одному»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Fear of Being Alone.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Miedo a quedarse solo."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "breakup-recovery",
-              "label": {
-                "ru": "Пережить расставание",
-                "en": "Breakup Recovery",
-                "es": "Superar una ruptura"
-              },
-              "searchIntent": {
-                "ru": [
-                  "как пережить расставание",
-                  "боль после разрыва"
-                ],
-                "en": [
-                  "get over a breakup",
-                  "breakup pain"
-                ],
-                "es": [
-                  "superar una ruptura",
-                  "dolor por ruptura"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "breakup-recovery-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Пережить расставание: Путь",
-                    "en": "Breakup Recovery: Path",
-                    "es": "Superar una ruptura: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Пережить расставание»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Breakup Recovery.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Superar una ruptura."
-                  }
-                },
-                {
-                  "id": "breakup-recovery-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Пережить расставание: Опора",
-                    "en": "Breakup Recovery: Support",
-                    "es": "Superar una ruptura: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Пережить расставание»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Breakup Recovery.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Superar una ruptura."
-                  }
-                },
-                {
-                  "id": "breakup-recovery-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Пережить расставание: Новый взгляд",
-                    "en": "Breakup Recovery: New Perspective",
-                    "es": "Superar una ruptura: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Пережить расставание»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Breakup Recovery.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Superar una ruptura."
-                  }
-                },
-                {
-                  "id": "breakup-recovery-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Пережить расставание: Новый шаг",
-                    "en": "Breakup Recovery: Integration",
-                    "es": "Superar una ruptura: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Пережить расставание»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Breakup Recovery.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Superar una ruptura."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "unrequited-love",
-              "label": {
-                "ru": "Неразделённая любовь",
-                "en": "Unrequited Love",
-                "es": "Amor no correspondido"
-              },
-              "searchIntent": {
-                "ru": [
-                  "неразделённая любовь",
-                  "любовь без ответа"
-                ],
-                "en": [
-                  "unrequited love",
-                  "one-sided love"
-                ],
-                "es": [
-                  "amor no correspondido",
-                  "amor unilateral"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "unrequited-love-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Неразделённая любовь: Путь",
-                    "en": "Unrequited Love: Path",
-                    "es": "Amor no correspondido: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Unrequited Love.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Amor no correspondido."
-                  }
-                },
-                {
-                  "id": "unrequited-love-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Неразделённая любовь: Опора",
-                    "en": "Unrequited Love: Support",
-                    "es": "Amor no correspondido: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Unrequited Love.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Amor no correspondido."
-                  }
-                },
-                {
-                  "id": "unrequited-love-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Неразделённая любовь: Новый взгляд",
-                    "en": "Unrequited Love: New Perspective",
-                    "es": "Amor no correspondido: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Unrequited Love.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Amor no correspondido."
-                  }
-                },
-                {
-                  "id": "unrequited-love-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Неразделённая любовь: Новый шаг",
-                    "en": "Unrequited Love: Integration",
-                    "es": "Amor no correspondido: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Неразделённая любовь»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Unrequited Love.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Amor no correspondido."
-                  }
-                }
-              ]
-            }
-          ],
-          "chooseWhen": {
-            "ru": "Переживаете одиночество или завершение отношений.",
-            "en": "You are dealing with loneliness or a breakup.",
-            "es": "Estás viviendo soledad o una ruptura."
-          }
-        },
-        {
           "id": "intimacy-family",
           "label": {
             "ru": "Близость и семья",
@@ -2783,6 +2792,353 @@
       },
       "subcategories": [
         {
+          "id": "energy-fatigue",
+          "label": {
+            "ru": "Усталость и восстановление",
+            "en": "Fatigue & Recovery",
+            "es": "Fatiga y recuperación"
+          },
+          "topics": [
+            {
+              "id": "constant-fatigue",
+              "label": {
+                "ru": "Постоянная усталость",
+                "en": "Constant Fatigue",
+                "es": "Cansancio constante"
+              },
+              "searchIntent": {
+                "ru": [
+                  "постоянная усталость",
+                  "всё время устаю"
+                ],
+                "en": [
+                  "constant fatigue",
+                  "always tired"
+                ],
+                "es": [
+                  "cansancio constante",
+                  "estar siempre cansado"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "constant-fatigue-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Постоянная усталость: Путь",
+                    "en": "Constant Fatigue: Path",
+                    "es": "Cansancio constante: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Constant Fatigue.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Cansancio constante."
+                  }
+                },
+                {
+                  "id": "constant-fatigue-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Постоянная усталость: Опора",
+                    "en": "Constant Fatigue: Support",
+                    "es": "Cansancio constante: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Constant Fatigue.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Cansancio constante."
+                  }
+                },
+                {
+                  "id": "constant-fatigue-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Постоянная усталость: Новый взгляд",
+                    "en": "Constant Fatigue: New Perspective",
+                    "es": "Cansancio constante: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Constant Fatigue.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Cansancio constante."
+                  }
+                },
+                {
+                  "id": "constant-fatigue-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Постоянная усталость: Новый шаг",
+                    "en": "Constant Fatigue: Integration",
+                    "es": "Cansancio constante: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Constant Fatigue.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Cansancio constante."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "mental-fatigue",
+              "label": {
+                "ru": "Умственная усталость",
+                "en": "Mental Fatigue",
+                "es": "Fatiga mental"
+              },
+              "searchIntent": {
+                "ru": [
+                  "умственная усталость",
+                  "умственное истощение"
+                ],
+                "en": [
+                  "mental fatigue",
+                  "mental exhaustion"
+                ],
+                "es": [
+                  "fatiga mental",
+                  "agotamiento mental"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "mental-fatigue-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Умственная усталость: Путь",
+                    "en": "Mental Fatigue: Path",
+                    "es": "Fatiga mental: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Умственная усталость»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Mental Fatigue.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fatiga mental."
+                  }
+                },
+                {
+                  "id": "mental-fatigue-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Умственная усталость: Опора",
+                    "en": "Mental Fatigue: Support",
+                    "es": "Fatiga mental: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Умственная усталость»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Mental Fatigue.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fatiga mental."
+                  }
+                },
+                {
+                  "id": "mental-fatigue-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Умственная усталость: Новый взгляд",
+                    "en": "Mental Fatigue: New Perspective",
+                    "es": "Fatiga mental: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Умственная усталость»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Mental Fatigue.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fatiga mental."
+                  }
+                },
+                {
+                  "id": "mental-fatigue-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Умственная усталость: Новый шаг",
+                    "en": "Mental Fatigue: Integration",
+                    "es": "Fatiga mental: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Умственная усталость»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Mental Fatigue.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Fatiga mental."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "physical-fatigue",
+              "label": {
+                "ru": "Физическая усталость",
+                "en": "Physical Fatigue",
+                "es": "Fatiga física"
+              },
+              "searchIntent": {
+                "ru": [
+                  "физическая усталость",
+                  "физическое истощение"
+                ],
+                "en": [
+                  "physical fatigue",
+                  "physical exhaustion"
+                ],
+                "es": [
+                  "fatiga física",
+                  "agotamiento físico"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "physical-fatigue-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Физическая усталость: Путь",
+                    "en": "Physical Fatigue: Path",
+                    "es": "Fatiga física: Camino"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Физическая усталость»: путь от исходной ситуации к ясному следующему шагу.",
+                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Physical Fatigue.",
+                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fatiga física."
+                  }
+                },
+                {
+                  "id": "physical-fatigue-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Физическая усталость: Опора",
+                    "en": "Physical Fatigue: Support",
+                    "es": "Fatiga física: Apoyo"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Физическая усталость»: бережное пространство поддержки и выбора.",
+                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Physical Fatigue.",
+                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fatiga física."
+                  }
+                },
+                {
+                  "id": "physical-fatigue-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Физическая усталость: Новый взгляд",
+                    "en": "Physical Fatigue: New Perspective",
+                    "es": "Fatiga física: Nueva perspectiva"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Физическая усталость»: новая символическая перспектива именно для этой темы.",
+                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Physical Fatigue.",
+                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fatiga física."
+                  }
+                },
+                {
+                  "id": "physical-fatigue-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Физическая усталость: Новый шаг",
+                    "en": "Physical Fatigue: Integration",
+                    "es": "Fatiga física: Integración"
+                  },
+                  "creativeBrief": {
+                    "ru": "Уникальный сценарий для темы «Физическая усталость»: интеграция в повседневность через одно необязательное действие.",
+                    "en": "End with one small, optional action grounded in everyday life. Topic: Physical Fatigue.",
+                    "es": "End with one small, optional action grounded in everyday life. Tema: Fatiga física."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "sleep-rest",
+              "label": {
+                "ru": "Сон и отдых",
+                "en": "Sleep & Rest",
+                "es": "Sueño y descanso"
+              },
+              "searchIntent": {
+                "ru": [
+                  "бессонница",
+                  "трудности с засыпанием",
+                  "не могу уснуть",
+                  "ночные пробуждения",
+                  "качество сна",
+                  "плохой сон"
+                ],
+                "en": [
+                  "insomnia",
+                  "trouble falling asleep",
+                  "can't fall asleep",
+                  "waking up at night",
+                  "sleep quality",
+                  "poor sleep"
+                ],
+                "es": [
+                  "insomnio",
+                  "dificultad para dormir",
+                  "no puedo conciliar el sueño",
+                  "despertares nocturnos",
+                  "calidad del sueño",
+                  "mal sueño"
+                ]
+              },
+              "scenarios": [
+                {
+                  "id": "sleep-rest-s1",
+                  "archetype": "journey",
+                  "label": {
+                    "ru": "Спокойный вечер",
+                    "en": "A Calm Evening",
+                    "es": "Una tarde tranquila"
+                  },
+                  "creativeBrief": {
+                    "ru": "Плавный переход от дневной активности к вечернему отдыху.",
+                    "en": "A gentle transition from daytime activity to evening rest.",
+                    "es": "Una transición suave de la actividad diurna al descanso nocturno."
+                  }
+                },
+                {
+                  "id": "sleep-rest-s2",
+                  "archetype": "shelter",
+                  "label": {
+                    "ru": "Мягкое засыпание",
+                    "en": "Drifting into Sleep",
+                    "es": "Dormirse suavemente"
+                  },
+                  "creativeBrief": {
+                    "ru": "Создание спокойного ритуала перед сном без принуждения.",
+                    "en": "A calm, non-forced wind-down ritual before sleep.",
+                    "es": "Un ritual tranquilo antes de dormir, sin presión."
+                  }
+                },
+                {
+                  "id": "sleep-rest-s3",
+                  "archetype": "reframe",
+                  "label": {
+                    "ru": "Тихая ночь",
+                    "en": "A Quiet Night",
+                    "es": "Una noche serena"
+                  },
+                  "creativeBrief": {
+                    "ru": "Мягкая история о возвращении к ночному покою.",
+                    "en": "A gentle story about returning to nighttime rest.",
+                    "es": "Una historia amable para volver al descanso nocturno."
+                  }
+                },
+                {
+                  "id": "sleep-rest-s4",
+                  "archetype": "integration",
+                  "label": {
+                    "ru": "Восстановление во сне",
+                    "en": "Restful Sleep",
+                    "es": "Sueño reparador"
+                  },
+                  "creativeBrief": {
+                    "ru": "Образ полноценного отдыха и восстановления после сна.",
+                    "en": "An image of restorative rest after sleep.",
+                    "es": "Una imagen de descanso reparador."
+                  }
+                }
+              ]
+            }
+          ],
+          "chooseWhen": {
+            "ru": "Не хватает сил или беспокоит физическая либо умственная усталость.",
+            "en": "You lack energy or experience physical or mental fatigue.",
+            "es": "Te falta energía o sientes cansancio físico o mental."
+          }
+        },
+        {
           "id": "body-wellbeing",
           "label": {
             "ru": "Тело и здоровье",
@@ -3118,11 +3474,16 @@
           }
         },
         {
-          "id": "energy-fatigue",
+          "id": "life-energy",
           "label": {
-            "ru": "Энергия и усталость",
-            "en": "Energy & Fatigue",
-            "es": "Energía y fatiga"
+            "ru": "Жизненная энергия",
+            "en": "Vital Energy",
+            "es": "Energía vital"
+          },
+          "chooseWhen": {
+            "ru": "Выбирайте, если хотите почувствовать больше бодрости, жизненных сил и активности, а не восстановиться после истощения.",
+            "en": "Choose this when you want more vitality, alertness and energy for activity, rather than recovery from exhaustion.",
+            "es": "Elige esta opción si buscas más vitalidad y energía para la actividad, no recuperarte del agotamiento."
           },
           "topics": [
             {
@@ -3135,15 +3496,18 @@
               "searchIntent": {
                 "ru": [
                   "нет энергии",
-                  "низкая энергия"
+                  "низкая энергия",
+                  "не хватает сил"
                 ],
                 "en": [
                   "low energy",
-                  "lack of energy"
+                  "lack of energy",
+                  "no energy"
                 ],
                 "es": [
                   "baja energía",
-                  "falta de energía"
+                  "falta de energía",
+                  "sin energía"
                 ]
               },
               "scenarios": [
@@ -3151,313 +3515,317 @@
                   "id": "low-energy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Низкая энергия: Путь",
-                    "en": "Low Energy: Path",
-                    "es": "Baja energía: Camino"
+                    "ru": "Низкая энергия: Новый импульс",
+                    "en": "Low Energy: A New Spark",
+                    "es": "Baja energía: Un nuevo impulso"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Низкая энергия»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Low Energy.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Baja energía."
+                    "ru": "Оригинальный визуальный сюжет для темы «Низкая энергия»: появление импульса к действию.",
+                    "en": "A distinct visual story for Low Energy: a spark of motivation.",
+                    "es": "Una historia visual distinta para Baja energía: un impulso para actuar."
                   }
                 },
                 {
                   "id": "low-energy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Низкая энергия: Опора",
-                    "en": "Low Energy: Support",
-                    "es": "Baja energía: Apoyo"
+                    "ru": "Низкая энергия: Внутренний источник",
+                    "en": "Low Energy: Inner Source",
+                    "es": "Baja energía: Fuente interior"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Низкая энергия»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Low Energy.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Baja energía."
+                    "ru": "Оригинальный визуальный сюжет для темы «Низкая энергия»: образ внутреннего источника сил.",
+                    "en": "A distinct visual story for Low Energy: an image of an inner source.",
+                    "es": "Una historia visual distinta para Baja energía: la imagen de una fuente interior."
                   }
                 },
                 {
                   "id": "low-energy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Низкая энергия: Новый взгляд",
-                    "en": "Low Energy: New Perspective",
-                    "es": "Baja energía: Nueva perspectiva"
+                    "ru": "Низкая энергия: Пробуждение сил",
+                    "en": "Low Energy: Awakening Vitality",
+                    "es": "Baja energía: Despertar vital"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Низкая энергия»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Low Energy.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Baja energía."
+                    "ru": "Оригинальный визуальный сюжет для темы «Низкая энергия»: постепенное пробуждение энергии.",
+                    "en": "A distinct visual story for Low Energy: a gradual awakening of vitality.",
+                    "es": "Una historia visual distinta para Baja energía: el despertar gradual de la vitalidad."
                   }
                 },
                 {
                   "id": "low-energy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Низкая энергия: Новый шаг",
-                    "en": "Low Energy: Integration",
-                    "es": "Baja energía: Integración"
+                    "ru": "Низкая энергия: Энергия в действии",
+                    "en": "Low Energy: Energy in Action",
+                    "es": "Baja energía: Energía en acción"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Низкая энергия»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Low Energy.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Baja energía."
+                    "ru": "Оригинальный визуальный сюжет для темы «Низкая энергия»: перенос бодрости в повседневное действие.",
+                    "en": "A distinct visual story for Low Energy: bringing energy into everyday action.",
+                    "es": "Una historia visual distinta para Baja energía: llevar la energía a la vida diaria."
                   }
                 }
               ]
             },
             {
-              "id": "constant-fatigue",
+              "id": "vitality",
               "label": {
-                "ru": "Постоянная усталость",
-                "en": "Constant Fatigue",
-                "es": "Cansancio constante"
+                "ru": "Жизненная энергия",
+                "en": "Vitality",
+                "es": "Vitalidad"
               },
               "searchIntent": {
                 "ru": [
-                  "постоянная усталость",
-                  "всё время устаю"
+                  "жизненная энергия",
+                  "жизненные силы",
+                  "чувствовать себя живым"
                 ],
                 "en": [
-                  "constant fatigue",
-                  "always tired"
+                  "vitality",
+                  "life energy",
+                  "feel alive"
                 ],
                 "es": [
-                  "cansancio constante",
-                  "estar siempre cansado"
+                  "vitalidad",
+                  "energía vital",
+                  "sentirse lleno de vida"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "constant-fatigue-s1",
+                  "id": "vitality-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Постоянная усталость: Путь",
-                    "en": "Constant Fatigue: Path",
-                    "es": "Cansancio constante: Camino"
+                    "ru": "Жизненная энергия: Новый импульс",
+                    "en": "Vitality: A New Spark",
+                    "es": "Vitalidad: Un nuevo impulso"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Constant Fatigue.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Cansancio constante."
+                    "ru": "Оригинальный визуальный сюжет для темы «Жизненная энергия»: появление импульса к действию.",
+                    "en": "A distinct visual story for Vitality: a spark of motivation.",
+                    "es": "Una historia visual distinta para Vitalidad: un impulso para actuar."
                   }
                 },
                 {
-                  "id": "constant-fatigue-s2",
+                  "id": "vitality-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Постоянная усталость: Опора",
-                    "en": "Constant Fatigue: Support",
-                    "es": "Cansancio constante: Apoyo"
+                    "ru": "Жизненная энергия: Внутренний источник",
+                    "en": "Vitality: Inner Source",
+                    "es": "Vitalidad: Fuente interior"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Constant Fatigue.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Cansancio constante."
+                    "ru": "Оригинальный визуальный сюжет для темы «Жизненная энергия»: образ внутреннего источника сил.",
+                    "en": "A distinct visual story for Vitality: an image of an inner source.",
+                    "es": "Una historia visual distinta para Vitalidad: la imagen de una fuente interior."
                   }
                 },
                 {
-                  "id": "constant-fatigue-s3",
+                  "id": "vitality-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Постоянная усталость: Новый взгляд",
-                    "en": "Constant Fatigue: New Perspective",
-                    "es": "Cansancio constante: Nueva perspectiva"
+                    "ru": "Жизненная энергия: Пробуждение сил",
+                    "en": "Vitality: Awakening Vitality",
+                    "es": "Vitalidad: Despertar vital"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Constant Fatigue.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Cansancio constante."
+                    "ru": "Оригинальный визуальный сюжет для темы «Жизненная энергия»: постепенное пробуждение энергии.",
+                    "en": "A distinct visual story for Vitality: a gradual awakening of vitality.",
+                    "es": "Una historia visual distinta para Vitalidad: el despertar gradual de la vitalidad."
                   }
                 },
                 {
-                  "id": "constant-fatigue-s4",
+                  "id": "vitality-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Постоянная усталость: Новый шаг",
-                    "en": "Constant Fatigue: Integration",
-                    "es": "Cansancio constante: Integración"
+                    "ru": "Жизненная энергия: Энергия в действии",
+                    "en": "Vitality: Energy in Action",
+                    "es": "Vitalidad: Energía en acción"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Постоянная усталость»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Constant Fatigue.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Cansancio constante."
+                    "ru": "Оригинальный визуальный сюжет для темы «Жизненная энергия»: перенос бодрости в повседневное действие.",
+                    "en": "A distinct visual story for Vitality: bringing energy into everyday action.",
+                    "es": "Una historia visual distinta para Vitalidad: llevar la energía a la vida diaria."
                   }
                 }
               ]
             },
             {
-              "id": "mental-fatigue",
+              "id": "boost-energy",
               "label": {
-                "ru": "Умственная усталость",
-                "en": "Mental Fatigue",
-                "es": "Fatiga mental"
+                "ru": "Повысить энергию",
+                "en": "Boost Energy",
+                "es": "Aumentar la energía"
               },
               "searchIntent": {
                 "ru": [
-                  "умственная усталость",
-                  "умственное истощение"
+                  "как повысить энергию",
+                  "вернуть энергию",
+                  "больше энергии"
                 ],
                 "en": [
-                  "mental fatigue",
-                  "mental exhaustion"
+                  "boost energy",
+                  "restore energy",
+                  "more energy"
                 ],
                 "es": [
-                  "fatiga mental",
-                  "agotamiento mental"
+                  "aumentar la energía",
+                  "recuperar energía",
+                  "más energía"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "mental-fatigue-s1",
+                  "id": "boost-energy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Умственная усталость: Путь",
-                    "en": "Mental Fatigue: Path",
-                    "es": "Fatiga mental: Camino"
+                    "ru": "Повысить энергию: Новый импульс",
+                    "en": "Boost Energy: A New Spark",
+                    "es": "Aumentar la energía: Un nuevo impulso"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Умственная усталость»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Mental Fatigue.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fatiga mental."
+                    "ru": "Оригинальный визуальный сюжет для темы «Повысить энергию»: появление импульса к действию.",
+                    "en": "A distinct visual story for Boost Energy: a spark of motivation.",
+                    "es": "Una historia visual distinta para Aumentar la energía: un impulso para actuar."
                   }
                 },
                 {
-                  "id": "mental-fatigue-s2",
+                  "id": "boost-energy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Умственная усталость: Опора",
-                    "en": "Mental Fatigue: Support",
-                    "es": "Fatiga mental: Apoyo"
+                    "ru": "Повысить энергию: Внутренний источник",
+                    "en": "Boost Energy: Inner Source",
+                    "es": "Aumentar la energía: Fuente interior"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Умственная усталость»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Mental Fatigue.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fatiga mental."
+                    "ru": "Оригинальный визуальный сюжет для темы «Повысить энергию»: образ внутреннего источника сил.",
+                    "en": "A distinct visual story for Boost Energy: an image of an inner source.",
+                    "es": "Una historia visual distinta para Aumentar la energía: la imagen de una fuente interior."
                   }
                 },
                 {
-                  "id": "mental-fatigue-s3",
+                  "id": "boost-energy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Умственная усталость: Новый взгляд",
-                    "en": "Mental Fatigue: New Perspective",
-                    "es": "Fatiga mental: Nueva perspectiva"
+                    "ru": "Повысить энергию: Пробуждение сил",
+                    "en": "Boost Energy: Awakening Vitality",
+                    "es": "Aumentar la energía: Despertar vital"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Умственная усталость»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Mental Fatigue.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fatiga mental."
+                    "ru": "Оригинальный визуальный сюжет для темы «Повысить энергию»: постепенное пробуждение энергии.",
+                    "en": "A distinct visual story for Boost Energy: a gradual awakening of vitality.",
+                    "es": "Una historia visual distinta para Aumentar la energía: el despertar gradual de la vitalidad."
                   }
                 },
                 {
-                  "id": "mental-fatigue-s4",
+                  "id": "boost-energy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Умственная усталость: Новый шаг",
-                    "en": "Mental Fatigue: Integration",
-                    "es": "Fatiga mental: Integración"
+                    "ru": "Повысить энергию: Энергия в действии",
+                    "en": "Boost Energy: Energy in Action",
+                    "es": "Aumentar la energía: Energía en acción"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Умственная усталость»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Mental Fatigue.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Fatiga mental."
+                    "ru": "Оригинальный визуальный сюжет для темы «Повысить энергию»: перенос бодрости в повседневное действие.",
+                    "en": "A distinct visual story for Boost Energy: bringing energy into everyday action.",
+                    "es": "Una historia visual distinta para Aumentar la energía: llevar la energía a la vida diaria."
                   }
                 }
               ]
             },
             {
-              "id": "physical-fatigue",
+              "id": "morning-energy",
               "label": {
-                "ru": "Физическая усталость",
-                "en": "Physical Fatigue",
-                "es": "Fatiga física"
+                "ru": "Утренняя бодрость",
+                "en": "Morning Energy",
+                "es": "Energía por la mañana"
               },
               "searchIntent": {
                 "ru": [
-                  "физическая усталость",
-                  "физическое истощение"
+                  "утренняя бодрость",
+                  "энергия утром",
+                  "просыпаться бодрым"
                 ],
                 "en": [
-                  "physical fatigue",
-                  "physical exhaustion"
+                  "morning energy",
+                  "energy in the morning",
+                  "wake up energized"
                 ],
                 "es": [
-                  "fatiga física",
-                  "agotamiento físico"
+                  "energía por la mañana",
+                  "despertar con energía",
+                  "levantarse con energía"
                 ]
               },
               "scenarios": [
                 {
-                  "id": "physical-fatigue-s1",
+                  "id": "morning-energy-s1",
                   "archetype": "journey",
                   "label": {
-                    "ru": "Физическая усталость: Путь",
-                    "en": "Physical Fatigue: Path",
-                    "es": "Fatiga física: Camino"
+                    "ru": "Утренняя бодрость: Новый импульс",
+                    "en": "Morning Energy: A New Spark",
+                    "es": "Energía por la mañana: Un nuevo impulso"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Физическая усталость»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Physical Fatigue.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Fatiga física."
+                    "ru": "Оригинальный визуальный сюжет для темы «Утренняя бодрость»: появление импульса к действию.",
+                    "en": "A distinct visual story for Morning Energy: a spark of motivation.",
+                    "es": "Una historia visual distinta para Energía por la mañana: un impulso para actuar."
                   }
                 },
                 {
-                  "id": "physical-fatigue-s2",
+                  "id": "morning-energy-s2",
                   "archetype": "shelter",
                   "label": {
-                    "ru": "Физическая усталость: Опора",
-                    "en": "Physical Fatigue: Support",
-                    "es": "Fatiga física: Apoyo"
+                    "ru": "Утренняя бодрость: Внутренний источник",
+                    "en": "Morning Energy: Inner Source",
+                    "es": "Energía por la mañana: Fuente interior"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Физическая усталость»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Physical Fatigue.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Fatiga física."
+                    "ru": "Оригинальный визуальный сюжет для темы «Утренняя бодрость»: образ внутреннего источника сил.",
+                    "en": "A distinct visual story for Morning Energy: an image of an inner source.",
+                    "es": "Una historia visual distinta para Energía por la mañana: la imagen de una fuente interior."
                   }
                 },
                 {
-                  "id": "physical-fatigue-s3",
+                  "id": "morning-energy-s3",
                   "archetype": "reframe",
                   "label": {
-                    "ru": "Физическая усталость: Новый взгляд",
-                    "en": "Physical Fatigue: New Perspective",
-                    "es": "Fatiga física: Nueva perspectiva"
+                    "ru": "Утренняя бодрость: Пробуждение сил",
+                    "en": "Morning Energy: Awakening Vitality",
+                    "es": "Energía por la mañana: Despertar vital"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Физическая усталость»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Physical Fatigue.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Fatiga física."
+                    "ru": "Оригинальный визуальный сюжет для темы «Утренняя бодрость»: постепенное пробуждение энергии.",
+                    "en": "A distinct visual story for Morning Energy: a gradual awakening of vitality.",
+                    "es": "Una historia visual distinta para Energía por la mañana: el despertar gradual de la vitalidad."
                   }
                 },
                 {
-                  "id": "physical-fatigue-s4",
+                  "id": "morning-energy-s4",
                   "archetype": "integration",
                   "label": {
-                    "ru": "Физическая усталость: Новый шаг",
-                    "en": "Physical Fatigue: Integration",
-                    "es": "Fatiga física: Integración"
+                    "ru": "Утренняя бодрость: Энергия в действии",
+                    "en": "Morning Energy: Energy in Action",
+                    "es": "Energía por la mañana: Energía en acción"
                   },
                   "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Физическая усталость»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Physical Fatigue.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Fatiga física."
+                    "ru": "Оригинальный визуальный сюжет для темы «Утренняя бодрость»: перенос бодрости в повседневное действие.",
+                    "en": "A distinct visual story for Morning Energy: bringing energy into everyday action.",
+                    "es": "Una historia visual distinta para Energía por la mañana: llevar la energía a la vida diaria."
                   }
                 }
               ]
             }
-          ],
-          "chooseWhen": {
-            "ru": "Не хватает сил или беспокоит физическая либо умственная усталость.",
-            "en": "You lack energy or experience physical or mental fatigue.",
-            "es": "Te falta energía o sientes cansancio físico o mental."
-          }
+          ]
         },
         {
           "id": "confidence-worth",
           "label": {
-            "ru": "Уверенность и самооценка",
-            "en": "Confidence & Self-Esteem",
-            "es": "Confianza y autoestima"
+            "ru": "Уверенность и спокойствие",
+            "en": "Confidence & Calm",
+            "es": "Confianza y calma"
           },
           "topics": [
             {
@@ -3786,350 +4154,15 @@
             "en": "You want to strengthen self-esteem and confidence.",
             "es": "Quieres fortalecer tu autoestima y confianza."
           }
-        },
-        {
-          "id": "sleep-rest",
-          "label": {
-            "ru": "Сон и отдых",
-            "en": "Sleep & Rest",
-            "es": "Sueño y descanso"
-          },
-          "topics": [
-            {
-              "id": "insomnia",
-              "label": {
-                "ru": "Бессонница",
-                "en": "Insomnia",
-                "es": "Insomnio"
-              },
-              "searchIntent": {
-                "ru": [
-                  "бессонница",
-                  "плохой сон"
-                ],
-                "en": [
-                  "insomnia",
-                  "poor sleep"
-                ],
-                "es": [
-                  "insomnio",
-                  "mal sueño"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "insomnia-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Бессонница: Путь",
-                    "en": "Insomnia: Path",
-                    "es": "Insomnio: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Бессонница»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Insomnia.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Insomnio."
-                  }
-                },
-                {
-                  "id": "insomnia-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Бессонница: Опора",
-                    "en": "Insomnia: Support",
-                    "es": "Insomnio: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Бессонница»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Insomnia.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Insomnio."
-                  }
-                },
-                {
-                  "id": "insomnia-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Бессонница: Новый взгляд",
-                    "en": "Insomnia: New Perspective",
-                    "es": "Insomnio: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Бессонница»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Insomnia.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Insomnio."
-                  }
-                },
-                {
-                  "id": "insomnia-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Бессонница: Новый шаг",
-                    "en": "Insomnia: Integration",
-                    "es": "Insomnio: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Бессонница»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Insomnia.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Insomnio."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "fall-asleep",
-              "label": {
-                "ru": "Трудности с засыпанием",
-                "en": "Trouble Falling Asleep",
-                "es": "Dificultad para dormir"
-              },
-              "searchIntent": {
-                "ru": [
-                  "не могу уснуть",
-                  "долго засыпаю"
-                ],
-                "en": [
-                  "trouble falling asleep",
-                  "can't fall asleep"
-                ],
-                "es": [
-                  "dificultad para dormir",
-                  "no puedo conciliar el sueño"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "fall-asleep-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Трудности с засыпанием: Путь",
-                    "en": "Trouble Falling Asleep: Path",
-                    "es": "Dificultad para dormir: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Трудности с засыпанием»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Trouble Falling Asleep.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Dificultad para dormir."
-                  }
-                },
-                {
-                  "id": "fall-asleep-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Трудности с засыпанием: Опора",
-                    "en": "Trouble Falling Asleep: Support",
-                    "es": "Dificultad para dormir: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Трудности с засыпанием»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Trouble Falling Asleep.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Dificultad para dormir."
-                  }
-                },
-                {
-                  "id": "fall-asleep-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Трудности с засыпанием: Новый взгляд",
-                    "en": "Trouble Falling Asleep: New Perspective",
-                    "es": "Dificultad para dormir: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Трудности с засыпанием»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Trouble Falling Asleep.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Dificultad para dormir."
-                  }
-                },
-                {
-                  "id": "fall-asleep-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Трудности с засыпанием: Новый шаг",
-                    "en": "Trouble Falling Asleep: Integration",
-                    "es": "Dificultad para dormir: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Трудности с засыпанием»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Trouble Falling Asleep.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Dificultad para dormir."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "night-waking",
-              "label": {
-                "ru": "Ночные пробуждения",
-                "en": "Waking Up at Night",
-                "es": "Despertares nocturnos"
-              },
-              "searchIntent": {
-                "ru": [
-                  "просыпаюсь ночью",
-                  "часто просыпаюсь"
-                ],
-                "en": [
-                  "waking up at night",
-                  "frequent night waking"
-                ],
-                "es": [
-                  "despertarse por la noche",
-                  "despertares frecuentes"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "night-waking-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Ночные пробуждения: Путь",
-                    "en": "Waking Up at Night: Path",
-                    "es": "Despertares nocturnos: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Ночные пробуждения»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Waking Up at Night.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Despertares nocturnos."
-                  }
-                },
-                {
-                  "id": "night-waking-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Ночные пробуждения: Опора",
-                    "en": "Waking Up at Night: Support",
-                    "es": "Despertares nocturnos: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Ночные пробуждения»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Waking Up at Night.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Despertares nocturnos."
-                  }
-                },
-                {
-                  "id": "night-waking-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Ночные пробуждения: Новый взгляд",
-                    "en": "Waking Up at Night: New Perspective",
-                    "es": "Despertares nocturnos: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Ночные пробуждения»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Waking Up at Night.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Despertares nocturnos."
-                  }
-                },
-                {
-                  "id": "night-waking-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Ночные пробуждения: Новый шаг",
-                    "en": "Waking Up at Night: Integration",
-                    "es": "Despertares nocturnos: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Ночные пробуждения»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Waking Up at Night.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Despertares nocturnos."
-                  }
-                }
-              ]
-            },
-            {
-              "id": "sleep-quality",
-              "label": {
-                "ru": "Качество сна",
-                "en": "Sleep Quality",
-                "es": "Calidad del sueño"
-              },
-              "searchIntent": {
-                "ru": [
-                  "улучшить качество сна",
-                  "не высыпаюсь"
-                ],
-                "en": [
-                  "improve sleep quality",
-                  "unrefreshing sleep"
-                ],
-                "es": [
-                  "mejorar la calidad del sueño",
-                  "no descansar al dormir"
-                ]
-              },
-              "scenarios": [
-                {
-                  "id": "sleep-quality-s1",
-                  "archetype": "journey",
-                  "label": {
-                    "ru": "Качество сна: Путь",
-                    "en": "Sleep Quality: Path",
-                    "es": "Calidad del sueño: Camino"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Качество сна»: путь от исходной ситуации к ясному следующему шагу.",
-                    "en": "Show a topic-specific journey from the current situation to a realistic next step. Topic: Sleep Quality.",
-                    "es": "Show a topic-specific journey from the current situation to a realistic next step. Tema: Calidad del sueño."
-                  }
-                },
-                {
-                  "id": "sleep-quality-s2",
-                  "archetype": "shelter",
-                  "label": {
-                    "ru": "Качество сна: Опора",
-                    "en": "Sleep Quality: Support",
-                    "es": "Calidad del sueño: Apoyo"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Качество сна»: бережное пространство поддержки и выбора.",
-                    "en": "Build a calm story around safety, resources and a sense of choice. Topic: Sleep Quality.",
-                    "es": "Build a calm story around safety, resources and a sense of choice. Tema: Calidad del sueño."
-                  }
-                },
-                {
-                  "id": "sleep-quality-s3",
-                  "archetype": "reframe",
-                  "label": {
-                    "ru": "Качество сна: Новый взгляд",
-                    "en": "Sleep Quality: New Perspective",
-                    "es": "Calidad del sueño: Nueva perspectiva"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Качество сна»: новая символическая перспектива именно для этой темы.",
-                    "en": "Use a distinct metaphor to explore the topic from another angle. Topic: Sleep Quality.",
-                    "es": "Use a distinct metaphor to explore the topic from another angle. Tema: Calidad del sueño."
-                  }
-                },
-                {
-                  "id": "sleep-quality-s4",
-                  "archetype": "integration",
-                  "label": {
-                    "ru": "Качество сна: Новый шаг",
-                    "en": "Sleep Quality: Integration",
-                    "es": "Calidad del sueño: Integración"
-                  },
-                  "creativeBrief": {
-                    "ru": "Уникальный сценарий для темы «Качество сна»: интеграция в повседневность через одно необязательное действие.",
-                    "en": "End with one small, optional action grounded in everyday life. Topic: Sleep Quality.",
-                    "es": "End with one small, optional action grounded in everyday life. Tema: Calidad del sueño."
-                  }
-                }
-              ]
-            }
-          ],
-          "chooseWhen": {
-            "ru": "Главная трудность связана с засыпанием или качеством сна.",
-            "en": "Your main difficulty is falling asleep or sleep quality.",
-            "es": "Tu principal dificultad es dormirte o la calidad del sueño."
-          }
         }
       ]
     },
     {
       "id": "stress-recovery",
       "label": {
-        "ru": "Стресс и восстановление",
-        "en": "Stress & Recovery",
-        "es": "Estrés y recuperación"
+        "ru": "Стресс и тревога",
+        "en": "Stress & Anxiety",
+        "es": "Estrés y ansiedad"
       },
       "subcategories": [
         {
@@ -4817,9 +4850,9 @@
         {
           "id": "trauma-childhood",
           "label": {
-            "ru": "Травмы и детство",
-            "en": "Trauma & Childhood",
-            "es": "Trauma e infancia"
+            "ru": "Психологические травмы",
+            "en": "Psychological Trauma",
+            "es": "Trauma psicológico"
           },
           "chooseWhen": {
             "ru": "Выбирайте для работы с болезненным детским опытом, отвержением или покинутостью.",

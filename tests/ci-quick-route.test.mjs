@@ -48,6 +48,21 @@ test('fast router requires exact, nonempty, NUL-delimited Git statuses',()=>{
     assert.throws(()=>parseChangedRows(source),source);
   }
 });
+test('650 real media changes use bounded safe full checks rather than INVALID_DIFF_ROWS',()=>{
+  const items=Array.from({length:650},(_,i)=>image(
+    'public/videos/holistic-house/original-motion-v1/motion-clip-'+i+
+    (i%2===0?'.jpg':'.mp4'),'A'));
+  const diff=items.map(r=>r.status+'\\0'+r.filename+'\\0').join('');
+  // The real Git name-status format is NUL-delimited: one status/path pair.
+  const parsed=parseChangedRows(diff.replaceAll('\\0','\0'));
+  assert.equal(parsed.length,650);
+  assert.deepEqual(parsed,items);
+  assert.equal(decideRoute(parsed,()=>{throw Error('classifier_must_not_run');}),'FULL');
+  assert.throws(()=>parseChangedRows(
+    Array.from({length:2049},(_,i)=>'A\0public/too-many-'+i+'.jpg\0').join('')),
+    /INVALID_DIFF_ROWS/);
+});
+
 test('image-only routes skip Core only when EVERY changed file is a trusted public raster',()=>{
   assert.equal(decideRoute([image('public/images/home.webp'),image('public/images/cover.png','A')],trusted),'ASSETS');
   for(const changed of [

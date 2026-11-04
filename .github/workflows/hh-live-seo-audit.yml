@@ -23,7 +23,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
-      - '.github/workflows/hh-live-seo-audit.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
       - 'scripts/verify-live-sitemap.mjs'
       - 'scripts/verify-public-tests-mobile.mjs'
       - 'app/[locale]/tests/**'
@@ -41,8 +41,8 @@ permissions:
   contents: read
 concurrency:
   # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
-  group: hh-live-seo-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-live-seo-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   source-build:
