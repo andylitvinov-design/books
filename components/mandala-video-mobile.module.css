@@ -1,6 +1,6 @@
 /* Mobile first Video Studio, art-directed to the approved Holistic House mock.
    The same local renderers are used for thumbnails, preview and exported clips. */
-.studio{--ink:#183d35;--green:#07936c;--cream:#fbf8f1;--edge:#e9e6db;
+.studio{--ink:#183d35;--green:#07936c;--cream:var(--hh-light-canvas);--edge:#e9e6db;
   color:var(--ink);font:500 14px/1.4 Arial,Helvetica,sans-serif;min-width:0;
   max-width:960px;margin:0 auto;padding:2px 0 76px}
 .studio *{box-sizing:border-box}
@@ -50,7 +50,7 @@
 .pagerDots{display:inline-flex;gap:5px}
 .pagerDots i{display:block;width:6px;height:6px;border-radius:50%;background:#dadfda}
 .pagerDots i:first-child{background:#009d70}
-.previewRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;margin-top:11px;padding:9px;border:1px solid #e0e9df;background:#f3f8f2;border-radius:13px}
+.previewRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;margin-top:11px;padding:9px;border:1px solid var(--hh-light-border);background:var(--hh-light-surface-soft);border-radius:13px}
 .previewButton{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #b7d8be;min-height:43px;border-radius:12px;background:#fffcf5;color:#14724f;font-size:12px;font-weight:750;padding:7px}
 .previewButton[aria-pressed="true"]{background:#e3f2e8;border-color:#0b9973}
 .canvasWindow{position:relative;display:grid;place-items:center;min-width:0;height:71px;overflow:hidden;border-radius:11px;background:#253934}
@@ -94,7 +94,7 @@
 .progress{height:6px;border-radius:10px;background:#dbe6dd;overflow:hidden}
 .progress span{display:block;height:100%;background:#07966e;transition:width .3s ease}
 .notice,.warning{font-size:11.5px;color:#905c22;margin:6px 0}
-.result{margin:12px 0 8px;padding:11px;border:1px solid #e1e8dd;border-radius:16px;background:#f9fcf8;scroll-margin-top:20px}
+.result{margin:12px 0 8px;padding:11px;border:1px solid var(--hh-light-border);border-radius:16px;background:var(--hh-light-surface);scroll-margin-top:20px}
 .result h3{font-size:14px}
 .result p{color:#667b6f;font-size:11.5px;margin-top:5px}
 .result video{display:block;width:min(100%,280px);height:auto;margin:10px auto;border-radius:12px;background:#253e34;max-height:300px}
@@ -3480,4 +3480,231 @@
  .studio[data-active-workspace="video"] .heroEditorial p{font-size:9px!important}
  .studio[data-active-workspace="video"] .previewStage .heroPlay{left:83%;width:44px;height:44px}
  .studio[data-active-workspace="video"] .quickStepHint{font-size:13px}
+}
+
+
+/* 04 Nov owner visual recovery: ONE stable header -> compact six-tab rail ->
+   ONE 16:9 Canvas/MP4 preview in Style, Montage, Phrases, Hypno, Course and PRO.
+   Previous per-workspace 73-100px tiles and portal-only positions are superseded.
+   No renderer, audio, privacy or export state is duplicated or replaced. */
+@media (max-width:759px) {
+  .studio[data-active-workspace] .quickBuilder {
+    gap:8px;
+    padding-bottom:12px;
+    background:transparent;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar {
+    order:0!important;
+    min-height:52px!important;
+    gap:8px;
+    margin:0;
+    padding:2px 4px!important;
+  }
+  .studio[data-active-workspace] .quickBuilder .quickBrandBack,
+  .studio[data-active-workspace] .quickBrandProfile {
+    width:44px;height:44px;
+  }
+  .studio[data-active-workspace] .quickBuilder .quickBrandBack svg {
+    width:28px;height:28px;
+  }
+  .studio[data-active-workspace] .quickBrandMobileTitle {
+    font-size:clamp(17px,4.6vw,21px);
+    color:#234735;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav {
+    order:1!important;
+    display:grid!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    gap:4px;
+    align-items:stretch;
+    min-width:0;
+    width:100%;
+    margin:0 0 1px!important;
+    padding:0!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button {
+    display:flex;
+    flex-direction:column;
+    min-width:0!important;
+    min-height:52px!important;
+    padding:5px 1px!important;
+    gap:3px!important;
+    border:1px solid #e9e1d5!important;
+    border-radius:12px!important;
+    background:linear-gradient(160deg,#fffdf9,#faf6ee)!important;
+    box-shadow:0 2px 7px #5c493010!important;
+    color:#234735!important;
+    text-align:center;
+    font:750 clamp(9px,2.55vw,11px)/1.12 Arial,Helvetica,sans-serif!important;
+    overflow-wrap:normal;
+    word-break:normal;
+    hyphens:none;
+  }
+  .studio[data-active-workspace] .quickVideoNav button svg {
+    flex:none;
+    width:18px!important;
+    height:18px!important;
+    color:#087b60!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] {
+    border-color:#0a8967!important;
+    background:linear-gradient(145deg,#27a782,#08795f)!important;
+    color:#fff!important;
+    box-shadow:0 3px 9px #06775c2a!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg {
+    color:#fff!important;
+  }
+  .studio[data-active-workspace] .quickVideoNav button[data-video-quick-control="phrases"] .quickNavCompact {
+    font-size:clamp(9px,2.55vw,11px)!important;
+    overflow-wrap:normal;
+  }
+  .studio[data-active-workspace] .quickBuilder>.previewStage {
+    order:2!important;
+    display:grid;
+    gap:0;
+    min-width:0;
+    width:100%;
+    margin:0!important;
+    padding:0!important;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .studio[data-active-workspace] .previewStage>.heroWithRail {
+    display:flex;
+    gap:6px;
+    align-items:stretch;
+    min-width:0;
+    width:100%;
+  }
+  .studio[data-active-workspace] .previewStage .heroWithRail>.hero {
+    box-sizing:border-box;
+    flex:1 1 0;
+    width:auto!important;
+    min-width:0;
+    min-height:0!important;
+    max-height:none!important;
+    aspect-ratio:16/9!important;
+    margin:0!important;
+    border-radius:16px!important;
+    overflow:hidden;
+  }
+  .studio[data-active-workspace] .previewStage .heroRail {
+    display:flex;
+    flex:0 0 44px;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    gap:4px;
+    min-width:44px;
+    padding:2px 0;
+    border-radius:15px;
+    background:transparent;
+  }
+  .studio[data-active-workspace] .previewStage .heroRail button {
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    flex:0 0 44px;
+  }
+  .studio[data-active-workspace] .previewStage .heroPlay {
+    left:81%;
+    top:50%;
+    width:44px!important;
+    height:44px!important;
+    min-width:44px;
+    min-height:44px;
+  }
+  .studio[data-active-workspace] .previewStage .heroPlay svg {
+    width:23px!important;
+    height:23px!important;
+  }
+  .studio[data-active-workspace] .heroEditorial {
+    left:10px;
+    bottom:10px;
+    max-width:64%;
+    gap:3px;
+  }
+  .studio[data-active-workspace] .heroEditorial h2 {
+    font-size:clamp(17px,4.6vw,22px)!important;
+    line-height:1.08!important;
+  }
+  .studio[data-active-workspace] .heroEditorial p {
+    font-size:clamp(10px,2.9vw,12px)!important;
+    line-height:1.25!important;
+  }
+  .studio[data-active-workspace] .quickBuilder>.workspaceHeading {
+    order:4!important;
+    min-height:0;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot {
+    order:3!important;
+    margin:4px 0;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"] {
+    order:4!important;
+  }
+  .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel] {
+    order:5!important;
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor] {
+    order:4!important;
+  }
+  .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases] {
+    order:4!important;
+  }
+  .studio[data-active-workspace] .quickBuilder>[data-video-quick-section="1"],
+  .studio[data-active-workspace] .quickBuilder>[data-video-topic-section] {
+    gap:8px;
+    padding:12px 10px!important;
+    border-radius:17px;
+  }
+  .studio[data-active-workspace] .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 {
+    font-size:clamp(17px,4.8vw,21px);
+    line-height:1.2;
+  }
+  .studio[data-active-workspace] .quickBuilder>.quickPracticeShortcuts button {
+    min-height:48px;
+    padding:8px 10px;
+    gap:6px;
+    border-radius:13px;
+    font-size:13px;
+  }
+  .studio[data-active-workspace] .basicStudio {
+    gap:9px;
+    padding:10px;
+    border-radius:16px;
+  }
+  .studio[data-active-workspace] .basicTabs {
+    gap:5px;
+  }
+  .studio[data-active-workspace] .basicTabs button {
+    min-height:54px;
+    padding:6px 3px;
+    gap:3px;
+    border-radius:12px;
+    font-size:clamp(10px,2.8vw,12px);
+  }
+  .studio[data-active-workspace] .basicTabs button svg {
+    width:20px;height:20px;
+  }
+  .studio[data-active-workspace] .advancedVideoToggle {
+    min-height:46px;
+    padding:8px 11px;
+    border-radius:12px;
+    font-size:13px;
+  }
+  .studio[data-active-workspace] .workspaceCourseGrid>a,
+  .studio[data-active-workspace] .workspaceCourseGrid>button {
+    min-height:68px;
+    padding:9px 10px;
+    border-radius:13px;
+  }
+}
+@media (max-width:354px) {
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav { gap:3px; }
+  .studio[data-active-workspace] .quickVideoNav button { padding:5px 0!important; }
 }

@@ -24,5 +24,13 @@ test('owner-only webhook is wired without automatic publication',()=>{
  assert.ok(service.includes("event.action==='story_start'"));
  assert.ok(service.includes("event.action==='story_choice'"));
  assert.ok(service.includes('applyOwnerStoryChoice(config,event.storyCallback)'));
- assert.ok(service.includes('Автоматический MP4-монтаж ещё не подключён'));
+ assert.ok(service.includes("startJob(config,{...event,action:'story_start'"));
+ assert.ok(service.includes("const coverage=plot?inspectStoryPlotCoverage(plot.id)"));
+ assert.ok(service.includes("renderOwnerTelegramStoryVideo(batch.parts"));
+ assert.ok(service.includes("storyYoutubeDescription("));
+ assert.ok(service.includes("source_seconds=$5"));
+ assert.ok(service.includes("accepted.seconds+event.part.duration>1800"));
+ assert.ok(service.includes("state:'story_duration_limit'"));
+ assert.ok(service.includes("Этот новый аудиофайл НЕ добавлен"));
+ assert.doesNotMatch(service,/Автоматический MP4-монтаж ещё не подключён/);
 });
