@@ -75,11 +75,11 @@ test('guarded inventory validates but expires historical exact-head sweep owners
   assert.ok(!s.includes('l.head_sha===c.head&&Date.parse(l.expires_at||"")>Date.now()'));
 });
 
-test('skipped successful Core events never replace a pending failed-Core watchdog',()=>{
+test('single scheduled Watchdog shares a writer lease with targeted Core and conflict callbacks',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
-  assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
-  assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
-  assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
+  assert.ok(s.includes('  reconcile:\n    # Watchdog and its dispatcher'));
+  assert.ok(s.includes('    concurrency:\n      group: hh-control-tower-single-writer'));
+  assert.ok(!s.includes('concurrency:\n  group: hh-control-tower-single-writer'));
   const reconcile=s.split('\n  completion-wait:\n')[0];
   assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
