@@ -529,8 +529,10 @@ jobs:
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, hh-specialist]
-    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
-    if: ${{ !cancelled() }}
+    # Draft cannot be merged by GitHub; do not manufacture a failed Core
+    # status when expensive Core/Specialist jobs are intentionally skipped.
+    # ready_for_review re-runs both real gates; failed Ready gates remain red.
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     # Read-only required aggregator: no Next build, npm or privileged tools.
     runs-on: ubuntu-slim
     timeout-minutes: 2
