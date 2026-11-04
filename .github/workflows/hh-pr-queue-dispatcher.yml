@@ -1,8 +1,7 @@
 name: HH PR Control Tower queue dispatcher
 on:
-  schedule:
-    - cron: '7 * * * *'
-  # Worker results now wake Watchdog directly; Control Tower observes hourly.
+  # The ten-minute Watchdog is the only scheduled PR inventory collector.
+  # Preserve read-only manual/push contract observation, not duplicate hourly polling.
   push:
     branches: ['codex/bootstrap-books']
     paths:
