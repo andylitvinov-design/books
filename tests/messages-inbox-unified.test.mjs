@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {UNIFIED_DOCK_IDS,isUnifiedMobileDockPath,unifiedMobileDockHref} from '../lib/unified-mobile-dock.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
@@ -122,22 +123,34 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages dock mirrors the five-destination private mobile Cabinet menu',()=>{
+test('Messages uses the one six-destination global dock; legacy five-dock stays unmounted',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
-  const nav=read('components/app/messages-bottom-navigation.jsx')
-  const css=read('app/[locale]/app/messages/messages-page.css')
+  const layout=read('app/layout.tsx')
+  const dock=read('components/unified-mobile-dock.tsx')
+  const css=read('app/unified-mobile-dock.css')
+  const oldNav=read('components/app/messages-bottom-navigation.jsx')
   const workspace=read('components/app/app-workspace.jsx')
-  assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
-  assert.match(nav,/hh-mobile-app-nav-home/)
-  assert.equal((nav.match(/\{path:'/g)||[]).length,5)
-  const order=[...nav.matchAll(/\{path:'([^']*)'/g)].map(match=>match[1])
-  assert.deepEqual(order,['','practice','messages','materials','profile'])
-  const mobile=workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('const navIsActive'))
-  assert.equal((mobile.match(/id: '/g)||[]).length,4)
-  assert.ok(nav.includes("locale==='es'?'en':locale"))
-  assert.doesNotMatch(css,/hh-messages-app-dock|repeat\(5,minmax\(0,1fr\)\)/)
-  assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
+  // The obsolete five-item component may remain for legacy paths, but it is
+  // not mounted on the canonical Messenger route in addition to the global dock.
+  assert.doesNotMatch(page,/MessagesBottomNavigation/)
+  assert.match(layout,/<UnifiedMobileDock initialLocale=\{lang\}\s*\/>/)
+  assert.match(dock,/data-hh-unified-dock/)
+  assert.match(dock,/UNIFIED_DOCK_IDS\.map/)
+  assert.match(dock,/<Link href=\{href\}/)
+  assert.match(css,/\.hh-mobile-app-nav\{display:none!important\}/)
+  assert.match(oldNav,/className="hh-mobile-app-nav"/)
+  assert.match(workspace,/const mobileNav = \[/)
+  assert.match(css,/data-keyboard-open="true"/)
+  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','ai','practice','master','profile'])
+  for(const locale of ['en','ru','es']){
+    assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
+    assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
+    assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/holistic-support/mobile')
+    assert.equal(unifiedMobileDockHref(locale,'master'),'/'+locale+'/practice')
+    assert.ok(unifiedMobileDockHref(locale,'video'))
+    assert.ok(unifiedMobileDockHref(locale,'mytube'))
+    assert.ok(unifiedMobileDockHref(locale,'profile'))
+  }
 })
 
 test('Messages compact mode opens only one mobile pane at a time, with accessible Back',()=>{
