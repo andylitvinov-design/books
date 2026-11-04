@@ -82,15 +82,16 @@ test('Core history uses the verified numeric workflow ID, not filename-only look
  }};
  const output=await collect({github:gh,now,maxRequests:60,minRemaining:150});
  assert.equal(output.source.closed_complete,true);
- assert.deepEqual(seen,[WORKFLOW_ID,WORKFLOW_ID,WORKFLOW_ID]);
+ assert.ok(seen.length>=3&&seen.length<=4);
+ assert.ok(seen.every(id=>id===WORKFLOW_ID));
 });
 
 test('historical Core run with empty GitHub pull_requests still joins unique exact merged HEAD',async()=>{
  const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
- const p={...pr(95,date+'00:00Z',date+'40:00Z',date+'40:00Z'),head:{sha:'a'.repeat(40),ref:'feature-95'},
+ const p={...pr(95,date+'00:00Z',date+'40:00Z',date+'40:00Z'),head:{sha:'a'.repeat(40),ref:'feature-95',repo:{full_name:repo}},
    base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
  const ret=data=>({headers:{'x-ratelimit-remaining':'900'},data});
- const core={id:101,workflow_id:WORKFLOW_ID,name:'HH PR core release gate',event:'pull_request',
+ const core={id:101,workflow_id:WORKFLOW_ID,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
   head_branch:'feature-95',head_sha:p.head.sha,repository:{full_name:repo},
   head_repository:{full_name:repo},pull_requests:[],status:'completed',
   conclusion:'success',run_attempt:1,
@@ -116,10 +117,10 @@ test('historical Core run with empty GitHub pull_requests still joins unique exa
 });
 test('blank PR links may not attach by branch name alone with a different HEAD',async()=>{
  const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
- const p={...pr(95),head:{sha:'a'.repeat(40),ref:'feature-95'},
+ const p={...pr(95),head:{sha:'a'.repeat(40),ref:'feature-95',repo:{full_name:repo}},
    base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
  const ret=data=>({headers:{'x-ratelimit-remaining':'900'},data});
- const bad={id:101,event:'pull_request',name:'HH PR core release gate',
+ const bad={id:101,event:'pull_request',name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
   head_branch:'feature-95',head_sha:'b'.repeat(40),repository:{full_name:repo},
   head_repository:{full_name:repo},pull_requests:[],status:'completed',
   conclusion:'success',created_at:date+'05:00Z',updated_at:date+'20:00Z'};
@@ -129,4 +130,86 @@ test('blank PR links may not attach by branch name alone with a different HEAD',
  const r=await collect({github:gh,now:Date.parse('2026-11-04T13:35:00Z'),
    maxRequests:60,minRemaining:150});
  assert.equal(r.intervals.some(x=>x.pr===95&&x.phase==='created_to_first_ci'),false);
+});
+
+test('verified unique-branch fallback recovers first Core, runner queue and execution without fake repair',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const p={...pr(17),head:{ref:'feature-17',sha:'a'.repeat(40)},
+  base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const response=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const run={id:1234,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/pull/17/merge',
+  head_sha:'a'.repeat(40),head_branch:'feature-17',event:'pull_request',status:'completed',conclusion:'failure',
+  repository:{full_name:repo},head_repository:{full_name:repo},pull_requests:[],run_attempt:1,
+  created_at:date+'03:00Z'};
+ const job={id:135,run_id:1234,run_attempt:1,name:'hh-specialist',status:'completed',conclusion:'failure',
+  created_at:date+'03:00Z',started_at:date+'05:00Z',completed_at:date+'08:00Z'};
+ const github={rest:{pulls:{list:async({state})=>response(state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async a=>response(a.branch?{total_count:1,workflow_runs:[run]}:{total_count:0,workflow_runs:[]}),
+   listJobsForWorkflowRun:async()=>response({total_count:1,jobs:[job]})},
+  issues:{listEventsForTimeline:async()=>response([]),listComments:async()=>response([])}}};
+ const res=await collect({github,now:Date.parse('2026-11-04T13:15:00Z'),maxRequests:50,minRemaining:150});
+ assert.equal(res.source.closed_complete,true);assert.deepEqual(res.source.branch_core_queries,[17]);
+ const report=analyze({...res,source:res.source});const row=report.windows[2].rows[0];
+ assert.equal(row.phases.created_to_first_ci,3);assert.equal(row.phases.runner_queue,2);
+ assert.equal(row.phases.ci_initial_execution,3);assert.equal(row.phases.source_repair,0);
+ assert.equal(row.phases.unknown,32);
+});
+
+test('numeric Core workflow and exact closed-PR SHA rescue authenticated jobs despite empty GitHub links',async()=>{
+ const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ assert.equal(WORKFLOW_ID,400848212);
+ const head='a'.repeat(40);
+ const p={...pr(18,date+'00:00Z',date+'40:00Z',date+'40:00Z'),
+   head:{ref:'feature-18',sha:head,repo:{full_name:repo}},
+   base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const run={id:4567,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
+  head_branch:p.head.ref,head_sha:head,event:'pull_request',status:'completed',conclusion:'success',
+  run_attempt:1,repository:{full_name:repo},head_repository:{full_name:repo},pull_requests:[],
+  created_at:date+'03:00Z'};
+ const jobs=[{id:411,run_id:run.id,run_attempt:1,name:'core-lint-types-build',status:'completed',
+  conclusion:'success',created_at:date+'03:00Z',started_at:date+'05:00Z',completed_at:date+'08:00Z'},
+  {id:412,run_id:run.id,run_attempt:1,name:'hh-merge-check',status:'completed',
+  conclusion:'success',created_at:date+'08:00Z',started_at:date+'10:00Z',completed_at:date+'12:00Z'}];
+ const queries=[];const gh={rest:{
+  pulls:{list:async a=>ret(a.state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async a=>{queries.push(a);return ret({total_count:1,workflow_runs:[run]})},
+   listJobsForWorkflowRun:async()=>ret({total_count:jobs.length,jobs})},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}
+ }};
+ const out=await collect({github:gh,now:Date.parse('2026-11-04T13:40:00Z'),maxRequests:60});
+ assert.equal(queries[0].workflow_id,WORKFLOW_ID);
+ assert.equal(out.source.ci_runs_matched.latest,1);
+ assert.deepEqual(out.source.branch_core_queries,[]);
+ const row=analyze({...out,source:out.source}).windows[2].rows[0];
+ assert.equal(row.phases.created_to_first_ci,3);
+ assert.equal(row.phases.runner_queue,4);
+ assert.equal(row.phases.ci_initial_execution,5);
+ assert.equal(row.phases.green_to_merge,28);
+ assert.equal(row.phases.unknown,0);
+});
+test('replacement chain records time to proven production merge but never asserts LIVE',()=>{
+ const p=pr(21,date+'00:00Z',date+'10:00Z',null,{replacement:{pr:22,source:'github_pr',url:`https://github.com/${repo}/pull/22`},
+   delivery_chain:{prs:[21,22],status:'PRODUCTION_MERGE_CONFIRMED_NOT_LIVE',
+    production_merged_at:date+'35:00Z',minutes_to_production_merge:35}});
+ const x=analyze({prs:[p]}).windows[2];
+ assert.equal(x.chain_delivery.replaced_chains,1);
+ assert.equal(x.chain_delivery.confirmed_production_merges,1);
+ assert.equal(x.chain_delivery.time_to_production_merge.average_min,35);
+ assert.match(renderMarkdown(analyze({prs:[p]})),/PRODUCTION_MERGE_CONFIRMED_NOT_LIVE/);
+});
+test('untrusted global Core run with empty PR links cannot attach wrong SHA or source repository',async()=>{
+ const {collect}=require('../scripts/ci-pr-cohort-backfill.cjs');
+ const head='a'.repeat(40);
+ const p={...pr(33),head:{ref:'unique-33',sha:head,repo:{full_name:repo}},base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
+ const fake={id:333,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
+  head_branch:'unique-33',head_sha:'b'.repeat(40),event:'pull_request',status:'completed',
+  repository:{full_name:repo},head_repository:{full_name:repo},pull_requests:[],created_at:date+'03:00Z'};
+ const ret=data=>({data,headers:{'x-ratelimit-remaining':'900'}});
+ const gh={rest:{pulls:{list:async a=>ret(a.state==='closed'?[p]:[])},
+  actions:{listWorkflowRuns:async a=>ret(a.branch?{total_count:0,workflow_runs:[]}:{total_count:1,workflow_runs:[fake]})},
+  issues:{listEventsForTimeline:async()=>ret([]),listComments:async()=>ret([])}}};
+ const out=await collect({github:gh,now:Date.parse('2026-11-04T13:40:00Z'),maxRequests:60});
+ assert.equal(out.source.ci_runs_matched.latest,0);
+ assert.ok(!out.intervals.some(x=>x.pr===33&&x.phase==='created_to_first_ci'));
 });

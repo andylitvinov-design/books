@@ -2,7 +2,7 @@
 /** One-shot historical GitHub evidence collector. Never dispatches CI or changes a PR. */
 const {REPO,WINDOWS}=require('./ci-pr-three-cohorts.cjs');
 const {parseComment}=require('./ci-pr-stage-receipts.cjs');
-const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW_ID=400848212,WORKFLOW='hh-pr-core-release.yml';
+const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW='hh-pr-core-release.yml',WORKFLOW_ID=400848212;
 const MIN_REMAINING=150,MAX_REQUESTS=95;
 const ts=x=>Date.parse(x||'');
 const coreUrl=id=>`https://github.com/${REPO}/actions/runs/${id}`;
@@ -22,7 +22,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
  if(!github?.rest?.pulls?.list||!Number.isFinite(now))throw Error('INVALID_COLLECTOR');
  const gate=budget({maxRequests,minRemaining});const oldest=ts(WINDOWS[0].start);
  const result={prs:[],intervals:[],openPRs:[],source:{checked_at:new Date(now).toISOString(),reads:0,coverage:'PARTIAL',
-  closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
+  closed_complete:false,open_complete:false,ci_runs_complete:{},ci_runs_errors:{},ci_runs_seen:{},ci_runs_matched:{},branch_core_queries:[],sampled_job_prs:[],sampled_timeline_prs:[],reason:null}};
  let closedFinished=false,allClosed=[],error=null;
  try{
   // A single creation-sorted REST sweep avoids Search's incomplete-index sample.
@@ -54,17 +54,55 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   }
   // An explicit successor PR may be in this historical closed or current open
   // inventory. Do not equate replacement to shipping the underlying task.
-  const successors=[...allClosed,...result.openPRs],members=new Map(result.prs.map(p=>[p.number,p]));
+  const successors=[...allClosed,...result.openPRs],members=new Map(successors.map(p=>[p.number,p]));
+  const ambiguousSuccessors=new Set();
   for(const next of successors){
    const match=String(next.title||'').match(/\b(?:replaces|supersedes)\s+#(\d+)\b/i);
    if(!match)continue;const old=members.get(Number(match[1]));
-   if(!old||old.number===next.number||!Number.isSafeInteger(next.number))continue;
-   if(old.replacement&&old.replacement.pr!==next.number){delete old.replacement;continue;}
+   if(!old||old.number===next.number||!Number.isSafeInteger(next.number)||ambiguousSuccessors.has(old.number))continue;
+   if(old.replacement&&old.replacement.pr!==next.number){delete old.replacement;ambiguousSuccessors.add(old.number);continue;}
    old.replacement={pr:next.number,source:'github_pr',url:`https://github.com/${REPO}/pull/${next.number}`,
     evidence:'explicit successor title; delivery not inferred'};
   }
-  // Scan only the known Core workflow, never all Actions jobs/checks.
-  const byPr=new Map(result.prs.map(p=>[p.number,[]]));
+  for(const p of result.prs){
+   if(!p.replacement)continue;
+   const chain=[p.number],visited=new Set(chain);let cursor=p,status='UNDELIVERED_OR_UNVERIFIED',productionAt=null;
+   for(let hop=0;hop<12;hop++){
+    const nextNumber=cursor.replacement?.pr;
+    if(!nextNumber)break;
+    if(visited.has(nextNumber)){status='CYCLE_UNVERIFIED';break;}
+    const next=members.get(nextNumber);if(!next){status='SUCCESSOR_OUTSIDE_INVENTORY';break;}
+    chain.push(next.number);visited.add(next.number);
+    if(next.merged_at&&next.base?.ref==='codex/public-book-library'){
+     productionAt=next.merged_at;status='PRODUCTION_MERGE_CONFIRMED_NOT_LIVE';break;
+    }
+    if(next.merged_at){status='INTERMEDIATE_MERGE_NOT_PRODUCTION';break;}
+    if(!next.closed_at){status='SUCCESSOR_OPEN';break;}
+    cursor=next;
+   }
+   p.delivery_chain={prs:chain,status,production_merged_at:productionAt,
+     minutes_to_production_merge:productionAt?Math.round((ts(productionAt)-ts(p.created_at))/600)/100:null};
+  }
+  // GitHub routinely clears workflow_run.pull_requests on closed PRs. A
+  // missing association is NOT permission to choose a PR by title or timing
+  // alone: only exact final HEAD + branch + repository + PR lifetime is safe.
+  const byPr=new Map(result.prs.map(p=>[p.number,[]])),seenRunIds=new Set();
+  const CORE_PATH='.github/workflows/'+WORKFLOW;
+  function attachGlobalRun(run){
+   const t=ts(run?.created_at),links=run?.pull_requests;
+   if(!Number.isSafeInteger(run?.id)||run.id<1||seenRunIds.has(run.id)||
+      !Number.isFinite(t)||run?.name!=='HH PR core release gate'||
+      run?.path?.split('@')[0]!==CORE_PATH||run?.event!=='pull_request'||
+      run?.repository?.full_name!==REPO||run?.head_repository?.full_name!==REPO||
+      !/^[a-f0-9]{40}$/i.test(run?.head_sha||'')||!Array.isArray(links))return false;
+   const eligible=result.prs.filter(p=>p.head?.repo?.full_name===REPO&&
+     p.head?.ref===run.head_branch&&p.head?.sha===run.head_sha&&
+     t>=ts(p.created_at)&&t<ts(p.closed_at)&&
+     (!links.length||links.length===1&&links[0].number===p.number&&
+      links[0].base?.ref===p.base?.ref));
+   if(eligible.length!==1)return false;
+   seenRunIds.add(run.id);byPr.get(eligible[0].number).push(run);return true;
+  }
   for(const window of WINDOWS){
    const hits=[],start=ts(window.start),end=ts(window.end);let complete=false;
    try{for(let page=1;page<=7;page++){
@@ -78,52 +116,74 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     if(runs.length&&runs.every(run=>ts(run.created_at)<start)){complete=true;break;}
    }}catch(e){result.source.ci_runs_errors[window.key]=String(e?.message||e).slice(0,180);}
    result.source.ci_runs_complete[window.key]=complete;
+   result.source.ci_runs_seen[window.key]=hits.length;
+   result.source.ci_runs_matched[window.key]=0;
    for(const run of hits){
-    const at=ts(run.created_at);if(!Number.isFinite(at)||at<start||at>=end||run.event!=='pull_request'||
-      run.repository?.full_name!==REPO||run.head_repository?.full_name!==REPO)continue;
-    // GitHub legitimately clears workflow_run.pull_requests for some merged
-    // PRs. The immutable final PR HEAD + branch + lifespan still identify the
-    // run, but ONLY when the match is unique and the empty array is genuine.
-    // No branch-only inference: old/synthetic/ambiguous HEADs stay unknown.
-    const listed=Array.isArray(run.pull_requests)?run.pull_requests:null;
-    const associated=listed?.filter(x=>byPr.has(x.number))||[];
-    let p=null;
-    if(associated.length===1){
-      p=result.prs.find(x=>x.number===associated[0].number);
-    }else if(listed?.length===0 && /^[a-f0-9]{40}$/i.test(run.head_sha||'')){
-      const exact=result.prs.filter(candidate=>candidate.head?.sha===run.head_sha&&
-        candidate.head?.ref===run.head_branch&&
-        at>=ts(candidate.created_at)&&at<=ts(candidate.closed_at)&&
-        candidate.base?.repo?.full_name===REPO);
-      if(exact.length===1)p=exact[0];
-    }
-    if(!p||run.head_branch!==p.head?.ref||at<ts(p.created_at)||at>ts(p.closed_at))continue;
-    byPr.get(p.number).push(run);
+    const at=ts(run?.created_at);
+    if(Number.isFinite(at)&&at>=start&&at<end&&attachGlobalRun(run))
+     result.source.ci_runs_matched[window.key]++;
    }
   }
   // First-CI evidence is usable only for a complete, date-scoped Core inventory.
   for(const p of result.prs){const window=WINDOWS.find(w=>ts(p.created_at)>=ts(w.start)&&ts(p.created_at)<ts(w.end));
    const runs=byPr.get(p.number).sort((a,b)=>ts(a.created_at)-ts(b.created_at));
    if(runs.length&&result.source.ci_runs_complete[window.key])result.intervals.push({pr:p.number,phase:'created_to_first_ci',
-    start:p.created_at,end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),
+    start:p.created_at,end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),head_sha:runs[0].head_sha,
     inventory_complete:true,reason:'first associated Core workflow run'});
   }
   // Target the eight longest recent cases and a small, fair earlier sample.
   const prioritized=[];
   for(const w of [...WINDOWS].reverse()){
-   const limit=w.key==='latest'?8:4;
+   const limit=w.key==='latest'?8:2;
    prioritized.push(...result.prs.filter(p=>ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)<ts(w.end)&&
       ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)>=ts(w.start))
      .sort((a,b)=>(ts(b.closed_at)-ts(b.created_at))-(ts(a.closed_at)-ts(a.created_at))).slice(0,limit));
   }
   for(const p of prioritized){
    if(gate.state.paused)break;
-   const runs=byPr.get(p.number).filter(r=>r.status==='completed').sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+   let runs=byPr.get(p.number).filter(r=>r.status==='completed').sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+   // GitHub often omits pull_requests on historical synthetic-merge runs.
+   // Bounded per-branch fallback identifies only one live historical PR at
+   // the same time; it never scans hundreds of unrelated workflows/checks.
+   if(!runs.length && !gate.state.paused){
+    try{
+     const history=await gate.request('branch-core-'+p.number,()=>github.rest.actions.listWorkflowRuns({
+      owner:OWNER,repo:REPOSITORY,workflow_id:WORKFLOW_ID,event:'pull_request',branch:p.head?.ref,
+      created:`${p.created_at.slice(0,10)}..${p.closed_at.slice(0,10)}`,per_page:100,page:1}));
+     const sibling=successors.some(other=>other.number!==p.number&&
+      other.head?.ref===p.head?.ref&&other.base?.repo?.full_name===REPO&&
+      ts(other.created_at)<=ts(p.closed_at)&&(!other.closed_at||ts(other.closed_at)>=ts(p.created_at)));
+     const total=history?.total_count;
+     const complete=Number.isSafeInteger(total)&&total>=0&&total<=100&&
+      Array.isArray(history.workflow_runs)&&history.workflow_runs.length===total;
+     if(complete&&!sibling){
+      runs=history.workflow_runs.filter(r=>r.name==='HH PR core release gate'&&
+       r.path?.split('@')[0]==='.github/workflows/'+WORKFLOW&&
+       r.event==='pull_request'&&r.head_branch===p.head?.ref&&
+       r.repository?.full_name===REPO&&r.head_repository?.full_name===REPO&&
+       /^[a-f0-9]{40}$/i.test(r.head_sha||'')&&
+       Array.isArray(r.pull_requests)&&
+       (!r.pull_requests.length&&r.head_sha===p.head?.sha||
+        r.pull_requests.length===1&&r.pull_requests[0].number===p.number&&
+        r.pull_requests[0].base?.ref===p.base?.ref)&&
+       ts(r.created_at)>=ts(p.created_at)&&ts(r.created_at)<ts(p.closed_at))
+       .sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+      if(runs.length){
+       result.source.branch_core_queries.push(p.number);
+       if(!result.intervals.some(i=>i.pr===p.number&&i.phase==='created_to_first_ci'))
+        result.intervals.push({pr:p.number,phase:'created_to_first_ci',start:p.created_at,
+         end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),head_sha:runs[0].head_sha,
+         inventory_complete:true,reason:'complete unique branch-scoped Core run history'});
+      }
+     }
+    }catch(e){result.source.ci_runs_errors['branch_'+p.number]=String(e?.message||e).slice(0,120);}
+   }
    let successfullySampled=false,previousEnd=null,previousFailure=false,lastGreen=null,lastGreenRun=null;
    for(const run of runs.slice(-2)){
     if(gate.state.paused)break;
-    const jobsData=await gate.request('core-run-jobs-'+run.id,()=>github.rest.actions.listJobsForWorkflowRun({
-     owner:OWNER,repo:REPOSITORY,run_id:run.id,per_page:100,filter:'latest'}));
+    let jobsData;try{jobsData=await gate.request('core-run-jobs-'+run.id,()=>github.rest.actions.listJobsForWorkflowRun({
+     owner:OWNER,repo:REPOSITORY,run_id:run.id,per_page:100,filter:'latest'}));}
+    catch(e){result.source.ci_runs_errors['jobs_'+p.number]=String(e?.message||e).slice(0,120);continue;}
     if(!Array.isArray(jobsData?.jobs)||jobsData.total_count>100)continue;
     const jobs=jobsData.jobs.filter(j=>j.status==='completed'&&Number.isFinite(ts(j.created_at))&&
       Number.isFinite(ts(j.started_at))&&Number.isFinite(ts(j.completed_at))&&
@@ -132,17 +192,17 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     if(!jobs.length)continue;successfullySampled=true;
     if(previousFailure&&previousEnd!==null&&previousEnd<=ts(run.created_at))result.intervals.push({
      pr:p.number,phase:'after_failed_ci_unattributed',start:new Date(previousEnd).toISOString(),end:run.created_at,
-     source:'github_actions_run',url:coreUrl(run.id),reason:'gap after red CI; cause not attributable'});
+     source:'github_actions_run',url:coreUrl(run.id),head_sha:run.head_sha,reason:'gap after red CI; cause not attributable'});
     for(const j of jobs){const url=coreUrl(run.id)+'/job/'+j.id;
      result.intervals.push({pr:p.number,phase:'runner_queue',start:j.created_at,end:j.started_at,
-      source:'github_actions_job',url,reason:'GitHub queued → runner start'});
+      source:'github_actions_job',url,head_sha:run.head_sha,reason:'GitHub queued → runner start'});
      result.intervals.push({pr:p.number,phase:run.id===runs[0]?.id&&run.run_attempt===1?'ci_initial_execution':'ci_repeat_execution',
-      start:j.started_at,end:j.completed_at,source:'github_actions_job',url,
+      start:j.started_at,end:j.completed_at,source:'github_actions_job',url,head_sha:run.head_sha,
       reason:'GitHub runner execution, concurrent jobs counted once'});
+     // Historical API may omit links for a valid closed PR; final HEAD SHA
+     // is independently required before crediting green → merge.
      if(j.name==='hh-merge-check'&&j.conclusion==='success'&&run.conclusion==='success'&&
-       ((run.pull_requests||[]).some(x=>x.number===p.number&&x.head?.sha===p.head?.sha)||
-        (Array.isArray(run.pull_requests)&&run.pull_requests.length===0&&
-         run.head_sha===p.head?.sha&&run.head_branch===p.head?.ref))){
+       run.head_sha===p.head?.sha){
       if(!lastGreen||ts(j.completed_at)>ts(lastGreen)){lastGreen=j.completed_at;lastGreenRun=run.id;}
      }
     }
@@ -152,7 +212,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    if(successfullySampled)result.source.sampled_job_prs.push(p.number);
    if(lastGreen&&p.merged_at&&ts(lastGreen)<=ts(p.merged_at))result.intervals.push({
     pr:p.number,phase:'green_to_merge',start:lastGreen,end:p.merged_at,
-    source:'github_actions_job',url:coreUrl(lastGreenRun),green_verified:true,
+    source:'github_actions_job',url:coreUrl(lastGreenRun),head_sha:p.head.sha,green_verified:true,
     reason:'successful exact-HEAD hh-merge-check → protected merge'});
    if(gate.state.paused)break;
    // One timeline page is authoritative only when fewer than 100 events exist.
