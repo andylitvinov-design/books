@@ -79,10 +79,12 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
     assert.deepEqual(errors, [], `${engine}: no page exceptions`);
     // The canvas check above is not an export test. Attach a real bundled
     // soundtrack and verify the actual downloaded procedural movie as media.
+    await page.locator('[data-video-quick-control="phrases"]').click();
     const soundtrack=page.locator('[data-video-quick-music-check]').first();
     await soundtrack.waitFor({state:'visible'});
     if(await soundtrack.getAttribute('aria-checked')!=='true')await soundtrack.click();
     assert.equal(await soundtrack.getAttribute('aria-checked'),'true',`${engine}: soundtrack attached`);
+    await page.locator('[data-video-quick-control="video"]').click();
     const create=page.locator('[data-free-video-create]');
     await create.waitFor({state:'visible'});
     assert.equal(await create.isEnabled(),true,`${engine}: procedural export is enabled`);
