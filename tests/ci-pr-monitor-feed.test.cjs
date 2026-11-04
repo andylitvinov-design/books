@@ -277,3 +277,34 @@ test('CI wake absent terminal result stays censored and invalid cohorts fail clo
   ...timing,duration_seconds:{...timing.duration_seconds,wake_pending_age:-1}
  }]}),context),/INVALID_CI_WAKE_DURATION/);
 });
+
+test('Control Tower API validates and shows bounded CI wake timing without false zero',()=>{
+ const {signedCiWakeTiming}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const {commentBody}=require('../scripts/ci-pr-task-state.cjs');
+ const task={lane:'ci',pr_number:2277,head_sha:SHA,task_key:'d'.repeat(32)};
+ const mk=(state,fields)=>({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody({...task,schema:'HH_PR_TASK_V1',state,...fields})});
+ const entry=signedCiWakeTiming(task,[
+  mk('RESERVED',{created_at:'2026-11-02T15:45:11.917Z'}),
+  mk('CLAIMED',{created_at:'2026-11-02T15:45:41.520Z'}),
+  mk('CI_WAKE_REQUESTED',{observed_at:'2026-11-02T15:45:45.897Z'}),
+  mk('CI_WAKE_UNDELIVERED',{created_at:'2026-11-03T04:38:38.776Z'})
+ ],Date.parse('2026-11-04T19:30:00Z'));
+ const raw=buildMonitorSnapshot(report({actionable:1,candidates:1,inspected:1,
+  ciWakeTelemetry:[entry]}),context);
+ const ui=require('../ops/pr-monitor/api/control-tower-stats.js');
+ const result=ui.normalize(raw,Date.parse(at)+86400000);
+ assert.equal(result.ci_wake_handoff.status,'SIGNED_BOUNDED_CI_SAMPLE');
+ assert.equal(result.ci_wake_handoff.wake_to_outcome.p95_seconds,46373);
+ assert.equal(result.ci_wake_handoff.example_records[0].pr_number,2277);
+ assert.equal(ui.normalize(buildMonitorSnapshot(report(),context),
+  Date.parse(at)+86400000).ci_wake_handoff.status,'NO_CI_TASKS_IN_SWEEP');
+ const forged={...raw,ci_wake_handoff:{...raw.ci_wake_handoff,
+  example_records:[{...raw.ci_wake_handoff.example_records[0],pr_number:-1}]}};
+ assert.equal(ui.normalize(forged,Date.parse(at)+86400000)
+   .ci_wake_handoff.status,'UNVERIFIED');
+ const body=require('node:fs').readFileSync('ops/pr-monitor/watchdog-control-tower.js','utf8');
+ assert.match(body,/ci_wake_handoff/);
+ assert.match(body,/wake_to_outcome/);
+});
