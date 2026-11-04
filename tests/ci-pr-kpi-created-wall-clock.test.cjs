@@ -57,3 +57,58 @@ test('synthetic PR merge ref requires verified ordered parents',()=>{
  assert.equal(audit({...input,syntheticParents:{1000:[SHA,BASE]}}).cohort.verified,0);
  assert.equal(audit({...input,syntheticParents:{1000:[BASE,SHA]}}).cohort.verified,1);
 });
+test('P50/P95 and stage coverage use the same merged-and-created PR denominator',()=>{
+ const x=calc([pr(1),pr(2,{merged_at:'2026-11-03T12:20:00Z'})],[run(1)],jobs(1));
+ assert.equal(x.cohort.merged,2);
+ assert.equal(x.total.p50,120);assert.equal(x.total.p95,138);
+ assert.equal(x.stages.before_final_head_ci.measured_prs,1);
+ assert.equal(x.stages.before_final_head_ci.cohort_prs,2);
+ assert.equal(x.stages.before_final_head_ci.coverage_pct,50);
+ assert.equal(x.stages.before_final_head_ci.p95,60);
+ assert.equal(x.job_substages.core_runner_to_completed.p50,10);
+ assert.equal(x.job_substages.specialist_runner_to_completed.p50,18);
+ assert.equal(x.bottleneck.status,'UNATTRIBUTED_TIME_MAY_DOMINATE');
+});
+test('real Core, Specialist, gate timestamps and overlapping substage separation',()=>{
+ const x=calc([pr(1)],[run(1)],jobs(1)),j=x.rows[0].evidence.jobs;
+ assert.equal(j['core-lint-types-build'].queued_at,'2026-11-03T11:00:00.000Z');
+ assert.equal(j['hh-specialist'].completed_at,'2026-11-03T11:30:00.000Z');
+ assert.equal(j['hh-merge-check'].runner_started_at,'2026-11-03T11:32:00.000Z');
+ assert.equal(x.job_substages.core_queued_to_runner.mean,10);
+ assert.equal(x.job_substages.specialist_queued_to_runner.mean,12);
+ assert.equal(x.job_substages.post_checks_to_gate_runner.mean,2);
+ assert.equal(x.job_substages.gate_runner_to_green.mean,3);
+ assert.equal(x.reconstruction.reconciled,true);
+});
+test('unique authenticated stages and LIVE timestamp pair on exact PR and HEAD',()=>{
+ const p=pr(1,{mergeSha:'d'.repeat(40)}),head=OLD,task='c'.repeat(32);
+ const events=[
+  {pr:1,head,kind:'stage',stage:'ready',at:'2026-11-03T10:04:00Z'},
+  {pr:1,head,kind:'stage',stage:'triage',at:'2026-11-03T10:07:00Z'},
+  {pr:1,head,kind:'stage',stage:'claimed',task,at:'2026-11-03T10:09:00Z'},
+  {pr:1,head,kind:'stage',stage:'repair_started',task,at:'2026-11-03T10:10:00Z'},
+  {pr:1,head,kind:'stage',stage:'source_published',task,newHead:SHA,at:'2026-11-03T10:20:00Z'},
+  {pr:1,head:'d'.repeat(40),kind:'live_verified',production:true,mergeSha:'d'.repeat(40),
+   aliasVerified:true,smokeVerified:true,at:'2026-11-03T11:45:00Z'}
+ ];
+ const x=audit({prs:[p],runs:[run(1)],jobs:jobs(1),events,start:from,end:to});
+ assert.equal(x.receipt_substages.created_to_ready.mean,4);
+ assert.equal(x.receipt_substages.ready_to_triage.mean,3);
+ assert.equal(x.receipt_substages.triage_to_claimed.mean,2);
+ assert.equal(x.receipt_substages.claimed_to_repair_started.mean,1);
+ assert.equal(x.receipt_substages.repair_started_to_source_published.mean,10);
+ assert.equal(x.receipt_substages.source_published_to_ci_queued.mean,40);
+ assert.equal(x.receipt_substages.merged_to_live_verified.mean,5);
+ assert.equal(x.rows[0].authenticated_receipt_intervals.merged_to_live_verified.completed_at,
+  '2026-11-03T11:45:00.000Z');
+});
+test('ambiguous duplicated receipts do not create false measured intervals',()=>{
+ const e={pr:1,head:SHA,kind:'stage',stage:'ready',at:'2026-11-03T10:04:00Z'};
+ const x=audit({prs:[pr(1)],runs:[run(1)],jobs:jobs(1),events:[e,e,
+  {pr:1,head:SHA,kind:'stage',stage:'triage',at:'2026-11-03T10:07:00Z'}],
+  start:from,end:to});
+ assert.equal(x.receipt_substages.created_to_ready.n,0);
+ assert.equal(x.receipt_substages.ready_to_triage.n,0);
+ assert.equal(x.receipt_substages.ready_to_triage.coverage_pct,0);
+ assert.equal(x.rows[0].authenticated_receipt_intervals.ready_to_triage,null);
+});
