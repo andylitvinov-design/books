@@ -3,10 +3,28 @@ import test from 'node:test'
 import './crm-telegram-campaigns.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
+import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS,normalizeReplyFailure} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
+test('blocked and uncertain replies retain only a safe encrypted reason and never become delivered',()=>{
+  assert.deepEqual(normalizeReplyFailure('blocked','CONSENT_REQUIRED','eligibility'),
+    {code:'CONSENT_REQUIRED',stage:'eligibility'})
+  assert.deepEqual(normalizeReplyFailure('failed','server-secret-example','provider'),
+    {code:'PROVIDER_REJECTED',stage:'provider'})
+  assert.deepEqual(normalizeReplyFailure('unknown','token=private','weird'),
+    {code:'PROVIDER_STATUS_UNKNOWN',stage:'persistence'})
+  assert.equal(normalizeReplyFailure('accepted','CONSENT_REQUIRED','provider'),null)
+  const store=source('lib/crm/messenger-store.js')
+  const route=source('app/api/app/crm/messenger/route.js')
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.match(store,/deliveryFailure:diagnostic/)
+  assert.match(store,/body_ciphertext=coalesce\(\$5::text,body_ciphertext\)/)
+  assert.match(store,/for update/)
+  assert.match(route,/stage:'eligibility'/)
+  assert.match(route,/stage:'provider'/)
+  assert.match(ui,/m[.]failure[?][.]code/)
+})
 test('only supported official messenger channels',()=>{
   assert.deepEqual(MESSENGER_CHANNELS,['telegram','whatsapp','instagram','messenger'])
   assert.deepEqual(canReply({channel:'unknown',lastInboundAt:new Date().toISOString(),enabled:true,suppressed:false}).reason,'INVALID_CHANNEL')

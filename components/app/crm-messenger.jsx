@@ -200,6 +200,10 @@ function replyReason(reason,lang){
     CONTACT_BLOCKED:{en:'Contact opted out',ru:'Контакт заблокировал сообщения',es:'Contacto bloqueado'},
     CHANNEL_NOT_CONNECTED:{en:'Provider not connected',ru:'Канал ещё не подключён',es:'Canal no conectado'},
     CONSENT_REQUIRED:{en:'Client must confirm /agree in Telegram. Refresh this chat afterward.',ru:'Клиенту нужно подтвердить /agree в Telegram. Затем обновите чат.',es:'El cliente debe confirmar /agree en Telegram. Actualiza el chat después.'},
+    REPLY_BLOCKED:{en:'Reply blocked. Check consent and channel status.',ru:'Отправка заблокирована. Проверьте согласие и канал.',es:'Respuesta bloqueada. Revisa el consentimiento y el canal.'},
+    PROVIDER_REJECTED:{en:'Provider rejected this message; check the channel.',ru:'Провайдер отклонил сообщение. Проверьте канал.',es:'El proveedor rechazó el mensaje. Revisa el canal.'},
+    PROVIDER_STATUS_UNKNOWN:{en:'Delivery result unknown. Do not resend automatically.',ru:'Результат отправки неизвестен. Не повторяйте автоматически.',es:'Resultado desconocido. No reenvíes automáticamente.'},
+    TEST_RECIPIENT_ONLY:{en:'This channel is limited to approved test recipients.',ru:'Канал ограничен разрешёнными тестовыми получателями.',es:'El canal está limitado a destinatarios de prueba autorizados.'},
   }
   return labels[reason]?.[lang]||reason||''
 }
@@ -696,6 +700,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
+              {m.failure?.code&&<small>{replyReason(m.failure.code,lang)||t.sendError}</small>}
             </div>)}
           </div>
           {!conversationOnly&&(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
