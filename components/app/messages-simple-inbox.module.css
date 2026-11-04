@@ -48,8 +48,8 @@
 .requestActions{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#fff}
 .requestActions p,.requestActions small{margin:0;color:var(--soft);font-size:12px}
 .requestActions span{overflow-wrap:anywhere}
-.requestActions a{display:inline-flex;gap:9px;align-items:center;min-height:42px;border:1px solid #d3dfd9;border-radius:10px;background:#edf5f0;padding:9px 13px;color:#24584f;text-decoration:none;font-weight:700;font-size:13px}
-.requestActions a:hover{background:#e1eee6}
+.requestActions :is(a,button){display:inline-flex;gap:9px;align-items:center;min-height:44px;border:1px solid #d3dfd9;border-radius:10px;background:#edf5f0;padding:9px 13px;color:#24584f;text-decoration:none;font:700 13px/1.35 system-ui,sans-serif;text-align:left;cursor:pointer}
+.requestActions :is(a,button):hover{background:#e1eee6}
 .srOnly{position:absolute;width:1px;height:1px;padding:0;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}
 .shell button:focus-visible,.shell a:focus-visible,.shell input:focus-visible{outline:3px solid #397d6b;outline-offset:2px}
 @media(min-width:1100px){.window{grid-template-columns:minmax(240px,350px) minmax(0,1fr)}}
@@ -143,7 +143,7 @@
 .shell .requestPane{background:linear-gradient(155deg,#fffcf6,#f6f0e6)}
 .shell .requestBubble{background:#fffefa;border-color:#e8dace;box-shadow:0 4px 11px #5548370c}
 .shell .requestActions{background:#fffdf9;border-color:#e9ddce}
-.shell .requestActions a{min-height:44px;border-color:#07866a;background:#e3f3e9;color:#08735b}
+.shell .requestActions :is(a,button){min-height:44px;border-color:#07866a;background:#e3f3e9;color:#08735b}
 .shell .cardButton{background:#e5f3ea;border:1px solid #c9e5d6;color:#126c55;border-radius:12px}
 .shell .placeholder{color:#7f8f80}
 .shell .placeholder svg{color:#099077}

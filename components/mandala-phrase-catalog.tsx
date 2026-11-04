@@ -17,7 +17,7 @@ import styles from "./mandala-phrase-catalog.module.css";
 
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;disabled:boolean;
-  selectedPhrase:string;onPhraseChoose:(text:string)=>void;onOpenAudio:()=>void;
+  selectedPhrase:string;onPhraseChoose:(text:string)=>void;onOpenAudio:(scenarioId:string)=>void;
 };
 type Path={categoryId:string;topicId:string;scenarioId:string;ideaId:string};
 const copy={
@@ -218,7 +218,7 @@ export function MandalaPhraseCatalog({
       }):<p>{t.empty}</p>}
       <p className={styles.note}>{t.note}</p>
       <button type="button" className={styles.audioNext} data-video-phrase-audioguide
-        disabled={disabled} onClick={onOpenAudio}><Music2 size={20}/>
+        disabled={disabled} onClick={()=>onOpenAudio(path.scenarioId)}><Music2 size={20}/>
         {t.audio}<ArrowRight size={19}/></button>
     </div>
   </div>;

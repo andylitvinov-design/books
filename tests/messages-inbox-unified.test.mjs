@@ -17,7 +17,11 @@ test('one full-width EN/RU/ES Messages page provides just two accessible tabs',(
   assert.match(hub,/role="tabpanel"/)
   assert.match(hub,/aria-selected=\{tab===id\}/)
   assert.match(hub,/ArrowRight/)
-  assert.match(hub,/params\.has\('to'\)\?'chats'/)
+  // A verified direct thread deep link may also select Conversations without
+  // granting thread access based on an untrusted query-string UUID.
+  assert.match(hub,/setDirectThreadId\(\/\^\[0-9a-f\]/)
+  assert.match(hub,/params\.has\('to'\)\|\|thread\?'chats'/)
+  assert.match(hub,/initialDirectThreadId=\{directThreadId\}/)
   assert.match(hub,/data-messages-hub/)
   for(const term of ["chats:'Переписка'","requests:'Заявки'","chats:'Conversations'","requests:'Client requests'","chats:'Conversaciones'","requests:'Solicitudes'"])
     assert.ok(hub.includes(term),term)

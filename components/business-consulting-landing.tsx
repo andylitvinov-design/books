@@ -1,11 +1,12 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, ChevronDown, ClipboardCheck, Compass, Lightbulb, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
-import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { businessConsultingCopy, type BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-consulting-landing.module.css";
@@ -32,6 +33,12 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
   const t = businessConsultingCopy[locale];
   const detailLabel = locale === "ru" ? "Детали" : locale === "es" ? "Detalles" : "Details";
   const siteRequestLabel = locale === "ru" ? "Заявка с сайта" : locale === "es" ? "Solicitud en la web" : "Website request";
+  const visualPhotos = [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/books-library.webp",
+    "/images/holistic-house/course-start-heron.webp",
+  ] as const;
   const offerImages = {
     free: "/images/holistic-house/report-lighthouse-coast.webp",
     express: "/images/holistic-house/books-library.webp",
@@ -48,7 +55,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
     });
 
   return (
-    <main className={styles.page} lang={locale} data-business-consulting>
+    <main className={styles.page} lang={locale} data-business-consulting data-public-visual-landing="business">
       <PublicSiteHeader locale={locale} />
       <div className={styles.container}>
         <nav className={styles.breadcrumb} aria-label={t.navBack}>
@@ -98,8 +105,6 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
           <small>{t.replyNote}</small>
         </nav>
-
-        <ServiceVideoShowcase topic="constellation-case" locale={locale} id="business-constellation-video" />
 
         <section id="business-offers" className={styles.offers} aria-labelledby="business-offers-title">
           <p className={styles.sectionEyebrow}>{t.offersEyebrow}</p>
@@ -152,50 +157,72 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
         </section>
 
+        <section className={styles.businessVideo} data-business-visual-screen="constellation-video"
+          aria-label={locale === "ru" ? "Видео о бизнес-расстановках" : locale === "es" ? "Vídeo sobre constelaciones empresariales" : "Business Constellations video"}>
+          <ServiceVideoShowcase topic="constellation-case" locale={locale} id="business-constellation-video" />
+        </section>
+
         <section className={styles.problems} aria-labelledby="business-problems-title">
           <p className={styles.sectionEyebrow}>{t.painEyebrow}</p>
           <h2 id="business-problems-title">{t.painTitle}</h2>
           <div className={styles.problemGrid}>
             {t.pains.map((item, index) => (
-              <article key={item.title} className={styles.problemCard}>
-                <span className={styles.cardNum}>0{index + 1}</span>
-                <h3>{item.title}</h3><p>{item.text}</p>
+              <article key={item.title} className={styles.problemCard} data-business-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><Image src={visualPhotos[index % visualPhotos.length]} alt="" fill unoptimized
+                  sizes="(max-width: 767px) 100vw, 42vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.cardNum}>0{index + 1}</span>
+                  <h3>{item.title}</h3><p>{item.text}</p>
+                </div>
               </article>
             ))}
           </div>
         </section>
-
-        <BusinessWebsiteEnquiry locale={locale}/>
 
         <section className={styles.workflow} aria-labelledby="business-process-title">
           <p className={styles.sectionEyebrow}>{t.processEyebrow}</p>
           <h2 id="business-process-title">{t.processTitle}</h2>
           <ol className={styles.workflowGrid}>
             {t.process.map((step, index) => (
-              <li key={step.title}>
-                <span className={styles.workflowNum}>{String(index + 1).padStart(2, "0")}</span>
-                <h3>{step.title}</h3><p>{step.text}</p>
+              <li key={step.title} data-business-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><Image src={visualPhotos[(index+1) % visualPhotos.length]} alt="" fill unoptimized
+                  sizes="(max-width: 767px) 100vw, 42vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.workflowNum}>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{step.title}</h3><p>{step.text}</p>
+                </div>
               </li>
             ))}
           </ol>
-          <div className={styles.twoApproaches}>
+          <div className={styles.twoApproaches} data-business-visual-screen="approaches">
+            <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill unoptimized
+              sizes="(max-width: 767px) 100vw, 42vw" /></div>
+            <div className={styles.sceneWords}>
             <h3>{t.distinctionTitle}</h3>
             <div className={styles.approachGrid}>
               <div><Compass size={22} aria-hidden="true"/><strong>{t.businessFactTitle}</strong><p>{t.businessFactText}</p></div>
               <div><Lightbulb size={22} aria-hidden="true"/><strong>{t.innerWorkTitle}</strong><p>{t.innerWorkText}</p></div>
             </div>
+            </div>
           </div>
         </section>
 
-        <section className={styles.results} aria-labelledby="business-results-title">
+        <section className={styles.results} aria-labelledby="business-results-title" data-business-visual-screen="results">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[1]} alt="" fill unoptimized
+            sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.resultCopy}>
           <div>
             <p className={styles.sectionEyebrow}>{t.resultTitle}</p>
             <h2 id="business-results-title">{t.resultTitle}</h2>
           </div>
           <ul>{t.results.map(result => <li key={result}><Check size={21} aria-hidden="true" />{result}</li>)}</ul>
+          </div>
         </section>
 
-        <section className={styles.mentor} aria-labelledby="business-mentoring-title">
+        <section className={styles.mentor} aria-labelledby="business-mentoring-title" data-business-visual-screen="mentoring">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill unoptimized
+            sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.mentorCopy}>
           <div>
             <p className={styles.sectionEyebrow}>{t.mentorEyebrow}</p>
             <h2 id="business-mentoring-title">{t.mentorTitle}</h2>
@@ -204,9 +231,13 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("mentoring")}
             label={t.mentorCta} className={styles.mentorButton} event="service_request_start"
             attributes={{ "data-business-format": "mentoring" }} />
+          </div>
         </section>
 
-        <section className={styles.request} id="request-session" aria-labelledby="business-request-title">
+        <section className={styles.request} id="request-session" aria-labelledby="business-request-title" data-business-visual-screen="request-formats">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[0]} alt="" fill unoptimized
+            sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.requestCopy}>
           <div>
             <p className={styles.sectionEyebrow}>{t.eyebrow}</p>
             <h2 id="business-request-title">{t.requestTitle}</h2>
@@ -225,20 +256,35 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
               label={t.formatCtas[2]} event="service_request_start" className={styles.requestButtonAlt}
               attributes={{ "data-business-format": "mentoring-bottom" }} />
           </div>
+          </div>
         </section>
 
-        <section className={styles.faq} aria-labelledby="business-faq-title">
+        <section className={styles.faq} aria-labelledby="business-faq-title" data-business-visual-screen="faq">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill unoptimized
+            sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.faqCopy}>
           <h2 id="business-faq-title">{t.faqTitle}</h2>
           {t.faqs.map(item => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
           <div className={styles.disclaimer}><ShieldCheck size={20} aria-hidden="true" /><p>{t.disclaimer}</p></div>
+          </div>
         </section>
 
-        <section className={styles.bottom}>
+        <section className={styles.bottom} data-business-visual-screen="free-alternative">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill unoptimized sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.bottomCopy}>
           <h2>{t.finalTitle}</h2>
           <AcquisitionEventLink href={freeHref} event="service_request_start" prefetch={false}
             className={styles.bottomAction} attributes={{ "data-business-cta": "free-bottom" }}>
             {t.finalCta}<ArrowRight size={18} aria-hidden="true"/>
           </AcquisitionEventLink>
+          </div>
+        </section>
+        <section className={styles.businessFinalScreen} data-business-visual-screen="final-capture">
+          <div className={styles.scenePhoto}>
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
+              sizes="(max-width: 767px) 100vw, 42vw" />
+          </div>
+          <BusinessWebsiteEnquiry locale={locale} />
         </section>
       </div>
     </main>

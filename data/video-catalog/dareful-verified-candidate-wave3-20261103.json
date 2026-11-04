@@ -1,0 +1,156 @@
+{
+  "version": "hh-dareful-source-candidates-v1",
+  "reviewedOn": "2026-11-03",
+  "approvedForPublication": false,
+  "editorialStatus": "official_page_license_claim_identified_source_motion_visual_and_people_brand_qc_pending",
+  "licenseEvidence": "Individual Dareful pages indicate CC BY 4.0 footage by Joel Holland; every source and actual moving frames must be independently rechecked before approval. No public MP4 is supplied by this manifest.",
+  "publisher": "Dareful",
+  "creator": "Joel Holland",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "sources": [
+    {
+      "id": "water-evening-sunset",
+      "sourcePage": "https://dareful.com/water-evening-sunset/",
+      "mediaUrl": "https://stream.mux.com/OcRqyM7R4Y928djs01t02zHvHIiUH3PRmWhmdhBO3f53M.m3u8",
+      "durationSeconds": 54,
+      "suggestedTheme": "relationships",
+      "suggestedNames": {
+        "ru": "Вечерний свет над водой",
+        "en": "Evening light on water",
+        "es": "Luz vespertina sobre el agua"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "water",
+        "sunset",
+        "light"
+      ]
+    },
+    {
+      "id": "snow-forest-winter",
+      "sourcePage": "https://dareful.com/snow-forest-winter/",
+      "mediaUrl": "https://stream.mux.com/ZhUFux02SjB3ZV7jAYPGZdWp668T6QO301GrcUlauhGsc.m3u8",
+      "durationSeconds": 13,
+      "suggestedTheme": "health",
+      "suggestedNames": {
+        "ru": "Заснеженный зимний лес",
+        "en": "Snowy winter forest",
+        "es": "Bosque nevado en invierno"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "winter",
+        "forest",
+        "snow"
+      ]
+    },
+    {
+      "id": "sunset-sky-landscape",
+      "sourcePage": "https://dareful.com/sunset-sky-landscape/",
+      "mediaUrl": "https://stream.mux.com/5mwxnmha00NKGOcn24VUO01g00ZYf02lWZJeIF3CHzD302NM.m3u8",
+      "durationSeconds": 45,
+      "suggestedTheme": "goals",
+      "suggestedNames": {
+        "ru": "Небо в закатном свете",
+        "en": "Sunset-lit sky",
+        "es": "Cielo iluminado al atardecer"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "sky",
+        "sunset",
+        "clouds"
+      ]
+    },
+    {
+      "id": "winter-forest-aerial",
+      "sourcePage": "https://dareful.com/winter-forest-aerial/",
+      "mediaUrl": "https://stream.mux.com/b6vVh3Fnhcbmd2M02O5qxdIbZkRdBckTz5drrbiqt700c.m3u8",
+      "durationSeconds": 48,
+      "suggestedTheme": "life",
+      "suggestedNames": {
+        "ru": "Полёт над зимним лесом",
+        "en": "Winter forest aerial",
+        "es": "Vista aérea de bosque invernal"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "forest",
+        "winter",
+        "aerial"
+      ]
+    },
+    {
+      "id": "winter-mountain-aerial",
+      "sourcePage": "https://dareful.com/winter-mountain-aerial/",
+      "mediaUrl": "https://stream.mux.com/6IP8JSAJUuoWLu00XGVGQQT4Vqo00AATkYwg029Ftmjpv8.m3u8",
+      "durationSeconds": 10,
+      "suggestedTheme": "goals",
+      "suggestedNames": {
+        "ru": "Зимние горные вершины",
+        "en": "Winter mountain peaks",
+        "es": "Cumbres montañosas en invierno"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "mountain",
+        "snow",
+        "sky"
+      ]
+    },
+    {
+      "id": "fog-mist-landscape",
+      "sourcePage": "https://dareful.com/fog-mist-landscape/",
+      "mediaUrl": "https://stream.mux.com/k01QyKqXcqIJsGBGwOdz7CWaD8vvifeN3b6Ii66KUrkY.m3u8",
+      "durationSeconds": 37,
+      "suggestedTheme": "health",
+      "suggestedNames": {
+        "ru": "Туманный пейзаж",
+        "en": "Misty landscape",
+        "es": "Paisaje entre la niebla"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "fog",
+        "mist",
+        "nature"
+      ]
+    },
+    {
+      "id": "full-moon-shining-through-clouds",
+      "sourcePage": "https://dareful.com/full-moon-shining-through-clouds/",
+      "mediaUrl": "https://stream.mux.com/jReaNmQ0102QPn7xBzYteFsDY00BDee8TlXlU4MdL9P02Do.m3u8",
+      "durationSeconds": 18,
+      "suggestedTheme": "energy",
+      "suggestedNames": {
+        "ru": "Луна сквозь облака",
+        "en": "Full moon through clouds",
+        "es": "Luna llena entre nubes"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "moon",
+        "night",
+        "clouds"
+      ]
+    },
+    {
+      "id": "island-mountain-aerial",
+      "sourcePage": "https://dareful.com/island-mountain-aerial/",
+      "mediaUrl": "https://stream.mux.com/QXpOMzzAVKqseJROfzGU1ua001NW00LbsB99026qr4F7pk.m3u8",
+      "durationSeconds": 16,
+      "suggestedTheme": "money",
+      "suggestedNames": {
+        "ru": "Островные горы с высоты",
+        "en": "Island mountain aerial",
+        "es": "Montañas insulares desde el aire"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "mountain",
+        "island",
+        "coast"
+      ]
+    }
+  ]
+}

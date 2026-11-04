@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {normalizeEnquiryAttribution} from '../lib/analytics/enquiry-attribution.mjs'
 import {randomUUID} from 'node:crypto'
 import pg from 'pg'
 
@@ -99,7 +100,7 @@ test('contact disclosure audit enforces owner and rejects another account', {ski
   const mutationSource=readFileSync(new URL('../lib/practitioners/public-service-enquiry.js',import.meta.url),'utf8')
    .replace(/^import .*$/gm,'').replace(/export /g,'')+'; updatePublicServiceEnquiry'
   const updateEnquiry=runInNewContext(mutationSource,{
-   AppError,requireUUID,transaction,randomUUID,seal,openSealed,
+   AppError,requireUUID,transaction,randomUUID,seal,openSealed,normalizeEnquiryAttribution,
    PRACTITIONER_ID:practitioner,relayContactView,redactRelayContacts,
    BOOKABLE_SKUS:{},validConfirmedSlot:()=>null,
   })

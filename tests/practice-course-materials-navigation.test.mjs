@@ -50,6 +50,8 @@ test('Canonical course editor CSP permits scoped private draft upload and previe
   assert.match(middleware,/reikiIntroAudioManager = .*courses/)
   assert.match(middleware,/\(\(reikiIntroAudioManager\|\|coachingOwnerAudioManager\) \? reikiIntroAudioOrigin : ''\)/)
   assert.match(middleware,/if \(!reikiIntroAudioManager && !reikiLessonAudioPage && !coachingOwnerAudioManager && !coachingLearnerAudioPlayer\) return ''/)
+  assert.match(middleware,/practitionerCourseMediaOrigin/)
+  assert.match(middleware,/frame-src 'none'/)
   assert.match(middleware,/media-src 'self'/)
   assert.match(middleware,/connect-src 'self'/)
 })

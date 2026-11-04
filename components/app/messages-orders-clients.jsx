@@ -2,8 +2,9 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
+import MessengerAiWorkspace from './messenger-ai-workspace'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
@@ -22,7 +23,8 @@ const TEXT={
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
   freeLabel:'FREE',freeConsultation:'Get a free written personal review',freeConsultationDetail:'Personal written review with Andrey · no call or fee.',
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
-  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
+  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
+  notifyTitle:'Do not miss your practitioner’s reply',notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',notifyAction:'Notification settings'},
  ru:{title:'Сообщения',subtitle:'Заказы и общение',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
@@ -38,7 +40,8 @@ const TEXT={
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
   freeLabel:'БЕСПЛАТНО',freeConsultation:'Получить бесплатный письменный разбор',freeConsultationDetail:'Личный письменный разбор с Андреем · без звонка и оплаты.',
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
-  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
+  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
+  notifyTitle:'Не пропустите ответ мастера',notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',notifyAction:'Настроить уведомления'},
  es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
@@ -54,7 +57,8 @@ const TEXT={
   newer:'Nueva respuesta',signIn:'Inicia sesión para ver tus pedidos',search:'Buscar profesional',more:'Las solicitudes anteriores están en Consultas.',
   freeLabel:'GRATIS',freeConsultation:'Solicitar un análisis personal escrito gratuito',freeConsultationDetail:'Revisión personal escrita con Andrey · sin llamada ni pago.',
   freeReiki:'Empezar el curso gratis de prácticas Reiki',freeReikiDetail:'Cinco lecciones con meditaciones y ejercicios sencillos.',
-  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.'},
+  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.',
+  notifyTitle:'No te pierdas la respuesta',notifyInfo:'Configura los avisos en tu teléfono o Telegram al cerrar el sitio.',notifyAction:'Configurar avisos'},
 }
 const STATES={
  en:{requested:'Waiting for practitioner',contacted:'Discussing details',reschedule_proposed:'Time change proposed',confirmed:'Confirmed by practitioner',in_progress:'In progress',completed:'Completed',declined:'Declined',cancelled:'Cancelled'},
@@ -88,7 +92,7 @@ function priceOf(order,t){
 export default function MessagesOrdersClients({locale='en',children}){
   const searchParams=useSearchParams()
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
-  const [section,setSection]=useState('orders')
+  const [section,setSection]=useState('ai')
   const [ordersData,setOrdersData]=useState(null)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(true)
@@ -103,7 +107,9 @@ export default function MessagesOrdersClients({locale='en',children}){
   const orderChatRef=useRef(null)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
-    setSection(q.get('section')==='clients'||q.has('to')||q.has('tab')?'clients':'orders')
+    const requested=q.get('section')
+    setSection(requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':
+      requested==='orders'||q.has('order')?'orders':'ai')
     const id=q.get('order')
     setSelectedId(id&&/^[0-9a-f-]{36}$/i.test(id)?id:'')
   },[searchParams])
@@ -143,7 +149,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       }
       const viewport=window.visualViewport
       const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight
-      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const nav=sharedDock&&getComputedStyle(sharedDock).display!=='none'
+        ?sharedDock:document.querySelector('.hh-messages-page .hh-mobile-app-nav')
       const editing=pane.contains(document.activeElement)&&
         /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
       const navTop=nav&&!editing&&getComputedStyle(nav).display!=='none'
@@ -175,12 +183,16 @@ export default function MessagesOrdersClients({locale='en',children}){
     }
   },[section,selectedId,ordersData?.accountId])
   function chooseSection(value){
+    if(!['ai','orders','clients'].includes(value))return
     setSection(value)
     const url=new URL(window.location.href)
-    if(value==='orders')url.searchParams.set('section','orders')
-    else url.searchParams.set('section','clients')
-    if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to')}
-    if(value==='clients'){url.searchParams.delete('order');setSelectedId('')}
+    url.searchParams.set('section',value)
+    if(value!=='clients'){
+      url.searchParams.delete('tab')
+      url.searchParams.delete('to')
+      url.searchParams.delete('requestId')
+    }
+    if(value!=='orders'){url.searchParams.delete('order');setSelectedId('')}
     setClientDetailOpen(false)
     window.history.replaceState(window.history.state,'',url)
   }
@@ -196,7 +208,9 @@ export default function MessagesOrdersClients({locale='en',children}){
   return <section className={styles.root} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
     <header className={styles.head}>
-      <div><h1>{t.title}</h1><p>{section==='clients'&&ordersData?.hasPractice?
+      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{section==='ai'?
+        (locale==='ru'?'ИИ · Заказы · Клиенты — всё в одном месте':locale==='es'?'IA · Pedidos · Clientes':'AI · Orders · Clients'):
+        section==='clients'&&ordersData?.hasPractice?
         (locale==='ru'?'Клиенты и входящие':locale==='es'?'Clientes y mensajes':'Clients and messages'):t.subtitle}</p></div>
       <span className={styles.headerActions}>
         <Link prefetch={false} className={styles.notificationSettings}
@@ -211,14 +225,20 @@ export default function MessagesOrdersClients({locale='en',children}){
         </button>
       </span>
     </header>
-    {!detailMode&&!loading&&!error&&ordersData&&<div className={styles.introCard}>
+    {section!=='ai'&&!detailMode&&!loading&&!error&&ordersData&&<div className={styles.introCard}>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
         <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
       <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>}
-    <div className={styles.sections} role="tablist" aria-label={t.title}>
+    <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
+      <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
+        className={styles.aiTab} onClick={()=>chooseSection('ai')}>
+        <Sparkles size={21} aria-hidden="true"/><span><strong>{
+          locale==="ru"?"ИИ":locale==="es"?"IA":"AI"
+        }</strong></span>
+      </button>
       <button type="button" role="tab" aria-controls="hh-orders-panel" aria-selected={section==='orders'}
         onClick={()=>chooseSection('orders')}><ShoppingBag size={23} aria-hidden="true"/>
         <span><strong>{t.orders}</strong></span>
@@ -231,7 +251,17 @@ export default function MessagesOrdersClients({locale='en',children}){
         {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
       </button>
     </div>
+    {section==='ai'&&<div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai>
+      <MessengerAiWorkspace locale={locale}/>
+    </div>}
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
+      {!loading&&!error&&orders.length>0&&!selected&&
+        <aside className={styles.notifyInvite}>
+          <Bell size={19} aria-hidden="true"/>
+          <div><strong>{t.notifyTitle}</strong><p>{t.notifyInfo}</p></div>
+          <Link href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+            prefetch={false}>{t.notifyAction}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </aside>}
       {!loading&&!error&&!selected&&ordersData&&orders.length===0&&
         <div className={styles.freeOffers} data-free-order-offers>
           <Link href={'/'+locale+'/services/free-situation-review'} className={styles.freeOffer}

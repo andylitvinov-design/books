@@ -7,7 +7,7 @@ on:
       - 'scripts/benchmarking/salesbot-remaster-parity.mjs'
       - 'lib/crm/salesbot-editor.mjs'
       - 'tests/crm-salesbot-feature-editor.test.mjs'
-      - '.github/workflows/hh-salesbot-remaster-feature.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:

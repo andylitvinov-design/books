@@ -193,8 +193,36 @@ try {
       }
       assert.equal(await requiredConsent.isChecked(), true,
         'Required reply-only consent must remain selected before the mocked CRM order')
-      await contactForm.locator('button[type="submit"]').click()
-      await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
+      const submitButton=contactForm.locator('button[type="submit"]')
+      assert.equal(await submitButton.isEnabled(),true,
+        'The real CTA must become enabled only after a committed phone and consent')
+      // Make the actual mobile button available above the fixed app dock.
+      await submitButton.evaluate(node=>node.scrollIntoView({behavior:'auto',block:'center'}))
+      await page.waitForFunction(() => {
+        const node=document.querySelector('[data-cart-contact-form] button[type="submit"]')
+        if(!node||node.disabled)return false
+        const box=node.getBoundingClientRect(), nav=document.querySelector('.mobile-bottom-navigation')
+        if(box.top<0||box.bottom>innerHeight+1)return false
+        if(nav&&getComputedStyle(nav).display!=='none'&&box.bottom>=nav.getBoundingClientRect().top-5)return false
+        const hit=document.elementFromPoint(box.left+box.width/2,box.top+box.height/2)
+        return hit===node||node.contains(hit)
+      },null,{timeout:10000})
+      if(width<600)await submitButton.tap()
+      else await submitButton.click()
+      try{
+        await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]')
+          .waitFor({state:'visible',timeout:18000})
+      }catch(error){
+        const detail=await contactForm.evaluate(form=>({
+          alerts:[...form.querySelectorAll('[role="alert"]')].map(e=>e.textContent),
+          consent:form.querySelector('input[type="checkbox"][required]')?.checked,
+          submitEnabled:form.querySelector('button[type="submit"]')?.disabled===false,
+          ready:document.querySelector('[data-cart-order-registration]')?.getAttribute('data-cart-order-ready')
+        }))
+        console.error(JSON.stringify({phase:'consented-native-submit',locale,width,
+          syntheticRequests:syntheticEnquiries.length,detail}))
+        throw error
+      }
       await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
       assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
       assert.equal(syntheticEnquiries[0].contactConsent, true)

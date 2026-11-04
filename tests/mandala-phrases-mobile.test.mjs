@@ -54,12 +54,15 @@ test("voice and music are consecutive, reuse canonical sound attach/play functio
   assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
 });
 
-test("single approved phrases workspace with voice/music before the final Create action",()=>{
+test("approved phrases retain reusable audio but Apply transitions to Montage without auto-render",()=>{
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
@@ -71,7 +74,8 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
- assert.match(studio,/activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\)/);
+ assert.match(studio,/if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}/,
+   "music preview returns to the shared real audio editor without replacing approved TTS");
  assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/);
  assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
  assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);
@@ -98,7 +102,12 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
 test("TTS never speaks an outdated script when phrases are staged",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(studio,/disabled=\{recording\|\|preparing\|\|phrasePending\} onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.ok(studio.includes("disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}"));
+  // An unapproved draft blocks narration generation, not public voice comparisons.
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}"));
+  assert.ok(voice.includes("if(!languageAvailable||disabled||approvalPending||busy"));
+  assert.ok(voice.includes("data-video-affirmation-voice-preview={v.id}"));
   assert.match(studio,/data-video-voice-approval-required/);
   assert.match(compact,/const customPhraseText=externalPhraseDraft\?\?customDraft\?\?settings\.custom/);
   assert.match(compact,/setCustomDraft\(custom\);onExternalPhraseClear\?\.\(\)/);
@@ -135,4 +144,35 @@ test("Wave theme switch and explicit crisis cannot bypass approved video phrases
  assert.match(src,/function approvePhrases\(\)\{\s*if\(safetyBlocked\)return/);
  assert.match(src,/if\(disabled\|\|!geminiConsent\|\|safetyBlocked\)return/);
  assert.doesNotMatch(src,/else if\(geminiConsent\)void generateGemini\(\)/);
+});
+
+test("Wave retains the chosen idea when a filtered five-phrase list needs fallback entries",()=>{
+ const local=phrases.slice(phrases.indexOf("function createWaveDraft("),phrases.indexOf("function filtered("));
+ assert.match(local,/const completed=\[\.\.\.phrases,\.\.\.fallbackPhrases\.filter\(line=>!phrases\.includes\(line\)\)\]\.slice\(0,5\)/);
+ assert.match(local,/phrases:completed\.length===5\?completed:fallbackPhrases/);
+ assert.match(phrases,/data-hypno-own-phrase aria-label=\{extra\.add\}/);
+});
+
+
+test("real WebKit voice acceptance expands the approved transcript before comparing selected speech",()=>{
+  const e2e=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.transcriptDisclosure\} data-video-affirmation-transcript-review>/);
+  assert.match(voice,/data-video-affirmation-spoken-text/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
+  assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
+});
+
+test("real WebKit voice acceptance expands advanced sound options before selecting a verified music bed",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/<details className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced>/);
+  assert.match(voice,/data-video-affirmation-bed/);
+  assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
+  assert.match(browser,/assert\.ok\(tracks\.includes\("audio"\)/);
 });

@@ -38,7 +38,8 @@ test("the requested psychotherapy YouTube video is limited to RU service media",
   assert.match(registry, /ru: \{[\s\S]*?hypnotherapy: hypnotherapyRu,/);
   assert.match(registry, /en: \{[\s\S]*?hypnotherapy: hypnotherapyEn,/);
   assert.match(registry, /return media\[locale === "es" \? "en" : locale\]\[topic\]/);
-  assert.match(landing, /service === "imagery-therapy" \? "hypnotherapy"/);
+  assert.match(landing, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
   assert.match(showcase, /heading: "Образная психотерапия — видео о подходе"/);
 });
 
@@ -85,7 +86,8 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
-  assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
+  assert.match(personal, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
   assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
   assert.match(free, /const situationVideo = kind !== "situation" \? null/);

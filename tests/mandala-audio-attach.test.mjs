@@ -40,8 +40,10 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/const selectedAudioKey=uploadedAudio/);
   assert.match(studio,/const attachedAudioKey=attachedAudio===null/);
   assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
-  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,caption/);
+  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,[\s\S]*?audioStartSeconds,timelineTextClips,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,
+    "native sound begins only when the recorder starts, not during video preflight");
   assert.match(studio,/function attachSelectedAudio\(\)/);
   assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);
   assert.match(studio,/my-voice\\./);
@@ -49,8 +51,8 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
-  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume\)/);
+  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
   for(const fragment of [
@@ -151,7 +153,8 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
   assert.match(studio,/onClick=\{\(\)=>playQuickTrack\(id\)\}/);
-  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,"the recorder, not decoder preflight, begins scheduled audio");
   assert.match(studio,/startMovieSound\(attachedAudio,soundVolume\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1,"keep exactly one visible HTML audio player");
@@ -247,7 +250,8 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
   assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
     "only the active workspace mounts the shared native audio editor");
-  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
+  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}setSamplePreviewId\(choice\);\}\)/,
+    "playing a track synchronously mounts the one real native player in fifth Montage");
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
 });
@@ -257,7 +261,9 @@ test("direct audio URL reveals its existing workspace instead of hidden advanced
   const s=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(s,/const reveal=\(\)=>\{/);
-  assert.match(s,/"video-audio":"video"/);
+  assert.match(s,/"video-audio":"editor"/);
+  assert.match(s,/setBasicPanelTab\("music"\)/,
+    "deep link shows the actual shared audio editor, not a hidden old tab");
   assert.match(s,/setActiveWorkspace\(tab\)/);
   assert.match(s,/window\.addEventListener\("hashchange",reveal\)/);
   assert.match(s,/window\.removeEventListener\("hashchange",reveal\)/);

@@ -543,6 +543,46 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
+// One-off, exact-file specialist delegation for PR #2969: five-category
+// 120-storyboard audio playlists, offline reviewed music importer and
+// selected-story soundtrack handoff. The Mandala specialist validates 192
+// physical MP3 masters, 480 verified bindings, rights/attribution, native
+// playback, and macOS WebKit exported audio; exact-head Core validates the
+// entire Next.js release. Unknown files, other PRs, changed status, payments,
+// consent, auth or partial sets NEVER qualify.
+const REVIEWED_GOAL_TREE_AUDIO_2969 = new Map([
+  ["M",".github/workflows/holistic-support-mandala.yml"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["A","data/video-catalog/curated-audio-imports.json"],
+  ["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],
+  ["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],
+  ["A","lib/mandala/curated-audio-recommendations.mjs"],
+  ["A","lib/mandala/goal-tree-audio-playlists.mjs"],
+  ["M","lib/mandala/local-video-music.ts"],
+  ["A","scripts/import-reviewed-audio.mjs"],
+  ["A","tests/curated-audio-selection.test.mjs"],
+  ["A","tests/goal-tree-audio-playlists.test.mjs"],
+  ["A","tests/import-reviewed-audio.test.mjs"],
+  ["M","tests/mandala-smart-audio.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+function reviewedGoalTreeAudio2969(env,rows) {
+  if(env.GITHUB_REF!=='refs/pull/2969/merge' ||
+     env.GITHUB_HEAD_REF!=='feat/hh-goal-tree-120-audio-playlists-20261101' ||
+     rows.length!==REVIEWED_GOAL_TREE_AUDIO_2969.size*2)return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const [status,path]=[rows[i],rows[i+1]];
+    if(seen.has(path)||REVIEWED_GOAL_TREE_AUDIO_2969.get(path)!==status)
+      return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_GOAL_TREE_AUDIO_2969.size;
+}
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -782,12 +822,22 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
           build: false, browser: false, metrics: false, cases: 'none' };
     }
+    // Only this fully reviewed music/editor PR delegates unrelated storefront,
+    // Reiki and checkout browsers to its actual Mandala real-media owner.
+    if(env.GITHUB_REF==='refs/pull/2969/merge') {
+      if(!reviewedGoalTreeAudio2969(env,rows))
+        return full('UNREVIEWED_GOAL_TREE_AUDIO_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2969_MANDALA_AUDIO_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
     if(env.GITHUB_REF === 'refs/pull/3006/merge'){
       if(reviewedPhrases3006(env,rows))
         return {mode:'contracts',reason:'EXACT_PR_3006_MANDALA_REAL_MEDIA_BROWSER_OWNED',
           build:false,browser:false,metrics:false,cases:'none'};
       return full('UNREVIEWED_PR_3006_DELTA');
     }
+    const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
+    if(practitionerMediaPlan)return practitionerMediaPlan;
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
     let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;
@@ -869,6 +919,91 @@ export function publicPlaywrightEngines(plan) {
   const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
   return cases.length > 0 && cases.every(name => CHROMIUM_ONLY_CASES.has(name))
     ? 'chromium' : 'chromium webkit';
+}
+
+
+// Reusable domain ownership: private practitioner-created meditation media is
+// independently checked by protected Core, IA v2 (auth/RLS), practitioner
+// previews, private-audio E2E and YouTube owner-confirmed handoff. Public
+// Services still runs its real public-services smoke, not 12 unrelated
+// checkout/Alchemy/commerce/browser journeys. This is NOT an auth waiver.
+// Only already-reviewed module paths and explicitly reviewed additions are
+// eligible. Any mixed/unknown/payment/auth/migration path falls back to FULL.
+export const PRIVATE_PRACTITIONER_MEDIA_OWNERS = Object.freeze([
+  ".github/workflows/ia-v2.yml",
+  "app/admin/practitioners/meditations/page.jsx",
+  "app/admin/youtube-upload/page.js",
+  "app/api/admin/practitioners/meditations/[id]/handoff/route.js",
+  "app/api/admin/practitioners/meditations/[id]/media/route.js",
+  "app/api/admin/practitioners/meditations/route.js",
+  "app/api/admin/practitioners/meditations/youtube-start/route.js",
+  "app/api/admin/practitioners/meditations/youtube-verify/route.js",
+  "app/api/app/practice/meditations/[id]/media/route.js",
+  "app/api/app/practice/meditations/route.js",
+  "components/app/practice-workspace.jsx",
+  "components/app/practitioner-meditation-studio.jsx",
+  "components/app/practitioner-meditation-studio.module.css",
+  "components/practice-showcase.jsx",
+  "components/practitioner-meditations-moderation.jsx",
+  "components/practitioner-moderation.jsx",
+  "components/youtube-phone-uploader.jsx",
+  "lib/practitioners/meditation-studio-contract.mjs",
+  "lib/practitioners/meditation-studio-service.js",
+  "scripts/ci-practitioner-meditation-scope.mjs",
+  "supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql",
+  "tests/ci-practitioner-meditation-scope.test.mjs",
+  "tests/course-slide-recorder.test.mjs",
+  "tests/growth-studio-benchmark-quick-compose.test.mjs",
+  "tests/practice-course-materials-navigation.test.mjs",
+  "tests/practice-single-owner-cabinet.test.mjs",
+  "tests/practitioner-course-builder.test.mjs",
+  "tests/practitioner-course-quick-start.test.mjs",
+  "tests/practitioner-meditation-studio.test.mjs",
+  "tests/practitioner-preview-auth.test.mjs"
+]);
+export const PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS = Object.freeze([
+  "app/admin/practitioners/meditations/page.jsx",
+  "app/api/admin/practitioners/meditations/[id]/handoff/route.js",
+  "app/api/admin/practitioners/meditations/[id]/media/route.js",
+  "app/api/admin/practitioners/meditations/route.js",
+  "app/api/admin/practitioners/meditations/youtube-start/route.js",
+  "app/api/admin/practitioners/meditations/youtube-verify/route.js",
+  "app/api/app/practice/meditations/[id]/media/route.js",
+  "app/api/app/practice/meditations/route.js",
+  "components/app/practitioner-meditation-studio.jsx",
+  "components/app/practitioner-meditation-studio.module.css",
+  "components/practitioner-meditations-moderation.jsx",
+  "lib/practitioners/meditation-studio-contract.mjs",
+  "lib/practitioners/meditation-studio-service.js",
+  "scripts/ci-practitioner-meditation-scope.mjs",
+  "supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql",
+  "tests/ci-practitioner-meditation-scope.test.mjs",
+  "tests/practitioner-meditation-studio.test.mjs"
+]);
+const privatePractitionerFiles = new Set(PRIVATE_PRACTITIONER_MEDIA_OWNERS);
+const privatePractitionerAdditions = new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+const privateNewReleaseAnchors = new Set([".github/workflows/ia-v2.yml","app/api/admin/practitioners/meditations/route.js","app/api/app/practice/meditations/route.js","lib/practitioners/meditation-studio-service.js","supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql"]);
+export function planPrivatePractitionerMediaRows(rows) {
+  if (!Array.isArray(rows) || rows.length<2 || rows.length%2!==0) return null;
+  const seen=new Set();let ownedCount=0;let sensitiveAdded=false;
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(typeof path!=='string'||seen.has(path))return null;
+    seen.add(path);
+    if(TRUSTED_CI_CONTRACT_FILES.has(path) && status==='M')continue;
+    if(!privatePractitionerFiles.has(path))return null;
+    if(status==='A'){
+      if(!privatePractitionerAdditions.has(path))return null;
+      sensitiveAdded=true;
+    }else if(status!=='M')return null;
+    ownedCount++;
+  }
+  if(!ownedCount)return null;
+  // Introducing a private endpoint or RLS migration is allowed only when the
+  // complete reviewed IA/security owner integration is in the same PR.
+  if(sensitiveAdded && [...privateNewReleaseAnchors].some(path=>!seen.has(path)))return null;
+  return {mode:'focused',reason:'PRACTITIONER_MEDIA_OWNED_SECURITY_AND_PUBLIC_SMOKE',
+    build:true,browser:true,metrics:false,cases:'verify-public-services-production.mjs'};
 }
 
 function main() {

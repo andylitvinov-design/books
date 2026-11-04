@@ -77,7 +77,8 @@ test('navigation and fallback are context-aware',()=>{
 test('published chat wires local NLU to existing confirm/create/audio flow',()=>{
  const ui=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
  assert.match(ui,/understandVideoChatReply\(value,step\)/);
- assert.match(ui,/reply\.kind==="goal"\|\|reply\.kind==="append_goal"/);
+ assert.match(ui,/if\(reply\.kind==="goal"\)/);
+ assert.match(ui,/if\(reply\.kind==="append_goal"\)/);
  assert.match(ui,/reply\.kind==="edit"/);
  assert.match(ui,/onConfirm\(\{scenario:executable\}\)/);
  assert.match(ui,/onCreate\(\)/);

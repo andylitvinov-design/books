@@ -157,13 +157,13 @@ function destination(locale, key) {
     diagnostic:root + '?panel=services&create=1&starter=diagnostic',
     energy:root + '?panel=services&create=1&starter=energy',
     personal:root + '?panel=services&create=1&starter=personal',
-    meditation:root + '?panel=materials&materialTab=courses&create=1&meditation=audio',
+    meditation:root + '?panel=meditations&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
     reiki:root + '?panel=services&create=1&starter=reiki',
     course:root + '?panel=materials&materialTab=courses&create=1',
     material:root + '?panel=materials&materialTab=articles',
     session:root + '?panel=services',
-    meditationList:root + '?panel=materials&materialTab=courses',
+    meditationList:root + '?panel=meditations',
     talismanList:root + '?panel=services',
     reikiList:root + '?panel=services',
     courseList:root + '?panel=materials&materialTab=courses',
@@ -468,7 +468,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </section>
     </div>}
 
-    <nav className={styles.bottomNav} aria-label={t.practice}>
+    <nav className={styles.bottomNav} data-legacy-practice-bottom-nav aria-label={t.practice}>
       {TABS.map(({key, label, Icon}) =>
         <button key={key} type="button" className={styles.navItem + (key === 'practice' ? ' ' + styles.navActive : '')}
           onClick={() => void openAction(key)} aria-current={key === 'practice' ? 'page' : undefined}>

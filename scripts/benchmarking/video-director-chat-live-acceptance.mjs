@@ -167,7 +167,9 @@ try{
       assert.ok(interactive,'LEGACY_CHAT_INTERACTION_NOT_HYDRATED');
       await textarea.fill('');
     }
-    await state(page,'goal');
+    const entryStep=await chat.getAttribute('data-chat-step');
+    assert.ok(['goal','category'].includes(entryStep),
+      'CHAT_ENTRY_MUST_BE_LEGACY_OR_CANONICAL_TREE');
     assert.equal(await chat.locator('form textarea').count(),1,'CHAT_COMPOSER_DUPLICATED');
     assert.equal(await chat.locator('input[type=checkbox]').isChecked(),false,
       'EXTERNAL_AI_MUST_REQUIRE_OPT_IN');
@@ -175,19 +177,41 @@ try{
       'CREATIVE_BRIEF_LIMIT_REGRESSION');
     const before=await chat.boundingBox();
     assert.ok(before&&before.width<=sizes[locale]+2,'CHAT_OVERFLOWS_MOBILE_VIEWPORT');
-    await send(chat,'Video');
-    await state(page,'goal');
-    await send(chat,ideas[locale]);
-    // New Director: one meaningful goal -> executable story immediately.
-    // Legacy LIVE: preserve the real multi-question check until the new
-    // production SHA is deployed; do not fake a successful action.
-    await page.waitForFunction(()=>{
-      const step=document.querySelector('[data-video-director-chat]')?.getAttribute('data-chat-step');
-      return step==='review'||step==='mood';
-    },undefined,{timeout:15000});
-    const next=await chat.getAttribute('data-chat-step');
-    if(ownerFlow)assert.equal(next,'review','OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY');
-    if(locale==='en'&&next==='mood'){
+    let selectedCaption=null;
+    if(entryStep==='category'){
+      // The same canonical category/topic/scenario/idea/phrase registry drives
+      // the actual messenger. This path is required as soon as it is LIVE.
+      const pick=async(step,id,expectedCount)=>{
+        await state(page,step);
+        const panel=chat.locator('[data-chat-inline-choices]');
+        assert.equal(await panel.count(),1,'ONE_ACTIVE_INLINE_ANSWER_PANEL_'+step);
+        assert.equal(await panel.getAttribute('data-chat-choice-stage'),step,
+          'CHAT_INLINE_STAGE_MISMATCH_'+step);
+        assert.equal(await panel.locator('xpath=ancestor::*[@data-chat-assistant-turn]').count(),1,
+          'CHOICES_NOT_INSIDE_ASSISTANT_MESSAGE_'+step);
+        const buttons=panel.locator('[data-video-chat-tree-choice]');
+        assert.equal(await buttons.count(),expectedCount,
+          'CANONICAL_TREE_OPTION_COUNT_'+step);
+        const button=chat.locator('[data-video-chat-tree-choice="'+id+'"]');
+        assert.equal(await button.count(),1,'CANONICAL_ID_NOT_AVAILABLE_'+id);
+        const text=(await button.innerText()).trim();
+        await button.click();
+        return text;
+      };
+      await state(page,'category');
+      await send(chat,'Video');
+      await state(page,'category');
+      await pick('category','love',5);
+      await pick('topic','love-trust',6);
+      await pick('scenario','love-trust-s1',4);
+      await pick('idea','love-trust-s1-i1',4);
+      const firstPhrase=chat.locator('[data-video-chat-tree-choice]').first();
+      await state(page,'phrase');
+      assert.equal(await chat.locator('[data-video-chat-tree-choice]').count(),3,
+        'PREPARED_PHRASE_CHOICES_NOT_AVAILABLE');
+      selectedCaption=(await firstPhrase.innerText()).trim();
+      await firstPhrase.click();
+      await state(page,'mood');
       await send(chat,'calm');
       await state(page,'aspect');
       await send(chat,'vertical');
@@ -195,8 +219,31 @@ try{
       await send(chat,'20 seconds');
       await state(page,'music');
       await send(chat,'meditation');
-      await state(page,'phrases');
-      await send(chat,'no');
+    }else{
+      // The old LIVE version remains testable; strict post-merge acceptance
+      // refuses any accidental fallback to the legacy unbranched dialogue.
+      if(process.env.HH_CHAT_EXPECT_CANONICAL==='true')
+        throw Error('CANONICAL_DIALOG_NOT_DEPLOYED');
+      await send(chat,'Video');
+      await state(page,'goal');
+      await send(chat,ideas[locale]);
+      await page.waitForFunction(()=>{
+        const stage=document.querySelector('[data-video-director-chat]')?.getAttribute('data-chat-step');
+        return stage==='review'||stage==='mood';
+      },undefined,{timeout:15000});
+      const next=await chat.getAttribute('data-chat-step');
+      if(ownerFlow)assert.equal(next,'review','OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY');
+      if(locale==='en'&&next==='mood'){
+        await send(chat,'calm');
+        await state(page,'aspect');
+        await send(chat,'vertical');
+        await state(page,'duration');
+        await send(chat,'20 seconds');
+        await state(page,'music');
+        await send(chat,'meditation');
+        await state(page,'phrases');
+        await send(chat,'no');
+      }
     }
     await state(page,'review');
     const card=chat.locator('[data-video-chat-storyboard]');
@@ -204,6 +251,15 @@ try{
     assert.equal(await card.locator('[data-executable-video-scenario]').getAttribute('data-executable-video-scenario'),
       'hh-executable-video-scenario-v1','PLAN_NOT_EXECUTABLE');
     assert.equal(await card.locator('[data-chat-shot-id]').count(),4,'FOUR_SHOT_PREVIEW_REQUIRED');
+    if(entryStep==='category'){
+      const warning=card.locator('[data-chat-concept-unbound]');
+      assert.equal(await warning.count(),1,'UNBOUND_CONCEPT_MUST_NOT_BE_FALSELY_EXPORTED');
+      assert.ok(selectedCaption,'SELECTED_PREPARED_PHRASE_MISSING');
+      const renderedCaptions=await card.locator('[data-chat-shot-id] small')
+        .allTextContents();
+      assert.ok(renderedCaptions.some(value=>value.includes(selectedCaption)),
+        'SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS');
+    }
     if(locale==='ru'){
       await card.locator('[data-video-chat-change-filter="duration"]').click();
       await state(page,'duration');
@@ -223,6 +279,7 @@ try{
     assert.equal(new Set(shots.map(x=>x.id)).size,4,'REPEATED_OR_MISSING_MP4_SCENE');
     for(const shot of shots)assert.ok(approved.has(shot.id),'UNLICENSED_PREVIEW_'+shot.id);
     report.localesChecked.push({locale,width:sizes[locale],chatVisible:true,filtersApplied:true,
+      canonicalTreeChecked:entryStep==='category',preparedCaptionInStoryboard:!!selectedCaption,
       fourApprovedClips:true});
     if(locale!=='ru'){
       assert.deepEqual(pageErrors,[],'CLIENT_JAVASCRIPT_ERROR_'+locale);

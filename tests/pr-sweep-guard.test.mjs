@@ -386,7 +386,7 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   ]) {
     assert.ok(source.includes('- name: ' + name + '\n        ' + prodOnly + '\n        run: ' + command), name + ' must execute on push and delegate only production PR');
   }
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
   assert.ok(source.includes("github.event.pull_request.draft == false"));
@@ -398,7 +398,7 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
     'tests/session-media-sdk.test.mjs',
     'Fixture lint and private media tests',
   ]) assert.ok(source.includes(required), 'private-owner/media gate removed: ' + required);
-  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -409,7 +409,7 @@ test('Practitioner presentations retain all real contracts on production PRs and
   const rule = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
   for (const [step, command] of [
     ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
@@ -462,7 +462,7 @@ test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retai
     'npx --no-install eslint components/app/simple-service-editor.jsx',
     "'.github/workflows/practice-visual-services.yml'",
   ]) assert.ok(source.includes(contract), 'missing real practice/consent/security gate '+contract);
-  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -486,7 +486,7 @@ test('Pro master workflow delegates duplicate global TS/Next to unconditional ex
     ['Validate the Next.js production build','npm run build'],
   ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
     'Pro '+step+' must be owned by immutable-base Core on production PRs');
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/run: npm run build/);
   assert.ok(core.includes('ci-specialist-aggregate.mjs'));
   assert.doesNotMatch(pro,/continue-on-error:\s*true/);

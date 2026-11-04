@@ -69,10 +69,19 @@ function expectedFor(id,collection,manifests){
 }
 function rightsScope(scene,source){
   if(scene.rightsReference?.kind==='dareful_cc_by_4_0'){
+    // The safe importer accepts either one genuine source or two independently
+    // licensed shots. Honor that contract in the physical catalogue probe too.
+    // Legacy two-shot records predate sourceKind and remain supported.
+    const sources=source.sources;
+    const validShape=source.sourceKind==='licensed_single_shot_edit'
+      ? Array.isArray(sources)&&sources.length===1
+      : (source.sourceKind===undefined||source.sourceKind==='licensed_two_shot_composite')
+        &&Array.isArray(sources)&&sources.length===2;
     if(!String(scene.rightsReference.attribution||'').includes('CC BY 4.0')||
-       !Array.isArray(source.sources)||source.sources.length!==2||
-       !source.sources.every(s=>s.licenseId==='cc_by_4_0'&&
-         /^https:\/\/dareful\.com\//.test(s.sourcePage)))
+       !validShape||
+       !sources.every(s=>s.licenseId==='cc_by_4_0'&&
+         /^https:\/\/dareful\.com\/[a-z0-9-]+\/$/.test(s.sourcePage))||
+       new Set(sources.map(s=>s.sourcePage)).size!==sources.length)
       invalid('INDIVIDUAL_RIGHTS_EVIDENCE');
     return 'individual_record';
   }

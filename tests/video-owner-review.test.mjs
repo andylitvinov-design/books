@@ -88,3 +88,11 @@ test('admin route explicitly denies anonymous requests and never caches private 
  assert.match(page,/noindex, nofollow/);
  assert.doesNotMatch(page,/export async function POST|sendToProvider|chargedXP/);
 });
+
+test('mobile owner review exercises real candidate video and private JSON draft',()=>{
+ const script=readFileSync(new URL('../scripts/benchmarking/verify-video-owner-review-browser.mjs',import.meta.url),'utf8');
+ assert.match(script,/videoWidth/);
+ assert.match(script,/approvedForPublication/);
+ assert.match(script,/waitForEvent\(['"]download/);
+ assert.match(script,/route\.abort/);
+});
