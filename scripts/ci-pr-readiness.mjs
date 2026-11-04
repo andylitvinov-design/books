@@ -1,6 +1,8 @@
 // Fail-closed early runner-minute guard: run after checkout, before setup-node/npm/Next.
 // Advisory efficiency check; NOT a substitute for the immutable-base release-ready gate.
-import { readFileSync, appendFileSync } from 'node:fs';
+import { readFileSync, appendFileSync, existsSync, realpathSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const SHA = /^[0-9a-f]{40}$/i;
@@ -94,6 +96,26 @@ async function readExactBaseAncestry(repository, live, token) {
   };
 }
 
+// The Public Services job uses a pinned Playwright container. actions/checkout
+// trusts the workspace in the host runner HOME, but Bash steps run in a separate
+// container HOME and may hit git's "dubious ownership" guard. Only after a live,
+// exact-HEAD PR readiness PASS, trust the one verified GitHub checkout directory.
+// Never use safe.directory=* or trust any caller-supplied path outside workspace.
+export function verifiedPublicServicesCheckout(env = process.env, cwd = process.cwd()) {
+  if (env.GITHUB_EVENT_NAME !== 'pull_request' ||
+      env.HH_PUBLIC_QA_ORIGIN !== 'http://127.0.0.1:3100') return null;
+  const workspace = env.GITHUB_WORKSPACE;
+  if (typeof workspace !== 'string' || !workspace.startsWith('/') ||
+      !existsSync(join(workspace, '.git'))) {
+    throw new Error('Public Services checkout workspace missing or unverified');
+  }
+  const trustedPath = realpathSync(workspace);
+  if (trustedPath !== realpathSync(cwd)) {
+    throw new Error('Public Services checkout differs from current working directory');
+  }
+  return trustedPath;
+}
+
 function emit(result) {
   const status = result.ready ? 'PASS' : 'BLOCK';
   console.log(`PR early-readiness ${status}: ${result.code}: ${result.message}`);
@@ -125,6 +147,15 @@ export async function main() {
       : null;
     const result = assessPrReadiness(event, live, repository, ancestryProof);
     if (result.code !== 'mergeability_pending' || attempt === 2) {
+      if (result.ready) {
+        const publicWorkspace = verifiedPublicServicesCheckout();
+        if (publicWorkspace) {
+          // Trust exactly this checked-out repository, then keep all subsequent
+          // immutable two-parent/ancestry checks intact in the protected workflow.
+          execFileSync('git', ['config', '--global', '--add', 'safe.directory', publicWorkspace],
+            { timeout: 4000, stdio: 'pipe' });
+        }
+      }
       emit(result);
       if (!result.ready) process.exitCode = 1;
       return;

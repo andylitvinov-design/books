@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {readFileSync} from "node:fs";
 import {affirmationNarrationText} from "../lib/mandala/affirmation-voice.mjs";
-import {VOICE_STUDIO_VOICES,validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
+import {VOICE_STUDIO_VOICES,VOICE_STUDIO_SAMPLE,validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -24,6 +24,31 @@ test("all six selected voices synthesize exactly the approved phrase through dis
       voiceId:voice.id,language:"ru",text:phrase,consent:false}));
   }
   assert.equal(names.size,6);
+});
+
+test("six real sample buttons remain usable, with bounded cancellation and iPhone tap replay",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.match(ui,/timer=setTimeout\(\(\)=>\{timedOut=true;controller\.abort\(\);\},27000\)/,
+    "a slow provider must not trap all voice previews in Loading forever");
+  assert.ok(ui.includes("if(sampleBusyId===id)"),"tapping active Loading cancels it");
+  assert.ok(ui.includes("if(!sampleBusyId && sampleVoiceId===id && sampleUrl && sampleAudioRef.current)"),
+    "replay must re-use a real cached WAV");
+  assert.ok(ui.includes("await player.play()"),"iPhone replay must be invoked during a real tap");
+  assert.ok(ui.includes("disabled={busy||disabled||!languageAvailable}"),
+    "other sample buttons must remain usable during one network request");
+  assert.ok(ui.includes("if(timer!==null)clearTimeout(timer)"),
+    "no orphan timeout after network success/failure");
+  assert.ok(ui.includes('sampleBusyId?t.sampleBusyHelp:sampleMessage'),
+    "spinner must explain progress and cancellation");
+  assert.ok(ui.includes('onError={()=>setSampleMessage(t.sampleAudioError)}'),
+    "native audio decode failures must be visible rather than silent");
+  for(const language of ["ru","en","es"]){
+    const txt=VOICE_STUDIO_SAMPLE[language];
+    assert.ok(txt.length>=35&&txt.length<=85,"short public sample in "+language);
+    const checked=validateStudioRequest({mode:"sample",voiceId:"sofia",language});
+    assert.equal(checked.text,txt);
+    assert.equal(checked.consent,false);
+  }
 });
 
 test("previewing a voice selects it for the actual phrase and WAV filename",()=>{
