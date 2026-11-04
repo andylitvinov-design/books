@@ -40,6 +40,8 @@ import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCa
 import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
 import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyTubeEditor} from "@/lib/mandala/creative-editor-history.mjs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
+import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
+import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
 import type {TimelineTextClip,TimelineTransition,TimelineLook} from "./mandala-multitrack-timeline";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -1311,11 +1313,30 @@ function paintStageCaptionOverlay(
     }else line=next;
   }
   if(line)lines.push(line);
-  const top=h*.80-(lines.length-1)*font*.67;
+  const animation=captionAnimationFrame(frame,frame.localTime,frame.durationSeconds,frame.alpha);
+  const centerY=animation.positionId==="top"?h*.16:
+    animation.positionId==="center"?h*.49:h*.80;
+  const top=centerY-(lines.length-1)*font*.67;
   const bandHeight=lines.length*font*1.25+font*.8;
-  ctx.fillStyle="rgba(9,31,29,.68)";
-  ctx.fillRect(w*.055,top-font*.76,w*.89,bandHeight);
-  ctx.fillStyle="#fffdf7";
+  ctx.globalAlpha=animation.alpha;
+  ctx.translate(0,animation.translateY*h);
+  ctx.translate(w/2,centerY);
+  ctx.scale(animation.scale,animation.scale);
+  ctx.translate(-w/2,-centerY);
+  if(animation.styleId!=="minimal"){
+    ctx.fillStyle=animation.styleId==="cinema"?"rgba(10,12,18,.82)":
+      animation.styleId==="glow"?"rgba(31,21,58,.56)":"rgba(9,31,29,.68)";
+    ctx.fillRect(w*.055,top-font*.76,w*.89,bandHeight);
+  }
+  ctx.fillStyle=animation.styleId==="glow"?"#fcf0ff":"#fffdf7";
+  if(animation.styleId==="glow"){
+    ctx.shadowColor="rgba(207,133,255,.95)";
+    ctx.shadowBlur=Math.max(6,font*.42);
+  }
+  if(animation.styleId==="minimal"){
+    ctx.shadowColor="rgba(4,16,18,.85)";
+    ctx.shadowBlur=Math.max(4,font*.13);
+  }
   ctx.textAlign="center";
   ctx.textBaseline="middle";
   for(let i=0;i<lines.length;i++){
@@ -1825,6 +1846,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [timelineTextClips,setTimelineTextClips]=useState<TimelineTextClip[]|null>(null);
   const timelineTextSerial=useRef(0);
   const editorDraftInputRef=useRef<HTMLInputElement>(null);
+  const subtitleFileInputRef=useRef<HTMLInputElement>(null);
+  const [smartCutBusy,setSmartCutBusy]=useState(false);
   const editorDraftEpochRef=useRef(0);
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
@@ -2032,6 +2055,86 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }finally{
       if(epoch===editorDraftEpochRef.current&&editorDraftInputRef.current)
         editorDraftInputRef.current.value="";
+    }
+  };
+  const importEditorSubtitles=async(file:File)=>{
+    if(recording||preparing||file.size<2||file.size>CAPTION_SRT_BYTES)return;
+    try{
+      const oldSignature=sourceRef.current;
+      const srt=await file.text();
+      if(oldSignature!==sourceRef.current)return;
+      const captions=importSrtCaptionClips(srt,duration) as TimelineTextClip[];
+      recordBeforeEditorChange("srt-import");
+      setTimelineTextClips(captions);
+      stopMovieSound();setPreviewPlaying(false);
+      setNotice(locale==="ru"?"Субтитры SRT добавлены на монтажную шкалу.":
+        locale==="es"?"Subtítulos SRT añadidos a la línea de tiempo.":
+        "SRT subtitles added to the editable timeline.");
+    }catch{
+      setNotice(locale==="ru"?"Ошибка SRT: нужны корректные таймкоды и не более 16 надписей.":
+        locale==="es"?"SRT inválido: marcas de tiempo y máximo de 16 líneas.":
+        "Invalid SRT: check timecodes and the 16-caption limit.");
+    }finally{
+      if(subtitleFileInputRef.current)subtitleFileInputRef.current.value="";
+    }
+  };
+  const exportEditorSubtitles=()=>{
+    if(recording||preparing||!timelineCaptions.length)return;
+    try{
+      const srt=exportSrtCaptionClips(timelineCaptions,duration);
+      const url=URL.createObjectURL(new Blob([srt],{type:"text/plain;charset=utf-8"}));
+      const link=document.createElement("a");link.href=url;
+      link.download="mytube-subtitles.srt";
+      document.body.appendChild(link);link.click();link.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url),5000);
+    }catch{
+      setNotice(locale==="ru"?"Не удалось экспортировать субтитры.":
+        locale==="es"?"No se pudieron exportar los subtítulos.":
+        "Subtitles could not be exported.");
+    }
+  };
+  const smartCutFromAudio=async()=>{
+    if(recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
+       !cinematicPlan||attachedAudio?.kind!=="file")return;
+    const file=attachedAudio.file;
+    if(!file.size||file.size>Math.min(SMART_CUT_MAX_AUDIO_BYTES,8*1024*1024)){
+      setNotice(locale==="ru"?"Для анализа ритма выберите аудиофайл до 8 МБ.":
+        locale==="es"?"Selecciona un archivo de audio de hasta 8 MB.":
+        "Choose an audio file up to 8 MB for beat analysis.");return;
+    }
+    setSmartCutBusy(true);
+    const sourceSignature=sourceRef.current;
+    let ctx:AudioContext|null=null;
+    try{
+      ctx=new AudioContext();
+      const audio=await ctx.decodeAudioData(await file.arrayBuffer());
+      if(sourceRef.current!==sourceSignature)return;
+      const pulses=audioTransientScores(audio.getChannelData(0),audio.sampleRate,duration);
+      const proposal=recommendSmartAudioCuts(duration,cinematicPlan.shots,pulses);
+      if(proposal.status!=="audio_aligned"){
+        setNotice(locale==="ru"?"В аудио нет достаточно чётких ритмических акцентов: исходный монтаж сохранён.":
+          locale==="es"?"No se detectó un ritmo claro: el montaje no cambia.":
+          "No clear beats detected; your current edit is unchanged.");return;
+      }
+      recordBeforeEditorChange("smart-audio-cut");
+      setCinematicPlan(current=>{
+        if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
+        const nextShots=current.shots.map((shot,i)=>({...shot,
+          startSeconds:proposal.shots[i].startSeconds,
+          durationSeconds:proposal.shots[i].durationSeconds}));
+        return {...current,shots:nextShots} as CinematicStoryboard;
+      });
+      stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(v=>v+1);
+      setNotice(locale==="ru"?"Четыре видеосцены выровнены по ритмическим акцентам аудио. Проверьте результат.":
+        locale==="es"?"Cuatro escenas ajustadas a los acentos musicales; revisa el resultado.":
+        "Four scenes aligned to audio transients. Review the resulting cuts.");
+    }catch{
+      setNotice(locale==="ru"?"Не удалось проанализировать аудио на этом устройстве.":
+        locale==="es"?"No se pudo analizar este audio en el dispositivo.":
+        "Could not analyze this audio on this device.");
+    }finally{
+      if(ctx)void ctx.close().catch(()=>{});
+      setSmartCutBusy(false);
     }
   };
   const freeFilmClipLabel=(id:string)=>{
@@ -3296,7 +3399,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const durationSeconds=Math.max(.1,clampTrackSecond(
         patch.durationSeconds??clip.durationSeconds,duration-startSeconds));
       return {...clip,startSeconds,durationSeconds,
-        text:patch.text===undefined?clip.text:normalizeStageCaption(patch.text)};
+        text:patch.text===undefined?clip.text:normalizeStageCaption(patch.text),
+        ...(patch.styleId!==undefined?{styleId:patch.styleId}:{}),
+        ...(patch.motionId!==undefined?{motionId:patch.motionId}:{}),
+        ...(patch.positionId!==undefined?{positionId:patch.positionId}:{})};
     }));
     setPreviewPlaying(false);stopMovieSound();
   };
@@ -5471,6 +5577,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}/>
 
+          <div className={videoStyles.editorDraftTools} data-video-editor-smart-tools>
+            <button type="button" data-video-smart-audio-cut
+              disabled={recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
+                attachedAudio?.kind!=="file"}
+              onClick={()=>void smartCutFromAudio()}>
+              <Music2 size={16} aria-hidden="true"/>
+              {smartCutBusy?(locale==="ru"?"Анализ ритма…":locale==="es"?
+                "Analizando…":"Analyzing…"):
+                locale==="ru"?"Монтаж по ритму":locale==="es"?
+                "Montaje por ritmo":"Cut to audio beats"}
+            </button>
+            <button type="button" data-video-subtitles-import disabled={recording||preparing}
+              onClick={()=>subtitleFileInputRef.current?.click()}>
+              <Type size={16} aria-hidden="true"/>
+              {locale==="ru"?"Импорт SRT":locale==="es"?"Importar SRT":"Import SRT"}
+            </button>
+            <button type="button" data-video-subtitles-export
+              disabled={recording||preparing||!timelineCaptions.length}
+              onClick={exportEditorSubtitles}>
+              <Download size={16} aria-hidden="true"/>
+              {locale==="ru"?"Экспорт SRT":locale==="es"?"Exportar SRT":"Export SRT"}
+            </button>
+            <input type="file" accept=".srt,text/plain" ref={subtitleFileInputRef}
+              aria-label={locale==="ru"?"Файл субтитров SRT":locale==="es"?
+                "Archivo SRT":"SRT subtitle file"}
+              onChange={e=>{
+                const file=e.currentTarget.files?.[0];
+                if(file)void importEditorSubtitles(file);
+              }}/>
+          </div>
           <div className={videoStyles.editorDraftTools} data-video-editor-draft-tools>
             <button type="button" data-video-editor-draft-save
               disabled={recording||preparing||!usingFreeFilmCompilation||!activeFreeFilmPreset}

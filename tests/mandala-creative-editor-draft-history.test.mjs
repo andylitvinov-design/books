@@ -96,3 +96,12 @@ test("real Studio wires editing actions to history and bounded local project imp
  assert.match(t,/data-video-timeline-undo/);
  assert.match(t,/data-video-timeline-redo/);
 });
+
+test("portable draft retains user-selected animated subtitle appearance safely",()=>{
+  const styled={...base(),captions:[{id:"caption-1",text:"Hello",startSeconds:1,
+    durationSeconds:4,styleId:"cinema",motionId:"slide_up",positionId:"center"}]};
+  const encoded=createMyTubeEditorDraft(styled,allowlists);
+  assert.equal(parseMyTubeEditorDraft(encoded,allowlists).captions[0].motionId,"slide_up");
+  assert.throws(()=>decode({...JSON.parse(encoded),
+    captions:[{...JSON.parse(encoded).captions[0],styleId:"<img src=x>"}]}),/caption/);
+});
