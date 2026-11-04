@@ -20,6 +20,9 @@
   var root, graphSlot, graphHint, comparison, prList, coverage, status, firstFoot, secondFoot;
   var sourceSnapshot = null, baseline = null, detailed = null, mounted = false;
   var scheduled = false, detailBusy = false, observer = null;
+  var queueSnapshot = null, queueError = null, archive = null, archivePending = false;
+  var auditRequests = 0, auditBusy = false, auditCache = new Map();
+  var diagnostics = null, archiveNote = null;
   var number = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1});
   function make(tag, className, value) {
     var e = document.createElement(tag);
@@ -77,6 +80,160 @@
     });
     return result;
   }
+  var SUBSTEPS = {
+    prepare: [
+      ['ready','Создан → Ready'],['triage','Ready → Triage'],
+      ['claimed','Triage → назначен исполнитель'],['repair','Исполнитель → начало Repair'],
+      ['source','Repair → публикация исправления'],['first_ci','Публикация → первая CI']
+    ],
+    runner: [
+      ['workflow_wait','Workflow поставлен → создание jobs'],
+      ['runner_wait','Ожидание runner после создания jobs']
+    ],
+    ci: [
+      ['checks','Выполнение Core CI jobs'],['specialist','Specialist CI jobs'],
+      ['between_waves_unknown','Промежутки между волнами CI (не установлено)'],
+      ['other_unknown','Другие пробелы событий CI'],['retry','Повторные CI: доказанные запуски']
+    ],
+    gate: [
+      ['green_checks','Core и Specialist зелёные'],
+      ['gate_queue','Ожидание Merge Gate'],['gate_run','Работа Merge Gate']
+    ],
+    merge: [
+      ['approval','Gate зелёный → готовность к merge'],
+      ['merge_wait','Ожидание auto-merge / слияния']
+    ],
+    merge_to_live: [
+      ['deploy_queue','Merge → создание production deployment'],
+      ['deploy_build','Deployment → READY'],['alias','READY → проверенный LIVE alias']
+    ]
+  };
+  function validCount(v) { return Number.isSafeInteger(v) && v >= 0; }
+  function queueValue(snapshot, key) {
+    if (!snapshot || typeof snapshot !== 'object') return null;
+    var buckets=[snapshot.counts,snapshot.queue?.counts,snapshot.queue,snapshot.metrics,
+      snapshot.summary,snapshot.data,snapshot];
+    for (var bucket of buckets) {
+      if (bucket && typeof bucket==='object' && validCount(bucket[key])) return bucket[key];
+    }
+    return null;
+  }
+  function queueNumbers(data) {
+    var names=['prs_waiting_ci','workflows_queued','workflows_running','jobs_queued','jobs_running'];
+    var values=names.map(function (n) {return queueValue(data,n);});
+    return values.some(validCount)?values:null;
+  }
+  function showQueue() {
+    var original = originalQueue();
+    var direct = queueNumbers(queueSnapshot);
+    function one(index) {
+      var a=original?.[index];
+      // A successful direct source is preferred over an uninitialized hidden original widget.
+      if (validCount(direct?.[index])) return String(direct[index]);
+      return /^\d+$/.test(a||'') ? a : '—';
+    }
+    var running=one(2), queued=one(1);
+    cells.running.n.textContent=running;
+    cells.queued.n.textContent=queued;
+    cells.running.sub.textContent='Workflows · jobs выполняются: '+one(4);
+    cells.queued.sub.textContent='Workflows · jobs ожидают: '+one(3);
+    status.textContent='GitHub CI · PR ждут: '+one(0)+'. '+
+      (queueError ? 'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».' :
+       'Только подтверждённые числа; неизвестное не равно 0.');
+  }
+  async function readQueue() {
+    try {
+      // This is the EXISTING queue endpoint and an on-demand GET only.
+      // No new schedules, no GitHub client token, no interval polling.
+      var response=await fetch('/api/ci-queue-detail',{cache:'default',
+        headers:{Accept:'application/json'}});
+      if (!response.ok) throw Error('HTTP '+response.status);
+      var data=await response.json();
+      if (!queueNumbers(data)) throw Error('Формат счётчиков не подтверждён');
+      queueSnapshot=data;queueError=null;
+    }catch(e){queueError=String(e.message||e).slice(0,95);}
+    showQueue();
+  }
+  function setSubstep(key, name, value, note) {
+    var entry=stages[key]?.substeps?.[name];
+    if (!entry) return;
+    entry.value.textContent=valid(value)?duration(value):'—';
+    entry.note.textContent=note || (valid(value)?'Подтверждённая выборка':'Нет подтверждённой пары временных меток');
+  }
+  function buildSubsteps(key, target) {
+    target.replaceChildren();
+    var list=make('div','hh2-stage-substeps');
+    stages[key].substeps=Object.create(null);
+    for (var pair of SUBSTEPS[key]||[]) {
+      var row=make('div','hh2-substep');
+      var label=make('span','',pair[1]);
+      var value=make('strong','','—');
+      var note=make('small','','Нет подтверждённой пары событий для той же когорты');
+      row.append(label,value,note);list.append(row);
+      stages[key].substeps[pair[0]]={value:value,note:note};
+    }
+    target.append(list);
+    var sample=make('p','hh2-sample','Времена не выводятся из разности других этапов. Глубокие замеры и архив CI могут иметь иной охват PR.');
+    target.append(sample);stages[key].sample=sample;
+  }
+  function archiveMatchedRows() {
+    if(!baseline?.rows||!Array.isArray(archive?.rows))return [];
+    var numbers=new Set(baseline.rows.map(function(p){return p.number;}));
+    return archive.rows.filter(function(r){return numbers.has(r.pr) &&
+      valid(r.elapsed_minutes) && r.stages_ms && typeof r.stages_ms==='object';});
+  }
+  function applyArchive() {
+    var rows=archiveMatchedRows();
+    if(!rows.length)return;
+    var keys=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
+    var sum=Object.create(null),tot=0;
+    for(var k of keys)sum[k]=0;
+    for(var r of rows) {
+      tot+=r.elapsed_minutes*60000;
+      for(var key of keys)sum[key]+=valid(r.stages_ms?.[key])?r.stages_ms[key]:0;
+    }
+    var actual=keys.reduce(function(n,k){return n+sum[k];},0);
+    if(Math.abs(actual-tot)>1000*rows.length) {
+      archiveNote.textContent='Архив CI: суммы интервалов не сходятся. Длительности скрыты.';
+      return;
+    }
+    for(var k of ['workflow_wait','runner_wait']) {
+      var note='Пересечение с выбранной когортой: '+rows.length+' PR / '+
+        baseline.n+' · среднее по CI-архиву, не всему потоку; история может быть частичной';
+      setSubstep('runner',k,sum[k]>0?sum[k]/rows.length/60000:null,note);
+    }
+    for(var k of ['checks','between_waves_unknown','other_unknown']) {
+      setSubstep('ci',k,sum[k]>0?sum[k]/rows.length/60000:null,
+        'То же пересечение '+rows.length+' PR / '+baseline.n+' · архив Core CI, не время всего PR');
+    }
+    // The CI archive partitions only first queued → last completed CI.
+    // Never add these subset means to the whole Created→Merged population mean.
+    var elapsed=tot/rows.length/60000,parts=actual/rows.length/60000;
+    archiveNote.textContent='CI-архив: '+rows.length+'/'+baseline.n+' тех же PR с сохранёнными job-метками. '+
+      'Путь первого → последнего Core CI: '+duration(elapsed)+
+      '; сумма неперекрывающихся подэтапов: '+duration(parts)+
+      '. Это отдельная неполная выборка, НЕ часть общей средней всей когорты.';
+    for(var key of ['runner','ci']) {
+      stages[key].sample.textContent='Подэтапы по пересечению '+rows.length+' PR, архив неполный. '+
+        'Промежутки без событий показаны отдельно, не записываются в Repair или ожидание runner.';
+    }
+  }
+  async function readArchive() {
+    if(archivePending||archive)return;
+    archivePending=true;
+    try {
+      var response=await fetch('/api/ci-journey-summary?hours=24',{cache:'default',
+        headers:{Accept:'application/json'}});
+      if(!response.ok)throw Error('HTTP '+response.status);
+      var data=await response.json();
+      if(data.schema!=='HH_CI_FIRST_LAST_ARCHIVE_V1'||!Array.isArray(data.rows))
+        throw Error('Архив CI не соответствует ожидаемому формату');
+      archive=data;applyArchive();
+    }catch(e){
+      archiveNote.textContent='Архив CI: '+String(e.message||e).slice(0,110)+
+        '. Нет данных ≠ 0.';
+    }finally{archivePending=false;}
+  }
   function rowStat(name, value, note) {
     var article = make('article', 'hh2-stat');
     article.append(make('span', '', name), make('strong', '', value), make('small', '', note));
@@ -133,9 +290,14 @@
       var summary = make('summary','hh2-stage-row');
       var name = make('span','',spec[1]), current = make('strong','','—'), history = make('strong','','—');
       summary.append(name,current,history);
-      var explanation = make('div','hh2-detail',spec[2]+' Источник: подтверждённые события PR/CI. Отсутствие пары временных меток не равно 0 минут.');
+      var explanation = make('div','hh2-detail');
       detail.append(summary,explanation);
-      comparison.append(detail); stages[spec[0]] = {current:current,history:history,explanation:explanation};
+      comparison.append(detail);
+      stages[spec[0]] = {current:current,history:history,explanation:explanation};
+      buildSubsteps(spec[0],explanation);
+      if (spec[0]==='runner'||spec[0]==='ci') detail.addEventListener('toggle',function(){
+        if (detail.open) void readArchive();
+      });
     });
     var all = make('details','hh2-stage-item hh2-total');
     var sum = make('summary','hh2-stage-row');
@@ -144,6 +306,10 @@
     all.append(sum,make('div','hh2-detail','Только PR, созданные и смерженные внутри одинаковых 24-часовых окон Toronto. До LIVE это не полный путь.'));
     comparison.append(all);stages.total={current:sum.children[1],history:sum.children[2]};
     two.append(comparison);
+    diagnostics=make('p','hh2-diagnostic','Проверяю охват подэтапов и сопоставимость периодов…');
+    two.append(diagnostics);
+    archiveNote=make('p','hh2-meta','Подэтапы Core CI загружаются только при раскрытии соответствующего этапа.');
+    two.append(archiveNote);
     coverage = make('p','hh2-meta','Сравнение по подтверждённым снимкам; этапы без исторических receipts остаются неизвестными.');
     two.append(coverage);
     var actions = make('div','hh2-actions');
@@ -155,14 +321,8 @@
     var prTitle = make('summary','','Каждый PR · общее время и хронология');
     prList = make('div','hh2-pr-list'); prList.append(make('p','hh2-placeholder','Читаю сохранённые PR-когорты…'));
     prs.append(prTitle,prList); two.append(prs);
-    var more = make('button','hh2-full','Показать остальные разделы монитора');
-    more.type='button';more.setAttribute('aria-pressed','false');
-    more.addEventListener('click',function () {
-      var opened = document.body.classList.toggle('hh2-full-open');
-      more.setAttribute('aria-pressed',String(opened));
-      more.textContent=opened?'Свернуть дополнительные разделы':'Показать остальные разделы монитора';
-    });
-    two.append(more);
+    var more=make('a','hh2-link','Все остальные разделы ↓');
+    more.href='#quick-signal';two.append(more);
     secondFoot = make('p','hh2-meta','Детали раскрываются нажатием на этап или отдельный PR.');
     two.append(secondFoot);
     root.append(one,two);
