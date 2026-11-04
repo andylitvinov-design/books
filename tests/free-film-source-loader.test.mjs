@@ -17,6 +17,7 @@ class FakeVideo extends EventTarget {
     this.plays = 0;
     this.pauses = 0;
     this._currentTime = 0;
+    this.duration = 10;
     this.seeking = false;
     this.rewinds = 0;
   }
@@ -157,4 +158,31 @@ test("a missing seeked event after rewind times out rather than certifying stale
     prepareFourFilmSources(shots, refs, {timeoutMs: 10}),
     /four_scene_load_timeout/,
   );
+});
+
+
+test("fresh export seeks all four approved sources to their authored slip starts", async () => {
+  const {videos,refs}=setup();
+  const edited=shots.map((shot,index)=>({...shot,sourcePhasePercent:index*10}));
+  videos.forEach(video=>video.ready());
+  const pending=prepareFourFilmSources(edited,refs,{timeoutMs:200});
+  assert.equal(videos[0].currentTime,0);
+  for(let index=1;index<4;index++){
+    assert.equal(videos[index].currentTime,index);
+    assert.equal(videos[index].seeking,true);
+    assert.equal(videos[index].rewinds,1);
+  }
+  videos.slice(1).forEach(video=>video.finishSeek());
+  assert.deepEqual(await pending,{ready:4,total:4});
+});
+test("a phase edit without real finite source duration is rejected, not silently exported",async()=>{
+  const {videos,refs}=setup();
+  const edited=shots.map((shot,index)=>({...shot,sourcePhasePercent:index===1?35:0}));
+  videos[1].duration=Infinity;
+  videos.forEach(video=>video.ready());
+  await assert.rejects(prepareFourFilmSources(edited,refs,{timeoutMs:100}),
+    /four_scene_source_duration_invalid:abundance-tree/);
+  await assert.rejects(prepareFourFilmSources(
+    shots.map((s,i)=>({...s,sourcePhasePercent:i===1?100:0})),refs),
+    /invalid_four_scene_montage/);
 });

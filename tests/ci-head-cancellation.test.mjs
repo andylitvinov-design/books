@@ -77,7 +77,9 @@ test('specialist concurrency isolates manual attempts and cancels only supersede
     const source = readFileSync(`.github/workflows/${file}`, 'utf8');
     const groupExpression = `${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
     assert.ok(source.includes('group: ' + groupExpression) || source.includes('group: >-\n    ' + groupExpression), file);
-    assert.ok(source.includes('cancel-in-progress: ${{ ' + cancelCondition + ' }}'), file);
+    const expectedCancel = ['hh-app-r1.yml', 'hh-app-browser.yml'].includes(file)
+      ? "github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft')" : cancelCondition;
+    assert.ok(source.includes('cancel-in-progress: ${{ ' + expectedCancel + ' }}'), file);
     assert.ok(!source.includes('github.event.before != github.event.after'), file+' must not use undefined synchronize fields');
   }
 });

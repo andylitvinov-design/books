@@ -442,7 +442,8 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
   assert.ok(source.includes('group: hh-pr-core-' +
     "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"),
+    'Core cancellation is limited to first-attempt synchronize or Draft transition');
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
 });

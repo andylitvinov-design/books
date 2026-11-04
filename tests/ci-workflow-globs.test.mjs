@@ -144,11 +144,17 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'for (const [name, engine] of engines)',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"
   ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  // Prebuilt version-matched browser images replace per-job apt installs,
+  // not genuine Chromium/WebKit launch and risk-scoped acceptance.
+  assert.match(s, /image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(s, /playwright@1\.63\.0/);
+  assert.match(s, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
+  assert.doesNotMatch(s, /playwright install --with-deps/);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 

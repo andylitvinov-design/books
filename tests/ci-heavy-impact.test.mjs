@@ -210,7 +210,7 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /if: needs\.impact\.outputs\.full_app == 'true'/);
   assert.match(yaml, /Independent native\/PWA contracts/);
   assert.match(yaml, /run: npm run test:app:db/);
-  assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
+  assert.ok(yaml.includes("browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '[\"chromium\",\"webkit\"]' || '[\"none\"]') }}"), 'Both browser engines remain when applicable');
 });
 
 test('Mandala PR retains units and runs full media browser only manually or for dedicated voice release branches', () => {
@@ -357,7 +357,7 @@ test('cheap CI routing jobs allow bounded checkout time without weakening specia
   const guard = read('hh-pr-sweep-guard.yml');
   const app = read('hh-app-r1.yml');
   assert.match(guard, /guard-unit:\n    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
-  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 8/);
+  assert.match(app, /impact:\n    name: route-expensive-app-suites\n    if: [^\n]+\n(?:    #[^\n]+\n)*    runs-on: ubuntu-slim\n    timeout-minutes: 8/);
   for (const yaml of [guard,app]) assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
@@ -369,4 +369,89 @@ test('owner video review runs real browser and physical source checks',()=>{
     assert.ok(step.startsWith('- name: '+name),name);
     assert.match(step.slice(0,step.indexOf('\n      - name:',1)>0?step.indexOf('\n      - name:',1):step.length),/feat\/video-owner-review-/,name);
   }
+});
+
+test('App R1 impact uses sparse checkout and one strictly routed no-op browser', () => {
+  const yaml = read('hh-app-r1.yml');
+  assert.ok(yaml.includes('sparse-checkout: |\n            scripts'),
+    'The exact synthetic-merge diff must avoid pulling full media blobs');
+  assert.ok(yaml.includes('fetch-depth: 2'), 'Verified diff requires both merge parents');
+  assert.ok(yaml.includes("browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '[\"chromium\",\"webkit\"]' || '[\"none\"]') }}"),
+    'Both browser engines run on actual scope; one no-op job otherwise');
+  assert.ok(yaml.includes('run: test "$HH_ROUTED_SCOPE" = false'),
+    'Missing routing results must fail closed, never claim a passing browser run');
+  assert.ok(yaml.includes('needs: impact') && yaml.includes("needs.impact.result == 'success'"),
+    'Use the single immutable HEAD classification for all dependent jobs');
+});
+
+test('App R1 trigger covers all critical routes and preserves mandatory sensitive checks', () => {
+  const trigger = parsePrTrigger(read('hh-app-r1.yml'), 'hh-app-r1.yml');
+  const strict = { full_app: true, database: true, banner: true, profile: true };
+  for (const path of [
+    'app/ru/app/account/page.tsx', 'app/en/client/report/page.tsx',
+    'app/api/app/profile/route.ts', 'app/api/client/report/route.ts',
+    'app/api/assessments/scoring/route.ts', 'components/app/owner-cabinet.tsx',
+    'lib/app/owner.ts', 'lib/profile/secure-profile.ts',
+    'lib/assessments/calculate.ts', 'lib/security/authorization.ts',
+    'data/assessments/checkin.json', 'supabase/migrations/20261104_security.sql',
+    'middleware.ts', 'next.config.ts', 'package.json', 'package-lock.json'
+  ]) {
+    assert.equal(matchesTrigger(trigger, [path]), true, path + ' must schedule App R1');
+    assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict, path + ' requires full checks');
+  }
+  for (const path of ['components/profile-compact-design.tsx', 'components/my-course-dashboard.tsx'])
+    assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
+  for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])
+    assert.equal(matchesTrigger(trigger, [path]), false, path + ' should not wake App R1');
+});
+
+test('App R1 routing-unit edits execute Guard and Core without five-job App R1 fanout', () => {
+  const changed = ['tests/ci-heavy-impact.test.mjs'];
+  const triggers = name => matchesTrigger(
+    parsePrTrigger(read(name), name),
+    changed, 'codex/public-book-library'
+  );
+  assert.equal(triggers('hh-app-r1.yml'), false, 'Guard-owned test-only diff must not allocate App R1');
+  assert.equal(triggers('hh-pr-sweep-guard.yml'), true, 'Guard still checks the actual test source');
+  assert.equal(triggers('hh-pr-core-release.yml'), true, 'Protected Core remains required');
+  for (const changedProductionSource of [
+    'scripts/ci-heavy-impact.mjs', 'lib/security/auth.ts',
+    'app/api/app/messages/route.ts', 'supabase/migrations/20261104_secure.sql'
+  ]) {
+    assert.equal(matchesTrigger(parsePrTrigger(read('hh-app-r1.yml'), 'hh-app-r1.yml'),
+      [changedProductionSource], 'codex/public-book-library'), true,
+      changedProductionSource + ' must retain real specialist acceptance');
+  }
+});
+
+test('Mandala policy-only impact tests route to fast Guard, while video, voice and media still run Mandala', () => {
+  const mandalaSource = read('holistic-support-mandala.yml');
+  const guardSource = read('hh-pr-sweep-guard.yml');
+  const mandala = parsePrTrigger(mandalaSource, 'holistic-support-mandala.yml');
+  const guard = parsePrTrigger(guardSource, 'hh-pr-sweep-guard.yml');
+  const ciContract = 'tests/ci-heavy-impact.test.mjs';
+  assert.equal(matchesTrigger(guard, [ciContract]), true,
+    'Policy-only impact test must execute the fast Guard regression suite');
+  assert.ok(guardSource.includes('node --test tests/pr-sweep-guard.test.mjs') &&
+    guardSource.includes(ciContract), 'Guard must actually execute its owned impact test');
+  assert.equal(matchesTrigger(mandala, [ciContract]), false,
+    'Policy test alone must not start the long Mandala music/media job');
+  for (const file of [
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-heavy-impact.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'lib/mandala/voice-studio.mjs',
+    'app/api/holistic-support/voice/route.js',
+    'tests/mandala-free-video.test.mjs',
+    'tests/video-chat-understanding.test.mjs',
+    'scripts/generate-scenario-melodies.mjs',
+    'public/audio/mandala/example.mp3'
+  ]) {
+    assert.equal(matchesTrigger(mandala, [file]), true,
+      file + ' still needs the full independent video and audio source gate');
+  }
+  assert.ok(mandalaSource.includes("  focused-unit-types-build:\n    if: "),
+    'Mandala Ready source gate must still exist');
+  assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
+  assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
 });

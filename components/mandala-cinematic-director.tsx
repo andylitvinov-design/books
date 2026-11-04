@@ -21,7 +21,9 @@ export type CinematicShot={id:string;number:number;title:string;theme:VideoTheme
   overlayText?:string;
   transitionIn?:"soft"|"cut"|"fade_black"|"flash_white";
   colorLook?:"original"|"warm"|"cool"|"dream";
-  motion?:MyTubeMotion|null;};
+  motion?:MyTubeMotion|null;
+  sourcePhasePercent?:number;
+  sourceSpeed?:number;};
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:readonly CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;

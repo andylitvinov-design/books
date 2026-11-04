@@ -112,6 +112,19 @@ test('OPORA test-only edits do not start the unrelated App R1 suite', () => {
 });
 
 
+test('public-service browser CI verifies real pinned engines without an apt cold-start', () => {
+  const src = workflow('hh-public-services-production.yml');
+  assert.match(src, /^    container:\n      image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble$/m);
+  assert.match(src, /^    defaults:\n      run:\n        shell: bash$/m);
+  assert.match(src, /npm install --prefix \/tmp\/hh-public-services-tools .*playwright@1\.63\.0/);
+  assert.match(src, /for \(const \[name, engine\] of engines\) \{/);
+  assert.match(src, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
+  assert.doesNotMatch(src, /playwright install --with-deps/);
+  assert.match(src, /^    timeout-minutes: 20$/m);
+  assert.match(src, /Production build and public browser acceptance/);
+  assert.match(src, /verify-public-services-production\.mjs/);
+});
+
 test('single post-migration status requires actual Core and Specialist without legacy wrapper runners', () => {
   const source=workflow('hh-pr-core-release.yml');
   assert.match(source,/^  pull_request:/m);
@@ -124,14 +137,16 @@ test('single post-migration status requires actual Core and Specialist without l
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   const unified=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(specialist && unified,'real specialist and unified status required');
-  assert.doesNotMatch(specialist,/^    needs:/m,'specialist must be queued concurrently with scope');
-  assert.match(specialist,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist,/^    needs: \[scope\]$/m,'Specialist must follow passing Core before polling');
+  assert.match(specialist,/^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m,
+    'Only successful Core on Ready PR can launch the Specialist');
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'Mobile Dock still uses the immutable exact-head Specialist aggregator');
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'DOCK must still run the trusted specialist aggregator');
-  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code/);
+  assert.match(specialist,/needs\.scope\.result == 'success'/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -885,12 +900,12 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
 
-test('Core cancels superseded first attempts, never manually rerun current HEAD', () => {
+test('Core cancels superseded first attempts and Draft transitions, never manual or edited runs', () => {
   const source = workflow('hh-pr-core-release.yml');
   const group = "group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}";
   assert.ok(source.includes(group), 'first-attempt HEADs of one PR share concurrency');
-  assert.ok(source.includes(cancel), 'only a newer synchronize attempt cancels older checks');
+  assert.ok(source.includes(cancel), 'only newer source HEAD or Draft transition cancels expensive Core');
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'), 'no obsolete SHA groups');
 });
 
@@ -1345,10 +1360,11 @@ test('post-migration live gate preserves parallel source checks and removes redu
   const source=workflow('hh-pr-core-release.yml');
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(specialist);
-  assert.doesNotMatch(specialist,/^    needs:/m,'schedule specialist alongside scope');
+  assert.match(specialist,/^    needs: \[scope\]$/m,'do not allocate Specialist before Core has passed');
   assert.match(specialist,/ci-specialist-aggregate\.mjs/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
-  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code/);
+  assert.match(specialist,/needs\.scope\.result == 'success'/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
@@ -1465,7 +1481,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
-  assert.match(specialist,/if: \$\{\{ !cancelled\(\) \}\}/);
+  assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
   assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -1482,8 +1498,8 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
-  assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
-  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
+  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
