@@ -539,6 +539,22 @@ test('Specialist API read fails closed after bounded retries and never retries a
   assert.equal(exhausted,4,'three retries, then a hard failure; never reinterpret missing evidence as green');
 });
 
+test('exhausted GitHub API quota fails immediately without wasteful 403/429 retry storms', async () => {
+  for(const status of [403,429]) {
+    let calls=0,waits=0;
+    const transport=async()=>{
+      calls++;
+      return {ok:false,status,headers:{get:name=>
+        name==='x-ratelimit-remaining'?'0':
+        name==='retry-after'?'120':null}};
+    };
+    const api=githubReader(repo,'test',transport,{sleep:async()=>{waits++;}});
+    await assert.rejects(()=>api.runs(SHA),new RegExp('GitHub read /actions/runs HTTP '+status+' RATE_LIMITED'));
+    assert.equal(calls,1,'rate-limit response must never immediately retry');
+    assert.equal(waits,0,'no sleeping in a billed CI runner awaiting reset');
+  }
+});
+
 test('Specialist read adapter retries network timeouts but not malformed successful responses',async()=>{
   let calls=0;
   const timed=githubReader(repo,'test',async()=>{
