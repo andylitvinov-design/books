@@ -1226,6 +1226,50 @@ test('late discovery then queue then real completion is accepted with successful
   assert.ok(clock.elapsed() < 60_000 + 180_000);
 });
 
+test('missing HEAD-index row can be recovered by exact workflow then tracked until real success', async () => {
+  const second='.github/workflows/late-indexed.yml';
+  const workflows=new Map([[path,yaml],[second,yaml]]);
+  const clock=virtualSpecialistClock();
+  let probes=0,refreshes=0;
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    runs:async()=>[run()],
+    runsForWorkflow:async(_sha,file)=>{
+      assert.equal(file,second); probes++;
+      return [run({id:256,path:second,status:'queued',conclusion:null})];
+    },
+    runById:async id=>{
+      assert.equal(id,256);refreshes++;
+      const complete=clock.elapsed()>=180_000;
+      return run({id:256,path:second,status:complete?'completed':'in_progress',
+        conclusion:complete?'success':null});
+    },
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const result=await verify(api,{repo,number:27,head:SHA,base:BASE},
+    {base:workflows,current:workflows},{maxWaitMs:240_000,pollMs:20_000,...clock});
+  assert.deepEqual(result.expected,[path,second].sort());
+  assert.equal(result.executed.length,2);
+  assert.equal(probes,1,'only missing workflow gets a targeted index lookup');
+  assert.ok(refreshes>=1,'pending recovered run must be refreshed until completed');
+  assert.ok(clock.elapsed()>=180_000,'queued evidence is not accepted as passed');
+});
+
+test('foreign direct workflow evidence never authorizes missing specialist', async () => {
+  const clock=virtualSpecialistClock();
+  const api={
+    pr:async()=>pr(),changed:async()=>[{filename:'lib/crm/a.js'}],
+    runs:async()=>[],runsForWorkflow:async()=>[
+      run({id:320,head_sha:'f'.repeat(40)})],
+  };
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},
+    {base:new Map([[path,yaml]]),current:new Map([[path,yaml]])},
+    {maxWaitMs:180_000,missingGraceMs:60_000,pollMs:20_000,...clock}),
+    /SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED/);
+  assert.equal(clock.elapsed(),60_000);
+});
+
 test('registered but never started queued specialist fails promptly and cannot merge', async () => {
   const clock = virtualSpecialistClock();
   const api = {
