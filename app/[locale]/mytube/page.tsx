@@ -1,4 +1,4 @@
-import type {Metadata} from "next";
+import type {Metadata, Viewport} from "next";
 import Link from "next/link";
 import {ArrowLeft, BookOpen, Play} from "lucide-react";
 import {notFound} from "next/navigation";
@@ -10,6 +10,7 @@ import {isPublicLocale} from "@/data/academy/catalog";
 import {metadataBaseFor} from "@/data/site-metadata";
 import styles from "./mytube.module.css";
 
+export const viewport:Viewport={themeColor:"#0f0f0f"};
 export const dynamic="force-dynamic";
 export const revalidate=0;
 type Props={params:Promise<{locale:string}>};
