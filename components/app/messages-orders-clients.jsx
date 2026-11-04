@@ -255,9 +255,9 @@ export default function MessagesOrdersClients({locale='en',children}){
         </button>
       </span>
     </header>
-    {section==='ai'&&<div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai>
+    <div id="hh-ai-panel" role="tabpanel" hidden={section!=='ai'} data-hh-messenger-ai>
       <MessengerAiWorkspace locale={locale}/>
-    </div>}
+    </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
       {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&

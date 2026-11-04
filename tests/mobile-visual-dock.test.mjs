@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {mobileVisualBottomGap,visualDockBottomCorrection} from '../lib/mobile-visual-bottom.mjs'
+import {mobileVisualBottomGap,visualDockBottomCorrection,visualKeyboardOpen} from '../lib/mobile-visual-bottom.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -36,6 +36,16 @@ test('Messages and protected Practice share one viewport-aware dock rather than 
  assert.match(messageCss,/input:focus,textarea:focus/)
 })
 
+test('keyboard detection does not mistake Safari toolbar for iOS keyboard',()=>{
+ assert.equal(visualKeyboardOpen({editing:false,layoutHeight:844,visualHeight:470,lastUnfocusedVisualHeight:780}),false)
+ assert.equal(visualKeyboardOpen({editing:true,layoutHeight:844,visualHeight:760,lastUnfocusedVisualHeight:780}),false)
+ assert.equal(visualKeyboardOpen({editing:true,layoutHeight:844,visualHeight:720,visualOffsetTop:45,lastUnfocusedVisualHeight:775}),false)
+ assert.equal(visualKeyboardOpen({editing:true,layoutHeight:844,visualHeight:510,lastUnfocusedVisualHeight:775}),true)
+ // Embedded browsers can shrink both layout viewport and visual viewport.
+ assert.equal(visualKeyboardOpen({editing:true,layoutHeight:470,visualHeight:470,lastUnfocusedVisualHeight:780}),true)
+ assert.equal(visualKeyboardOpen({editing:true,layoutHeight:470,visualHeight:NaN,lastUnfocusedVisualHeight:780}),false)
+})
+
 test('unified six-item dock uses measured visual edge without double Safari viewport correction',()=>{
  // Modern WebKit already anchors the fixed dock to the visual viewport.
  assert.equal(visualDockBottomCorrection({dockBottom:720,visualBottom:720}),0)
@@ -53,6 +63,7 @@ test('unified six-item dock uses measured visual edge without double Safari view
  const css=read('components/unified-mobile-dock.module.css')
  const reservation=read('app/unified-mobile-dock.css')
  assert.match(dock,/visualDockBottomCorrection/)
+ assert.match(dock,/visualKeyboardOpen/)
  assert.match(dock,/getBoundingClientRect\(\)/)
  assert.match(dock,/visualViewport/)
  assert.match(dock,/data-keyboard-open/)
@@ -61,4 +72,5 @@ test('unified six-item dock uses measured visual edge without double Safari view
  assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/)
  assert.doesNotMatch(reservation,/100vh\s*-\s*100dvh/)
  assert.match(reservation,/--hh-unified-nav-height/)
+ assert.match(reservation,/data-keyboard-open="true"/)
 })

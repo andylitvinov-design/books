@@ -17,6 +17,7 @@ test('default EN/RU/ES messages route renders one Orders / Clients hub',()=>{
   assert.match(page,/if\(!\['en','ru','es'\]\.includes\(locale\)\)notFound\(\)/)
   assert.doesNotMatch(page,/showOrders\?<MessagesOrdersClients/)
   assert.doesNotMatch(page,/hh-messages-context-nav/)
+  assert.doesNotMatch(page,/MessagesBottomNavigation/)
 })
 test('approved Messenger preserves existing CRM plus direct and client request auth, not a fake chat',()=>{
   assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
@@ -26,6 +27,7 @@ test('approved Messenger preserves existing CRM plus direct and client request a
   assert.match(simple,/<DirectMessageInbox/)
   assert.match(simple,/<PracticeRequestConversation/)
   assert.match(orders,/data-orders-clients-hub/)
+  assert.match(orders,/hidden=\{section!=='ai'\}/)
   assert.match(orders,/if\(!\['ai','orders','clients'\]\.includes\(value\)\)return/)
   assert.match(orders,/url\.searchParams\.set\('section',value\)/)
   assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
