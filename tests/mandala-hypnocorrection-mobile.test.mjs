@@ -138,8 +138,8 @@ test("effects moves the single original tab rail above Wave on mobile only",()=>
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
-  assert.ok(studio.indexOf('id="video-hero"')<studio.indexOf("data-video-quick-controls"),
-    "original video hero precedes the tabs in source order and all other workspaces");
+  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf('id="video-hero"'),
+    "six workspaces now precede the same original video hero; Effects still portals its rail");
   assert.match(studio,/activeWorkspace==="effects"&&mobile\.matches/);
   assert.match(studio,/data-video-hypno-nav-slot/);
   assert.match(studio,/createPortal\(nav,effectsNavTarget\)/);

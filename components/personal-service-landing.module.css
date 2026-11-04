@@ -282,30 +282,15 @@
 }
 @media(prefers-reduced-motion:reduce){.screen,.videoScreen{scroll-behavior:auto}}
 
-/* Mobile final capture stays within one viewport, with a keyboard-accessible
-   internal scroll for the consented form instead of clipping the last fields. */
-@media(max-width:767px){
-  .captureScreen{
-    height:min(700px,calc(100svh - 140px));
-    min-height:0;
-    overflow:hidden;
-  }
-  .captureScreen .capturePortrait{
-    flex:0 0 auto;
-    height:clamp(92px,13svh,122px);
-    min-height:0;
-  }
-  .captureScreen .captureContent{
-    flex:1 1 auto;
-    min-height:0;
-    overflow-y:auto;
-    overflow-x:hidden;
-    overscroll-behavior:contain;
-    align-self:stretch;
-    scrollbar-width:thin;
-  }
-  .captureScreen .captureContent :global([data-inline-offer-form]){
-    min-width:0;
-    max-width:100%;
-  }
+/* Keep the final contact screen usable on narrow phones without hiding either consent. */
+@media(max-width:430px){
+ .captureScreen{position:relative}
+ .capturePortrait{position:absolute;z-index:1;top:10px;right:10px;width:62px;height:62px;border-radius:12px}
+ .captureContent{padding:12px 11px}
+ .captureContent>h2,.captureContent>.smallEyebrow{padding-right:68px}
+ .captureContent .captureIntro{line-height:1.3;margin-bottom:7px}
+ .captureContent :global([data-inline-offer-form]){padding:9px}
+ .captureContent :global([data-inline-offer-form] form){gap:6px}
+ .captureContent :global([data-inline-offer-form] [data-enquiry-attribution-choice]){font-size:11px!important;line-height:1.25!important;margin:0!important}
+ .captureContent :global([data-inline-offer-form] [role="group"]:has([data-compact-channel])){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 }

@@ -370,3 +370,45 @@ test("unrecognized video prompts retain only the source-backed preset, without i
  assert.doesNotMatch(source,/\bfetch\s*\(/);
  assert.doesNotMatch(source,/\b(?:localStorage|sessionStorage|paidRenderApproved)\b/);
 });
+
+
+test("approved first screen keeps six tabs above a real 16:9 Canvas and one right-side video rail",()=>{
+ const mobile=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ const nav=studio.indexOf("data-video-quick-controls");
+ const film=studio.indexOf('id="video-hero"');
+ assert.ok(nav>=0&&film>nav,"six tabs precede the first video frame in the same preview section");
+ assert.match(studio,/data-video-player-with-controls/);
+ assert.match(studio,/data-video-next-sample/);
+ assert.match(studio,/data-video-open-scenarios/);
+ assert.match(studio,/data-video-another-sample/);
+ assert.match(studio,/quickPickStyle\(\(quickStyleIndex\+1\)%quickStylePosters.length\)/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+ assert.match(mobile,/\.heroWithRail/);
+ assert.match(mobile,/\.previewStage \.heroWithRail>\.hero/);
+ assert.match(mobile,/aspect-ratio:16\/9!important/);
+});
+
+test("single prompt input precedes goal filters, topic chooser and four story candidates",()=>{
+ const prompt=studio.indexOf("data-video-request-prompt");
+ const goal=studio.indexOf("data-video-director-goal-controls");
+ const topic=studio.indexOf("data-video-director-topic-controls");
+ assert.ok(prompt>=0&&prompt<goal&&goal<topic);
+ assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.match(director,/createPortal\(requestInput,requestTarget\)/);
+ assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
+ assert.match(director,/createPortal\(topicPanel,topicTarget\)/);
+ assert.match(director,/data-auto-video-story-options/);
+});
+
+test("brief and detailed questionnaires choose from existing licensed clips without a second provider",()=>{
+ assert.match(studio,/data-video-profile-picker/);
+ assert.match(director,/data-video-profile-short/);
+ assert.match(director,/data-video-profile-extended/);
+ assert.match(director,/data-video-profile-apply/);
+ assert.match(director,/profileMode==="extended"/);
+ assert.match(director,/onClick=\{applyProfile\}/);
+ assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:nextGoal,goalId:profileFocus/);
+ assert.match(director,/onCategoryChange\?\.\(nextTheme\);onGoalChange\(nextGoal\)/);
+ assert.doesNotMatch(director,/fetch\(/);
+ assert.doesNotMatch(director,/localStorage|sessionStorage/);
+});

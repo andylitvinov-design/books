@@ -41,6 +41,24 @@ for (const engine of [chromium, webkit]) {
           waitUntil: "domcontentloaded", timeout: 60000,
         });
         assert.equal(response?.status(), 200, label + " HTTP");
+        if (slug === "psychohomeopathy") {
+          // This legacy service now redirects to the canonical Alchemy landing.
+          // Verify that real destination and its consented request, rather than
+          // expecting the retired personal-service template.
+          assert.equal(new URL(page.url()).pathname, `/${locale}/services/alchemy-of-soul`, label + " canonical redirect");
+          const panels=page.locator("[data-alchemy-panel]");
+          await panels.first().waitFor({state:"visible",timeout:25000});
+          assert.ok(await panels.count()>=2,label+" Alchemy stages remain visible");
+          const request=page.locator('[data-alchemy-panel="request"]');
+          assert.equal(await request.count(),1,label+" one Alchemy request");
+          const consent=request.locator('input[type="checkbox"][required]');
+          assert.equal(await consent.count(),1,label+" explicit reply consent");
+          assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth)<=width+2,label+" no horizontal overflow");
+          assert.deepEqual(errors,[],label+" unexpected page errors");
+          results.push({label,redirect:"alchemy-of-soul",form:true,errors:[]});
+          continue;
+        }
         const personal = slug !== "hypnotherapy-course";
         const root = personal ? "[data-visual-service-landing]" : "[data-core-service-visual]";
         const visual = personal ? "[data-service-visual-screen]" : "[data-core-visual-screen]";
