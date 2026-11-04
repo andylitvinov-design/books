@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, contractMarkerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
@@ -237,6 +237,45 @@ test('malformed trigger definitions fail closed instead of being treated as unre
     'on:\n  pull_request: {paths: [lib/**]}\n',
     'on:\n  pull_request:\n    paths:\n      - lib/**\n    paths-ignore:\n      - docs/**\n',
   ]) assert.throws(()=>parsePrTrigger(text),/MISSING_ON|EMPTY_FILTER|UNSUPPORTED|CONFLICTING/);
+});
+
+test('shared-contract fanout removal is narrowly allowed only for exact YAML path deletion',()=>{
+  const owner='.github/workflows/dao-iching-library.yml';
+  const marker='tests/ci-pr-selective-workflows.test.mjs';
+  const before="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'components/dao-hexagram-card.tsx'\n      - '"+marker+"'\n  workflow_dispatch:\njobs:\n  check:\n    runs-on: ubuntu-latest\n";
+  const after=before.replace("      - '"+marker+"'\n",'');
+  const rows=[{filename:owner,status:'modified'},{filename:marker,status:'modified'},
+    {filename:'lib/ci/specialist-aggregate.mjs',status:'modified'},
+    {filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'},
+    {filename:'tests/ci-specialist-aggregate.test.mjs',status:'modified'}];
+  const base=new Map([[owner,before]]),current=new Map([[owner,after]]);
+  const expected=expectedWorkflows({base,current,changed:rows.map(x=>x.filename)});
+  assert.deepEqual(expected,[owner], 'immutable BASE still identifies the former requirement');
+  const advisory=(candidate=current,changedRows=rows)=>[...contractMarkerRemovalAdvisory({
+    base,current:candidate,changedRows,expected
+  })];
+  assert.deepEqual(advisory(),[owner], 'only the known obsolete shared contract route can be waived');
+  assert.deepEqual(advisory(current,rows.filter(x=>x.filename!==marker)),[],
+    'removing marker from changed paths does not authorize advisory');
+  assert.deepEqual(advisory(current,[...rows,{filename:'components/dao-hexagram-card.tsx',status:'modified'}]),[],
+    'real domain changes must always require the product workflow');
+  assert.deepEqual(advisory(current,[...rows,{filename:'lib/ci/private-release.js',status:'modified'}]),[],
+    'unreviewed CI source changes must never use this exception');
+  assert.deepEqual(advisory(new Map([[owner,after.replace('ubuntu-latest','self-hosted')]])),[],
+    'editing runner, jobs or permissions cannot hide a required suite');
+  const withSelf=before.replace("      - 'components/dao-hexagram-card.tsx'\n",
+    "      - '"+owner+"'\n      - 'components/dao-hexagram-card.tsx'\n");
+  assert.deepEqual([...contractMarkerRemovalAdvisory({
+    base:new Map([[owner,withSelf]]),
+    current:new Map([[owner,withSelf.replace("      - '"+marker+"'\n",'')]]),
+    changedRows:rows,expected:[owner],
+  })],[], 'owner self-checks must remain required');
+  const unknown='.github/workflows/unknown-browser.yml';
+  assert.deepEqual([...contractMarkerRemovalAdvisory({
+    base:new Map([[unknown,before]]),current:new Map([[unknown,after]]),
+    changedRows:rows.map(x=>x.filename===owner?{filename:unknown,status:'modified'}:x),
+    expected:[unknown],
+  })],[], 'new or unreviewed workflows cannot opt out');
 });
 
 test('union of baseline and PR proposal prevents removing a required workflow to bypass checks',()=>{
