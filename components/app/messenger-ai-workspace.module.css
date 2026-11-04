@@ -53,3 +53,41 @@
  .rail button svg{width:19px;height:19px}
 }
 @media(prefers-reduced-motion:reduce){.layout *{scroll-behavior:auto!important}}
+
+
+/* Real five-action AI prompt menu across full width; original click handlers stay. */
+.layout{display:flex;flex-direction:column;align-items:stretch;gap:10px;max-width:100%;min-width:0}
+.rail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;
+ position:static;top:auto;padding:0;min-width:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.rail button{min-width:0;min-height:72px;display:flex;flex-direction:column;gap:5px;
+ padding:8px 3px;border:1px solid #ece2db;border-radius:17px;background:linear-gradient(135deg,#fffefa,#fffaf6);
+ box-shadow:0 4px 12px #513e3010;color:#235b4c;font:700 11px/1.22 system-ui,sans-serif}
+.rail button span{overflow-wrap:anywhere}
+.rail button[aria-pressed=true]{background:linear-gradient(125deg,#f6eaff,#fdf7ff);
+ border-color:#c9a3ed;box-shadow:0 3px 13px #9556c421}
+.content{box-sizing:border-box;width:100%;min-width:0;padding:12px;
+ border:1px solid #eee5df;border-radius:21px;background:linear-gradient(155deg,#fffefa,#fffaf7 68%,#fff9fc)}
+.welcome{min-height:78px;padding:12px;border-radius:17px;background:linear-gradient(112deg,#f8effc,#fffdfb 62%,#e9f7ef)}
+.welcome h2{color:#143d3a}
+.welcome p{color:#666b67}
+@media(max-width:700px){
+ .layout{display:flex;flex-direction:column;gap:9px}
+ .rail{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:0}
+ .rail button{min-height:64px;padding:7px 2px;gap:4px;font-size:10px;border-radius:15px}
+ .rail button svg{width:21px;height:21px;flex:none}
+ .content{padding:10px;border-radius:19px}
+ .welcome{min-height:70px;padding:10px;gap:10px}
+ .welcome img{width:46px;height:46px}
+ .welcome h2{font-size:15px;line-height:1.26}
+ .welcome p{font-size:12px;line-height:1.35}
+}
+@media(max-width:354px){
+ .rail{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+ .rail button{min-height:59px;padding:6px 1px;gap:3px;font-size:9px;border-radius:13px}
+ .rail button svg{width:19px;height:19px}
+ .content{padding:8px}
+ .welcome{min-height:65px;padding:8px}
+ .welcome img{width:36px;height:36px}
+ .welcome h2{font-size:13px}
+ .welcome p{font-size:11px}
+}

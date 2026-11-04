@@ -15,7 +15,7 @@ type SpeechLanguage="ru"|"en"|"es";
 type Bed="none"|NatureBed;
 export type AffirmationVoicePreferences={voiceId:string;language:SpeechLanguage;bed:Bed};
 export type AffirmationVoiceResult={
-  file:File;spokenText:string;voiceId:string;language:SpeechLanguage;
+  file:File;speechFile?:File;spokenText:string;voiceId:string;language:SpeechLanguage;
   speechSeconds:number;mixSeconds:number;bed:Bed;source?:"local";
 };
 const durationChoices=[10,20,30,60] as const;
@@ -82,9 +82,10 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
+  initialPreferences?:AffirmationVoicePreferences;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -95,13 +96,12 @@ export function MandalaAffirmationVoice({
   const levels=levelCopy[locale];
   const [phraseChoice,setPhraseChoice]=useState<number|"all">(0);
   const selectedIndex=phraseChoice==="all"?null:Math.min(phraseChoice,Math.max(0,lines.length-1));
-  // Default to one approved phrase. Never send an unapproved draft, topic or
-  // private profile to an external provider; explicit consent is still required.
   const speechText=enabled?affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0):"";
-  const [language,setLanguage]=useState<SpeechLanguage>(locale);
-  const [voiceId,setVoiceId]=useState("maya");
-  const [voiceGender,setVoiceGender]=useState<"female"|"male"|"own">("female");
-  const [bed,setBed]=useState<Bed>("none");
+  const initialVoiceId=initialPreferences?.voiceId??"maya";
+  const [language,setLanguage]=useState<SpeechLanguage>(()=>initialPreferences?.language??locale);
+  const [voiceId,setVoiceId]=useState(initialVoiceId);
+  const [voiceGender,setVoiceGender]=useState<"female"|"male"|"own">(()=>initialVoiceId.startsWith("local-")?"own":VOICE_STUDIO_VOICES.find(v=>v.id===initialVoiceId)?.gender==="male"?"male":"female");
+  const [bed,setBed]=useState<Bed>(()=>initialPreferences?.bed??"none");
   const [voiceLevel,setVoiceLevel]=useState(90);
   const [musicLevel,setMusicLevel]=useState(12);
   const [consent,setConsent]=useState(false);
@@ -201,7 +201,8 @@ export function MandalaAffirmationVoice({
       const uri=URL.createObjectURL(file);
       if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(clip.seconds);
-      onAttach({file,spokenText:speechText,voiceId,language,speechSeconds:clip.seconds,mixSeconds:clip.mixSeconds,bed:selected.bed});
+      const speechFile=new File([clip.blob],"holistic-house-affirmations-speech.wav",{type:"audio/wav"});
+      onAttach({file,speechFile,spokenText:speechText,voiceId,language,speechSeconds:clip.seconds,mixSeconds:clip.mixSeconds,bed:selected.bed});
       setMessage(t.ready+(clip.providerNotice||""));
     }catch(error){
       if(job!==jobRef.current)return;
