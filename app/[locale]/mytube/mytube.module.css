@@ -1,53 +1,39 @@
-/* MyTube is an intentionally isolated YouTube-inspired dark surface.
-   The rest of Holistic House keeps Holistic Light / Studio Warm Peach. */
+/* Owner-approved MyTube-only dark exception: YouTube-like discovery, not a global theme. */
 .page{
-  --mytube-canvas:#0f0f0f;
-  --mytube-surface:#181818;
-  --mytube-raised:#272727;
-  --mytube-line:#303030;
-  --mytube-ink:#f1f1f1;
-  --mytube-muted:#aaa;
-  --mytube-red:#ff0033;
-  min-height:100svh;min-width:0;overflow-x:clip;
-  padding-bottom:env(safe-area-inset-bottom,0px);
-  background:var(--mytube-canvas);color:var(--mytube-ink);
-  font-family:Arial,Helvetica,sans-serif;color-scheme:dark
+  --mytube-bg:#0f0f0f;--mytube-panel:#181818;--mytube-surface:#272727;
+  --mytube-border:#303030;--mytube-ink:#f1f1f1;--mytube-muted:#aaa;--mytube-red:#ff0033;
+  min-height:100svh;min-width:0;overflow-x:clip;background:var(--mytube-bg);color:var(--mytube-ink);
+  color-scheme:dark;font-family:Arial,Helvetica,sans-serif;
+  padding-bottom:env(safe-area-inset-bottom,0px)
 }
 .page *{box-sizing:border-box}
-.topbar{
-  position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
-  gap:12px;min-width:0;min-height:66px;
-  padding:9px max(16px,calc((100vw - 1240px)/2));
-  border-bottom:1px solid var(--mytube-line);
-  background:rgba(15,15,15,.97);
-  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px)
-}
-.back,.library{
-  display:flex;align-items:center;justify-content:center;gap:8px;flex:0 1 160px;
-  min-width:44px;min-height:44px;text-decoration:none;
-  color:var(--mytube-muted);font-size:13px;font-weight:700
-}
+.topbar{position:sticky;top:0;z-index:25;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-width:0;min-height:62px;
+  padding:8px max(16px,calc((100vw - 1240px)/2));background:rgba(15,15,15,.98);
+  border-bottom:1px solid var(--mytube-border);backdrop-filter:blur(12px)}
+.back,.library{display:flex;align-items:center;justify-content:center;gap:7px;flex:0 1 155px;
+  min-width:44px;min-height:44px;text-decoration:none;color:var(--mytube-muted);
+  font-size:13px;font-weight:650}
 .back{justify-content:flex-start}.library{justify-content:flex-end}
 .back:hover,.library:hover{color:var(--mytube-ink)}
 .brand{display:flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;
   color:var(--mytube-ink);white-space:nowrap}
-.playMark{display:grid;place-items:center;width:37px;height:26px;border-radius:8px;
+.playMark{display:grid;place-items:center;width:36px;height:25px;border-radius:7px;
   color:#fff;background:var(--mytube-red)}
-.playMark svg{width:18px;height:18px;fill:currentColor;stroke-width:1.6}
-.brand strong{font-size:clamp(22px,4vw,27px);font-weight:850;letter-spacing:-.065em}
+.brand strong{font-size:clamp(22px,4vw,26px);font-weight:850;letter-spacing:-.06em}
 .brand strong span{color:var(--mytube-ink)}
-.content{max-width:1272px;margin:0 auto;padding:16px 16px 55px;min-width:0}
-.subline{margin:0 2px 14px;color:var(--mytube-muted);font-size:13px;font-weight:500}
-.footerNote{margin:24px 4px 0;color:var(--mytube-muted);font-size:12px;line-height:1.5;text-align:center}
+.content{max-width:1272px;margin:0 auto;padding:14px 16px 56px;min-width:0}
+.subline{margin:0 2px 12px;color:var(--mytube-muted);font-size:13px;font-weight:500}
+.footerNote{margin:25px 4px 0;color:var(--mytube-muted);font-size:12px;line-height:1.5;text-align:center}
 .page a:focus-visible,.page button:focus-visible,.page input:focus-visible,
 .page select:focus-visible,.page summary:focus-visible{
-  outline:2px solid var(--mytube-red);outline-offset:3px
+  outline:2px solid #fafafa;outline-offset:3px
 }
 @media(max-width:640px){
-  .topbar{min-height:57px;padding:6px 12px;gap:5px}
-  .back,.library{flex:0 1 60px;gap:3px;font-size:12px}
+  .topbar{min-height:55px;padding:5px 12px;gap:5px}
+  .back,.library{flex:0 1 65px;gap:3px;font-size:12px}
   .back span,.library span{display:none}
   .brand strong{font-size:24px}
-  .content{padding:11px 10px 35px}
-  .subline{display:none}
+  .content{padding:12px 10px 35px}
+  .subline{margin:0 3px 10px;font-size:12px}
 }

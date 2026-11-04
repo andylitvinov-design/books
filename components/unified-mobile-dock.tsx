@@ -26,7 +26,6 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
   const localeMatch = pathname.match(/^\/(ru|en|es)(?:\/|$)/);
   const locale = (localeMatch?.[1] || initialLocale) as PublicLocale;
   const visible = isUnifiedMobileDockPath(pathname);
-  const darkMyTube = /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname);
   const navRef = useRef<HTMLElement>(null);
   const [hash, setHash] = useState("");
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -141,8 +140,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
 
   if (!visible) return null;
   const active = unifiedMobileDockActive(pathname, hash);
-  return <nav ref={navRef} data-hh-unified-dock data-mytube-theme={darkMyTube ? "dark" : undefined}
-    data-keyboard-open={keyboardOpen || undefined}
+  return <nav ref={navRef} data-hh-unified-dock data-keyboard-open={keyboardOpen || undefined}
     className={styles.dock} aria-label={
       locale === "ru" ? "Нижнее меню Holistic House" :
       locale === "es" ? "Menú inferior Holistic House" : "Holistic House bottom menu"}>

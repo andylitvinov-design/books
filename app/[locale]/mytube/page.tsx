@@ -43,7 +43,7 @@ export default async function MyTubePage({params}:Props){
         <ArrowLeft size={22} aria-hidden="true"/><span>{copy.back}</span>
       </Link>
       <div className={styles.brand} aria-label="MyTube">
-        <span className={styles.playMark}><Play size={18} fill="currentColor" aria-hidden="true"/></span>
+        <span className={styles.playMark}><Play size={17} fill="currentColor" aria-hidden="true"/></span>
         <strong>My<span>Tube</span></strong>
       </div>
       <Link href={"/"+locale+"/library?view=videos"} prefetch={false}

@@ -96,121 +96,105 @@
 }
 
 
-/* Dedicated MyTube dark mode. All selectors are scoped to the MyTube variant;
-   the Library feed and warm-site design tokens are untouched. */
-.refine{display:grid;gap:12px}
-.refine[hidden]{display:none!important}
-.mytube{color:var(--mytube-ink,#f1f1f1)}
-.mytube .topSearch{
-  min-height:47px;margin:0 0 14px;padding:0 14px;
-  border:1px solid var(--mytube-line,#303030);
-  border-radius:999px;background:#121212;color:var(--mytube-muted,#aaa);box-shadow:none
-}
-.mytube .topSearch input{height:45px;color:var(--mytube-ink,#f1f1f1);background:transparent;font-size:16px}
-.mytube .topSearch input::placeholder{color:#888}
+/* MyTube is an explicit dark-video destination. Library and Video Studio stay light. */
+.mytube{color:#f1f1f1;color-scheme:dark}
+.mytube .topSearch,.mytube.topSearch{border:1px solid #303030;border-radius:26px;background:#121212;color:#aaa;box-shadow:none}
+.mytube .topSearch input,.mytube .topSearch input::placeholder{color:#aaa}
+.mytube .topSearch input{color:#f1f1f1}
 .mytube .topSearch:focus-within{border-color:#777;box-shadow:0 0 0 1px #777}
-.mytube .topSearch button{background:var(--mytube-raised,#272727);color:var(--mytube-ink,#f1f1f1)}
+.mytube .topSearch button{background:#272727;color:#f1f1f1}
+.mytube .panel{border:1px solid #272727;border-radius:16px;background:#181818;box-shadow:none;gap:10px;padding:14px 15px 12px;margin:0 0 15px}
+.mytube .intro h2{font:750 clamp(17px,2.8vw,20px)/1.25 Arial,Helvetica,sans-serif;color:#f1f1f1}
+.mytube .intro h2 svg{color:#ff0033;width:19px;height:19px;flex-basis:19px}
+.mytube .intro p{color:#aaa;font-size:12px;margin-top:4px}
+.mytube .groupHeading strong{color:#aaa;font-size:12px;font-weight:700}
+.mytube .areaSection{gap:8px;min-width:0}
+.mytube .lifeAreas{display:flex;flex-wrap:nowrap;gap:8px;max-width:100%;min-width:0;overflow-x:auto;
+  overscroll-behavior-x:contain;scrollbar-width:none;padding:1px 0 4px}
+.mytube .lifeAreas::-webkit-scrollbar{display:none}
+.mytube .lifeAreas button{flex:0 0 auto;width:auto;min-height:38px;padding:7px 13px;
+  border:1px solid #303030;border-radius:9px;background:#272727;color:#f1f1f1;
+  font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;text-wrap:nowrap}
+.mytube .lifeAreas button[aria-pressed=true]{border-color:#f1f1f1;background:#f1f1f1;color:#0f0f0f}
+.mytube .goals button{border-color:#383838;border-radius:9px;background:#272727;color:#f1f1f1}
+.mytube .goals button[aria-pressed=true]{border-color:#f1f1f1;background:#f1f1f1;color:#0f0f0f}
+.mytube .controls label,.mytube .advancedControls label{color:#aaa;font-size:12px}
+.mytube .controls select,.mytube .advancedControls select{border-color:#383838;background:#272727;color:#f1f1f1}
+.mytube .saved{background:#272727;border-color:#383838;color:#f1f1f1}
+.mytube .saved[aria-pressed=true]{background:#f1f1f1;border-color:#f1f1f1;color:#0f0f0f}
+.mytube .advanced{border-top:1px solid #303030;padding-top:6px}
+.mytube .advanced summary{color:#d2d2d2;min-height:40px}
+.mytube .note{color:#a0a0a0}
+.mytube .reset button{color:#d6d6d6}
+.mytube .clearFilters{min-height:38px;border-color:#383838;border-radius:20px;
+  background:#272727;color:#ededed;font-size:12px}
+.mytube .clearFilters:hover{background:#383838}
+.mytube .results{color:#f1f1f1;font-size:18px;margin:9px 2px 14px}
+.mytube .results span:last-child{background:#272727;color:#f1f1f1;border-radius:999px;padding:5px 11px}
+.mytube .empty{background:#202020;color:#ddd;border:1px solid #303030}
+.mytube .panel :is(button,select,summary):focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:640px){
+  .mytube .panel{gap:9px;padding:12px 11px;margin:0 0 13px}
+  .mytube .intro p{display:none}
+  .mytube .areaSection>.groupHeading:first-child{display:none}
+  .mytube .lifeAreas{display:flex;grid-template-columns:none;gap:7px}
+  .mytube .lifeAreas button{min-height:39px;font-size:12px;padding:7px 11px}
+  .mytube .goals button{min-height:39px;font-size:12px}
+  .mytube .controls{gap:7px}
+  .mytube .controls label{flex:1 1 105px;min-width:100px}
+  .mytube .saved{flex:0 0 auto;min-height:40px;padding:7px 11px}
+  .mytube .advancedControls label{flex-basis:120px}
+  .mytube .topSearch{min-height:46px;margin-bottom:10px}
+  .mytube .topSearch input{height:45px}
+  .mytube .results{margin:7px 1px 11px}
+}
+@media(max-width:350px){
+  .mytube .controls label{flex-basis:105px;min-width:0}
+  .mytube .saved{flex-basis:100%}
+}
+
+
+/* MyTube-only video-first disclosure; the warm Library grid remains untouched. */
+.wrapper:not(.mytube) .refine,.moreControls{display:contents}
+.refine[hidden],.moreControls[hidden]{display:none!important}
+.mytube .intro{display:none}
 .mytube .panel{
-  gap:0;margin:0 0 17px;padding:0;border:0;border-radius:0;
+  gap:0;margin:0 0 13px;padding:0;border:0;border-radius:0;
   background:transparent;box-shadow:none
 }
-.mytube .intro{display:none}
-.mytube .areaSection{display:grid;gap:10px;min-width:0}
+.mytube .areaSection{gap:8px;min-width:0}
 .mytube .areaSection>.groupHeading{display:none}
-.mytube .lifeAreas{
-  display:flex;grid-template-columns:none;flex-wrap:nowrap;gap:8px;
-  min-width:0;max-width:100%;overflow-x:auto;padding:0 0 3px;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch
-}
-.mytube .lifeAreas::-webkit-scrollbar{display:none}
-.mytube .lifeAreas button{
-  flex:0 0 auto;width:auto;min-height:44px;white-space:nowrap;
-  border:1px solid #303030;border-radius:9px;padding:9px 14px;
-  background:var(--mytube-raised,#272727);color:var(--mytube-ink,#f1f1f1);
-  font-size:13px;font-weight:700;line-height:1.15
-}
-.mytube .lifeAreas button[aria-pressed=true]{
-  background:#f1f1f1;border-color:#f1f1f1;color:#0f0f0f
-}
+.mytube .lifeAreas button{min-height:44px}
 .mytube .filterToggle{
-  display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;
-  justify-self:start;min-height:44px;min-width:0;padding:6px 7px;
-  border:0;border-radius:9px;background:transparent;color:#d6d6d6;
-  font:700 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer
+  display:inline-flex;align-items:center;justify-content:flex-start;
+  justify-self:start;gap:8px;min-height:44px;max-width:100%;
+  margin:0;padding:6px 8px;border:0;border-radius:9px;
+  background:transparent;color:#ddd;font:700 13px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer
 }
-.mytube .filterToggle svg:first-child{color:var(--mytube-red,#ff0033)}
+.mytube .filterToggle svg:first-child{color:#ff0033}
 .mytube .filterToggle svg:last-child{transition:transform .15s ease}
 .mytube .filterToggle[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
-.mytube .filterToggle:hover{background:#212121}
+.mytube .filterToggle:hover{background:#272727}
 .mytube .refine{
-  margin:0;padding:14px;border:1px solid var(--mytube-line,#303030);
-  border-radius:14px;background:var(--mytube-surface,#181818);
-  color:var(--mytube-ink,#f1f1f1);gap:14px
+  display:grid;gap:9px;margin:0;padding:12px;
+  border:1px solid #303030;border-radius:13px;background:#181818
 }
-.mytube .refine .groupHeading strong{color:#ededed;font-size:13px}
-.mytube .goals{display:flex;flex-wrap:wrap;gap:8px}
-.mytube .goals button{
-  min-height:44px;padding:8px 12px;border:1px solid #404040;border-radius:9px;
-  background:#272727;color:#eee;font-size:13px;font-weight:650;white-space:normal
-}
-.mytube .goals button[aria-pressed=true]{
-  background:#f1f1f1;border-color:#f1f1f1;color:#0f0f0f
-}
-.mytube .controls label,.mytube .advancedControls label{color:#bbb;font-size:12px}
-.mytube .controls select,.mytube .advancedControls select{
-  min-height:44px;border:1px solid #494949;border-radius:9px;
-  background:#272727;color:#f1f1f1;font-size:14px
-}
-.mytube .saved{
-  min-height:44px;border:1px solid #404040;border-radius:9px;
-  background:#272727;color:#f1f1f1
-}
-.mytube .saved[aria-pressed=true]{border-color:#f1f1f1;background:#f1f1f1;color:#0f0f0f}
-.mytube .advanced{padding-top:10px;border-color:#3b3b3b}
-.mytube .advanced summary{color:#e5e5e5}
-.mytube .note{color:#aaa}
-.mytube .reset button{color:#ddd}
-.mytube .clearFilters{
-  min-height:42px;border:1px solid #404040;border-radius:9px;
-  background:#272727;color:#ddd;font-weight:700
-}
-.mytube .clearFilters:hover{background:#383838}
-.mytube .results{
-  margin:7px 2px 12px;color:#f1f1f1;font-size:17px;font-weight:750
-}
-.mytube .results span:last-child{
-  border-radius:9px;padding:5px 9px;background:#272727;color:#eee
-}
-.mytube .empty{
-  padding:24px;border:1px solid #303030;border-radius:14px;
-  background:#181818;color:#bbb;font-size:14px
-}
-.mytube .panel button:focus-visible,.mytube .panel select:focus-visible,
-.mytube .panel summary:focus-visible{outline:2px solid #ff0033;outline-offset:2px}
-@media(max-width:640px){
-  .mytube .topSearch{margin:1px 0 11px;min-height:46px}
-  .mytube .topSearch input{height:44px}
-  .mytube .panel{gap:0;margin:0 0 12px;padding:0}
-  .mytube .lifeAreas{grid-template-columns:none;gap:7px}
-  .mytube .lifeAreas button{min-height:44px;width:auto;padding:9px 12px;font-size:13px}
-  .mytube .goals{flex-wrap:wrap;overflow:visible}
-  .mytube .goals button{font-size:12px}
-  .mytube .controls label{flex:1 1 115px}
-  .mytube .saved{flex:0 0 auto}
-  .mytube .results{font-size:16px}
-}
-@media(prefers-reduced-motion:reduce){
-  .mytube .filterToggle svg:last-child{transition:none}
-}
-
-
-/* Flatten the shared Library variant back to its pre-MyTube grid structure.
-   The dark version alone receives the extra disclosure containers. */
-.wrapper:not(.mytube) .refine,.moreControls{display:contents}
-.moreControls[hidden]{display:none!important}
 .mytube .refine:empty{display:none}
 .mytube .moreControls{
-  display:grid;gap:14px;margin:0;padding:14px;
-  border:1px solid #303030;border-radius:14px;
-  background:var(--mytube-surface,#181818)
+  display:grid;gap:12px;margin:0;padding:12px;
+  border:1px solid #303030;border-radius:13px;background:#181818
 }
+.mytube .refine .groupHeading strong{color:#ddd}
+.mytube .goals{flex-wrap:wrap}
+.mytube .goals button{min-height:44px}
+.mytube .saved{min-height:44px}
+.mytube .clearFilters{min-height:44px}
+.mytube .filterToggle:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:640px){
+ .mytube .panel{padding:0;margin:0 0 12px}
+ .mytube .lifeAreas button{min-height:44px}
+ .mytube .goals{flex-wrap:wrap;overflow:visible}
+ .mytube .goals button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.mytube .filterToggle svg:last-child{transition:none}}

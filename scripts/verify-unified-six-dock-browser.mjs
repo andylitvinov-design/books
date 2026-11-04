@@ -26,9 +26,10 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  assert.equal(await dock.getAttribute("data-mytube-theme"),"dark",
+  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.match(dockBackground,/^rgba?\\(15, 15, 15/,
     id+" dark dock applies only to MyTube");
-  const moreFilters=page.locator('button[aria-controls="mytube-refine-controls"]');
+  const moreFilters=page.locator('button[aria-controls~="mytube-refine-controls"]');
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
     id+" video-first feed starts with secondary filters collapsed");
   const links=dock.locator("[data-unified-dock-item]");

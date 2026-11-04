@@ -257,7 +257,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
             onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
         </div>
         {variant==="mytube"&&<button type="button" className={styles.filterToggle}
-          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls"
+          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
           onClick={()=>setFiltersOpen(value=>!value)}>
           <SlidersHorizontal size={16} aria-hidden="true"/>
           {filtersOpen?t.collapse:t.refine}
@@ -297,7 +297,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         </>:null}
         </div>
       </div>
-      <div className={styles.moreControls} hidden={variant==="mytube"&&!filtersOpen}>
+      <div className={styles.moreControls} id={variant==="mytube"?"mytube-more-controls":undefined}
+        hidden={variant==="mytube"&&!filtersOpen}>
       <div className={styles.controls}>
         <label>{t.original}
           <select value={language} onChange={event=>setLanguage(event.target.value)}>

@@ -20,18 +20,3 @@
 @media(max-width:354px){.dock{padding-inline:2px;gap:0}.item{font-size:9px;gap:3px;padding-inline:0;min-height:48px}.item svg{width:21px;height:21px}}
 @media(min-width:760px){.dock{width:min(92%,850px);border-radius:25px 25px 0 0}}
 @media(prefers-reduced-motion:reduce){.dock,.item{transition:none}}
-
-
-/* Preserve the shared six-item dock and its Safari anchoring. Only MyTube is dark. */
-.dock[data-mytube-theme="dark"]{
-  border-color:#303030;border-bottom:0;
-  background:rgba(15,15,15,.97);
-  box-shadow:0 -8px 26px rgba(0,0,0,.5)
-}
-.dock[data-mytube-theme="dark"] .item{color:#a5a5a5}
-.dock[data-mytube-theme="dark"] .item[aria-current="page"]{
-  color:#fff;background:#292929;font-weight:800
-}
-.dock[data-mytube-theme="dark"] .item[aria-current="page"] svg{color:#ff0033}
-.dock[data-mytube-theme="dark"] .item:hover{color:#f1f1f1;background:#242424}
-.dock[data-mytube-theme="dark"] .item:focus-visible{outline-color:#ff0033}
