@@ -255,3 +255,13 @@ test('owner P0: mobile AI chat stays mounted across folders, never autofocuses q
  assert.match(css,/flex:1 1 auto;min-height:48px;max-height:none/)
  assert.match(pageCss,/\[data-hh-unified-dock\]/)
 });
+
+test('hidden private dialogs never hide navigation in another folder',()=>{
+ const ui=source('components/app/messages-orders-clients.jsx')
+ const css=source('app/[locale]/app/messages/messages-page.css')
+ assert.match(ui,/clientsVisited&&/)
+ assert.match(ui,/if\(section==='clients'\)setClientsVisited\(true\)/)
+ assert.match(css,/data-section="orders"\] \[data-hh-order-active-chat\]/)
+ assert.match(css,/data-section="clients"\] \[data-simple-messages\]/)
+ assert.doesNotMatch(css,/body:has\(\.hh-messages-page \[data-hh-order-active-chat\]\)/)
+})

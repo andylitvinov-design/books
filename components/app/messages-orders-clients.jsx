@@ -107,6 +107,8 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [search,setSearch]=useState('')
   const [clientCount,setClientCount]=useState(0)
   const [clientDetailOpen,setClientDetailOpen]=useState(false)
+  const [clientsVisited,setClientsVisited]=useState(()=>section==='clients')
+  useEffect(()=>{if(section==='clients')setClientsVisited(true)},[section])
   const [selectedId,setSelectedId]=useState('')
   const orderChatRef=useRef(null)
   const hubRef=useRef(null)
@@ -451,8 +453,8 @@ export default function MessagesOrdersClients({locale='en',children}){
     </div>
     <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
       {listHelper}
-      {isValidElement(children)?cloneElement(children,{
-        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children}
+      {clientsVisited&&(isValidElement(children)?cloneElement(children,{
+        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
     </div>
   </section>
 }
