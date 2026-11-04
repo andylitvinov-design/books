@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflows = [
   'assessment-range-mobile-browser.yml',
@@ -800,4 +801,26 @@ test('Messenger mobile Draft skips heavy runners and automatically rechecks on R
     assert.ok(workflow.includes(required), 'Messenger security and post-merge acceptance lost: ' + required);
   }
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/, 'Real Messenger failures may never be advisory');
+});
+
+test('Free Review runs for real lead/intake changes, not shared CI policy test-only edits', () => {
+  const trigger = name => parsePrTrigger(read(name), name);
+  const match = (name,path) => matchesTrigger(trigger(name), [path], 'codex/public-book-library');
+  const shared = 'tests/ci-heavy-impact.test.mjs';
+  assert.equal(match('hh-free-review-live-mobile.yml', shared), false,
+    'Free Review heavy runner must not start for Guard-owned CI test changes');
+  assert.equal(match('hh-pr-sweep-guard.yml', shared), true,
+    'the existing Guard must still validate the shared routing test');
+  assert.equal(match('hh-pr-core-release.yml', shared), true,
+    'Core retains the protected default PR check');
+  for (const real of [
+    'scripts/ci-heavy-impact.mjs','scripts/verify-free-review-live-mobile.mjs',
+    'components/free-entry-landing.tsx','components/personal-express-enquiry.tsx',
+    'lib/coaching/intake-model.js','tests/free-diagnosis-three-offers.test.mjs'
+  ]) assert.equal(match('hh-free-review-live-mobile.yml', real), true,
+    'real functional Free Review changes must still execute their owner QA: '+real);
+  const yaml=read('hh-free-review-live-mobile.yml');
+  assert.match(yaml,/workflow_dispatch:/);
+  assert.match(yaml,/^  push:/m);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });

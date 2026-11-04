@@ -197,6 +197,19 @@ jobs:
           # Fetch both parents when available; raw parent headers are still
           # verified below even when the runner marks the depth boundary shallow.
           fetch-depth: 2
+      # GitHub checkout marks this path safe for the host runner. This job runs
+      # in a separate Playwright container with a different Git HOME/owner.
+      # Trust ONLY GitHub's exact checkout workspace, never safe.directory=*.
+      - name: Trust checked-out workspace inside Public Services container
+        run: |
+          set -euo pipefail
+          [[ -n "${GITHUB_WORKSPACE:-}" && -d "$GITHUB_WORKSPACE/.git" ]] || {
+            echo "::error::Missing checked-out GitHub workspace"; exit 1;
+          }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          [[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]] || {
+            echo "::error::Checkout path does not match GitHub workspace"; exit 1;
+          }
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:

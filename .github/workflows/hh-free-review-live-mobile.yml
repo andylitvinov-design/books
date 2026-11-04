@@ -25,7 +25,7 @@ on:
       - 'components/site-video-player.tsx'
       - 'data/service-video-library.ts'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
+      # Shared CI-only impact test is already executed by HH PR Sweep Guard.
   push:
     branches: ['codex/public-book-library']
     paths:

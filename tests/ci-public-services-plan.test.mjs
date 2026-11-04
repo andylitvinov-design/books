@@ -1551,3 +1551,18 @@ test('Public Services checkout uses the exact event merge and raw, shallow-safe 
     'shallow checkout cannot derive the second parent with rev-parse');
   assert.ok(yaml.includes('PR_HEAD_SHA'),'event PR head must remain exact');
 });
+
+test('Playwright Public Services container trusts only the GitHub checkout path before exact merge verification',()=>{
+ const yaml=workflow('hh-public-services-production.yml');
+ const setup=yaml.indexOf('name: Trust checked-out workspace inside Public Services container');
+ const ancestry=yaml.indexOf('name: Verify bounded Public Services PR ancestry');
+ assert.ok(setup>0 && ancestry>setup,'container safe.directory setup precedes fail-closed ancestry');
+ for(const required of [
+   'git config --global --add safe.directory "$GITHUB_WORKSPACE"',
+   '[[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]]',
+   '[[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]]',
+   'mapfile -t tested_parents',
+ ])assert.ok(yaml.includes(required),'missing exact container checkout proof: '+required);
+ assert.equal(yaml.includes('git config --global --add safe.directory "*"'),false,
+   'never globally whitelist untrusted directories');
+})
