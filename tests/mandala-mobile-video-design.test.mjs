@@ -437,7 +437,10 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
   const studio=read("components/mandala-free-video-studio.tsx");
   const dock=read("components/holistic-support-mandala-dock.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} \/>/);
+  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} photoMode=\{photoMode\} \/>/);
+  assert.equal((route.match(/<HolisticSupportMandalaDock\b/g) ?? []).length, 1,
+    "The photo/video mode switch must not duplicate the support bottom dock");
+  assert.match(route, /const photoMode = query\?\.mode === "photo";/);
   assert.match(route, /<MandalaMeditationClient locale=\{locale\}/);
   assert.match(studio, /data-video-mandala-hero/);
   assert.match(studio, /data-video-support-layout/);
