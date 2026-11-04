@@ -87,7 +87,7 @@ test('Core history uses the verified numeric workflow ID, not filename-only look
 
 test('historical Core run with empty GitHub pull_requests still joins unique exact merged HEAD',async()=>{
  const {collect,WORKFLOW_ID}=require('../scripts/ci-pr-cohort-backfill.cjs');
- const p={...pr(95),head:{sha:'a'.repeat(40),ref:'feature-95'},
+ const p={...pr(95,date+'00:00Z',date+'40:00Z',date+'40:00Z'),head:{sha:'a'.repeat(40),ref:'feature-95'},
    base:{ref:'codex/public-book-library',repo:{full_name:repo}}};
  const ret=data=>({headers:{'x-ratelimit-remaining':'900'},data});
  const core={id:101,workflow_id:WORKFLOW_ID,name:'HH PR core release gate',event:'pull_request',
