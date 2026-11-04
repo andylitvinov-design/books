@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflows = [
   'assessment-range-mobile-browser.yml',
@@ -800,4 +801,42 @@ test('Messenger mobile Draft skips heavy runners and automatically rechecks on R
     assert.ok(workflow.includes(required), 'Messenger security and post-merge acceptance lost: ' + required);
   }
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/, 'Real Messenger failures may never be advisory');
+});
+
+test('shared CI routing tests avoid Mandala and Free Review fanout without losing real QA', () => {
+  const policyFile = 'tests/ci-heavy-impact.test.mjs';
+  const affected = [policyFile];
+  const route = name => matchesTrigger(parsePrTrigger(read(name), name), affected);
+  assert.equal(route('hh-pr-sweep-guard.yml'), true, 'policy test must run in Guard');
+  assert.equal(route('hh-pr-core-release.yml'), true, 'protected Core still executes');
+  const guard = read('hh-pr-sweep-guard.yml');
+  assert.ok(guard.includes(policyFile) &&
+    guard.includes('node --test tests/pr-sweep-guard.test.mjs'),
+    'the existing Guard job actually tests routing changes');
+  for (const owner of ['holistic-support-mandala.yml', 'hh-free-review-live-mobile.yml']) {
+    assert.equal(route(owner), false, owner + ' cannot spend a heavy runner on policy-test-only edits');
+    const source = read(owner);
+    const trigger = parsePrTrigger(source, owner);
+    assert.equal(matchesTrigger(trigger, ['scripts/ci-heavy-impact.mjs']), true,
+      owner + ' must still run when the router itself changes');
+    assert.match(source, /workflow_dispatch:/, owner + ' manual full QA remains enabled');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/, owner + ' must fail closed');
+  }
+  for (const path of [
+    'components/mandala-free-video-studio.tsx',
+    'lib/mandala/video-chat-understanding.mjs',
+    'app/api/holistic-support/voice/route.js',
+    'tests/mandala-free-video.test.mjs',
+    '.github/workflows/holistic-support-mandala.yml'
+  ]) assert.equal(matchesTrigger(parsePrTrigger(read('holistic-support-mandala.yml'),
+    'holistic-support-mandala.yml'), [path]), true,
+    'real Mandala source must retain its QA: ' + path);
+  for (const path of [
+    'components/free-entry-landing.tsx',
+    'components/personal-express-enquiry.tsx',
+    'lib/coaching/intake-model.js',
+    'scripts/verify-free-review-live-mobile.mjs'
+  ]) assert.equal(matchesTrigger(parsePrTrigger(read('hh-free-review-live-mobile.yml'),
+    'hh-free-review-live-mobile.yml'), [path]), true,
+    'real Free Review source must retain its QA: ' + path);
 });
