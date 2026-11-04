@@ -95,11 +95,17 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
       run?.path?.split('@')[0]!==CORE_PATH||run?.event!=='pull_request'||
       run?.repository?.full_name!==REPO||run?.head_repository?.full_name!==REPO||
       !/^[a-f0-9]{40}$/i.test(run?.head_sha||'')||!Array.isArray(links))return false;
-   const eligible=result.prs.filter(p=>p.head?.repo?.full_name===REPO&&
-     p.head?.ref===run.head_branch&&p.head?.sha===run.head_sha&&
-     t>=ts(p.created_at)&&t<ts(p.closed_at)&&
-     (!links.length||links.length===1&&links[0].number===p.number&&
-      links[0].base?.ref===p.base?.ref));
+   // GitHub's exact PR link may refer to an earlier HEAD.
+   // Without that link, only the final SHA proves attribution.
+   const eligible=result.prs.filter(p=>{
+    if(p.head?.repo?.full_name!==REPO||p.head?.ref!==run.head_branch||
+       t<ts(p.created_at)||t>=ts(p.closed_at))return false;
+    if(links.length===0)return p.head.sha===run.head_sha;
+    if(links.length!==1)return false;
+    const link=links[0];
+    return link.number===p.number&&link.base?.ref===p.base?.ref&&
+      (!link.head?.repo?.full_name||link.head.repo.full_name===REPO);
+   });
    if(eligible.length!==1)return false;
    seenRunIds.add(run.id);byPr.get(eligible[0].number).push(run);return true;
   }
@@ -129,7 +135,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
    const runs=byPr.get(p.number).sort((a,b)=>ts(a.created_at)-ts(b.created_at));
    if(runs.length&&result.source.ci_runs_complete[window.key])result.intervals.push({pr:p.number,phase:'created_to_first_ci',
     start:p.created_at,end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),head_sha:runs[0].head_sha,
-    inventory_complete:true,reason:'first associated Core workflow run'});
+    inventory_complete:true,reason:'first linked Core run (may precede final HEAD)'});
   }
   // Target the eight longest recent cases and a small, fair earlier sample.
   const prioritized=[];
@@ -170,6 +176,8 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
        .sort((a,b)=>ts(a.created_at)-ts(b.created_at));
       if(runs.length){
        result.source.branch_core_queries.push(p.number);
+       // Reuse branch-fallback evidence in the same per-PR CI-wave inventory.
+       for(const linked of runs)attachGlobalRun(linked);
        if(!result.intervals.some(i=>i.pr===p.number&&i.phase==='created_to_first_ci'))
         result.intervals.push({pr:p.number,phase:'created_to_first_ci',start:p.created_at,
          end:runs[0].created_at,source:'github_actions_run',url:coreUrl(runs[0].id),head_sha:runs[0].head_sha,
@@ -179,7 +187,11 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     }catch(e){result.source.ci_runs_errors['branch_'+p.number]=String(e?.message||e).slice(0,120);}
    }
    let successfullySampled=false,previousEnd=null,previousFailure=false,lastGreen=null,lastGreenRun=null;
-   for(const run of runs.slice(-2)){
+   // Include the earliest and last two verified Core runs, not just the
+   // last two. At most one extra read per sample, no new scheduled work.
+   const sampledRuns=[...new Map([...runs.slice(0,1),...runs.slice(-2)]
+    .map(run=>[run.id,run])).values()];
+   for(const run of sampledRuns){
     if(gate.state.paused)break;
     let jobsData;try{jobsData=await gate.request('core-run-jobs-'+run.id,()=>github.rest.actions.listJobsForWorkflowRun({
      owner:OWNER,repo:REPOSITORY,run_id:run.id,per_page:100,filter:'latest'}));}
@@ -244,6 +256,15 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     }
    }
   }
+  // Missing links are UNKNOWN, never evidence of zero CI.
+  result.source.core_waves_by_pr=Object.fromEntries(
+   [...byPr.entries()].filter(([,runs])=>runs.length>0).map(([number,runs])=>{
+    const ordered=[...runs].sort((a,b)=>ts(a.created_at)-ts(b.created_at)||a.id-b.id);
+    return [number,{count:ordered.length,repeat_count:Math.max(0,ordered.length-1),
+     first_at:ordered[0].created_at,last_at:ordered[ordered.length-1].created_at,
+     run_ids:ordered.map(r=>r.id),
+     observed_run_head_shas:[...new Set(ordered.map(r=>r.head_sha))]}];
+   }));
   result.source.coverage=result.source.closed_complete?'COMPLETE_PR_COHORT_PARTIAL_CI':'PARTIAL_PR_INVENTORY';
  }catch(e){error=e;result.source.reason=gate.state.reason||String(e?.message||e).slice(0,180);}
  result.source.reads=gate.state.requests;result.source.remaining=gate.state.remaining;
