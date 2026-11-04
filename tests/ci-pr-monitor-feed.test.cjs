@@ -147,3 +147,38 @@ test('malformed negative or oversized label hints fail closed',()=>{
   production:2,backlogLabelHints:{labeled_unique:3}}),context),
   /BACKLOG_LABEL_HINTS_EXCEED_INVENTORY/);
 });
+
+test('verified bounded inspection publishes nonzero blockers without overlap inflation',()=>{
+ const sample={schema:'HH_WATCHDOG_VERIFIED_SAMPLE_V1',
+  scope:'BOUNDED_DEEP_INSPECTION',checkedAt:at,production:160,
+  inspected:16,mergeConflicts:8,coreFailures:8,specialistFailures:6,
+  specialistPolicyHolds:0,releaseGateOnly:0,verifiedSourceFailures:0,
+  coreFailureUnverified:0,specialistEvidenceUnverified:0,
+  sourceRepairQueued:0,conflictLabelsQueued:0};
+ const monitor=buildMonitorSnapshot(report({
+  watchdogSample:sample,watchdogSampleStatus:'VERIFIED_BOUNDED_SAMPLE',
+  backlogLabelHints:{labeled_unique:101}}),context);
+ assert.equal(monitor.watchdog_sample_status,'VERIFIED_BOUNDED_SAMPLE');
+ assert.equal(monitor.watchdog_sample.inspected,16);
+ assert.equal(monitor.counts.verified_blocked_lower_bound,8);
+ assert.equal(monitor.counts.labeled_outstanding_prs,101);
+ assert.equal(monitor.delivery_status,'VERIFIED_BLOCKED_WORK_NO_AUTO_SOURCE_REPAIR');
+ assert.equal(monitor.counts.total_blockers,0,
+  'legacy total_blockers counts only denied attempts, not all backlog roots');
+ assert.deepEqual(parseExisting(renderSnapshot(monitor)),monitor);
+ assert.throws(()=>buildMonitorSnapshot(report({
+  watchdogSample:{...sample,coreFailures:17}}),context),/WATCHDOG_SAMPLE_EXCEEDS_INSPECTION/);
+ assert.throws(()=>buildMonitorSnapshot(report({
+  production:3,watchdogSample:sample}),context),/INVALID_VERIFIED_WATCHDOG_SAMPLE/);
+});
+test('verified zero inspection is incomplete, not proof of zero blocked PRs',()=>{
+ const sample={schema:'HH_WATCHDOG_VERIFIED_SAMPLE_V1',
+  scope:'BOUNDED_DEEP_INSPECTION',checkedAt:at,production:160,inspected:0,
+  mergeConflicts:0,coreFailures:0,specialistFailures:0,
+  specialistPolicyHolds:0,releaseGateOnly:0,verifiedSourceFailures:0,
+  coreFailureUnverified:0,specialistEvidenceUnverified:0,
+  sourceRepairQueued:0,conflictLabelsQueued:0};
+ const snapshot=buildMonitorSnapshot(report({watchdogSample:sample}),context);
+ assert.equal(snapshot.delivery_status,'WATCHDOG_DEEP_INSPECTION_INCOMPLETE');
+ assert.equal(snapshot.watchdog_sample.inspected,0);
+});
