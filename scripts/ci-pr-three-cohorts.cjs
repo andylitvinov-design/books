@@ -75,6 +75,9 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],observations=[],so
   const members=prs.filter(p=>{const t=validatedPR(p);return t.created>=start&&t.created<end&&t.closed!==null&&t.closed>=start&&t.closed<end;});
   const rows=members.map(p=>{
    const t=validatedPR(p),part=splitIntervals(p,intervals.filter(i=>i.pr===p.number));
+   // No association means unknown waves, never evidence of zero CI.
+   const wave=source?.core_waves_by_pr?.[p.number];
+   const coreWaves=Number.isSafeInteger(wave?.count)&&wave.count>0?wave.count:null;
    const explanation=explainPrClock({pr:p,segments:part.segments,observations:obsByPr.get(p.number)||[]});
    return{pr:p.number,url:`https://github.com/${REPO}/pull/${p.number}`,title:p.title||'',base:p.base?.ref||null,
     created_at:p.created_at,closed_at:p.closed_at,merged_at:p.merged_at||null,
@@ -84,9 +87,19 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],observations=[],so
     observed_gap_minutes:explanation.context_gap_minutes,
     direct_verified_minutes:explanation.verified_cause_minutes,
     gap_categories:explanation.observed_gap_categories,root_cause_coverage_pct:explanation.known_cause_pct,
-    evidence_count:part.segments.filter(s=>s.url).length};
+    evidence_count:part.segments.filter(s=>s.url).length,
+    core_ci_waves:coreWaves,core_ci_repeats:coreWaves===null?null:coreWaves-1,
+    first_core_at:coreWaves===null?null:wave.first_at,
+    last_core_at:coreWaves===null?null:wave.last_at};
   }).sort((a,b)=>b.full_minutes-a.full_minutes||a.pr-b.pr);
-  const totals=stats(rows.map(x=>x.full_minutes));const outcomes=Object.fromEntries(['merged','replaced','closed_without_merge'].map(k=>[k,rows.filter(r=>r.outcome===k).length]));
+  const totals=stats(rows.map(x=>x.full_minutes));
+  const observedWaves=rows.filter(x=>x.core_ci_waves!==null);
+  const ciWaves={...stats(observedWaves.map(x=>x.core_ci_waves)),
+   observed_prs:observedWaves.length,cohort_prs:rows.length,
+   coverage_pct:rows.length?round(100*observedWaves.length/rows.length):null,
+   repeat_prs:observedWaves.filter(x=>x.core_ci_repeats>0).length,
+   complete_run_inventory:source?.ci_runs_complete?.[w.key]===true};
+  const outcomes=Object.fromEntries(['merged','replaced','closed_without_merge'].map(k=>[k,rows.filter(r=>r.outcome===k).length]));
   const phases={};for(const stage of PHASES){const covered=rows.filter(x=>stage==='unknown'||x.phases[stage]>0),summary=stats(covered.map(x=>x.phases[stage]));phases[stage]={...summary,covered_prs:covered.length,
     coverage_pct:rows.length?round(100*covered.length/rows.length):null,
     contribution_to_cohort_mean:rows.length&&(covered.length||stage==='unknown')?round(rows.reduce((s,x)=>s+x.phases[stage],0)/rows.length):null};}
@@ -97,7 +110,7 @@ function analyze({prs,intervals=[],windows=WINDOWS,openPRs=[],observations=[],so
   analyses.push({key:w.key,label:w.label,window_start:w.start,window_end:w.end,count:rows.length,outcomes,
    gap_phases,mean_context_gap_minutes:rows.length?round(rows.reduce((sum,r)=>sum+r.observed_gap_minutes,0)/rows.length):null,
    mean_direct_verified_minutes:rows.length?round(rows.reduce((sum,r)=>sum+r.direct_verified_minutes,0)/rows.length):null,
-   total:totals,phases,rows,
+   total:totals,phases,rows,ci_waves:ciWaves,
    chain_delivery:{replaced_chains:rows.filter(r=>r.outcome==='replaced').length,
     confirmed_production_merges:rows.filter(r=>r.delivery_chain?.status==='PRODUCTION_MERGE_CONFIRMED_NOT_LIVE').length,
     time_to_production_merge:stats(rows.map(r=>r.delivery_chain?.minutes_to_production_merge).filter(Number.isFinite))},
@@ -134,6 +147,10 @@ function renderMarkdown(result){
  compare('Replacement chains with verified production merge (not LIVE)',x=>x.chain_delivery.confirmed_production_merges);
    compare('Replacement chain time to production merge, min',x=>fmt(x.chain_delivery.time_to_production_merge.average_min));
    compare('Average, min',x=>fmt(x.total.average_min));compare('Median, min',x=>fmt(x.total.median_min));compare('P90, min',x=>fmt(x.total.p90_min));
+ compare('Observed Core CI waves: PRs / total',x=>x.ci_waves.observed_prs+' / '+x.ci_waves.cohort_prs);
+ compare('Core CI wave count: median (attributed only)',x=>fmt(x.ci_waves.median_min));
+ compare('Core CI repeated: linked PRs',x=>x.ci_waves.repeat_prs);
+ compare('Core run inventory verified complete',x=>x.ci_waves.complete_run_inventory?'YES':'NO / PARTIAL');
  compare('Direct job / repair measured time (mean), min',x=>fmt(x.mean_direct_verified_minutes));
  compare('Observed-context intervals, causality unverified (mean), min',x=>fmt(x.mean_context_gap_minutes));
  line.push('','**Stages:** cohort-mean contribution; then mean / median / P90 among measured PRs; then % of PRs with evidence. A dash means unmeasured (not zero). Unknown is explicit.','',
@@ -145,11 +162,11 @@ function renderMarkdown(result){
  for(const category of GAP_CATEGORIES)line.push('| '+LABELS[category]+' | '+w.map(x=>{const s=x.gap_phases[category];return fmt(s.contribution_to_cohort_mean)+' min; '+fmt(s.coverage_pct)+'% PR';}).join(' | ')+' |');
  line.push('','## Evidence drill-down');
  for(const x of w){line.push('',`<details><summary>${x.label}: ${x.count} completed PRs, ${x.known_phase_prs} with ≥1 attributed stage</summary>`,'',
- '| PR | Base | Outcome | Full, min | Attributed % | Evidence |','|---|---|---|---:|---:|---|');
+ '| PR | Base | Outcome | Full, min | Core waves | Attributed % | Evidence |','|---|---|---|---:|---:|---:|---|');
   for(const row of x.rows){const known=row.segments.filter(s=>s.url);let links=known.slice(0,3).map(s=>'[event]('+s.url+')').join(' ');
    if(row.delivery_chain){links+=' · Chain '+row.delivery_chain.prs.map(n=>'[#'+n+'](https://github.com/'+REPO+'/pull/'+n+')').join(' → ');
     links+=' ('+row.delivery_chain.status+')';}
-   if(!links)links='Not recovered';line.push(`| [#${row.pr}](${row.url}) | ${String(row.base||'—').replaceAll('|','/')} | ${row.outcome} | ${row.full_minutes} | ${row.known_pct}% | ${links} |`);}
+   if(!links)links='Not recovered';line.push(`| [#${row.pr}](${row.url}) | ${String(row.base||'—').replaceAll('|','/')} | ${row.outcome} | ${row.full_minutes} | ${row.core_ci_waves??'—'} | ${row.known_pct}% | ${links} |`);}
   line.push('','</details>');
  }
  line.push('','## Longest eight · latest cohort');

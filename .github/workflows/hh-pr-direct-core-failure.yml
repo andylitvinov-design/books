@@ -54,6 +54,21 @@ jobs:
             core.info('HH_DIRECT_CORE_HANDOFF '+JSON.stringify(result));
             await core.summary.addHeading('Core failure: direct exact-HEAD Repair')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
+      - name: Persist completed Core job timings without another runner
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            try {
+              const {archive}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-core-journey-archive.cjs');
+              const result=await archive({github,context});
+              core.info('HH_CI_JOURNEY_ARCHIVE '+JSON.stringify(result));
+            } catch(error) {
+              core.warning('HH_CI_JOURNEY_ARCHIVE_UNAVAILABLE '+
+                String(error.message||error).slice(0,120));
+            }
   core-slot-wakeup:
     name: core-ci-freed-slot-wakeup
     # Success already wakes native AutoMerge. Only schedule a fresh Watchdog
@@ -73,6 +88,7 @@ jobs:
       contents: read
       actions: write
       pull-requests: read
+      issues: write
     steps:
       - name: Checkout trusted default branch for bounded admission policy
         uses: actions/checkout@v4
@@ -87,3 +103,18 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-slot-wakeup.cjs');
             await run({github,core,context});
+      - name: Persist completed Core job timings without another runner
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            try {
+              const {archive}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-core-journey-archive.cjs');
+              const result=await archive({github,context});
+              core.info('HH_CI_JOURNEY_ARCHIVE '+JSON.stringify(result));
+            } catch(error) {
+              core.warning('HH_CI_JOURNEY_ARCHIVE_UNAVAILABLE '+
+                String(error.message||error).slice(0,120));
+            }

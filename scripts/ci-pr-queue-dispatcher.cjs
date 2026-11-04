@@ -165,7 +165,31 @@ function backlogLabelHints(prs){
  return result;
 }
 
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null}){
+// Bounded exact-run Watchdog inspection, not a repository-wide proof or
+// authorization to edit sources. Categories may overlap within the sample.
+function trustedWatchdogSample(evidence,productionCount){
+ if(!evidence||evidence.inventoryComplete!==true||
+    evidence.inventoryScope!=='ALL_OPEN_PRS'||
+    evidence.production!==productionCount||
+    !Number.isFinite(Date.parse(evidence.checkedAt||'')))return null;
+ const fields=['inspected','mergeConflicts','coreFailures','specialistFailures',
+  'specialistPolicyHolds','releaseGateOnly','verifiedSourceFailures',
+  'coreFailureUnverified','specialistEvidenceUnverified',
+  'sourceRepairQueued','conflictLabelsQueued'];
+ const sample={schema:'HH_WATCHDOG_VERIFIED_SAMPLE_V1',
+  scope:'BOUNDED_DEEP_INSPECTION',checkedAt:evidence.checkedAt,
+  production:productionCount};
+ for(const field of fields){
+  const value=evidence[field];
+  if(!Number.isSafeInteger(value)||value<0||value>productionCount)return null;
+  sample[field]=value;
+ }
+ if(sample.inspected>productionCount ||
+    fields.slice(1).some(field=>sample[field]>sample.inspected))return null;
+ return sample;
+}
+
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -280,6 +304,12 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
  summary.backlogLabelHints=backlogLabelHints(production);
+ if(watchdogEvidence!==null){
+  summary.watchdogSample=inventorySnapshot!==null?
+   trustedWatchdogSample(watchdogEvidence,summary.production):null;
+  summary.watchdogSampleStatus=summary.watchdogSample?
+   'VERIFIED_BOUNDED_SAMPLE':'UNVERIFIED';
+ }
  // Reconcile a *proven* old terminal denial only after the new no-commit
  // Worker is on trusted default. This cannot silently free a source owner:
  // the helper validates bot-signed receipts, completed run, current HEAD,
@@ -333,7 +363,21 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
  }
  summary.candidates=candidates.length;
- if(!candidates.length){summary.reason='NO_ACTIONABLE_PR';return finish();}
+ if(!candidates.length){
+  const sample=summary.watchdogSample;
+  // A deep sample with zero inspected PRs proves no absence of blockers.
+  // Historical labels describe unresolved work, not source-write permission.
+  const noInspection=sample?.inspected===0&&summary.production>0;
+  const sampleExceptions=!!sample&&[
+   'mergeConflicts','coreFailures','specialistFailures',
+   'specialistPolicyHolds','coreFailureUnverified','specialistEvidenceUnverified'
+  ].some(field=>sample[field]>0);
+  const labeledExceptions=(summary.backlogLabelHints?.labeled_unique||0)>0;
+  summary.reason=noInspection?'SCAN_INCOMPLETE':
+   (sampleExceptions||labeledExceptions)?
+    'NO_AUTO_SOURCE_ELIGIBLE_WITH_BLOCKED_WORK':'NO_ACTIONABLE_PR';
+  return finish();
+ }
  // Metadata-only handoffs survive runner saturation or unknown inventory.
  let capacity=null,capacityReason=null;
  try{capacity=await capacityFn(github,owner,repo);}

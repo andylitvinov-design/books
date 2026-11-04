@@ -261,7 +261,7 @@ test('stale PR SHA, missing source proof and manual hold cannot cause writes',as
 test('the dispatcher never starts an empty worker when no candidate can act',async()=>{
  const f=fixture([pr(2,'repair',{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]})]);
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(r.reason,'NO_ACTIONABLE_PR');assert.equal(f.calls.dispatched.length,0);
+ assert.equal(r.reason,'NO_AUTO_SOURCE_ELIGIBLE_WITH_BLOCKED_WORK');assert.equal(f.calls.dispatched.length,0);
 });
 test('dry run records possible work but performs no reservation or dispatch',async()=>{
  const f=fixture([pr(1)],{comments:{1:[proof()]}});
@@ -1421,4 +1421,74 @@ test('Watchdog removes a stale signed CI hold after real current-HEAD Core proof
  assert.equal(f.calls.reserved.length,0);
  assert.deepEqual(f.calls.removed.map(x=>x.name),
   ['hh:ci-needed','hh:ci-wake-unverified']);
+});
+
+test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blockers with zero source eligibility',async()=>{
+ const production=Array.from({length:156},(_,i)=>{
+  const n=i+1,labels=n<=16?[{name:'hh:repair-manual'}]:[];
+  if(n<=8)labels.push({name:'hh:conflict-repair-needed'});
+  if(n<=6)labels.push({name:'hh:specialist-repair-needed'});
+  return pr(n,'repair',{labels});
+ });
+ const evidence={inventoryComplete:true,inventoryScope:'ALL_OPEN_PRS',
+  checkedAt:new Date(NOW).toISOString(),production:156,inspected:16,
+  mergeConflicts:8,coreFailures:8,specialistFailures:6,
+  specialistPolicyHolds:0,releaseGateOnly:0,verifiedSourceFailures:0,
+  coreFailureUnverified:0,specialistEvidenceUnverified:0,
+  sourceRepairQueued:0,conflictLabelsQueued:0};
+ let globalReads=0;
+ const github={rest:{pulls:{list:async()=>{
+  globalReads++;throw Error('DISPATCHER_MUST_REUSE_WATCHDOG_SNAPSHOT');
+ }}}};
+ const report=await run({github,core:core(),context,now:NOW,
+  inventorySnapshot:production,watchdogEvidence:evidence});
+ assert.equal(globalReads,0);
+ assert.equal(report.production,156);
+ assert.equal(report.actionable,0);
+ assert.equal(report.candidates,0);
+ assert.equal(report.dispatchAccepted,0);
+ assert.equal(report.reason,'NO_AUTO_SOURCE_ELIGIBLE_WITH_BLOCKED_WORK');
+ assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
+ assert.equal(report.watchdogSample.inspected,16);
+ assert.equal(report.watchdogSample.coreFailures,8);
+ assert.equal(report.watchdogSample.mergeConflicts,8);
+ assert.equal(report.watchdogSample.specialistFailures,6);
+ assert.equal(report.backlogLabelHints.labeled_unique,16);
+ const {buildMonitorSnapshot}=require('../scripts/ci-pr-monitor-feed.cjs');
+ const output=buildMonitorSnapshot(report,context);
+ assert.equal(output.counts.verified_blocked_lower_bound,8,
+  'overlapping categories must never be added together');
+ assert.equal(output.delivery_status,'VERIFIED_BLOCKED_WORK_NO_AUTO_SOURCE_REPAIR');
+ assert.equal(output.watchdog_sample.inspected,16);
+ assert.equal(output.counts.worker_dispatches,0);
+});
+test('147 open PRs and no deep inspection means SCAN_INCOMPLETE, not zero problems',async()=>{
+ const production=Array.from({length:147},(_,i)=>pr(i+1,'repair',{labels:[]}));
+ const evidence={inventoryComplete:true,inventoryScope:'ALL_OPEN_PRS',
+  checkedAt:new Date(NOW).toISOString(),production:147,inspected:0,
+  mergeConflicts:0,coreFailures:0,specialistFailures:0,
+  specialistPolicyHolds:0,releaseGateOnly:0,verifiedSourceFailures:0,
+  coreFailureUnverified:0,specialistEvidenceUnverified:0,
+  sourceRepairQueued:0,conflictLabelsQueued:0};
+ const report=await run({github:{rest:{}},core:core(),context,now:NOW,
+  inventorySnapshot:production,watchdogEvidence:evidence});
+ assert.equal(report.reason,'SCAN_INCOMPLETE');
+ assert.equal(report.candidates,0);
+ const {buildMonitorSnapshot}=require('../scripts/ci-pr-monitor-feed.cjs');
+ const output=buildMonitorSnapshot(report,context);
+ assert.equal(output.delivery_status,'WATCHDOG_DEEP_INSPECTION_INCOMPLETE');
+ assert.equal(output.watchdog_sample.inspected,0);
+});
+test('mismatched Watchdog evidence never claims verified blockers or authorizes dispatch',async()=>{
+ const selected=pr(9,'repair',{labels:[{name:'hh:repair-manual'}]});
+ const evidence={inventoryComplete:true,inventoryScope:'ALL_OPEN_PRS',
+  checkedAt:new Date(NOW).toISOString(),production:99,inspected:1,
+  mergeConflicts:1,coreFailures:1,specialistFailures:0,specialistPolicyHolds:0,
+  releaseGateOnly:0,verifiedSourceFailures:0,coreFailureUnverified:0,
+  specialistEvidenceUnverified:0,sourceRepairQueued:0,conflictLabelsQueued:0};
+ const result=await run({github:{rest:{}},core:core(),context,now:NOW,
+  inventorySnapshot:[selected],watchdogEvidence:evidence});
+ assert.equal(result.watchdogSampleStatus,'UNVERIFIED');
+ assert.equal(result.watchdogSample,null);
+ assert.equal(result.dispatchAccepted,0);
 });

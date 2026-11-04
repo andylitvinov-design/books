@@ -17,7 +17,7 @@
     grid.className='hh-watchdog-grid';
     const entries=[
       ['candidates','Кандидатов','PR, выбранные диспетчером для обработки'],
-      ['blocked_total','Заблокировано','Все подтверждённые причины недоставленных PR, а не только OWNER_LEASE_UNVERIFIED'],
+      ['blocked_total','Подтверждено ≥','Нижняя граница подтверждённых блокировок в ограниченной проверенной выборке. Категории могут пересекаться.'],
       ['worker_dispatches','Runner стартовал','Подтверждённый старт реального Worker, не просто HTTP-приём dispatch']
     ];
     const nodes={};
@@ -79,7 +79,9 @@
         if(data.schema!=='HH_CONTROL_DISPATCH_METRICS_V1'||data.source_dry_run!==false||!data.counts)throw Error('Source unverified');
         for(const [key,label] of entries){
           const count=data.counts[key];
-          const value=Number.isSafeInteger(count)&&count>=0?new Intl.NumberFormat('ru-RU').format(count):'—';
+          const value=Number.isSafeInteger(count)&&count>0?
+            (key==='blocked_total'?'≥':'')+new Intl.NumberFormat('ru-RU').format(count):
+            Number.isSafeInteger(count)&&count===0&&key!=='blocked_total'?'0':'—';
           nodes[key].textContent=value;
           nodes[key].setAttribute('aria-label',label+': '+value);
         }
@@ -91,11 +93,41 @@
             data.counts.production_prs:'неизвестно')+
           ' · принято: '+(Number.isSafeInteger(data.counts.dispatch_requests_accepted)?
             data.counts.dispatch_requests_accepted:'—')+
+          ' · PR с метками: '+(Number.isSafeInteger(data.counts.labeled_outstanding_prs)?
+            data.counts.labeled_outstanding_prs:'—')+
+          ' · глубоко проверено: '+(Number.isSafeInteger(data.watchdog_sample?.inspected)?
+            data.watchdog_sample.inspected:'—')+
           (minutes!==null&&minutes>20?' · УСТАРЕВШИЙ ОТЧЁТ':'');
         if(/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(data.run_url||'')){
           link.href=data.run_url;link.hidden=false;
         }
         blockersList.replaceChildren();
+        const sample=data.watchdog_sample;
+        if(sample&&Number.isSafeInteger(sample.inspected)){
+          const intro=document.createElement('p');
+          intro.textContent=sample.inspected===0?
+            'Ни один PR глубоко не проверен: отсутствие подтверждений не означает отсутствие проблем.':
+            'Подтверждено минимум '+sample.verified_blocked_lower_bound+
+            ' проблемных PR среди '+sample.inspected+
+            ' глубоко проверенных. Категории ниже могут пересекаться.';
+          blockersList.append(intro);
+          const categories=[
+            ['core_failures','Core CI — ошибки'],
+            ['merge_conflicts','DIRTY — конфликты слияния'],
+            ['specialist_failures','Specialist — ошибки'],
+            ['specialist_policy_holds','Specialist — блокировки политики']
+          ];
+          for(const [code,label] of categories){
+            const count=sample[code];
+            if(!Number.isSafeInteger(count)||count<=0)continue;
+            const item=document.createElement('div');
+            item.className='hh-ct-blocker-item';
+            item.textContent=label+' · проверенная выборка';
+            const strong=document.createElement('strong');
+            strong.textContent=String(count);
+            item.append(strong);blockersList.append(item);
+          }
+        }
         const names={
           CI_WAKE_MANUAL_HOLD_UNVERIFIED:'Не подтверждена ручная разблокировка CI',
           SOURCE_PROOF_MISSING:'Не хватает подтверждения исходной ошибки',
@@ -119,12 +151,14 @@
           blockersList.append(p);blockers.open=true;
         }else{
           const total=rows.reduce((sum,[,n])=>sum+n,0);
-          blockersTitle.textContent='Блокировки · '+total+' · причины и PR';
+          blockersTitle.textContent=sample?
+            'Проблемы PR · ограниченная проверенная выборка':
+            'Блокировки передачи · '+total+' · причины и PR';
           if(!rows.length){
             const p=document.createElement('p');
             p.textContent=data.counts.candidates>0?
-              'Кандидаты есть, но подробный блокер не указан.':
-              'В этом подтверждённом проходе блокировок передачи нет.';
+              'Кандидаты есть, но подробный блокер передачи не указан.':
+              'Автоматическая передача не заблокирована; другие проблемы PR и метки рассматриваются отдельно.';
             blockersList.append(p);
           }
           for(const [code,n] of rows.slice(0,12)){
@@ -147,7 +181,7 @@
             }
             blockersList.append(item);
           }
-          blockers.open=rows.length>0;
+          blockers.open=rows.length>0||Number.isSafeInteger(sample?.inspected);
         }
         last=Date.now();
       }catch{

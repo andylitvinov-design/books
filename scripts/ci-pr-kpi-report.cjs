@@ -59,10 +59,14 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,cancellati
    blockers:{label:covers(dispatch,now-2*width)?'COMPLETE_NON_ATOMIC':'SAMPLE_NOT_TOTAL',
     current:blockers(now-width,now),previous:blockers(now-2*width,now-width)}};
  }
+ const receiptLive=(receipts.events||[]).filter(e=>e.kind==='live_verified'&&e.production===true);
+ const liveObserved={n:receiptLive.length,scope:'VERIFIED_RECEIPTS_ONLY_NOT_ALL_PRODUCTION_PR',
+  latest_at:receiptLive.length?receiptLive.map(x=>x.at).sort().at(-1):null};
  const source=x=>({complete:valid(x),reason:typeof x.reason==='string'?x.reason:'UNVERIFIED',
   reads:Number.isSafeInteger(x.reads)?x.reads:null,
   segments:Array.isArray(x.segments)?x.segments.map(y=>({complete:valid(y),since:Number.isFinite(y.since)?new Date(y.since).toISOString():null,reason:y.reason||'UNVERIFIED'})):[]});
  return {schema:'HH_CONTROL_KPI_V1',checked_at:new Date(now).toISOString(),
+  live_receipts_observed:liveObserved,
   backlog:{complete:valid(backlog),counts:valid(backlog)?backlog.counts:null,reason:backlog.reason||'UNVERIFIED'},
   sources:{receipts:source(receipts),merges:source(merges),actions:source(actions),dispatch:source(dispatch),ci:source(ci),cancellations:source(cancellations)},
   limitations:['GitHub reads are non-atomic; stable inventories are checked twice.',
