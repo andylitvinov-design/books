@@ -2,6 +2,7 @@
 /** One-shot historical GitHub evidence collector. Never dispatches CI or changes a PR. */
 const {REPO,WINDOWS}=require('./ci-pr-three-cohorts.cjs');
 const {parseComment}=require('./ci-pr-stage-receipts.cjs');
+const {collectTimelineGraphQL}=require('./ci-pr-graphql-timeline.cjs');
 const OWNER='andylitvinov-design',REPOSITORY='books',WORKFLOW='hh-pr-core-release.yml',WORKFLOW_ID=400848212;
 const MIN_REMAINING=150,MAX_REQUESTS=95;
 const ts=x=>Date.parse(x||'');
@@ -12,7 +13,7 @@ function budget({maxRequests=MAX_REQUESTS,minRemaining=MIN_REMAINING}={}){
   if(state.paused||state.requests>=maxRequests){state.paused=true;state.reason||='API_REQUEST_BUDGET';throw Error(state.reason);}
   state.requests++;
   try{const res=await call();const h=res?.headers?.['x-ratelimit-remaining'];
-   if(h!==undefined&&h!==null&&Number.isFinite(Number(h))){state.remaining=Number(h);if(state.remaining<minRemaining){state.paused=true;state.reason='API_RATE_RESERVE';}}
+   if(h!==undefined&&h!==null&&Number.isFinite(Number(h))){state.remaining=state.remaining===null?Number(h):Math.min(state.remaining,Number(h));if(state.remaining<minRemaining){state.paused=true;state.reason='API_RATE_RESERVE';}}
    state.operations.push(name);return res.data;
   }catch(error){if(error?.status===429||/rate limit/i.test(String(error?.message||''))||(error?.status===403&&Number(error?.response?.headers?.['x-ratelimit-remaining'])===0)){state.paused=true;state.reason='GITHUB_RATE_LIMIT';}
    throw error;}
@@ -136,7 +137,7 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
   // Target the eight longest recent cases and a small, fair earlier sample.
   const prioritized=[];
   for(const w of [...WINDOWS].reverse()){
-   const limit=w.key==='latest'?8:6; // bounded earlier-cohort sampling, no cron
+   const limit=w.key==='latest'?8:2; // GraphQL bulk history covers every cohort; REST job sampling stays bounded
    prioritized.push(...result.prs.filter(p=>ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)<ts(w.end)&&
       ts(p.created_at)>=ts(w.start)&&ts(p.closed_at)>=ts(w.start))
      .sort((a,b)=>(ts(b.closed_at)-ts(b.created_at))-(ts(a.closed_at)-ts(a.created_at))).slice(0,limit));
@@ -275,6 +276,23 @@ async function collect({github,now=Date.now(),maxRequests=MAX_REQUESTS,minRemain
     }
    }
   }
+  // No extra Actions job: one batched authenticated GraphQL read for PR timeline
+  // events, including October PRs that predate the production Core workflow.
+  // The REST rate reserve is not replenished by a separate GraphQL bucket.
+  if(typeof github.graphql==='function'&&!gate.state.paused){
+   const remainingBudget=Math.min(12,maxRequests-gate.state.requests-2);
+   if(remainingBudget>=1){
+    const graph=await collectTimelineGraphQL({prs:result.prs,maxBatches:remainingBudget,
+     read:(query,vars)=>gate.request('graph-timeline-evidence',async()=>{
+      const data=await github.graphql(query,vars);
+      return{data,headers:{'x-ratelimit-remaining':data?.rateLimit?.remaining}};
+     })});
+    result.observations.push(...graph.observations);
+    result.source.graphql_timeline={calls:graph.calls,matched_events:graph.matched_events,
+     partial_prs:graph.partial_prs.length,complete:graph.complete,reason:graph.reason,
+     read_errors:graph.batch_errors};
+   }else result.source.graphql_timeline={complete:false,reason:'API_BUDGET_RESERVED'};
+  }else result.source.graphql_timeline={complete:false,reason:'GRAPHQL_UNAVAILABLE_OR_RATE_PAUSED'};
   result.source.coverage=result.source.closed_complete?'COMPLETE_PR_COHORT_PARTIAL_CI':'PARTIAL_PR_INVENTORY';
  }catch(e){error=e;result.source.reason=gate.state.reason||String(e?.message||e).slice(0,180);}
  result.source.reads=gate.state.requests;result.source.remaining=gate.state.remaining;
