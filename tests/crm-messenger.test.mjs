@@ -3,10 +3,24 @@ import test from 'node:test'
 import './crm-telegram-campaigns.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS,normalizeReplyFailure} from '../lib/crm/messenger-policy.js'
+import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS,normalizeReplyFailure,evaluateMessengerReplyEligibility} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
+test('one reply policy is used before reserving and again before provider dispatch',()=>{
+  const now=Date.parse('2026-11-04T13:40:00Z')
+  const lastInboundAt=new Date(now-4*24*3600000).toISOString()
+  const base={channel:'telegram',lastInboundAt,enabled:true,suppressed:false,now}
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:false}).reason,'CONSENT_REQUIRED')
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:true}).ok,true)
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:true,suppressed:true}).reason,'CONTACT_BLOCKED')
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:false}).ok,true)
+  const code=source('lib/crm/messenger-store.js')
+  assert.equal((code.match(/evaluateMessengerReplyEligibility\(/g)||[]).length,3)
+  assert.match(code,/for update of t/)
+  assert.match(code,/diagnosticConsented:thread[.]diagnostic_consented===true/)
+  assert.match(code,/diagnosticConsented:row[.]diagnostic_consented===true/)
+})
 test('blocked and uncertain replies retain only a safe encrypted reason and never become delivered',()=>{
   assert.deepEqual(normalizeReplyFailure('blocked','CONSENT_REQUIRED','eligibility'),
     {code:'CONSENT_REQUIRED',stage:'eligibility'})
