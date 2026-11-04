@@ -4,6 +4,22 @@
 ## Why both unopened and open branches matter
 A GitHub `push` event and hosting Git integration may launch checks and preview deployments **before any pull request exists**. `create_file` / `update_file` through a GitHub connector usually advances the remote ref once per file, producing an avoidable wave per file. Draft PRs are not necessarily free. The goal is to publish one *complete validated* remote HEAD, not merely one PR. This reduces avoidable runs without weakening required Core, Specialist, Guard, actionlint, domain tests or production LIVE proof.
 
+## One root → one PR: duplicate admission before any remote write
+
+Observed in the [second frozen 2026-11-04 cohort](PR_LAST_TEN_STAGE_AUDIT_20261104.md): [#3525](https://github.com/andylitvinov-design/books/pull/3525) duplicated [#3524](https://github.com/andylitvinov-design/books/pull/3524), [#3520](https://github.com/andylitvinov-design/books/pull/3520) was superseded by [#3521](https://github.com/andylitvinov-design/books/pull/3521), and [#3519](https://github.com/andylitvinov-design/books/pull/3519) was superseded by [#3516](https://github.com/andylitvinov-design/books/pull/3516). They were closed after creation; CI could already have started. This is not proof all their time was wasted.
+
+Before the **first remote push or PR creation**, the code-writing agent must:
+1. Confirm exact issue/root/HH_OPT_ACTION, scope, target base, current HEAD and ownership lease. Do not use titles or shared paths alone as authoritative duplicate IDs.
+2. Reuse an already fetched **bounded open-PR inventory on the same target base**; when unavailable, read it only once for this code-authoring action. Inspect directly linked recent superseding/merged PRs as needed, not every historic PR. Respect API quota.
+3. Same verified root and functional fix already OPEN: `REUSE_OR_HANDOFF_EXISTING_PR`. Do not change active CI HEAD or create a second PR; use the current owner lease or HANDOFF.
+4. Same exact fix verified MERGED and present in latest protected base: `ALREADY_RESOLVED`. No new source, PR or CI; separate production LIVE may still be unverified.
+5. Different verified root despite file overlap: `INDEPENDENT_SCOPE` (explain why) and proceed with one atomic published HEAD. Ambiguous root/owner/inventory: `HOLD_DUPLICATE_UNVERIFIED` or `HOLD_INCOMPLETE_INVENTORY`; report URLs, not guesses.
+6. Only when no matching root is found in a **verified complete bounded result**, local checks, lease and cost guard pass, use `NEW_PR_ALLOWED` and create **one** thematic PR.
+
+Record in the existing owner task note only: `GLOBAL_PR_ONE_PUBLISH_V1_DUP root=<id_or_unknown> existing_pr=<id_or_none> decision=<status> base=<branch> evidence=<url> first_remote_updates=<n>`. Do **not** rewrite an active PR description just to add this line: the `edited` event may trigger Core on an unchanged HEAD.
+
+This is an agent-side **pre-PR admission contract**, not a new GitHub required check or server-side enforcement. It introduces no new cron, Actions runner, Vercel deployment, paid integration or automated historical scan. Observe future actual results via the existing :20 optimizer and preserve required exact-HEAD Core/Specialist/Guard checks.
+
 ## Mandatory pre-remote admission
 1. Identify exact `owner/repo`, current default base, proposed head, target branch and **whether an open PR already targets the branch**. Read root `AGENTS.md`, global owner contract, local release rules and current task lease before any write. If someone else owns HEAD, do not overwrite their work.
 2. Inspect existing GitHub Actions event filters for **push, create, pull_request, edited, synchronize**. Check actual Git integrations and deployment/preview settings and whether any runner/provider usage can incur extra charges. Do not assume a private repository or an existing Vercel Pro plan is free. Unknown cost => `HOLD_COST_UNVERIFIED`. No new external API billing, cron, runner or preview for this optimization.
