@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -1591,6 +1591,54 @@ test('actual specialist verification still blocks CI-policy changes without trus
   await assert.rejects(()=>verify({...api,compare:async()=>({...updated,files:[
     {filename:'.github/workflows/core.yml',status:'modified'}]})},ctx,sources,
     {maxWaitMs:0,trustedPolicyBaseSha:current}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('isolated Specialist policy retains green CI only across fully proven public media advances', () => {
+  const base='a'.repeat(40), current='b'.repeat(40);
+  const candidate=['scripts/ci-specialist-aggregate.mjs',
+    'tests/ci-specialist-aggregate.test.mjs'];
+  const allowed=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-multitrack-timeline.module.css',
+    'lib/mandala/free-film-source-loader.mjs',
+    'tests/free-film-source-loader.test.mjs',
+    'tests/video-affirmations.test.mjs',
+    'docs/MYTUBE_CAPCUT_TECHNOLOGY_PARITY_2026-11-04.md',
+  ];
+  const compare=filenames=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:current}],
+    files:filenames.map(filename=>({filename,status:'modified'})),
+  });
+  assert.equal(safeIndependentPublicMediaAdvance(compare(allowed),base,current,candidate),true);
+  for(const risky of [
+    'app/api/auth/route.ts','components/client-profile.tsx',
+    'components/mandala-private-token.tsx',
+    'lib/mandala/payment-provider.mjs',
+    'lib/ci/specialist-aggregate.mjs',
+    '.github/workflows/hh-pr-core-release.yml',
+    'package-lock.json','tests/ci-pr-readiness.test.mjs',
+    'scripts/verify-release-reaudit.mjs',
+    'docs/operations/CI_RELEASE_POLICY.md',
+    'docs/security.md',
+  ]) assert.equal(safeIndependentPublicMediaAdvance(compare([risky]),base,current,candidate),false,risky);
+  for(const candidateChange of [
+    ['app/[locale]/about/page.tsx'], ['lib/crm/marketing.js'],
+    ['.github/workflows/hh-pr-core-release.yml'], ['scripts/ci-specialist-aggregate.mjs',
+      'app/[locale]/about/page.tsx'],
+  ]) assert.equal(safeIndependentPublicMediaAdvance(compare(allowed),base,current,candidateChange),false);
+  assert.equal(safeIndependentPublicMediaAdvance(compare(allowed),base,current,[]),false);
+  assert.equal(safeIndependentPublicMediaAdvance(compare(allowed),base,current,
+    [...candidate,...candidate]),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),status:'diverged'},base,current,candidate),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),behind_by:1},base,current,candidate),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),commits:[]},base,current,candidate),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),total_commits:4},base,current,candidate),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),files:[
+    {filename:allowed[0],status:'renamed',previous_filename:'other'}]},base,current,candidate),false);
+  assert.equal(safeIndependentPublicMediaAdvance({...compare(allowed),files:
+    Array(50).fill({filename:allowed[0],status:'modified'})},base,current,candidate),false);
 });
 
 test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
