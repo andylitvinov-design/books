@@ -1590,3 +1590,31 @@ test('Playwright Public Services container trusts only the GitHub checkout path 
  assert.equal(yaml.includes('git config --global --add safe.directory "*"'),false,
    'never globally whitelist untrusted directories');
 })
+
+
+test('modified-only public unit tests take the focused unit lane', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const invoke = entries => planPublicServicesEvent({
+    GITHUB_EVENT_NAME: 'pull_request', HH_PUBLIC_BASE_SHA: base, HH_PUBLIC_HEAD_SHA: head,
+  }, (_command, args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head + '\n');
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') return Buffer.from(entries.flatMap(([status,file])=>[status,file]).join('\0') + '\0');
+    throw Error('Unexpected git command: ' + args.join(' '));
+  });
+  const good = invoke([['M','tests/holistic-support-first-screen.test.mjs'],
+                       ['M','tests/public-service-enquiries.test.mjs']]);
+  assert.deepEqual([good.mode,good.reason,good.build,good.browser,good.cases],
+    ['contracts','MODIFIED_PUBLIC_TESTS_ONLY',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(good),false);
+  for (const unsafe of [
+    [['A','tests/holistic-new.test.mjs']],
+    [['D','tests/holistic-old.test.mjs']],
+    [['M','tests/holistic-x.test.mjs'],['M','app/api/payments/checkout/route.js']],
+    [['M','tests/holistic-x.test.mjs'],['M','scripts/verify-service-cart-browser.mjs']],
+    [['M','tests/holistic-x.test.mjs'],['M','tests/ci-pr-readiness.test.mjs']],
+  ]) assert.equal(invoke(unsafe).mode,'full');
+  const wf=workflow('hh-public-services-production.yml');
+  assert.match(wf,/Run exact modified public unit tests/);
+  assert.match(wf,/node --test/);
+});
