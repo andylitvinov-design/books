@@ -31,6 +31,7 @@ const copy = {
     sendFree: "Free written diagnostic · €0",
     sendShort: "Personal session · 30 min · €50",
     sendFull: "Personal session · 60 min · €100",
+    telegramLinked: "Your answers will attach to the existing verified Telegram CRM conversation. Email and phone are optional.",
     sendEmail: "Email for a reply",
     sendPhone: "Phone (optional if email is supplied)",
     sendDisclosure: "By selecting “Send answers to Andrey”, you agree to share your answers and reply contact with Andrey for this one request only. No marketing.",
@@ -86,6 +87,7 @@ const copy = {
     sendFree: "Бесплатная письменная диагностика · €0",
     sendShort: "Личная сессия · 30 минут · €50",
     sendFull: "Личная сессия · 60 минут · €100",
+    telegramLinked: "Ответы привяжутся к существующему подтверждённому диалогу Telegram в CRM. Email и телефон необязательны.",
     sendEmail: "Email для ответа",
     sendPhone: "Телефон (необязателен, если указан email)",
     sendDisclosure: "Нажимая «Отправить ответы Андрею», вы передаёте ответы и контакт Андрею для одного личного ответа. Без рекламы и рассылок.",
@@ -141,6 +143,7 @@ const copy = {
     sendFree: "Evaluación escrita gratis · €0",
     sendShort: "Sesión personal · 30 min · €50",
     sendFull: "Sesión personal · 60 min · €100",
+    telegramLinked: "Las respuestas se vincularán a tu conversación verificada de Telegram. Correo y teléfono son opcionales.",
     sendEmail: "Email de contacto",
     sendPhone: "Teléfono (opcional con email)",
     sendDisclosure: "Al pulsar «Enviar respuestas a Andrey», aceptas compartir el formulario y tu contacto solo para esta respuesta personal. Sin publicidad.",
@@ -234,6 +237,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
+  const [telegramHandoff, setTelegramHandoff] = useState<string | null>(null);
   const [leadBusy, setLeadBusy] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadReceipt, setLeadReceipt] = useState("");
@@ -245,6 +249,15 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const total = COACHING_FIELDS.length;
 
   useEffect(() => {
+    // Read and erase the short-lived opaque bearer token from the URL fragment.
+    // Never persist it in analytics, history, draft storage or query params.
+    const url = new URL(window.location.href);
+    const handoff = new URLSearchParams(url.hash.slice(1)).get("handoff");
+    if (handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff)) setTelegramHandoff(handoff);
+    if (handoff) {
+      url.hash = "";
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
     let active = true;
     let restored: Draft | null = null;
     let privateCopyRequested = new URLSearchParams(window.location.search).get("private") === "1";
@@ -364,7 +377,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   }
   async function submitDiagnostic() {
     if (leadBusy || leadReceipt || busy || collision) return;
-    if (missing || (!replyContact.email.trim() && !replyContact.phone.trim())) {
+    if (missing || (!replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)) {
       setLeadError(t.sendError); return;
     }
     setLeadBusy(true); setLeadError("");
@@ -377,6 +390,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           answers: draft.answers, questions: draft.questions,
           contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
           contactConsent: true, website: "",
+          ...(telegramHandoff ? { handoff: telegramHandoff } : {}),
         }) };
       }
       const response = await fetch("/api/coaching-diagnostic", {
@@ -521,6 +535,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
               </label>)}
             </div>
           </fieldset>
+          {telegramHandoff ? <p className={styles.requestFootnote}>{t.telegramLinked}</p> : null}
           <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
@@ -532,7 +547,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
-            (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
+            (!replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
