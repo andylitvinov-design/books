@@ -30,8 +30,8 @@ recording does not clear a third-party underlying composition.
   MP3 objects; validates exact source byte count and pinned Git blob hash;
   probes real MP3 codec, sample rate, channels and duration.
 - The existing guarded importer checks SHA-256, author, performer, two independent
-  rights grants and output file path. It cuts a first **96-second** licensed
-  preview/music bed per track, stereo 44.1 kHz, MP3 CBR 256 kbit/s, with bounded
+  rights grants and output file path. It cuts a first licensed preview/music bed of up to **96 seconds** per track
+  (shorter sources retain their measured length), stereo 44.1 kHz, MP3 CBR 256 kbit/s, with bounded
   loudness and fades. Encoding 256 kbit/s cannot restore quality missing from a
   lower-bitrate original. Keep the original source SHA in the published registry.
 - Five real first-party paths must exist under /audio/mandala/curated/<id>.mp3,

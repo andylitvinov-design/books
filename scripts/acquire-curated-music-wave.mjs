@@ -1,5 +1,5 @@
 /**
- * Owner-reviewed first wave of genuinely recorded instrumental music.
+ * Rights-reviewed first wave of recorded instrumental music; listening review is pending.
  * Download ONLY five pinned GitHub objects from the composer-author's CC BY 4.0
  * catalogue. This runs once on a trusted GitHub runner, not in the website,
  * API route, request handler, build, or browser.
@@ -31,6 +31,15 @@ const expectedSourceIds=new Set([
   "curated-forest-awakes","curated-leaving-millie",
 ]);
 
+// Rights review applies only to these exact five composer-published objects.
+const reviewedSources=Object.freeze({
+  "curated-memory-away":["A Memory Away.mp3","9e87f558a1460f303b25d78bc9b447238f70a8d9",4208768,"A Memory Away","a-memory-away.mp3"],
+  "curated-daybreak":["Daybreak.mp3","383824196f822b07877547066a8975b8620956eb",4251776,"Daybreak","daybreak.mp3"],
+  "curated-home":["Home.mp3","ce4a2523f5676d6dcc3653b28f1788299a3898e3",2159639,"Home","home.mp3"],
+  "curated-forest-awakes":["The Forest Awakes.mp3","6635a935d0090aee936f64a796bf9b92e641d283",4418391,"The Forest Awakes","forest-awakes.mp3"],
+  "curated-leaving-millie":["Leaving Millie (live piano).mp3","fccf27f0c45251a1bcfe2f0ef8ade179923076de",3683035,"Leaving Millie (live piano)","leaving-millie-live.mp3"],
+});
+
 export function validateAcquisitionManifest(doc){
   if(doc.version!=="hh-curated-source-wave-v1"||
      doc.sourceRepository!==SOURCE_REPO||doc.sourceCommit!==SOURCE_COMMIT||
@@ -39,6 +48,10 @@ export function validateAcquisitionManifest(doc){
      doc.entries.length!==5||new Set(doc.entries.map(e=>e.id)).size!==5)
     throw Error("curated_wave_source_provenance_invalid");
   for(const entry of doc.entries){
+    const reviewed=reviewedSources[entry.id];
+    if(!reviewed||entry.repositoryFilename!==reviewed[0]||entry.gitBlobSha!==reviewed[1]||
+       entry.sizeBytes!==reviewed[2]||entry.title!==reviewed[3]||entry.sourceFile!==reviewed[4])
+      throw Error("curated_wave_unreviewed_source_"+String(entry.id));
     if(!expectedSourceIds.has(entry.id)||typeof entry.repositoryFilename!=="string"||
        !/^[a-zA-Z0-9 ()'-]+\.mp3$/.test(entry.repositoryFilename)||
        !/^[a-z0-9-]+\.mp3$/.test(entry.sourceFile)||
@@ -77,7 +90,7 @@ function probeOriginal(path){
   const seconds=Number(info.format?.duration);
   if(audio.length!==1||audio[0].codec_name!=="mp3"||
     ![1,2].includes(audio[0].channels)||Number(audio[0].sample_rate)<22050||
-    !Number.isFinite(seconds)||seconds<100||seconds>1800)
+    !Number.isFinite(seconds)||seconds<60||seconds>1800)
     throw Error("source_recording_invalid_codec_or_duration_"+JSON.stringify({seconds,streams:audio}));
   return {seconds,sampleRate:Number(audio[0].sample_rate),channels:audio[0].channels};
 }
@@ -121,7 +134,7 @@ export async function acquireCuratedWave({dryRun=false}={}){
     const sha256=createHash("sha256").update(bytes).digest("hex");
     const reviewed={
       id:entry.id,sourceFile:entry.sourceFile,sha256,reviewed:true,
-      reviewedOn:"2026-11-02",recordingLicense:"CC-BY-4.0",
+      reviewedOn:"2026-11-04",recordingLicense:"CC-BY-4.0",
       compositionRights:"licensed_for_commercial_sync",
       sourcePage:evidenceURL(entry),recordingLicenseEvidence:RIGHTS_PAGE,
       compositionLicenseEvidence:LICENSE_PAGE,

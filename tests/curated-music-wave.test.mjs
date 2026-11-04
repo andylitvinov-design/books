@@ -54,12 +54,12 @@ test("lossy source is not misrepresented as a newly recorded original or a paid 
   assert.match(source,/compositionRights:"licensed_for_commercial_sync"/);
   assert.doesNotMatch(source,/shell\s*:\s*true|api\.higgsfield|api\.openai|api\.elevenlabs/i);
   const importer=readFileSync(new URL("scripts/import-reviewed-audio.mjs",root),"utf8");
-  assert.match(importer,/"-t","96"/);
+  assert.match(importer,/"-t",String\(plan\.seconds\)/);
   assert.match(importer,/"-b:a","256k"/);
-  assert.match(importer,/durationSeconds:96/);
+  assert.match(importer,/durationSeconds:Math\.round\(actualSeconds\*1000\)\/1000/);
 });
 
-test("if imported, physically verify five licensed MP3s: SHA-256, 96 sec, 256 kbps and stereo",()=>{
+test("if imported, physically verify five licensed MP3s: SHA-256, actual duration, 256 kbps and stereo",()=>{
   const entries=published.entries.filter(x=>x.id.startsWith("curated-"));
   if(process.env.HH_CURATED_AUDIO_EXPECT_PUBLISHED!=="1"){
     assert.ok(entries.length===0||entries.length===5,"only complete batch publication");
@@ -73,7 +73,7 @@ test("if imported, physically verify five licensed MP3s: SHA-256, 96 sec, 256 kb
     assert.equal(t.compositionRights,"licensed_for_commercial_sync");
     assert.equal(t.creator,"Tanner Helland");
     assert.equal(t.performer,"Tanner Helland");
-    assert.equal(t.durationSeconds,96);
+    assert.ok(t.durationSeconds>=60&&t.durationSeconds<=96.2);
     assert.match(t.sourcePage,/\/blob\/[a-f0-9]{40}\/mp3\//);
     assert.equal(t.url,"/audio/mandala/curated/"+t.id+".mp3");
     const path=new URL("public"+t.url,root);
@@ -88,7 +88,36 @@ test("if imported, physically verify five licensed MP3s: SHA-256, 96 sec, 256 kb
     assert.equal(info.streams[0].codec_name,"mp3");
     assert.equal(Number(info.streams[0].sample_rate),44100);
     assert.equal(info.streams[0].channels,2);
-    assert.ok(Number(info.format.duration)>95&&Number(info.format.duration)<98);
+    assert.ok(Math.abs(Number(info.format.duration)-t.durationSeconds)<0.05,"catalog duration matches encoded file");
     assert.ok(Number(info.format.bit_rate)>=240000,"encoded bitrate below expected");
   }
+});
+
+test('short licensed recordings keep their physical duration and fade before the actual end',async()=>{
+  const {planReviewedAudioClip}=await import('../scripts/import-reviewed-audio.mjs');
+  assert.deepEqual(planReviewedAudioClip(89.8),{seconds:89.55,fadeStart:88.75});
+  assert.deepEqual(planReviewedAudioClip(125),{seconds:96,fadeStart:95.2});
+  for(const value of [0,0.5,NaN,Infinity,-1])assert.throws(()=>planReviewedAudioClip(value));
+});
+
+test('duration probe reads real encoded audio and fails closed for missing files',async()=>{
+  const {mkdtempSync,rmSync}=await import('node:fs');
+  const {tmpdir}=await import('node:os');
+  const {join}=await import('node:path');
+  const {probeAudioDuration}=await import('../scripts/import-reviewed-audio.mjs');
+  const dir=mkdtempSync(join(tmpdir(),'hh-curated-duration-'));
+  try{
+    const file=join(dir,'tone.mp3');
+    const made=spawnSync('ffmpeg',['-v','error','-f','lavfi','-i','sine=frequency=440:duration=2','-codec:a','libmp3lame',file],{encoding:'utf8'});
+    assert.equal(made.status,0,made.stderr);
+    const seconds=probeAudioDuration(file);
+    assert.ok(seconds>=2&&seconds<2.2,'ffprobe reads real MP3 duration');
+    assert.throws(()=>probeAudioDuration(join(dir,'missing.mp3')));
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+test('curated rights review cannot be reused for an unreviewed recording in the same repository',()=>{
+  const altered={...sources,entries:sources.entries.map((track,index)=>index===0?
+    {...track,repositoryFilename:'Unreviewed recording.mp3',gitBlobSha:'a'.repeat(40)}:track)};
+  assert.throws(()=>validateAcquisitionManifest(altered));
 });

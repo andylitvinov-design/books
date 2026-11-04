@@ -86,6 +86,24 @@ export function validateReviewedAudioMetadata(row){
     voiceSafe:row.voiceSafe,name:{ru:row.name.ru,en:row.name.en,es:row.name.es}
   });
 }
+export function probeAudioDuration(path){
+  const result=spawnSync("ffprobe",["-v","error","-show_entries","format=duration:stream=codec_type","-of","json",path],
+    {timeout:20000,encoding:"utf8",maxBuffer:256*1024});
+  if(result.error||result.status!==0)throw Error("audio_duration_probe_failed");
+  let info;try{info=JSON.parse(result.stdout)}catch{throw Error("audio_duration_probe_failed")}
+  const seconds=Number(info.format?.duration);
+  if(!info.streams?.some(s=>s.codec_type==="audio")||!Number.isFinite(seconds)||seconds<1||seconds>86400)
+    throw Error("audio_duration_invalid");
+  return seconds;
+}
+export function planReviewedAudioClip(sourceSeconds){
+  if(!Number.isFinite(sourceSeconds)||sourceSeconds<1)throw Error("audio_duration_invalid");
+  // Compressed inputs can report padding beyond their decoded samples.
+  // Leave a small tail before fading so short masters do not end mid-fade.
+  const seconds=Math.round(Math.min(96,Math.max(1,sourceSeconds-.25))*1000)/1000;
+  return {seconds,fadeStart:Math.round(Math.max(0,seconds-.8)*1000)/1000};
+}
+
 function manifestFile(path){
   if(!path||typeof path!=="string")throw Error("manifest_path_missing");
   const absolute=resolve(root,path);
@@ -121,15 +139,17 @@ export function importReviewedAudio({manifest,dryRun=false}){
     throw Error("duplicate_recording_or_curated_id");
   const dest=resolve(outputDir,meta.id+".mp3");
   if(existsSync(dest))throw Error("target_file_already_exists");
-  if(dryRun)return {id:meta.id,validated:true,created:false,rights:meta.recordingLicense};
+  const sourceSeconds=probeAudioDuration(file);
+  const plan=planReviewedAudioClip(sourceSeconds);
+  if(dryRun)return {id:meta.id,validated:true,created:false,rights:meta.recordingLicense,sourceSeconds,clipSeconds:plan.seconds};
   const executable=ffmpegStatic&&existsSync(ffmpegStatic)?ffmpegStatic:"ffmpeg";
   mkdirSync(outputDir,{recursive:true});
   const tmp=dest+".tmp";
   try{
     const result=spawnSync(executable,[
       "-nostdin","-hide_banner","-loglevel","error","-y",
-      "-i",file,"-vn","-t","96",
-      "-af","loudnorm=I=-23:TP=-2.5:LRA=9,afade=t=in:st=0:d=0.25,afade=t=out:st=95.4:d=0.6",
+      "-i",file,"-vn","-t",String(plan.seconds),
+      "-af",`loudnorm=I=-23:TP=-2.5:LRA=9,afade=t=in:st=0:d=0.25,afade=t=out:st=${plan.fadeStart}:d=0.6`,
       "-ar","44100","-ac","2","-codec:a","libmp3lame","-b:a","256k",
       "-map_metadata","-1","-f","mp3",tmp
     ],{timeout:60000,maxBuffer:2*1024*1024});
@@ -138,12 +158,14 @@ export function importReviewedAudio({manifest,dryRun=false}){
     // Never claim an arbitrary remote recording is project-authored.
     const bytes=readFileSync(tmp);
     const outputHash=createHash("sha256").update(bytes).digest("hex");
+    const actualSeconds=probeAudioDuration(tmp);
+    if(actualSeconds>plan.seconds+0.2||actualSeconds<plan.seconds-0.2)throw Error("encoded_audio_duration_mismatch");
     const published={
       id:meta.id,kind:"melody",sourceType:"reviewed_external_recording",
       url:"/audio/mandala/curated/"+meta.id+".mp3",
       name:meta.name,title:meta.title,creator:meta.creator,performer:meta.performer,
       categories:meta.categories,moods:meta.moods,pace:meta.pace,
-      voiceSafe:meta.voiceSafe,durationSeconds:96,sourcePage:meta.sourcePage,
+      voiceSafe:meta.voiceSafe,durationSeconds:Math.round(actualSeconds*1000)/1000,sourcePage:meta.sourcePage,
       sourceSha256:meta.sha256,audioSha256:outputHash,recordingLicense:meta.recordingLicense,
       recordingLicenseUrl:meta.recordingLicenseUrl,
       recordingLicenseEvidence:meta.recordingLicenseEvidence,
