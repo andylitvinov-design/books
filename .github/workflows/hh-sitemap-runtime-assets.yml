@@ -8,7 +8,7 @@ on:
       - 'data/spanish-remedies.json'
       - 'content/remedies/**'
       - 'tests/sitemap-runtime-assets.test.mjs'
-      - '.github/workflows/hh-sitemap-runtime-assets.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

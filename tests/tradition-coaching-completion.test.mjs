@@ -8,11 +8,16 @@ test('each coaching course has its own localized public Academy detail page',()=
   const page=read('app/[locale]/academy/[[...slug]]/page.tsx')
   const landing=read('components/academy-tradition-coaching-landing.tsx')
   const hub=read('components/academy-hub.tsx')
+  const appRoute=read('app/[locale]/app/[[...path]]/page.jsx')
   const css=read('components/academy-tradition-coaching-landing.module.css')
   for(const slug of ['egyptian','greek']){
     assert.ok(page.includes('if (key === "coaching/'+slug+'") return <AcademyTraditionCoachingLanding'),slug)
     assert.ok(!hub.includes('href: "/" + locale + "/academy/coaching/'+slug+'"'),slug+' stays only in Coaching catalog')
-    assert.ok(landing.includes('"/"+locale+"/coaching#coaching-tradition-"+slug'),slug+' Start through public coaching lounge')
+    assert.ok(landing.includes('"/app/coaching/"+slug'),slug+' Start directly in the existing private coaching course');
+    assert.ok(landing.includes('locale==="es"?"en":locale') && landing.includes('?lang=es'),
+      slug+' keeps Spanish course content through the supported account route');
+    assert.ok(appRoute.includes("path[0] === 'coaching'") && appRoute.includes("['egyptian','greek']"),
+      slug+' account route accepts both original traditions');
     assert.ok(landing.includes(slug+': {'),slug+' original eight-level course')
     assert.ok(landing.includes('slug:TraditionSlug'),slug+' typed route')
   }

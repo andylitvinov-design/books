@@ -4,7 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-free-review-live-mobile.yml'
       - 'scripts/verify-free-review-live-mobile.mjs'
       - 'components/free-entry-landing.tsx'
       - 'components/free-entry-landing.module.css'

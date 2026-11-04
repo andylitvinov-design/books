@@ -44,9 +44,9 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
-   "fifth Montage reuses one original photo editor");
- assert.match(studio,/\{activeWorkspace==="pro" \? <details className=\{videoStyles.quickExtras\} data-video-pro-advanced>/,
-   "advanced visual settings are in the sixth PRO workspace");
+   "second Montage reuses one original photo editor");
+ assert.match(studio,/<details className=\{videoStyles\.montageStyleSettings\} data-video-editor-style-settings/,
+   "the one advanced style settings panel now belongs to the second Montage workspace");
  assert.match(studio,/\{deepVideoPane\}/);
 });
 test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
@@ -130,9 +130,11 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/data-video-audio-attach/);
 });
 test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+  const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('<nav className={videoStyles.quickVideoNav}',start);
-  assert.ok(start>0&&finish>start);
+  const finish=studio.indexOf('{/* Show the introductory film separately',start);
+  assert.ok(nav>0&&start>nav&&finish>start,
+    "tabs precede the Canvas; the informational YouTube overlay follows it");
   assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
   assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
   assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
@@ -147,11 +149,10 @@ test("iPhone music is one scannable rail with distinct Listen and Include contro
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(css,/font:650 clamp\(10px,2.75vw,12px\)/);
 });
-test("free personal video starts before the separate diagnostic marketing CTA",()=>{
+test("the approved Studio route opens directly without the separate diagnostic marketing CTA",()=>{
  const page=readFileSync(new URL("../app/[locale]/holistic-support/mandala/page.tsx",import.meta.url),"utf8");
- const studioPos=page.indexOf("<MandalaMeditationClient");
- const promoPos=page.indexOf("styles.slimDiagnostic");
- assert.ok(studioPos>=0&&promoPos>studioPos);
+ assert.match(page,/<MandalaMeditationClient/);
+ assert.doesNotMatch(page,/styles\.slimDiagnostic|data-video-diagnostic-banner|const promo =/);
 });
 
 test("video studio lazily loads optional editor workspaces and collapsed tools", () => {
@@ -223,6 +224,58 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  const benchmark=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-studio-hydrated=\{studioHydrated\?"true":"false"\}/);
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
- assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-advanced-toggle"));
+ assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-first-video-advanced"),
+   "hydration must complete before the first direct free-video disclosure");
  assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
+});
+
+test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
+ const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second");
+ const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
+ assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
+ assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
+ const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
+ assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const scenario=editor.indexOf('data-video-editor-scenario');
+ assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.match(editor,/data-video-montage-script-update/);
+ assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
+   "editing a four-shot montage changes the local actual caption track");
+ assert.match(editor,/setCaptionMode\("custom"\)/,
+   "single-scene style applies the script as a real caption");
+ assert.match(editor,/data-video-editor-style-settings/);
+ assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
+ assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
+});
+
+test("owner 04 Nov: Montage retains the editor but places compact tabs and video first",()=>{
+ const layout=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
+ assert.match(layout,/quickBuilder>\.quickVideoNav\s*\{[^}]*order:1!important/);
+ assert.match(layout,/quickBuilder>\.previewStage\s*\{[^}]*order:2!important/);
+ assert.match(layout,/data-active-workspace="editor"\] \.quickBuilder>\[data-video-basic-editor\]\s*\{\s*order:4!important/);
+ assert.match(layout,/aspect-ratio:16\/9!important/);
+ assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/);
+ assert.ok(studio.indexOf("data-video-quick-controls") < studio.indexOf("data-video-live-stage"),
+   "one tab row stays between brand and player in every mode");
+ const timelineCss=readFileSync(new URL("../components/mandala-multitrack-timeline.module.css",import.meta.url),"utf8");
+ const tracks=timelineCss.slice(timelineCss.lastIndexOf("/* HH iPhone track order"));
+ for(const [kind,order] of [["video",2],["audio",3],["text",4]]){
+   assert.ok(tracks.includes('.trackRow[data-video-track="'+kind+'"]{order:'+order+';}'));
+ }
+});
+
+test("all six workspaces use the same in-flow navigation and one real export",()=>{
+ assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
+ assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
+ assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
+   "no mode can teleport the navigation to a different vertical position");
+ const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ assert.match(editor,/data-video-montage-tools/);
+ assert.match(editor,/data-video-montage-export/);
+ assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
+ assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
+ assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
 });

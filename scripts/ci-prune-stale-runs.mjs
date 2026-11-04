@@ -34,6 +34,19 @@ export function context(env, event) {
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
 const CORE_FORCE_PATH = '.github/workflows/hh-pr-core-release.yml';
+// Only browser-focused workflow execution is interruptible after a runner starts.
+// For closed-unmerged PRs, keep the separately proven exact-SHA cleanup policy.
+const IN_PROGRESS_BROWSER_WORKFLOWS = new Set([
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-messages-wellness-browser.yml',
+  '.github/workflows/practice-visual-browser.yml',
+]);
+const isRunningBrowserWorkflow = value => typeof value === 'string' &&
+  [...IN_PROGRESS_BROWSER_WORKFLOWS].some(file =>
+    value === file || value.startsWith(file + '@refs/'));
 const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
   'hh-specialist', 'hh-merge-check', 'hh-eslint-repair', 'release-ready']);
 
@@ -68,6 +81,9 @@ export function eligible(run, pr, ctx) {
   }
   if (pr.state !== 'open' || ctx.closedHeadSha ||
       !Array.isArray(run.pull_requests) || run.pull_requests.length !== 1) return false;
+  // A stale open PR may cancel in-progress browser jobs only, never Core,
+  // Specialist, Repair or unrelated checks. Closed-PR cleanup remains separate.
+  if (run.status === 'in_progress' && !isRunningBrowserWorkflow(run.path)) return false;
   const linked = run.pull_requests[0];
   if (linked?.number !== pr.number || linked?.base?.ref !== TARGET ||
       linked?.head?.ref !== run.head_branch || !sha40(linked?.head?.sha)) return false;

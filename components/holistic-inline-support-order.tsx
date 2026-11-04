@@ -162,7 +162,11 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
           onClick={() => {
             // React may briefly paint a stale consultation while the new
             // request effect clears old results. Reset in this same user event.
-            setMasters(null); setConsultations(null); setSearched(true);
+            // Every explicit Search is a fresh directory request, including
+            // a second click with unchanged filters; never show stale offers.
+            setMasters(null); setConsultations(null);
+            setAttempt(current => current + 1);
+            setSearched(true);
           }}>{t.search}<span aria-hidden="true">→</span></button>
         <p className={styles.note}>{t.note}</p>
       </div>}

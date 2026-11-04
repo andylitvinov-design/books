@@ -59,11 +59,12 @@ test('marketing → topic → prefiltered simple test explorer → course or fre
   const more = await readFile('components/home-more-disclosure.tsx', 'utf8')
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=\{locale\}/)
   assert.doesNotMatch(home, /<HomepageTopicJourneys locale=\{locale\}/);
-  assert.match(more, /data-home-topic-filter="energy"/);
-  assert.match(more, /data-home-topic-filter="love"/);
-  assert.match(more, /data-home-topic-filter="business"/)
-  assert.match(tiles,/direction\.id === 'relationships' \? 'love' : direction\.id/)
-  for (const direction of ['energy','relationships','business']) assert.ok(tiles.includes("id: '" + direction + "'"))
+  assert.match(more, /data-home-topic-filter=\{category\.id\}/);
+  for (const direction of ['goals-money','love-relationships','energy-confidence','stress-anxiety']) {
+    assert.ok(more.includes('"' + direction + '": "'), direction);
+    assert.ok(tiles.includes("id: '" + direction + "'"), direction);
+  }
+  assert.match(tiles, /listMyTubeCategories\(locale\)/)
   assert.match(chooser,/data-topic-action="tests"/)
   assert.match(chooser,/data-topic-action="course"/)
   assert.match(chooser,/data-topic-action="review"/)

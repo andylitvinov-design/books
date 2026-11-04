@@ -326,9 +326,25 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
           await reveal.click();
+          // A single real WebKit touch/click can commit React's aria-expanded
+          // after Playwright's click has resolved. Do not retry the click or
+          // silently accept a lost tap: require the actual React render within
+          // a bounded window, or fail this exact viewport.
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "true" &&
+              panel instanceof HTMLElement && !panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
           await reveal.click();
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "false" &&
+              panel instanceof HTMLElement && panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");

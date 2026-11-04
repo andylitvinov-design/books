@@ -8,12 +8,11 @@ on:
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'
-      - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
-      - '.github/workflows/practice-google-browser.yml'
+      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:

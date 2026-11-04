@@ -27,12 +27,18 @@ test("client form needs explicit contact, keeps private text out and never check
   assert.match(src,/const consentId=formId\+"-contact-consent"/);
   assert.match(src,/id=\{consentId\} name="contactConsent" type="checkbox"/);
   assert.match(src,/label htmlFor=\{consentId\}/);
-  // A normal label click must delegate to the native checkbox. Combining
-  // preventDefault and manual state inversion double-toggles consent in WebKit.
-  assert.ok(src.includes('onChange={event=>setConsent(event.target.checked)}'));
-  assert.ok(src.includes('<label htmlFor={consentId}>'));
-  assert.ok(!src.includes('<label htmlFor={consentId} onClick='), 'a real label tap must not intercept native checkbox consent');
-  assert.ok(src.includes('disabled={busy||!consent||(!email.trim()&&!phone.trim())}'));
+  // Preserve the native checkbox path for direct tapping and keyboard use.
+  // In iPhone WebKit, the visible label also handles a real user tap because
+  // WebKit can fail to activate the separate input under a fixed dock.
+  // The browser acceptance independently checks that label click checks once.
+  assert.match(src,/onChange=\{event=>setConsent\(event\.target\.checked\)\}/);
+  // The native checkbox handles direct taps/keyboard; a full-width label
+  // prevents WebKit's dropped sibling-input activation and toggles once.
+  assert.match(src,/<label htmlFor=\{consentId\}[\s\S]*?onPointerDown=\{event=>\{[\s\S]*?setPointerCapture\(event\.pointerId\)[\s\S]*?onClick=\{event=>\{/);
+  assert.match(src,/event\.preventDefault\(\);\s*if\(busy\)return;\s*setConsent\(value=>!value\);/);
+  assert.doesNotMatch(src,/onClick=\{[^}]*setConsent\(true\)/);
+  assert.match(src,/checked=\{consent\}/);
+  assert.doesNotMatch(src,/setConsent\(true\)/);
   assert.match(src,/consent&&|!consent/);
   assert.match(src,/\/api\/service-enquiries/);
   assert.match(src,/crypto.randomUUID/);

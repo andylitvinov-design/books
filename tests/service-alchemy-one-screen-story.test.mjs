@@ -79,7 +79,9 @@ test("Alchemy/browser routes use semantic readiness with real booking and privac
 test("Public Services real consent flow opens optional contact name disclosure before typing",()=>{
  const chooser=read("components/contact-channel-chooser.tsx");
  const helper=read("scripts/helpers/contact-channel-verifier.mjs");
- assert.match(chooser,/<details className=\{styles\.optionalName\} open=\{nameOpen\}>/);
+ assert.match(chooser,/<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+ assert.match(chooser,/<summary>\{c\.nameOptional\}<\/summary>/);
+ assert.doesNotMatch(chooser,/nameOpen|setNameOpen/);
  assert.match(chooser,/autoComplete="name"/);
  assert.ok(helper.includes('const nameDisclosure = form.locator(\'details:has(input[autocomplete="name"])\')'));
  assert.ok(helper.includes('const name = nameDisclosure.locator(\'input[autocomplete="name"]\')'));

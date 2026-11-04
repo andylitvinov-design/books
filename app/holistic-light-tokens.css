@@ -4,19 +4,19 @@
  * approved My Course, Business, CRM, or Video Studio surfaces automatically.
  */
 :root {
-  --hh-light-canvas: #fcf9f2;
-  --hh-light-surface: #ffffff;
-  --hh-light-surface-soft: #f8f5ef;
+  --hh-light-canvas: #fbf5e9;
+  --hh-light-surface: #fffcf7;
+  --hh-light-surface-soft: #f5ecdc;
   --hh-light-ink: #143d3a;
   --hh-light-editorial-ink: #17334b;
   --hh-light-muted: #5d6a71;
-  --hh-light-border: #e7e3da;
-  --hh-light-divider: #ede9e1;
+  --hh-light-border: #e9dfd1;
+  --hh-light-divider: #eee4d7;
   --hh-light-primary: #067a67;
   --hh-light-primary-hover: #006e60;
   --hh-light-primary-soft: #e6f6f1;
   --hh-light-focus: #176e6e;
-  --hh-light-shadow: 0 6px 24px rgb(20 61 58 / 6%);
+  --hh-light-shadow: 0 6px 24px rgb(78 53 30 / 7%);
   --hh-light-radius-chip: 14px;
   --hh-light-radius-control: 18px;
   --hh-light-radius-card: 22px;

@@ -21,7 +21,10 @@ const fail = (error, auth) => {
 export async function GET() {
   const providers=voiceStudioProviders(process.env)
   const configured = voiceStudioReady(process.env)
-  const languages=providers.gemini||providers.openrouter?['en','ru','es']:
+  // Guest voices must reflect only provider routes that cannot bill.
+  // The optional paid custom-voice provider never makes public samples ready.
+  const publicFree=providers.gemini||providers.openrouterFree
+  const languages=providers.gemini?['en','ru','es']:
     providers.openrouterFree?['en']:[]
   return NextResponse.json({
     enabled:configured,
@@ -32,7 +35,7 @@ export async function GET() {
     languages,
     mode:'gemini-free-openrouter-free-optional-paid',
     customRequiresSignIn:true,
-    publicAffirmationsEnabled:configured,
+    publicAffirmationsEnabled:publicFree,
   },{headers:PRIVATE_HEADERS})
 }
 export async function POST(request) {
@@ -89,7 +92,10 @@ export async function POST(request) {
         provider='openrouter-free'
       }catch(error){freeFailure=error}
     }
-    if(!wav && backupKey) {
+    // Public phrase/sample modes are FREE-ONLY even if an operator later
+    // enables a paid custom-voice backup for authenticated sessions.
+    // Never charge the owner implicitly for visitor narration attempts.
+    if(!wav && backupKey && validated.mode==='custom') {
       // Hard daily cap: 20 requests x 650 chars x $15/M chars ~ $0.20/day.
       // No paid retry; visitors never pay, operator must set OpenRouter key spend limits.
       await consumeRate(config,{op:'voice-studio-openrouter-paid-day'},20,86400)

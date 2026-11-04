@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {affirmationNarrationText,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
-import {validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
+import {affirmationNarrationText,affirmationNarrationForSelection,isApprovedAffirmationNarration,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
+import {validateStudioRequest,buildStudioPayload,VOICE_STUDIO_VOICES,voiceStudioProviders} from "../lib/mandala/voice-studio.mjs";
+import {fixedLivePhraseRequest,verifyLiveSelectedPhrase,verifyLiveVoiceBytes} from "../scripts/verify-live-selected-voice-phrase.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const source=read("scripts/verify-affirmation-voice-browser.mjs");
@@ -135,6 +136,12 @@ test("all six voices can be selected and their real samples requested before phr
     assert.ok(editor.includes(marker),marker);
   assert.match(styles,/\.sampleButton\{/);
   assert.match(styles,/\.samplePlayer audio\{/);
+  const previewAt=editor.indexOf('data-video-affirmation-voice-preview={v.id}');
+  assert.ok(previewAt>=0,"six genuine preview controls exist");
+  const previewHandler=editor.slice(previewAt,previewAt+520);
+  assert.match(previewHandler,/if\(voiceId!==v\.id\)\{setVoiceId\(v\.id\);setConsent\(false\);\}/,
+    "Preview must also select that voice and revoke older narration consent");
+
   assert.doesNotMatch(editor,/autoPlay/);
   assert.ok(editor.includes("if(textChanged)setConsent(false)"),
     "newly approved phrase text must require new consent before external narration");
@@ -146,8 +153,8 @@ test("all six voices can be selected and their real samples requested before phr
 
 
 test("voice browser opens the compact studio advanced audio controls before using them",()=>{
-  assert.match(source,/data-video-advanced-toggle/);
-  assert.match(source,/advancedToggle\.click\(\)[\s\S]*?musicSettings\.waitFor\(\{state:"visible"/);
+  assert.match(source,/allStories\.click\(\)[\s\S]*?data-video-advanced-open/);
+  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
@@ -157,13 +164,13 @@ test("voice browser selects the visible montage workspace before recording",()=>
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
   const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
-  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav"',generate);
+  const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
   const render=source.indexOf('[data-video-quick-control="video"]',remix);
   assert.ok(phrase>=0&&generate>phrase&&expected>generate&&visible>expected&&remix>visible&&render>remix,
     "inspect the visible attached audio in the canonical video stage, then record the remixed movie");
-  assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
+  assert.doesNotMatch(source.slice(generate,remix),/\.textContent\(/,"attachment evidence must use the visible UI");
 });
 
 test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
@@ -186,7 +193,7 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'Number(audioTrack.channels),2',
     'pcm.stdout.some(value=>value!==0)',
     '[data-video-narration-stale]',
-    'assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true)',
+    'await expect(page.locator("[data-video-quick-generate]")).toBeDisabled()',
   ])assert.ok(source.includes(assertion),assertion);
 });
 
@@ -250,4 +257,120 @@ test("real WebKit export enables inline Hypno whisper and binaural controls befo
   assert.match(source,/hypno-audio-effects-rendered/);
   assert.match(source,/stream=codec_type,channels/);
   assert.match(source,/Number\(audioTrack\.channels\),2/);
+});
+
+test("one approved phrase is free narration default; all-phrases stays explicit",()=>{
+  const phrases=["Я спокоен","Я выбираю жизнь","Я могу действовать"];
+  assert.equal(affirmationNarrationForSelection(phrases,0),"Я спокоен.");
+  assert.equal(affirmationNarrationForSelection(phrases,1),"Я выбираю жизнь.");
+  assert.equal(affirmationNarrationForSelection(phrases,2),"Я могу действовать.");
+  assert.equal(affirmationNarrationForSelection(phrases,"all"),
+    "Я спокоен. Я выбираю жизнь. Я могу действовать.");
+  for(const bad of [-1,3,"1",null,undefined,1.5]) {
+    if(bad===undefined)continue; // default intentionally selects first phrase
+    assert.equal(affirmationNarrationForSelection(phrases,bad),"");
+  }
+  assert.equal(isApprovedAffirmationNarration(phrases,"Я выбираю жизнь."),true);
+  assert.equal(isApprovedAffirmationNarration(phrases,"Я выбираю жизнь.",false),false);
+  assert.equal(isApprovedAffirmationNarration(["Я спокоен"],"Я выбираю жизнь."),false);
+  assert.equal(isApprovedAffirmationNarration(phrases,"Чужая фраза."),false);
+  assert.equal(affirmationNarrationForSelection(["<script>"],0),"");
+});
+
+test("all six selected Gemini voices synthesize precisely the selected phrase, no paid provider",()=>{
+  const expected={mark:"Enceladus",alexander:"Charon",leon:"Puck",sofia:"Gacrux",maya:"Sulafat",alisa:"Zephyr"};
+  assert.equal(VOICE_STUDIO_VOICES.length,6);
+  assert.equal(new Set(VOICE_STUDIO_VOICES.map(v=>v.provider)).size,6);
+  for(const voice of VOICE_STUDIO_VOICES){
+    const text=affirmationNarrationForSelection(["Я могу отдыхать.","Я выбираю спокойствие."],1);
+    const validated=validateStudioRequest({mode:"affirmations",voiceId:voice.id,language:"ru",text,consent:true});
+    const payload=buildStudioPayload(validated);
+    assert.equal(payload.input[0].content[0].text,"Я выбираю спокойствие.");
+    assert.deepEqual(payload.generation_config.speech_config,[{voice:expected[voice.id]}]);
+    assert.equal(payload.response_format.type,"audio");
+    assert.throws(()=>validateStudioRequest({mode:"affirmations",voiceId:voice.id,language:"ru",text,consent:false}));
+  }
+  assert.deepEqual(voiceStudioProviders({
+    HH_VOICE_STUDIO_ENABLED:"true",
+    HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:"true",
+    HH_VOICE_STUDIO_GEMINI_API_KEY:"synthetic-free-gemini-key-not-real",
+  }),{gemini:true,openrouterFree:false,openrouter:false});
+});
+
+test("mobile one-phrase selection uses approved lines only, revokes consent and stale audio",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  const parent=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  assert.ok(ui.includes('data-video-affirmation-phrase'));
+  assert.ok(ui.includes('affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0)'));
+  assert.ok(ui.includes('setConsent(false)'));
+  assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
+  const speechChangeEffect=ui.slice(
+    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language]);'));
+  assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
+    "changing the spoken phrase must detach its previous WAV");
+  assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
+    "do not leave the removed spoken line attached merely because its text changed");
+  assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
+  assert.match(ui,/data-video-affimations-audio-ready/);
+  assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/);
+  assert.match(css,/\.phrasePick select\{/);
+  assert.doesNotMatch(ui,/autoPlay/);
+});
+
+test("one real-network acceptance request is strictly fixed to approved phrase and free Leon",async()=>{
+  const expected={mode:"affirmations",voiceId:"leon",language:"ru",text:"Я выбираю спокойствие.",consent:true};
+  assert.deepEqual(fixedLivePhraseRequest(),expected);
+  const requests=[];
+  const wavRate=24000,frames=24000;
+  const wav=Buffer.alloc(44+frames*2);
+  wav.write("RIFF",0);wav.writeUInt32LE(wav.length-8,4);
+  wav.write("WAVEfmt ",8);wav.writeUInt32LE(16,16);
+  wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);
+  wav.writeUInt32LE(wavRate,24);wav.writeUInt32LE(wavRate*2,28);
+  wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
+  wav.write("data",36);wav.writeUInt32LE(frames*2,40);
+  for(let i=0;i<frames;i++)wav.writeInt16LE(Math.round(11000*Math.sin(2*Math.PI*220*i/wavRate)),44+i*2);
+  const fetchImpl=async (url,opts)=>{
+    requests.push({url,opts});
+    if(opts.method==="GET")return new Response(JSON.stringify({
+      enabled:true,providers:{gemini:true,openrouterFree:true,openrouter:false},languages:["en","ru","es"],
+    }),{status:200,headers:{"content-type":"application/json"}});
+    return new Response(wav,{status:200,headers:{"content-type":"audio/wav","cache-control":"private, no-store","x-hh-voice-provider":"gemini"}});
+  };
+  const evidence=await verifyLiveSelectedPhrase({fetchImpl});
+  assert.equal(evidence.voiceId,"leon");
+  assert.equal(evidence.provider,"gemini");
+  assert.ok(evidence.rms>0.002);
+  assert.equal(requests.length,2,"one actual phrase request, not six paid retries");
+  assert.deepEqual(JSON.parse(requests[1].opts.body),expected);
+  assert.equal(requests[1].opts.headers.Origin,"https://holistichouse.vercel.app");
+  assert.equal("Authorization" in requests[1].opts.headers,false);
+  const silent=Buffer.from(wav);silent.fill(0,44);
+  assert.throws(()=>verifyLiveVoiceBytes(silent.buffer.slice(silent.byteOffset,silent.byteOffset+silent.byteLength)),/SILENT/);
+  await assert.rejects(verifyLiveSelectedPhrase({fetchImpl:async(url,opts)=>
+    opts.method==="GET"?new Response(JSON.stringify({enabled:false}),{status:200}):new Response(wav)}),
+    /FREE_PROVIDER_NOT_READY/);
+});
+
+test("anonymous selected phrase can never hit paid backup even if operator custom mode has it",()=>{
+  const route=read("app/api/holistic-support/voice/route.js");
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(route,/if\(!wav && backupKey && validated\.mode==='custom'\)/,
+    "only authenticated custom mode can ever consider the approved paid fallback");
+  assert.match(route,/const publicFree=providers\.gemini\|\|providers\.openrouterFree/);
+  assert.match(route,/publicAffirmationsEnabled:publicFree/);
+  assert.match(route,/const languages=providers\.gemini\?/);
+  assert.doesNotMatch(voice,/xAI \(operator-funded backup\)|xAI \(respaldo/);
+  assert.ok(voice.includes('mode:"affirmations",voiceId,language,text:speechText,consent:true'));
+});
+
+test("hypno remix keeps the actual consented spoken phrase and refuses stale source",()=>{
+  const parent=read("components/mandala-free-video-studio.tsx");
+  assert.match(parent,/setHypnoSpeechText\(clip\.source==="local"\?"":clip\.spokenText\)/);
+  assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,hypnoSpeechText,affirmations\.enabled\)/);
+  assert.match(parent,/spokenText:effectSpokenText/);
+  assert.match(parent,/spokenText:hypnoSpeechText/);
+  assert.doesNotMatch(parent,/spokenText:currentAffirmationSpeech/);
 });
