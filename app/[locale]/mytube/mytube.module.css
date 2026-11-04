@@ -1,27 +1,53 @@
-.page{min-height:100svh;min-width:0;overflow-x:clip;background:#fcfdfb;color:#17291e;
-  font-family:Arial,Helvetica,sans-serif;padding-bottom:env(safe-area-inset-bottom,0)}
+/* MyTube is an intentionally isolated YouTube-inspired dark surface.
+   The rest of Holistic House keeps Holistic Light / Studio Warm Peach. */
+.page{
+  --mytube-canvas:#0f0f0f;
+  --mytube-surface:#181818;
+  --mytube-raised:#272727;
+  --mytube-line:#303030;
+  --mytube-ink:#f1f1f1;
+  --mytube-muted:#aaa;
+  --mytube-red:#ff0033;
+  min-height:100svh;min-width:0;overflow-x:clip;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--mytube-canvas);color:var(--mytube-ink);
+  font-family:Arial,Helvetica,sans-serif;color-scheme:dark
+}
 .page *{box-sizing:border-box}
-.topbar{position:relative;display:flex;align-items:center;justify-content:space-between;
-  gap:12px;min-width:0;min-height:69px;padding:12px max(16px,calc((100vw - 1240px)/2));
-  border-bottom:1px solid #e7ece6;background:#fff}
-.back,.library{display:flex;align-items:center;justify-content:center;gap:7px;flex:0 1 155px;
-  min-width:44px;min-height:44px;text-decoration:none;color:#3e5e4d;font-size:13px;font-weight:750}
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-width:0;min-height:66px;
+  padding:9px max(16px,calc((100vw - 1240px)/2));
+  border-bottom:1px solid var(--mytube-line);
+  background:rgba(15,15,15,.97);
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px)
+}
+.back,.library{
+  display:flex;align-items:center;justify-content:center;gap:8px;flex:0 1 160px;
+  min-width:44px;min-height:44px;text-decoration:none;
+  color:var(--mytube-muted);font-size:13px;font-weight:700
+}
 .back{justify-content:flex-start}.library{justify-content:flex-end}
-.brand{display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;
-  color:#1b2620;white-space:nowrap}
-.playMark{display:grid;place-items:center;width:33px;height:30px;border-radius:9px;
-  color:#fff;background:#16815d}
-.brand strong{font-size:clamp(22px,4vw,27px);font-weight:850;letter-spacing:-.06em}
-.brand strong span{color:#137e5c}
-.content{max-width:1272px;margin:0 auto;padding:18px 16px 55px;min-width:0}
-.subline{margin:2px 2px 18px;color:#546b5b;font-size:14px;font-weight:600}
-.footerNote{margin:24px 4px 0;color:#829187;font-size:12px;line-height:1.5;text-align:center}
-.page a:focus-visible{outline:3px solid #d6a64b;outline-offset:3px}
+.back:hover,.library:hover{color:var(--mytube-ink)}
+.brand{display:flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;
+  color:var(--mytube-ink);white-space:nowrap}
+.playMark{display:grid;place-items:center;width:37px;height:26px;border-radius:8px;
+  color:#fff;background:var(--mytube-red)}
+.playMark svg{width:18px;height:18px;fill:currentColor;stroke-width:1.6}
+.brand strong{font-size:clamp(22px,4vw,27px);font-weight:850;letter-spacing:-.065em}
+.brand strong span{color:var(--mytube-ink)}
+.content{max-width:1272px;margin:0 auto;padding:16px 16px 55px;min-width:0}
+.subline{margin:0 2px 14px;color:var(--mytube-muted);font-size:13px;font-weight:500}
+.footerNote{margin:24px 4px 0;color:var(--mytube-muted);font-size:12px;line-height:1.5;text-align:center}
+.page a:focus-visible,.page button:focus-visible,.page input:focus-visible,
+.page select:focus-visible,.page summary:focus-visible{
+  outline:2px solid var(--mytube-red);outline-offset:3px
+}
 @media(max-width:640px){
- .topbar{min-height:65px;padding:8px 12px;gap:5px}
- .back,.library{flex:0 1 82px;gap:3px;font-size:12px}
- .back span,.library span{display:none}
- .brand strong{font-size:25px}
- .content{padding:14px 10px 35px}
- .subline{margin:2px 5px 13px;font-size:13px}
+  .topbar{min-height:57px;padding:6px 12px;gap:5px}
+  .back,.library{flex:0 1 60px;gap:3px;font-size:12px}
+  .back span,.library span{display:none}
+  .brand strong{font-size:24px}
+  .content{padding:11px 10px 35px}
+  .subline{display:none}
 }
