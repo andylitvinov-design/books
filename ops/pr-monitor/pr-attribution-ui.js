@@ -55,6 +55,17 @@
     const stamp=elt('p','hh-pr-audit-stamp',
       `${fmtDate(data.created_at)} — ${fmtDate(data.ended_at)} · ${data.state==='merged'?'Смёржен':data.state==='open'?'Открыт':'Закрыт без merge'}`);
     result.append(stamp);
+    const live=data.live_evidence;
+    const proof=elt('div','hh-pr-audit-alert',live?
+      'LIVE подтверждён '+fmtDate(live.live_at)+' · Merge → LIVE: '+
+        fmtMin(Math.round(live.merged_to_live_minutes*60000))+
+        ' · Created → LIVE: '+fmtMin(Math.round(live.created_to_live_minutes*60000))+
+        '. Это историческое подтверждение, не текущий алиас.':
+      'LIVE ещё не подтверждён доступными квитанциями. Отсутствие записи НЕ означает, что версия не опубликована.');
+    if(live?.receipt_url){const proofLink=elt('a',null,'Квитанция GitHub LIVE');
+      proofLink.href=live.receipt_url;proofLink.target='_blank';proofLink.rel='noopener noreferrer';
+      proof.append(' ',proofLink);}
+    result.append(proof);
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',
         'История источников неполная: временные промежутки без записей остаются нераспределёнными.'));

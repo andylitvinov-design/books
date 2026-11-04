@@ -154,3 +154,35 @@ test('GitHub issue timeline shows concrete conflict labels but does not pretend 
  assert.equal(out.stage_totals_minutes.unattributed,90);
  assert(out.intervals.some(i=>i.stage==='unattributed'&&i.reason.includes('метка конфликта')));
 });
+
+test('historical LIVE receipt is paired to exact merge SHA and adds Merge→LIVE without a single new GitHub request',async()=>{
+ const mergedSha='d'.repeat(40),deploy='dpl_1234567890ABCDEFG';
+ const verifiedAt=at(98),commentAt=at(99);
+ const body='<!-- HH_LIVE_VERIFIED_V1 sha='+mergedSha+' deployment='+deploy+' -->\n'+
+  'LIVE observed at '+verifiedAt+' for protected production merge commit '+mergedSha+
+  '. This is a historical deployment observation, not a promise that the same SHA remains the latest version.\n\n'+
+  'Vercel production deployment: '+deploy+'. Verified public alias: https://holistichouse.vercel.app/en. Method: PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT.\n\n'+
+  '- https://github.com/'+repo+'/commit/'+mergedSha+'\n'+
+  '- https://vercel.com/super10/codex-public-book-library/'+deploy.slice(4)+'\n'+
+  '- https://holistichouse.vercel.app/api/public/release-evidence\n'+
+  '- https://holistichouse.vercel.app/en\n';
+ const receipt={id:921,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:commentAt,
+  html_url:'https://github.com/'+repo+'/pull/3390#issuecomment-921',body};
+ const prMerged={...pr,state:'closed',merge_commit_sha:mergedSha};
+ const m=makeRequest({prValue:prMerged,commentRows:[...comments,receipt]});
+ const response=await api.loadPr(3390,{request:m.request,now:Date.parse(at(110))});
+ assert.equal(response.source.reads,6);
+ assert.equal(response.live_evidence?.deployment_id,deploy);
+ assert.equal(response.journey.live_receipt_found,true);
+ assert.equal(response.journey.merge_to_live_minutes,8);
+ assert.equal(response.journey.created_to_live_minutes,98);
+ assert.equal(response.elapsed_minutes,90); // Created→MERGED keeps its original denominator
+ assert(response.chronology.some(x=>x.kind==='live_verified'&&x.url.endsWith('#issuecomment-921')));
+ const fake={...receipt,user:{id:77,login:'human',type:'User'}};
+ assert.equal(api.verifiedLiveReceipt([fake],prMerged),null);
+ assert.equal(api.verifiedLiveReceipt([{...receipt,body:body.replace(mergedSha,'e'.repeat(40))}],prMerged),null);
+ assert.equal(api.verifiedLiveReceipt([receipt],{...prMerged,base:{ref:'codex/bootstrap-books'}}),null);
+ assert.equal(api.verifiedLiveReceipt([{...receipt,created_at:at(90)}],prMerged),null);
+ assert.equal(api.verifiedLiveReceipt([{...receipt,body:body.replace('PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT','UNTRUSTED')}],prMerged),null);
+});

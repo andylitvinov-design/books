@@ -62,6 +62,55 @@ function extractStageReceipts(comments,number){
  }
  return result;
 }
+/**
+ * A historical LIVE observation is a signed-by-provenance GitHub Actions
+ * comment. The current Vercel alias may have moved since this receipt.
+ * Do NOT infer LIVE from a green CI, merged_at or an unverified label.
+ */
+const LIVE_METHODS=new Set([
+ 'VERCEL_API_READY_AND_ALIAS','PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT',
+ 'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY',
+ 'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY'
+]);
+function verifiedLiveReceipt(comments,pr){
+ const mergeSha=String(pr?.merge_commit_sha||'').toLowerCase();
+ const created=parseUTC(pr?.created_at),merged=parseUTC(pr?.merged_at);
+ if(pr?.base?.ref!=='codex/public-book-library'||pr.state!=='closed'||
+    !SHA.test(mergeSha)||merged===null||created===null||created>merged||
+    !Array.isArray(comments))return null;
+ const found=[];
+ for(const c of comments){
+  if(!trustedComment(c)||typeof c.body!=='string'||c.body.length>150000)continue;
+  const commentAt=parseUTC(c.created_at);if(commentAt===null)continue;
+  const body=c.body;
+  const m=body.match(/^<!-- HH_LIVE_VERIFIED_V1 sha=([a-f0-9]{40}) deployment=(dpl_[A-Za-z0-9]{8,64}) -->\r?\nLIVE observed at (\d{4}-\d\d-\d\dT[^\s]+) for protected production merge commit ([a-f0-9]{40})\./i);
+  if(!m||m[1].toLowerCase()!==mergeSha||m[4].toLowerCase()!==mergeSha)continue;
+  const observed=parseUTC(m[3]),deploy=m[2];
+  if(!STAGE_ISO.test(m[3])||observed===null||observed<merged||
+     observed>commentAt+60000||commentAt-observed>48*3600000)continue;
+  const marker='Vercel production deployment: '+deploy+
+   '. Verified public alias: https://holistichouse.vercel.app/en. Method: ';
+  if(!body.includes(marker))continue;
+  const method=body.slice(body.indexOf(marker)+marker.length).split('.')[0];
+  if(!LIVE_METHODS.has(method))continue;
+  const commitUrl='https://github.com/'+OWNER+'/'+REPO+'/commit/'+mergeSha;
+  const deployUrl='https://vercel.com/super10/codex-public-book-library/'+deploy.slice(4);
+  const runtimeUrl='https://holistichouse.vercel.app/api/public/release-evidence';
+  if(!body.includes('- '+commitUrl)||!body.includes('- '+deployUrl)||
+     !body.includes('- https://holistichouse.vercel.app/en')||
+     (method.startsWith('PUBLIC_RUNTIME')&&!body.includes('- '+runtimeUrl)))continue;
+  const url=String(c.html_url||'');
+  if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/pull\/\d+#issuecomment-\d+$/.test(url)||
+     !url.includes('/pull/'+pr.number+'#issuecomment-'))continue;
+  found.push({live_at:new Date(observed).toISOString(),deployment_id:deploy,
+   proof_method:method,receipt_url:url,deploy_url:deployUrl,
+   merge_sha:mergeSha,merged_to_live_minutes:Math.round((observed-merged)/6000)/10,
+   created_to_live_minutes:Math.round((observed-created)/6000)/10});
+ }
+ found.sort((a,b)=>a.live_at.localeCompare(b.live_at)||a.deployment_id.localeCompare(b.deployment_id));
+ return found[0]||null;
+}
+
 async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  let remaining=null,used=0,partial=false;
  const reserve=token?80:12;
@@ -181,7 +230,26 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  const filtered=checked.filter(r=>r.head_sha===r.pull_requests[0]?.head?.sha ||
    Array.isArray(r.verified_merge_parents));
  const timeline=analyzePrTimeline({pr,runs:filtered,jobs,events,now,runInventoryComplete});
- return {...timeline,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
+ // Reuse the SAME previously fetched PR comment page: zero extra API calls.
+ const live=verifiedLiveReceipt(comments,pr);
+ if(live){
+  timeline.chronology.push({kind:'live_verified',at:live.live_at,
+   reason:'Production LIVE независимо подтверждён: '+live.proof_method,
+   url:live.receipt_url,merge_sha:live.merge_sha,deployment_id:live.deployment_id});
+  timeline.chronology.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+ }
+ const mergedAt=parseUTC(pr.merged_at);
+ const journey={created_at:pr.created_at,
+  first_observed_ci_at:timeline.chronology.find(e=>e.kind==='ci_queued')?.at||null,
+  final_ci_green_at:[...timeline.chronology].reverse().find(e=>e.kind==='ci_green')?.at||null,
+  merged_at:pr.merged_at||null,
+  live_verified_at:live?.live_at||null,
+  live_receipt_found:!!live,
+  live_proof_status:live?'VERIFIED_HISTORICAL':'NOT_OBSERVED_IN_BOUNDED_COMMENTS',
+  merge_to_live_minutes:live?.merged_to_live_minutes??null,
+  created_to_live_minutes:live?.created_to_live_minutes??null,
+  end_to_end_complete:!!live&&mergedAt!==null};
+ return {...timeline,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
   exact_head_no_pr_ref_matches:headMatchFallbacks,
   history_partial:partial,remaining_api_quota:remaining,
   known_limitations:[
@@ -215,6 +283,7 @@ async function handler(req,res){
 }
 handler.loadPr=loadPr;
 handler.extractStageReceipts=extractStageReceipts;
+handler.verifiedLiveReceipt=verifiedLiveReceipt;
 handler.extractConflictLabels=extractConflictLabels;
 handler.safePr=safePr;
 module.exports=handler;
