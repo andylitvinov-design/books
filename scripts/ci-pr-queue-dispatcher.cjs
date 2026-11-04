@@ -186,6 +186,27 @@ function trustedWatchdogSample(evidence,productionCount){
  }
  if(sample.inspected>productionCount ||
     fields.slice(1).some(field=>sample[field]>sample.inspected))return null;
+ // Only the trusted same-run Watchdog supplies these exact-HEAD samples.
+ // Historical labels and pending checks cannot masquerade as root cases.
+ if(evidence.blockerCases!==undefined){
+  if(!Array.isArray(evidence.blockerCases)||evidence.blockerCases.length>16)return null;
+  const roots=new Set(['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
+   'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD']);
+  const seen=new Set(),cases=[];
+  for(const row of evidence.blockerCases){
+   if(!Number.isSafeInteger(row?.pr_number)||row.pr_number<=0||
+      !/^[a-f0-9]{40}$/i.test(row.head_sha||'')||
+      !roots.has(row.root_code)||
+      !['FAILURE','TIMEOUT','UNKNOWN'].includes(row.ci_result)||
+      row.source_run_id!==undefined&&
+       (!Number.isSafeInteger(row.source_run_id)||row.source_run_id<=0))return null;
+   const key=row.pr_number+':'+row.root_code;
+   if(seen.has(key))return null;
+   seen.add(key);
+   cases.push({...row,head_sha:row.head_sha.toLowerCase()});
+  }
+  sample.blockerCases=cases;
+ }
  return sample;
 }
 

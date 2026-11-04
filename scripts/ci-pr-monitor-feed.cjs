@@ -4,6 +4,7 @@
 // and a sampled automation queue is not the entire production PR backlog.
 const REPO='andylitvinov-design/books';
 const {capture,rows:timestampRows,VERSION:TIMESTAMP_SCHEMA}=require('./ci-pr-timestamp-inventory.cjs');
+const {reconcileBlockerProgress}=require('./ci-pr-blocker-progress.cjs');
 const ISSUE_NUMBER=3128;
 const MARKER='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
 const SCHEMA='HH_CONTROL_DISPATCH_METRICS_V1';
@@ -45,6 +46,29 @@ function verifiedBoundedSample(input,productionCount){
  sample.verified_blocked_lower_bound=Math.max(
   sample.mergeConflicts,sample.coreFailures,
   sample.specialistFailures,sample.specialistPolicyHolds);
+ // This optional evidence contains no extra API calls and no fixes/merge
+ // claims. Reject arbitrary PRs, unknown roots, malformed HEADs and duplicates.
+ if(input.blockerCases!==undefined){
+  if(!Array.isArray(input.blockerCases)||input.blockerCases.length>16)
+   throw Error('INVALID_MONITOR_BLOCKER_CASES');
+  const roots=new Set(['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
+   'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD']);
+  const seen=new Set(),cases=[];
+  for(const c of input.blockerCases){
+   const key=c?.pr_number+':'+c?.root_code;
+   if(!Number.isSafeInteger(c?.pr_number)||c.pr_number<1||
+      !/^[a-f0-9]{40}$/i.test(c.head_sha||'')||!roots.has(c.root_code)||
+      !['FAILURE','TIMEOUT','UNKNOWN'].includes(c.ci_result)||
+      c.source_run_id!==undefined &&
+       (!Number.isSafeInteger(c.source_run_id)||c.source_run_id<=0)||
+      seen.has(key))throw Error('INVALID_MONITOR_BLOCKER_CASES');
+   seen.add(key);
+   cases.push({pr_number:c.pr_number,head_sha:c.head_sha.toLowerCase(),
+     root_code:c.root_code,ci_result:c.ci_result,
+     ...(c.source_run_id?{source_run_id:c.source_run_id}:{})});
+  }
+  sample.blocker_cases=cases;
+ }
  return sample;
 }
 function buildMonitorSnapshot(report,context){
@@ -172,7 +196,7 @@ function parseExisting(body){
 function renderSnapshot(snapshot){
   const fence=String.fromCharCode(96).repeat(3);
   return [MARKER,'## Watchdog direct handoff — public snapshot',
-    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
+    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
     '',fence+'json',JSON.stringify(snapshot,null,2),fence,'',
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
@@ -211,6 +235,12 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
     next.pr_timestamp_inventory=prior;
     next.pr_timestamp_status='PRESERVED_PRIOR_FULL_SCAN';
   }else next.pr_timestamp_status='NO_FULL_PR_TIMESTAMP_SNAPSHOT';
+  // Persist and compare bounded root×PR×HEAD evidence in this SAME
+  // single-writer monitor issue. Reuse the already-fetched PR inventory.
+  // An absent case in a later partial sample must never mean "fixed".
+  next.blocker_progress=reconcileBlockerProgress({
+    previous:previous.blocker_progress,watchdogSample:next.watchdog_sample,
+    inventorySnapshot,observedAt:next.checked_at});
   let body=renderSnapshot(next);
   // Keep this existing public issue below GitHub's body size budget. Never
   // silently publish truncated PR coverage as a complete inventory.

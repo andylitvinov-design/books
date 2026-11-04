@@ -683,7 +683,26 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),eventPrNumber:priorityNumber,
     verifiedSourceFailures:0,failedCoreCronState,cronBackstop,
+    blockerCases:[],
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
+
+  // Bounded, exact-HEAD blocker facts collected from checks ALREADY read by
+  // Watchdog. These are not source-fix, owner, merge or LIVE receipts.
+  // Neither collecting them nor publishing them starts any new CI work.
+  const noteConfirmedBlocker=(pr,root,ciResult='UNKNOWN',sourceRunId=null)=>{
+    if(!Number.isSafeInteger(pr?.number)||pr.number<1||
+       !/^[a-f0-9]{40}$/i.test(pr?.head?.sha||'')||
+       !['MERGE_CONFLICT','CORE_REQUIRED_CHECK_FAILED',
+         'SPECIALIST_PRODUCT_FAILURE','SPECIALIST_POLICY_HOLD'].includes(root))
+      return;
+    if(summary.blockerCases.some(c=>c.pr_number===pr.number&&c.root_code===root)||
+       summary.blockerCases.length>=16)return;
+    const row={pr_number:pr.number,head_sha:pr.head.sha.toLowerCase(),
+      root_code:root,ci_result:ciResult};
+    if(Number.isSafeInteger(sourceRunId)&&sourceRunId>0)
+      row.source_run_id=sourceRunId;
+    summary.blockerCases.push(row);
+  };
 
   // Share only newly verified queue labels with the same-run dispatcher.
   const addedQueueLabels=new Map();
@@ -712,6 +731,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       return decision;
     }
     const product=decision==='PRODUCT_FAILURE';
+    noteConfirmedBlocker(live,product?'SPECIALIST_PRODUCT_FAILURE':'SPECIALIST_POLICY_HOLD','FAILURE');
     const to=product?SPECIALIST_LABEL:RELEASE_GATE_LABEL;
     const from=product?RELEASE_GATE_LABEL:SPECIALIST_LABEL;
     if(product)summary.specialistFailures++;
@@ -869,6 +889,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     const mergeState = classifyMergeState(live);
     if (mergeState === 'DIRTY') {
       summary.mergeConflicts++;
+      noteConfirmedBlocker(live,'MERGE_CONFLICT');
       if (conflictHandoffs < MAX_CONFLICT_HANDOFFS && !budget.exhausted) {
         const created = await ensureQueueLabel(github,owner,repo,live,CONFLICT_LABEL,
           'Production merge conflict: repair without bypassing required checks',
@@ -1071,6 +1092,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
+    noteConfirmedBlocker(live,'CORE_REQUIRED_CHECK_FAILED',
+      latest.conclusion==='failure'?'FAILURE':'TIMEOUT',latest.id);
     // Immediately hand verified source failures to Repair when capacity is idle.
     // A delayed, infrastructure-only retry is still guarded by transientFailure().
     let jobs=null;
