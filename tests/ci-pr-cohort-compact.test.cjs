@@ -45,9 +45,9 @@ test('compact aggregate stage lists each evidence interval instead of pairing to
  const report=analyze({prs:[pr],intervals,source:{closed_complete:true},windows:WINDOWS});
  const body=renderCompact(report,{runId:123});
  const stage=body.split('<details><summary>created to first ci: 1 PR')[1].split('</details>')[0];
- assert.match(stage,/\\| 29 \\|/,'total stage remains 29 real minutes, excluding conflict');
- assert.match(stage,/2026-11-03T13:00:00.000Z → 2026-11-03T13:10:00.000Z \\(≈10 min\\)/);
- assert.match(stage,/2026-11-03T13:11:00.000Z → 2026-11-03T13:30:00.000Z \\(≈19 min\\)/);
+ assert.match(stage,/\| 29 \|/,'total stage remains 29 real minutes, excluding conflict');
+ assert.match(stage,/2026-11-03T13:00:00.000Z → 2026-11-03T13:10:00.000Z \(≈10 min\)/);
+ assert.match(stage,/2026-11-03T13:11:00.000Z → 2026-11-03T13:30:00.000Z \(≈19 min\)/);
  assert.match(stage,/Total across 2 disjoint intervals/);
  assert.ok(body.length<60000,'The historical report stays within the issue size limit');
 });
