@@ -244,6 +244,8 @@ test('owner P0: mobile AI chat stays mounted across folders, never autofocuses q
  assert.match(hub,/<div id="hh-clients-panel"[^>]*hidden=\{section!=='clients'\}/)
  assert.doesNotMatch(hub,/setSelectedId\(''\)\}/)
  assert.match(hub,/--hh-messenger-height/)
+ assert.match(hub,/aiAccountRef\.current/)
+ assert.match(hub,/key=\{aiSession\}/)
  assert.match(hub,/visualViewport/)
  assert.match(hub,/data-hh-order-active-chat/)
  assert.match(hub,/--hh-order-chat-height/)

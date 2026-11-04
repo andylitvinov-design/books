@@ -110,13 +110,18 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [selectedId,setSelectedId]=useState('')
   const orderChatRef=useRef(null)
   const hubRef=useRef(null)
+  const aiAccountRef=useRef(null)
+  const [aiSession,setAiSession]=useState(0)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
     const requested=q.get('section')
     setSection(requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':
       requested==='orders'||q.has('order')?'orders':'ai')
     const id=q.get('order')
-    setSelectedId(id&&/^[0-9a-f-]{36}$/i.test(id)?id:'')
+    // Switching folders removes ?order= from the URL, but must not discard
+    // the private conversation still mounted behind the current tab.
+    if(id&&/^[0-9a-f-]{36}$/i.test(id))setSelectedId(id)
+    else if(requested==='orders')setSelectedId('')
   },[searchParams])
   const reload=useCallback(()=>setGeneration(v=>v+1),[])
   useEffect(()=>{
@@ -133,6 +138,19 @@ export default function MessagesOrdersClients({locale='en',children}){
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
   },[generation,locale])
+  // A normal account bootstrap must not erase the AI draft in progress.
+  // Clear it only on a verified account switch or explicit sign-out.
+  useEffect(()=>{
+    const account=ordersData?.accountId
+    if(account){
+      if(aiAccountRef.current&&aiAccountRef.current!==account)
+        setAiSession(value=>value+1)
+      aiAccountRef.current=account
+    }else if(signedOut&&aiAccountRef.current){
+      aiAccountRef.current=null
+      setAiSession(value=>value+1)
+    }
+  },[ordersData?.accountId,signedOut])
   const orders=ordersData?.orders||[]
   const visible=useMemo(()=>{
     const term=search.trim().toLocaleLowerCase()
@@ -312,7 +330,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       </span>
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
-      <MessengerAiWorkspace key={ordersData?.accountId||'guest'} locale={locale}/>
+      <MessengerAiWorkspace key={aiSession} locale={locale}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
       {listHelper}
