@@ -112,11 +112,15 @@ export async function verifyGuidedPractices({browser,base,engine}){
             selectedState:q('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state")??null,
             selectedVector:q('[data-guided-focus-vector][aria-pressed="true"]')?.getAttribute("data-guided-focus-vector")??null,
             journeyStep:q('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+            planOpen:root?.getAttribute("data-guided-plan-open")??null,
+            planClickCount:root?.getAttribute("data-guided-plan-click-count")??null,
+            planSignatureMatch:root?.getAttribute("data-guided-plan-signature-match")??null,
+            programmeReady:root?.getAttribute("data-guided-programme-ready")??null,
             meditationPresent:Boolean(q("[data-guided-meditation-result]")),
             pagePath:location.pathname,
           };
         });
-        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify(snapshot),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+"px programme missing after one click: "+JSON.stringify({...snapshot,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
@@ -155,16 +159,37 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
         "six development directions are available");
       await course.locator('[data-guided-focus-vector="goals"]').click();
+      // A WebKit click can resolve before React commits the selected direction.
+      // Wait for the actual accessible selection and enabled action, without
+      // a second click, sleep, or bypass of the real safety/validation gate.
+      await page.waitForFunction(()=>{
+        const course=document.querySelector("[data-video-guided-course]");
+        return course?.querySelector('[data-guided-focus-vector="goals"][aria-pressed="true"]') &&
+          course.getAttribute("data-guided-focus-ready")==="true" &&
+          course.querySelector("[data-guided-generate-meditation]")?.disabled===false;
+      },null,{timeout:15000});
       assert.equal(await generate.isEnabled(),true,
         "selected direction alone is enough; the context note is optional");
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // In headed iOS/WebKit the DOM value may update before React's controlled
+      // textarea onChange commits. The Generate button was already enabled by
+      // the selected vector, so waiting for !disabled could click against a
+      // stale focus signature. Assert the real React render has consumed the
+      // synthetic text before clicking; no sleep or second-click workaround.
+      await page.waitForFunction(expectedLength=>{
+        const action=document.querySelector("[data-guided-generate-meditation]");
+        const input=document.querySelector("[data-video-key-difficulty]");
+        return action?.getAttribute("data-guided-context-committed-length")===String(expectedLength) &&
+          input?.value==="I feel rushed" && action?.disabled===false;
+      },"I feel rushed".length,{timeout:15000});
       assert.equal(await course.locator("[data-video-key-goal]").count(),0,
         "vector choice replaces the former second blank text area");
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
         "switching from state invalidates previous eight-session outline");
       await generate.click();
       try{
+        await page.waitForFunction(()=>document.querySelector("[data-video-guided-course]")
+          ?.getAttribute("data-guided-meditation-ready")==="true",null,{timeout:15000});
         await result.waitFor({state:"visible",timeout:15000});
       }catch(error){
         const state=await course.evaluate(el=>({
@@ -174,8 +199,16 @@ export async function verifyGuidedPractices({browser,base,engine}){
           disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
           resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          focusReady:el.getAttribute('data-guided-focus-ready'),
+          hasScript:el.getAttribute('data-guided-has-script'),
+          meditationOpen:el.getAttribute('data-guided-meditation-open'),
+          meditationClickCount:el.getAttribute('data-guided-meditation-click-count'),
+          focusResetCount:el.getAttribute('data-guided-focus-reset-count'),
+          signatureMatch:el.getAttribute('data-guided-signature-match'),
+          meditationReady:el.getAttribute('data-guided-meditation-ready'),
+          committedLength:el.querySelector('[data-guided-generate-meditation]')?.getAttribute('data-guided-context-committed-length'),
         }));
-        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify({...state,pageErrors:pageErrors.slice(-5)}),{cause:error});
       }
       await course.locator("[data-guided-create-plan]").click();
       await programme.waitFor({state:"visible"});
