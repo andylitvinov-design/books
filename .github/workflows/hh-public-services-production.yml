@@ -211,6 +211,20 @@ jobs:
           }
           tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
           tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
+          # GitHub checkout occasionally keeps the exact PR merge shallow even
+          # at fetch-depth 2. Recover ONLY its missing history, never substitute
+          # an arbitrary PR head or mark an unverified checkout as passing.
+          if [[ "$tested_head" != "$PR_HEAD_SHA" || ! "$tested_base" =~ ^[0-9a-f]{40}$ ]]; then
+            actual_checkout="$(git rev-parse HEAD)"
+            [[ "$actual_checkout" == "$GITHUB_SHA" && "$(git rev-parse --is-shallow-repository)" == true ]] || {
+              echo "::error::Unexpected or non-shallow PR checkout; refusing recovery"; exit 1;
+            }
+            # One bounded source-only deepening call, no full clone and no
+            # second workflow. All exact-parent and ancestry checks stay below.
+            git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"
+            tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
+            tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
+          fi
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Checkout is not the exact two-parent PR test merge"; exit 1;
           }
