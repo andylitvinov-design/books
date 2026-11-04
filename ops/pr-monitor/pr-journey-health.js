@@ -27,7 +27,11 @@
  const fmt=n=>n===null||!Number.isFinite(n)?'—':n<1?Math.round(n*60)+' сек':n<120?
   n.toLocaleString('ru-RU',{maximumFractionDigits:1})+' мин':
   (n/60).toLocaleString('ru-RU',{maximumFractionDigits:2})+' ч';
- const quant=(numbers,p)=>numbers.length?numbers.slice().sort((a,b)=>a-b)[Math.floor((numbers.length-1)*p)]:null;
+ const quant=(numbers,p)=>{
+  if(!numbers.length)return null;
+  const a=numbers.slice().sort((x,y)=>x-y),i=(a.length-1)*p,l=Math.floor(i),h=Math.ceil(i);
+  return a[l]+(a[h]-a[l])*(i-l);
+ };
  function calculate(snapshot,hours,scope){
   if(snapshot?.schema!=='HH_PR_CREATED_COHORT_V1'||!HOURS.includes(hours)||
     !['production','all'].includes(scope)||!Array.isArray(snapshot.rows))throw Error('INVALID_COHORT');
@@ -43,8 +47,11 @@
   return {hours,scope,asof:snapshot.generated_at,start:new Date(begin).toISOString(),
    complete:snapshot.coverage?.complete===true,created:created.length,merged:merged.length,
    closedUnmerged:closedUnmerged.length,pending:pending.length,draft:pending.filter(p=>p.draft).length,
-   mean:average,median:quant(times,.5),p90:quant(times,.9),
-   coverage:{knownMergedDurations:times.length,mergedPopulation:merged.length},
+   mean:average,median:quant(times,.5),p50:quant(times,.5),p90:quant(times,.9),p95:quant(times,.95),
+   coverage:{knownMergedDurations:times.length,mergedPopulation:merged.length,
+    percent:merged.length?100*times.length/merged.length:null},
+   merged_ids:merged.map(p=>p.number).sort((a,b)=>a-b),
+   quantile_method:'LINEAR_INTERPOLATION',
    example:merged.slice().sort((a,b)=>(ms(b.merged_at)-ms(b.created_at))-(ms(a.merged_at)-ms(a.created_at)))
     .slice(0,5).map(p=>({number:p.number,minutes:(ms(p.merged_at)-ms(p.created_at))/60000})),
    cohortSource:snapshot.coverage};
@@ -89,7 +96,7 @@
   let s;try{s=calculate(source,hours,scope)}catch(e){info.textContent='Срез недоступен: '+e.message;return;}
   stat.replaceChildren();
   for(const [label,value] of [['Создано',s.created],['Merged',s.merged],['Без merge',s.closedUnmerged],
-   ['Ещё не закрыто',s.pending],['Среднее Created→Merged',fmt(s.mean)],['Медиана',fmt(s.median)],['P90',fmt(s.p90)]]){
+   ['Ещё не закрыто',s.pending],['Среднее Created→Merged',fmt(s.mean)],['P50',fmt(s.p50)],['P95',fmt(s.p95)],['Охват',s.coverage.knownMergedDurations+'/'+s.coverage.mergedPopulation]]){
    const card=make('div','', 'hh-journey-stat');card.append(make('small',label),make('strong',String(value)));stat.append(card);
   }
   const age=Math.max(0,Math.round((Date.now()-(ms(s.asof)||Date.now()))/60000));
@@ -107,19 +114,22 @@
    const right=make('div','');
    const stats=d?.stages?.[key]||(key==='retry_gap'?d?.details?.retry_gap:null);
    if(stats&&stats.n>0){
-    right.append(make('strong',fmt(stats.mean)),make('small','Среднее по '+stats.n+
-     ' измерениям · медиана '+fmt(stats.median)+' · P90 '+fmt(stats.p90)));
+    right.append(make('strong',fmt(stats.mean)),make('small','Выборка '+stats.n+'/'+(Number.isSafeInteger(denom)?denom:'?')+
+     ' · P50 '+fmt(stats.p50??stats.median)+' · P95 '+fmt(stats.p95??null)+' · отдельные доказанные переходы'));
    }else{
     right.append(make('strong','— · не измерено'),make('small',d?'Нет проверенной пары событий':'Нужна подробная проверка'));
    }
    row.append(left,right);table.append(row);
   }
   if(d){
-   const cv=d.coverage||{},samePopulation=d.population?.merged===s.merged;
+   const cv=d.coverage||{},identities=d.population?.pr_numbers;
+   const samePopulation=Array.isArray(identities)&&
+    identities.length===s.merged_ids.length&&
+    identities.slice().sort((a,b)=>a-b).every((v,i)=>v===s.merged_ids[i]);
    info.textContent+=' Детали CI: '+(cv.selected??'?')+' выбранных PR из '+(cv.created??'?')+
     ', ошибок '+(cv.errors??'?')+', подтверждённых merge '+(cv.verified_merges??'?')+
-    '. '+(samePopulation?'Когорты имеют одинаковое число merge, но разные отметки времени.':
-     'ВНИМАНИЕ: снимки различаются по времени и знаменателю; средние этапов не складывать.');
+    '. '+(samePopulation?'Состав PR совпадает, но время снимков может различаться; стадии нельзя складывать без проверки интервалов.':
+     'ВНИМАНИЕ: состав детальной когорты не подтверждён по PR ID; средние этапов не складывать.');
   }
  }
  async function readCohort(){

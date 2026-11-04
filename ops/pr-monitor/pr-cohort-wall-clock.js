@@ -17,6 +17,12 @@
  const KEYS=['before_unknown','workflow_wait','runner_wait','checks',
    'ci_wave_unknown','ci_other_unknown','after_unknown','no_archive_unknown'];
  const MILLIS=60000;
+ const PERCENTILE_METHOD='LINEAR_INTERPOLATION';
+ function pct(values,q){
+  if(!values.length)return null;
+  const a=[...values].sort((x,y)=>x-y),i=(a.length-1)*q,lo=Math.floor(i),hi=Math.ceil(i);
+  return a[lo]+(a[hi]-a[lo])*(i-lo);
+ }
  function stamp(s){const x=Date.parse(typeof s==='string'?s:'');return Number.isFinite(x)?x:null;}
  function valid(n){return typeof n==='number'&&Number.isFinite(n)&&n>=0;}
  function row(p){
@@ -68,6 +74,7 @@
   const N=prs.length,byPR=ordered(archive);
   const totals=Object.fromEntries(KEYS.map(k=>[k,0]));
   const counts=Object.fromEntries(KEYS.map(k=>[k,0]));
+  const samples=Object.fromEntries(KEYS.map(k=>[k,[]]));
   let covered=0,missing=0,invalid=0,partial=0,overall=0;
   const paths=[];
   for(const p of prs){
@@ -83,7 +90,10 @@
    overall+=p.elapsed;
    for(const key of KEYS){
      totals[key]+=values[key];
-     if(key==='no_archive_unknown'? !known: Boolean(known))counts[key]++;
+     if(key==='no_archive_unknown'? !known: Boolean(known)){
+    counts[key]++;
+    samples[key].push(values[key]/MILLIS);
+   }
    }
    paths.push({pr:p.number,elapsed_ms:p.elapsed,covered:Boolean(known),
     from:new Date(p.start).toISOString(),to:new Date(p.end).toISOString(),
@@ -93,8 +103,27 @@
   }
   const reconciled=KEYS.reduce((n,k)=>n+totals[k],0)===overall;
   if(!reconciled)throw Error('COHORT_WALL_CLOCK_NOT_RECONCILED');
+  const stage_kpis=Object.fromEntries(KEYS.map(k=>{
+   const a=samples[k],n=a.length,mean=n?a.reduce((sum,v)=>sum+v,0)/n:null;
+   return [k,{measured_prs:n,cohort_prs:N,coverage_pct:n*100/N,
+    mean_measured_min:mean,p50_min:pct(a,.5),p95_min:pct(a,.95),
+    contribution_mean_minutes:n?totals[k]/N/MILLIS:null}];
+  }));
+  const KNOWN=['workflow_wait','runner_wait','checks'],
+   UNKNOWN=['before_unknown','ci_wave_unknown','ci_other_unknown','after_unknown','no_archive_unknown'];
+  const top=KNOWN.filter(key=>stage_kpis[key].measured_prs>0)
+   .map(key=>({stage:key,contribution_mean_minutes:totals[key]/N/MILLIS}))
+   .sort((a,b)=>b.contribution_mean_minutes-a.contribution_mean_minutes)[0]||null;
+  const unattributed=UNKNOWN.reduce((sum,key)=>sum+totals[key],0)/N/MILLIS;
+  const largest_delay={largest_measured_stage:top,unattributed_mean_minutes:unattributed,
+   status:top&&top.contribution_mean_minutes>unattributed?
+    'LARGEST_VERIFIED_INTERVAL_BOUNDED':'UNATTRIBUTED_TIME_MAY_DOMINATE',
+   note:'Самая длинная подтверждённая категория, а не доказанная первопричина.'};
   return {schema:VERSION,period:{from:cohort.from,to:cohort.to},
     N,overall_ms:overall,overall_mean_minutes:overall/N/MILLIS,
+    overall_p50_minutes:pct(prs.map(p=>p.elapsed/MILLIS),.5),
+    overall_p95_minutes:pct(prs.map(p=>p.elapsed/MILLIS),.95),
+    percentile_method:PERCENTILE_METHOD,stage_kpis,largest_delay,
     stage_totals_ms:totals,
     stage_mean_minutes:Object.fromEntries(KEYS.map(k=>[k,
       (counts[k]>0?totals[k]/N/MILLIS:null)])),

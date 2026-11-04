@@ -60,7 +60,7 @@
     };
     return {n: rows.length,
       mean: rows.length ? values.reduce(function (a,b) { return a+b; },0)/rows.length : null,
-      median: quantile(0.5), p90: quantile(0.9),
+      median: quantile(0.5), p50: quantile(0.5), p90: quantile(0.9), p95: quantile(0.95),
       rows: rows.sort(function (a,b) { return b.minutes-a.minutes; }),
       from: win.from, to: win.to, complete: win.complete === true};
   }
@@ -196,7 +196,8 @@
     }
     if(key==='merge_to_live')return null;
     const value=model.stage_mean_minutes[key],n=model.observed_count[key];
-    return n>0&&valid(value)?{mean:value,n}:null;
+    return n>0&&valid(value)?{mean:value,n,p50:model.stage_kpis?.[key]?.p50_min??null,
+      p95:model.stage_kpis?.[key]?.p95_min??null}:null;
   }
   function applyArchive() {
     if(!baseline)return;
@@ -231,7 +232,9 @@
       st.sample.textContent=
         'Средний вклад в общую когорту: '+(item?duration(item.mean):'—')+
         ' / PR; подтверждено по '+(item?.n??0)+' из '+N+
-        ' PR. Это не средняя длительность только проверенных PR. '+
+        ' PR. P50 по измеренным: '+duration(item?.p50)+
+        ' · P95 по измеренным: '+duration(item?.p95)+
+        '. Это не средняя длительность только проверенных PR. '+
         ((key.endsWith('_unknown')||key==='ci_gaps')?
           'Причина задержки внутри границ пока не установлена.':
           'Это наблюдаемая нижняя граница; старая CI могла отсутствовать в архиве.');
@@ -240,9 +243,10 @@
       if(key==='merge_to_live')continue;
       for(const pair of SUBSTEPS[key]){
         const name=pair[0],val=model.stage_mean_minutes[name];
-        const n=model.observed_count[name]??0;
+        const n=model.observed_count[name]??0,kpi=model.stage_kpis?.[name];
         if(n>0&&valid(val))setSubstep(key,name,val,
           'Среднее на '+N+' PR · покрытие '+n+'/'+N+
+          ' · P50 '+duration(kpi?.p50_min)+' · P95 '+duration(kpi?.p95_min)+
           (name.endsWith('unknown')?' · причины не установлены':' · подтверждённые метки'));
         else setSubstep(key,name,null,'В этот период нет проверенного временного интервала');
       }
@@ -257,7 +261,13 @@
         Math.max(model.stage_mean_minutes.no_archive_unknown||0,
         model.stage_mean_minutes.before_unknown||0,
         model.stage_mean_minutes.after_unknown||0))+
-      ' на PR; это недостаток меток, не доказательство ожидания конкретного исполнителя.';
+      ' на PR; это недостаток меток, не доказательство ожидания конкретного исполнителя. '+
+       'Самый длинный подтверждённый этап: '+(model.largest_delay?.largest_measured_stage?.stage||'—')+
+       ' · средний вклад '+duration(model.largest_delay?.largest_measured_stage?.contribution_mean_minutes)+
+       ' / PR; неизвестное время '+duration(model.largest_delay?.unattributed_mean_minutes)+
+       ' / PR. Статус: '+(model.largest_delay?.status==='LARGEST_VERIFIED_INTERVAL_BOUNDED'?
+       'максимальная измеренная часть ограничена доказательствами':
+       'неизвестное время может превосходить известные этапы')+'.';
     archiveNote.textContent='Источник: сохранённые GitHub Actions Core CI; по '+covered+
       ' из '+N+' PR найдены непротиворечивые job-интервалы. '+
       'До/после этих интервалов причины НЕ подтверждены. '+model.coverage.rejected_ci_rows+
@@ -325,9 +335,10 @@
     times.append(make('h2','','Длительность прохождения PR'));
     var metrics = make('div','hh2-time-grid');
     cells.avg = rowStat('PR → Merge · среднее','—','Подтверждённая когорта');
-    cells.median = rowStat('PR → Merge · медиана','—','Сопоставимый период');
+    cells.median = rowStat('PR → Merge · P50','—','Та же когорта PR');
+    cells.p95 = rowStat('PR → Merge · P95','—','Та же когорта PR');
     cells.live = rowStat('PR → LIVE','—','Нет полного LIVE-подтверждения');
-    metrics.append(cells.avg,cells.median,cells.live); times.append(metrics);
+    metrics.append(cells.avg,cells.median,cells.p95,cells.live); times.append(metrics);
     firstFoot = make('p','hh2-meta','PR → Merge и PR → LIVE не смешиваются. Пропуск ≠ 0.');
     times.append(firstFoot); one.append(times);
     var two = make('section','hh2-screen hh2-second'); two.id = 'hh2-stages';
@@ -431,6 +442,7 @@
     if (baseline) {
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
       cells.median.querySelector('strong').textContent=duration(baseline.median);
+       cells.p95.querySelector('strong').textContent=duration(baseline.p95);
       firstFoot.textContent='Одна когорта Created→Merged: '+baseline.n+' PR · срез '+
         (baseline.to||'—')+' · '+(baseline.source==='live'?'текущий API':'архив; может устареть')+
         '. LIVE пока подтверждается отдельно.';

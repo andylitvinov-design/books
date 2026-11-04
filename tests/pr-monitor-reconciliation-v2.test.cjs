@@ -61,3 +61,20 @@ test('CI reads are bounded to existing endpoints and do not schedule new polling
  assert.match(source,/fetch\('\/api\/ci-journey-summary\?hours=72'/);
  assert.match(source,/fetch\('\/api\/pr-attribution\?pr='/);
 });
+
+test('the visible PR-to-Merge dashboard uses same-cohort interpolated P50/P95',()=>{
+ const t=n=>new Date(Date.UTC(2026,10,4,10,0,0)+n*60000).toISOString();
+ const r=aggregate({from:t(0),to:t(100),rows:[
+  {number:101,created_at:t(0),merged_at:t(10)},
+  {number:102,created_at:t(1),merged_at:t(13)},
+  {number:103,created_at:t(2),merged_at:t(22)}
+ ]});
+ assert.equal(r.n,3);
+ assert.equal(r.mean,14);
+ assert.equal(r.p50,12);
+ assert.equal(r.p95,19.2);
+ assert.match(source,/PR → Merge · P95/);
+ assert.match(source,/stage_kpis/);
+ assert.match(source,/largest_delay/);
+ assert.doesNotMatch(source,/setInterval\s*\(/);
+});

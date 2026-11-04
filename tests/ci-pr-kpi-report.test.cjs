@@ -122,3 +122,18 @@ test('report exposes observed LIVE receipts without calling unknown PRs live or 
  assert.equal(r.windows['1h'].current.kpi.merge_to_live,null);
  assert.equal(r.windows['1h'].current.phase_minutes.stages.merged_to_live_verified.n,1);
 });
+
+test('same-cohort KPI report retains authenticated merge-to-LIVE and P95',()=>{
+ const input=data(),at=m=>new Date(NOW-m*60000).toISOString();
+ input.merges.events=[{kind:'merged',at:at(7),pr:77,head:SHA,mergeSha:MERGE,
+  created_at:at(40),head_ref:'feature/77',production:true}];
+ input.receipts.events=[{kind:'live_verified',pr:77,head:MERGE,mergeSha:MERGE,
+  production:true,aliasVerified:true,smokeVerified:true,at:at(5)}];
+ const x=buildReport(input).windows['1h'].created_to_merged;
+ assert.equal(x.cohort.merged,1);
+ assert.equal(x.total.p50,33);assert.equal(x.total.p95,33);
+ assert.equal(x.receipt_substages.merged_to_live_verified.mean,2);
+ assert.equal(x.receipt_substages.merged_to_live_verified.cohort_prs,1);
+ assert.equal(x.receipt_substages.merged_to_live_verified.coverage_pct,100);
+ assert.equal(x.bottleneck.status,'NO_VERIFIED_GATE');
+});
