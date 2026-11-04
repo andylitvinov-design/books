@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
@@ -1974,3 +1974,42 @@ test('an affected Mandala browser workflow remains required on exact HEAD', asyn
   await assert.rejects(()=>verify(api,ctx,mixed,opts),/SPECIALIST_FAILED/);
 });
 
+
+test('trusted one-time optional owner routing tolerates only exact immutable-base YAML edits', () => {
+  const owner='.github/workflows/hh-growth-studio.yml';
+  const guard='.github/workflows/hh-pr-sweep-guard.yml';
+  const legacy="      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  const marker="      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'";
+  const oldOwner=readFileSync(owner,'utf8');
+  const oldGuard=readFileSync(guard,'utf8');
+  assert.equal(oldOwner.split(legacy).length,2);
+  assert.equal(oldGuard.split(legacy).length,2);
+  const base=new Map([[owner,oldOwner],[guard,oldGuard]]);
+  const current=new Map([
+    [owner,oldOwner.replace(legacy,marker)],
+    [guard,oldGuard.replace(legacy,legacy+'\n'+marker)],
+  ]);
+  const files={base,current};
+  const rows=[
+    {filename:owner,status:'M'},
+    {filename:guard,status:'M'},
+    {filename:'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md',status:'A'},
+    {filename:'tests/ci-pr-selective-workflows.test.mjs',status:'M'},
+  ];
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,rows),true);
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,rows.slice(0,-2)),false,
+    'migration marker addition must be present');
+  const unsafe=[
+    {filename:'app/api/payments/checkout/route.ts',status:'M'},
+    {filename:owner,status:'A'},
+    {filename:'package-lock.json',status:'M'},
+  ];
+  for(const x of unsafe)
+    assert.equal(verifiedOptionalOwnerSelectorMigration(files,[...rows,x]),false);
+  const modified=current.get(owner).replace('runs-on: ubuntu-24.04','runs-on: windows-latest');
+  assert.equal(verifiedOptionalOwnerSelectorMigration({
+    base,current:new Map([[owner,modified],[guard,current.get(guard)]])
+  },rows),false,'any other job body change must keep strict current-base checks');
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,[...rows,rows[0]]),false,
+    'repeated or ambiguous diff entries never qualify');
+});
