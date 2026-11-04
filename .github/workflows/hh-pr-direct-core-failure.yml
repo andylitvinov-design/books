@@ -40,7 +40,31 @@ jobs:
           node --check scripts/ci-pr-event-handoff.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-base-advanced-recovery.cjs
+      - name: Validate trusted base recovery contracts
+        run: node --test tests/ci-pr-base-advanced-recovery.test.cjs
+      - name: Refresh exactly the proven BASE_ADVANCED PR
+        id: base_recovery
+        if: github.event.workflow_run.conclusion == 'failure'
+        uses: actions/github-script@v7
+        env:
+          HH_OWNER_TOKEN_PRESENT: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+        with:
+          # The existing owner token is needed so that a real branch
+          # synchronize emits new pull_request checks. GITHUB_TOKEN alone
+          # can suppress those workflow events; never create a stale HEAD.
+          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          script: |
+            const {recoverBaseAdvanced}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-base-advanced-recovery.cjs');
+            const result=await recoverBaseAdvanced({github,context,
+              hasOwnerToken:process.env.HH_OWNER_TOKEN_PRESENT==='true'});
+            core.info('HH_BASE_ADVANCED_RECOVERY '+JSON.stringify(result));
+            if(result.status==='UPDATED')core.setOutput('updated','true');
+            await core.summary.addHeading('Exact-head production BASE recovery')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
       - name: Route verified failed Core directly to signed Repair
+        if: steps.base_recovery.outputs.updated != 'true'
         uses: actions/github-script@v7
         env:
           HH_CONTROL_TOWER_ENABLED: 'true'
