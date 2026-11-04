@@ -158,7 +158,43 @@ for(const browserType of [chromium,webkit]){
     const aiTab=root.getByRole('tab',{name:locale==='ru'?'ИИ':locale==='es'?'IA':'AI',exact:true})
     await aiTab.click()
     await root.locator('#hh-ai-panel').waitFor({state:'visible',timeout:15000})
-    sameShell(await shell(),'AI')
+    // The AI view is intentionally viewport-pinned; unlike list folders, its
+    // header must not be compared to the page-flow position of Orders.
+    const aiComposer=root.locator('#hh-ai-panel textarea').first()
+    await aiComposer.waitFor({state:'visible',timeout:15000})
+    const aiGeometry=await aiComposer.evaluate(el=>{
+      const r=el.getBoundingClientRect()
+      const hub=el.closest('[data-orders-clients-hub]').getBoundingClientRect()
+      return {composerBottom:r.bottom,hubBottom:hub.bottom,position:getComputedStyle(el.closest('[data-orders-clients-hub]')).position}
+    })
+    assert.equal(aiGeometry.position,'fixed',key+' AI chat viewport pinned')
+    assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
+      key+' visible composer '+JSON.stringify(aiGeometry))
+    const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
+    await firstQuick.click()
+    assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
+    assert.equal(await aiComposer.evaluate(el=>document.activeElement===el),false,
+      key+' quick action must not autofocus keyboard')
+    await aiComposer.fill('One line\n'.repeat(12))
+    const multiline=await aiComposer.evaluate(el=>({
+      height:el.getBoundingClientRect().height,
+      bottom:el.getBoundingClientRect().bottom,
+      visualBottom:(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||window.innerHeight)
+    }))
+    assert.ok(multiline.height>44&&multiline.height<=102,
+      key+' multiline composer grows within cap '+JSON.stringify(multiline))
+    assert.ok(multiline.bottom<=multiline.visualBottom+3,
+      key+' editable field stays in viewport '+JSON.stringify(multiline))
+    // Headless WebKit has no native software keyboard: focus alone must not
+    // hide the dock or apply keyboard-only compact layout.
+    await page.waitForFunction(()=>document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='false')
+    assert.equal(await root.getAttribute('data-keyboard-open'),'false',
+      key+' keyboard state follows visual viewport, not focus alone')
+    await aiComposer.fill('Synthetic unsent AI draft')
+    await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
+    await aiTab.click()
+    assert.equal(await aiComposer.inputValue(),'Synthetic unsent AI draft',
+      key+' AI draft survives switching folders')
     // Five approved AI actions stay on one horizontal row on each mobile width.
     const aiLayout=await page.evaluate(()=>{
       const rail=document.querySelector('[data-chat-menu-rail]')
@@ -174,6 +210,7 @@ for(const browserType of [chromium,webkit]){
     assert.ok(aiLayout.outerWidth>=width-32,key+' full width AI workspace '+JSON.stringify(aiLayout))
     await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
     await customer.waitFor({state:'visible',timeout:15000})
+    // The list header returns to its stable page-flow geometry after AI.
     sameShell(await shell(),'clients return')
     const clientWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
     assert.ok(clientWidth<=width+3,key+' clients overflow '+clientWidth)
@@ -182,7 +219,7 @@ for(const browserType of [chromium,webkit]){
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
     const fullscreen=await customer.locator('[class*="window"]').first().evaluate(el=>{
       const r=el.getBoundingClientRect()
-      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const nav=document.querySelector('[data-hh-unified-dock]')
       return {position:getComputedStyle(el).position,top:r.top,width:r.width,height:r.height,
         visualHeight:window.visualViewport?.height||window.innerHeight,
         navDisplay:nav?getComputedStyle(nav).display:'missing'}
@@ -244,7 +281,7 @@ for(const browserType of [chromium,webkit]){
     const send=orderChat.locator('[class*="compose"] > button').last()
     const geometry=await send.evaluate(element=>{
       const r=element.getBoundingClientRect()
-      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const nav=document.querySelector('[data-hh-unified-dock]')
       const navTop=nav&&getComputedStyle(nav).display!=='none'
         ?nav.getBoundingClientRect().top:window.innerHeight
       return {bottom:r.bottom,navTop}
