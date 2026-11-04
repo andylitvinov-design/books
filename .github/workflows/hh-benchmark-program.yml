@@ -5,7 +5,6 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - "docs/benchmarking/**"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"

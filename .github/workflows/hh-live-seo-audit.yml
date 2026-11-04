@@ -23,7 +23,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
-      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'
       - 'scripts/verify-live-sitemap.mjs'
       - 'scripts/verify-public-tests-mobile.mjs'
       - 'app/[locale]/tests/**'
