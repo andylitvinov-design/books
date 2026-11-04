@@ -239,7 +239,42 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   timeline.chronology.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
  }
  const mergedAt=parseUTC(pr.merged_at);
- const journey={created_at:pr.created_at,
+ const firstEvent=kind=>timeline.chronology.find(e=>e.kind===kind);
+ const latestEvent=kind=>[...timeline.chronology].reverse().find(e=>e.kind===kind);
+ const eventCheckpoint=(key,label,kind)=>{
+  const e=firstEvent(kind);
+  return {key,label,at:e?.at||null,url:e?.url||null,
+   evidence:e?'GITHUB_VERIFIED_EVENT':'NOT_RECORDED',kind};
+ };
+ const runStart=timeline.attempt_details?.find(a=>a.repeated===false);
+ const concrete=(key,label,at,url,kind)=>({key,label,at:at||null,url:url||null,
+  evidence:at?'GITHUB_VERIFIED_EVENT':'NOT_RECORDED',kind});
+ const checkpointRows=[
+  concrete('created','PR создан',pr.created_at,'https://github.com/'+OWNER+'/'+REPO+'/pull/'+number,'created'),
+  eventCheckpoint('ready','Готов к обработке','ready'),
+  eventCheckpoint('triage','Triage и маршрутизация','triage'),
+  eventCheckpoint('claimed','Задача взята Worker','claimed'),
+  eventCheckpoint('first_ci_queued','Первая подтверждённая CI в очереди','ci_queued'),
+  concrete('runner_started','Первый Runner начал работу',runStart?.runner_started_at,runStart?.run_url,'runner_started'),
+  eventCheckpoint('core_job_completed','Core job завершён','job_completed'),
+  eventCheckpoint('ci_failed','Ошибка CI зафиксирована','ci_failed'),
+  eventCheckpoint('repair_started','Фактический Repair начат','repair_started'),
+  eventCheckpoint('source_published','Исправленный код опубликован','source_published'),
+  eventCheckpoint('conflict_detected','Конфликт обнаружен','conflict_labeled'),
+  eventCheckpoint('conflict_label_cleared','Метка конфликта снята','conflict_unlabeled'),
+  eventCheckpoint('repeat_ci_queued','Повторная CI в очереди','repeat_ci_queued'),
+  concrete('merge_gate_green','Последний Merge Gate зелёный',latestEvent('ci_green')?.at,
+   latestEvent('ci_green')?.url,'ci_green'),
+  concrete('merged','Merge подтверждён',pr.merged_at,'https://github.com/'+OWNER+'/'+REPO+'/pull/'+number,'merged'),
+  concrete('deployment_ready','Production deployment READY',null,null,'deploy_ready_unobserved'),
+  concrete('live_verified','Production LIVE подтверждён',live?.live_at,live?.receipt_url,'live_verified')
+ ];
+ const checkpointCoverage={total:checkpointRows.length,
+  observed:checkpointRows.filter(x=>x.evidence==='GITHUB_VERIFIED_EVENT').length,
+  missing:checkpointRows.filter(x=>x.evidence!=='GITHUB_VERIFIED_EVENT').map(x=>x.key),
+  caveat:'Отсутствие отметки может означать пропуск события либо ненужность этапа, а не нулевое время.'};
+
+ const journey={checkpoints:checkpointRows,checkpoint_coverage:checkpointCoverage,created_at:pr.created_at,
   first_observed_ci_at:timeline.chronology.find(e=>e.kind==='ci_queued')?.at||null,
   final_ci_green_at:[...timeline.chronology].reverse().find(e=>e.kind==='ci_green')?.at||null,
   merged_at:pr.merged_at||null,
