@@ -88,8 +88,24 @@ test('source contract: locale key and original titles/audio labels stay in serve
   assert.match(parent, /nativeSuffix=\{locale === "en" \? " · Russian audio" : ""\}/);
   for (const text of ['Video testimonials', 'Видеоотзывы', 'Testimonios en vídeo', 'qM_nFUkYJ1k']) assert.ok((parent + source).includes(text));
 });
-test('cleanup handler contains no direct provider command/fetch, autoplay or CSP mutation', () => {
-  assert.doesNotMatch(source, /fetch\(|postMessage\(|\.play\(|autoplay=|innerHTML|contentWindow|location\./);
+test('disclosure cleanup never launches provider commands or playback; muted recovery is explicit-play-only', () => {
+  const beforePlayback=source.split('function pauseAndRemember(video: HTMLVideoElement) {')[1]?.split('function onNativePlay(')[0];
+  const disclosure=source.split('function onSummaryClickCapture(')[1]?.split('  return (')[0];
+  assert.ok(beforePlayback && disclosure,'Both close handlers must be identifiable');
+  for(const body of [beforePlayback,disclosure]) {
+    assert.doesNotMatch(body, /fetch\(|postMessage\(|\.play\(|autoplay=|innerHTML|contentWindow|location\./,
+      'Closing/opening disclosure must never invoke video play or providers');
+  }
+  assert.doesNotMatch(source,/fetch\(|postMessage\(|autoplay=|innerHTML|contentWindow|location\./,
+    'No provider commands, automatic iframe playback or CSP mutation in this component');
+  assert.equal((source.match(/\.play\(/g)||[]).length,1,
+    'One bounded muted native-media retry is the ONLY possible programmatic play call');
+  const recovery=source.split('function onNativePlay(')[1]?.split('function discardRecovery(')[0];
+  assert.ok(recovery,'The user-play observer must own the sole recovery');
+  assert.match(recovery,/if \(video\.muted === true && video\.readyState >= 2\)/,
+    'Explicit user play, retained same source, ready decoder and mute are all required');
+  assert.match(recovery,/video\.pause\(\);[\s\S]*video\.play\(\)/,
+    'Only an explicit already-started stalled muted pipeline can re-enter PLAYING once');
   assert.match(source, /<summary onClickCapture=\{onSummaryClickCapture\}>\{props.summary\}<\/summary>/);
   assert.match(source, /onToggle=\{onToggle\}/);
 });
