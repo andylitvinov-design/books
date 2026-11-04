@@ -4,15 +4,15 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("all personal service detail pages share readable session choices without changing enquiry transport", () => {
+test("all personal service detail pages share readable session choices with on-site CRM capture", () => {
   const landing = read("components/personal-service-landing.tsx");
   const styles = read("components/personal-service-landing.module.css");
   assert.match(landing, /const facts = \{/);
   for (const part of ["30 min · €50", "60 min · €100", "30 мин · €50", "60 мин · €100"]) assert.ok(landing.includes(part));
-  assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
+  assert.match(landing, /<CompactLeadCapture/);
   assert.match(landing, /href="#request-session"/);
-  assert.match(landing, /bookingIdentity/);
-  assert.match(landing, /closingPrimary/);
+  assert.match(landing, /capturePortrait/);
+  assert.match(landing, /closingSecondary/);
   assert.match(styles, /\.heroFacts/);
   assert.match(styles, /@media\(max-width:767px\)/);
   assert.match(styles, /:focus-visible/);

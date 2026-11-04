@@ -10,7 +10,7 @@ const voice=source("components/mandala-affirmation-voice.tsx");
 const recorder=source("components/mandala-local-voice-tracks.tsx");
 
 test("approved six Studio tabs lead the wide video preview on mobile",()=>{
-  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\{id:"editor",Icon:Scissors\},\{id:"phrases",Icon:Heart\}/);
+  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.previewStage \.quickVideoNav\{[\s\S]*?order:-1!important/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.previewStage \.hero\{[\s\S]*?aspect-ratio:16\/9!important/);
   assert.match(studio,/Как работают фразы поддержки/);

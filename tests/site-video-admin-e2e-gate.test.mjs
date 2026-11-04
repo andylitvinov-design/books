@@ -63,3 +63,18 @@ test('same-document anchor navigation reloads published snapshot without popstat
   assert.match(source,/assert\.deepEqual\(pageErrors,\[\],/);
   assert.doesNotMatch(source,/^[ \t]*pageErrors\s*=\s*\[\]/m); // no post-initialization reset.
 });
+
+// Publishing keeps the editor's client-side aria-live confirmation mounted.
+// Public route/tag invalidation is still mandatory; never publish a stale site.
+test('site-video publish invalidates public pages but does not remount active editor before feedback',()=>{
+  const actions=readFileSync('app/admin/videos/actions.js','utf8');
+  assert.match(actions,/revalidateTag\('holistic-house-published-site-videos'\)/);
+  assert.match(actions,/revalidatePath\(page\)/);
+  assert.match(actions,/if \(record\.slot === 'consultation'\) revalidatePath/);
+  assert.doesNotMatch(actions,/^\s*revalidatePath\('\/admin\/videos'\)/m);
+  const ui=readFileSync('components/site-video-manager.tsx','utf8');
+  assert.match(ui,/setRecords\(previous =>/);
+  assert.match(ui,/setNotice\(\{ key, kind: intent \}\)/);
+  assert.match(ui,/<div aria-live="polite" aria-atomic="true">/);
+  assert.match(source,/await expect\(target\.locator\('\[aria-live="polite"\]'\)\)\.toContainText\('Video published to the selected page\.'\)/);
+});

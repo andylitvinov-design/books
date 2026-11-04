@@ -1,0 +1,1037 @@
+{
+  "schemaVersion": "hh-mytube-scene-topic-ranking-v1",
+  "createdAt": "2026-11-03",
+  "sourceCatalog": "data/video-catalog/scene-taxonomy.json",
+  "taxonomyVersion": "mytube-content-taxonomy-4x4x4-v3",
+  "editorialStatus": "AI_proposed_visual_suitability_not_human_verified",
+  "policy": {
+    "scope": "approved_first_party_video_scenes_only",
+    "deduplicateBy": "sceneId",
+    "onePrimaryTopicPerScene": true,
+    "secondaryTopicsAllowed": true,
+    "topicScoreMeaning": "relative_editorial_visual_suitability_not_statistical_probability",
+    "scenarioVisualFitMeaning": "potential_fit_for_story_archetype_not_finished_video",
+    "noAutomaticPublicPromotion": true,
+    "originalRightsAndSourceMetadataRemainCanonical": true
+  },
+  "archetypeOrder": [
+    "journey",
+    "shelter",
+    "reframe",
+    "integration"
+  ],
+  "scenes": [
+    {
+      "sceneId": "golden-rain",
+      "topics": [
+        {
+          "topicId": "money-mindset",
+          "score": 94
+        },
+        {
+          "topicId": "money-blocks",
+          "score": 76
+        },
+        {
+          "topicId": "income-growth",
+          "score": 61
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 55,
+        "shelter": 62,
+        "reframe": 95,
+        "integration": 43
+      }
+    },
+    {
+      "sceneId": "cosmic-flow",
+      "topics": [
+        {
+          "topicId": "money-mindset",
+          "score": 88
+        },
+        {
+          "topicId": "income-growth",
+          "score": 82
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 52
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 72,
+        "shelter": 55,
+        "reframe": 93,
+        "integration": 49
+      }
+    },
+    {
+      "sceneId": "abundance-tree",
+      "topics": [
+        {
+          "topicId": "financial-stability",
+          "score": 95
+        },
+        {
+          "topicId": "money-mindset",
+          "score": 82
+        },
+        {
+          "topicId": "income-growth",
+          "score": 66
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 68,
+        "shelter": 94,
+        "reframe": 86,
+        "integration": 70
+      }
+    },
+    {
+      "sceneId": "opportunity-falls",
+      "topics": [
+        {
+          "topicId": "income-growth",
+          "score": 93
+        },
+        {
+          "topicId": "business-decisions",
+          "score": 71
+        },
+        {
+          "topicId": "goal-setting",
+          "score": 64
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 95,
+        "shelter": 55,
+        "reframe": 89,
+        "integration": 79
+      }
+    },
+    {
+      "sceneId": "money-magnet",
+      "topics": [
+        {
+          "topicId": "money-mindset",
+          "score": 93
+        },
+        {
+          "topicId": "income-growth",
+          "score": 84
+        },
+        {
+          "topicId": "self-confidence",
+          "score": 54
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 72,
+        "shelter": 60,
+        "reframe": 94,
+        "integration": 72
+      }
+    },
+    {
+      "sceneId": "path-to-goals",
+      "topics": [
+        {
+          "topicId": "goal-follow-through",
+          "score": 96
+        },
+        {
+          "topicId": "goal-setting",
+          "score": 90
+        },
+        {
+          "topicId": "procrastination",
+          "score": 65
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 97,
+        "shelter": 64,
+        "reframe": 77,
+        "integration": 96
+      }
+    },
+    {
+      "sceneId": "partners",
+      "topics": [
+        {
+          "topicId": "entrepreneurship",
+          "score": 89
+        },
+        {
+          "topicId": "leadership",
+          "score": 84
+        },
+        {
+          "topicId": "business-decisions",
+          "score": 75
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 79,
+        "shelter": 84,
+        "reframe": 68,
+        "integration": 94
+      }
+    },
+    {
+      "sceneId": "infinite-flow",
+      "topics": [
+        {
+          "topicId": "income-growth",
+          "score": 90
+        },
+        {
+          "topicId": "money-mindset",
+          "score": 87
+        },
+        {
+          "topicId": "financial-stability",
+          "score": 65
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 85,
+        "shelter": 62,
+        "reframe": 89,
+        "integration": 67
+      }
+    },
+    {
+      "sceneId": "golden-shield",
+      "topics": [
+        {
+          "topicId": "financial-stability",
+          "score": 97
+        },
+        {
+          "topicId": "money-blocks",
+          "score": 76
+        },
+        {
+          "topicId": "self-confidence",
+          "score": 58
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 61,
+        "shelter": 96,
+        "reframe": 86,
+        "integration": 55
+      }
+    },
+    {
+      "sceneId": "abundance-circle",
+      "topics": [
+        {
+          "topicId": "money-mindset",
+          "score": 94
+        },
+        {
+          "topicId": "financial-stability",
+          "score": 85
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 54
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 67,
+        "shelter": 92,
+        "reframe": 86,
+        "integration": 60
+      }
+    },
+    {
+      "sceneId": "life-gifts",
+      "topics": [
+        {
+          "topicId": "money-mindset",
+          "score": 83
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 76
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 65
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 60,
+        "shelter": 90,
+        "reframe": 93,
+        "integration": 58
+      }
+    },
+    {
+      "sceneId": "dreams",
+      "topics": [
+        {
+          "topicId": "goal-setting",
+          "score": 96
+        },
+        {
+          "topicId": "life-purpose",
+          "score": 85
+        },
+        {
+          "topicId": "motivation-drive",
+          "score": 76
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 96,
+        "shelter": 65,
+        "reframe": 94,
+        "integration": 88
+      }
+    },
+    {
+      "sceneId": "wealth-sunrise",
+      "topics": [
+        {
+          "topicId": "income-growth",
+          "score": 92
+        },
+        {
+          "topicId": "goal-setting",
+          "score": 82
+        },
+        {
+          "topicId": "morning-energy",
+          "score": 70
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 97,
+        "shelter": 70,
+        "reframe": 81,
+        "integration": 91
+      }
+    },
+    {
+      "sceneId": "golden-harvest",
+      "topics": [
+        {
+          "topicId": "financial-stability",
+          "score": 92
+        },
+        {
+          "topicId": "income-growth",
+          "score": 85
+        },
+        {
+          "topicId": "goal-follow-through",
+          "score": 74
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 82,
+        "shelter": 94,
+        "reframe": 86,
+        "integration": 89
+      }
+    },
+    {
+      "sceneId": "radiant-portal",
+      "topics": [
+        {
+          "topicId": "business-decisions",
+          "score": 91
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 89
+        },
+        {
+          "topicId": "goal-setting",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 97,
+        "shelter": 62,
+        "reframe": 96,
+        "integration": 87
+      }
+    },
+    {
+      "sceneId": "prosperity-coast",
+      "topics": [
+        {
+          "topicId": "financial-stability",
+          "score": 88
+        },
+        {
+          "topicId": "money-mindset",
+          "score": 85
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 70
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 74,
+        "shelter": 95,
+        "reframe": 83,
+        "integration": 65
+      }
+    },
+    {
+      "sceneId": "solar-surge",
+      "topics": [
+        {
+          "topicId": "morning-energy",
+          "score": 98
+        },
+        {
+          "topicId": "low-energy",
+          "score": 88
+        },
+        {
+          "topicId": "motivation-drive",
+          "score": 84
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 94,
+        "shelter": 60,
+        "reframe": 77,
+        "integration": 95
+      }
+    },
+    {
+      "sceneId": "ocean-pulse",
+      "topics": [
+        {
+          "topicId": "breathing-practices",
+          "score": 97
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 87
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 65,
+        "shelter": 97,
+        "reframe": 82,
+        "integration": 65
+      }
+    },
+    {
+      "sceneId": "sunbeam-flow",
+      "topics": [
+        {
+          "topicId": "mental-clarity",
+          "score": 96
+        },
+        {
+          "topicId": "morning-energy",
+          "score": 85
+        },
+        {
+          "topicId": "self-confidence",
+          "score": 70
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 85,
+        "shelter": 75,
+        "reframe": 90,
+        "integration": 89
+      }
+    },
+    {
+      "sceneId": "river-power",
+      "topics": [
+        {
+          "topicId": "low-energy",
+          "score": 94
+        },
+        {
+          "topicId": "motivation-drive",
+          "score": 89
+        },
+        {
+          "topicId": "recovery-after-load",
+          "score": 68
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 96,
+        "shelter": 69,
+        "reframe": 78,
+        "integration": 94
+      }
+    },
+    {
+      "sceneId": "desert-light",
+      "topics": [
+        {
+          "topicId": "mental-clarity",
+          "score": 91
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 82
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 66
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 88,
+        "shelter": 79,
+        "reframe": 92,
+        "integration": 83
+      }
+    },
+    {
+      "sceneId": "mountain-air",
+      "topics": [
+        {
+          "topicId": "breathing-practices",
+          "score": 95
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 85
+        },
+        {
+          "topicId": "body-awareness",
+          "score": 75
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 81,
+        "shelter": 94,
+        "reframe": 85,
+        "integration": 79
+      }
+    },
+    {
+      "sceneId": "wildflower-dance",
+      "topics": [
+        {
+          "topicId": "personal-growth",
+          "score": 91
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 84
+        },
+        {
+          "topicId": "motivation-drive",
+          "score": 68
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 85,
+        "shelter": 90,
+        "reframe": 84,
+        "integration": 75
+      }
+    },
+    {
+      "sceneId": "fern-awakening",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 93
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 90
+        },
+        {
+          "topicId": "morning-energy",
+          "score": 75
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 94,
+        "shelter": 86,
+        "reframe": 89,
+        "integration": 88
+      }
+    },
+    {
+      "sceneId": "coastal-freedom",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 89
+        },
+        {
+          "topicId": "self-confidence",
+          "score": 86
+        },
+        {
+          "topicId": "recovery-after-load",
+          "score": 69
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 96,
+        "shelter": 78,
+        "reframe": 88,
+        "integration": 91
+      }
+    },
+    {
+      "sceneId": "lone-tree",
+      "topics": [
+        {
+          "topicId": "self-confidence",
+          "score": 91
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 88
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 79
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 71,
+        "shelter": 98,
+        "reframe": 85,
+        "integration": 72
+      }
+    },
+    {
+      "sceneId": "meadow-morning",
+      "topics": [
+        {
+          "topicId": "morning-energy",
+          "score": 94
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 83
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 75
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 89,
+        "shelter": 97,
+        "reframe": 84,
+        "integration": 89
+      }
+    },
+    {
+      "sceneId": "calm-sea",
+      "topics": [
+        {
+          "topicId": "stress-relief",
+          "score": 97
+        },
+        {
+          "topicId": "breathing-practices",
+          "score": 92
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 89
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 60,
+        "shelter": 98,
+        "reframe": 87,
+        "integration": 62
+      }
+    },
+    {
+      "sceneId": "morning-dew",
+      "topics": [
+        {
+          "topicId": "recovery-after-load",
+          "score": 94
+        },
+        {
+          "topicId": "morning-energy",
+          "score": 85
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 74
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 73,
+        "shelter": 96,
+        "reframe": 82,
+        "integration": 77
+      }
+    },
+    {
+      "sceneId": "mossy-stream",
+      "topics": [
+        {
+          "topicId": "stress-relief",
+          "score": 94
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 89
+        },
+        {
+          "topicId": "body-awareness",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 70,
+        "shelter": 98,
+        "reframe": 84,
+        "integration": 68
+      }
+    },
+    {
+      "sceneId": "gentle-falls",
+      "topics": [
+        {
+          "topicId": "muscle-relaxation",
+          "score": 96
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 90
+        },
+        {
+          "topicId": "breathing-practices",
+          "score": 72
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 70,
+        "shelter": 97,
+        "reframe": 87,
+        "integration": 66
+      }
+    },
+    {
+      "sceneId": "sea-breeze",
+      "topics": [
+        {
+          "topicId": "breathing-practices",
+          "score": 96
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 86
+        },
+        {
+          "topicId": "body-awareness",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 74,
+        "shelter": 96,
+        "reframe": 80,
+        "integration": 73
+      }
+    },
+    {
+      "sceneId": "lake-mist-dawn",
+      "topics": [
+        {
+          "topicId": "stress-relief",
+          "score": 93
+        },
+        {
+          "topicId": "evening-fatigue",
+          "score": 84
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 82
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 68,
+        "shelter": 98,
+        "reframe": 87,
+        "integration": 61
+      }
+    },
+    {
+      "sceneId": "flower-softening",
+      "topics": [
+        {
+          "topicId": "self-acceptance",
+          "score": 90
+        },
+        {
+          "topicId": "muscle-relaxation",
+          "score": 87
+        },
+        {
+          "topicId": "emotional-intimacy",
+          "score": 77
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 66,
+        "shelter": 96,
+        "reframe": 92,
+        "integration": 71
+      }
+    },
+    {
+      "sceneId": "petal-hope",
+      "topics": [
+        {
+          "topicId": "personal-growth",
+          "score": 90
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 82
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 80
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 92,
+        "shelter": 85,
+        "reframe": 93,
+        "integration": 85
+      }
+    },
+    {
+      "sceneId": "ocean-release",
+      "topics": [
+        {
+          "topicId": "stress-relief",
+          "score": 97
+        },
+        {
+          "topicId": "muscle-relaxation",
+          "score": 89
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 79
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 87,
+        "shelter": 95,
+        "reframe": 94,
+        "integration": 83
+      }
+    },
+    {
+      "sceneId": "shore-breath",
+      "topics": [
+        {
+          "topicId": "breathing-practices",
+          "score": 98
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 85
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 80
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 74,
+        "shelter": 95,
+        "reframe": 84,
+        "integration": 73
+      }
+    },
+    {
+      "sceneId": "river-grounding",
+      "topics": [
+        {
+          "topicId": "calm-presence",
+          "score": 95
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 91
+        },
+        {
+          "topicId": "body-awareness",
+          "score": 84
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 72,
+        "shelter": 98,
+        "reframe": 84,
+        "integration": 75
+      }
+    },
+    {
+      "sceneId": "forest-renewal",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 96
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 93
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 93,
+        "shelter": 88,
+        "reframe": 90,
+        "integration": 88
+      }
+    },
+    {
+      "sceneId": "soft-horizon",
+      "topics": [
+        {
+          "topicId": "goal-setting",
+          "score": 95
+        },
+        {
+          "topicId": "life-purpose",
+          "score": 88
+        },
+        {
+          "topicId": "mental-clarity",
+          "score": 80
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 97,
+        "shelter": 69,
+        "reframe": 92,
+        "integration": 90
+      }
+    },
+    {
+      "sceneId": "heart-flow",
+      "topics": [
+        {
+          "topicId": "emotional-intimacy",
+          "score": 97
+        },
+        {
+          "topicId": "rebuilding-trust",
+          "score": 81
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 70
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 82,
+        "shelter": 95,
+        "reframe": 89,
+        "integration": 77
+      }
+    },
+    {
+      "sceneId": "clear-morning",
+      "topics": [
+        {
+          "topicId": "mental-clarity",
+          "score": 97
+        },
+        {
+          "topicId": "morning-energy",
+          "score": 92
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 65
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 83,
+        "shelter": 86,
+        "reframe": 91,
+        "integration": 91
+      }
+    },
+    {
+      "sceneId": "still-water",
+      "topics": [
+        {
+          "topicId": "calm-presence",
+          "score": 96
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 91
+        },
+        {
+          "topicId": "evening-fatigue",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 66,
+        "shelter": 98,
+        "reframe": 87,
+        "integration": 61
+      }
+    },
+    {
+      "sceneId": "garden-acceptance",
+      "topics": [
+        {
+          "topicId": "self-acceptance",
+          "score": 97
+        },
+        {
+          "topicId": "emotional-intimacy",
+          "score": 94
+        },
+        {
+          "topicId": "ready-relationship",
+          "score": 81
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 75,
+        "shelter": 98,
+        "reframe": 91,
+        "integration": 75
+      }
+    }
+  ]
+}
