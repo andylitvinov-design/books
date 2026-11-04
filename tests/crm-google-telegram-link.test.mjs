@@ -30,7 +30,7 @@ test('server links only account-owned verified Telegram and bound Google account
  assert.match(source,/delete from app_private\.crm_google_telegram_links where account_id=\$1/)
 })
 test('identity mapping uses RLS, authenticated grant and revocation on re-pair',()=>{
- const sql=read('supabase/migrations/20261104165000_hh_crm_verified_google_telegram_link.sql')
+ const sql=read('supabase/migrations/20261104165824_hh_crm_verified_google_telegram_link.sql')
  assert.match(sql,/FORCE ROW LEVEL SECURITY/)
  assert.match(sql,/ON DELETE CASCADE/)
  assert.match(sql,/UNIQUE\(crm_bot_hash,crm_user_hash\)/)
