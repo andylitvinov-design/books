@@ -51,7 +51,7 @@ export function applyPrBrowserBudget(mode, eventName, impact, headRef = '') {
   if (mode === 'mandala' && eventName === 'pull_request') {
     // Scenario source review changes require real browser acceptance rather
     // than the generic PR budget's source-only classification.
-    if (headRef === 'feat/video-120-scenario-media-bindings-20261102')
+    if (headRef === 'feat/video-120-scenario-media-bindings-20261102' || headRef === 'feat/video-owner-review-20261102')
       return { ...impact, browser: true };
     return { ...impact, browser: false };
   }
