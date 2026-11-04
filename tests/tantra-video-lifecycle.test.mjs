@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { verifyNativeWebKitRecovery } from '../lib/tantra/native-webkit-recovery-proof.mjs';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -554,4 +555,40 @@ test('real WebKit browser acceptance requires new presented decoded frames after
   assert.match(functionBody,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/,'the frame must match the active media clock');
   assert.match(functionBody,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/,'paused, stalled-seek or errored media cannot pass');
   assert.doesNotMatch(functionBody,/toBeGreaterThan\(initial\.frames\)/,'GStreamer resets this counter on a real decoder rebuild');
+});
+
+// Timeline order is more precise than millisecond timestamps. A real seeked
+// and the following user-activated native Play can be stamped at the SAME ms.
+test('WebKit recovery proof accepts genuine same-ms seek→play only with later real frames',()=>{
+ const src=videos[0].src;
+ const before={time:31.447,presentedFrame:{at:14175}};
+ const player={currentSrc:src,muted:true,paused:false,seeking:false,ended:false,error:null};
+ const ev=(type,at,more={})=>({type,at,source:src,open:true,...more});
+ const sequence=[
+   ev('js-play',14263),ev('js-load',15980),ev('loadedmetadata',17076),
+   ev('seeked',17554),ev('js-play',17554),ev('playing',17558),
+   ev('presented-frame',17980,{presentedFrame:{mediaTime:31.8728}}),
+ ];
+ const accepted=verifyNativeWebKitRecovery(player,before,sequence);
+ assert.deepEqual(accepted,{
+   oneReload:true,firstPlay:true,metadata:true,seeked:true,
+   resumed:true,playing:true,realFrame:true,sameSource:true,muted:true,live:true,
+ });
+ const withoutFrame=sequence.slice(0,-1);
+ assert.equal(verifyNativeWebKitRecovery(player,before,withoutFrame).realFrame,false,
+   'No decoded frame must NEVER certify a WebKit resume');
+ const reversed=[...sequence];[reversed[3],reversed[4]]=[reversed[4],reversed[3]];
+ assert.equal(verifyNativeWebKitRecovery(player,before,reversed).resumed,false,
+   'Same-ms play BEFORE seeked does not establish recovered playback');
+ const duplicate=[...sequence,ev('js-load',18400)];
+ assert.equal(verifyNativeWebKitRecovery(player,before,duplicate).oneReload,false,
+   'No second source reload/retry may pass');
+ const stale=[...sequence.slice(0,-1),ev('presented-frame',17980,
+   {presentedFrame:{mediaTime:31.447}})];
+ assert.equal(verifyNativeWebKitRecovery(player,before,stale).realFrame,false,
+   'A stationary or replayed frame is insufficient');
+ const wrong=[...sequence.slice(0,-1),ev('presented-frame',17980,
+   {source:videos[1].src,presentedFrame:{mediaTime:31.8728}})];
+ assert.equal(verifyNativeWebKitRecovery(player,before,wrong).realFrame,false,
+   'A frame from a different MP4 cannot authorize source identity');
 });

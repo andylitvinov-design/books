@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, mkdir, writeFile, open } from 'node:fs/promises';
 import { chromium, webkit, expect } from '@playwright/test';
+import { verifyNativeWebKitRecovery } from '../lib/tantra/native-webkit-recovery-proof.mjs';
 
 // Read-only public Tantra checks. No form submission, account data or live-site default.
 const origin = process.env.TANTRA_ORIGIN || 'http://127.0.0.1:3123';
@@ -257,34 +258,7 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
       assert.equal(sample.playRequest.state,'rejected');
       assert.equal(sample.playRequest.error.name,'AbortError',
         'Only a native source reload may abort the original user Play promise');
-      const proof=await video.evaluate((el,before)=>{
-        const events=(window.__tantraNativeTimeline??[])
-          .filter(event=>event.source===el.currentSrc && event.open===true &&
-            Number.isFinite(event.at) && event.at>(before.presentedFrame?.at??-1));
-        const firstPlay=events.find(event=>event.type==='js-play');
-        const reloads=events.filter(event=>event.type==='js-load' &&
-          firstPlay && event.at>firstPlay.at);
-        const reload=reloads[0];
-        const metadata=events.find(event=>event.type==='loadedmetadata' &&
-          reload && event.at>reload.at);
-        const seeked=events.find(event=>event.type==='seeked' &&
-          metadata && event.at>metadata.at);
-        const resumed=events.find(event=>event.type==='js-play' &&
-          seeked && event.at>seeked.at);
-        const playing=events.find(event=>event.type==='playing' &&
-          resumed && event.at>resumed.at);
-        const frame=events.find(event=>event.type==='presented-frame' &&
-          playing && event.at>playing.at &&
-          Number.isFinite(event.presentedFrame?.mediaTime) &&
-          event.presentedFrame.mediaTime>before.time+0.35 &&
-          event.currentSrc===undefined &&
-          event.source===el.currentSrc);
-        return {oneReload:reloads.length===1,firstPlay:!!firstPlay,
-          metadata:!!metadata,seeked:!!seeked,resumed:!!resumed,
-          playing:!!playing,realFrame:!!frame,
-          sameSource:events.every(event=>event.source===el.currentSrc),
-          muted:el.muted,live:!el.paused&&!el.seeking&&!el.ended&&!el.error};
-      },initial);
+      const proof=await video.evaluate(verifyNativeWebKitRecovery,initial);
       observation.recoveryProof=proof;
       assert.deepEqual(proof,{
         oneReload:true,firstPlay:true,metadata:true,seeked:true,
