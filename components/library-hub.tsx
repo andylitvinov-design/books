@@ -128,6 +128,19 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
       image: "/images/holistic-house/books-library.webp",
     },
     {
+      id: "library-temple-attunements",
+      title: locale === "ru" ? "Настройки древних традиций" : locale === "es" ? "Sintonizaciones de tradiciones antiguas" : "Ancient tradition attunements",
+      subtitle: locale === "ru" ? "Отдельная картотека · божества и места силы" : locale === "es" ? "Fichas por tradición y deidad" : "Separate card index · deities and places",
+      description: locale === "ru"
+        ? "Майя, Греция, Египет и другие традиции: фильтр по культуре, каналу или божеству; отдельные оригинальные стихи, контекст и подтверждённые иллюстрации."
+        : locale === "es"
+          ? "Busca por tradición, deidad, canal y lugar. Versos originales con fuentes e imágenes comprobadas cuando están disponibles."
+          : "Browse Maya, Greek, Egyptian and other traditions by deity, channel and place. Original author-written verses, sources and verified images.",
+      href: `/${locale}/temple-channels`,
+      actionLabel: text.open,
+      image: "/images/holistic-house/hero-olive-incense.webp",
+    },
+    {
       id: "library-dao-hexagrams",
       title: locale === "ru" ? "Даосское гадание · 64 гексаграммы" : locale === "es" ? "Oráculo taoísta · 64 hexagramas" : "Daoist divination · 64 hexagrams",
       subtitle: locale === "ru" ? "Случайная карта или выбор номера" : locale === "es" ? "Pregunta o elige un número" : "Draw a card or choose a number",
