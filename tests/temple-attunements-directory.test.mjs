@@ -22,7 +22,7 @@ test("temple hierarchy keeps traditions, unique deity channels and separate sour
     assert.ok(item.source.title.length > 5);
     assert.doesNotMatch(JSON.stringify(item), /https?:\/\/(?:docs|drive)\.google\.com/);
     for (const photo of item.photos) {
-      assert.match(photo.src, /^\/library\/temple-channels\/[a-z0-9-]+\.jpg$/);
+      assert.match(photo.src, /^\/library\/temple-channels\/(?:expanded\/)?[a-z0-9-]+\.(?:jpg|png)$/);
       assert.ok(existsSync(join(process.cwd(), "public", photo.src)), "missing original photograph " + photo.src);
     }
   }
@@ -63,6 +63,8 @@ test("the second manuscript contributes 39 independent attunements with original
   const { expandedTempleAttunements } = await import("../data/temple-attunements-expansion.mjs");
   assert.equal(expandedTempleAttunements.length, 39);
   assert.equal(templeAttunements.length, 54);
+  assert.equal(expandedTempleAttunements.filter((entry) => entry.photos.length > 0).length, 25);
+  assert.equal(expandedTempleAttunements.filter((entry) => entry.photos.length === 0).length, 14);
   assert.ok(templeTraditions.reduce((sum, t) => sum + t.channels.length, 0) >= 40);
   const originalIds = new Set(templeAttunements.map((entry) => entry.id));
   assert.equal(originalIds.size, 54);
@@ -71,7 +73,13 @@ test("the second manuscript contributes 39 independent attunements with original
     assert.ok(entry.textRu.length >= 48);
     assert.ok(getTempleChannel(entry.traditionId, entry.channelId));
     assert.equal(entry.place.verification, "author-described");
-    assert.deepEqual(entry.photos, [], "no unverified photo may be silently substituted");
+    for (const photo of entry.photos) {
+      assert.match(photo.src, /^\/library\/temple-channels\/expanded\/[a-z0-9-]+\.(?:jpg|png)$/);
+      const bytes = readFileSync(join(process.cwd(), "public", photo.src));
+      assert.ok(bytes.length > 8_000, "photo must be a real manuscript image");
+      assert.ok(bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) ||
+        bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+    }
   }
 });
 
