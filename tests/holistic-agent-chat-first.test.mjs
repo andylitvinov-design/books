@@ -60,8 +60,8 @@ test('RU EN ES greetings answer without a paid model; focused iPhone editor fill
  }
  const hub=source('components/app/messages-orders-clients.jsx')
  const navCss=source('app/unified-mobile-dock.css')
- assert.ok(hub.includes('const limit=editing?bottom:Math.min(bottom'))
- assert.ok(navCss.includes('data-chat-editing="true"'))
+ assert.ok(hub.includes('const limit=keyboard?bottom:Math.min(bottom'))
+ assert.ok(navCss.includes('data-keyboard-open="true"'))
  const css=source('components/holistic-agent-chat.module.css')
  assert.ok(css.includes('.startActions button'))
  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))

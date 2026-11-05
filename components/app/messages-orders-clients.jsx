@@ -223,8 +223,11 @@ export default function MessagesOrdersClients({locale='en',children}){
       const active=document.activeElement
       const editing=Boolean(hub.querySelector('[data-hh-messenger-ai]')?.contains(active))&&
         Boolean(active?.matches?.('textarea,input:not([type="file"]),[contenteditable="true"]'))
-      const keyboard=editing&&(window.innerHeight-bottom>115||
-        (visual?.height||window.innerHeight)<window.innerHeight*0.75)
+      // Share iOS keyboard visibility with the unified dock and handle Safari animation.
+      const sharedKeyboard=document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='true'
+      const visualHeight=visual?.height||window.innerHeight
+      const keyboard=editing&&(sharedKeyboard||window.innerHeight-bottom>92||
+        visualHeight<window.innerHeight*0.83)
       hub.dataset.chatEditing=editing?'true':'false'
       hub.dataset.keyboardOpen=keyboard?'true':'false'
       const sharedDock=document.querySelector('[data-hh-unified-dock]')
@@ -232,8 +235,8 @@ export default function MessagesOrdersClients({locale='en',children}){
       const dock=[sharedDock,fallbackDock].find(el=>el&&getComputedStyle(el).display!=='none'&&
         el.getBoundingClientRect().height>0)
       const navTop=dock?.getBoundingClientRect().top
-      // A focused composer owns the entire visual viewport, without double subtracting the dock.
-      const limit=editing?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
+      // Reserve space for a VISIBLE dock only: no phantom 88px gap below input.
+      const limit=keyboard?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom)
       hub.style.setProperty('--hh-messenger-top',top+'px')
       hub.style.setProperty('--hh-messenger-height',Math.max(1,Math.floor(limit-top-4))+'px')
     }

@@ -127,7 +127,7 @@ test("center AI opens the existing Messenger agent; Video Director is a separate
  assert.match(privateMessages,/data-chat-top-tabs/);
  assert.match(privateMessages,/id="hh-ai-panel"/);
  const assistant=read("components/app/messenger-ai-workspace.jsx");
- assert.match(assistant,/holistic-support\/mandala#video-director-chat/);
+ assert.doesNotMatch(assistant,/holistic-support\/mandala#video-director-chat/);
  assert.match(assistant,/HolisticAgentChat/);
  assert.match(privateMessages,/role="tab"/);
 });
@@ -186,7 +186,8 @@ test("central AI navigates to the single Messenger, original video deep link rem
  const agent=read("components/app/messenger-ai-workspace.jsx");
  assert.match(dock,/data-hh-unified-dock/);
  assert.match(dock,/data-video-director-chat-details/);
- assert.match(agent,/holistic-support\/mandala#video-director-chat/);
+ assert.doesNotMatch(agent,/holistic-support\/mandala#video-director-chat/);
+ assert.match(agent,/HolisticAgentChat/);
  assert.doesNotMatch(dock,/onClick=\{id === "ai" \? \(\) =>/);
 });
 
