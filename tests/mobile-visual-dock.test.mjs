@@ -21,8 +21,8 @@ test('Messages and protected Practice share one global viewport-aware dock',()=>
  const messageCss=read('app/[locale]/app/messages/messages-page.css')
  const route=read('app/[locale]/app/messages/page.tsx')
  assert.ok(!route.includes('MessagesBottomNavigation'))
- for(const token of ['visualDockBottomCorrection','visualKeyboardOpen','visualViewport',
-   'ResizeObserver','orientationchange','pageshow','--hh-unified-viewport-inset',
+ for(const token of ['visualKeyboardOpen','visualViewport',
+   'ResizeObserver','orientationchange','pageshow',
    'messengerPage.dataset.hhMobileKeyboardOpen'])
    assert.ok(nav.includes(token),token)
  assert.ok(css.includes('--hh-unified-nav-height'))
@@ -58,15 +58,20 @@ test('unified six-item dock uses measured visual edge without double Safari view
  const dock=read('components/unified-mobile-dock.tsx')
  const css=read('components/unified-mobile-dock.module.css')
  const reservation=read('app/unified-mobile-dock.css')
- assert.match(dock,/visualDockBottomCorrection/)
+ assert.doesNotMatch(dock,/visualDockBottomCorrection/)
+ assert.doesNotMatch(dock,/--hh-unified-viewport-inset/)
+ assert.doesNotMatch(dock,/addEventListener\("scroll", update/)
  assert.match(dock,/visualKeyboardOpen/)
  assert.match(dock,/getBoundingClientRect\(\)/)
  assert.match(dock,/visualViewport/)
  assert.match(dock,/data-keyboard-open/)
  assert.match(dock,/orientationchange/)
- assert.match(css,/bottom:var\(--hh-unified-viewport-inset,0px\)/)
+ // Safari itself anchors fixed UI at the visual edge; JS must not add another inset.
+ assert.match(css,/position:fixed;z-index:58;bottom:0;/)
+ assert.match(css,/safe-area-inset-bottom/)
+ assert.doesNotMatch(css,/--hh-unified-viewport-inset/)
  assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/)
- assert.doesNotMatch(reservation,/100vh\s*-\s*100dvh/)
+ assert.doesNotMatch(reservation,/100vh\s*-\s*100dvh|--hh-unified-viewport-inset/)
  assert.match(reservation,/--hh-unified-nav-height/)
  assert.match(reservation,/data-keyboard-open="true"/)
 })
