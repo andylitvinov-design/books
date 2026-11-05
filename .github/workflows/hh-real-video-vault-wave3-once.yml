@@ -26,10 +26,16 @@ jobs:
           test -f data/video-catalog/dareful-verified-candidate-wave2-20261101.json
           node --check scripts/review-dareful-cinematic-wave3-20261105.mjs
           node --test tests/cinematic-hd-footage-wave3-contract.test.mjs
-      - name: Inspect real moving licensed video with free local FFmpeg
+      - name: Install free system FFmpeg and FFprobe if missing
         run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
           command -v ffmpeg
           command -v ffprobe
+      - name: Inspect real moving licensed video with free local FFmpeg
+        run: |
           node scripts/review-dareful-cinematic-wave3-20261105.mjs
       - name: Verify no release or public MP4 update
         run: |
