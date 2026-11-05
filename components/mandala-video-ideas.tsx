@@ -12,7 +12,7 @@ import css from "./mandala-video-ideas.module.css";
 type Axis={id:string;label:string;description:string};
 type Cluster={id:string;label:string};
 type Props={locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
- canGenerate:boolean;generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
+ generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void};
 const wording={
  ru:{title:"Моё состояние и желание",current:"Состояние сейчас",desired:"Желаемое состояние",energy:"Энергия сейчас",scale:"по 10-балльной шкале",want:"Что бы мне хотелось",hint:"Выберите одно или несколько направлений",phrases:"Ваши фразы",regenerate:"Новые варианты",clear:"Очистить",own:"Добавить свою фразу",edit:"Изменить фразу",save:"Сохранить фразу",preview:"Посмотреть фразу в видео",down:"Переместить вниз",create:"Сгенерировать видео",empty:"Выберите направление, чтобы получить фразы",privacy:"Фразы подбираются автоматически, без передачи ответов внешним сервисам."},
@@ -20,7 +20,7 @@ const wording={
  es:{title:"Mi estado y deseo",current:"Cómo me siento ahora",desired:"Cómo quiero sentirme",energy:"Energía actual",scale:"en una escala de 0 a 10",want:"Qué me gustaría",hint:"Elige una o varias direcciones",phrases:"Tus frases",regenerate:"Nuevas opciones",clear:"Borrar",own:"Escribir mi propia frase",edit:"Editar frase",save:"Guardar frase",preview:"Ver frase en vídeo",down:"Mover abajo",create:"Generar vídeo",empty:"Elige una dirección para las frases",privacy:"Las frases cambian automáticamente sin enviar tus respuestas a proveedores."}
 } as const;
 const allFive=[0,1,2,3,4];
-export function MandalaVideoIdeas({locale,theme,active,disabled,settings,canGenerate,generating,
+export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate}:Props){
  const t=wording[locale];
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
@@ -150,7 +150,7 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,canGene
        disabled={disabled} onClick={()=>{setDraft(lines[4]);setEditing(4)}}>
        <Plus size={18} aria-hidden="true"/>{t.own}</button>:null}
    </section>
-   <button type="button" className={css.create} data-video-ideas-create disabled={disabled||!canGenerate}
+   <button type="button" className={css.create} data-video-ideas-create disabled={disabled}
      onClick={onCreate}><Play size={23} fill="currentColor" aria-hidden="true"/>
       {generating?t.create+"…":t.create}<span aria-hidden="true">→</span>
    </button>

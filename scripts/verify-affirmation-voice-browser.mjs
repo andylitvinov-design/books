@@ -169,25 +169,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // On Safari an early click can be swallowed and leave Montage hidden.
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       phase(engine,"editor-ready");
-      // A real visitor sets duration using Montage → Music, then moves to
-      // Phrases. The retired Video quick-audio disclosure is intentionally
-      // hidden by the canonical six-workspace layout: do not bypass its CSS.
+      // The current Montage screen is preference-first: the old hidden
+      // [data-video-montage-settings] disclosure is NOT the visible panel.
+      // Set real 10s duration through its live labelled dropdown; then move
+      // to Ideas. Preserve true voice/MP4 encoding and all consent checks.
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      const montageSettings=page.locator('[data-video-montage-settings]');
+      const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await settingsTab.waitFor({state:"visible",timeout:25000});
+      await expect(settingsTab).toHaveAttribute("aria-pressed","true");
+      const montageSettings=page.locator('[data-video-montage-preferences]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      const durationSelect=montageSettings.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
