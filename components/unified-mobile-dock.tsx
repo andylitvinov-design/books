@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { UNIFIED_DOCK_IDS, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
+import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
 import { visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
@@ -26,6 +26,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
   const localeMatch = pathname.match(/^\/(ru|en|es)(?:\/|$)/);
   const locale = (localeMatch?.[1] || initialLocale) as PublicLocale;
   const visible = isUnifiedMobileDockPath(pathname);
+  const homeRoute = isUnifiedMobileDockHomePath(pathname);
   const navRef = useRef<HTMLElement>(null);
   const [hash, setHash] = useState("");
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -128,7 +129,8 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
 
   if (!visible) return null;
   const active = unifiedMobileDockActive(pathname, hash);
-  return <nav ref={navRef} data-hh-unified-dock data-keyboard-open={keyboardOpen || undefined}
+  return <nav ref={navRef} data-hh-unified-dock data-hh-home-route={homeRoute || undefined}
+    data-keyboard-open={keyboardOpen || undefined}
     className={styles.dock} aria-label={
       locale === "ru" ? "Нижнее меню Holistic House" :
       locale === "es" ? "Menú inferior Holistic House" : "Holistic House bottom menu"}>

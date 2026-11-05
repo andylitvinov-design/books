@@ -5,7 +5,7 @@ body:has([data-hh-unified-dock]) [data-mandala-support-bottom-nav],
 body:has([data-hh-unified-dock]) .hh-mobile-app-nav,
 body:has([data-hh-unified-dock]) .hh-practice-inner-dock,
 body:has([data-hh-unified-dock]) [data-legacy-practice-bottom-nav],
-body:has([data-hh-unified-dock]) .mobile-bottom-navigation{display:none!important}
+body:has([data-hh-unified-dock]:not([data-hh-home-route])) .mobile-bottom-navigation{display:none!important}
 body:has([data-hh-unified-dock]) [data-mytube-page],
 body:has([data-hh-unified-dock]) [data-mandala-meditation-page],
 body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
@@ -49,3 +49,14 @@ body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
 /* Keep AI chat mounted so switching Orders/Clients does not discard a draft.
    Explicitly hide the inactive panel even under legacy CSS overrides. */
 .hh-app.hh-messages-page [data-hh-messenger-ai][hidden]{display:none!important}
+
+/* Marketing site retains its seven discovery links in the browser. Installed
+   standalone Holistic House uses the SAME six-item dock as Practice, Studio,
+   Messenger, Master and Profile — including at /, /en, /ru and /es. */
+@media (display-mode: standalone){
+ body:has([data-hh-unified-dock][data-hh-home-route]) .mobile-bottom-navigation{display:none!important}
+ body:has([data-hh-unified-dock][data-hh-home-route]){padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)}
+}
+@media not (display-mode: standalone){
+ [data-hh-unified-dock][data-hh-home-route]{display:none!important}
+}
