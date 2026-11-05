@@ -180,11 +180,19 @@ jobs:
       - name: Mobile Dock geometry and iPhone keyboard contracts
         if: ${{ steps.dock-scope.outputs.dock_only == 'true' }}
         run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       - run: npm ci --no-audit --no-fund
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       # Keep IA-owned auth, encryption, ownership and navigation contracts on
       # every non-dock PR. Only the exact five-file dock scope uses focused tests;
       # all ambiguous or mixed changes retain the complete IA release suite.
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
+        with:
+          stage: materialize
       - name: IA security, ownership and navigation contracts
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-

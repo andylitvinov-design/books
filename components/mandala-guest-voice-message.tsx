@@ -106,13 +106,13 @@ export function MandalaGuestVoiceMessage({locale}:{locale:Locale}){
   try{await navigator.share({files:[file],title:ui.title});}
   catch(e){if(!(e instanceof DOMException&&e.name==="AbortError"))setMessage(ui.copyFail);}
  }
- return <div className={styles.page} data-guest-voice-message>
+ return <div className={styles.page} data-guest-voice-message data-guest-voice-hydrated={origin?"true":"false"}>
   <div className={styles.layout}>
    <header className={styles.hero}><h1>{ui.title}</h1><p>{ui.intro}</p></header>
    <section className={styles.card}>
     <h2>{ui.invite}</h2>
     <label className={styles.field}>{ui.hint}
-     <textarea rows={2} value={phrase} maxLength={200} placeholder={ui.example}
+     <textarea rows={2} value={phrase} maxLength={200} disabled={!origin} placeholder={ui.example}
       onChange={e=>setPhrase(e.currentTarget.value)} data-guest-message-phrase/>
     </label>
     <div className={styles.actions}><button className={styles.button} type="button"

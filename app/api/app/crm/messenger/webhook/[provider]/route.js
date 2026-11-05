@@ -73,7 +73,8 @@ export async function POST(request,{params}){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
-              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch(error){
+              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale,
+                webAppUrl:intake.webAppUrl||null})}catch(error){
               // Never repeat a prompt after an unknown Telegram result.
               // Log only allowlisted reason and server-secret HMAC correlation.
               const evidence=telegramPromptFailureEvidence(event.eventId,error,

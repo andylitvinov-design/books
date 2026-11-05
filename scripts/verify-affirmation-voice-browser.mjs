@@ -72,12 +72,15 @@ async function verifyGuestVoiceConsent(browser,locale){
     await page.goto(BASE+"/"+locale+"/holistic-support/voice-message",{
       waitUntil:"domcontentloaded",timeout:90000,
     });
-    await expect(page.locator("[data-guest-voice-message]")).toBeVisible({timeout:25000});
+    const guest=page.locator("[data-guest-voice-message]");
+    await expect(guest).toBeVisible({timeout:25000});
+    await expect(guest).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
     const start=page.locator("[data-guest-message-start]");
     await expect(start).toBeDisabled();
     await expect(page.locator("[data-guest-message-consent]")).not.toBeChecked();
     const phrase=locale==="ru"?"Я рядом и поддерживаю тебя.":"I am here to support you.";
     await page.locator("[data-guest-message-phrase]").fill(phrase);
+    await expect(page.locator("[data-guest-message-phrase]")).toHaveValue(phrase);
     const invitation=page.locator("[data-guest-message-link]");
     await expect(invitation).toBeVisible();
     const uri=new URL(await invitation.inputValue());
@@ -88,6 +91,7 @@ async function verifyGuestVoiceConsent(browser,locale){
     const recipient=await context.newPage();
     try{
       await recipient.goto(uri.href,{waitUntil:"domcontentloaded",timeout:90000});
+      await expect(recipient.locator("[data-guest-voice-message]")).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
       await expect(recipient.locator("[data-guest-message-phrase]")).toHaveValue(phrase,{timeout:15000});
       await expect(recipient.locator("[data-guest-message-consent]")).not.toBeChecked();
       await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();

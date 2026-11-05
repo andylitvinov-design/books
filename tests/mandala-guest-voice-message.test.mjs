@@ -14,6 +14,8 @@ test("guest voice messages are real recordings, not paid or cloned provider outp
    "URL.revokeObjectURL(","new File(chunks","navigator.share({files:[file]"])
   assert.ok(ui.includes(x),x);
  assert.ok(ui.includes("disabled={!approved}"));
+ assert.ok(ui.includes('data-guest-voice-hydrated={origin?"true":"false"}'));
+ assert.ok(ui.includes("disabled={!origin}"),"form disabled before client hydration");
  assert.ok(ui.includes("MAX_RECORD_MS=30_000,MAX_BYTES=8*1024*1024"));
  assert.ok(ui.includes("encodeURIComponent(good)"));
  assert.ok(ui.includes('window.location.hash.startsWith("#t=")'));
@@ -50,4 +52,5 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.match(browser,/assert\.equal\(uri\.search,""/);
  assert.match(browser,/recipient\.locator\("\[data-guest-message-consent\]"/);
  assert.match(browser,/assert\.deepEqual\(providerPosts,\[\]/);
+ assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
