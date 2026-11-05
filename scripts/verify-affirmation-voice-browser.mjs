@@ -44,9 +44,19 @@ async function verifyWorkspaceHydration(browser,locale){
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
+    // On compact iPhones the scene director is intentionally hidden on Step 1.
+    // Exercise the real visible Continue action, never click a hidden control.
+    await expect(allStories).toBeHidden();
+    const continueScenario=page.locator('[data-video-continue-scenarios]');
+    await expect(continueScenario).toBeVisible({timeout:15000});
+    await expect(continueScenario).toBeEnabled();
+    await continueScenario.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible({timeout:15000});
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
     const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toBeVisible({timeout:15000});
     await expect(phrases).toBeEnabled();
     await phrases.click();
     await expect(phrases).toHaveAttribute("aria-pressed","true");

@@ -2573,8 +2573,6 @@
    padding:10px 9px;border-radius:16px;background:#fffdfa}
  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{
    display:none!important}
- .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-audio-choices]{
-   display:grid!important}
  .studio .quickBuilder>[data-video-order-bar]{order:18}
  .studio .quickBuilder>.quickHeader,
  .studio .quickBuilder>.quickBenefits,
@@ -2610,13 +2608,11 @@
  .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 7px!important}
 }
 
-/* The ONE music library is shared by Style (advanced) and Support Phrases.
-   Default entry stays short; a deliberate Advanced action reveals it. */
+/* The ONE quick music library belongs only to expanded Goal.
+   Ideas is selection-only; Montage retains the dedicated Audio panel. */
 @media(max-width:759px){
  .studio[data-active-workspace="video"][data-video-advanced-open="true"]
    .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:9}
- .studio[data-active-workspace="phrases"]
-   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:5}
  .studio[data-active-workspace="video"] .quickBuilder>.advancedVideoToggle{display:flex;order:8}
  .studio .quickBuilder>[data-video-topic-section]{scroll-margin-top:12px}
 }
@@ -3772,21 +3768,21 @@
 @media(max-width:759px){
   /* A true, bounded 16:9 player, not the long cinematic banner. */
   .studio[data-active-workspace="video"] .quickBuilder{gap:6px!important;padding-bottom:10px}
-  .studio[data-active-workspace="video"] .quickBuilder>.quickBrandBar{
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{
     min-height:42px!important;padding:0 3px!important}
-  .studio[data-active-workspace="video"] .quickBrandMobileTitle{display:none!important}
-  .studio[data-active-workspace="video"] .quickBrandIdentity{
+  .studio[data-active-workspace] .quickBrandMobileTitle{display:none!important}
+  .studio[data-active-workspace] .quickBrandIdentity{
     display:grid!important;gap:1px}
-  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+  .studio[data-active-workspace] .quickBrandIdentity strong{
     font:800 clamp(16px,4.3vw,19px)/1.08 Georgia,serif}
-  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+  .studio[data-active-workspace] .quickBrandIdentity small{
     font-size:10px;line-height:1.16}
-  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav{
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav{
     gap:3px!important;margin:0!important}
-  .studio[data-active-workspace="video"] .quickVideoNav button{
+  .studio[data-active-workspace] .quickVideoNav button{
     min-height:47px!important;padding:4px 1px!important;gap:2px!important;
     border-radius:11px!important;font-size:clamp(9px,2.5vw,11px)!important}
-  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+  .studio[data-active-workspace] .quickVideoNav button svg{
     width:17px!important;height:17px!important}
   .studio[data-active-workspace="video"] .quickBuilder>.previewStage{margin:0!important}
   .studio[data-active-workspace="video"] .previewStage>.heroWithRail{
@@ -3910,43 +3906,43 @@
     display:none!important;
   }
   /* Preserve the video preview, navigation, error notices and result if ready. */
-  .studio[data-active-workspace="video"] .quickBuilder>.quickBrandBar{
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{
     min-height:37px!important;margin:0!important;padding:0 2px!important;gap:5px;
   }
-  .studio[data-active-workspace="video"] .quickBrandBack{
+  .studio[data-active-workspace] .quickBrandBack{
     width:35px;height:35px;min-width:35px;min-height:35px;
   }
-  .studio[data-active-workspace="video"] .quickBrandBack svg{
+  .studio[data-active-workspace] .quickBrandBack svg{
     width:24px!important;height:24px!important;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity{
+  .studio[data-active-workspace] .quickBrandIdentity{
     display:grid!important;gap:0;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+  .studio[data-active-workspace] .quickBrandIdentity strong{
     font-size:clamp(15px,4.3vw,19px)!important;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+  .studio[data-active-workspace] .quickBrandIdentity small{
     font-size:10px!important;line-height:1.07;
   }
-  .studio[data-active-workspace="video"] .quickBrandPhoto{
+  .studio[data-active-workspace] .quickBrandPhoto{
     min-width:42px;min-height:39px;padding:4px;
     background:#fffdf7;border-radius:11px;
   }
-  .studio[data-active-workspace="video"] .quickBrandPhoto span{
+  .studio[data-active-workspace] .quickBrandPhoto span{
     display:none;
   }
-  .studio[data-active-workspace="video"] .quickBrandProfile{
+  .studio[data-active-workspace] .quickBrandProfile{
     width:39px;height:39px;
   }
-  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav{
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav{
     gap:3px!important;margin:0!important;
   }
-  .studio[data-active-workspace="video"] .quickVideoNav button{
+  .studio[data-active-workspace] .quickVideoNav button{
     min-height:44px!important;max-height:46px;gap:1px!important;
     padding:3px 1px!important;border-radius:10px!important;
     font-size:clamp(9px,2.5vw,11px)!important;line-height:1.12!important;
   }
-  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+  .studio[data-active-workspace] .quickVideoNav button svg{
     width:16px!important;height:16px!important;
   }
   .studio[data-active-workspace="video"] .previewStage>.heroWithRail{
@@ -4055,4 +4051,141 @@
   .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{
     padding-top:5px!important;padding-bottom:5px!important;
   }
+}
+
+/* 05 Nov approved compact Ideas, with no visible legacy tone/focus or audio pane. */
+.studio[data-active-workspace="phrases"] .quickPhraseSection>.quickSectionHeading{display:none!important}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]{display:none!important}
+.studio[data-active-workspace="phrases"] .quickPhraseSection{padding:0!important;margin:0!important}
+
+
+/* Owner-approved 05 Nov: compact Montage wishes screen. Preserves the single
+   playback canvas and the real recorder; only Text mounts the edit timeline. */
+.studio[data-active-workspace="editor"] .basicStudio{
+  display:grid!important;gap:9px;min-width:0;background:transparent!important;
+  border:0!important;box-shadow:none!important;padding:0!important;margin:0!important
+}
+.studio[data-active-workspace="editor"] .montageQuickTools{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;min-width:0;overflow:visible!important;margin:0;padding:0
+}
+.studio[data-active-workspace="editor"] .montageQuickTools button{
+  display:grid;justify-items:center;align-content:center;gap:4px;min-width:0;
+  min-height:52px;padding:6px 3px;white-space:normal;text-align:center;
+  background:var(--hh-light-surface,#fffcf7);color:var(--hh-light-text,#143d3a);
+  border:1px solid var(--hh-light-border,#e9dfd1);border-radius:14px;
+  font:750 clamp(12px,3.2vw,15px)/1.12 Arial,Helvetica,sans-serif;
+  box-shadow:0 2px 9px #5e473010
+}
+.studio[data-active-workspace="editor"] .montageQuickTools button[aria-pressed="true"]{
+  color:white;border-color:#067a67;
+  background:linear-gradient(140deg,#24ac89,#067a67);box-shadow:0 3px 10px #0073582c
+}
+.studio[data-active-workspace="editor"] .montageQuickTools button[aria-pressed="true"] svg{color:white}
+.studio[data-active-workspace="editor"] .montageQuickTools button:focus-visible,
+.studio[data-active-workspace="editor"] .montagePreferenceItem select:focus-visible,
+.studio[data-active-workspace="editor"] .montageEffectsGrid button:focus-visible{
+  outline:3px solid #176e6e;outline-offset:2px
+}
+.montageActivePanel{min-width:0}
+.montagePreferences,.montagePane{
+  display:grid;gap:10px;min-width:0;padding:14px;
+  border:1px solid var(--hh-light-border,#e9dfd1);border-radius:20px;
+  background:var(--hh-light-surface,#fffcf7);
+  box-shadow:0 4px 16px #71532912
+}
+.montagePreferencesHeader{display:flex;align-items:center;gap:10px;color:#116a55}
+.montagePreferencesHeader>svg{flex:none;width:24px;height:24px}
+.montagePreferencesHeader h3,.montagePane>h3{
+  margin:0;font:800 clamp(18px,4.5vw,23px)/1.15 Arial,Helvetica,sans-serif;
+  color:var(--hh-light-text,#143d3a)
+}
+.montagePreferencesHeader p{margin:3px 0 0;font:500 13px/1.3 Arial,Helvetica,sans-serif;color:#536b62}
+.montagePreferencesGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.montagePreferenceItem{
+  display:grid;gap:5px;min-width:0;padding:9px;
+  border:1px solid #e8e0d7;border-radius:13px;background:#fffdfa;
+  font:700 14px/1.2 Arial,Helvetica,sans-serif;color:#173d38
+}
+.montagePreferenceItem>span{display:flex;align-items:center;gap:6px;min-width:0}
+.montagePreferenceItem>span svg{flex:none;color:#067a67}
+.montagePreferenceItem select{
+  box-sizing:border-box;display:block;min-width:0;width:100%;height:40px;
+  border:1px solid #d7e2d9;border-radius:11px;padding:5px 24px 5px 8px;
+  background:#fff;color:#143d3a;
+  font:650 14px/1.2 Arial,Helvetica,sans-serif;
+  text-overflow:ellipsis
+}
+.montagePreferenceItem select:disabled{opacity:.55}
+.montagePreferencesNote{
+  display:flex;align-items:flex-start;gap:8px;margin:0;padding:9px 10px;
+  border-radius:13px;background:#e9f7ef;color:#315f50;
+  font:500 12.5px/1.35 Arial,Helvetica,sans-serif
+}
+.montagePreferencesNote svg{flex:none;color:#067a67}
+.montagePane{gap:12px}
+.montagePane .montageScenario{margin:0}
+.montageEffectsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.montageEffectsGrid button{
+  display:grid;gap:4px;position:relative;min-width:0;padding:5px;
+  border:1px solid #dbe4da;border-radius:12px;background:#fff;
+  color:#174a3c;font:700 12px/1.2 Arial,Helvetica,sans-serif
+}
+.montageEffectsGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#ebf8ee}
+.montageEffectsGrid img{width:100%;aspect-ratio:1.4;object-fit:cover;border-radius:9px}
+.montageEffectsGrid button>svg{position:absolute;top:7px;right:7px;color:#fff;background:#067a67;border-radius:50%}
+.montageEffectBrightness{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:0;margin:0;padding:0}
+.montageEffectBrightness legend{font-weight:750;color:#143d3a}
+.montageEffectBrightness button{min-height:44px;padding:8px 12px;border:1px solid #d6e1d5;border-radius:12px;background:white;color:#143d3a}
+.montageEffectBrightness button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67}
+.studio[data-active-workspace="editor"] .quickBuilder>[data-video-order-bar]{
+  order:5!important;position:static!important;bottom:auto!important;
+  display:grid;grid-template-columns:1fr;gap:7px;
+  margin:0!important;padding:0!important;background:transparent!important;box-shadow:none!important
+}
+.studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;
+  min-height:20px;margin:0!important;padding:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important
+}
+.studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary strong{font-size:15px;color:#067a67}
+.studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary small{font-size:11px}
+.studio[data-active-workspace="editor"] [data-video-order-bar] .quickGenerate{
+  box-sizing:border-box;width:100%;min-height:56px;margin:0;padding:9px 12px;
+  border-radius:16px;background:linear-gradient(125deg,#16a783,#067a67);
+  color:#fff;font:800 clamp(17px,4.4vw,20px)/1.15 Arial,Helvetica,sans-serif
+}
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"] .quickBuilder{
+    gap:8px!important;background:var(--hh-light-canvas,#fbf5e9)!important
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage{order:2!important}
+  .studio[data-active-workspace="editor"] .previewStage .heroRail{display:none!important}
+  .studio[data-active-workspace="editor"] .previewStage>.heroWithRail>.hero{
+    flex:1 1 auto!important;width:100%!important;aspect-ratio:16/9!important
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor]{
+    order:4!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferences{padding:11px;gap:8px}
+  .studio[data-active-workspace="editor"] .montagePreferencesGrid{gap:7px}
+  .studio[data-active-workspace="editor"] .montagePreferenceItem{padding:7px;gap:4px}
+  .studio[data-active-workspace="editor"] .montagePreferenceItem select{height:44px}
+  .studio[data-active-workspace="editor"] .montagePreferencesNote{padding:7px 9px}
+}
+@media(max-width:355px){
+  .studio[data-active-workspace="editor"] .montageQuickTools{gap:5px}
+  .studio[data-active-workspace="editor"] .montageQuickTools button{font-size:11px;padding:6px 2px}
+  .studio[data-active-workspace="editor"] .montagePreferenceItem{padding:6px}
+  .studio[data-active-workspace="editor"] .montagePreferenceItem select{font-size:12px;padding-left:6px}
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader p{font-size:12px}
+  .studio[data-active-workspace="editor"] .montagePreferencesNote{font-size:12px}
+}
+
+/* Keep helper copy optional in a short iPhone browser viewport; all six live
+   selectors and the one Generate button remain fully available. */
+@media (max-width:759px) and (max-height:760px){
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader p,
+  .studio[data-active-workspace="editor"] .montagePreferencesNote{display:none}
+  .studio[data-active-workspace="editor"] .montagePreferences{gap:7px}
 }
