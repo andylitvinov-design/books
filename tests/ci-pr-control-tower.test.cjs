@@ -258,10 +258,29 @@ test('stale PR SHA, missing source proof and manual hold cannot cause writes',as
   assert.equal(r.dispatchAccepted,0);assert.equal(f.calls.dispatched.length,0);
  }
 });
-test('the dispatcher never starts an empty worker when no candidate can act',async()=>{
- const f=fixture([pr(2,'repair',{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]})]);
+test('manual legacy PR gets only signed cloud preflight, never direct source permission',async()=>{
+ const manual=pr(2,'repair',{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
+ const f=fixture([manual]);
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(r.reason,'NO_AUTO_SOURCE_ELIGIBLE_WITH_BLOCKED_WORK');assert.equal(f.calls.dispatched.length,0);
+ assert.equal(r.reason,'DISPATCH_ACCEPTED');
+ assert.equal(r.actionable,1);
+ assert.equal(r.nonmanualRouted,0,'manual legacy must not become ordinary source work');
+ assert.equal(r.legacyPrepEligible,1);
+ assert.equal(r.repairDispatchAccepted,0,'no source-repair dispatch from manual label');
+ assert.equal(r.legacyDispatchAccepted,1,'one bounded existing cloud preflight');
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
+ assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
+ assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
+ const signed=taskFor(manual,{tier:'P4'});
+ const terminal=fixture([manual],{comments:{2:[{body:commentBody({
+  ...signed,state:'PREPARED'})}]}});
+ const again=await run({github:terminal.github,core:core(),context,
+  now:NOW+600000,capacityFn:terminal.capacityFn});
+ assert.equal(again.dispatchAccepted,0);
+ assert.equal(terminal.calls.dispatched.length,0);
+ assert.equal(again.blocked.ALREADY_HANDLED,1,
+  'signed exact-head terminal outcome cannot be dispatched twice');
 });
 test('dry run records possible work but performs no reservation or dispatch',async()=>{
  const f=fixture([pr(1)],{comments:{1:[proof()]}});
