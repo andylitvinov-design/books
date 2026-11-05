@@ -29,9 +29,6 @@ export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
       ? "/audio/mandala/scenarios/" + preset + ".mp3"
       : "/audio/mandala/" + preset + ".wav";
 }
-import {MYTUBE_MUSIC_BEDS,validateMyTubeMusicBed,myTubeAudioLaneGains} from "./creative-editor-audio-lanes.mjs";
-import type {MyTubeMusicBed} from "./creative-editor-audio-lanes.mjs";
-
 export type AmbientSession = {
   track: MediaStreamTrack;
   close: () => void;
@@ -615,17 +612,27 @@ export async function startLayeredVideoAudio(
   options:{seconds:number;startSeconds?:number;loop?:boolean;
     fadeSeconds?:number;deferStart?:boolean}={seconds:30},
 ):Promise<AmbientSession|null>{
+  // Keep this module's existing import-free CommonJS test interface and avoid
+  // a new iOS user-gesture await before AudioContext.resume(). The public
+  // project draft uses the same five first-party names and exact bounds.
+  const names:readonly OriginalMelodyPreset[]=[
+    "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"
+  ];
+  const fadeSeconds=options.fadeSeconds??1;
   if(typeof window==="undefined"||!isSupportedLocalAudio(file)||
-     !MYTUBE_MUSIC_BEDS.includes(bedId as typeof MYTUBE_MUSIC_BEDS[number])||
+     !names.includes(bedId)||
      !Number.isFinite(options.seconds)||options.seconds<3||options.seconds>60||
      !Number.isFinite(options.startSeconds??0)||(options.startSeconds??0)<0||
-     (options.startSeconds??0)>=options.seconds)return null;
-  let safe:MyTubeMusicBed;
-  try{
-    safe=validateMyTubeMusicBed({id:bedId,volumePercent:bedVolumePercent,
-      fadeSeconds:options.fadeSeconds??1});
-    myTubeAudioLaneGains(masterVolume,safe.volumePercent,true);
-  }catch{return null;}
+     (options.startSeconds??0)>=options.seconds||
+     !Number.isFinite(masterVolume)||masterVolume<0||masterVolume>100||
+     !Number.isInteger(bedVolumePercent)||bedVolumePercent<0||
+     bedVolumePercent>60||bedVolumePercent%5!==0||
+     ![0,.5,1,2].includes(fadeSeconds))return null;
+  const myTubeAudioLaneGains=(volume:number)=>{
+    const primary=volume/100/Math.sqrt(2);
+    return {primary,bed:primary*bedVolumePercent/100};
+  };
+  const safe={volumePercent:bedVolumePercent,fadeSeconds};
   const AudioCtor=window.AudioContext||
     (window as typeof window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
   if(!AudioCtor)return null;
@@ -672,7 +679,7 @@ export async function startLayeredVideoAudio(
       started=true;
       const now=context.currentTime,finish=now+options.seconds;
       const voiceStart=now+offset;
-      const levels=myTubeAudioLaneGains(lastMaster,safe.volumePercent,true);
+      const levels=myTubeAudioLaneGains(lastMaster);
       const gainPlan=[
         {node:gains[0],value:levels.primary,start:voiceStart,
           inSeconds:.035,outSeconds:.1},
@@ -700,7 +707,7 @@ export async function startLayeredVideoAudio(
       setVolume(value:number){
         if(closed||faded||!Number.isFinite(value)||value<0||value>100)return;
         lastMaster=value;
-        const current=myTubeAudioLaneGains(value,safe.volumePercent,true);
+        const current=myTubeAudioLaneGains(value);
         const now=context.currentTime;
         for(const [i,level] of [current.primary,current.bed].entries()){
           const gain=gains[i].gain;

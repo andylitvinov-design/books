@@ -2779,10 +2779,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               startSeconds:effectiveAudioStartSeconds,fadeSeconds:musicBed.fadeSeconds,
               deferStart:true
             })
-          :await startUploadedAudio(attachedAudio.file,soundVolume,{
-            loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,
-            startSeconds:effectiveAudioStartSeconds,deferStart:true
-          })
+          :await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true})
         : attachedAudio?.kind==="preset" ? useWebCodecsMp4?null:await startPresetAudio(attachedAudio.id,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true})
         : attachedAudio?.kind==="presets" ? useWebCodecsMp4?null:await startPresetMixAudio(attachedAudio.ids,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true}) : null;
       if(attachedAudio && !musicSession) {

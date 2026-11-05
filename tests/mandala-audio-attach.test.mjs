@@ -35,7 +35,7 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   assert.doesNotMatch(section,/<video\b|<img\b|youtube|autoplay/);
 });
 
-test("choice is a preview, attach is explicit and MediaRecorder exports ONLY attached audio",()=>{
+test("choice is preview; only attached voice plus explicitly selected original music can reach MediaRecorder",()=>{
   assert.match(studio,/type AttachedAudio = \{kind:"preset"/);
   assert.match(studio,/const selectedAudioKey=uploadedAudio/);
   assert.match(studio,/const attachedAudioKey=attachedAudio===null/);
@@ -53,6 +53,9 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
   assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/musicBed\.id!=="none"\s*\?await startLayeredVideoAudio\(/);
+  assert.match(studio,/attachedAudio\?\.kind==="file"&&audioRights&&musicBed\.id!=="none"/);
+  assert.match(studio,/startLayeredVideoAudio\(\s*attachedAudio\.file,musicBed\.id,soundVolume,musicBed\.volumePercent/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
   for(const fragment of [
@@ -92,10 +95,14 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  // Permit only two safe same-origin music GETs (existing gallery mixer and
+  // the explicitly selected original bed). Never allow arbitrary network IO.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
-  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
-  assert.doesNotMatch((studio+source).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  const originalBedWav=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
+  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified gallery music GET");
+  assert.equal((source.match(originalBedWav)||[]).length,1,"one verified optional original-music GET");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
 test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
