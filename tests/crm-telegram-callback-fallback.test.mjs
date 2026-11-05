@@ -32,6 +32,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',pr
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
  Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
+   // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
+   receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
    ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++}});
  if(diagnostic==='off'){
   const begin=sources.hook.indexOf('export async function processTelegramDiagnostic'),end=sources.hook.indexOf('  if(!/^',begin);
