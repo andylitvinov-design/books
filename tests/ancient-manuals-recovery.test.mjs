@@ -63,6 +63,9 @@ test('published ancient manuals are traced into both locale and legacy book read
   }
   assert.ok(totalBytes > 100_000 && totalBytes < 1_000_000,
     'Trace only the eight small public HTML manuals; no huge image/archive directories');
+  const verifier = readFileSync(new URL('../scripts/verify-maya-reader-release.mjs', import.meta.url), 'utf8');
+  assert.match(verifier, /export async function verifyAncientReaderBundles/);
+  assert.match(verifier, /[[]locale[]][/]books[/][[]bookId[]]/);
   assert.doesNotMatch(nextConfig, /"\.\/source-books\/\*\*\/\*"/,
     'Never copy the entire source archive into every Vercel function');
 });
