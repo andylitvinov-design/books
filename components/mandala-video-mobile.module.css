@@ -2081,8 +2081,46 @@
 }
 
 
-/* A user-invoked published Video Therapy introduction overlays the ONE
-   existing composition stage; no second preview/player is mounted at rest. */
+
+/* Published presentation occupies the existing 16:9 stage on the first screen.
+   The YouTube iframe is not mounted until explicit Play; Canvas remains reusable. */
+.studio .therapyHero{position:absolute;inset:0;z-index:8;overflow:hidden;border-radius:inherit;
+  background:#143d32;color:#fff}
+.studio .therapyHeroLaunch{display:flex;position:relative;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;width:100%;height:100%;padding:10px 15px;border:0;cursor:pointer;
+  color:#fff;text-align:center;
+  background:linear-gradient(180deg,#09271e78,#0c2829ad),url("https://i.ytimg.com/vi/P9Wvo3gEY6U/hqdefault.jpg") center/cover}
+.studio .therapyHeroKicker{font:700 clamp(8px,2.5vw,11px)/1.1 Arial,sans-serif;
+  letter-spacing:.15em;text-shadow:0 1px 4px #001a13}
+.studio .therapyHeroPlayIcon{display:flex;align-items:center;justify-content:center;
+  width:clamp(38px,9vw,50px);height:clamp(38px,9vw,50px);
+  margin:2px 0;border:2px solid #f4f2e0c9;border-radius:50%;background:#f8f4d82a;
+  box-shadow:0 2px 16px #0004}
+.studio .therapyHeroTitle{font:800 clamp(15px,4.3vw,23px)/1.15 Georgia,serif;
+  text-shadow:0 2px 10px #001b19}
+.studio .therapyHeroCaption{font:600 clamp(10px,2.8vw,13px)/1.2 Arial,sans-serif}
+.studio .therapyHeroPlayback{position:absolute;inset:0;background:#071f19}
+.studio .therapyHeroFrame{display:block;width:100%;height:100%;border:0}
+.studio .therapyHeroClose{position:absolute;z-index:2;top:6px;right:6px;min-height:34px;
+  padding:6px 10px;border:1px solid #fff9;border-radius:9px;background:#133c32ee;
+  color:#fff;font:700 11px/1.2 Arial,sans-serif;cursor:pointer}
+.studio .therapyHeroExternal{position:absolute;z-index:3;right:7px;bottom:7px;
+  padding:5px 8px;border-radius:7px;background:#163e32dd;color:#fff;
+  text-decoration:none;font:700 10px/1.2 Arial,sans-serif}
+.studio .therapyHeroEnglish{display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:6px;height:100%;padding:12px 16px;text-align:center;
+  background:linear-gradient(125deg,#153f32,#345b48 64%,#9d875a)}
+.studio .therapyHeroEnglish strong{font:800 clamp(15px,4.3vw,22px)/1.15 Georgia,serif}
+.studio .therapyHeroEnglish>span:not(.therapyHeroKicker){font:600 11px/1.3 Arial,sans-serif}
+.studio .therapyHeroEnglish button{min-height:35px;padding:6px 11px;border:1px solid #e1deb4;
+  border-radius:9px;background:#f8f3da;color:#214a39;font:700 11px/1.2 Arial,sans-serif;cursor:pointer}
+.studio .therapyHeroEnglish a{color:#fff;text-decoration:underline;
+  font:600 10px/1.2 Arial,sans-serif}
+.studio .therapyHeroLaunch:focus-visible,.studio .therapyHeroClose:focus-visible,
+.studio .therapyHeroEnglish button:focus-visible,.studio .therapyHeroEnglish a:focus-visible,
+.studio .therapyHeroExternal:focus-visible{outline:3px solid #f4c96c;outline-offset:-3px}
+
+/* Legacy overlay styles remain for compatibility with non-primary workspaces. */
 .studio .therapyIntroLaunch{
   position:absolute;z-index:6;top:10px;left:10px;
   display:flex;align-items:center;gap:8px;max-width:min(77%,300px);
