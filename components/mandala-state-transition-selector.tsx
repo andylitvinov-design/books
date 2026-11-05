@@ -9,7 +9,7 @@ type Recommendation={
  rank:number;scenarioId:string;label:string;creativeBrief:string;
  transitionTemplateId:string;fourBeats:string[];reasonCodes:string[];
  suggestedMotifIds:string[];suggestedStyleId:string;mediaStatus:string;
- editorialReviewStatus:string;safeToAutoExport:boolean;
+ editorialReviewStatus:string;safeToAutoExport:boolean;rationale?:string;
 };
 type Response={
  // Only fields rendered by the selector: engine metadata is additional and
@@ -18,7 +18,7 @@ type Response={
  recommendations:Recommendation[];
 };
 type Props={
- locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;
+ locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;allowEditorialDrafts?:boolean;
  onChooseScenario:(scenarioId:string)=>void;
 };
 const language={
@@ -29,7 +29,7 @@ const language={
    alternative:"Другой путь",choose:"Подходит — дальше",pending:"Только после вашего подтверждения будет выбран сценарий.",
    media:"Это творческий сценарий. Для видео необходимы отдельно проверенные кадры и права.",
    failure:"Уточните состояния или попробуйте другой путь.",safety:"Для поддержки и творчества, а не для диагностики или лечения.",
-   reset:"Изменить состояния",chosen:"Выбранный ранее сценарий",close:"Закрыть детали"},
+   reset:"Изменить состояния",chosen:"Выбранный ранее сценарий",close:"Закрыть детали",energy:"Сколько сейчас энергии?",energyLow:"Мало",energyMedium:"Достаточно",energyHigh:"Много"},
  en:{title:"From how I feel now to how I want to feel",hint:"Two short choices help find a gentle story for your topic.",
    now:"How I feel now",want:"How I want to feel",empty:"Choose a state",intensity:"How intense is it now?",
    low:"Mildly",medium:"Noticeably",high:"Very strongly",more:"Refine (optional)",
@@ -37,7 +37,7 @@ const language={
    alternative:"Alternative route",choose:"This fits — continue",pending:"Nothing is selected until you confirm.",
    media:"An editorial story concept. Actual video requires separately verified footage and rights.",
    failure:"Refine the states or explore a different path.",safety:"For support and creativity, not diagnosis or treatment.",
-   reset:"Change states",chosen:"Previously selected story",close:"Close details"},
+   reset:"Change states",chosen:"Previously selected story",close:"Close details",energy:"How much energy do you have?",energyLow:"Low",energyMedium:"Moderate",energyHigh:"High"},
  es:{title:"De cómo me siento a cómo quiero sentirme",hint:"Dos elecciones breves permiten sugerir una historia suave para tu tema.",
    now:"Cómo me siento ahora",want:"Cómo quiero sentirme",empty:"Elige un estado",intensity:"¿Con qué intensidad?",
    low:"Leve",medium:"Notable",high:"Muy fuerte",more:"Precisar (opcional)",
@@ -45,16 +45,17 @@ const language={
    alternative:"Otra ruta",choose:"Me parece bien — continuar",pending:"La historia no se selecciona hasta que la confirmes.",
    media:"Es un concepto creativo. El vídeo necesita imágenes y derechos verificados.",
    failure:"Precisa los estados o explora otro camino.",safety:"Apoyo y creatividad, no diagnóstico ni tratamiento.",
-   reset:"Cambiar estados",chosen:"Historia seleccionada",close:"Cerrar detalles"},
+   reset:"Cambiar estados",chosen:"Historia seleccionada",close:"Cerrar detalles",energy:"¿Cuánta energía tienes ahora?",energyLow:"Poca",energyMedium:"Moderada",energyHigh:"Mucha"},
 } as const;
 const key=(topicId:string)=>"hh-stse-v1-session:"+topicId;
-export function StateTransitionSelector({locale,topicId,disabled,selectedScenarioId,onChooseScenario}:Props){
+export function StateTransitionSelector({locale,topicId,disabled,selectedScenarioId,onChooseScenario,allowEditorialDrafts=false}:Props){
  const t=language[locale];
  const states=useMemo(()=>listStates(locale),[locale]);
  const validIds=useMemo(()=>new Set(states.map(row=>row.id)),[states]);
  const [current,setCurrent]=useState("");
  const [desired,setDesired]=useState("");
  const [intensity,setIntensity]=useState<"low"|"medium"|"high">("medium");
+ const [energy,setEnergy]=useState<"low"|"moderate"|"high">("moderate");
  const [result,setResult]=useState<Response|null>(null);
  const [choice,setChoice]=useState(0);
  const [busy,setBusy]=useState(false);
@@ -63,13 +64,14 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
  useEffect(()=>{
    serial.current+=1;
    setResult(null);setChoice(0);setFeedback("");setBusy(false);
-   setCurrent("");setDesired("");setIntensity("medium");
+   setCurrent("");setDesired("");setIntensity("medium");setEnergy("moderate");
    // Per-tab temporary persistence, never raw free text, no cookies or network.
    try{
      const saved=JSON.parse(window.sessionStorage.getItem(key(topicId))||"null");
      if(saved&&validIds.has(saved.currentId)&&validIds.has(saved.desiredId)){
        setCurrent(saved.currentId);setDesired(saved.desiredId);
        if(["low","medium","high"].includes(saved.intensity))setIntensity(saved.intensity);
+       if(["low","moderate","high"].includes(saved.energy))setEnergy(saved.energy);
      }
    }catch{/* Restricted storage is allowed; the flow still works in memory. */}
  },[topicId,validIds]);
@@ -86,7 +88,8 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
      const data:Response=recommendScenario({
        schemaVersion:"state-transition-request-v1",locale,topicId,
        current:{stateId:current,intensity},desired:{stateId:desired,intensity:"medium"},
-       preferences:{pace:intensity==="high"?"gentle":null},
+       preferences:{pace:intensity==="high"?"gentle":null,energy,
+         includeEditorialDrafts:allowEditorialDrafts},
      });
      if(serial.current!==turn)return;
      if(data.status==="ok"&&data.recommendations.length){
@@ -101,7 +104,10 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
    if(!rec||disabled||busy||!validIds.has(current)||!validIds.has(desired))return;
    // Persist only explicit confirmed canonical choice for this tab, not state text.
    try{window.sessionStorage.setItem(key(topicId),JSON.stringify({
-     currentId:current,desiredId:desired,intensity,scenarioId:rec.scenarioId
+     currentId:current,desiredId:desired,intensity,energy,scenarioId:rec.scenarioId,
+     transitionTemplateId:rec.transitionTemplateId,
+     motifId:rec.suggestedMotifIds[0]||null,styleId:rec.suggestedStyleId,
+     editorialStatus:rec.editorialReviewStatus
    }));}catch{/* Private/no-storage modes remain supported. */}
    onChooseScenario(rec.scenarioId);
  };
@@ -136,6 +142,15 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
          <option value="low">{t.low}</option><option value="medium">{t.medium}</option><option value="high">{t.high}</option>
        </select>
      </label>
+     <label className={css.field}>
+       <span>{t.energy}</span>
+       <select data-stse-energy value={energy} disabled={disabled||busy}
+         onChange={event=>update(()=>setEnergy(event.currentTarget.value as "low"|"moderate"|"high"))}>
+         <option value="low">{t.energyLow}</option>
+         <option value="moderate">{t.energyMedium}</option>
+         <option value="high">{t.energyHigh}</option>
+       </select>
+     </label>
    </details>
    <button type="button" className={css.suggest} data-stse-suggest
      disabled={!current||!desired||disabled||busy} onClick={suggest}>
@@ -151,6 +166,7 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
             checked={choice===index} disabled={disabled||busy} onChange={()=>setChoice(index)}/>
           <span className={css.optionBody}>
             <strong>{index===0?t.recommend:t.alternative}: {rec.label}</strong>
+            <small>{rec.rationale||rec.creativeBrief}</small>
             <small>{rec.creativeBrief}</small>
             <small>{t.media}</small>
           </span>

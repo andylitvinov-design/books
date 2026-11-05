@@ -76,8 +76,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/taxonomySubcategories\.map\(item=>/);
  assert.match(director,/taxonomyTopics\.map\(item=>/);
  assert.match(director,/taxonomyScenarios\.length>=4/);
- assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED==="true"/);
- assert.match(director,/STSE_ENABLED\?\s*listStateTransitionScenarios\(selectedTopicId,locale\):listMyTubeScenarios\(selectedTopicId,locale\)/);
+ assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED!=="false"/);
+ assert.match(director,/const STSE_DRAFTS_ENABLED=STSE_ENABLED&&process\.env\.NEXT_PUBLIC_HH_STSE_CONTENT_EXPANSION_ENABLED==="true"/);
+ assert.match(director,/allowEditorialDrafts=\{STSE_DRAFTS_ENABLED\}/);
+ assert.match(director,/STSE_DRAFTS_ENABLED\?\s*listStateTransitionScenarios\(selectedTopicId,locale\):listMyTubeScenarios\(selectedTopicId,locale\)/);
  assert.match(director,/data-stse-media-unbound/);
  assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
 
@@ -119,7 +121,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(autoCss,/\.storyChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(autoCss,/\.shots\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  const approved=taxonomy.scenes.filter(scene=>scene.status==="approved");
- assert.equal(approved.length,44);
+ assert.equal(approved.length,48);
  assert.ok(approved.every(scene=>scene.poster?.startsWith("/videos/holistic-house/")&&
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });

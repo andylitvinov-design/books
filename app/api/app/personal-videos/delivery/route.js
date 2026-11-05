@@ -31,7 +31,8 @@ async function handle(request){
      throw new AppError('INVALID_DELIVERY_REQUEST',400)
    if(body.action==='connect'&&body.consent===true&&typeof body.locale==='string')
     data=await beginVideoTelegramLink(config,actor,body.locale)
-   else if(body.action==='automatic'&&typeof body.enabled==='boolean'&&body.consent===true)
+   else if(body.action==='automatic'&&typeof body.enabled==='boolean'&&
+    (!body.enabled||body.consent===true))
     data=await setVideoTelegramAutomatic(config,actor,body)
    else throw new AppError('INVALID_DELIVERY_REQUEST',400)
   }

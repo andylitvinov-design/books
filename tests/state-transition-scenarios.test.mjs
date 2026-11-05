@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {getMyTubeTaxonomy,auditMyTubeTaxonomy} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import expansion from "../data/video-catalog/state-transition-scenarios-v1.json" with {type:"json"};
 import {auditMyTubeCreativeChoices} from "../lib/mandala/mytube-creative-choices.mjs";
 import {STATE_DEFINITIONS,TRANSITION_TEMPLATES,EXTRA_SCENARIO_MOTIFS,
   auditStateTransitionRegistry} from "../lib/mandala/state-transition/state-catalog.mjs";
@@ -134,4 +135,75 @@ test("motif pools exist for each new editorial route without claiming verified i
    assert.equal(choices.length,5);
    assert.equal(new Set(choices).size,5);
  }
+});
+
+test("public scenario selection excludes unpublished editorial drafts unless explicitly requested",()=>{
+ const all=listStateTransitionScenarios("life-purpose","ru");
+ const publicSet=listStateTransitionScenarios("life-purpose","ru",{includeEditorialDrafts:false});
+ assert.equal(all.length,8);
+ assert.equal(publicSet.length,4);
+ assert.ok(publicSet.every(s=>!s.newExpansion && /-s[1-4]$/.test(s.scenarioId)));
+ for(const locale of ["ru","en","es"]){
+   const input=request("anxiety","confidence",locale);
+   const safe=recommendScenario(input);
+   assert.equal(safe.status,"ok");
+   assert.ok(safe.recommendations.length>=1&&safe.recommendations.length<=3);
+   assert.ok(safe.recommendations.every(row=>/-s[1-4]$/.test(row.scenarioId)));
+   assert.ok(safe.recommendations.every(row=>row.safeToAutoExport===false));
+   const preview=recommendScenario({...input,preferences:{includeEditorialDrafts:true}});
+   assert.equal(preview.status,"ok");
+   assert.ok(preview.recommendations.every(row=>row.mediaStatus==="needs_verified_media"));
+ }
+});
+test("energy and draft-preview parameters are strictly bounded, with no new media approval",()=>{
+ const base=request("fatigue","vitality");
+ assert.equal(recommendScenario({...base,preferences:{energy:"extreme"}}).status,"invalid_energy");
+ assert.equal(recommendScenario({...base,preferences:{includeEditorialDrafts:"yes"}}).status,"invalid_editorial_preview");
+ const low=recommendScenario({...base,preferences:{energy:"low"}});
+ const high=recommendScenario({...base,preferences:{energy:"high"}});
+ assert.equal(low.status,"ok");
+ assert.equal(high.status,"ok");
+ assert.notEqual(low.recommendationId,high.recommendationId);
+ assert.ok(low.recommendations.every(row=>row.scoreBreakdown.mediaAvailability===0));
+ assert.ok(!low.recommendations.some(row=>row.safeToAutoExport));
+});
+
+test("256 revised editorial drafts use topic-specific four-beat anchors and curated motif roles, but remain unapproved",()=>{
+ const atlas=getMyTubeTaxonomy();
+ const originals=new Map();
+ for(const category of atlas.categories)for(const sub of category.subcategories)for(const topic of sub.topics)
+   originals.set(topic.id,topic);
+ const motifs=new Set(),sourceBriefs={ru:new Set(),en:new Set(),es:new Set()};
+ let revised=0;
+ for(const group of expansion.topics){
+   const topic=originals.get(group.topicId);
+   assert.ok(topic,"unknown editorial topic "+group.topicId);
+   assert.equal(group.scenarios.length,4);
+   for(const scenario of group.scenarios){
+     revised++;
+     assert.equal(scenario.storyDerivation,"original_four_arcs_reframed_as_new_nonclinical_editorial_proposal");
+     assert.equal(scenario.editorialReviewStatus,"needs_human_review");
+     assert.equal(scenario.mediaBindingStatus,"unbound");
+     assert.equal(scenario.published,false);
+     assert.equal(scenario.motifEvidenceStatus,"editorial_visual_hint_not_frame_verified");
+     assert.equal(scenario.motifIds.length,5);
+     assert.equal(new Set(scenario.motifIds).size,5);
+     for(const id of Object.values(scenario.motifBeatHints))assert.ok(scenario.motifIds.includes(id));
+     motifs.add(scenario.motifIds.join("|"));
+     for(const locale of ["ru","en","es"]){
+       const beats=scenario.storyboard[locale];
+       assert.equal(beats.length,4);
+       assert.equal(new Set(beats).size,4);
+       assert.equal(scenario.creativeBrief[locale],beats.join(" → "));
+       assert.ok(!sourceBriefs[locale].has(scenario.creativeBrief[locale]));
+       sourceBriefs[locale].add(scenario.creativeBrief[locale]);
+       const legacyBeats=topic.scenarios.flatMap(x=>x.storyboard[locale]);
+       assert.ok(beats.every(beat=>!legacyBeats.includes(beat)),
+         scenario.id+" must be more than a copy of a legacy scene");
+     }
+   }
+ }
+ assert.equal(revised,256);
+ assert.equal(motifs.size,256);
+ for(const locale of ["ru","en","es"])assert.equal(sourceBriefs[locale].size,256);
 });

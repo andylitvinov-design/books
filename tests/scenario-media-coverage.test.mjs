@@ -67,9 +67,9 @@ test("editorial queue enumerates the exact independent scenes still required",()
  const presets=loadActiveFilmPresets().presets;
  const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url))).scenes;
  const q=createScenarioAcquisitionQueue(presets,scenes);
- assert.equal(q.expectedNewMp4,148);
- assert.equal(q.slots.length,148);
- assert.equal(new Set(q.slots.map(row=>row.id)).size,148);
+ assert.equal(q.expectedNewMp4,144);
+ assert.equal(q.slots.length,144);
+ assert.equal(new Set(q.slots.map(row=>row.id)).size,144);
  for(const row of q.slots){
    assert.equal(row.importStatus,"not_imported");
    assert.equal(row.rightsStatus,"needs_individual_editorial_review");

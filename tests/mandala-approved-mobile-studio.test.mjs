@@ -194,9 +194,9 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.equal(original.length,24);
   assert.equal(additions.presets.length,24);
   assert.equal(catalogue.length,48);
-  assert.equal(taxonomy.scenes.length,44);
+  assert.equal(taxonomy.scenes.length,48);
   const physical=new Set(taxonomy.scenes.filter(item=>item.status==="approved").map(item=>item.id));
-  assert.equal(physical.size,44);
+  assert.equal(physical.size,48);
   const groups=new Map(),ids=new Set(),originalClips=new Set();
   for(const film of catalogue){
     assert.ok(!ids.has(film.id),"every free montage has a distinct id");
@@ -216,6 +216,10 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   for(const category of ["money","energy","life","health","relationships","goals"])
     assert.equal(groups.get(category),8,category);
   assert.equal(originalClips.size,44,"all 44 licensed source clips appear in ready-to-edit movies");
+  const portraitSources=new Set([...originalClips,...additions.presets.flatMap(p=>p.portraitClips||[])]);
+  assert.equal(portraitSources.size,48,"all four additional real footage sources are available in portrait film edits");
+  assert.ok([...portraitSources].every(id=>physical.has(id)));
+  assert.equal(additions.presets.filter(p=>p.portraitClips).length,4);
   assert.match(src,/free-film-presets-v2\.json/);
   assert.match(src,/scene-taxonomy\.json/);
   assert.match(src,/data-free-film-compilation-catalog/);

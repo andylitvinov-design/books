@@ -62,6 +62,29 @@ function duplicateMarker(rows,failedRunId,head){
   }
   return null;
 }
+// A failed CI run does not authorize a simultaneous Repair while the current
+// Core wave is queued/running, or after a newer Core attempt superseded it.
+// Read only; the protected HEAD lease and source CAS are still mandatory.
+export function assertNoCompetingCoreWave(snapshot,failed,pr){
+  if(!Number.isSafeInteger(snapshot?.total_count)||snapshot.total_count<0||
+     snapshot.total_count>100||!Array.isArray(snapshot.workflow_runs)||
+     snapshot.workflow_runs.length!==snapshot.total_count||!date(failed?.created_at))
+    throw Error('CORE_WAVE_INDEX_INCOMPLETE');
+  for(const run of snapshot.workflow_runs){
+    if(run?.event!=='pull_request'||run.name!=='HH PR core release gate'||
+       run.head_branch!==pr.head.ref||
+       run.head_repository?.full_name!==pr.head.repo?.full_name)continue;
+    if(!positive(run.id)||!date(run.created_at)||!run.status)
+      throw Error('CORE_WAVE_EVIDENCE_INVALID');
+    // Even older-HEAD Core checks consume capacity until cancelled/completed.
+    if(run.status!=='completed')throw Error('COMPETING_CORE_WAVE_ACTIVE');
+    const newer=Date.parse(run.created_at)>Date.parse(failed.created_at)||
+      (run.created_at===failed.created_at&&run.id>failed.id);
+    if(newer&&run.head_sha===pr.head.sha&&failed.name==='HH PR core release gate')
+      throw Error('FAILED_CORE_WAVE_SUPERSEDED');
+  }
+}
+
 export async function recordRepairStart(api,{repo='andylitvinov-design/books',number,owner,failedRunId}){
   if(repo!=='andylitvinov-design/books'||!positive(number)||!positive(failedRunId)||
       !/^[a-zA-Z0-9_.-]{2,80}$/.test(owner||''))throw Error('INVALID_REPAIR_IDENTITY');
@@ -94,6 +117,12 @@ export async function recordRepairStart(api,{repo='andylitvinov-design/books',nu
   ownedLease(latest,owner,identity);
   const replay=duplicateMarker(latest,failedRunId,identity.head);
   if(replay)return {duplicate:true,comment_id:replay.id,recorded_at:replay.created_at};
+  // Inspect ONLY the existing Core workflow's branch-scoped run history.
+  // No workflow dispatch/retry is performed. An unfinished or superseding wave
+  // must settle before source Repair can publish a new HEAD/CI wave.
+  const coreWaves=await api('/actions/workflows/hh-pr-core-release.yml/runs?event=pull_request&branch='+
+    encodeURIComponent(current.head.ref)+'&per_page=100&page=1');
+  assertNoCompetingCoreWave(coreWaves,run,current);
   const body=REPAIR_MARKER+'\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
     action:'repair_started',owner,failed_run_id:failedRunId,failed_head_sha:identity.head});
   const posted=await api('/issues/'+number+'/comments',{method:'POST',body:{body}});

@@ -69,6 +69,7 @@ import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loadi
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
 
@@ -275,7 +276,7 @@ const studioCopy = {
     wishReady:"Suggested scene",wishDefault:"No matching visual theme; we kept your chosen topic.",
     wishMissing:"Write a short wish first.",
     settings:"Settings",home:"Home",meditations:"Meditations",createTab:"Create",
-    advanced:"Mandala & guided meditations",photoError:"Try a JPG, PNG or WebP image smaller than 10 MB.",
+    advanced:"Mandala & guided meditations",photoError:"Try a JPG, PNG, WebP or HEIC/HEIF photo up to 25 MB, supported by this device.",
   },
   ru: {
     title:"Видеоредактор",renderMode:"Вариант ролика",withPortrait:"С моим фото",backgroundOnly:"Только видеофон",backgroundHint:"Фон без портрета, который можно добавить в свой видеомонтаж.",sub:"Создай своё персональное видео",back:"К поддержке",
@@ -315,7 +316,7 @@ const studioCopy = {
     wishReady:"Подходящий сюжет",wishDefault:"Сцена не найдена по словам; оставили выбранную вами тему.",
     wishMissing:"Сначала напишите краткое пожелание.",
     settings:"Настройки",home:"Главная",meditations:"Медитации",createTab:"Создать",
-    advanced:"Мандала и авторские медитации",photoError:"Загрузите JPG, PNG или WebP до 10 МБ.",
+    advanced:"Мандала и авторские медитации",photoError:"Загрузите JPG, PNG, WebP или HEIC/HEIF до 25 МБ при поддержке устройства.",
   },
   es: {
     title:"Editor de vídeo",renderMode:"Tipo de vídeo",withPortrait:"Con mi foto",backgroundOnly:"Solo fondo animado",backgroundHint:"Fondo animado para usar debajo de otro vídeo.",sub:"Crea tu vídeo personal",back:"Volver a apoyo",
@@ -355,7 +356,7 @@ const studioCopy = {
     wishReady:"Escena sugerida",wishDefault:"No hay coincidencias; mantenemos tu tema elegido.",
     wishMissing:"Escribe primero tu deseo.",
     settings:"Ajustes",home:"Inicio",meditations:"Meditaciones",createTab:"Crear",
-    advanced:"Mandala y meditaciones originales",photoError:"Usa JPG, PNG o WebP de hasta 10 MB.",
+    advanced:"Mandala y meditaciones originales",photoError:"Usa JPG, PNG, WebP o HEIC/HEIF de hasta 25 MB si tu dispositivo lo admite.",
   }
 } as const;
 const layoutCopy = {
@@ -567,7 +568,7 @@ const moneyTemplates = [
 /** 24 CURATED EDITS of 32 existing licensed first-party MP4 masters:
  * no remote stock API and no fictional claims of new source footage. */
 const FREE_FILM_PLAN_VERSION = "hh-local-stock-compilation-v1";
-type FreeFilmPreset = {id:string;theme:VideoTheme;label:Record<VideoLocale,string>;clips:readonly string[]};
+type FreeFilmPreset = {id:string;theme:VideoTheme;label:Record<VideoLocale,string>;clips:readonly string[];portraitClips?:readonly string[]};
 const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
   {
     "id": "warm-prosperity",
@@ -951,8 +952,8 @@ function compileFreeFilmPreset(
 ):CinematicStoryboard {
   // All four shots must pass the live source-rights whitelist, even after replacement.
   // Explicit avoid-water/forest/night exclusions survive montage editing.
-  const clipIds=edit?.clipIds??preset.clips;
-  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])]))
+  const clipIds=edit?.clipIds??(aspect==="portrait"&&preset.portraitClips?preset.portraitClips:preset.clips);
+  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])],aspect))
     throw Error("invalid_free_film_replacement");
   if(edit && (!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==4||
     edit.captionTexts.some(value=>typeof value!=="string")))
@@ -1705,9 +1706,24 @@ const quickCanvasPoster=(scene:LocalSceneId)=>
   "/videos/holistic-house/film-collection-v2/"+(quickCanvasScenePoster[scene]||"mountain-air")+".jpg";
 
 
-export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError, professionalSource = null, professionalMode = false }: {
+// On iOS the input itself (not a hidden input's scripted .click) must receive
+// the user's trusted tap, including in standalone Add-to-Home-Screen mode.
+function NativePhotoInput({ label, disabled, onPhotoFileSelected }: {
+  label: string; disabled: boolean; onPhotoFileSelected: (photo: File) => void;
+}) {
+  return <input type="file" accept={SUPPORT_PHOTO_ACCEPT} aria-label={label}
+    data-video-native-photo-input className={videoStyles.nativePhotoInput}
+    disabled={disabled} onChange={event => {
+      const photo = event.currentTarget.files?.[0];
+      event.currentTarget.value = "";
+      if (photo) onPhotoFileSelected(photo);
+    }}/>;
+}
+
+export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, onPhotoFileSelected, photoError, photoPending = false, professionalSource = null, professionalMode = false }: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
-  onPickPhoto: () => void; photoError?: string;
+  onPickPhoto: () => void; onPhotoFileSelected: (photo: File) => void;
+  photoError?: string; photoPending?: boolean;
   professionalSource?: MandalaProfessionalSource | null; professionalMode?: boolean;
 }) {
   const t = translations[locale];
@@ -1751,6 +1767,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(true);
+  const selectNativePhoto = (photo: File) => {
+    // Canceled picker preserves the previous choice; no upload takes place.
+    setBackgroundOnly(false);
+    onPhotoFileSelected(photo);
+  };
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
@@ -1985,8 +2006,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
-  const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
-    FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
+  const aspectFilmPresets:readonly FreeFilmPreset[]=FREE_FILM_PRESETS.map(preset=>aspect==="portrait"&&preset.portraitClips
+    ?{...preset,clips:preset.portraitClips}:preset);
+  const freeFilmOptions=showAllFreeFilms?aspectFilmPresets:
+    aspectFilmPresets.filter(preset=>preset.theme===theme);
   const effectiveAudioStartSeconds=clampTrackSecond(audioStartSeconds,Math.max(0,duration-.1));
   const timelineCaptions:TimelineTextClip[]=timelineTextClips??(
     usingFreeFilmCompilation&&cinematicPlan
@@ -2292,14 +2315,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
   const canStartSelectedFilm=freeVideoSelected && freeFilmSourcesListed &&
-    !micRecording && !preparing && !recording;
+    !micRecording && !preparing && !recording && !photoPending;
   // Create remains available before optional MP4 decoding: the trusted Create
   // tap performs the bounded decode, rather than disabling this action forever.
   const canGenerate = Boolean(source) && (creationMode!=="generated" || Boolean(currentFreeVideoPlan)) &&
     (!usingFreeFilmCompilation || freeFilmSourcesListed) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
-    !audioDurationInvalid && !micRecording && !preparing && !recording && !voiceGenerating && !narrationInvalid && !phrasePending;
+    !audioDurationInvalid && !micRecording && !preparing && !recording && !voiceGenerating && !narrationInvalid && !phrasePending && !photoPending;
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -3823,7 +3846,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const startFromHero=()=>{
     if(hypnoAudioBusy)return false;
-    if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;
     if(phrasePending){
       setNotice(locale==="ru"?"Сначала утвердите фразы в разделе «Фразы поддержки».":locale==="es"?"Confirma las frases en el apartado «Frases de apoyo».":"Approve the selected phrases before creating a video.");
       setActiveWorkspace("phrases");
@@ -4023,6 +4046,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setPreviewPlaying(false);setSuggestion("");
   };
   const createQuickVideo = () => {
+    if(photoPending){
+      setNotice(locale==="ru"?"Подготовка фото ещё не завершена.":locale==="es"?"La foto aún se está preparando.":"Photo preparation is still in progress.");
+      return false;
+    }
     if(phrasePending){
       setNotice(locale==="ru"?"Подтвердите изменённые фразы перед созданием видео.":locale==="es"?"Confirma las frases nuevas antes de crear el vídeo.":"Approve your edited phrases before creating the video.");
       setActiveWorkspace("phrases");return false;
@@ -4551,21 +4578,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{approved.preview}</h3>
               <p>{approved.covers}</p></div>
-            <button type="button" onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}
-              disabled={recording||preparing} className={videoStyles.quickEdit}>
+            <label className={videoStyles.quickEdit+" "+videoStyles.nativePhotoControl} aria-disabled={recording||preparing}>
               <Camera size={15} aria-hidden="true"/>{quick.pick}
-            </button>
+              <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
+            </label>
           </div>
 
           <div className={videoStyles.quickImageRail}>
-            <button type="button" className={videoStyles.quickImageUpload} data-video-quick-photo
-              disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+            <label className={videoStyles.quickImageUpload+" "+videoStyles.nativePhotoControl} data-video-quick-photo
+              aria-disabled={recording||preparing}>
               {photoUrl ? <>
                 {/* Only user-owned local Blob, never submitted to AI or CRM. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photoUrl} alt="" draggable={false}/>
               </> : <><Camera size={24} aria-hidden="true"/><span>{quick.pick}</span></>}
-            </button>
+              <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
+            </label>
             {activeTemplates.slice(0,6).map(scene=>{
               const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
               const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
@@ -4600,6 +4628,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 if(approved)primeNativeMasterFromUserGesture();
               }}/><span>{ui.consent}</span>
           </label>:null}
+          {photoPending?<p role="status" data-video-photo-pending className={videoStyles.warning}>{locale==="ru"?"Подготавливаем фото на устройстве…":locale==="es"?"Preparando la foto en tu dispositivo…":"Preparing photo on this device…"}</p>:null}
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>
 
@@ -4789,7 +4818,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             Visual styling reuses the approved Messenger pattern without importing CRM data. */}
         <MandalaVideoDirectorChat
           locale={locale} goal={wish} theme={theme}
-          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
           renderOptions={{quality,brightness,volumePercent:soundVolume}}
           disabled={recording||preparing} canCreate={canGenerate}
           rendering={recording||preparing} renderProgress={progress}
@@ -5284,7 +5313,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section>
         <MandalaAutoVideoDirector
-          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
+          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
           disabled={!studioHydrated||recording||preparing}
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
@@ -5376,7 +5405,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       ):null}
       {professionalMode ? <MandalaProfessionalPromo
-        locale={locale} presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+        locale={locale} presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
         publicOffer={professionalSource?.publicOffer ?? null}
         publicPractitioner={professionalSource?.publicPractitioner ?? null}
         disabled={recording||preparing}
@@ -5711,6 +5740,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                :locale==="es"
                ?`${freeSceneTaxonomy.scenes.length} vídeos con licencia y ${ORIGINAL_MOTION_SCENES.length} animaciones MP4 originales. Cuatro escenas diferentes por montaje.`
                :`${freeSceneTaxonomy.scenes.length} licensed clips plus ${ORIGINAL_MOTION_SCENES.length} original abstract animation MP4s. Four distinct clips per montage; animation is not filmed footage.`}</p>
+            <p><a href="/videos/holistic-house/film-collection-v3/hd-credits-20261105.html" target="_blank" rel="noopener noreferrer">{locale==="ru"?"Лицензии новых видеосцен":locale==="es"?"Créditos de los vídeos HD":"HD footage credits"}</a></p>
           </div>
           <button type="button" data-free-film-more disabled={recording||preparing}
             aria-expanded={showAllFreeFilms} onClick={()=>setShowAllFreeFilms(value=>!value)}>
@@ -6524,9 +6554,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         <section className={videoStyles.centerProfile} aria-label={ui.stepPhoto}>
-          <button type="button" className={videoStyles.photoPortrait} data-video-profile-photo-picker
-            disabled={recording||preparing} aria-label={photoUrl?ui.replace:ui.addPhoto}
-            onClick={onPickPhoto}>
+          <label className={videoStyles.photoPortrait+" "+videoStyles.nativePhotoControl} data-video-profile-photo-picker aria-disabled={recording||preparing}>
             {photoUrl ? (
               // This is a private local blob, never optimized or uploaded.
               // eslint-disable-next-line @next/next/no-img-element
@@ -6539,13 +6567,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true" />
               </span>}
             <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
-          </button>
+            <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
+          </label>
           <div className={videoStyles.profileFocus}><small>{supportUi.focus}</small><strong>{ui.themes[lowestTheme]}</strong></div>
           <button type="button" className={videoStyles.recommendButton}
             disabled={recording||preparing} data-video-recommend-focus
             onClick={()=>selectCategory(lowestTheme)}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
           </button>
+          {photoPending?<p role="status" data-video-photo-pending className={videoStyles.warning}>{locale==="ru"?"Подготавливаем фото на устройстве…":locale==="es"?"Preparando la foto en tu dispositivo…":"Preparing photo on this device…"}</p>:null}
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>
 
@@ -6601,10 +6631,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}/>
             <span>{layout.photoEnable}</span>
           </label>
-          <button type="button" className={videoStyles.previewChoiceLink} data-video-photo-picker
-            disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+          <label className={videoStyles.previewChoiceLink+" "+videoStyles.nativePhotoControl} data-video-photo-picker aria-disabled={recording||preparing}>
             <Camera size={14} aria-hidden="true"/>{photoUrl?ui.replace:layout.photoLink}
-          </button>
+            <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
+          </label>
         </div>
         <div className={videoStyles.previewChoice}>
           <label className={videoStyles.previewChoiceLabel}>
