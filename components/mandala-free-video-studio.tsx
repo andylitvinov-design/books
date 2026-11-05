@@ -38,6 +38,7 @@ import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
+import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
 import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
@@ -2021,8 +2022,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Safari may postpone decoding hidden MP4 until a trusted Create gesture.
   // Presence of all four verified catalogue sources unlocks the button;
   // the actual decoded-frame check remains mandatory during export.
+  // Each source must have physical geometry, enough actual seconds and a
+  // distinct master across the WHOLE movie. A landscape Canvas is not proof.
+  const physicallyVerifiedFourShots=usingFreeFilmCompilation&&cinematicPlan
+    ?cinematicPlan.shots.map(shot=>verifiedCategorySource(
+        FREE_FILM_CATALOG_BY_ID.get(shot.sceneId))):[];
+  const freeFilmPhysicalReady=physicallyVerifiedFourShots.length===4&&
+    physicallyVerifiedFourShots.every((scene,index)=>Boolean(scene&&cinematicPlan&&
+      verifiedSceneAspect(scene,aspect)&&
+      scene.durationSeconds>=cinematicPlan.shots[index].durationSeconds))&&
+    new Set(physicallyVerifiedFourShots.map(scene=>canonicalSourceMasterKey(scene))).size===4;
   const freeFilmSourcesListed=freeFilmShots.length===4 &&
-    freeFilmShots.every(shot=>Boolean(shot.film));
+    freeFilmShots.every(shot=>Boolean(shot.film))&&freeFilmPhysicalReady;
   // If iOS rejects a finalized Canvas recording, preserve a real, public,
   // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
   // it as the personal montage, with applied music/photo/text or duration.
@@ -3805,6 +3816,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
+      const actual=plan.shots.map(shot=>verifiedCategorySource(
+        FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)));
+      if(actual.length!==4||actual.some((scene,index)=>!scene||
+         !verifiedSceneAspect(scene,outputAspect)||
+         scene.durationSeconds<plan.shots[index].durationSeconds)||
+         new Set(actual.map(scene=>canonicalSourceMasterKey(scene))).size!==4)
+        throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
       resetEditorHistory();
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
