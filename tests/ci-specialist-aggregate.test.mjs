@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
@@ -1974,3 +1974,140 @@ test('an affected Mandala browser workflow remains required on exact HEAD', asyn
   await assert.rejects(()=>verify(api,ctx,mixed,opts),/SPECIALIST_FAILED/);
 });
 
+
+test('trusted one-time optional owner routing tolerates only exact immutable-base YAML edits', () => {
+  const owner='.github/workflows/hh-growth-studio.yml';
+  const guard='.github/workflows/hh-pr-sweep-guard.yml';
+  const legacy="      - 'tests/ci-pr-selective-workflows.test.mjs'";
+  const marker="      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'";
+  // Immutable fixtures: do not rely on concurrently merging owner PRs.
+  const oldOwner=['name: Example owner','on:','  pull_request:','    paths:',legacy,
+    'jobs:','  verify:','    runs-on: ubuntu-24.04'].join('\n')+'\n';
+  const oldGuard=['name: Example guard','on:','  pull_request:','    paths:',legacy,
+    'jobs:','  guard:','    runs-on: ubuntu-slim'].join('\n')+'\n';
+  const base=new Map([[owner,oldOwner],[guard,oldGuard]]);
+  const current=new Map([
+    [owner,oldOwner.replace(legacy,marker)],
+    [guard,oldGuard.replace(legacy,legacy+'\n'+marker)],
+  ]);
+  const files={base,current};
+  const rows=[
+    {filename:owner,status:'M'},
+    {filename:guard,status:'M'},
+    {filename:'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md',status:'A'},
+    {filename:'tests/ci-pr-selective-workflows.test.mjs',status:'M'},
+  ];
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,rows),true);
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,rows.slice(0,-2)),false,
+    'migration marker addition must be present');
+  const unsafe=[
+    {filename:'app/api/payments/checkout/route.ts',status:'M'},
+    {filename:owner,status:'A'},
+    {filename:'package-lock.json',status:'M'},
+  ];
+  for(const x of unsafe)
+    assert.equal(verifiedOptionalOwnerSelectorMigration(files,[...rows,x]),false);
+  const modified=current.get(owner)+'\n# unreviewed workflow amendment\n';
+  assert.equal(verifiedOptionalOwnerSelectorMigration({
+    base,current:new Map([[owner,modified],[guard,current.get(guard)]])
+  },rows),false,'any other job body change must keep strict current-base checks');
+  assert.equal(verifiedOptionalOwnerSelectorMigration(files,[...rows,rows[0]]),false,
+    'repeated or ambiguous diff entries never qualify');
+});
+test('independent production CI maintenance keeps already-green sensitive PRs on one HEAD', () => {
+  const live='c'.repeat(40), intermediate='d'.repeat(40);
+  const diff=rows=>({
+    status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:intermediate},{sha:live}],
+    files:rows,
+  });
+  const ordinary=filename=>({filename,status:'modified'});
+  const marker=filename=>({
+    filename,status:'modified',additions:0,deletions:1,changes:1,
+    patch:"@@ -10,3 +10,2 @@\n       - 'components/owned-service.tsx'\n-      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'\n   workflow_dispatch:",
+  });
+  const owner='.github/workflows/hh-growth-studio.yml';
+  const candidate=['lib/crm/messenger-store.js','app/api/app/crm/route.js'];
+  assert.equal(safeIndependentCiMaintenanceAdvance(diff([
+    ordinary('tests/pr-fast-lane.test.mjs'),
+    ordinary('scripts/ci-pr-loss-report.mjs'),
+    marker(owner),
+    ordinary('tests/ci-pr-selective-workflows.test.mjs'),
+  ]),BASE,live,candidate),true);
+  assert.equal(safeIndependentCiMaintenanceAdvance(diff([
+    ordinary('README.PR-LOSS-TELEMETRY.md'),
+    ordinary('lib/ci/pr-loss-metrics.mjs'),
+    ordinary('tests/ci-pr-repair-start.test.mjs'),
+  ]),BASE,live,candidate),true);
+  const forbidden=[
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-actionlint.yml',
+    '.github/workflows/hh-pr-sweep-guard.yml',
+    'scripts/ci-specialist-aggregate.mjs','lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-public-services-plan.mjs','tests/ci-specialist-aggregate.test.mjs',
+    'package.json','package-lock.json','supabase/migrations/1234.sql',
+    'app/api/payments/route.ts','lib/crm/messenger-store.js',
+    'components/mandala-free-video-studio.tsx',
+  ];
+  for(const name of forbidden)
+    assert.equal(safeIndependentCiMaintenanceAdvance(diff([ordinary(name)]),BASE,live,candidate),
+      false,'unsafe drift accepted: '+name);
+  assert.equal(safeIndependentCiMaintenanceAdvance(diff([ordinary(candidate[0])]),BASE,live,candidate),false);
+  const unsafeMarkers=[
+    {...marker(owner),patch:marker(owner).patch.replace("docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md","components/critical.tsx")},
+    {...marker(owner),additions:1},
+    {...marker(owner),deletions:2},
+    {...marker(owner),status:'removed'},
+    {...marker(owner),patch:null},
+    {...marker(owner),previous_filename:'other.yml'},
+    {...marker(owner),patch:marker(owner).patch+"\n+    continue-on-error: true"},
+  ];
+  for(const item of unsafeMarkers)
+    assert.equal(safeIndependentCiMaintenanceAdvance(diff([item]),BASE,live,candidate),false,
+      'unverified owner routing change may never reuse old CI');
+  const good=diff([ordinary('tests/pr-fast-lane.test.mjs')]);
+  for(const bad of [
+    {...good,status:'diverged'},{...good,behind_by:1},
+    {...good,merge_base_commit:{sha:intermediate}},
+    {...good,base_commit:{sha:intermediate}},
+    {...good,commits:[{sha:intermediate}]},
+    {...good,commits:[{sha:intermediate},{sha:intermediate}]},
+    {...good,files:Array(100).fill(ordinary('tests/pr-fast-lane.test.mjs'))},
+    {...good,files:[ordinary('tests/pr-fast-lane.test.mjs'),ordinary('tests/pr-fast-lane.test.mjs')]},
+    {...good,files:[{...ordinary('tests/pr-fast-lane.test.mjs'),status:'removed'}]},
+    {...good,files:[{...ordinary('tests/pr-fast-lane.test.mjs'),previous_filename:'other'}]},
+  ]) assert.equal(safeIndependentCiMaintenanceAdvance(bad,BASE,live,candidate),false);
+  assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,BASE,candidate),false);
+  assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,[]),false);
+  assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,['tests/pr-fast-lane.test.mjs']),false);
+});
+
+test('base movement during Specialist preserves exact-HEAD results only for proven disjoint CI delta', async () => {
+  const live='c'.repeat(40);
+  const comparison=filename=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:[{filename,status:'modified'}],
+  });
+  let liveReads=0;
+  const api={
+    pr:async()=>pr(),
+    target:async()=>(++liveReads===1?BASE:live),
+    compare:async()=>comparison('tests/pr-fast-lane.test.mjs'),
+    runs:async()=>[run()],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
+  };
+  const files={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const good=await verify(api,ctx,files,{maxWaitMs:0});
+  assert.deepEqual(good.expected,[path]);
+  assert.ok(liveReads>=2,'base drift must be inspected after real Specialist jobs');
+  api.target=async()=>live;
+  api.compare=async()=>comparison('.github/workflows/hh-pr-core-release.yml');
+  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  api.compare=async()=>comparison('tests/pr-fast-lane.test.mjs');
+  api.pr=async()=>({...pr(),head:{...pr().head,sha:'d'.repeat(40)}});
+  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
