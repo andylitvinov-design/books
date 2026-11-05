@@ -3772,21 +3772,21 @@
 @media(max-width:759px){
   /* A true, bounded 16:9 player, not the long cinematic banner. */
   .studio[data-active-workspace="video"] .quickBuilder{gap:6px!important;padding-bottom:10px}
-  .studio[data-active-workspace="video"] .quickBuilder>.quickBrandBar{
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{
     min-height:42px!important;padding:0 3px!important}
-  .studio[data-active-workspace="video"] .quickBrandMobileTitle{display:none!important}
-  .studio[data-active-workspace="video"] .quickBrandIdentity{
+  .studio[data-active-workspace] .quickBrandMobileTitle{display:none!important}
+  .studio[data-active-workspace] .quickBrandIdentity{
     display:grid!important;gap:1px}
-  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+  .studio[data-active-workspace] .quickBrandIdentity strong{
     font:800 clamp(16px,4.3vw,19px)/1.08 Georgia,serif}
-  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+  .studio[data-active-workspace] .quickBrandIdentity small{
     font-size:10px;line-height:1.16}
-  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav{
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav{
     gap:3px!important;margin:0!important}
-  .studio[data-active-workspace="video"] .quickVideoNav button{
+  .studio[data-active-workspace] .quickVideoNav button{
     min-height:47px!important;padding:4px 1px!important;gap:2px!important;
     border-radius:11px!important;font-size:clamp(9px,2.5vw,11px)!important}
-  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+  .studio[data-active-workspace] .quickVideoNav button svg{
     width:17px!important;height:17px!important}
   .studio[data-active-workspace="video"] .quickBuilder>.previewStage{margin:0!important}
   .studio[data-active-workspace="video"] .previewStage>.heroWithRail{
@@ -3910,43 +3910,43 @@
     display:none!important;
   }
   /* Preserve the video preview, navigation, error notices and result if ready. */
-  .studio[data-active-workspace="video"] .quickBuilder>.quickBrandBar{
+  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{
     min-height:37px!important;margin:0!important;padding:0 2px!important;gap:5px;
   }
-  .studio[data-active-workspace="video"] .quickBrandBack{
+  .studio[data-active-workspace] .quickBrandBack{
     width:35px;height:35px;min-width:35px;min-height:35px;
   }
-  .studio[data-active-workspace="video"] .quickBrandBack svg{
+  .studio[data-active-workspace] .quickBrandBack svg{
     width:24px!important;height:24px!important;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity{
+  .studio[data-active-workspace] .quickBrandIdentity{
     display:grid!important;gap:0;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+  .studio[data-active-workspace] .quickBrandIdentity strong{
     font-size:clamp(15px,4.3vw,19px)!important;
   }
-  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+  .studio[data-active-workspace] .quickBrandIdentity small{
     font-size:10px!important;line-height:1.07;
   }
-  .studio[data-active-workspace="video"] .quickBrandPhoto{
+  .studio[data-active-workspace] .quickBrandPhoto{
     min-width:42px;min-height:39px;padding:4px;
     background:#fffdf7;border-radius:11px;
   }
-  .studio[data-active-workspace="video"] .quickBrandPhoto span{
+  .studio[data-active-workspace] .quickBrandPhoto span{
     display:none;
   }
-  .studio[data-active-workspace="video"] .quickBrandProfile{
+  .studio[data-active-workspace] .quickBrandProfile{
     width:39px;height:39px;
   }
-  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav{
+  .studio[data-active-workspace] .quickBuilder>.quickVideoNav{
     gap:3px!important;margin:0!important;
   }
-  .studio[data-active-workspace="video"] .quickVideoNav button{
+  .studio[data-active-workspace] .quickVideoNav button{
     min-height:44px!important;max-height:46px;gap:1px!important;
     padding:3px 1px!important;border-radius:10px!important;
     font-size:clamp(9px,2.5vw,11px)!important;line-height:1.12!important;
   }
-  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+  .studio[data-active-workspace] .quickVideoNav button svg{
     width:16px!important;height:16px!important;
   }
   .studio[data-active-workspace="video"] .previewStage>.heroWithRail{
@@ -4163,7 +4163,6 @@
   .studio[data-active-workspace="editor"] .quickBuilder{
     gap:8px!important;background:var(--hh-light-canvas,#fbf5e9)!important
   }
-  .studio[data-active-workspace="editor"] .quickBuilder>.quickBrandBar{display:none!important}
   .studio[data-active-workspace="editor"] .quickBuilder>.previewStage{order:2!important}
   .studio[data-active-workspace="editor"] .previewStage .heroRail{display:none!important}
   .studio[data-active-workspace="editor"] .previewStage>.heroWithRail>.hero{
