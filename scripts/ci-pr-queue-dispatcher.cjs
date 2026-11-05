@@ -705,7 +705,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // do not let an old conflict handoff prevent a no-token cloud comparison.
   // This never authorizes source writes or removes hh:repair-manual.
   const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty';
-  if(task.lane==='conflict'&&isVerifiedDirty){
+  if(task.lane!=='legacy'&&isVerifiedDirty){
    // Conflicts cannot be repaired by the ESLint worker. Hand off once per
    // exact HEAD, then retire the queue labels under a manual owner blocker.
    // A retry may finish cleanup, but MUST NOT repost the handoff.
