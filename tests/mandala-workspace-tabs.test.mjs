@@ -9,12 +9,12 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","editor","phrases","effects","practices","pro"]);
+ assert.deepEqual(ids,["video","phrases","editor","effects","practices","pro"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/Фразы и гипнокоррекция/);
+ assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
  assert.match(studio,/Гипноэффекты/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -181,7 +181,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Стиль видео"','tab:"Фразы и гипнокоррекция"','tab:"Гипноэффект"',
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -203,7 +203,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("unified Hypnocorrection editor appears first in the Phrases workspace",()=>{
+test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
@@ -212,11 +212,13 @@ test("unified Hypnocorrection editor appears first in the Phrases workspace",()=
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
+ assert.match(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-legacy-phrase-editor hidden aria-hidden="true"/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ["Фразы и гипнокоррекция","Phrases & hypnocorrection","Frases e hipnocorrección"])
+ for(const label of ['tab:"Идеи"','tab:"Ideas"'])
    assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
@@ -231,7 +233,7 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
  const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
- assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second");
+ assert.ok(tabs.indexOf('id:"phrases"')<tabs.indexOf('id:"editor"'),"Ideas is second, Montage third");
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
@@ -273,8 +275,10 @@ test("all six workspaces use the same in-flow navigation and one real export",()
    "no mode can teleport the navigation to a different vertical position");
  const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
  assert.match(editor,/data-video-montage-tools/);
- assert.match(editor,/data-video-montage-export/);
- assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ assert.match(editor,/data-video-montage-tab=\{item.id\}/);
+ assert.match(editor,/data-video-montage-preferences/);
+ assert.doesNotMatch(editor,/data-video-montage-export/, "the old second export button must stay removed");
+ assert.match(studio,/onClick=\{createQuickVideo\}/,"the single real Generate CTA must reuse the original renderer");
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);

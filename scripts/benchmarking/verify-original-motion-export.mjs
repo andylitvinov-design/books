@@ -29,7 +29,16 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  await page.locator('[data-auto-video-all-scenes]').click();
+  const continueScenario = page.locator('[data-video-continue-scenarios]');
+  await continueScenario.waitFor({ state: 'visible', timeout: 15000 });
+  await continueScenario.click();
+  await page.locator('[data-mandala-free-video][data-video-scenario-open="true"]')
+    .waitFor({ state: 'visible', timeout: 15000 });
+  const allStories = page.locator('[data-auto-video-all-scenes]');
+  await allStories.waitFor({ state: 'visible', timeout: 15000 });
+  await allStories.click();
+  await page.locator('[data-mandala-free-video][data-video-advanced-open="true"]')
+    .waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');

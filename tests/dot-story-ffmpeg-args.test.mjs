@@ -8,9 +8,9 @@ const scenes=Array.from({length:4},(_,i)=>({
  tags:['nature'],motifs:['nature'],sha256:sha,
  video:'/videos/holistic-house/film-collection-v3/scene-'+i+'.mp4',
 }));
-const plan={ok:true,version:'hh-dot-story-cut-plan-v1',audioDurationMs:48000,
+const plan={ok:true,version:'hh-dot-story-cut-plan-v1',audioDurationMs:20000,
  shots:scenes.map((s,i)=>({index:i,sceneId:s.id,sourcePath:s.video,
- stage:i,startMs:i*12000,durationMs:12000,sourceDurationMs:5000}))};
+ stage:i,startMs:i*5000,durationMs:5000,sourceDurationMs:5000}))};
 const verifiedFiles=Object.fromEntries(scenes.map(s=>[s.id,{
  approved:true,path:s.video,sha256:sha,durationMs:5000,
  absolutePath:'/var/task/public'+s.video,
@@ -18,9 +18,9 @@ const verifiedFiles=Object.fromEntries(scenes.map(s=>[s.id,{
 test('four verified MP4s compile to contiguous FFmpeg timeline with original audio input',()=>{
  const args=compileDotStoryFfmpegArgs({plan,scenes,verifiedFiles,
  audioFile:'/tmp/audio.mp3',outputFile:'/tmp/result.mp4'});
- assert.equal(args.filter(x=>x==='-stream_loop').length,4);
+ assert.equal(args.filter(x=>x==='-stream_loop').length,0);
  assert.equal(args.filter(x=>x==='-i').length,5);
- assert.ok(args.includes('48.000'));
+ assert.ok(args.includes('20.000'));
  assert.ok(args.includes('4:a:0'));
  assert.ok(args.includes('concat=n=4:v=1:a=0[v]')===false);
  assert.ok(args.join(' ').includes('concat=n=4:v=1:a=0[v]'));
@@ -35,20 +35,32 @@ test('reject missing physical proof, arbitrary paths and timeline drift',()=>{
  }}),/PHYSICAL_PROOF/);
 });
 
-test('repeated montage shots reuse a single decoder per unique licensed MP4',()=>{
- const twelve=Array.from({length:12},(_,i)=>({
+test('repeated nonadjacent master IDs and overdubbed short sources fail closed',()=>{
+ const repeated=Array.from({length:12},(_,i)=>({
   index:i,stage:Math.floor(i/3),sceneId:scenes[i%4].id,
-  sourcePath:scenes[i%4].video,startMs:i*12000,
-  durationMs:12000,sourceDurationMs:5000,
+  sourcePath:scenes[i%4].video,startMs:i*5000,
+  durationMs:5000,sourceDurationMs:5000,
  }));
- const args=compileDotStoryFfmpegArgs({
-  plan:{...plan,audioDurationMs:144000,shots:twelve},
-  scenes,verifiedFiles,audioFile:'/tmp/audio.mp3',outputFile:'/tmp/result.mp4',
- });
- assert.equal(args.filter(x=>x==='-stream_loop').length,4);
- assert.equal(args.filter(x=>x==='-i').length,5);
- assert.ok(args.join(' ').includes('split=3'));
- assert.ok(args.join(' ').includes('concat=n=12:v=1:a=0[v]'));
+ const base={scenes,verifiedFiles,audioFile:'/tmp/audio.mp3',outputFile:'/tmp/result.mp4'};
+ assert.throws(()=>compileDotStoryFfmpegArgs({
+  ...base,plan:{...plan,audioDurationMs:60000,shots:repeated},
+ }),/STORY_RENDER_REPEATED_MASTER/);
+ assert.throws(()=>compileDotStoryFfmpegArgs({
+  ...base,plan:{...plan,shots:plan.shots.map((s,i)=>
+   i===0?{...s,durationMs:5001,loopRequired:true}:s)},
+ }),/STORY_RENDER_SOURCE_EXHAUSTED/);
+ assert.throws(()=>compileDotStoryFfmpegArgs({
+  ...base,plan:{...plan,shots:plan.shots.map((s,i)=>
+   i===0?{...s,durationMs:5001}:s)},
+ }),/STORY_RENDER_SOURCE_EXHAUSTED/);
+});
+test('distinct scene IDs derived from one original filmed master cannot repeat',()=>{
+ const withOrigins=scenes.map((scene,i)=>({...scene,
+  originMasterKeys:[i<2?'original:https://dareful.com/source-1/':'original:master-'+i]}));
+ assert.throws(()=>compileDotStoryFfmpegArgs({
+  plan,scenes:withOrigins,verifiedFiles,
+  audioFile:'/tmp/audio.mp3',outputFile:'/tmp/result.mp4',
+ }),/STORY_RENDER_REPEATED_MASTER/);
 });
 test('stage and trusted physical source are mandatory',()=>{
  const base={plan,scenes,verifiedFiles,audioFile:'/tmp/audio.mp3',
