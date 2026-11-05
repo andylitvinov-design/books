@@ -116,3 +116,23 @@ test('trusted ranked alternatives join four fixed narrative anchors without loop
   assert.ok(r.shots.every((s,i)=>!s.loopRequired&&s.durationMs<=s.sourceDurationMs&&
     (!i||s.sceneId!==r.shots[i-1].sceneId)));
 });
+
+test('unique owner montage protects all four act anchors and never repeats a scene',()=>{
+ const anchors=scenes.slice(0,4).map(x=>x.id);
+ const result=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:30000,
+   scenes,stageClipIds:anchors,allowRepetition:false});
+ assert.equal(result.ok,true);
+ assert.equal(result.uniqueSceneCount,result.cutCount);
+ assert.equal(result.cutCount,6);
+ assert.deepEqual([0,1,2,3].map(stage=>
+   result.shots.find(x=>x.stage===stage).sceneId),anchors);
+ assert.ok(result.shots.every(x=>!x.loopRequired));
+});
+test('unique owner montage fails closed rather than recycling scenes',()=>{
+ const result=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,
+   scenes,stageClipIds:scenes.slice(0,4).map(x=>x.id),
+   allowRepetition:false});
+ assert.equal(result.code,'UNIQUE_SCENES_INSUFFICIENT');
+ assert.equal(result.requiredCount,36);
+ assert.equal(result.approvedRelevantCount,6);
+});
