@@ -152,8 +152,12 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens the compact studio advanced audio controls before using them",()=>{
-  assert.match(source,/allStories\.click\(\)[\s\S]*?data-video-advanced-open/);
+test("voice browser opens visible Montage Audio before real media controls",()=>{
+  assert.match(source,/const preferences=page\.locator\('\[data-video-montage-preferences\]'\)/);
+  assert.match(source,/await preferences\.waitFor\(\{state:"visible",timeout:25000\}\)/);
+  assert.match(source,/await montageAudioTab\.click\(\)/);
+  assert.match(source,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/const montageSettings=page\.locator\('\[data-video-montage-settings\]'\)/);
   assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 

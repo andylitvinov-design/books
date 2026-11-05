@@ -160,6 +160,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Montage defaults to Settings. The audio disclosure is mounted only
+      // after a visible user tap on its Audio tab; never click a hidden panel.
+      const preferences=page.locator('[data-video-montage-preferences]');
+      await preferences.waitFor({state:"visible",timeout:25000});
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioTab.waitFor({state:"visible",timeout:15000});
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
