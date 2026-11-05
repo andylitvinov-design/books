@@ -1114,11 +1114,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='receipt'&&<>
             <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
             <p className={styles.lead}>{c.congratsLead}</p>
-            <div className={styles.learnedSkill} data-opora-learned-skill={cycle.day}>
+            {/* A neutral safety exit must not replay the practice instruction. */}
+            {!neutralSupport&&<div className={styles.learnedSkill} data-opora-learned-skill={cycle.day}>
               <span>{c.congratsSkillLabel}</span>
               <strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||lesson.title}</strong>
               <p><b>{c.congratsPracticeLabel}:</b> {(showNewPlan?dailyPlan?.practice:null)||dayCopy?.practice||practiceGuide}</p>
-            </div>
+            </div>}
             <p className={styles.soft}>{t.savedText}</p>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
