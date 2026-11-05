@@ -39,8 +39,6 @@ on:
       - 'scripts/ci-pr-schedule-fallback.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
-      - 'tests/ci-pr-direction-watcher.test.cjs'
-      - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
 permissions:
   contents: read
@@ -94,16 +92,26 @@ jobs:
                 .addCodeBlock(JSON.stringify(result,null,2)).write();
               return;
             }
-            // Prior PR #3108 proved object write. Subsequent push/manual probes
-            // remain READ-ONLY and never mutate source or required checks.
-            const tokenProbeRequested=context.eventName==='push' ||
+            // Control-code pushes only syntax-check files: no exact PR target.
+            // Never probe an obsolete hardcoded PR and produce false RED.
+            if(context.eventName==='push'){
+              core.info('HH_CI_WORKER_PUSH_CHECK_ONLY: no addressed PR probe');
+              return;
+            }
+            // Manual owner-token diagnosis remains available and fail closed.
+            const tokenProbeRequested=
               String(context.payload.inputs?.token_probe ?? 'false')==='true';
             if(tokenProbeRequested){
+              const probePrNumber=Number(context.payload.inputs?.pr_number||0);
+              if(!Number.isSafeInteger(probePrNumber)||probePrNumber<1){
+                core.setFailed('HH_OWNER_TOKEN_PROBE_EXPLICIT_PR_REQUIRED');
+                return;
+              }
               const {probeOwnerToken}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-owner-token-probe.cjs');
               const result=await probeOwnerToken({
                 github,ownerToken:token,
-                prNumber:Number(context.payload.inputs?.pr_number||2169),
+                prNumber:probePrNumber,
                 writeProbe:false,
                 report:observation=>core.info('HH_OWNER_TOKEN_PROBE_STAGE '+JSON.stringify(observation))
               });
