@@ -34,6 +34,17 @@ jobs:
           node --check scripts/review-dareful-cinematic-wave2-20261105.mjs
           node --test tests/cinematic-hd-footage-wave2-contract.test.mjs
           node scripts/review-dareful-cinematic-wave2-20261105.mjs
+      - name: Reject incomplete retry reports or any source publication
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const r=JSON.parse(readFileSync("artifacts/cinematic-dareful-wave2-retry-20261105/report.json","utf8"));
+            if(r.reviewedSourceCandidates!==10||r.sources.length!==10||
+               r.publicationStatus!=="ALL_UNAPPROVED_REVIEW_ONLY"||
+               r.sources.some(s=>s.readyForPublication!==false||s.editorialApproval!==false))
+              process.exit(1);
+          '
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json data/video-catalog/free-stock-scenes.json
       - name: Archive private actual moving HD video and visual contact sheets (never public)
         if: always()
         uses: actions/upload-artifact@v4
