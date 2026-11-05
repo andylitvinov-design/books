@@ -4,7 +4,7 @@
 import {appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
-import {analyzePrLoss, summarizePrLoss, connected} from '../lib/ci/pr-loss-metrics.mjs';
+import {analyzePrLoss, summarizePrLoss, connected, analyzePrLifecycle} from '../lib/ci/pr-loss-metrics.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -92,7 +92,25 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
           if(comments.length===100)searchTruncated=true;
         }catch(err){errors.push('comments:'+pr.number+':'+String(err.message||err));}
       }
+      // Read-only supplementary P1 lifecycle evidence. Failed or incomplete
+      // reads remain visibly unknown, never a fabricated timestamp or PASS.
+      let timeline=null,commitStatus=null;
+      try {
+        const events=await read('/repos/'+repo+'/issues/'+pr.number+'/timeline?per_page=100&page=1');
+        if(Array.isArray(events)&&events.length<100)timeline=events;
+        else {searchTruncated=true;errors.push('timeline:'+pr.number+':incomplete');}
+      } catch(err) {errors.push('timeline:'+pr.number+':'+String(err.message||err));}
+      if(pr.merged_at&&/^[0-9a-f]{40}$/i.test(pr.merge_commit_sha||'')) {
+        try {commitStatus=await read('/repos/'+repo+'/commits/'+pr.merge_commit_sha+'/status');}
+        catch(err) {errors.push('vercel-status:'+pr.number+':'+String(err.message||err));}
+      }
       const row=analyzePrLoss(pr,selected,jobRows,comments,new Date(now).toISOString());
+      row.lifecycle=analyzePrLifecycle(pr,selected,jobRows,comments,timeline,commitStatus,{
+        // PR commits may be prepared before opening; never assert complete
+        // first-head history if known CI runs are missing or unlinked.
+        runHistoryComplete:result.total_count<=100&&matched.length===selected.length&&
+          (pr.commits<=1||matched.some(r=>r.head_sha!==pr.head.sha))
+      });
       output.push(row);
     }catch(err) {errors.push('pr:'+issue.number+':'+String(err.message||err));}
   }
@@ -126,6 +144,17 @@ export function formatSummary(report) {
     ' | '+fmt(x.minutes)+' | '+x.pr_count+' | '+fmt(x.mean_minutes)+
     ' | '+fmt(x.p50_minutes)+' | '+fmt(x.p95_minutes)+' |'));
   if(!report.top3.length) lines.push('| — | Insufficient confirmed timestamps | — | — | — | — | — |');
+  lines.push('','### PR → LIVE timestamps (observed UTC; unknown never equals zero)');
+  lines.push('| PR | Ready | First CI | Runner | Error | Repair | New HEAD first CI* | Final PASS | Merge | Vercel provider READY* | Functional smoke |');
+  lines.push('| ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for(const row of report.rows) {
+    const t=row.lifecycle?.timestamps||{};
+    const phases=['ready_at','first_ci_at','runner_started_at','first_error_at',
+      'repair_started_at','new_head_first_ci_observed_at','final_pass_at','merged_at',
+      'vercel_reported_ready_at','functional_smoke_at'];
+    lines.push('| #'+row.pr+' | '+phases.map(k=>t[k]||'unknown').join(' | ')+' |');
+  }
+  lines.push('','*A new HEAD time here is its first CI observation, not its remote push timestamp. Vercel means only the provider status on the merged release SHA: NOT independent Vercel API READY or verified public alias. Functional smoke requires independent exact-release interaction evidence. See JSON for individual provenance/coverage.*');
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
     fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count);

@@ -159,6 +159,9 @@ jobs:
                   scripts/ci-public-services-plan.mjs|\
                   tests/ci-public-services-plan.test.mjs|\
                   scripts/ci-pr-readiness.mjs|\
+                  scripts/ci-pr-loss-report.mjs|\
+                  lib/ci/pr-loss-metrics.mjs|\
+                  tests/ci-pr-loss-metrics.test.mjs|\
                   scripts/ci-source-preflight.mjs|\
                   tests/ci-source-preflight.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
