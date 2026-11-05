@@ -85,7 +85,14 @@ test('CI worker offers dedicated read-only probe without new write token or job'
   assert.match(y,/      token_probe:/);
   assert.match(y,/HH_OWNER_TOKEN_PROBE /);
   assert.match(y,/READ_OK_WRITE_UNVERIFIED/);
-  assert.match(y,/context\.eventName==='push'/);
+  assert.match(y,/context\\.eventName==='push'/);
+  assert.ok(y.includes('HH_CI_WORKER_PUSH_CHECK_ONLY'));
+  assert.ok(y.includes('HH_OWNER_TOKEN_PROBE_EXPLICIT_PR_REQUIRED'));
+  assert.ok(y.includes('prNumber:probePrNumber'));
+  assert.ok(!y.includes('prNumber:Number(context.payload.inputs?.pr_number||2169)'));
+  assert.ok(!y.includes("tokenProbeRequested=context.eventName==='push'"));
+  assert.ok(!y.includes('tests/ci-pr-direction-watcher.test.cjs'));
+  assert.ok(!y.includes('tests/ci-pr-priority.test.cjs'));
 });
 
 test('scoped blob write succeeds without modifying branch or creating a commit',async()=>{
