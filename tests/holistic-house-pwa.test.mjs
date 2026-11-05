@@ -42,7 +42,7 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
   assert.doesNotMatch(page,/manifest: path\[0\] === 'course'/)
 })
 
-test('installed canonical root scope covers all six tab routes',()=>{
+test('installed canonical root scope covers all seven tab routes',()=>{
  const origin='https://holistichouse.vercel.app';
  for(const locale of ['en','ru','es']){
   const name='public/holistic-house-app'+(locale==='en'?'':'-'+locale)+'.webmanifest';
