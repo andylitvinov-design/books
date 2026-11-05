@@ -84,9 +84,18 @@ try {
     console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
     throw error;
   }
-  const download = page.waitForEvent('download', { timeout: 30000 });
+  // The production Save action opens a chooser; only Files starts a download.
+  // Retain the real exported MP4/audio FFprobe gate after this delivery handoff.
   await save.click();
-  await (await download).saveAs(movie);
+  const delivery = page.locator('[data-video-messenger-delivery]');
+  await delivery.waitFor({state: 'visible', timeout: 10000});
+  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
+  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
+  const [download] = await Promise.all([
+    page.waitForEvent('download', {timeout: 30000}),
+    delivery.locator('[data-video-save-direct-choice]').click(),
+  ]);
+  await download.saveAs(movie);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));
