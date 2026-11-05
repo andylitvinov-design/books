@@ -10,6 +10,7 @@ import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v1.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
+import { MandalaVideoIdeas } from "./mandala-video-ideas";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
@@ -38,7 +39,6 @@ import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
-import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
 import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
@@ -204,24 +204,24 @@ const translations = {
 
 const workspaceCopy = {
  ru:{
-  video:{tab:"Стиль видео",title:"Стиль видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
-  phrases:{tab:"Фразы и гипнокоррекция",title:"Фразы и гипнокоррекция",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
+  video:{tab:"Цель",title:"Цель видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
+  phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
   effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
   editor:{tab:"Монтаж",title:"Быстрая генерация",desc:"Видеостиль, фото, голос и музыка — основные настройки видео."}
  },
  en:{
-  video:{tab:"Video style",title:"Video style",desc:"Real film scenes, atmosphere and visual direction."},
-  phrases:{tab:"Phrases & hypnocorrection",title:"Phrases & hypnocorrection",desc:"Your intention, support phrases and optional voice or music."},
+  video:{tab:"Goal",title:"Video goal",desc:"Real film scenes, atmosphere and visual direction."},
+  phrases:{tab:"Ideas",title:"Video ideas",desc:"Your intention, support phrases and optional voice or music."},
   effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
   editor:{tab:"Montage",title:"Quick generation",desc:"Video styles, photo, voice and music — the essential settings."}
  },
  es:{
-  video:{tab:"Estilo vídeo",title:"Estilo de vídeo",desc:"Escenas reales, ambiente y estilo visual."},
-  phrases:{tab:"Frases e hipnocorrección",title:"Frases e hipnocorrección",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
+  video:{tab:"Objetivo",title:"Objetivo del vídeo",desc:"Escenas reales, ambiente y estilo visual."},
+  phrases:{tab:"Ideas",title:"Ideas para vídeo",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
   effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
@@ -230,14 +230,14 @@ const workspaceCopy = {
 } as const;
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"editor",Icon:Scissors},
- {id:"phrases",Icon:Heart},{id:"effects",Icon:Sparkles},
+ {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
+ {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
  {id:"practices",Icon:Leaf},{id:"pro",Icon:Zap}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Стиль",editor:"Монтаж",phrases:"Фразы",effects:"Гипно",practices:"Курс",pro:"PRO"},
- en:{video:"Style",editor:"Edit",phrases:"Phrases",effects:"Hypno",practices:"Course",pro:"PRO"},
- es:{video:"Estilo",editor:"Montaje",phrases:"Frases",effects:"Hipno",practices:"Curso",pro:"PRO"}
+ ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO"},
+ en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO"},
+ es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO"}
 } as const;
 
 const studioCopy = {
@@ -2022,18 +2022,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Safari may postpone decoding hidden MP4 until a trusted Create gesture.
   // Presence of all four verified catalogue sources unlocks the button;
   // the actual decoded-frame check remains mandatory during export.
-  // Each source must have physical geometry, enough actual seconds and a
-  // distinct master across the WHOLE movie. A landscape Canvas is not proof.
-  const physicallyVerifiedFourShots=usingFreeFilmCompilation&&cinematicPlan
-    ?cinematicPlan.shots.map(shot=>verifiedCategorySource(
-        FREE_FILM_CATALOG_BY_ID.get(shot.sceneId))):[];
-  const freeFilmPhysicalReady=physicallyVerifiedFourShots.length===4&&
-    physicallyVerifiedFourShots.every((scene,index)=>Boolean(scene&&cinematicPlan&&
-      verifiedSceneAspect(scene,aspect)&&
-      scene.durationSeconds>=cinematicPlan.shots[index].durationSeconds))&&
-    new Set(physicallyVerifiedFourShots.map(scene=>canonicalSourceMasterKey(scene))).size===4;
   const freeFilmSourcesListed=freeFilmShots.length===4 &&
-    freeFilmShots.every(shot=>Boolean(shot.film))&&freeFilmPhysicalReady;
+    freeFilmShots.every(shot=>Boolean(shot.film));
   // If iOS rejects a finalized Canvas recording, preserve a real, public,
   // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
   // it as the personal montage, with applied music/photo/text or duration.
@@ -3816,13 +3806,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
-      const actual=plan.shots.map(shot=>verifiedCategorySource(
-        FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)));
-      if(actual.length!==4||actual.some((scene,index)=>!scene||
-         !verifiedSceneAspect(scene,outputAspect)||
-         scene.durationSeconds<plan.shots[index].durationSeconds)||
-         new Set(actual.map(scene=>canonicalSourceMasterKey(scene))).size!==4)
-        throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
       resetEditorHistory();
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
@@ -4973,7 +4956,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.heroShade} aria-hidden="true"/>
         <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording}>
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
-            {activeWorkspace==="phrases"?(locale==="ru"?"Фразы · предпросмотр":locale==="es"?"Frases · vista previa":"Phrases · preview"):locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
+            {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
           <h2>{activeWorkspace==="phrases"
               ?(locale==="ru"?"Как работают фразы поддержки":locale==="es"?"Cómo funcionan las frases":"How support phrases work")
@@ -5268,7 +5251,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
-          {deepHypnoPane}
+          <MandalaVideoIdeas locale={locale} theme={theme}
+            active={activeWorkspace==="phrases"} disabled={recording||preparing}
+            settings={affirmations} canGenerate={canGenerate&&freeVideoSelected&&!phrasePending}
+            generating={recording||preparing} onChange={setAffirmations}
+            onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
+            onCreate={createQuickVideo}/>
+          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
+            {deepHypnoPane}
+          </div> : null}
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut disabled={recording||preparing}

@@ -4056,3 +4056,8 @@
     padding-top:5px!important;padding-bottom:5px!important;
   }
 }
+
+/* 05 Nov approved compact Ideas, with no visible legacy tone/focus or audio pane. */
+.studio[data-active-workspace="phrases"] .quickPhraseSection>.quickSectionHeading{display:none!important}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]{display:none!important}
+.studio[data-active-workspace="phrases"] .quickPhraseSection{padding:0!important;margin:0!important}
