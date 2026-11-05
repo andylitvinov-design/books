@@ -1,5 +1,6 @@
 import test from "node:test";
 import "./free-film-source-loader.test.mjs";
+import "./mandala-video-ideas-eight-axes.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
@@ -281,9 +282,9 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 });
 
 
-test("owner-approved second Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
+test("owner-approved third Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
+ assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
