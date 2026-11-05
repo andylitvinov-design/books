@@ -10,7 +10,8 @@ const voice=source("components/mandala-affirmation-voice.tsx");
 const recorder=source("components/mandala-local-voice-tracks.tsx");
 
 test("approved six Studio tabs lead the wide video preview on mobile",()=>{
-  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
+  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+  assert.match(studio,/ru:\{video:"Цель",editor:"Монтаж",phrases:"Идеи"/);
   assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
   assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
   assert.doesNotMatch(studio,/createPortal\(nav|effectsNavTarget|montageNavTarget/);

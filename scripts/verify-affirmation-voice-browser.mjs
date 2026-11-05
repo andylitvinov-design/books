@@ -50,6 +50,15 @@ async function verifyWorkspaceHydration(browser,locale){
     // The owner-approved compact first screen intentionally hides the director.
     // Use the real visitor's Continue gesture, never force-click a hidden control.
     await openScenarios.click();
+    // Goal → Ideas can change the active workspace; follow only visible tabs
+    // before opening the real four-story editor on either live UI version.
+    const goalsTab=page.locator('[data-video-quick-control="video"]');
+    if(await goalsTab.getAttribute("aria-pressed")!=="true"){
+      const ideasTab=page.locator('[data-video-quick-control="phrases"]');
+      await expect(ideasTab).toHaveAttribute("aria-pressed","true");
+      await goalsTab.click();
+      await expect(goalsTab).toHaveAttribute("aria-pressed","true");
+    }
     await expect(studio).toHaveAttribute("data-video-scenario-open","true");
     await expect(allStories).toBeVisible();
     await expect(allStories).toBeEnabled();
