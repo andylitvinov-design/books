@@ -14,8 +14,18 @@ function computeCapacity(active,queued,jobs){
   // Scheduled/push CI probes never edit PR metadata. They have an independent
   // workflow concurrency group and must not reserve the addressed CI lane.
   !(x.name===WORKFLOWS.ci&&['schedule','push'].includes(x.event));
- for(const x of [...active,...queued])if(Object.prototype.hasOwnProperty.call(activeWorker,x.name)&&occupiesSlot(x))
+ // GitHub's in_progress/queued pages may overlap while a run transitions.
+ // Never count one authenticated run ID as two occupied Repair Worker slots.
+ // Missing/invalid IDs remain conservatively counted as separate runs.
+ const countedRunIds=new Set();
+ for(const x of [...active,...queued]){
+  if(!Object.prototype.hasOwnProperty.call(activeWorker,x?.name)||!occupiesSlot(x))continue;
+  if(Number.isSafeInteger(x.id)&&x.id>0){
+   if(countedRunIds.has(x.id))continue;
+   countedRunIds.add(x.id);
+  }
   activeWorker[x.name]++;
+ }
  const runningJobs=jobs.filter(x=>x.status==='in_progress').length;
  const queuedJobs=jobs.filter(x=>['queued','waiting','pending'].includes(x.status)).length;
  // GitHub controls native runner scheduling. Reserve optional CI worker capacity

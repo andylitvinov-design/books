@@ -66,6 +66,23 @@ test('Repair has an independently bounded lane when queued Core CI is saturated'
   assert.equal(canDispatchRepair(Infinity,0),false);
   assert.equal(canDispatchRepair(3,NaN),false);
 });
+test('capacity counts an active Repair Worker only once across overlapping Actions pages',()=>{
+ const {computeCapacity,admission}=require('../scripts/ci-pr-capacity.cjs');
+ const name='HH PR source Repair Worker';
+ const active={id:41970000001,name,status:'in_progress'};
+ const crossing={...active,status:'queued'};
+ const overlap=computeCapacity([active],[crossing],[]);
+ assert.equal(overlap.activeWorker[name],1);
+ assert.equal(admission('repair',overlap),'ADMIT');
+ const distinct=computeCapacity([active,{...active,id:41970000002}],[],[]);
+ assert.equal(distinct.activeWorker[name],2);
+ assert.equal(admission('repair',distinct),'WORKER_BUSY');
+ const unknownIds=computeCapacity([{name,status:'in_progress'}],[{name,status:'queued'}],[]);
+ assert.equal(unknownIds.activeWorker[name],2,'unidentified runs must not be optimistically de-duplicated');
+ assert.equal(admission('repair',unknownIds),'WORKER_BUSY');
+ const completed=computeCapacity([{...active,status:'completed'}],[crossing],[]);
+ assert.equal(completed.activeWorker[name],1,'completed transitional rows never occupy a slot');
+});
 test('merge state classifier distinguishes dirty, unknown and behind',()=>{
   assert.equal(classifyMergeState({mergeable:false,mergeable_state:'dirty'}),'DIRTY');
   assert.equal(classifyMergeState({mergeable:null,mergeable_state:'unknown'}),'UNKNOWN');
