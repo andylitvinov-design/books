@@ -29,7 +29,7 @@ test('the real video result and natural-language chat reuse one chooser',()=>{
 
 test('automatic video delivery is explicit opt-in, owner scoped and private',()=>{
  const backend=source('lib/app/personal-video-messenger.js')
- const migration=source('supabase/migrations/20261104230500_hh_personal_video_telegram_delivery.sql')
+ const migration=source('supabase/migrations/20261105015517_hh_personal_video_telegram_delivery_20261104.sql')
  const upload=source('components/mandala-video-delivery.tsx')
  assert.match(source('lib/app/client-telegram-policy.js'),/HH_VIDEO_TELEGRAM_DELIVERY_ENABLED==='true'/)
  // Video bot pairing cannot silently opt users into the general messages/

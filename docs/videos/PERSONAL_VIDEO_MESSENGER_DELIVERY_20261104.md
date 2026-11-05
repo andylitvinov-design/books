@@ -20,7 +20,7 @@ Production branch: `codex/public-book-library`. Existing Video Studio exports an
 
 ## Release plan and receipts
 1. Review existing active video PR #2625 (PAUSED), Telegram OIDC #3511 (separate), WhatsApp CRM #2177 (separate). No overlapping authentication, paid HeyGen, or CRM changes.
-2. Apply `supabase/migrations/20261104230500_hh_personal_video_telegram_delivery.sql` to the authorized production Supabase project **after normal migration review**. Validate RLS FORCE, account isolation, unique dispatch and verified-link behavior. Never claim a migration applied just because committed.
+2. Apply `supabase/migrations/20261105015517_hh_personal_video_telegram_delivery_20261104.sql` to the authorized production Supabase project **after normal migration review**. Validate RLS FORCE, account isolation, unique dispatch and verified-link behavior. Never claim a migration applied just because committed.
 3. Exact-HEAD: `node --test tests/personal-video-messenger-delivery.test.mjs`, lint, TypeScript, Next build, existing Video Studio / Cabinet auth / RLS / WebKit tests and required Core+Specialist gates. Do not weaken CI.
 4. Human QA at 320/390/430 iPhone/WebKit and desktop: MP4 10/15/20/30/60, WebM and >12MB fallback, post-render save/Share, typed download intent, guest/linked/unlinked, bot /start, unlink or /stop, permissions, cancellation, repeated clicks, mismatched user ID.
 5. Only after protected PR merge, Vercel READY exact SHA/domain confirmation and private storage quota/owner consent verification, enable `HH_VIDEO_TELEGRAM_DELIVERY_ENABLED` within existing free resources; test a real opted-in Telegram chat with an actual MP4 and confirm Bot API acceptance and recipient-side message.
