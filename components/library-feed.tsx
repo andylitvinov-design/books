@@ -29,6 +29,7 @@ export type LibraryFeedItem = {
   sourceGroup?: string;
   sourceLabel?: string;
   durationVerifiedSeconds?: number;
+  mytubeFormat?: "shorts" | "study";
   sourceApproved?: boolean;
   source_kind?: string;
   editorial_status?: string;
@@ -51,7 +52,7 @@ const words = {
     watch: "Watch", close: "Close video", original: "Watch on YouTube",
     read: "Read", open: "Open", more: "Show more",
     empty: "No materials match your search.",
-    seriesTitle: "Video blogs by channel", allSeries: "All videos", seriesDetails: "Open complete series", episode: "Episode",
+    seriesTitle: "Video blogs by channel", allSeries: "All videos", seriesDetails: "Open complete series", episode: "Episode", mytubeShort: "Brief", mytubeStudy: "Lesson",
   },
   ru: {
     latest: "Новые публикации", videos: "Видео", guides: "Книги и методички",
@@ -61,7 +62,7 @@ const words = {
     watch: "Смотреть", close: "Закрыть видео", original: "Открыть на YouTube",
     read: "Читать", open: "Открыть", more: "Показать ещё",
     empty: "По вашему запросу материалов нет.",
-    seriesTitle: "Видеоблоги по каналам", allSeries: "Все видео", seriesDetails: "Открыть весь цикл", episode: "Выпуск",
+    seriesTitle: "Видеоблоги по каналам", allSeries: "Все видео", seriesDetails: "Открыть весь цикл", episode: "Выпуск", mytubeShort: "Краткое", mytubeStudy: "Обучение",
   },
   es: {
     latest: "Nuevas publicaciones", videos: "Vídeos", guides: "Libros y guías",
@@ -71,7 +72,7 @@ const words = {
     watch: "Ver", close: "Cerrar vídeo", original: "Ver en YouTube",
     read: "Leer", open: "Abrir", more: "Mostrar más",
     empty: "No se encontraron materiales.",
-    seriesTitle: "Videoblogs por canal", allSeries: "Todos los vídeos", seriesDetails: "Abrir serie completa", episode: "Episodio",
+    seriesTitle: "Videoblogs por canal", allSeries: "Todos los vídeos", seriesDetails: "Abrir serie completa", episode: "Episodio", mytubeShort: "Breve", mytubeStudy: "Clase",
   },
 } as const;
 
@@ -255,7 +256,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             )}
             {videoLayout === "mytube" && (
             <p className={styles.meta}>
-              <span className={styles.kind}>{copy[item.kind]}</span>
+              <span className={styles.kind}>{item.mytubeFormat === "shorts" ? copy.mytubeShort : item.mytubeFormat === "study" ? copy.mytubeStudy : copy[item.kind]}</span>
               {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
               {date && <span>{date}</span>}
               {item.author && <span className={styles.author}>{item.author}</span>}
