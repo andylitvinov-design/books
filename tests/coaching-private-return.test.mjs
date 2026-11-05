@@ -122,6 +122,13 @@ assert.equal(callbackBlocks.length, 1)
 const destinations = findAll(callbackBlocks[0], node => ts.isVariableDeclaration(node) && node.name.getText(route) === 'destination')
 assert.equal(destinations.length, 1)
 const destinationExpression = destinations[0].initializer.getText(route)
+// The current production OAuth callback computes one extra safe fallback
+// for the guest-visible Practice page. Keep the real expression in this
+// fixture instead of hard-coding a variable no longer in local scope.
+const failedPracticeDeclarations = findAll(callbackBlocks[0], node => ts.isVariableDeclaration(node)
+  && node.name.getText(route) === 'failedPracticeDestination')
+assert.equal(failedPracticeDeclarations.length, 1)
+const failedPracticeExpression = failedPracticeDeclarations[0].initializer.getText(route)
 const redirect = (change = {}) => vm.runInNewContext(destinationExpression, {
   origin: 'https://synthetic-site.invalid', locale: 'en', intentId: null, serviceId: null,
   continueTo: 'coaching-intake', requestId: null, returnPath: null, program: null,
@@ -136,7 +143,11 @@ test('actual callback destination stays same-origin/same-path with only constant
     const destination = redirect({ origin, locale })
     assert.equal(destination, `${origin}/${locale}/coaching/intake?private=1`)
     for (const reason of ['cancelled', 'failed']) for (const fn of authQueryFunctions) {
-      const result = vm.runInNewContext(`(${fn.getText(route)})(${JSON.stringify(reason)})`, { URL, destination }, { timeout: 1000 })
+      const failedPracticeDestination = vm.runInNewContext(failedPracticeExpression,
+        { continueTo: 'coaching-intake', origin, locale, destination }, { timeout: 1000 })
+      assert.equal(failedPracticeDestination, destination, 'private return never changes on Google failure')
+      const result = vm.runInNewContext(`(${fn.getText(route)})(${JSON.stringify(reason)})`,
+        { URL, destination, failedPracticeDestination, linkedAccount: null, locale }, { timeout: 1000 })
       const url = new URL(result)
       assert.equal(url.origin, origin)
       assert.equal(url.pathname, `/${locale}/coaching/intake`)
