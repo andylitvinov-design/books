@@ -11,9 +11,9 @@ const STAGES=['before_final_head_ci','ci_queued_to_first_runner','final_head_che
 const JOB_SUBSTAGES=['core_queued_to_runner','core_runner_to_completed',
  'specialist_queued_to_runner','specialist_runner_to_completed',
  'post_checks_to_gate_runner','gate_runner_to_green'];
-const RECEIPT_SUBSTAGES=['created_to_ready','ready_to_triage','triage_to_claimed',
+const RECEIPT_SUBSTAGES=['created_to_ready','ready_to_final_head_ci_observed','ready_to_triage','triage_to_claimed',
  'claimed_to_repair_started','repair_started_to_source_published',
- 'source_published_to_ci_queued','merged_to_live_verified'];
+ 'source_published_to_ci_queued','merged_to_deployment_ready_observed','merged_to_live_verified'];
 function ts(v){const x=Date.parse(v||'');return Number.isFinite(x)?x:null;}
 function min(a,b){return a!==null&&b!==null&&b>=a?(b-a)/60000:null;}
 function round(n){return Math.round(n*100)/100;}
@@ -108,6 +108,8 @@ function receiptTimings(p,events,created,merged,selectedRun,endMs){
    (task===undefined||e.task===task));return list.length===1?list[0]:null;};
   const ready=only('ready'),triage=only('triage'),claim=only('claimed');
   if(ready)add('created_to_ready',created,ready.atMs,head);
+  if(ready&&selectedRun)add('ready_to_final_head_ci_observed',ready.atMs,
+    ts(selectedRun.ci_run_created_at),head,null,'authenticated_ready_plus_verified_exact_head_ci');
   if(ready&&triage)add('ready_to_triage',ready.atMs,triage.atMs,head);
   if(triage&&claim&&(!triage.task||triage.task===claim.task))
    add('triage_to_claimed',triage.atMs,claim.atMs,head,claim.task);
@@ -123,12 +125,16 @@ function receiptTimings(p,events,created,merged,selectedRun,endMs){
   }
  }
  if(SHA.test(p.mergeSha||'')){
-  const live=events.filter(e=>e?.kind==='live_verified'&&e.pr===p.number&&
-   e.production===true&&e.aliasVerified===true&&e.smokeVerified===true&&
-   String(e.mergeSha||'').toLowerCase()===p.mergeSha.toLowerCase())
-   .map(e=>ts(e.at)).filter(t=>t!==null&&t>=merged&&t<=endMs).sort((a,b)=>a-b);
-  if(live.length)add('merged_to_live_verified',merged,live[0],p.mergeSha,null,
-   'authenticated_github_actions_live_receipt');
+  const deployed=events.filter(e=>e?.kind==='live_verified'&&e.pr===p.number&&
+   e.production===true&&e.aliasVerified===true&&
+   String(e.mergeSha||'').toLowerCase()===p.mergeSha.toLowerCase());
+  const bounded=rows=>rows.map(e=>ts(e.at)).filter(t=>t!==null&&t>=merged&&t<=endMs).sort((a,b)=>a-b);
+  const ready=bounded(deployed);
+  if(ready.length)add('merged_to_deployment_ready_observed',merged,ready[0],p.mergeSha,null,
+   'authenticated_github_actions_alias_receipt');
+  const functional=bounded(deployed.filter(e=>e.smokeVerified===true));
+  if(functional.length)add('merged_to_live_verified',merged,functional[0],p.mergeSha,null,
+   'authenticated_github_actions_functional_smoke_receipt');
  }
  return Object.fromEntries(RECEIPT_SUBSTAGES.map(k=>[k,
   candidates[k].length===1?candidates[k][0]:null]));
@@ -154,13 +160,23 @@ function audit({prs,runs,jobs,events=[],start,end,productionBase=PROD,syntheticP
    if(found.length){outcome=found[0];reason=null;}
   }
   const received=receiptTimings(p,events,created,merged,outcome?.observed||null,endMs);
+  // Partition only when the same unique Ready milestone connects native
+  // creation and the verified final-HEAD CI timestamp. This is an observed
+  // interval, not an attribution of idle time or repair work.
+  const pre=outcome?.values.before_final_head_ci;
+  const first=received.created_to_ready,next=received.ready_to_final_head_ci_observed;
+  const split=Number.isFinite(pre)&&first&&next&&
+    first.completed_at===next.started_at&&Math.abs(first.minutes+next.minutes-pre)<0.01;
+  const readiness={status:split?'AUTHENTICATED_READY_BOUNDS_NOT_CAUSAL':'READY_BOUNDARY_UNVERIFIED',
+    created_to_ready_minutes:split?round(first.minutes):null,
+    ready_to_final_head_ci_minutes:split?round(next.minutes):null};
   rows.push({pr:p.number,head_sha:SHA.test(head||'')?head:null,
    url:p.html_url||'https://github.com/'+REPO+'/pull/'+p.number,
    created_at:p.created_at,merged_at:p.merged_at,full_minutes:round(full),
    verified:!!outcome,missing_reason:reason,
    intervals:outcome?Object.fromEntries(STAGES.map(k=>[k,round(outcome.values[k])])):null,
    job_substages:outcome?Object.fromEntries(JOB_SUBSTAGES.map(k=>[k,round(outcome.substages[k])])):null,
-   authenticated_receipt_intervals:received,
+   authenticated_receipt_intervals:received,before_final_head_ci_ready_partition:readiness,
    evidence:outcome?{...outcome.observed,run_id:outcome.run_id,job_ids:outcome.job_ids,run_attempt:outcome.run_attempt}:null});
  }
  rows.sort((a,b)=>a.pr-b.pr);
@@ -183,7 +199,16 @@ function audit({prs,runs,jobs,events=[],start,end,productionBase=PROD,syntheticP
  const unresolved=total?round((unallocated||0)+
   (stages.before_final_head_ci.contribution_mean_minutes||0)):null;
  const first=candidates[0]||null;
- const bottleneck={largest_measured_phase:first,unattributed_mean_minutes:unresolved,
+ const largestObserved=STAGES.map(stage=>({stage,
+   contribution_mean_minutes:stages[stage].contribution_mean_minutes,
+   coverage_pct:stages[stage].coverage_pct}))
+  .filter(x=>x.contribution_mean_minutes!==null)
+  .sort((a,b)=>b.contribution_mean_minutes-a.contribution_mean_minutes)[0]||null;
+ const splitN=rows.filter(r=>r.before_final_head_ci_ready_partition.status===
+   'AUTHENTICATED_READY_BOUNDS_NOT_CAUSAL').length;
+ const bottleneck={largest_measured_phase:first,largest_observed_phase:largestObserved,
+  readiness_partitions_verified:splitN,readiness_partition_cohort_prs:total,
+  unattributed_mean_minutes:unresolved,
   status:!total?'EMPTY_COHORT':!checked.length?'NO_VERIFIED_GATE':
    first&&first.contribution_mean_minutes>unresolved?
    'LARGEST_PHASE_BOUNDED_BY_EVIDENCE':'UNATTRIBUTED_TIME_MAY_DOMINATE',
@@ -199,6 +224,8 @@ function audit({prs,runs,jobs,events=[],start,end,productionBase=PROD,syntheticP
   limitations:['Verified stages are exact final HEAD CI run timestamps only, not original authoring, developer work, or first CI on earlier HEADs.',
    'Core and Specialist job substeps are concurrent diagnostics, never summed into wall time.',
    'Pre-final-HEAD and unverifiable intervals are unattributed, not developer idle time.',
+   'Created to Ready and Ready to final-HEAD CI are chronological boundaries only, not proven wait, worker queue, or repair causes.',
+   'Merged to deployment READY is observed via authenticated alias receipt and may exceed the real activation time; feature-specific smoke remains separate.',
    'Receipt pairs require a unique exact-HEAD/task match. Absent events are never zeros.',
    'LIVE requires an independently authenticated exact merge SHA and smoke/alias proof.'],rows};
 }

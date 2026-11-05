@@ -146,3 +146,27 @@ test('duplicate or cross-HEAD stage receipts are not mistaken for continuous wor
  assert.equal(s.repair_started_to_source_published.n,0);
  assert.equal(s.ready_to_triage.n,0);
 });
+
+
+test('native PR creation and unique Ready receipt expose non-causal Draft chronology',()=>{
+ const merged=event('merged',10,{head:NEW,mergeSha:MERGE,production:true,
+  created_at:new Date(NOW-60*60000).toISOString()});
+ const ready=event('stage',30,{head:SHA,stage:'ready'});
+ const result=summarizeWindow({events:[ready,merged],jobs:[],coverage:complete,now:NOW,windowMs:3600000});
+ assert.equal(result.phase_minutes.stages.created_to_ready.average_min,30);
+ const duplicate=summarizeWindow({events:[ready,{...ready,head:NEW},merged],jobs:[],coverage:complete,now:NOW,windowMs:3600000});
+ assert.equal(duplicate.phase_minutes.stages.created_to_ready.average_min,null);
+ const noNative=summarizeWindow({events:[ready,{...merged,created_at:null}],jobs:[],coverage:complete,now:NOW,windowMs:3600000});
+ assert.equal(noNative.phase_minutes.stages.created_to_ready.average_min,null);
+});
+test('authenticated alias READY is not the same as functional production acceptance',()=>{
+ const events=[event('merged',20,{head:NEW,mergeSha:MERGE,production:true}),
+  event('live_verified',10,{head:NEW,mergeSha:MERGE,production:true,aliasVerified:true,smokeVerified:false})];
+ const m=summarizeWindow({events,jobs:[],coverage:complete,now:NOW,windowMs:3600000}).phase_minutes.stages;
+ assert.equal(m.merged_to_deployment_ready_observed.average_min,10);
+ assert.equal(m.merged_to_live_verified.average_min,null);
+ const confirmed=summarizeWindow({events:[...events,{...events[1],at:new Date(NOW-5*60000).toISOString(),smokeVerified:true}],
+  jobs:[],coverage:complete,now:NOW,windowMs:3600000}).phase_minutes.stages;
+ assert.equal(confirmed.merged_to_deployment_ready_observed.average_min,10);
+ assert.equal(confirmed.merged_to_live_verified.average_min,15);
+});
