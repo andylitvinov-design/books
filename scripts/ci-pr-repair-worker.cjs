@@ -275,6 +275,33 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     const strategy=legacy?(safeRetry?'code':'legacy'):
       !conflict&&verifiedCoreCodeFailure(comments,pr.head.sha)?'code':'lint';
     if(!legacy&&!hasToken)return skip('HH_AUTOMERGE_TOKEN_MISSING');
+    // A reservation was verified above, but another owner or a new HEAD can
+    // arrive while we inspect files. Re-read immediately before CLAIMED.
+    // Only addressed tasks pay the additional complete-history read.
+    const current=(await limited('claim-prewrite-head',()=>github.rest.pulls.get({
+      owner,repo,pull_number:pr.number
+    }))).data;
+    if(!current||current.state!=='open'||current.draft||
+       current.head?.sha!==pr.head.sha||current.head?.ref!==pr.head.ref||
+       current.base?.ref!==pr.base.ref||current.base?.sha!==pr.base?.sha||
+       !(eligible(current,fullRepo)||legacyPrepEligible(current,fullRepo))||
+       taskFor(current,priorityFor(current,now))?.task_key!==task.task_key){
+      log('SKIP_HEAD_OR_TASK_CHANGED_BEFORE_CLAIM #'+pr.number);
+      continue;
+    }
+    if(taskKey){
+      const latestComments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+      const signed=latestComments&&parseRecords(latestComments.filter(trustedControlComment));
+      const latest=signed?.filter(r=>r.task_key===taskKey&&
+        r.head_sha===expectedSha&&r.pr_number===number).at(-1);
+      if(!latest||latest.state!=='RESERVED'||latest.lane!==task.lane||
+         latest.owner_run_id!==reservationRunId||
+         reservationStatus(task,latestComments,now)!=='RESERVED_REQUIRES_REVIEW'||
+         activeSweepLease(latestComments,pr.head.sha,now)){
+        log('SKIP_OWNER_OR_RESERVATION_CHANGED_BEFORE_CLAIM #'+pr.number);
+        continue;
+      }
+    }
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
     const receipt=task;
