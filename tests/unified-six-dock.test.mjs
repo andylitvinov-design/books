@@ -57,20 +57,17 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
- // iOS Safari moves the visual viewport when its URL bar appears/dismisses;
- // keep the six buttons on the visible bottom WITHOUT replacing left centering.
+ // Keep the iPhone dock anchored to the viewport; Safari's native bottom
+ // controls must never cause an extra JS-computed vertical offset.
  assert.match(css,/translate3d\(-50%,0,0\)/);
- assert.match(css,/bottom:var\(--hh-unified-viewport-inset,0px\)/);
- assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/);
+ assert.match(css,/position:fixed;z-index:58;bottom:0;/);
+ assert.doesNotMatch(css,/--hh-unified-viewport-inset|100vh\s*-\s*100dvh|bottom:max\(/);
  assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
- assert.ok(dock.includes('const visualBottom = visualOffsetTop + visualHeight'));
- assert.match(dock,/visualDockBottomCorrection\(/);
- assert.doesNotMatch(dock,/mobileVisualBottomGap\(/);
- assert.match(dock,/--hh-unified-viewport-inset/);
- assert.match(hide,/--hh-unified-viewport-inset/);
- assert.match(dock,/resetDockCorrection/);
- assert.match(dock,/window\.addEventListener\("scroll", update/);
- assert.match(dock,/window\.removeEventListener\("scroll", update/);
+ assert.match(dock,/visualKeyboardOpen\(/);
+ assert.doesNotMatch(dock,/visualDockBottomCorrection\(|mobileVisualBottomGap\(|--hh-unified-viewport-inset/);
+ assert.doesNotMatch(hide,/--hh-unified-viewport-inset/);
+ assert.doesNotMatch(dock,/addEventListener\("scroll", update/);
+ assert.doesNotMatch(dock,/removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
  assert.match(css,/min-height:52px/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
