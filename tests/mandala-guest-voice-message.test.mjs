@@ -75,3 +75,14 @@ test("macOS WebKit hydration follows the actual compact video scenario entry",()
  assert.match(style,/\[data-video-scenario-open="false"\]/);
  assert.ok(!browser.includes("allStories.click({force:true})"),"hidden scenario controls cannot be clicked forcefully");
 });
+
+test("real macOS WebKit waits for true React-controlled consent after a native click",()=>{
+ const source=read("scripts/verify-affirmation-voice-browser.mjs");
+ const ui=read("components/mandala-guest-voice-message.tsx");
+ assert.ok(source.includes('await consentBox.click();'));
+ assert.ok(source.includes('await expect(consentBox).toBeChecked({timeout:10000});'));
+ assert.ok(source.includes("await expect(start).toBeEnabled();"));
+ assert.ok(!source.includes('page.locator("[data-guest-message-consent]").check()'));
+ assert.ok(ui.includes('onChange={e=>setApproved(e.currentTarget.checked)}'));
+ assert.ok(source.includes('assert.deepEqual(providerPosts,[]'));
+});

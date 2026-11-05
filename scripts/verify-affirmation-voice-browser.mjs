@@ -109,7 +109,13 @@ async function verifyGuestVoiceConsent(browser,locale){
     await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
     await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
     await page.locator("[data-guest-message-phrase]").fill(phrase);
-    await page.locator("[data-guest-message-consent]").check();
+    // A real user click must persist through React controlled-input scheduling.
+    // Playwright .check() requires a synchronous DOM toggle and can report a
+    // false negative before WebKit flushes the onChange state update.
+    const consentBox=page.locator("[data-guest-message-consent]");
+    await expect(consentBox).not.toBeChecked();
+    await consentBox.click();
+    await expect(consentBox).toBeChecked({timeout:10000});
     await expect(start).toBeEnabled();
     await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
     await expect(page.locator("[data-guest-message-save]")).toHaveCount(0);

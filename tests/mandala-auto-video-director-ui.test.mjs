@@ -438,11 +438,23 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 });
 
 
-test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
-  const handler=director.slice(director.indexOf(start),director.indexOf(end));
-  assert.ok(handler.length>0,start+" exists");
-  for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
+test("new prompt, explicit Design, and profile choice invalidate every prior MyTube plot selection",()=>{
+ const handlers=[
+  ["const requestField=","const requestInput="],
+  ["const applyProfile=","const designFromRequest="],
+  ["const designFromRequest=","const analyzedPath="],
+ ];
+ for(const [start,end] of handlers){
+  const begin=director.indexOf(start),finish=director.indexOf(end,begin+1);
+  assert.ok(begin>=0&&finish>begin,start+" handler exists");
+  const handler=director.slice(begin,finish);
+  for(const setter of ["setSelectedSubcategoryId","setSelectedTopicId",
+    "setSelectedScenarioId","setSelectedPlotId","setSymbolicPlotFallback",
+    "setTimelineEdits","setConfirmedTimelineKey"])
    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
+ const requestComposer=director.slice(director.indexOf("const requestInput="),
+   director.indexOf("const profilePanel="));
+ assert.match(requestComposer,/\{requestField\}/,
+   "the visible compact prompt must mount the input with the invalidation handler");
 });
