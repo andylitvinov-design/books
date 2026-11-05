@@ -182,6 +182,12 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
+      // Restore only the 8 small, published tradition HTML manuals to reader
+      // functions. Exclude raw archives and photographs to protect function size.
+      "./source-books/book-4-egyptian-tradition/*.html",
+      "./source-books/book-5-greek-mysteries/*.html",
+      "./source-books/book-6-roman-tradition/*.html",
+      "./source-books/book-7-zoroastrian-mithra/*.html",
     ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
       all[route] = [...files]; return all;
     }, {}),
