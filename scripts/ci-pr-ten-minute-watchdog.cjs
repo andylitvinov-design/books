@@ -37,6 +37,7 @@ const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
 const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task-state.cjs');
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -668,7 +669,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     repairNext:availableRepair ?
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
-    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
+    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,ciErrorByCategory:{},
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
@@ -1108,6 +1109,20 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if (latest.conclusion === 'failure' && latest.run_attempt >= 1) {
       const root=classifyCoreFailureJobs(jobs);
+      // Reuse the already fetched trusted exact-HEAD jobs. Diagnostic only:
+      // this category cannot authorize a source write, retry or merge.
+      const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
+      summary.ciErrorByCategory[diagnosis.category]=
+        (summary.ciErrorByCategory[diagnosis.category]||0)+1;
+      const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
+        c.root_code==='CORE_REQUIRED_CHECK_FAILED');
+      if(blocker){
+        blocker.ci_error_category=diagnosis.category;
+        if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
+        if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
+      }
+      log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
+        ' root='+root+' HEAD='+live.head.sha.slice(0,12));
       if(root==='RELEASE_GATE_ONLY') {
         summary.releaseGateOnly++;
         // This may be a production BASE_ADVANCED result or failed specialist

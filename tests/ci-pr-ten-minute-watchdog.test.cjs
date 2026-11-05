@@ -1666,3 +1666,5 @@ test('unknown Core steps and Specialist-only base drift cannot create source Rep
    check(3,'actionlint-changed','failure'),check(4,'real-browser-acceptance','failure')
  ]}),'SPECIALIST_CONTRACT_FAILED');
 });
+// The existing Watchdog contract suite runs this isolated, no-token classifier suite.
+require('./ci-pr-red-ci-classifier.test.cjs');
