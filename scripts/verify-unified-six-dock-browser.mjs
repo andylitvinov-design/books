@@ -313,7 +313,7 @@ try{
  await practiceLink.waitFor({state:"visible",timeout:15000});
  assert.equal(await practiceLink.getAttribute("href"),"/ru/holistic-support/mobile");
  await practiceLink.click();
- await page.waitForURL(/\\/ru\\/holistic-support\\/mobile\\/?$/,{timeout:45000});
+ await page.waitForURL(new RegExp("/ru/holistic-support/mobile/?$"),{timeout:45000});
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0,
