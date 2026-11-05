@@ -3,6 +3,7 @@
 /* Trusted default-branch PR Repair Worker. Never execute PR code with a write token. */
 const PROD = 'codex/public-book-library';
 const DEFAULT = 'codex/bootstrap-books';
+const REPO = 'andylitvinov-design/books';
 const SOURCE = 'hh:repair-needed';
 const CONFLICT = 'hh:conflict-repair-needed';
 const MANUAL = 'hh:repair-manual';
