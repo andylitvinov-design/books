@@ -12,8 +12,9 @@ type Recommendation={
  editorialReviewStatus:string;safeToAutoExport:boolean;
 };
 type Response={
- status:string;recommendationId:string|null;clarification:string|null;
- normalized:{currentIds:string[];desiredIds:string[];confidenceBand:string}|null;
+ // Only fields rendered by the selector: engine metadata is additional and
+ // should retain the actual JS module's inferred shape.
+ status:string;clarification:string|null;
  recommendations:Recommendation[];
 };
 type Props={
