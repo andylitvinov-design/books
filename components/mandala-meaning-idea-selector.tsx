@@ -24,6 +24,7 @@ export type ConfirmedMeaningHandoff={
  renderReady:boolean;mayPublishVideo:boolean;
 };
 type Props={locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;
+ initialAxisId?:string;canChooseScenario?:boolean;
  onConfirmHandoff:(handoff:ConfirmedMeaningHandoff|null,includeCaption:boolean)=>void;
  onChooseScenario:(scenarioId:string)=>void};
 const wording={
@@ -139,7 +140,7 @@ function parsedHandoff(value:unknown):ConfirmedMeaningHandoff|null{
 const storageKey=(topicId:string)=>"hh-meaning-idea-v1-session:"+topicId;
 const digitOrNull=(value:string)=>value===""?null:Number(value);
 export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScenarioId,
- onConfirmHandoff,onChooseScenario}:Props){
+ initialAxisId="",canChooseScenario=true,onConfirmHandoff,onChooseScenario}:Props){
  const t=wording[locale];
  const states=useMemo<StateOption[]>(()=>listStates(locale).map(x=>({id:String(x.id),label:String(x.label)})),[locale]);
  const axes=useMemo<MeaningAxisOption[]>(()=>listMeaningAxes(locale),[locale]);
@@ -149,7 +150,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  const [desired,setDesired]=useState("");
  const [intensity,setIntensity]=useState("");
  const [energy,setEnergy]=useState("");
- const [axis,setAxis]=useState("");
+ const [axis,setAxis]=useState(initialAxisId);
  const [response,setResponse]=useState<Response|null>(null);
  const [selectedId,setSelectedId]=useState("");
  const [customText,setCustomText]=useState("");
@@ -171,14 +172,14 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  useEffect(()=>{
    let active=true;
    requestSerial.current++;
-   setCurrent("");setDesired("");setAxis("");setIntensity("");setEnergy("");
+   setCurrent("");setDesired("");setAxis(initialAxisId);setIntensity("");setEnergy("");
    setResponse(null);setSelectedId("");setCustomText("");setEditing(false);setError("");
    setHandoff(null);setBusy(false);
    try{
      const saved=JSON.parse(window.sessionStorage.getItem(storageKey(topicId))||"null");
      if(saved&&saved.locale===locale&&validIds.has(saved.current)&&validIds.has(saved.desired)&&
-       (saved.axis===""||axes.some(x=>x.id===saved.axis))){
-       setCurrent(saved.current);setDesired(saved.desired);setAxis(saved.axis);
+       (saved.axis===""||axes.some(x=>x.id===saved.axis))&&(!initialAxisId||saved.axis===initialAxisId)){
+       setCurrent(saved.current);setDesired(saved.desired);setAxis(initialAxisId||saved.axis);
        const strong=Number.isInteger(saved.intensity)&&saved.intensity>=0&&saved.intensity<=10?
          String(saved.intensity):"";
        const fuel=Number.isInteger(saved.energy)&&saved.energy>=0&&saved.energy<=10?
@@ -190,7 +191,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
            import("@/lib/mandala/meaning-emotion/idea-film-handoff.mjs")
          ]).then(([engine,bridge])=>{
            if(!active)return;
-           const req=makeRequest(saved.current,saved.desired,saved.axis,
+           const req=makeRequest(saved.current,saved.desired,initialAxisId||saved.axis,
              digitOrNull(strong),digitOrNull(fuel));
            const suggestion=engine.recommendMeaningIdeas(req);
            const idea=engine.confirmMeaningIdea(req,saved.neutral===true?
@@ -210,7 +211,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
    return ()=>{active=false;requestSerial.current++};
  // Intentionally reset only when topic/locale changes, not on callback re-render.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[topicId,locale,validIds,axes]);
+ },[topicId,locale,validIds,axes,initialAxisId]);
  const invalidate=()=>{
    requestSerial.current++;
    setResponse(null);setSelectedId("");setCustomText("");setEditing(false);
@@ -293,7 +294,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
          onClick={()=>chooseStates(x.currentStateId,x.desiredStateId)}>{x.label}</button>)}
      </div>
    </details>
-   <p className={css.legend}>{t.axis}</p>
+   {!initialAxisId?<><p className={css.legend}>{t.axis}</p>
    <div className={css.axes} role="group" aria-label={t.axis}>
      <button type="button" className={css.chip} data-meaning-axis="auto"
        disabled={disabled||busy} aria-pressed={!axis} onClick={()=>{invalidate();setAxis("")}}>
@@ -305,7 +306,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
        aria-pressed={axis===item.id} onClick={()=>{invalidate();setAxis(item.id)}}>
        {item.label}
      </button>)}
-   </div>
+   </div></>:null}
    <details className={css.compact}><summary>{t.optional}</summary>
      <div className={css.fields}>
        <label className={css.field}>{t.intensity}
@@ -382,7 +383,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
         <ol>{handoff.filmScenario.narrativeBeats.map((beat,i)=><li key={i}>{beat}</li>)}</ol>
         {selectedScenarioId?<p>{t.existing}</p>:
          <button type="button" className={css.secondary} data-meaning-choose-scenario
-           disabled={disabled||busy}
+           disabled={disabled||busy||!canChooseScenario}
            onClick={()=>onChooseScenario(handoff.filmScenario!.scenarioId)}>{t.apply}</button>}
        </div>:null}
      </div>:null}
