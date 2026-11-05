@@ -552,15 +552,30 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
+          // The unified Profile dock now opens the PRIVATE Cabinet first.
+          // Verify the hard CSP boundary, guest isolation and the public
+          // "Create" tab instead of assuming the old public-only destination.
           await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
+          await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
+          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-create'; });
+          await cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Public profile discovery must retain same-policy soft navigation');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document');
+          await expect(cspPage.locator('[data-profile-direct-tests]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-builder-before-private-tests'; });
           await cspPage.locator('[data-profile-direct-tests]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document');
           await cspPage.evaluate(() => {
             window.__cspViolations = [];
             document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.effectiveDirective));
@@ -569,14 +584,14 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Test discovery keeps public navigation while retaining private CSP.
+          // Private test discovery keeps the six-dock navigation under private CSP.
           // Check the actual private account separately, without altering this
           // page's Back/Forward chain or reading an authenticated account.
           const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
           await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/personality-profiles');
+          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
           const privatePage = await privateContext.newPage();

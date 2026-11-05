@@ -244,6 +244,36 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  if(browserType===webkit && locale==="ru" && width===390){
+    // Simulates navigator.standalone, not Safari View Controller on a phone.
+    await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{
+      configurable:true,value:true,
+    }));
+    await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+    await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
+    // The root dock is server-rendered; wait until React owns the click
+    // before testing same-document navigation (no pre-hydration hard link).
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-unified-dock-item="video"]');
+      return link && Object.keys(link).some(key=>key.startsWith("__reactProps$"));
+    },null,{timeout:15000});
+    const initialDocument=await page.evaluate(()=>performance.timeOrigin);
+    let popups=0;
+    page.on("popup",()=>{popups++});
+    for(const [tab,path] of [
+      ["video","/ru/holistic-support/mandala"],
+      ["mytube","/ru/mytube"],
+      ["master","/ru/practice"],
+      ["practice","/ru/holistic-support/mobile"],
+    ]){
+      await page.locator('[data-unified-dock-item="'+tab+'"]').click();
+      await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
+      assert.equal(await page.evaluate(()=>performance.timeOrigin),initialDocument,
+        tab+" standalone public navigation must stay in the same document");
+    }
+    assert.equal(popups,0,"standalone public tabs must not open another page");
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Practice",sameDocument:true});
+  }
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){
@@ -261,7 +291,14 @@ try{
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
  const videoHeader=page.locator("[data-video-hypno-scroll-start]");
  await videoHeader.waitFor({state:"visible",timeout:45000});
- assert.equal((await videoHeader.innerText()).trim(),"Видео-мандала","Video has a single short mobile title");
+ // The approved compact video-first header deliberately hides its older
+ // standalone title and shows the branded studio identity instead. Assert
+ // the ACTUAL visible mobile design, not a retired screenshot-era label.
+ const studioIdentity=videoHeader.locator('[class*="quickBrandIdentity"]');
+ assert.equal((await studioIdentity.innerText()).trim(),"Holistic House\nВидеостудия · Создание видео",
+   "Video has the approved compact Holistic House studio identity");
+ assert.equal(await videoHeader.locator('[class*="quickBrandMobileTitle"]').isVisible(),false,
+   "the retired alternate mobile title stays hidden to avoid double heading");
  assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,
    "no duplicate end-of-page header");
  assert.equal(await page.locator("[data-mandala-support-bottom-nav]:visible").count(),0,
