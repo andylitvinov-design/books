@@ -52,9 +52,9 @@ test('unverified MP4 paths never become FFmpeg arguments',()=>{
    outputFile:'/tmp/hh-dot-story-proof12/tile-scene-0-61.mp4',
  }),/COMPACT_SOURCE_UNVERIFIED/);
  assert.throws(()=>compileCompactTileArgs({scene,verified:{
-   ...verified,absolutePath:'/etc/passwd'},frames:144,outputFile:out}),/UNSAFE_PATH/);
+   ...verified,absolutePath:'/etc/passwd'},frames:60,outputFile:out}),/UNSAFE_PATH/);
  assert.throws(()=>compileCompactTileArgs({scene,verified:{
-   ...verified,sha256:'b'.repeat(64)},frames:144,outputFile:out}),/UNVERIFIED/);
+   ...verified,sha256:'b'.repeat(64)},frames:60,outputFile:out}),/UNVERIFIED/);
  assert.throws(()=>compactConcatPlaylist(planCompactStoryTiles(plan()),'/tmp/../../x'),
    /PLAYLIST_INVALID/);
 });
