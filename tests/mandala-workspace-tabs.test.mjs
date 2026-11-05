@@ -275,8 +275,10 @@ test("all six workspaces use the same in-flow navigation and one real export",()
    "no mode can teleport the navigation to a different vertical position");
  const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
  assert.match(editor,/data-video-montage-tools/);
- assert.match(editor,/data-video-montage-export/);
- assert.match(editor,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ assert.match(editor,/data-video-montage-tab=\{item.id\}/);
+ assert.match(editor,/data-video-montage-preferences/);
+ assert.doesNotMatch(editor,/data-video-montage-export/, "the old second export button must stay removed");
+ assert.match(studio,/onClick=\{createQuickVideo\}/,"the single real Generate CTA must reuse the original renderer");
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);

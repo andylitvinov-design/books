@@ -6,7 +6,10 @@ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",i
 
 test("Montage opens on preferences, preserves real recorder and exactly four functional tabs",()=>{
   assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"audio">\("settings"\)/);
-  assert.equal((studio.match(/id:"(settings|effects|text|audio)",Icon:/g)||[]).length,4);
+  const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
+  const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
+  assert.ok(tabStart>0,"Montage nav must exist");
+  assert.equal((tabMarkup.match(/id:"(settings|effects|text|audio)",Icon:/g)||[]).length,4);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(item.id==="editor"\)setMontagePanel\("settings"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
