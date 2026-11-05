@@ -233,3 +233,32 @@ test('existing Dareful importer remains intact and default CLI keeps old --impor
  assert.match(code,/MANUAL_RECONCILE_ONLY/);
  assert.doesNotMatch(code,/fetch\((?:'|")https?:\/\//);
 });
+
+test('NPS: only official public-domain archives and independently filmed videos',()=>{
+ const a={...base,assetId:'nps-canyon-one',sourceProvider:'nps_grca',
+  sourceAssetId:'nps-video-id-one',filmedMasterId:'nps-camera-master-one',
+  originalSourcePage:'https://www.nps.gov/grca/learn/photosmultimedia/b-roll_hd10.htm',
+  localFile:'nps-original.MTS',creator:'National Park Service',
+  licenseId:'nps_public_domain_broll',
+  licenseUrl:'https://www.nps.gov/grca/learn/photosmultimedia/b-roll_hd_index.htm',
+  licenseEvidence:'Specific National Park Service B-roll movie is explicitly marked public domain.',
+  exactClipLicenseConfirmed:true,identifiableSubjectsCleared:true};
+ assert.equal(validateVaultAsset(a).sourceProvider,'nps_grca');
+ const b={...a,assetId:'nps-canyon-two',sourceAssetId:'nps-video-id-two',
+  filmedMasterId:'nps-camera-master-two'};
+ assert.equal(validateVaultManifest({schemaVersion:'hh-video-vault-batch-v1',
+  batchId:'nps-reviewed-pilot',milestone:20,assets:[a,b]}).assets.length,2);
+ assert.equal(findVaultDuplicate(b,[{asset_id:a.assetId,source_provider:a.sourceProvider,
+  source_asset_id:a.sourceAssetId,filmed_master_id:a.filmedMasterId,
+  source_url:a.originalSourcePage}]),null);
+ assert.throws(()=>validateVaultManifest({schemaVersion:'hh-video-vault-batch-v1',
+  batchId:'nps-reviewed-pilot',milestone:20,
+  assets:[a,{...b,filmedMasterId:a.filmedMasterId}]}),/DUPLICATE_MASTER/);
+ assert.throws(()=>validateVaultAsset({...a,
+  originalSourcePage:'https://www.nps.gov/saan/learn/photosmultimedia/videos.htm'}),/RIGHTS_EVIDENCE/);
+ assert.throws(()=>validateVaultAsset({...a,
+  originalSourcePage:'https://www.nps.gov/grca/learn/photosmultimedia/unsafe-video.htm'}),/RIGHTS_EVIDENCE/);
+ assert.throws(()=>validateVaultAsset({...a,exactClipLicenseConfirmed:false}),/UNVERIFIED_RIGHTS/);
+ assert.throws(()=>validateVaultAsset({...a,noRecognizablePeople:false,
+  subjectReleaseStatus:'unknown'}),/RELEASE_MISSING/);
+});

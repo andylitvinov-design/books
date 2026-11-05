@@ -491,8 +491,14 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/1\. Опишите запрос или выберите цель/);
-  assert.ok(studio.indexOf("data-video-request-prompt") < studio.indexOf("data-video-director-goal-controls"), "the request precedes goal filters");
+  assert.match(studio,/1\. Выберите цель видео/);
+  const goal=studio.indexOf("data-video-director-goal-controls");
+  const topic=studio.indexOf("data-video-director-topic-controls");
+  const prompt=studio.indexOf("data-video-request-prompt");
+  const next=studio.indexOf("data-video-continue-scenarios");
+  assert.ok(goal>=0&&goal<topic&&topic<prompt&&prompt<next,
+    "goal and topic precede the single free-text request and next-stage action");
+  assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
   assert.match(studio,/data-video-quick-generate/);

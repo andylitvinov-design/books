@@ -1,6 +1,6 @@
-# Holistic House — Design Bible v1.2 · Holistic Light — Warm & Alive
+# Holistic House — Design Bible v1.3 · Holistic Light — Warm & Alive
 
-**Status:** canonical specification for NEW/refactored Holistic House UI (updated 3 November 2026; screenshot-driven Studio Warm Peach addition).  
+**Status:** canonical specification for NEW/refactored Holistic House UI (updated 5 November 2026; Studio Warm Peach color-temperature QA addendum).  
 **Owner reference:** https://docs.google.com/document/d/1zREpz2hpHA-dfilYgXS18TASkrw-D8mf_UXEFrfOvvU/edit  
 **Opt-in CSS:** app/holistic-light-tokens.css.  
 **Audit:** scripts/holistic-light-design-qa.mjs and existing scripts/capture-public-ui-reference.mjs, scripts/compare-ui-screenshots.mjs.
@@ -283,3 +283,47 @@ Required responsive widths: **320 / 354 / 390 / 430px**, plus 768 and 1280px. In
 - No invented prices, AI availability, credit charges or external delivery claims.
 
 **Status:** this reference family is now part of the canonical design contract. Implementation still requires route-matched screenshot comparison, real action E2E and separate LIVE SHA verification; the design specification itself is not evidence that any particular page has already been visually accepted.
+
+---
+
+### 10.11. Warmth is not brightness — neutral-temperature visual QA (5 November 2026)
+
+**Owner reference:** two iPhone images from 5 November 2026: first the actual Video Studio **Style** tab; second the approved illustrative **Montage** mock. They have different selected views, media/posters and chrome. The comparison establishes color/light direction only; pixel geometry requires identical route, tab, locale, auth state, viewport, DPR, scroll and screenshot crop.
+
+**Diagnostic:** numerically lighter does not mean visually warmer. Warmth is the coordinated result of five layers: page canvas, near-white surfaces, borders and shadows, relevant hero/media lighting, and interactive accents. Current UI sometimes feels grey/olive and flatter; the mock appears sunnier thanks to consistent peach/cream tones and warm natural image light. JPEG sample tones are approximate, not CSS source values. Do not “fix” this with global brightness, saturation or a yellow filter.
+
+#### Prevent these observed mistakes
+
+1. **Local overrides drift from semantic tokens.** Some neutral page/card backgrounds in components/mandala-meditation.module.css and components/mandala-video-mobile.module.css override the shared Holistic Light palette. Reuse existing semantic Studio tokens, not unrelated repeated hex colors or a global blanket CSS override.
+2. **Grey/olive neutral cards.** Legacy backgrounds around #F8F8F1 and #F3F8F2 can read cold or green when used on ordinary cards. Reserve green/mint for intentionally selected, success or energy states; default Video Studio cards should be warm near-white.
+3. **Green-cast neutral shadows.** Existing rgba(35,51,38,.052) and rgba(30,67,44,.07) on non-semantic panels cool the visual white. Use a restrained warm brown neutral shadow; reserve green glow for active interaction.
+4. **Lighting disconnect.** A cool/overcast video poster lowers perceived warmth even if CSS canvas is cream. Prefer relevant, naturally warm-lit footage when appropriate; never force orange overlays, fake lens flares or replace real media with a misleading graphic.
+5. **Different screen states compared as the same.** Style vs Montage has different actual controls, media and navigation. Align view identity first; preserve approved workflows rather than copying a mock over a working editor.
+
+#### Parameter contract: Studio Warm Peach (LOCAL theme)
+
+| Semantic role | Approved value |
+| --- | --- |
+| Canvas | #FFF7F3 |
+| Gentle warm gradient edge | #FFF0E8 |
+| Suggested canvas gradient | linear-gradient(165deg, #FFF7F3 0%, #FFF4EC 55%, #FFF0E8 100%) |
+| Ordinary cards / inputs | #FFFCFA |
+| Elevated controls / media | #FFFFFF |
+| Neutral border / divider | 1px #EADFD9 / #EEE6E0 |
+| Neutral shadow | 0 5px 18px rgb(66 42 31 / 7%) |
+| Main heading / forest heading / body | #142B3D / #14523F / #26343B |
+| Emerald CTA / vivid active / pressed | #07885F / #02A065 / #006B4B |
+| Selected mint / gold / pink / lavender / blue | #EAF5EC / #FFF1D8 / #FCEEF6 / #F1E8F8 / #EAF2F8 |
+
+Keep global Holistic Light canvas #FBF5E9, regular cards #FFFCF7 and soft panels #F5ECDC distinct from this Studio variant. Existing Warm Sunrise, My Course teal, Business wood, protected cabinets and meaningful selection colors remain approved exceptions. Do **not** recolor the full site peach.
+
+**Art direction:** as a qualitative guideline, about 70–80% warm neutrals, 10–15% dark ink/media, 5–10% emerald interactive focus plus small pastel category accents. This is not an automated pixel ratio test. Keep one dominant green CTA per step; other actions should be outlined/near-white. Preserve bright natural photos with appropriate warm sunlight and useful depth, but avoid universal orange gradients, overexposure, unrelated golden effects, autoplay, or one repeated portrait.
+
+#### QA and acceptance
+
+- Inspect computed CSS of page/canvas, major sections, ordinary cards, input panels, dock and shadows. Distinguish neutral cool grey/mint from meaningful selected/success/accent treatments.
+- Render route-matched screenshots and interactions at **320/354/390/430px** in EN/RU/ES; cover Chromium and WebKit. Align the same tab, media, viewport, state, DPR and content crop; exclude iPhone/Safari chrome.
+- Review **canvas → surface/card → border/shadow → image/hero → CTA/category** independently. Ensure readable labels, proper contrast (WCAG AA 4.5:1 regular, 3:1 large text/meaningful controls), visible selected border/check, safe areas, non-overlapping bottom dock and no horizontal overflow.
+- Check real buttons/actions and preserve existing video export, playback, privacy and authentication. Green build, CSS constants, HTTP 200 or an unmatched screenshot do not prove visual acceptance or production E2E. Keep the existing ≥85/100 design-acceptance threshold and all critical safety/accessibility blockers.
+
+**Status:** design specification only, **not** proof that local Video Studio surfaces have been restyled or verified LIVE. Extended owner-facing Russian analysis is chapter 16 of the same existing Google Docs Design Bible v1.3: https://docs.google.com/document/d/1zREpz2hpHA-dfilYgXS18TASkrw-D8mf_UXEFrfOvvU/edit

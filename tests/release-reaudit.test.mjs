@@ -271,3 +271,20 @@ test('initial navigation effect and identical replay preserve preopened native m
   assert.ok(menus.every(menu => menu.focusCount === 0));
   cleanup();
 });
+
+test('release audit preserves all four browser lanes while isolating CI process load', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const segment = verifier.match(/const browserLanes = \[([\s\S]*?)\];/)?.[1] || '';
+  const lanes = [...segment.matchAll(/\['(chromium|webkit)',\s*(chromium|webkit),\s*(390|1365)\]/g)];
+  assert.deepEqual(lanes.map(row => row[1] + '/' + row[3]),
+    ['webkit/390', 'webkit/1365', 'chromium/390', 'chromium/1365']);
+  assert.ok(lanes.every(row => row[1] === row[2]), 'Browser names must match launchers');
+  assert.match(verifier, /for \(const \[engine, browserType, width\] of browserLanes\) \{/);
+  assert.match(verifier, /await exercise\(engine, browserType, width\)/);
+  assert.doesNotMatch(verifier, /Promise\.all\(\[exercise\(/);
+  assert.match(verifier, /console\.info\('\[release-reaudit\] public route '/);
+  for (const safety of ["check('public-page'", "check('csp-navigation-and-history'",
+    "check('private-anonymous'", "check('api-video-csp-restrictive'"]) {
+    assert.ok(verifier.includes(safety), 'Preserve release safety contract: ' + safety);
+  }
+});
