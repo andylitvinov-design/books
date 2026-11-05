@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {listMyTubeScenarioMotifs,auditMyTubeCreativeChoices} from "../lib/mandala/mytube-creative-choices.mjs";
 import {
   auditMyTubeTaxonomy, MYTUBE_TAXONOMY_COUNTS, listMyTubeCategories,
   listMyTubeSubcategories, listMyTubeTopics, listMyTubeScenarios,
@@ -98,4 +99,49 @@ test("every localized topic has four different original four-beat storyboards", 
   assert.deepEqual(listMyTubeScenarios("anxiety-no-reason", "ru").map(s => s.label), [
     "Облако без объяснения", "Сигнал без сообщения", "Ориентир без причины", "Можно попросить помощи",
   ]);
+});
+
+
+test("every one of the 256 scenarios has its own meaningful five-motif composition",()=>{
+  const audit=auditMyTubeCreativeChoices();
+  assert.equal(audit.ok,true,audit.errors.join("\n"));
+  assert.deepEqual(audit.mappingDiversity,{ordered:256,unordered:256});
+  assert.deepEqual(audit.counts,{scenarios:256,motifs:46,styles:10,suggestions:1280});
+  const mapping=new Map();
+  for(const category of listMyTubeCategories("en")){
+    for(const sub of listMyTubeSubcategories(category.id,"en")){
+      for(const topic of listMyTubeTopics(category.id,sub.id,"en")){
+        for(const scenario of listMyTubeScenarios(topic.id,"en")){
+          const choices=listMyTubeScenarioMotifs(scenario.id,"en");
+          assert.equal(choices.length,5,scenario.id);
+          assert.equal(new Set(choices.map(item=>item.id)).size,5,scenario.id);
+          assert.ok(choices.every(item=>item.label&&item.meaning));
+          const ids=choices.map(item=>item.id);
+          mapping.set(scenario.id,ids);
+          for(const locale of ["ru","es"])
+            assert.deepEqual(listMyTubeScenarioMotifs(scenario.id,locale).map(item=>item.id),ids);
+        }
+      }
+    }
+  }
+  assert.equal(mapping.size,256);
+  assert.equal(new Set([...mapping.values()].map(a=>a.join("|"))).size,256);
+  assert.equal(new Set([...mapping.values()].map(a=>[...a].sort().join("|"))).size,256);
+  // The literal image in the title takes priority; themes and arc remain represented.
+  assert.equal(mapping.get("life-purpose-s1")[0],"compass");
+  assert.equal(mapping.get("life-purpose-s2")[0],"fire");
+  assert.equal(mapping.get("stress-relief-s1")[0],"rain");
+  assert.equal(mapping.get("stress-relief-s3")[0],"hands");
+  assert.equal(mapping.get("income-growth-s4")[0],"stream");
+  assert.ok(mapping.get("low-energy-s2").includes("nest"));
+  assert.notDeepEqual(mapping.get("life-purpose-s1"),mapping.get("finding-self-s1"));
+});
+
+test("scenario motif expansion stays editorial and must not change plot or footage rights",()=>{
+  const unknown=listMyTubeScenarioMotifs("invented-scenario","ru");
+  assert.deepEqual(unknown,[]);
+  const one=listMyTubeScenarioMotifs("panic-attacks-s1","ru");
+  assert.ok(one.every(m=>m.status==="editorial_symbol_not_verified_footage"));
+  assert.ok(one.every(m=>m.recommended=== (m.rank===1)));
+  assert.equal(listMyTubeScenarios("panic-attacks","ru").length,4);
 });
