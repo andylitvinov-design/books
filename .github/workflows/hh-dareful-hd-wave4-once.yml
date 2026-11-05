@@ -1,0 +1,100 @@
+name: HH Real filmed Video Vault Wave 4 - one-time private footage QA
+on:
+  push:
+    branches: [codex/hh-dareful-wave4-20261105]
+    paths:
+      - '.github/workflows/hh-dareful-hd-wave4-once.yml'
+      - 'tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip'
+permissions:
+  contents: read
+concurrency:
+  group: hh-real-footage-wave4-single-source-publish
+  cancel-in-progress: false
+jobs:
+  discover:
+    if: github.ref == 'refs/heads/codex/hh-dareful-wave4-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify immutable review-only source package and unpack into job workspace
+        run: |
+          set -euo pipefail
+          echo '73b9b29de526496875bd69557c1911523b8387d6a92dbbf30a48b445866c8ea6  tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip' | sha256sum -c -
+          unzip -oq tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip -d "$RUNNER_TEMP/hh-wave4-src"
+          cp -a "$RUNNER_TEMP/hh-wave4-src/hh-wave4/." "$GITHUB_WORKSPACE/"
+          node --check scripts/dareful-wave4-discover.mjs
+          node --check scripts/dareful-wave4-review.mjs
+          node --test tests/dareful-wave4.test.mjs
+      - name: One-shot bounded official Dareful CC BY 4.0 candidate discovery, without import
+        run: node scripts/dareful-wave4-discover.mjs --discover
+      - name: Ensure no fake live-approved footage or public catalog modification
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const r=JSON.parse(readFileSync("artifacts/hh-dareful-wave4/discovered.json","utf8"));
+            if(r.sourceCount<12||r.sourceCount>60||r.readyForPublication!==0||
+               r.footageRecordedInCloudflareR2!==0||
+               r.sources.some(s=>s.approvedForPublication!==false||
+                 s.cloudflareR2UploadVerified!==false))process.exit(1);
+          '
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json
+      - name: Archive discovered source-page IDs and license claims for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-wave4-source-research
+          path: artifacts/hh-dareful-wave4/discovered.json
+          retention-days: 5
+          if-no-files-found: warn
+  screen:
+    if: github.ref == 'refs/heads/codex/hh-dareful-wave4-20261105'
+    needs: [discover]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check immutable source package and prepare isolated local QA code
+        run: |
+          set -euo pipefail
+          echo '73b9b29de526496875bd69557c1911523b8387d6a92dbbf30a48b445866c8ea6  tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip' | sha256sum -c -
+          unzip -oq tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip -d "$RUNNER_TEMP/hh-wave4-src"
+          cp -a "$RUNNER_TEMP/hh-wave4-src/hh-wave4/." "$GITHUB_WORKSPACE/"
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-dareful-wave4-source-research
+          path: artifacts/hh-dareful-wave4
+      - name: Require genuine local FFmpeg and ffprobe
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -1
+      - name: Screen real moving 5s H264 portrait and landscape variants
+        run: node scripts/dareful-wave4-review.mjs --shard=${{ matrix.shard }}
+      - name: Store technical previews, 9-frame contact sheets, and SHA256 receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-wave4-screen-${{ matrix.shard }}
+          path: artifacts/hh-dareful-wave4-screen-${{ matrix.shard }}/*
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
