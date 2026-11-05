@@ -228,8 +228,21 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      # Confirmed upstream incident #3599: ffmpeg-static postinstall downloaded
+      # ffmpeg-linux-x64.gz/README with HTTP 504 on two exact-head attempts.
+      # For strictly CI-only PRs we run policy/test contracts, not the product
+      # encoder or Next build. Keep reproducible npm lockfile install without
+      # optional lifecycle downloads on that route ONLY.
+      - name: Install dependencies for verified Core route
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && "${{ steps.diff.outputs.ci_only }}" == true ]]; then
+            npm ci --ignore-scripts --no-audit --no-fund
+          else
+            npm ci --no-audit --no-fund
+          fi
       # When full Mandala browser QA is advisory, Core retains a mandatory
       # bounded, exact-tested-merge source gate for narration/privacy and codecs.
       # The Specialist aggregator checks this trusted marker on BASE before

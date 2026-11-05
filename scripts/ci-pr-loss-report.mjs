@@ -4,7 +4,7 @@
 import {appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
-import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected} from '../lib/ci/pr-loss-metrics.mjs';
+import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected, analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -105,6 +105,13 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
         catch(err) {errors.push('vercel-status:'+pr.number+':'+String(err.message||err));}
       }
       const row=analyzePrLoss(pr,selected,jobRows,comments,new Date(now).toISOString());
+      row.core_waves=analyzeCoreWaveGaps(pr,selected,jobRows,timeline,{
+        runHistoryComplete:result.total_count<=100&&
+          result.workflow_runs.length===result.total_count&&matched.length===selected.length&&
+          (pr.commits<=1||(Array.isArray(timeline)&&
+            new Set(timeline.filter(e=>e.event==='committed'&&
+              /^[0-9a-f]{40}$/i.test(e.sha||'')).map(e=>e.sha)).size>=pr.commits))
+      });
       row.lifecycle=analyzePrLifecycle(pr,selected,jobRows,comments,timeline,commitStatus,{
         // Full branch run index + bounded jobs + full commit timeline are
         // necessary before calling the earliest Ready/Core timestamps exact.
@@ -159,6 +166,19 @@ export function formatSummary(report) {
     lines.push('| #'+row.pr+' | '+phases.map(k=>t[k]||'unknown').join(' | ')+' |');
   }
   lines.push('','*New HEAD = first exact-SHA CI observation, not remote push time. Vercel READY = provider status only, not independent API/alias proof. Vercel skipped = verified ignored build on the merged commit, never READY. Functional smoke requires independent exact-release interaction evidence. Unknown never means zero. See JSON provenance and partial coverage.*');
+  lines.push('','### Core CI wave gaps — verified pairs, not assumed causes');
+  lines.push('| PR | Core observed | Same HEAD repeats | New HEAD waves | Measured gaps | Gap mean / p50 / p95 (min) | Runner wait mean (min) | Core work mean (min) | History |');
+  lines.push('| ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- |');
+  for(const row of report.rows) {
+    const w=row.core_waves;
+    if(!w)continue;
+    lines.push('| #'+row.pr+' | '+w.observed_core_runs+' | '+w.same_head_repeat_runs+
+      ' | '+w.new_head_runs+' | '+w.gaps_measured.n+' | '+
+      [w.gaps_measured.mean_minutes,w.gaps_measured.p50_minutes,w.gaps_measured.p95_minutes]
+        .map(fmt).join(' / ')+' | '+fmt(w.first_runner_wait.mean_minutes)+
+      ' | '+fmt(w.core_job_work.mean_minutes)+' | '+(w.run_history_complete?'complete':'partial')+' |');
+  }
+  lines.push('','Gap is previous Core run updated_at → next Core run created_at. Same-HEAD repeat, changed HEAD, runner wait and execution are distinct; timestamps alone never establish the root cause. Missing/overlapping history remains unknown.');
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
     fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count);
