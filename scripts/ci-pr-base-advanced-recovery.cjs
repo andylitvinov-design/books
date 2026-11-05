@@ -75,9 +75,10 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.
  const e=context.payload.workflow_run;
  const refs=(e.pull_requests||[]).filter(x=>Number.isSafeInteger(x?.number)&&x.number>0&&
   x.base?.ref===PROD&&SHA.test(x.base.sha||'')&&
-  x.head?.sha===e.head_sha&&x.head?.ref===e.head_branch);
+  SHA.test(x.head?.sha||'')&&x.head?.ref===e.head_branch);
  if(refs.length!==1)return outcome('SKIPPED','AMBIGUOUS_IMMUTABLE_PR_ASSOCIATION');
- const ref=refs[0],number=ref.number;
+ const ref=refs[0],number=ref.number,sourceSha=ref.head.sha;
+ let testedBase=ref.base.sha;
  try{
   const {owner,repo}=context.repo;
   const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:e.id})).data;
@@ -85,6 +86,17 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.
      run.status!=='completed'||run.conclusion!=='failure'||
      run.head_sha!==e.head_sha||run.head_branch!==e.head_branch||
      run.path?.split('@')[0]!==CORE_PATH)return outcome('SKIPPED','RUN_CHANGED',number);
+  // A pull_request run may use GitHub's synthetic merge SHA rather than
+  // the source branch SHA. Its two immutable parents prove the exact
+  // tested BASE and PR source; never equate a merge SHA with the source.
+  if(e.head_sha!==sourceSha){
+   const merge=(await github.rest.repos.getCommit({owner,repo,ref:e.head_sha})).data;
+   if(merge?.sha!==e.head_sha||!Array.isArray(merge.parents)||
+      merge.parents.length!==2||!SHA.test(merge.parents[0]?.sha||'')||
+      merge.parents[1]?.sha!==sourceSha)
+    return outcome('SKIPPED','RUN_MERGE_PARENTS_UNVERIFIED',number);
+   testedBase=merge.parents[0].sha;
+  }
   const jobData=(await github.rest.actions.listJobsForWorkflowRun({
    owner,repo,run_id:e.id,per_page:100,filter:'latest'
   })).data;
@@ -100,10 +112,10 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.
    await new Promise(resolve=>setTimeout(resolve,2000));
    pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   }
-  if(!sameSource(pr,e.head_branch,e.head_sha))
+  if(!sameSource(pr,e.head_branch,sourceSha))
    return outcome('SKIPPED','PR_SOURCE_CHANGED_DRAFT_HELD_OR_CONFLICT',number);
   const liveBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
-  const live=liveBranch?.commit?.sha,old=ref.base.sha;
+  const live=liveBranch?.commit?.sha,old=testedBase;
   if(liveBranch?.protected!==true||!SHA.test(live||'')||old===live)
    return outcome('SKIPPED','NO_VERIFIED_PROTECTED_BASE_ADVANCE',number);
   const diff=(await github.rest.repos.compareCommits({
@@ -116,20 +128,20 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.
   let pages=0;
   const comments=await readCompleteIssueComments(github,owner,repo,number,
    async (_kind,call)=>{if(++pages>10)throw Error('LEASE_HISTORY_PAGE_LIMIT');return call();});
-  if(!Array.isArray(comments)||externalOwnerLeaseStatus(comments,e.head_sha,now)!=='FREE')
+  if(!Array.isArray(comments)||externalOwnerLeaseStatus(comments,sourceSha,now)!=='FREE')
    return outcome('SKIPPED','ACTIVE_OR_UNVERIFIED_SOURCE_LEASE',number);
   const [fresh,production]=await Promise.all([
    github.rest.pulls.get({owner,repo,pull_number:number}),
    github.rest.repos.getBranch({owner,repo,branch:PROD})
   ]);
-  if(!sameSource(fresh.data,e.head_branch,e.head_sha)||
+  if(!sameSource(fresh.data,e.head_branch,sourceSha)||
      production.data?.protected!==true||production.data?.commit?.sha!==live)
    return outcome('SKIPPED','HEAD_OR_BASE_CHANGED_BEFORE_UPDATE',number);
   // A normal merge of protected production into the PR head. GitHub performs
   // the expected_head_sha lease atomically; synchronize triggers genuine CI.
   const update=await github.request(
    'PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch',{
-    owner,repo,pull_number:number,expected_head_sha:e.head_sha
+    owner,repo,pull_number:number,expected_head_sha:sourceSha
    });
   if(update?.status!==202)return outcome('SKIPPED','UPDATE_NOT_ACCEPTED',number);
   return outcome('UPDATED','PROTECTED_BASE_SYNC_REQUESTED_NEW_HEAD_REQUIRES_REAL_CI',number);
