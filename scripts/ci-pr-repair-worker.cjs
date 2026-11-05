@@ -34,6 +34,32 @@ function eligible(pr, fullRepo) {
     !pr.labels?.some(l => [MANUAL,'hh:hold','hh:blocked',
       'hh:worker-claimed','hh:direction-override:invalid'].includes(l.name)));
 }
+function legacyPrepEligible(pr,fullRepo){
+ return !!(pr&&pr.state==='open'&&!pr.draft&&
+  pr.base?.ref===PROD&&pr.head?.repo?.full_name===fullRepo&&
+  pr.user?.login===fullRepo.split('/')[0]&&SHA.test(pr.head?.sha||'')&&
+  pr.labels?.some(l=>l.name===MANUAL)&&
+  !pr.labels?.some(l=>['hh:hold','hh:blocked','hh:worker-claimed',
+    'hh:direction-override:invalid'].includes(l.name)));
+}
+// A manual label may be retired ONLY for an old worker-generated manual
+// outcome, a NEW source HEAD with an actual signed Core failure, clean base,
+// a no-sensitive-files allowlist and no independent release gate.
+function trustedLegacySourceRetry(pr,comments,files){
+ const sha=pr?.head?.sha;
+ if(!SHA.test(sha||'')||!legacyPrepEligible(pr,REPO)||
+  pr.mergeable!==true||!['clean','blocked','behind'].includes(pr.mergeable_state)||
+  pr.labels?.some(l=>['hh:release-gate-review','hh:specialist-repair-needed',
+    CONFLICT].includes(l.name))||
+  !pr.labels?.some(l=>l.name===SOURCE)||
+  !Array.isArray(files)||!files.length||files.length>MAX_FILES||
+  !files.every(safeFreeSourcePath)||
+  !hasVerifiedSourceHandoff(comments,sha)||!verifiedCoreCodeFailure(comments,sha))
+  return false;
+ return comments.some(c=>trustedControlComment(c)&&
+  parseRecords([c])?.some(r=>r.state==='MANUAL'&&
+   SHA.test(r.head_sha||'')&&r.head_sha!==sha));
+}
 function activeSweepLease(comments,sha,now){
  // The trusted Dispatcher and Repair must see the same exact-HEAD owner.
  return externalOwnerLeaseStatus(comments,sha,now)!=='FREE';
@@ -91,7 +117,8 @@ function safeFiles(items) {
 // A claimed repair cannot complete green without independently proven source.
 // An outdated HEAD is an intentional safe abort, not a failed publication.
 function claimedRepairMissingSourceProof(result) {
-  return !!result && result.claim_status === 'claimed' &&
+  return !!result && result.state!=='PREPARED' &&
+    result.claim_status === 'claimed' &&
     result.source_published !== true && result.state !== 'SUPERSEDED';
 }
 
@@ -134,7 +161,8 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     return response;
   };
   if (fullRepo !== 'andylitvinov-design/books') return skip('WRONG_REPOSITORY');
-  if (!dryRun && !hasToken) return skip('HH_AUTOMERGE_TOKEN_MISSING');
+  // Existing owner token is required later only for source publication.
+ // The read-only legacy path can run without this secret.
   if(taskKey && (!/^[a-f0-9]{32}$/i.test(taskKey) || !SHA.test(expectedSha) ||
       !Number.isSafeInteger(number) || number<1 ||
       !/^[1-9][0-9]{0,18}$/.test(reservationRunId) ||
@@ -158,7 +186,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
   }
   for (const item of candidates) {
     const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
-    if (!eligible(pr,fullRepo) ||
+    if (!(eligible(pr,fullRepo)||legacyPrepEligible(pr,fullRepo)) ||
         (expectedSha && item.number===number && pr.head.sha !== expectedSha)) continue;
     const task=taskFor(pr,priorityFor(pr,now));
     if(!task || (taskKey&&task.task_key!==taskKey)){
@@ -180,7 +208,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     const comments = await readCompleteIssueComments(github,owner,repo,pr.number,limited);
     if(!comments)continue;
     const marker='<!-- '+MARKER+' '+pr.head.sha+' -->';
-    if(comments.some(c=>(c.body||'').includes(marker)))continue;
+    if(task.lane!=='legacy'&&comments.some(c=>(c.body||'').includes(marker)))continue;
     if(taskKey){
       // Exact signed reservation from the trusted single writer is mandatory.
       // A stale, foreign, unsigned or superseded reservation never claims.
@@ -188,7 +216,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       const relevant=signed?.filter(r=>r.task_key===taskKey&&
         r.head_sha===expectedSha&&r.pr_number===number);
       const latest=relevant?.at(-1);
-      if(!latest||latest.state!=='RESERVED'||latest.lane!=='repair'||
+      if(!latest||latest.state!=='RESERVED'||latest.lane!==task.lane||
          latest.owner_run_id!==reservationRunId){
         log('REFUSE_UNSIGNED_OR_SUPERSEDED_RESERVATION #'+pr.number);continue;
       }
@@ -200,7 +228,8 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
         log('SKIP_RESERVED_OR_HANDLED #'+pr.number+' '+state);continue;
       }
     }
-    const mode=repairMode(pr);
+    const legacy=task.lane==='legacy';
+    const mode=legacy?'legacy':repairMode(pr);
     if(mode==='stale_conflict'){
       // A resolved conflict must not consume the manual repair slot forever.
       if(!dryRun){
@@ -225,7 +254,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // A source label from an older HEAD is not permission to edit new code.
     // The trusted Watchdog must have diagnosed this exact HEAD as source-red.
-    if(!conflict && (!hasVerifiedSourceHandoff(comments,pr.head.sha)||
+    if(!legacy&&!conflict && (!hasVerifiedSourceHandoff(comments,pr.head.sha)||
         !verifiedCoreCodeFailure(comments,pr.head.sha))){
       log('SKIP_SOURCE_WITHOUT_VERIFIED_FAILED_CORE_BUILD #' + pr.number);
       continue;
@@ -234,14 +263,17 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     if (!conflict) {
       const response = (await limited('changed-files',()=>github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1}))).data;
       files = safeFiles(response);
-      if (!files || files.length === 0) continue;
+      if (!files || (files.length === 0 && !legacy)) continue;
     }
     if (remaining !== null && remaining < RATE_RESERVE) return skip('GITHUB_API_RESERVE');
     if (dryRun) {
       log('WOULD_CLAIM #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
       return {status:'dry_run',number:pr.number,sha:pr.head.sha,files};
     }
-    const strategy=!conflict&&verifiedCoreCodeFailure(comments,pr.head.sha)?'code':'lint';
+    const safeRetry=legacy&&hasToken&&trustedLegacySourceRetry(pr,comments,files);
+    const strategy=legacy?(safeRetry?'code':'legacy'):
+      !conflict&&verifiedCoreCodeFailure(comments,pr.head.sha)?'code':'lint';
+    if(!legacy&&!hasToken)return skip('HH_AUTOMERGE_TOKEN_MISSING');
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
     const receipt=task;
@@ -256,7 +288,8 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
         at:new Date().toISOString(),source:'repair_worker_claim'}):'';
     await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body:
       marker + '\n**HH Repair Worker claimed this HEAD.**\n' +
-      'Owner: @' + pr.user.login + '; strategy: ' + (conflict?'conflict/manual':strategy==='code'?'verified Core/TypeScript code repair':'targeted ESLint autofix') +
+      'Owner: @' + pr.user.login + '; strategy: ' + (legacy?(safeRetry?'legacy/safe-source-repair':'legacy/cloud-preflight'):
+       conflict?'conflict/manual':strategy==='code'?'verified Core/TypeScript code repair':'targeted ESLint autofix') +
       '. The worker does not bypass checks or overwrite another source branch.' +
       (claimedReceipt?'\n'+claimedReceipt:'')+(claimStage?'\n'+claimStage:'')});
     try { await github.rest.issues.addAssignees({owner,repo,issue_number:pr.number,assignees:[pr.user.login]}); }
@@ -309,7 +342,8 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       !SHA.test(expectedSha || '') || !validCandidate(candidate,expectedSha))
     throw Error('HH_REPAIR_PUBLISH_INVALID_CANDIDATE');
   const pr=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
-  if (!eligible(pr,fullRepo))
+  const legacy=legacyPrepEligible(pr,fullRepo);
+  if (!eligible(pr,fullRepo) && !legacy)
     throw Error('HH_REPAIR_PUBLISH_STALE_OR_UNAUTHORIZED');
   // An owner edit may move the PR after the isolated patch was computed.
   // This is a safe cancellation, not a source failure or publish success.
@@ -360,6 +394,19 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     catch(error){if(error.status!==404)core.info('Manual source queue cleanup #'+prNumber+': '+error.message);}
     return {status:'manual_required',number:prNumber};
   }
+  if(legacy){
+    // The signed claim belongs to THIS trusted GitHub Actions run, not an
+    // arbitrary PR author or an outdated workflow outcome.
+    const comments=await readCompleteIssueComments(github,owner,repo,prNumber,
+      async (_n,request)=>request());
+    const receipts=parseRecords((comments||[]).filter(trustedControlComment));
+    if(!comments||!trustedLegacySourceRetry(pr,comments,allowed)||
+       !receipts?.some(r=>r.lane==='legacy'&&r.state==='CLAIMED'&&
+        r.head_sha===expectedSha&&r.owner_run_id===String(context.runId))||
+       activeSweepLease(comments,expectedSha,Date.now())||
+       candidate.files.some(f=>!safeFreeSourcePath(f.path)))
+      throw Error('HH_REPAIR_LEGACY_MANUAL_NOT_AUTHORIZED');
+  }
   if (!writer) throw Error('HH_REPAIR_PUBLISH_OWNER_TOKEN_REQUIRED');
   const parent = (await github.rest.git.getCommit({owner,repo,commit_sha:expectedSha})).data;
   if (!SHA.test(parent.tree?.sha || '')) throw Error('HH_REPAIR_PUBLISH_MISSING_PARENT_TREE');
@@ -398,6 +445,17 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl}):'')+(publishedStage?'\n'+publishedStage:'')});
   try { await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE}); }
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
+  if(legacy){
+    // Only a verified source patch on the NEW remote HEAD can retire a
+    // worker-generated manual marker; remaining independent gates stay.
+    const updated=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
+    if(updated?.head?.sha===created.sha&&updated.state==='open'&&
+       updated.labels?.some(l=>l.name===MANUAL)){
+      try{await github.rest.issues.removeLabel({
+        owner,repo,issue_number:prNumber,name:MANUAL});
+      }catch(e){core.info('HH_REPAIR: manual flag still held: '+e.message);}
+    }
+  }
   return {status:'committed',number:prNumber,sha:created.sha};
 }
 /**
@@ -506,6 +564,10 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
   }else if(claimStatus!=='claimed'){
     state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
+   }else if(strategy==='legacy'&&fixResult==='success'&&candidateStatus==='prepared'){
+    state='PREPARED';reason='LEGACY_CLOUD_PREFLIGHT_NO_SOURCE_WRITE';
+  }else if(strategy==='legacy'){
+    state='FAILED';reason='LEGACY_PREFLIGHT_INCOMPLETE';
   }else if((strategy==='lint'||strategy==='code')&&fixResult!=='success'){
     state=strategy==='code'?'MANUAL':'FAILED';
     reason=(strategy==='code'?'DETERMINISTIC_REPAIR_JOB_':'FIX_JOB_')+
@@ -654,4 +716,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,PROD,SOURCE,CONFLICT,MARKER};

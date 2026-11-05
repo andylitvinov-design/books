@@ -1,6 +1,6 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
-const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,validLegacyPrep,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
@@ -8,7 +8,8 @@ const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=re
 const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
-const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
+const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.yml',
+ conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
 function verifiedSourceGreen(checks){
@@ -99,7 +100,7 @@ function workerBusyOrCooling(runs,now,lane=null){
  });
 }
 function planCandidates(prs,now){
- const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
+ const available=prs.filter(pr=>(validPR(pr)||validLegacyPrep(pr))&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
  if(!ranked.length)return [];
  // Source and manual conflict have separate resources. Inspect more than the
@@ -110,6 +111,12 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
+ // Bound older manual PRs to ONE cloud preflight per hour using the existing
+ // 10-minute Watchdog inventory. No new cron, repeated CI or new runner class.
+ const legacy=ranked.filter(pr=>laneOf(pr)==='legacy');
+ const legacyTurn=Math.floor(now/600000)%6===4;
+ const old=legacyTurn&&legacy.length?
+  legacy[Math.floor(now/3600000)%legacy.length]:null;
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -121,13 +128,15 @@ function planCandidates(prs,now){
   const fast=conflicts.slice(0,Math.min(2,room));
   const tail=conflicts.slice(fast.length),rotating=room-fast.length;
   const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
-  return [...fast,...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
+  return [...(old?[old]:[]),...fast,
+   ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
+   .slice(0,MAX_CONFLICT_ONLY_INSPECT)
    .map(pr=>taskFor(pr,priorityFor(pr,now)));
  }
  const picked=[],chosen=new Set();
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
  if(fairnessTurn)add(conflict);
- add(source[0]);add(ci);
+ add(source[0]);add(ci);add(old);
  // Keep priority among the first three sources and rotate the remainder.
  for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
@@ -264,7 +273,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   specialistReclassified:0,wouldSpecialistReclassify:0,
   policyReclassified:0,wouldPolicyReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
-  actionableByLane:{repair:0,ci:0,conflict:0},
+  actionableByLane:{repair:0,legacy:0,ci:0,conflict:0},
+  legacyDispatchAccepted:0,
   capacityReason:null,blocked:{},legacyCiRecovery:null,
   workerRuns:[],blockerExamples:{},ciWakeOutcomes:{},ciWakeTelemetry:[],
   ciCoreConfirmed:0,ciCoreQueued:0,ciCoreRunning:0,ciCoreWaitingRunner:0,ciHoldRecovered:0,
@@ -422,7 +432,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const candidates=focusedPR
   ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
   : planCandidates(production,now);
- summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
+ summary.actionable=production.filter(pr=>laneOf(pr)).length;
  for(const pr of production){
   const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
  }
@@ -516,7 +526,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   try{fresh=(await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;}
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
-     !validPR(fresh)||laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
+     !(task.lane==='legacy'?validLegacyPrep(fresh):validPR(fresh))||
+      laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
   let comments;
   try{
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
@@ -912,6 +923,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
    summary.dispatchAccepted++;
    if(task.lane==='repair')summary.repairDispatchAccepted++;
+   if(task.lane==='legacy')summary.legacyDispatchAccepted++;
    summary.workerRuns.push({task_key:task.task_key,pr_number:task.pr_number,
     head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
     sourceCommitConfirmed:false});
