@@ -4139,11 +4139,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return startFromHero();
   };
 
+  const continueToIdeas = () => {
+    // Reuse the original device-only request classifier; no provider or render.
+    const designButton=document.querySelector<HTMLButtonElement>("[data-video-request-design]");
+    if(designButton&&!designButton.disabled)designButton.click();
+    quickNavTokenRef.current++;
+    setVideoScenarioOpen(false);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+    setIntroPlaying(false);
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-quick-controls]")?.scrollIntoView({
+        behavior:"instant" as ScrollBehavior,block:"start",
+      })));
+  };
   const openVideoScenarioStep = () => {
+    // Explicit four-shot review belongs to Ideas, never embedded in Goals.
+    quickNavTokenRef.current++;
     setVideoScenarioOpen(true);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+    setIntroPlaying(false);
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-auto-video-director]")?.scrollIntoView({
-        behavior:"smooth",block:"start",
+        behavior:"instant" as ScrollBehavior,block:"start",
       })));
   };
   const deepAudioPane = (
@@ -4783,6 +4804,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // A new workspace is explicit user intent: retire stale catalog jumps.
             quickNavTokenRef.current++;
             setActiveWorkspace(item.id);
+            if(item.id!=="phrases")setVideoScenarioOpen(false);
             if(item.id==="editor")setMontagePanel("settings");
             if(item.id!=="practices")setIntroPlaying(false);
             setStudioMode(item.id==="practices"?"therapy":"pump");
@@ -4881,12 +4903,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"3. Describe tu idea":"3. Describe your request"}</h4>
             <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
             <button type="button" className={videoStyles.quickPromptContinue}
-              data-video-continue-scenarios
+              data-video-continue-scenarios data-video-continue-ideas="true"
               disabled={!studioHydrated||recording||preparing}
-              onClick={openVideoScenarioStep}>
-              <Film size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Продолжить к созданию видео":
-                locale==="es"?"Continuar para crear el vídeo":"Continue to video creation"}</span>
+              onClick={continueToIdeas}>
+              <Heart size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее к идеям":
+                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
@@ -4894,7 +4916,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
         <details className={videoStyles.directorChatDetails}
-          data-video-director-chat-details data-workspace-section="video"
+          data-video-director-chat-details data-workspace-section="phrases"
           open={directorChatOpen}
           onToggle={event=>setDirectorChatOpen(event.currentTarget.open)}>
           <summary><Sparkles size={17} aria-hidden="true"/>
@@ -5304,6 +5326,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
             locale==="es"?"Configurar audioguía, música y voz":"Set up audio guidance, music & voice"}
           <ArrowRight size={17} aria-hidden="true"/>
+        </button>
+        <button type="button" className={videoStyles.phraseStoryToggle}
+          data-video-show-storyboard aria-expanded={videoScenarioOpen}
+          disabled={!studioHydrated||recording||preparing}
+          onClick={()=>setVideoScenarioOpen(open=>!open)}>
+          <ListVideo size={18} aria-hidden="true"/>
+          <span>{locale==="ru"?"Раскадровка из 4 сцен (по желанию)":
+            locale==="es"?"Plan de 4 escenas (opcional)":"4-shot storyboard (optional)"}</span>
+          <ChevronDown size={18} aria-hidden="true"/>
         </button>
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"

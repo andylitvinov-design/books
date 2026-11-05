@@ -14,8 +14,11 @@ test("video entry is goal, topic, request and actionable next step",()=>{
    assert.ok(studio.indexOf(keys[i])>studio.indexOf(keys[i-1]),keys[i]);
  assert.equal((studio.match(/data-video-request-prompt/g)||[]).length,1,"one input");
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/setVideoScenarioOpen\(true\)/);
- assert.match(studio,/onClick=\{openVideoScenarioStep\}/);
+ assert.match(studio,/const continueToIdeas = \(\) => \{/);
+ assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/data-video-continue-ideas="true"/);
+ assert.match(studio,/setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/setVideoScenarioOpen\(false\)/);
  assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
 });
 
@@ -54,4 +57,17 @@ test("only the first mobile screen is compact; original actions remain at step t
  assert.match(browser,/height of \[820,700\]/);
  assert.match(browser,/g\.cta\.bottom<=g\.visibleBottom-6/);
  assert.match(browser,/await continueButton\.click\(\)/);
+});
+
+test("Goals shows one green continuation and no embedded storyboard or bonus tools",()=>{
+ assert.equal((studio.match(/data-video-continue-ideas="true"/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
+ assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?\[data-video-request-design\][\s\S]*?setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/data-video-show-storyboard aria-expanded=\{videoScenarioOpen\}/);
+ assert.match(css,/\.studio\[data-active-workspace="video"\] \.quickBuilder>[\s\S]*?:not\(\[data-video-topic-section\]\)\{[\s\S]*?display:none!important/);
+ assert.match(css,/data-video-request-composer\]>\[data-video-request-design\]/);
+ assert.match(css,/data-video-request-composer\]>\[data-video-request-analysis\]/);
+ assert.match(css,/data-active-workspace="phrases"\]\[data-video-scenario-open="true"\]/);
+ for(const caption of ["Далее к идеям","Continue to ideas","Continuar a ideas"])
+   assert.ok(studio.includes(caption),"missing locale CTA "+caption);
 });

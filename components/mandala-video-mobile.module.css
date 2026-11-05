@@ -4301,3 +4301,40 @@
     display:none!important
   }
 }
+
+/* Goals is exactly the player, categories, topic, request and one green CTA.
+   Keep the source director mounted for React portals, but never show its
+   embedded story/bonus/workspace actions on Goals. */
+.studio[data-active-workspace="video"] .quickBuilder>
+  :not(.quickBrandBar):not(.quickVideoNav):not(.previewStage):not([data-video-quick-section="1"]):not([data-video-topic-section]){
+  display:none!important;
+}
+.studio[data-active-workspace="video"] [data-video-request-composer]>[data-video-request-design],
+.studio[data-active-workspace="video"] [data-video-request-composer]>[data-video-request-analysis]{
+  display:none!important;
+}
+/* Four-scene story review and detailed first-video editing are opt-in
+   inside Ideas; reuse the original renderer and assets. */
+.phraseStoryToggle{
+  display:flex;align-items:center;gap:9px;min-height:44px;width:100%;
+  margin:10px 0 0;padding:9px 12px;border-radius:12px;
+  border:1px solid var(--hh-light-border,#e9dfd1);
+  background:var(--hh-light-surface,#fffcf7);color:var(--hh-light-text,#143d3a);
+  font:700 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;text-align:left;
+}
+.phraseStoryToggle span{flex:1;min-width:0}
+.phraseStoryToggle[aria-expanded="true"]>svg:last-child{transform:rotate(180deg)}
+.phraseStoryToggle:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.phraseStoryToggle:disabled{opacity:.6;cursor:not-allowed}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-auto-video-director]{
+  display:grid!important;order:6!important;min-width:0;
+}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-video-first-video-advanced]{
+  display:block!important;order:7!important;min-width:0;
+}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-video-director-chat-details][open]{
+  display:grid!important;order:8!important;
+}

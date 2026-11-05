@@ -44,12 +44,17 @@ async function verifyWorkspaceHydration(browser,locale){
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
+    await expect(allStories).toBeHidden();
+    const next=page.locator('[data-video-continue-ideas]');
+    await expect(next).toBeEnabled();
+    await next.click();
+    const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    await expect(allStories).toBeHidden();
+    await page.locator('[data-video-show-storyboard]').click();
+    await expect(allStories).toBeVisible();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
-    const phrases=page.locator('[data-video-quick-control="phrases"]');
-    await expect(phrases).toBeEnabled();
-    await phrases.click();
-    await expect(phrases).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
   }finally{release();await context.close();}
 }

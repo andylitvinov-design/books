@@ -132,9 +132,16 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Compact Video hides its extended source editor until the visitor chooses
-  // "All stories". Exercise that REAL visible button, not a hidden DOM node
-  // or direct React state manipulation, before testing the actual export.
+  // Follow the owner-approved Goal -> Ideas pathway before opening optional
+  // story tools. Never force-click a hidden Goals subpage in a browser smoke.
+  const next=page.locator('[data-video-continue-ideas]');
+  await next.waitFor({state:'visible',timeout:40000});
+  await next.click();
+  await page.locator('[data-video-quick-control="phrases"]')
+    .waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+    'true','NEXT_BUTTON_MUST_OPEN_IDEAS');
+  await page.locator('[data-video-show-storyboard]').click();
   const allStories = page.locator('[data-auto-video-all-scenes]');
   await allStories.waitFor({state:'visible',timeout:40000});
   await allStories.click();
