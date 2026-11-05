@@ -101,3 +101,18 @@ test('four editorial anchors retain all six relevant vetted sources',()=>{
     !shot.loopRequired&&shot.durationMs<=shot.sourceDurationMs&&
     (!i||shot.sceneId!==r.shots[i-1].sceneId)));
 });
+
+test('trusted ranked alternatives join four fixed narrative anchors without looping',()=>{
+  const ids=scenes.slice(0,4).map(x=>x.id);
+  const extras=scenes.slice(4).map(x=>({
+    ...x,tags:['unrelated editor beat'],motifs:['different-tag'],
+  }));
+  const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,
+    scenes:[...scenes.slice(0,4),...extras],stageClipIds:ids});
+  assert.equal(r.ok,true);
+  assert.equal(r.uniqueSceneCount,6);
+  assert.deepEqual([0,1,2,3].map(stage=>
+    r.shots.find(x=>x.stage===stage).sceneId),ids);
+  assert.ok(r.shots.every((s,i)=>!s.loopRequired&&s.durationMs<=s.sourceDurationMs&&
+    (!i||s.sceneId!==r.shots[i-1].sceneId)));
+});

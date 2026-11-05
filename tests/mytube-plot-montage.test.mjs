@@ -126,3 +126,26 @@ test("mobile director forwards aspect and invalidates a confirmed cut on format 
   assert.match(source,/targetAspect:aspect/);
   assert.match(source,/stageCaptions,selectedMotifId,selectedStyleId,aspect,/);
 });
+
+test('ranked landscape alternatives are unique and exclude portrait-only footage',async()=>{
+  const [plot]=await listMyTubePlots('money-mindset-s1','ru');
+  const choice=recommendMyTubePlotMontage({
+    plot,scenes:stock.scenes,targetAspect:'landscape',
+  });
+  assert.equal(choice.hasFourApprovedSources,true);
+  assert.ok(Array.isArray(choice.additionalClipIds));
+  assert.ok(choice.additionalClipIds.length<=12);
+  const ids=[...choice.clipIds,...choice.additionalClipIds];
+  assert.equal(new Set(ids).size,ids.length);
+  assert.ok(choice.additionalClipIds.every(id=>stock.scenes.some(s=>
+    s.id===id&&(!s.allowedAspects||s.allowedAspects.includes('landscape')))));
+});
+test('real owner Telegram path uses ranked alternatives and 16:9 by default',()=>{
+  const code=readFileSync(new URL('../lib/practitioners/owner-telegram-story-render.mjs',import.meta.url),'utf8');
+  assert.match(code,/targetAspect:'landscape'/);
+  assert.match(code,/montage\.additionalClipIds/);
+  assert.match(code,/matched\.length>=8/);
+  assert.match(code,/approvedSourceBytes\+source\.expectedBytes>48_000_000/);
+  assert.match(code,/const sceneIds=matched\.map\(scene=>scene\.id\)/);
+  assert.match(code,/sceneIds,tempDir:dir,executable,fetcher/);
+});
