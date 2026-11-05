@@ -54,3 +54,12 @@ The one public search unifies manual and AATA source results without duplicating
 **Pending editorial work:** map and review embedded JPEGs for the 39 newly extracted cards. The documents contain images but their attachment provenance/rights and individual placement should be checked before export. Photo-less cards remain valid; do not substitute other temples. Extracted transliterations in EN/ES are *titles only*; original verse is RU. Variant manuscripts must be cross-referenced before they can count as additional independent material.
 
 **Acceptance:** exact-head Core/Guard/Specialist and targeted Node tests, protected merge, Vercel READY with descendant ancestry, and real URL checks (EN/RU/ES filters, Zeus, Athena, pagination, original image gallery). Passing checks != proven mobile screenshot fidelity.
+
+## V3 · Original source photo review (25 photos)
+The original `3_Античность (1).docx` has 257 image objects; photographs/images were associated with 25 newly added attunements by paragraph proximity plus a contact-sheet visual review. These are **illustrations embedded beside the source text**, not independently authenticated archaeological site photographs or proof of the stated temple history. Text-only cards remain text-only where images could not be safely matched.
+
+- New public assets: `public/library/temple-channels/expanded/archive-*.jpg` (24) and `archive-fortuna-perge.png` (1).
+- All image bytes came from the original author's connected manuscript (no stock, generation or unrelated gallery). Each was checked for valid JPEG/PNG signature and absence of embedded EXIF/GPS metadata; images are not presumed separately rights-cleared beyond the owner's instruction to reproduce his archive photography.
+- The matching text, city, and author-described temple name are not altered; captions explicitly say "source manuscript illustration" rather than certifying a photographed location.
+- 25 cards display one source image, while the remaining 14 document-only expansion cards retain the quiet neutral fallback. Existing 10 source DOCX photos and 16 original Telegram photo sets remain untouched and their public archive references are reused.
+- Responsive lazy media layout, ordinary original-photo alt text, 12 cards per server response and no automatic popup.

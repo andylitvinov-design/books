@@ -1,6 +1,7 @@
-// Source: author's manuscript "3. Античность"; only manually verified author-original poems.
-// No ancient hymn translations, unverified photo URLs or fabricated coordinates.
-// Every verse remains in Russian as written; alternate manuscript phrases are preserved.
+// Source: author's manuscript "3. Античность"; 39 verified author-original Russian rhythms.
+// For 25 entries, images originate from neighboring paragraphs in that same manuscript.
+// No independent archaeological attribution, invented source, ancient hymn translations or coordinates.
+// Original Russian phrases and alternate variants are preserved.
 export const expandedTempleAttunements = Object.freeze([
   {
     "id": "archive-zeus-nessebar",
@@ -33,7 +34,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-zeus-nessebar.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Зевс · Несебыр» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Zeus · Nessebar",
+          "es": "Ilustración del manuscrito original junto a Zeus · Nessebar"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -41,7 +51,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 100,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-athena-izmir",
@@ -115,7 +125,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-athena-priene-gate.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Афина · Приена» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Athena · Priene",
+          "es": "Ilustración del manuscrito original junto a Athena · Priene"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -123,7 +142,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 102,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-athena-priene-altar",
@@ -156,7 +175,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-athena-priene-altar.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Афина · Приена» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Athena · Priene",
+          "es": "Ilustración del manuscrito original junto a Athena · Priene"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -164,7 +192,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 103,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-athena-priene-archaic",
@@ -197,7 +225,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-athena-priene-archaic.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Афина · Приена» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Athena · Priene",
+          "es": "Ilustración del manuscrito original junto a Athena · Priene"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -205,7 +242,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 104,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-athena-side",
@@ -238,7 +275,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-athena-side.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Афина · Сиде» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Athena · Side",
+          "es": "Ilustración del manuscrito original junto a Athena · Side"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -246,7 +292,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 105,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-artemis-ephesus-museum",
@@ -320,7 +366,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-artemis-ephesus-temple.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Артемида · Эфес» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Artemis · Ephesus",
+          "es": "Ilustración del manuscrito original junto a Artemis · Ephesus"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -328,7 +383,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 107,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-artemis-didyma",
@@ -365,7 +420,16 @@ export const expandedTempleAttunements = Object.freeze([
       },
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-artemis-didyma.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Артемида · Дидима» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Artemis · Didyma",
+          "es": "Ilustración del manuscrito original junto a Artemis · Didyma"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -373,7 +437,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 108,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-aphrodite-izmir-one",
@@ -570,7 +634,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-pan-alanya.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Пан · Аланья» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Pan · Alanya",
+          "es": "Ilustración del manuscrito original junto a Pan · Alanya"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -578,7 +651,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 113,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-pan-izmir",
@@ -652,7 +725,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-heracles-demre.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Геракл · Демре» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Heracles · Demre",
+          "es": "Ilustración del manuscrito original junto a Heracles · Demre"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -660,7 +742,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 115,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-heracles-side",
@@ -734,7 +816,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-pompeii.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Помпеи» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Pompeii",
+          "es": "Ilustración del manuscrito original junto a Apollo · Pompeii"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -742,7 +833,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 117,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-didyma-altar",
@@ -775,7 +866,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-didyma-altar.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Дидима» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Didyma",
+          "es": "Ilustración del manuscrito original junto a Apollo · Didyma"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -783,7 +883,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 118,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-didyma-entrance",
@@ -816,7 +916,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-didyma-entrance.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Дидима» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Didyma",
+          "es": "Ilustración del manuscrito original junto a Apollo · Didyma"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -824,7 +933,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 119,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-didyma-court",
@@ -857,7 +966,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-didyma-court.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Дидима» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Didyma",
+          "es": "Ilustración del manuscrito original junto a Apollo · Didyma"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -865,7 +983,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 120,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-didyma-four",
@@ -939,7 +1057,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-klaros-hellenistic.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Кларос» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Claros",
+          "es": "Ilustración del manuscrito original junto a Apollo · Claros"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -947,7 +1074,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 122,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-klaros-archaic",
@@ -960,7 +1087,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "format": "verse",
     "language": "ru",
-    "textRu": "Нежная приятность\nВозвышенно полна\nЗвучанье флейт изящных\nПриветствует тебя\nВлеча нас с упоеньем\nВ пределы красоты\nВ хрустальность вдохновенья\nИ шелест чистоты\nВысоких дум отвага\nСклонится перед тем       \nКто служит с вдохновеньем\nКрасе изящных тем.\n// Высоких дум отвагу\nИ смелость слов впусти\nКоль следуешь с безумством\nСветлейшему пути / творящему пути.\n=",
+    "textRu": "Нежная приятность\nВозвышенно полна\nЗвучанье флейт изящных\nПриветствует тебя\nВлеча нас с упоеньем\nВ пределы красоты\nВ хрустальность вдохновенья\nИ шелест чистоты\nВысоких дум отвага\nСклонится перед тем       \nКто служит с вдохновеньем\nКрасе изящных тем.\n// Высоких дум отвагу\nИ смелость слов впусти\nКоль следуешь с безумством\nСветлейшему пути / творящему пути.",
     "place": {
       "city": {
         "ru": "Кларос",
@@ -980,7 +1107,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-klaros-archaic.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Кларос» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Claros",
+          "es": "Ilustración del manuscrito original junto a Apollo · Claros"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -988,7 +1124,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 123,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-sofia",
@@ -1021,7 +1157,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-sofia.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · София» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Sofia",
+          "es": "Ilustración del manuscrito original junto a Apollo · Sofia"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1029,7 +1174,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 124,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-nessebar",
@@ -1062,7 +1207,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-nessebar.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Несебыр» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Nessebar",
+          "es": "Ilustración del manuscrito original junto a Apollo · Nessebar"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1070,7 +1224,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 125,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-varna-one",
@@ -1103,7 +1257,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-apollo-varna-one.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Аполлон · Варна» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Apollo · Varna",
+          "es": "Ilustración del manuscrito original junto a Apollo · Varna"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1111,7 +1274,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 126,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-apollo-varna-two",
@@ -1185,7 +1348,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-hermes-varna-one.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Гермес · Варна» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Hermes · Varna",
+          "es": "Ilustración del manuscrito original junto a Hermes · Varna"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1193,7 +1365,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 128,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-hermes-varna-two",
@@ -1349,7 +1521,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-serapis-priene.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Серапис · Приена» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Serapis · Priene",
+          "es": "Ilustración del manuscrito original junto a Serapis · Priene"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1357,7 +1538,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 132,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-serapis-red-basilica",
@@ -1394,7 +1575,16 @@ export const expandedTempleAttunements = Object.freeze([
       },
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-serapis-red-basilica.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Серапис · Бергамо / Пергамон (по записи)» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Serapis · Bergamo / Pergamon (source wording)",
+          "es": "Ilustración del manuscrito original junto a Serapis · Bergamo / Pergamon (source wording)"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1402,7 +1592,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 133,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-fortuna-perge",
@@ -1435,7 +1625,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-fortuna-perge.png",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Фортуна · Перге» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Fortuna · Perge",
+          "es": "Ilustración del manuscrito original junto a Fortuna · Perge"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1443,7 +1642,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 134,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-hadrian-ephesus-one",
@@ -1476,7 +1675,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-hadrian-ephesus-one.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Император · Эфес» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Emperor · Ephesus",
+          "es": "Ilustración del manuscrito original junto a Emperor · Ephesus"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1484,7 +1692,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 135,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-hadrian-ephesus-two",
@@ -1558,7 +1766,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-emperor-pergamon.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Император · Пергамон» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Emperor · Pergamon",
+          "es": "Ilustración del manuscrito original junto a Emperor · Pergamon"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1566,7 +1783,7 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 137,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   },
   {
     "id": "archive-hadrian-troy",
@@ -1599,7 +1816,16 @@ export const expandedTempleAttunements = Object.freeze([
       "note": null,
       "verification": "author-described"
     },
-    "photos": [],
+    "photos": [
+      {
+        "src": "/library/temple-channels/expanded/archive-hadrian-troy.jpg",
+        "alt": {
+          "ru": "Иллюстрация к настройке «Император · Троя» из оригинальной авторской методички",
+          "en": "Source-manuscript illustration beside Emperor · Troy",
+          "es": "Ilustración del manuscrito original junto a Emperor · Troy"
+        }
+      }
+    ],
     "source": {
       "id": "antiquity-chapter-3",
       "title": "3. Античность",
@@ -1607,6 +1833,6 @@ export const expandedTempleAttunements = Object.freeze([
     },
     "sortOrder": 138,
     "visibility": "public",
-    "photoContext": "Source section identified; image not yet publicly verified."
+    "photoContext": "Embedded author-manuscript illustration adjacent to this source section; exact historical site attribution not independently verified."
   }
 ]);
