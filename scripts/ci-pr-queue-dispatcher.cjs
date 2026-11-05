@@ -111,11 +111,13 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
- // Bound older manual PRs to ONE cloud preflight per hour using the existing
- // 10-minute Watchdog inventory. No new cron, repeated CI or new runner class.
- const legacy=ranked.filter(pr=>laneOf(pr)==='legacy');
- const legacyTurn=Math.floor(now/600000)%6===4;
- const old=legacyTurn&&legacy.length?
+ // Scheduled GitHub cron can arrive many minutes late. Pick the same old PR
+ // in a UTC hour, regardless of when the only available sweep is delivered.
+ // Exact task receipts prevent duplicate execution on later ticks in that
+ // hour; no new cron, workflow, runner class or provider.
+ const legacy=ranked.filter(pr=>laneOf(pr)==='legacy')
+  .sort((a,b)=>a.number-b.number);
+ const old=legacy.length?
   legacy[Math.floor(now/3600000)%legacy.length]:null;
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
@@ -433,8 +435,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
   : planCandidates(production,now);
  // Source-write eligibility must remain separate from safe legacy preparation.
- summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
+ // Legacy preparation is routable but NEVER authorizes source mutation.
+ // Report both populations so the monitor does not reject a safe prep task.
+ summary.nonmanualRouted=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
  summary.legacyPrepEligible=production.filter(pr=>validLegacyPrep(pr)).length;
+ summary.actionable=summary.nonmanualRouted+summary.legacyPrepEligible;
  for(const pr of production){
   const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
  }

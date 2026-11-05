@@ -210,3 +210,34 @@ test('existing queued Watchdog or malformed schedule inventory blocks fallback',
  assert.equal(m.decision,'WATCHDOG_WAKE_UNAVAILABLE');
  assert.equal(dispatches,0);
 });
+
+// A genuine protected control-plane push may recover a delayed Watchdog.
+// Unknown/foreign branches and cron history never authorize dispatch.
+test('protected default push calls existing Watchdog only when cron is stale',async()=>{
+ const {wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const old=new Date(NOW-90*60000).toISOString();
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'push'};
+ let dispatches=0;
+ const github={rest:{actions:{
+  listWorkflowRuns:async({event})=>({data:{total_count:event==='schedule'?1:0,
+   workflow_runs:event==='schedule'?[{id:55,status:'completed',
+    created_at:old,updated_at:old}]:[]}}),
+  createWorkflowDispatch:async({workflow_id,ref,inputs})=>{
+   assert.equal(workflow_id,'hh-pr-ten-minute-watchdog.yml');
+   assert.equal(ref,'codex/bootstrap-books');
+   assert.deepEqual(inputs,{dry_run:'false'});dispatches++;
+  }
+ }}};
+ const actual=await wakeStaleWatchdog({github,context,summary:{production:33},now:NOW});
+ assert.equal(actual.decision,'EVENT_WATCHDOG_WAKE_ACCEPTED');
+ assert.equal(dispatches,1);
+ for(const invalid of [
+  {...context,ref:'refs/heads/codex/public-book-library'},
+  {...context,repo:{owner:'foreign',repo:'books'}}
+ ]){
+  assert.equal((await wakeStaleWatchdog({github,context:invalid,
+   summary:{production:33},now:NOW})).decision,'NOT_ELIGIBLE');
+ }
+ assert.equal(dispatches,1,'never dispatch from an untrusted context');
+});

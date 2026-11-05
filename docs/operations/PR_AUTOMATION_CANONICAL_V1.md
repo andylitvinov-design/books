@@ -48,6 +48,8 @@ The reusable architecture already exists: [.github workflows](../../.github/work
 | **:45 — Conflict Repair** | Verified `dirty` / merge-tree conflict and owner lease | Preserve real source semantics; one actual repair on current HEAD; no automatic no-op rebase, branch update storm, or force push. |
 | **≤10 PR notifier — existing cadence** | Read existing complete snapshot only; once-per-threshold notification | No new scans, extra CI, or repeated alerts for the same crossing. |
 
+**Legacy Cloud liveness v2 (2026-11-05).** The existing Direction Watcher now invokes the existing, bounded `wakeStaleWatchdog` only after a real current production PR inventory from its trusted scheduled, manually dispatched or protected control-plane push run. A delayed Watchdog cron (35-minute grace) may cause ONE existing `workflow_dispatch` wake only if no active or recent real reconcile is detected. No new schedule, job, API scanning service, paid provider or preview deployment is added. Legacy PRs use a stable hourly selection independent of GitHub cron delivery minute; signed task reservations and terminal PREPARED receipts reject repeat execution on the same HEAD. Monitor `actionable_prs` means routable; `nonmanual_routed_prs` and `legacy_preflight_eligible_prs` keep read-only preparation distinct from source-write authorization.
+
 The old `:05 Shared Roots` task was **disabled** on this date; do not restart or silently multiply its responsibilities. Existing GitHub-native dispatcher/Watchdog/Repair/CI jobs remain the *primary* event-driven pipeline; Chat agents are secondary diagnostics/repair, never a competing dispatch engine.
 
 ## 5. Measurements, truthfulness and root-cause decisions

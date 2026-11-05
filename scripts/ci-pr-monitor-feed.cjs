@@ -126,6 +126,10 @@ function buildMonitorSnapshot(report,context){
     discovered_open_prs:validCount(report.discovered??report.production,'discovered'),
     production_prs:validCount(report.production,'production'),
     actionable_prs:validCount(report.actionable,'actionable'),
+    nonmanual_routed_prs:validCount(report.nonmanualRouted??report.actionable,
+      'nonmanualRouted'),
+    legacy_preflight_eligible_prs:validCount(report.legacyPrepEligible??0,
+      'legacyPrepEligible'),
     candidates:validCount(report.candidates,'candidates'),
     inspected:validCount(report.inspected,'inspected'),
     unknown_owner_locks:validCount(blocked.OWNER_LEASE_UNVERIFIED||0,'unknown_owner_locks'),
@@ -133,6 +137,9 @@ function buildMonitorSnapshot(report,context){
     // Historical compatibility name: ONLY trusted exact-task RUNNER_STARTED receipts.
     worker_dispatches:validCount(report.runnerStartedConfirmed,'runnerStartedConfirmed')
   };
+  if((report.nonmanualRouted!==undefined||report.legacyPrepEligible!==undefined)&&
+     counts.nonmanual_routed_prs+counts.legacy_preflight_eligible_prs!==counts.actionable_prs)
+    throw Error('ROUTABLE_POPULATIONS_INCONSISTENT');
   if(counts.candidates>counts.actionable_prs ||
      counts.inspected>counts.candidates ||
      counts.dispatch_requests_accepted>counts.inspected ||

@@ -33,11 +33,22 @@ test('Draft/explicit hold/foreign source prevent both manual prep and source',()
   assert.equal(task.laneOf(x),null);
  }
 });
-test('bounded old queue rotates once per hour rather than six times',()=>{
+test('stable old candidate survives arbitrary delayed cron ticks and rotates hourly',()=>{
  const old=Array.from({length:12},(_,i)=>pr(i+204));
- const at=planCandidates(old,NOW);
- assert.equal(at.filter(x=>x.lane==='legacy').length,1);
- assert.equal(planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy').length,0);
+ const at=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
+ const late=planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy');
+ const next=planCandidates(old,NOW+1200000).filter(x=>x.lane==='legacy');
+ assert.equal(at.length,1);
+ assert.equal(late.length,1,'late :50 tick must still admit a candidate');
+ assert.equal(late[0].pr_number,at[0].pr_number,
+  'a second 10-minute tick of one hour reuses the exact same task');
+ assert.equal(next.length,1);
+ assert.notEqual(next[0].pr_number,at[0].pr_number,
+  'next UTC hour rotates without waiting for :40');
+ const receipt=task.taskFor(old[0],{tier:'P4',direction:'academy-courses'});
+ assert.equal(task.reservationStatus(receipt,
+  [{body:task.commentBody({...receipt,state:'PREPARED'})}],NOW),
+  'ALREADY_HANDLED','terminal receipt prevents redundant source preparation');
  assert.equal(WORKFLOWS.legacy,WORKFLOWS.repair);
  const cap=computeCapacity([],[],[]);
  assert.equal(admission('legacy',cap),'ADMIT');

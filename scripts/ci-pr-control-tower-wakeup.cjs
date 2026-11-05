@@ -129,7 +129,7 @@ async function wakeStaleWatchdog({github,context,summary,dryRun=false,
   const report=()=>{log('HH_WATCHDOG_CRON_BACKSTOP '+JSON.stringify(info));return info;};
   if(dryRun||context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books'||
      context.ref!=='refs/heads/'+DEFAULT||
-     !['schedule','workflow_run','workflow_dispatch'].includes(context.eventName)||
+     !['schedule','workflow_run','workflow_dispatch','push'].includes(context.eventName)||
      !Number.isSafeInteger(summary?.production)||summary.production<1)return report();
   const {owner,repo}=context.repo;
   try{

@@ -1444,10 +1444,12 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
   inventorySnapshot:production,watchdogEvidence:evidence});
  assert.equal(globalReads,0);
  assert.equal(report.production,156);
- assert.equal(report.actionable,0);
- assert.equal(report.candidates,0);
- assert.equal(report.dispatchAccepted,0);
- assert.equal(report.reason,'NO_AUTO_SOURCE_ELIGIBLE_WITH_BLOCKED_WORK');
+ assert.equal(report.actionable,16,'manual preflight candidates count as routable');
+ assert.equal(report.nonmanualRouted,0,'no manual source write was permitted');
+ assert.equal(report.legacyPrepEligible,16);
+ assert.equal(report.candidates,1,'exactly one stable old preflight candidate');
+ assert.equal(report.dispatchAccepted,0,'the mock never proves capacity or a lease');
+ assert.match(report.reason,/^CAPACITY_UNVERIFIED:/);
  assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
  assert.equal(report.watchdogSample.inspected,16);
  assert.equal(report.watchdogSample.coreFailures,8);
@@ -1458,7 +1460,9 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
  const output=buildMonitorSnapshot(report,context);
  assert.equal(output.counts.verified_blocked_lower_bound,8,
   'overlapping categories must never be added together');
- assert.equal(output.delivery_status,'VERIFIED_BLOCKED_WORK_NO_AUTO_SOURCE_REPAIR');
+ assert.equal(output.delivery_status,'HANDOFF_BLOCKED');
+ assert.equal(output.counts.nonmanual_routed_prs,0);
+ assert.equal(output.counts.legacy_preflight_eligible_prs,16);
  assert.equal(output.watchdog_sample.inspected,16);
  assert.equal(output.counts.worker_dispatches,0);
 });
