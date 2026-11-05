@@ -3724,3 +3724,24 @@
   .editorDraftTools{gap:5px}
   .editorDraftTools button{font-size:11px;padding:7px 9px}
 }
+
+
+/* Optional independent music bed stays subordinate to the one canonical editor. */
+.audioBedPanel{margin:10px 0;border:1px solid #d8e4d9;border-radius:13px;
+  padding:10px;background:#fafcf9;color:#215346}
+.audioBedPanel summary{display:flex;align-items:center;gap:8px;cursor:pointer;
+  min-height:39px;font-size:13px;font-weight:800}
+.audioBedControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:8px 0}
+.audioBedControls label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:750}
+.audioBedControls select,.audioBedControls input{width:100%;min-width:0;min-height:42px;
+  border:1px solid #c9dcd0;border-radius:10px;padding:7px;color:#184a38;
+  background:#fffdf9}
+.audioBedControls input{accent-color:#078b73}
+.audioBedControls :disabled{opacity:.55}
+.audioBedInfo{font-size:11px;line-height:1.5;color:#677d71;margin:4px 1px}
+@media(max-width:560px){
+ .audioBedControls{grid-template-columns:1fr 1fr}
+ .audioBedControls label:first-child{grid-column:1/-1}
+}
+@media(max-width:360px){.audioBedControls{grid-template-columns:1fr}
+ .audioBedControls label:first-child{grid-column:auto}}
