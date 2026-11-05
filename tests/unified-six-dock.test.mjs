@@ -179,25 +179,37 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube is black with a single slim collapsed filter bar containing the canonical category tree",()=>{
+test("MyTube stays dark with a swipeable direction rail and expandable deeper filters",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
- const pageStyle=read("app/[locale]/mytube/mytube.module.css");
+ const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
- const discoveryStyle=read("components/video-discovery.module.css");
- const acceptance=read("scripts/verify-unified-six-dock-browser.mjs");
+ const css=read("components/video-discovery.module.css");
+ const browser=read("scripts/verify-unified-six-dock-browser.mjs");
  assert.match(page,/themeColor:"#0f0f0f"/);
- assert.match(pageStyle,/--mytube-bg:#0f0f0f/);
+ assert.match(style,/--mytube-bg:#0f0f0f/);
+ assert.match(discovery,/data-mytube-category-rail/);
  assert.match(discovery,/data-mytube-filter-toggle/);
- assert.match(discovery,/aria-controls="mytube-primary-controls mytube-refine-controls mytube-more-controls"/);
+ assert.match(discovery,/aria-controls="mytube-refine-controls mytube-more-controls"/);
  assert.match(discovery,/hidden=\{variant==="mytube"&&!filtersOpen\}/);
- assert.match(discovery,/filterSelection/);
  assert.match(discovery,/listMyTubeScenarios\(mytubeTopicId,locale\)/);
- for(const marker of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
-   assert.match(discovery,new RegExp(marker));
- assert.match(discoveryStyle,/\.mytube \.filterToggle\{/);
- assert.match(discoveryStyle,/min-height:44px/);
- assert.match(discoveryStyle,/\.mytube \.taxonomyPrimary\[hidden\]\{display:none!important\}/);
- assert.match(acceptance,/primaryTree\.isVisible\(\),false/);
- assert.match(acceptance,/filterBounds\.height<=60/);
- assert.match(acceptance,/moreFilters\.click\(\)/);
+ for(const name of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
+  assert.match(discovery,new RegExp(name));
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{/);
+ assert.match(css,/overflow-x:auto/);
+ assert.match(css,/\.mytube \.compactMoreButton\{/);
+ assert.match(discovery,/data-mytube-duration-mode=\{mode\}/);
+ assert.match(browser,/rail\.evaluate\(el=>el\.scrollLeft\)/);
+ assert.match(browser,/refined\.isVisible\(\),false/);
 });
+test("Shorts / Study are exclusive and do not invent lengths for unverified videos",async()=>{
+ const {matchesMyTubeDuration,MYTUBE_STUDY_MIN_SECONDS}=await import("../lib/video-discovery/mytube-duration.mjs");
+ assert.equal(MYTUBE_STUDY_MIN_SECONDS,600);
+ assert.equal(matchesMyTubeDuration(599,"shorts"),true);
+ assert.equal(matchesMyTubeDuration(600,"shorts"),false);
+ assert.equal(matchesMyTubeDuration(600,"study"),true);
+ assert.equal(matchesMyTubeDuration(601,"study"),true);
+ assert.equal(matchesMyTubeDuration(undefined,"all"),true);
+ assert.equal(matchesMyTubeDuration(undefined,"shorts"),false);
+ assert.equal(matchesMyTubeDuration(null,"study"),false);
+});
+
