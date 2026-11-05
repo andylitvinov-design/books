@@ -1732,3 +1732,74 @@ test('capacity keeps repair blocked when GitHub inventory stays severely inconsi
  assert.equal(LIMIT.maxActiveRuns,24);
  assert.equal(LIMIT.maxRepairWorkerRuns,2);
 });
+
+test('complete terminal job evidence frees one ghost of 24 in_progress Actions runs without raising limits',async()=>{
+ const {snapshot,admission,LIMIT}=require('../scripts/ci-pr-capacity.cjs');
+ const now=Date.parse('2026-11-05T22:00:00Z'),date=ms=>new Date(ms).toISOString();
+ const ancient=date(now-4*3600000),done=date(now-2*3600000),fresh=date(now-100000);
+ const all=Array.from({length:24},(_,i)=>({
+   id:42199900000+i,name:i===0?'HH PR source Repair Worker':'other-'+i,
+   status:'in_progress',conclusion:null,run_attempt:1,
+   created_at:i===0?ancient:fresh,updated_at:i===0?ancient:fresh,
+ }));
+ let jobReads=0;
+ const github={rest:{actions:{
+   listWorkflowRunsForRepo:async({status})=>({data:{
+     total_count:status==='queued'?0:all.length,
+     workflow_runs:status==='queued'?[]:all,
+   }}),
+   listJobsForWorkflowRun:async({run_id})=>{
+     jobReads++;
+     const old=run_id===all[0].id;
+     return {data:{total_count:1,jobs:[{
+       id:12700000000+run_id-all[0].id,status:old?'completed':'in_progress',
+       conclusion:old?'success':null,completed_at:old?done:null,
+     }]}};
+   }
+ }}};
+ const capacity=await snapshot(github,'andylitvinov-design','books',now);
+ assert.equal(capacity.known,true);
+ assert.equal(capacity.verifiedTerminalOverhangRuns,1);
+ assert.equal(capacity.activeRuns,23);
+ assert.equal(capacity.activeWorker['HH PR source Repair Worker'],0);
+ assert.equal(capacity.runningJobs,23);
+ assert.equal(jobReads,24);
+ assert.equal(admission('repair',capacity),'ADMIT');
+ assert.equal(LIMIT.maxActiveRuns,24);
+ assert.equal(LIMIT.maxRepairWorkerRuns,2);
+});
+test('ghost-capacity recovery fails closed on active jobs, partial pages, fresh runs and 25 active workflows',async()=>{
+ const {snapshot,admission}=require('../scripts/ci-pr-capacity.cjs');
+ const now=Date.parse('2026-11-05T22:00:00Z'),iso=ms=>new Date(ms).toISOString();
+ const old=iso(now-4*3600000),done=iso(now-2*3600000),recent=iso(now-60000);
+ const active=Array.from({length:24},(_,i)=>({
+   id:42199901000+i,name:'other-'+i,status:'in_progress',conclusion:null,
+   run_attempt:1,created_at:old,updated_at:i===0?old:recent,
+ }));
+ const trial=async({firstJobStatus='completed',incomplete=false,all=active},reason,jobReadsExpected)=>{
+   let jobReads=0;
+   const gh={rest:{actions:{
+     listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:all.length,
+       workflow_runs:status==='queued'?[]:all}}),
+     listJobsForWorkflowRun:async({run_id})=>{
+       jobReads++;
+       const first=run_id===all[0].id;
+       return {data:{total_count:first&&incomplete?2:1,jobs:[{
+         id:run_id,status:first?firstJobStatus:'in_progress',
+         conclusion:first&&firstJobStatus==='completed'?'success':null,
+         completed_at:first?done:null,
+       }]}};
+     },
+   }}};
+   const result=await snapshot(gh,'andylitvinov-design','books',now);
+   assert.equal(result.known,false);
+   assert.equal(result.reason,reason);
+   assert.equal(admission('repair',result),'CAPACITY_UNKNOWN');
+   assert.equal(jobReads,jobReadsExpected);
+ };
+ await trial({firstJobStatus:'in_progress'},'RUN_CAPACITY_SATURATED',24);
+ await trial({incomplete:true},'INCOMPLETE_JOB_INVENTORY',24);
+ await trial({all:active.map(x=>({...x,updated_at:recent}))},'RUN_CAPACITY_SATURATED',0);
+ await trial({all:[...active,{...active[0],id:42199902000}]},'RUN_CAPACITY_SATURATED',0);
+ await trial({all:active.map((x,i)=>i?x:{...x,run_attempt:2})},'RUN_CAPACITY_SATURATED',0);
+});

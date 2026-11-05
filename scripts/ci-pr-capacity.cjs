@@ -4,6 +4,34 @@ const WORKFLOWS={repair:'HH PR source Repair Worker',legacy:'HH PR source Repair
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
 const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:2,maxRepairWorkerRuns:2,
  maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
+
+const TERMINAL_OVERHANG_GRACE_MS=60*60*1000;
+// An Actions run can remain in_progress hours after EVERY job finished.
+// Never release capacity from workflow status alone: exact, complete and
+// hour-old terminal job evidence is mandatory; unknown remains occupied.
+function possibleTerminalOverhang(run,now){
+ if(!Number.isFinite(now)||!run||run.status!=='in_progress'||
+    run.conclusion!==null||run.run_attempt!==1||
+    !Number.isSafeInteger(run.id)||run.id<=0)return false;
+ const created=Date.parse(run.created_at||''),updated=Date.parse(run.updated_at||'');
+ return Number.isFinite(created)&&Number.isFinite(updated)&&created<=updated&&
+   updated<=now-TERMINAL_OVERHANG_GRACE_MS;
+}
+function verifiedTerminalOverhang(run,page,now){
+ if(!possibleTerminalOverhang(run,now)||!page||
+    !Number.isSafeInteger(page.total_count)||page.total_count<1||
+    page.total_count>100||!Array.isArray(page.jobs)||
+    page.jobs.length!==page.total_count)return false;
+ const seen=new Set();
+ return page.jobs.every(job=>{
+   if(!job||!Number.isSafeInteger(job.id)||job.id<=0||seen.has(job.id)||
+      job.status!=='completed'||typeof job.conclusion!=='string'||!job.conclusion)
+     return false;
+   seen.add(job.id);
+   const completed=Date.parse(job.completed_at||'');
+   return Number.isFinite(completed)&&completed<=now-TERMINAL_OVERHANG_GRACE_MS;
+ });
+}
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
   return {known:false,reason:'INCOMPLETE_CAPACITY'};
@@ -76,7 +104,7 @@ function admission(lane,capacity){
  // task ownership and SHA before reserving and starting this lane.
  return 'ADMIT';
 }
-async function snapshot(github,owner,repo){
+async function snapshot(github,owner,repo,now=Date.now()){
  // GitHub may update total_count while an Actions run moves between states.
  // A single disagreeing count must not permanently idle the dispatch queue.
  // Only when two reads severely disagree, retry twice more using idempotent
@@ -96,7 +124,9 @@ async function snapshot(github,owner,repo){
   }
   // When even the total count is saturated, do not waste API quota reading
   // runner jobs or accidentally treat an incomplete list as a free slot.
-  if(Math.max(aCount,active.length)>=LIMIT.maxActiveRuns||
+  if((Math.max(aCount,active.length)>=LIMIT.maxActiveRuns&&
+     !(aCount===LIMIT.maxActiveRuns&&active.length===aCount&&
+       qCount===queued.length&&active.some(run=>possibleTerminalOverhang(run,now))))||
      Math.max(qCount,queued.length)>=LIMIT.maxRepairQueuedRuns){
     return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount};
   }
@@ -128,8 +158,18 @@ async function snapshot(github,owner,repo){
       return {known:false,reason:'INCOMPLETE_JOB_INVENTORY',activeRuns:aCount,queuedRuns:qCount};
   jobs.push(...result.data.jobs.map(job=>({...job,workflow_name:active[index].name})));
  }
- const capacity=computeCapacity(active,queued,jobs);
- capacity.activeRuns=Math.max(aCount,active.length);
+ // Release only authenticated, complete first-attempt job-terminal overhangs.
+ // BOUNDED_PARTIAL and unknown IDs keep all original hard limits.
+ const overhangIds=new Set();
+ if(confidence==='VERIFIED'&&aCount===active.length&&qCount===queued.length)
+   for(let i=0;i<active.length;i++)
+     if(verifiedTerminalOverhang(active[i],batches[i]?.data,now))
+       overhangIds.add(active[i].id);
+ if(Math.max(aCount,active.length)>=LIMIT.maxActiveRuns&&!overhangIds.size)
+   return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount};
+ const capacity=computeCapacity(active.filter(run=>!overhangIds.has(run.id)),queued,jobs);
+ capacity.activeRuns=Math.max(aCount,active.length)-overhangIds.size;
+ capacity.verifiedTerminalOverhangRuns=overhangIds.size;
  capacity.queuedRuns=Math.max(qCount,queued.length);
  capacity.inventoryConfidence=confidence;
  capacity.unknownActiveRuns=Math.max(0,aCount-active.length);
@@ -138,4 +178,4 @@ async function snapshot(github,owner,repo){
    capacity.unknownActiveRuns*8+capacity.unknownQueuedRuns*2;
  return capacity;
 }
-module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot};
+module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot,possibleTerminalOverhang,verifiedTerminalOverhang};
