@@ -656,8 +656,10 @@ jobs:
       (
         ((needs.claim.result == 'failure' || needs.claim.result == 'cancelled') &&
          needs.claim.outputs.no_fix_finalized != 'success') ||
-        (needs.claim.outputs.strategy == 'lint' &&
-         needs.publish.outputs.finalization_status != 'success')
+        ((needs.claim.outputs.strategy == 'lint' &&
+          needs.publish.outputs.finalization_status != 'success') ||
+         (needs.claim.outputs.strategy == 'legacy' &&
+          needs.fix.result == 'success'))
       )
     runs-on: ubuntu-24.04
     timeout-minutes: 7

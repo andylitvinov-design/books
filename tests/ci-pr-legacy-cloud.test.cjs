@@ -60,6 +60,8 @@ test('cloud worker records PREPARED without demanding a fake source SHA',()=>{
  assert.match(yml,/needs.claim.outputs.strategy == 'legacy'/);
  assert.match(yml,/HH_LEGACY_CLOUD_PREFLIGHT_V1/);
  assert.match(yml,/name: hh-legacy-preflight/);
+ assert.match(yml,/needs.claim.outputs.strategy == 'legacy'/);
+ assert.match(yml,/needs.fix.result == 'success'/);
  assert.match(yml,/runs-on: ubuntu-24.04/);
  assert.doesNotMatch(yml,/runs-on: (?:self-hosted|ubuntu-latest-large)/);
 });

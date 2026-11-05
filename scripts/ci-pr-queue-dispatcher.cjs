@@ -432,7 +432,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const candidates=focusedPR
   ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
   : planCandidates(production,now);
- summary.actionable=production.filter(pr=>laneOf(pr)).length;
+ // Source-write eligibility must remain separate from safe legacy preparation.
+ summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
+ summary.legacyPrepEligible=production.filter(pr=>validLegacyPrep(pr)).length;
  for(const pr of production){
   const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
  }
