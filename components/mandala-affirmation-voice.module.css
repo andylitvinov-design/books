@@ -55,6 +55,9 @@
 .samplePlayer strong{font-size:13px}
 .samplePlayer audio{display:block;width:100%;min-height:44px}
 .sampleStatus{display:block;color:#54725f;font-size:12px;line-height:1.5}
+.deviceSampleButton{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;margin-top:8px;padding:10px 12px;border:1px solid #b6dcc8;border-radius:12px;background:#f5fdf8;color:#286b54;font:700 13px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer}
+.deviceSampleButton:disabled{opacity:.45;cursor:not-allowed}
+.deviceSampleButton:focus-visible{outline:3px solid #d9a54e;outline-offset:2}
 @media(max-width:360px){.sampleButton{width:76px;font-size:11px}.voiceCardSelect{padding:8px 9px;gap:6px}}
 .panel .transcript p{font-size:clamp(15px,4vw,17px);line-height:1.55}
 .panel .heading h4{font-size:clamp(18px,4.8vw,21px)}

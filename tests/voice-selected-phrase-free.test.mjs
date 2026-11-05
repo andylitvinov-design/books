@@ -51,6 +51,27 @@ test("six real sample buttons remain usable, with bounded cancellation and iPhon
   }
 });
 
+test("guest can explicitly hear a labeled device-voice text example without burning free Gemini quota",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.ok(ui.includes("function previewDeviceSample()"));
+  assert.ok(ui.includes("new SpeechSynthesisUtterance(VOICE_STUDIO_SAMPLE[language])"),
+    "device preview must narrate ONLY the fixed public sample, not client or medical text");
+  assert.ok(ui.includes("data-video-affirmation-device-voice"));
+  assert.ok(ui.includes("window.speechSynthesis.speak(utterance)"));
+  assert.ok(ui.includes("deviceSpeechAvailable"),"unsupported Safari must not show an inert fallback");
+  assert.ok(ui.includes("deviceUtteranceRef.current"),"old speech must stop on mode/voice change");
+  assert.ok(ui.includes("НЕ выбранный голос Софии, Майи или Алисы"),
+    "Russian disclosure must not misrepresent a device voice as the Gemini preset");
+  assert.ok(ui.includes("NOT the selected Sofia, Maya or Alisa"),
+    "English device fallback must be explicitly distinct from exact premium voices");
+  assert.ok(ui.includes("NO la voz seleccionada"),
+    "Spanish device fallback must identify its actual audio provenance");
+  assert.ok(!ui.includes("body:JSON.stringify({mode:\"device_sample\""),
+    "device-only narration may not invoke a cloud provider");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  assert.ok(css.includes(".deviceSampleButton{"));
+});
+
 test("previewing a voice selects it for the actual phrase and WAV filename",()=>{
   const ui=read("components/mandala-affirmation-voice.tsx");
   assert.ok(ui.includes("if(voiceId!==v.id){setVoiceId(v.id);setConsent(false);}"),
