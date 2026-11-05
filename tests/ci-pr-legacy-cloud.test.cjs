@@ -95,3 +95,49 @@ test('cloud worker records PREPARED without demanding a fake source SHA',()=>{
  assert.match(yml,/runs-on: ubuntu-24.04/);
  assert.doesNotMatch(yml,/runs-on: (?:self-hosted|ubuntu-latest-large)/);
 });
+
+// Regression from actual #2467 / Actions run 41972035311: claim-stage
+// finalization used to write FAILED/FIX_JOB_SKIPPED while legacy fix was
+// still running. Only the post-fix finalizer is allowed to write PREPARED.
+test('legacy cloud preflight is finalized after fix; never early FAILED',async()=>{
+ const yaml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const claim=yaml.split('  claim:\n')[1].split('  fix:\n')[0];
+ const finish=yaml.split('  finalize:\n')[1];
+ assert.match(claim,/steps.select.outputs.strategy != 'legacy'/);
+ assert.match(finish,/needs.claim.outputs.strategy == 'legacy'/);
+ assert.match(finish,/needs.claim.result == 'success'/);
+ assert.doesNotMatch(finish,/needs.claim.outputs.strategy == 'legacy' &&\s*needs.fix.result == 'success'/);
+ const comments=[],changes=[];
+ const github={rest:{
+  pulls:{get:async()=>({data:pr(2467)})},
+  issues:{
+   listComments:async()=>({data:[]}),
+   createComment:async({body})=>{comments.push(body);return {data:{id:1}};},
+   addLabels:async x=>changes.push(x),
+   removeLabel:async x=>changes.push(x)
+  },
+  actions:{listJobsForWorkflowRun:async()=>({data:{jobs:[
+   {name:'fix',conclusion:'success',steps:[{name:'Cloud-only legacy source comparison and focused test preflight',
+    started_at:'2026-11-05T05:08:46.000Z',conclusion:'success'}]}
+  ]}})}
+ }};
+ const core={info(){},warning(){},summary:{
+  addHeading(){return this},addCodeBlock(){return this},async write(){}
+ }};
+ const result=await worker.finalize({github,core,
+  context:{repo:{owner:'andylitvinov-design',repo:'books'},runId:41972035311,
+   payload:{inputs:{}}},
+  number:2467,expectedSha:HEAD,taskKey:'e'.repeat(32),
+  claimStatus:'claimed',claimResult:'success',strategy:'legacy',
+  fixResult:'success',candidateStatus:'prepared',
+  candidateDetail:'SHALLOW_ANCESTRY_UNAVAILABLE',
+  publishResult:'skipped'});
+ assert.equal(result.state,'PREPARED');
+ assert.equal(result.lane,'legacy');
+ assert.equal(result.source_published,false);
+ assert.equal(result.detail_code,'SHALLOW_ANCESTRY_UNAVAILABLE');
+ assert.equal(comments.length,1);
+ assert.match(comments[0],/"state":"PREPARED"/);
+ assert.doesNotMatch(comments[0],/FIX_JOB_SKIPPED/);
+ assert.deepEqual(changes,[],'manual and source labels are untouched');
+});

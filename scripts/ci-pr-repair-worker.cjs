@@ -660,10 +660,18 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
   const agentDetail=[codeVerifyDetail,codeDetail].find(x=>typeof x==='string' &&
     /^(?:CODEX_|FREE_AI_)/.test(x) && /^[A-Z0-9_:.-]{5,120}$/.test(x));
-  const detailCode=state==='MANUAL'||state==='FAILED'?
-    agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
+  const allowedLegacyDetails=new Set([
+    'GIT_TREE_CONFLICT','GIT_TREE_MERGES_WITHOUT_CONFLICT',
+    'SHALLOW_ANCESTRY_UNAVAILABLE','PRODUCTION_FETCH_UNAVAILABLE',
+    'MERGE_TREE_NOT_VERIFIED'
+  ]);
+  const detailCode=state==='PREPARED'&&strategy==='legacy'?
+    (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
+    state==='MANUAL'||state==='FAILED'?
+      agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
-    head_sha:expectedSha,lane:'repair',state,reason_code:reason,strategy,
+    head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
+    state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
