@@ -13,7 +13,7 @@ import { listVideoProgress } from "@/lib/app/video-progress";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendations";
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
-import { interpretSupportUtterance } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
@@ -83,11 +83,8 @@ function preflight(text,locale) {
 export async function POST(request) {
   let auth;
   try {
-    // Off by default: installing source code does not publish a clinical agent.
-    if (process.env.HH_AGENT_CHAT_ENABLED !== "true" ||
-      (process.env.VERCEL_ENV === "production" &&
-        process.env.HH_AGENT_PRODUCTION_APPROVED !== "true"))
-      throw new AppError("AGENT_DISABLED",503);
+    // The verified, non-clinical rules guide has no model, billing or external sends.
+    // Experimental browser/owned inference still needs the explicit production gate.
     const config = getAppConfig();
     requireSameOrigin(request,config);
     auth = createRequestAuth(request,config);
@@ -95,6 +92,11 @@ export async function POST(request) {
     const repository = createAppRepository(config);
     await repository.ensureAccount(actor);
     const body = inputOf(await readBody(request,32000));
+    const experimentalEnabled=process.env.HH_AGENT_CHAT_ENABLED==="true" &&
+      (process.env.VERCEL_ENV!=="production" ||
+        process.env.HH_AGENT_PRODUCTION_APPROVED==="true");
+    if(body.mode!=="rules"&&!experimentalEnabled)
+      throw new AppError("AGENT_DISABLED",503);
     await consumeRate(config,{op:"holistic-agent-turn",actorId:actor.id},10,60);
     await consumeRate(config,{op:"holistic-agent-daily",actorId:actor.id},100,86400);
     const safety = preflight(body.message,body.locale);
@@ -180,8 +182,10 @@ export async function POST(request) {
       production:process.env.NODE_ENV==="production",
     }) !== null && (process.env.HH_AGENT_OLLAMA_TOKEN||"").length >= 20;
     const allowOwned=body.mode==="owned"&&body.ownedInferenceConsent===true&&configured;
+    const explanation=explainUserQuestion(body.message,body.locale,decision);
+    const spokenDecision=explanation?{...decision,message:explanation}:decision;
     const envelope=prepareNaturalDialogue({
-      locale:body.locale,message:body.message,history:body.history,decision,
+      locale:body.locale,message:body.message,history:body.history,decision:spokenDecision,
       access:{authenticated:true,ownerScoped:true},
       consent:{ownedInference:allowOwned,browserInference:false,agentMemory:false},
       channel:allowOwned?"owned":"none",
