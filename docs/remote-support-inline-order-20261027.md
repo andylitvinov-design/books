@@ -14,3 +14,16 @@
 ## Verification
 - Automated targeted tests cover locale UI, privacy, validation, transactional idempotency and neutral master arrival.
 - Typecheck and scoped ESLint. Vercel preview/production CI required before claiming release; browser at 320–430 px EN/RU/ES and real provider delivery must be tested separately.
+
+## Compact full-width mobile search — owner change, 27 October 2026
+- Same in-page finder at `/{en,ru,es}/holistic-support`: first-screen compact theme (business & money / relationships / energy & health), service (energy support / talisman / consultation), budget (Any / Free / up to €20 / up to €100) and one Find button. 44px controls, responsive near-viewport panel down to 320px.
+- Results, practitioner cards, appointment preference and optional private personal words appear **only after Find**, reducing the first screen from five focus sectors + hero + free-text form to three selectable rows and CTA. The standalone `/{locale}/services/remote-energy-support` retains its existing full wizard.
+- Currency safety: a €20/€100 cap checks **only published EUR amounts**, never invents an FX conversion or drops unknown-price offers into budget ranges. Free only when catalog price is zero/explicitly free. Talisman cost is unpublished: a specific budget returns an honest no-priced-offers message and reset, not a fake talisman listing.
+- Consultation choice reuses only **published + active** personal session/assessment/intro service entries and links to their existing approved service details/request routes. No new booking, catalog replica, payment, DB migration or CRM channel.
+- Controlled public topic only reaches existing authenticated booking draft; optional private words are added **after** a practitioner selection and are never placed in a URL, public lookup, analytics or persistent client storage. No medical treatment or guaranteed benefit claims.
+- Regression: `tests/holistic-compact-search.test.mjs`, plus adapted original source contracts. CI, actual phone WebKit/Chromium and authenticated real E2E are separate gates; do **not** mark live before exact production SHA + Vercel READY + domain readback.
+
+## Direct catalog order polish — 27 October 2026
+- When a user selects a named Fu-style card at `#talismans`, `initialTalismanId` is a controlled public catalog reference. Open the existing, consented talisman enquiry **without** repeating the broad three-theme/three-service/four-budget finder. Load only the published-practitioner list; show retry on API failures, and if there is exactly one published contact, open that contact's talisman enquiry confirmation form automatically. With multiple practitioners, keep the selection step.
+- This is **not** auto-submit: client must explicitly continue to their protected Cabinet, review the message and submit with consent. Cost, manufacture, deliverability and payment remain unconfirmed until the master responds. Public selection contains no personal note or health data. The generic Holistic Support finder and standalone energy flow are unchanged.
+- Release gating: source contracts + TypeScript + Next build + live 320/390/430px browser interaction; real authenticated CRM receipt and external notifications require a consenting test client/provider confirmation.

@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { REMOTE_SUPPORT_DURATIONS, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
-import { RemoteSupportEnquiryContact } from "./remote-support-enquiry-contact";
+import type { ReikiOffer } from "@/lib/practitioners/reiki-offer.mjs";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { REMOTE_SUPPORT_DURATIONS, REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, readRemoteSupportPublicDraft, remoteSupportPublicServiceTitle, remoteSupportPublicRequestSummary, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
+import { matchesHolisticEuroBudget } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./remote-energy-support-booking.module.css";
+import { talismanFromCatalog } from "@/lib/practitioners/taoist-talismans";
 
 type Locale = "en" | "ru" | "es";
 type Format = "asynchronous" | "live";
 export type SupportRequestKind = "talisman" | "energy";
+type PriceBudget = "any" | "free" | "20" | "100";
 
 export type EnergySupportMaster = {
   slug: string;
@@ -16,14 +21,20 @@ export type EnergySupportMaster = {
   title: string;
   photo: string;
   serviceId: string;
+  /** Moderated title of the published practitioner service. */
+  serviceTitle?: string;
   methods: string[];
   bio: string;
   description: string;
   languages: string[];
   currency: string;
   priceOptions: {duration: 10 | 20 | 30 | 60; price: number}[];
+  reikiOffer?: ReikiOffer | null;
+  serviceHref?: string;
   reviewCount: number;
   reviewAverage: number;
+  /** Validated external introductions from an approved public service. */
+  presentations?: { type: "audio" | "video"; url: string }[];
 };
 
 const WORDS = {
@@ -36,8 +47,8 @@ const WORDS = {
     talismanServiceType: "Custom talisman enquiry · Availability not confirmed",
     talismanOffer: "Request talisman",
     talismanFormTitle: "Ask this practitioner about a talisman",
-    talismanHint: "Leave your contact below. We will confirm availability, design, price and delivery before any payment.",
-    talismanSubmit: "Confirm request",
+    talismanHint: "The practitioner will confirm whether they can create one, the design, price and delivery details before any order or payment.",
+    talismanSubmit: "Continue to contact",
     eyebrow: "PERSONAL PRACTICE · ONLINE",
     title: "Energy support for your goal",
     intro: "Choose an area, add any preferences, and explore published practitioner offers.",
@@ -51,14 +62,12 @@ const WORDS = {
     liveCompact: "Live online",
     duration: "Requested duration",
     schedule: "Preferred time",
-    scheduleOptional: "Suggest a date and time (optional)",
-    scheduleHint: "Leave this closed to agree on a time later.",
     date: "Date",
     time: "Time",
     timeZone: "Your local time",
     noSlots: "The time is a preference, not a confirmed appointment.",
     price: "Price comes from the practitioner’s approved offer. Payment is not enabled yet.",
-    send: "Confirm request",
+    send: "Continue to request",
     noMasters: "No practitioners are currently taking remote energy support requests. Please check back or explore their other services.",
     more: "See practitioners",
     freeReiki: "Explore the free Reiki introduction",
@@ -78,7 +87,7 @@ const WORDS = {
     intentionLabel: "Any preferences? (optional)",
     intentionPlaceholder: "For example: a gentle practice in the evening…",
     focusPrompt: "Choose one area of support",
-    privacyHint: "Keep it brief; do not include medical records or someone else’s private details. Your note is sent only when you confirm the request and agree to a personal reply.",
+    privacyHint: "Keep it brief. Do not include medical records or another person’s private details. You will review the message before sending it in your private account.",
     privacyShort: "Private until you send · no medical details",
     findOptions: "Find options",
     specialistsTitle: "Available practitioners",
@@ -91,7 +100,7 @@ const WORDS = {
     methodsLabel: "Available practices",
     languagesLabel: "Languages",
     optionTitle: "Your preferred session",
-    optionHint: "Select a practice, format and duration. Preferred time is optional. No booking or payment yet.",
+    optionHint: "Select a practice, format, duration and preferred time. This is a request—not a booking or payment.",
     focusRequired: "Choose an area of support to view available options.",
     pastTime: "Choose a future date and time. This is only a preferred time until confirmed.",
     missingChoice: "Please choose a practitioner and a published duration.",
@@ -99,6 +108,9 @@ const WORDS = {
     minutes: "min",
     noPublishedOptions: "No approved duration or price is available",
     reviewCount: "verified reviews",
+    unpricedBudget: "Talisman prices are not published. Select Any to ask a practitioner without assuming a price.",
+    noPriceMatches: "No published practitioner price matches this budget. EUR caps do not convert other currencies.",
+    resetBudget: "Show all prices",
   },
   ru: {
     kindLabel: "Что вы хотите заказать?",
@@ -109,8 +121,8 @@ const WORDS = {
     talismanServiceType: "Запрос на талисман · Доступность не подтверждена",
     talismanOffer: "Заказать талисман",
     talismanFormTitle: "Обсудить талисман с этим мастером",
-    talismanHint: "Оставьте контакт ниже. Мастер уточнит символ, цену и условия до подтверждения заказа или оплаты.",
-    talismanSubmit: "Подтвердить заявку",
+    talismanHint: "Это заявка на обсуждение. Мастер уточнит символ, цену и условия до подтверждения заказа или оплаты.",
+    talismanSubmit: "Указать контакт",
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
     title: "Энергетическая поддержка цели",
     intro: "Выберите направление, при желании добавьте пожелания и найдите предложения мастеров.",
@@ -124,14 +136,12 @@ const WORDS = {
     liveCompact: "Онлайн-сеанс",
     duration: "Желаемая длительность",
     schedule: "Удобное время",
-    scheduleOptional: "Указать удобное время (необязательно)",
-    scheduleHint: "Можно не заполнять — время согласуем позже.",
     date: "Дата",
     time: "Время",
     timeZone: "Ваше местное время",
     noSlots: "Вы выбираете предпочтительное время, а не подтверждённую запись.",
     price: "Цена из опубликованного предложения мастера. Оплата пока не подключена.",
-    send: "Подтвердить заявку",
+    send: "Перейти к заявке",
     noMasters: "Сейчас нет мастеров, принимающих заявки на дистанционную поддержку. Посмотрите другие услуги.",
     more: "Посмотреть мастеров",
     freeReiki: "Открыть бесплатное знакомство с Рейки",
@@ -151,7 +161,7 @@ const WORDS = {
     intentionLabel: "Ваши пожелания (необязательно)",
     intentionPlaceholder: "Например: мягкая практика вечером…",
     focusPrompt: "Выберите одно направление",
-    privacyHint: "Пишите кратко, без диагнозов, документов и чужих личных данных. Пожелания отправляются только после подтверждения заявки и согласия на ответ.",
+    privacyHint: "Коротко, без диагнозов, медицинских документов и чужих личных данных. Перед отправкой вы проверите сообщение в защищённом кабинете.",
     privacyShort: "Приватно до отправки · без медданных",
     findOptions: "Найти варианты",
     specialistsTitle: "Доступные мастера",
@@ -164,7 +174,7 @@ const WORDS = {
     methodsLabel: "Доступные практики",
     languagesLabel: "Языки",
     optionTitle: "Параметры вашего сеанса",
-    optionHint: "Выберите практику, формат и длительность. Время указывать необязательно. Пока без записи и оплаты.",
+    optionHint: "Выберите практику, формат, длительность и удобное время. Это заявка, а не подтверждённая запись или оплата.",
     focusRequired: "Выберите направление, чтобы увидеть доступные варианты.",
     pastTime: "Выберите будущую дату и время. Это пожелание, а не подтверждённая запись.",
     missingChoice: "Выберите мастера и опубликованную длительность.",
@@ -172,6 +182,9 @@ const WORDS = {
     minutes: "мин",
     noPublishedOptions: "Нет утверждённой длительности или цены",
     reviewCount: "проверенных отзывов",
+    unpricedBudget: "Цены на талисманы не опубликованы. Выберите «Любой», чтобы обсудить цену с мастером.",
+    noPriceMatches: "Нет предложений с подтверждённой ценой в этом диапазоне. Цены в других валютах не пересчитываются.",
+    resetBudget: "Показать все цены",
   },
   es: {
     kindLabel: "¿Qué deseas solicitar?",
@@ -182,8 +195,8 @@ const WORDS = {
     talismanServiceType: "Consulta sobre talismán · Sin confirmar",
     talismanOffer: "Solicitar talismán",
     talismanFormTitle: "Preguntar por un talismán",
-    talismanHint: "Deja un contacto para acordar el diseño, precio y entrega antes de cualquier pago.",
-    talismanSubmit: "Confirmar solicitud",
+    talismanHint: "El profesional confirmará si puede hacerlo, el diseño, el precio y la entrega antes de cualquier pago.",
+    talismanSubmit: "Indicar contacto",
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
     title: "Apoyo energético para tu objetivo",
     intro: "Elige un área, añade tus preferencias si quieres y explora ofertas publicadas.",
@@ -197,14 +210,12 @@ const WORDS = {
     liveCompact: "En vivo",
     duration: "Duración solicitada",
     schedule: "Horario preferido",
-    scheduleOptional: "Elegir fecha y hora (opcional)",
-    scheduleHint: "Puedes dejarlo cerrado y acordar la hora después.",
     date: "Fecha",
     time: "Hora",
     timeZone: "Tu horario local",
     noSlots: "Es una preferencia horaria, no una reserva confirmada.",
     price: "Precio de la oferta aprobada. El pago aún no está disponible.",
-    send: "Confirmar solicitud",
+    send: "Continuar con la solicitud",
     noMasters: "Actualmente no hay profesionales que acepten solicitudes de apoyo a distancia.",
     more: "Ver profesionales",
     freeReiki: "Explorar la introducción gratuita a Reiki",
@@ -224,7 +235,7 @@ const WORDS = {
     intentionLabel: "¿Alguna preferencia? (opcional)",
     intentionPlaceholder: "Por ejemplo: una práctica suave por la tarde…",
     focusPrompt: "Elige un área de apoyo",
-    privacyHint: "Sin historiales médicos ni datos privados de otras personas. La nota se envía solo al confirmar la solicitud y aceptar una respuesta.",
+    privacyHint: "Escribe brevemente, sin historiales médicos ni datos privados de otras personas. Revisarás el texto antes de enviarlo en tu cuenta privada.",
     privacyShort: "Privado hasta el envío · sin datos médicos",
     findOptions: "Buscar opciones",
     specialistsTitle: "Profesionales disponibles",
@@ -237,7 +248,7 @@ const WORDS = {
     methodsLabel: "Prácticas disponibles",
     languagesLabel: "Idiomas",
     optionTitle: "Tu sesión preferida",
-    optionHint: "Elige práctica, modalidad y duración. El horario es opcional. Todavía no es una reserva ni un pago.",
+    optionHint: "Elige práctica, modalidad, duración y hora. Es una solicitud, no una reserva ni un pago.",
     focusRequired: "Elige un área de apoyo para ver las opciones disponibles.",
     pastTime: "Elige una fecha y hora futuras. No es una reserva confirmada.",
     missingChoice: "Elige un profesional y una duración publicada.",
@@ -245,6 +256,9 @@ const WORDS = {
     minutes: "min",
     noPublishedOptions: "No hay duración o precio aprobado",
     reviewCount: "reseñas verificadas",
+    unpricedBudget: "Los talismanes no tienen precio publicado. Elige Cualquiera para consultar sin suponer un precio.",
+    noPriceMatches: "No hay precios publicados en este presupuesto. No convertimos otras monedas a euros.",
+    resetBudget: "Mostrar todos los precios",
   },
 } as const;
 
@@ -264,7 +278,7 @@ function localDateToday() {
 
 export function RemoteEnergySupportBooking({
   locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
-  initialGoal = "", onKindChange,
+  initialGoal = "", initialIntention = "", initialTalismanId = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
@@ -272,19 +286,31 @@ export function RemoteEnergySupportBooking({
   mode?: "inline" | "standalone";
   selectedKind?: SupportRequestKind;
   initialGoal?: string;
+  /** Shown for review; never submitted until the user confirms the secure enquiry. */
+  initialIntention?: string;
+  initialTalismanId?: string;
   onKindChange?: (kind: SupportRequestKind) => void;
+  compactFinder?: boolean;
+  priceBudget?: PriceBudget;
+  onClearBudget?: () => void;
 }) {
   const t = WORDS[locale];
   const [selectedServiceId, setSelectedServiceId] = useState(() =>
-    masters.find((master) => master.slug === preferredPractitioner)?.serviceId || ""
+    masters.find((master) => master.slug === preferredPractitioner)?.serviceId ||
+    // In the talisman catalog there is just one verified published contact:
+    // show the enquiry form immediately, without implying availability/payment.
+    (initialTalismanId && selectedKind === "talisman" && masters.length === 1
+      ? masters[0].serviceId : "")
   );
   const [goal, setGoal] = useState(initialGoal);
   const [requestKind, setRequestKind] = useState<SupportRequestKind>(selectedKind);
+  const [catalogId, setCatalogId] = useState(initialTalismanId);
   useEffect(() => {
     setRequestKind(selectedKind);
     if (initialGoal) setGoal(initialGoal);
-  }, [selectedKind, initialGoal]);
-  const [intention, setIntention] = useState("");
+    setCatalogId(initialTalismanId);
+  }, [selectedKind, initialGoal, initialTalismanId]);
+  const [intention, setIntention] = useState(initialIntention);
   const [showResults, setShowResults] = useState(mode === "inline" || Boolean(preferredPractitioner));
   const [method, setMethod] = useState("");
   const [format, setFormat] = useState<Format>("asynchronous");
@@ -294,6 +320,9 @@ export function RemoteEnergySupportBooking({
   const [minimumDay, setMinimumDay] = useState("");
   const [timezone, setTimezone] = useState("America/Toronto");
   const [error, setError] = useState("");
+  const [contactDraft, setContactDraft] = useState<ReturnType<typeof readRemoteSupportPublicDraft>>(null);
+  const [talismanRequested, setTalismanRequested] = useState(false);
+  useEffect(() => { setTalismanRequested(false); setContactDraft(null); }, [goal, catalogId, selectedServiceId, requestKind]);
 
   const selected = useMemo(
     () => masters.find((master) => master.serviceId === selectedServiceId) || null,
@@ -307,7 +336,15 @@ export function RemoteEnergySupportBooking({
     () => (selected?.priceOptions || []).filter((option) => Number.isFinite(option.price) && option.price > 0),
     [selected]
   );
-  const currentPrice = options.find((option) => option.duration === duration);
+  const budgetOptions = useMemo(
+    () => compactFinder ? options.filter(option => matchesHolisticEuroBudget(option.price, selected?.currency || "", "fixed", priceBudget)) : options,
+    [compactFinder, options, priceBudget, selected?.currency]
+  );
+  const currentPrice = budgetOptions.find((option) => option.duration === duration);
+  const matchingMasters = compactFinder && priceBudget !== "any"
+    ? requestKind === "talisman" ? [] : masters.filter(master =>
+      master.priceOptions.some(option => matchesHolisticEuroBudget(option.price, master.currency, "fixed", priceBudget)))
+    : masters;
   const priceLabel = (price: number, currency: string) => {
     try {
       return new Intl.NumberFormat(locale, {
@@ -318,6 +355,34 @@ export function RemoteEnergySupportBooking({
     }
   };
 
+  // After optional Google OAuth, restore only the controlled service/time draft.
+  // The client's free-text intention is never persisted or sent to public CRM.
+  useEffect(() => {
+    if (!selected?.serviceId) return;
+    try {
+      const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+      const draft = readRemoteSupportPublicDraft(window.sessionStorage, selected.serviceId);
+      if (!draft) return;
+      if (pending?.path !== window.location.pathname ||
+          pending?.service !== remoteSupportPublicServiceTitle(draft)) return;
+      setContactDraft(draft);
+      setGoal(draft.goal);
+      setMethod(draft.method);
+      setFormat(draft.format);
+      setDuration(draft.duration);
+      setDay(draft.date);
+      setTime(draft.time);
+      setTimezone(draft.timezone);
+    } catch { /* An unavailable store never creates an order or payment. */ }
+  }, [mode, selected?.serviceId]);
+  useEffect(() => {
+    if (!contactDraft) return;
+    window.requestAnimationFrame(() =>
+      document.getElementById("remote-public-contact")?.scrollIntoView({
+        block: "nearest", behavior: "auto",
+      }));
+  }, [mode, contactDraft]);
+
   useEffect(() => {
     setMinimumDay(localDateToday());
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Toronto");
@@ -325,10 +390,10 @@ export function RemoteEnergySupportBooking({
     if (stagedIntention) setIntention(stagedIntention);
   }, []);
   useEffect(() => {
-    if (options.length && !options.some((option) => option.duration === duration)) {
-      setDuration(options[0].duration);
+    if (budgetOptions.length && !budgetOptions.some((option) => option.duration === duration)) {
+      setDuration(budgetOptions[0].duration);
     }
-  }, [selectedServiceId, options, duration]);
+  }, [selectedServiceId, budgetOptions, duration]);
   useEffect(() => {
     if (methods.length && !methods.includes(method)) setMethod(methods[0]);
   }, [methods, method]);
@@ -359,20 +424,57 @@ export function RemoteEnergySupportBooking({
     }
   }
 
-
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    const topic = goal || (requestKind === "talisman"
+      ? "Personal talisman enquiry" : mode === "inline" ? "Personal intention" : "");
+    if (!topic) {
+      setError("focus");
+      document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
+      return;
+    }
+    if (!selected) { setError("missing"); return; }
+    if (requestKind === "talisman") {
+      setTalismanRequested(true);
+      return;
+    }
+    if (!currentPrice || !method) { setError("missing"); return; }
+    if (Boolean(day) !== Boolean(time)) { setError("partial"); return; }
+    if (day && time) {
+      const preferred = new Date(day + "T" + time + ":00");
+      if (!Number.isFinite(preferred.getTime()) ||
+        preferred.getTime() <= Date.now() + 5 * 60 * 1000) {
+        setError("past");
+        return;
+      }
+    }
+    const publicDraft = {
+      version: 1, serviceId: selected.serviceId, practitioner: selected.name,
+      goal: topic, method, format, duration, date: day, time, timezone,
+      expectedPrice: currentPrice.price, expectedCurrency: selected.currency,
+      savedAt: Date.now(),
+    };
+    // Only bounded offer metadata may survive an authorized OAuth return.
+    // Free-text visitor details never enter URLs or browser storage.
+    try { window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON.stringify(publicDraft)); }
+    catch { /* Contact/consent works even if private browsing denies storage. */ }
+    setContactDraft(publicDraft);
+  };
 
   return (
-    <section className={mode === "inline" ? styles.page + " " + styles.inline : styles.page}
+    <section className={mode === "inline" ? styles.page + " " + styles.inline + (compactFinder ? " " + styles.compactResults : "") : styles.page}
       aria-labelledby="remote-support-title" data-remote-support-intent-first
-      data-support-request-kind={requestKind}>
-      <header className={styles.intro}>
+      data-support-request-kind={requestKind}
+      data-public-visual-landing={compactFinder ? undefined : "remote-energy"}>
+      {compactFinder ? <h2 id="remote-support-title" className={styles.srOnly}>{t.specialistsTitle}</h2> : <header className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{requestKind === "talisman" ? t.talismanTitle : t.title}</h1>
         <p>{requestKind === "talisman" ? t.talismanIntro : t.intro}</p>
         <p className={styles.steps}>{t.steps}</p>
-      </header>
+      </header>}
 
-      <div className={styles.kindChooser} role="group" aria-label={t.kindLabel}>
+      {!compactFinder && <div className={styles.kindChooser} role="group" aria-label={t.kindLabel}>
         <p>{t.kindLabel}</p>
         {(["talisman", "energy"] as const).map(kind => (
           <button key={kind} type="button" aria-pressed={requestKind === kind}
@@ -385,8 +487,8 @@ export function RemoteEnergySupportBooking({
             {kind === "talisman" ? t.kindTalisman : t.kindEnergy}
           </button>
         ))}
-      </div>
-      <section className={styles.intentPanel} aria-labelledby="remote-intent-heading">
+      </div>}
+      {!compactFinder && <section className={styles.intentPanel} aria-labelledby="remote-intent-heading">
         <div className={styles.sectionHeading}>
           <span className={styles.stepNumber} aria-hidden="true">01</span>
           <div>
@@ -398,14 +500,14 @@ export function RemoteEnergySupportBooking({
           {FOCUSES.map((focus) => (
             <button key={focus.id} type="button" data-remote-focus-chip aria-pressed={goal === focus.id}
               className={goal === focus.id ? styles.focusActive : ""}
-              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setError(""); }}>
+              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setCatalogId(""); setError(""); }}>
               {focus[locale]}
             </button>
           ))}
         </div>
         <label className={styles.intentLabel} htmlFor="remote-intention">{t.intentionLabel}</label>
         <textarea id="remote-intention" className={styles.intentionInput}
-          maxLength={500} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
           onChange={(event) => { setIntention(event.target.value); setError(""); }}
           aria-describedby="remote-intention-privacy"/>
         <details className={styles.privacyDetails}>
@@ -417,7 +519,7 @@ export function RemoteEnergySupportBooking({
           aria-controls="remote-results" aria-expanded={showResults} onClick={findOptions}>
           {t.findOptions}<span aria-hidden="true">→</span>
         </button>
-      </section>
+      </section>}
 
       <section id="remote-results" className={styles.results} hidden={!showResults} aria-labelledby="remote-practitioners-title">
         <div className={styles.sectionHeading}>
@@ -428,18 +530,23 @@ export function RemoteEnergySupportBooking({
           </div>
         </div>
 
-        {masters.length === 0 ? (
+        {matchingMasters.length === 0 ? (
           <div className={styles.empty} role="status">
-            <p>{t.noMasters}</p>
-            <Link href={"/" + locale + "/masters"}>{t.more} →</Link>
-            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>{t.freeReiki} →</Link>
+            <p>{compactFinder && priceBudget !== "any"
+              ? requestKind === "talisman" ? t.unpricedBudget : t.noPriceMatches
+              : t.noMasters}</p>
+            {compactFinder && priceBudget !== "any" && onClearBudget &&
+              <button type="button" className={styles.clearBudget} onClick={onClearBudget}>{t.resetBudget}</button>}
+            <Link href={"/" + locale + "/masters"} prefetch={false}>{t.more} →</Link>
+            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"} prefetch={false}>{t.freeReiki} →</Link>
           </div>
         ) : (
           <div className={styles.cards}>
-            {masters.map((master) => {
+            {matchingMasters.map((master) => {
               const isOpen = selectedServiceId === master.serviceId;
               const offers = master.priceOptions
-                .filter((offer) => Number.isFinite(offer.price) && offer.price > 0)
+                .filter((offer) => Number.isFinite(offer.price) && offer.price > 0 &&
+                  (!compactFinder || matchesHolisticEuroBudget(offer.price, master.currency, "fixed", priceBudget)))
                 .sort((a, b) => a.duration - b.duration);
               return (
                 <article key={master.serviceId} className={styles.masterOffer}
@@ -484,21 +591,53 @@ export function RemoteEnergySupportBooking({
                         <button className={styles.requestButton} type="button"
                           aria-expanded={isOpen} aria-controls={"remote-request-" + master.serviceId}
                           disabled={requestKind === "energy" && !offers.length}
-                          onClick={() => { setSelectedServiceId(isOpen ? "" : master.serviceId); setError(""); }}>
+                          onClick={() => { setSelectedServiceId(isOpen ? "" : master.serviceId); setTalismanRequested(false); setContactDraft(null); setError(""); }}>
                           {isOpen ? t.hideOptions : requestKind === "talisman" ? t.talismanOffer : t.requestThis} <span aria-hidden="true">→</span>
                         </button>
                       </div>
                     </div>
                   </div>
                   {isOpen && (requestKind === "talisman" ? (
-                    <div id={"remote-request-" + master.serviceId} className={styles.bookingForm}>
+                    <>
+                    <form id={"remote-request-" + master.serviceId} className={styles.bookingForm} onSubmit={submit}>
                       <h4>{t.talismanFormTitle}</h4>
                       <p className={styles.bookingIntro}>{t.talismanHint}</p>
-                      <RemoteSupportEnquiryContact locale={locale} master={master}
-                        kind="talisman" goal={goal} intention={intention}/>
-                    </div>
+                      <p className={styles.privacyHint}>{t.privacyShort}</p>
+                      {compactFinder && <div className={styles.field}>
+                        <label htmlFor={"remote-intention-" + master.serviceId}>{t.intentionLabel}</label>
+                        <textarea id={"remote-intention-" + master.serviceId} className={styles.intentionInput}
+                          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+                          onChange={event => setIntention(event.target.value)}/>
+                      </div>}
+                      <button type="submit" className={styles.submit}>
+                        {t.talismanSubmit} <span aria-hidden="true">→</span>
+                      </button>
+                      {error && <p className={styles.error} role="alert">
+                        {error === "focus" ? t.focusRequired : error === "missing" ? t.missingChoice : t.needsStorage}
+                      </p>}
+                    </form>
+                    {talismanRequested && (
+                      <section className={styles.publicContact}
+                        data-remote-public-order-contact aria-label={t.talismanFormTitle}>
+                        <h4>{t.talismanFormTitle}</h4>
+                        <p>{t.bookingStatus}</p>
+                        <ContactChannelChooser
+                          locale={locale} quick cartContact stayAfterSave
+                          whatsappUrl={whatsappEnquiryUrl({
+                            locale, service: "Personal talisman enquiry · " + master.name,
+                            request: "Please confirm availability and terms before any payment",
+                          })}
+                          publicServiceTitle={"Personal talisman enquiry · " + master.name}
+                          publicTopic={talismanFromCatalog(catalogId)?.goal === goal
+                            ? goal + " · " + catalogId : goal || "Personal talisman enquiry"}
+                          resetKey={master.serviceId + ":" + (goal || "") + ":" + catalogId}
+                        />
+                      </section>
+                    )}
+                    </>
                   ) : (
-                    <div id={"remote-request-" + master.serviceId} className={styles.bookingForm}>
+                    <>
+                    <form id={"remote-request-" + master.serviceId} className={styles.bookingForm} onSubmit={submit}>
                       <h4>{t.optionTitle}</h4>
                       <p className={styles.bookingIntro}>{t.optionHint}</p>
                       <div className={styles.field}>
@@ -525,7 +664,7 @@ export function RemoteEnergySupportBooking({
                       <fieldset className={styles.durationGroup}>
                         <legend>{t.duration}</legend>
                         {REMOTE_SUPPORT_DURATIONS.map((minutes) => {
-                          const published = options.find((option) => option.duration === minutes);
+                          const published = budgetOptions.find((option) => option.duration === minutes);
                           return <label className={duration === minutes ? styles.activeDuration : ""} key={minutes}
                             title={!published ? t.unavailablePrice : undefined}>
                             <input type="radio" name="remote-duration" value={minutes}
@@ -539,28 +678,35 @@ export function RemoteEnergySupportBooking({
                         })}
                       </fieldset>
                       <details className={styles.timeGroup} data-optional-session-time
-                        onToggle={event => {
-                          if (!event.currentTarget.open) { setDay(""); setTime(""); }
-                        }}>
+                        onToggle={event => { if (!event.currentTarget.open) { setDay(""); setTime(""); } }}>
                         <summary className={styles.timeToggle}>
-                          {t.scheduleOptional} <span aria-hidden="true">⌄</span>
+                          {t.schedule} <small>· {t.timeZone}: {timezone}</small>
+                          <small className={styles.optionalTime}>· {locale === "ru"
+                            ? "Необязательно — время согласуем"
+                            : locale === "es" ? "Opcional: horario por acordar"
+                            : "Optional · agree a time later"}</small>
+                          <span aria-hidden="true">⌄</span>
                         </summary>
-                        <p className={styles.timeHint}>
-                          {t.scheduleHint} · {t.timeZone}: {timezone}
-                        </p>
                         <div className={styles.timeFields}>
                           <div className={styles.field}>
                             <label htmlFor="remote-date">{t.date}</label>
-                            <input id="remote-date" type="date" min={minimumDay || undefined}
+                            <input id="remote-date" type="date"  min={minimumDay || undefined}
                               value={day} onChange={(event) => setDay(event.target.value)}/>
                           </div>
                           <div className={styles.field}>
                             <label htmlFor="remote-time">{t.time}</label>
-                            <input id="remote-time" type="time" value={time}
+                            <input id="remote-time" type="time"  value={time}
                               onChange={(event) => setTime(event.target.value)}/>
                           </div>
                         </div>
                       </details>
+                      {compactFinder && <div className={styles.field}>
+                        <label htmlFor={"remote-intention-" + master.serviceId}>{t.intentionLabel}</label>
+                        <textarea id={"remote-intention-" + master.serviceId} className={styles.intentionInput}
+                          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+                          onChange={event => setIntention(event.target.value)}/>
+                        <small>{t.privacyShort}</small>
+                      </div>}
                       <details className={styles.requestSummary}>
                          <summary className={styles.requestSummaryToggle}>
                            <strong>{currentPrice && selected
@@ -570,11 +716,49 @@ export function RemoteEnergySupportBooking({
                          </summary>
                          <p>{t.noSlots} {t.price}</p>
                        </details>
-                      <RemoteSupportEnquiryContact locale={locale} master={master}
-                        kind="energy" goal={goal} intention={intention} method={method}
-                        format={format} duration={duration} price={currentPrice?.price}
-                        day={day} time={time} timezone={timezone}/>
-                    </div>
+                      <button className={styles.submit} type="submit" disabled={!currentPrice}>
+                        {mode === "inline"
+                          ? locale === "ru" ? "Заказать" : locale === "es" ? "Solicitar" : "Place request"
+                          : t.send} <span aria-hidden="true">→</span>
+                      </button>
+                      {error && error !== "focus" && (
+                        <p className={styles.error} role="alert">
+                          {error === "past" ? t.pastTime
+                            : error === "partial" ? (locale === "ru" ? "Выберите и дату, и время или оставьте оба поля пустыми." :
+                              locale === "es" ? "Elige fecha y hora, o deja ambos campos vacíos." :
+                              "Select both date and time, or leave both empty.")
+                            : error === "missing" ? t.missingChoice : t.needsStorage}
+                        </p>
+                      )}
+                    </form>
+                    {contactDraft?.serviceId === master.serviceId && (
+                      <section id="remote-public-contact" className={styles.publicContact}
+                        data-remote-public-order-contact data-remote-visual-screen="final-capture" aria-label={t.send}>
+                        <h4>{locale === "ru" ? "Оформление заявки" : locale === "es" ? "Enviar solicitud" : "Request contact"}</h4>
+                        <p>{locale === "ru"
+                          ? "Укажите телефон или войдите через Google. После отправки с вашим согласием заявка появится в CRM. Время и оплата ещё не подтверждены."
+                          : locale === "es"
+                            ? "Indica tu teléfono o usa Google. La solicitud se guarda solo con tu consentimiento; todavía no hay reserva ni pago."
+                            : "Enter your phone or use Google. Your consented request is saved to CRM; no booking or payment is confirmed."}</p>
+                        <ContactChannelChooser
+                          locale={locale} quick cartContact stayAfterSave
+                          whatsappUrl={whatsappEnquiryUrl({
+                            locale, service: remoteSupportPublicServiceTitle(contactDraft),
+                            request: "Please confirm the Reiki support enquiry",
+                          })}
+                          publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
+                          publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}
+                          resetKey={contactDraft.serviceId + ":" + contactDraft.date + ":" + contactDraft.time + ":" + contactDraft.method + ":" + contactDraft.duration + ":" + contactDraft.format + ":" + contactDraft.goal}
+                          onSaved={() => {
+                            try {
+                              if (readRemoteSupportPublicDraft(window.sessionStorage, contactDraft.serviceId))
+                                window.sessionStorage.removeItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY);
+                            } catch { /* The CRM write, not browser storage, confirms receipt. */ }
+                          }}
+                        />
+                      </section>
+                    )}
+                    </>
                   ))}
                 </article>
               );

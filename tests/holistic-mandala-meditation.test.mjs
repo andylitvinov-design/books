@@ -1,0 +1,115 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFileSync } from "node:fs";
+
+const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+
+test("mandala meditation has an EN/RU/ES public route, locale handoff and a clear Holistic Support entry", () => {
+  const route = read("app/[locale]/holistic-support/mandala/page.tsx");
+  const support = read("app/[locale]/holistic-support/page.tsx");
+  const locales = read("lib/public-locales.ts");
+  assert.match(route, /<PublicSiteHeader locale=\{locale\}/);
+  assert.match(route, /<MandalaMeditationClient locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\}/);
+  for (const locale of ["en", "ru", "es"]) {
+    assert.ok(route.includes('"/' + locale + '/holistic-support/mandala"'), locale + " localized canonical");
+  }
+  assert.match(route, /isPublicLocale\(locale\)/);
+  assert.match(route, /metadataBaseFor\(\)/);
+  assert.match(locales, /holistic-support\\\/mandala/);
+  assert.match(support, /data-holistic-mandala-entry/);
+  assert.match(support, /meditationMandalaAction/);
+  assert.match(support, /holistic-support\/mandala/);
+});
+
+test("public mandala adapts original seven Power Place geometries and stone-mosaic asset", () => {
+  const client = read("components/mandala-meditation-client.tsx");
+  const mosaic = read("public/mandalas/legacy-stone-mosaic.svg");
+  for (const id of ["client", "zodiac", "star", "chess", "altar", "business", "dao", "stone"]) {
+    assert.match(client, new RegExp('id: "' + id + '"'), id + " preset missing");
+  }
+  assert.match(client, /<MandalaArt option=\{current\}/);
+  assert.match(client, /data-mandala-preset=\{option\.id\}/);
+  assert.match(client, /legacy-stone-mosaic\.svg/);
+  assert.match(mosaic, /viewBox="0 0 1200 1200"/);
+  assert.match(mosaic, /id="pebbles"/);
+});
+
+test("private photo never leaves the browser and can be cropped or removed", () => {
+  const client = read("components/mandala-meditation-client.tsx");
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /URL\.createObjectURL\(prepared\)/);
+  assert.match(client, /photoChoiceEpoch\.current/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /!photoPending/);
+  assert.match(studio, /!recording && !photoPending/, "the quick video cannot begin during HEIC preparation");
+  assert.match(studio, /if\(photoPending\)\{/, "recording callback checks stale photo before export");
+  assert.match(studio, /data-video-photo-pending/);
+  assert.match(studio, /if\(recording\|\|preparing\|\|preparingRef\.current\|\|jobRef\.current\|\|webCodecJobRef\.current\|\|photoPending\)return false;/,
+    "HEIC must add to—not replace—active render and codec job guards");
+  const normalized = read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(normalized, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(normalized, /canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
+  assert.match(normalized, /URL\.revokeObjectURL\(objectUrl\)/);
+  assert.doesNotMatch(normalized, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon/);
+  assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
+  assert.match(client, /setImageUrl\(null\)/);
+  assert.match(client, /setZoom\(/);
+  assert.match(client, /setOffsetX\(/);
+  assert.match(client, /setOffsetY\(/);
+  assert.match(client, /setSquarePhoto\(/);
+  assert.match(client, /maxLength=\{140\}/);
+  assert.doesNotMatch(client, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon/);
+});
+
+test("mandala uses source-approved video meditations rather than fake dubbed audio", () => {
+  const route = read("app/[locale]/holistic-support/mandala/page.tsx");
+  const client = read("components/mandala-meditation-client.tsx");
+  const source = read("data/academy/holistic-support-meditations.ts");
+  assert.match(route, /freeMeditationVideos\(locale\)/);
+  assert.match(client, /<AcademyVideoPlayer key=\{activeVideo\.id\}/);
+  assert.match(client, /videos\.filter\(video => activeTopic === "all" \|\| video\.topics\.includes\(activeTopic\)\)/);
+  assert.match(client, /topic === "all" \|\| video\.topics\.includes\(topic\)/);
+  assert.match(source, /verified_legacy_public_embed/);
+  assert.match(source, /if \(locale !== "ru"\)/);
+  assert.doesNotMatch(client, /youtubeId:\s*["']|\.mp3|autoplay=1|audio\.src/);
+});
+
+test("focus screen has mobile-safe controls, visible player and Escape handling", () => {
+  const client = read("components/mandala-meditation-client.tsx");
+  const styles = read("components/mandala-meditation.module.css");
+  assert.match(client, /setFocusMode\(/);
+  assert.match(client, /onClick=\{toggleFocusMode\}/);
+  assert.match(client, /function toggleFocusMode\(\) \{ setFocusMode\(value => !value\); \}/);
+  assert.doesNotMatch(client, /onPointerUp=|onPointerDown=|pointerHandledRef|onFocusPointerUp|onFocusClick/);
+  assert.doesNotMatch(client, /lastFocusPress/);
+  assert.match(client, /event\.key === "Escape"/);
+  assert.match(client, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(client, /aria-pressed=\{focusMode\}/);
+  assert.match(styles, /\.focus .videoFrame/);
+  assert.match(styles, /\.focus .editor,\.focus .caution\{display:none\}/);
+  assert.match(styles, /@media\(max-width:720px\)/);
+  assert.match(styles, /@media\(max-width:350px\)/);
+  assert.match(styles, /env\(safe-area-inset-bottom\)/);
+  assert.doesNotMatch(styles, /\.focus .videoPane\{display:none\}/);
+});
+
+test("visible photo upload is a real native input on iPhone Safari and PWA", () => {
+  const client = read("components/mandala-meditation-client.tsx");
+  const studio = read("components/mandala-free-video-studio.tsx");
+  const css = read("components/mandala-video-mobile.module.css");
+  assert.match(studio, /function NativePhotoInput\(/);
+  assert.match(studio, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(studio, /event\.currentTarget\.files\?\.\[0\]/);
+  assert.match(studio, /if \(photo\) onPhotoFileSelected\(photo\)/);
+  assert.equal((studio.match(/<NativePhotoInput label=/g) || []).length, 4);
+  assert.match(studio, /data-video-quick-photo/);
+  assert.match(studio, /data-video-photo-picker/);
+  assert.match(studio, /data-video-profile-photo-picker/);
+  assert.match(client, /onPhotoFileSelected=\{photo => \{ void handleImageFile\(photo\); \}\}/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  assert.match(css, /\.nativePhotoInput\{position:absolute;inset:0;z-index:3/);
+  assert.match(css, /\.nativePhotoControl:focus-within/);
+  assert.doesNotMatch(studio, /new FormData\(|fetch\([^)]*photo/i);
+});

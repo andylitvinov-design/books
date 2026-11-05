@@ -78,6 +78,10 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   assert.equal(parseOwnerAudioCommand(audio,NOW).action,'materials')
   audio.message.text='/start audio'
   assert.equal(parseOwnerAudioCommand(audio,NOW).action,'help')
+  audio.message.text='/start combine'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'combine')
+  audio.message.text='/start@Andydotbot combine'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'combine')
   audio.message.text='/start '+ 'a'.repeat(32)
   assert.equal(parseOwnerAudioCommand(audio,NOW),null)
   audio.message.text='/ai'
@@ -94,8 +98,8 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   assert.match(prompt.text,/20 МБ/)
   assert.doesNotMatch(prompt.text,/файл уже сохранён/)
   assert.match(ownerAudioMaterialsMessage().text,/admin\/materials\/telegram/)
-  assert.equal(prompt.reply_markup.inline_keyboard[0][0].callback_data,'hh-audio:to:meditations')
-  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url)
+  assert.ok(prompt.reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-audio:to:meditations'))
+  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url==='https://holistichouse.vercel.app/admin/materials/telegram')
   assert.equal(library.url,'https://holistichouse.vercel.app/admin/materials/telegram')
 })
 test('in-chat audio entry button is owner-only and cannot alter folders by itself',()=>{
@@ -111,6 +115,21 @@ test('in-chat audio entry button is owner-only and cannot alter folders by itsel
   query.callback_query.message.from.username='Andydotbot'
   query.callback_query.from.id=111111
   assert.equal(parseOwnerAudioCallback(query),null)
+})
+test('inaccessible Telegram callback recovers old combine buttons but never forged senders',()=>{
+  const callback={update_id:777,callback_query:{id:'old-button',data:'hh-audio:combine',
+    from:{id:123456,is_bot:false},
+    message:{message_id:456,date:0,chat:{id:123456,type:'private'}}}}
+  assert.equal(parseOwnerAudioCallback(callback)?.action,'combine')
+  callback.callback_query.message.date=1700000000
+  assert.equal(parseOwnerAudioCallback(callback),null)
+  callback.callback_query.message.date=0
+  callback.callback_query.message.from={is_bot:true,username:'ImpostorBot'}
+  assert.equal(parseOwnerAudioCallback(callback),null)
+  callback.callback_query.message.from={is_bot:true,username:'Andydotbot'}
+  assert.equal(parseOwnerAudioCallback(callback)?.action,'combine')
+  callback.callback_query.from.id=987654
+  assert.equal(parseOwnerAudioCallback(callback),null)
 })
 test('audio importer includes command UX, self-healing menu and owner-only website guide',()=>{
   const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
@@ -137,7 +156,9 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   const callbacks=keyboard.inline_keyboard.flat()
     .map(item=>item.callback_data).filter(value=>value?.startsWith('hh-audio:to:'))
   const expected=OWNER_AUDIO_FOLDERS.map(item=>'hh-audio:to:'+item.id)
-  assert.ok(keyboard.inline_keyboard.flat().some(item=>item.callback_data==='hh-audio:combine'))
+  assert.ok(keyboard.inline_keyboard.flat().some(item=>item.url==='https://t.me/Andydotbot?start=combine'))
+  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
+    .some(item=>item.url==='https://t.me/Andydotbot?start=combine'))
   assert.deepEqual([...callbacks].sort(),[...expected].sort())
   assert.ok(keyboard.inline_keyboard.flat().every(item=>
     !item.callback_data||item.callback_data.length<=64))
@@ -145,7 +166,7 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   assert.match(chosen.text,/Медитации/)
   assert.match(chosen.text,/30 минут/)
   assert.match(chosen.text,/Следующая запись/)
-  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url)?.url
+  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url?.startsWith('https://holistichouse.vercel.app/admin/materials/telegram'))?.url
   assert.equal(folderLink,'https://holistichouse.vercel.app/admin/materials/telegram?folder=meditations')
   assert.throws(()=>ownerAudioDestinationSelectedMessage('client-reports'))
 })

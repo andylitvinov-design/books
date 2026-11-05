@@ -1,0 +1,458 @@
+{
+  "schemaVersion": "mytube-topic-motif-palettes-v1",
+  "sourceTaxonomyVersion": "mytube-content-taxonomy-4x4x4-v4",
+  "status": "curated_editorial_suggestions_not_verified_media",
+  "selectionRule": "literal imagery in scenario title, followed by topic-specific imagery and dramatic arc",
+  "topicCount": 64,
+  "motifsPerTopic": 5,
+  "topics": {
+    "life-purpose": [
+      "compass",
+      "horizon",
+      "book",
+      "path",
+      "sunrise"
+    ],
+    "finding-self": [
+      "mirror",
+      "window",
+      "book",
+      "tree",
+      "door"
+    ],
+    "personal-growth": [
+      "seed",
+      "tree",
+      "stairs",
+      "garden",
+      "butterfly"
+    ],
+    "life-transitions": [
+      "bridge",
+      "door",
+      "boat",
+      "horizon",
+      "moon"
+    ],
+    "goal-setting": [
+      "compass",
+      "lantern",
+      "horizon",
+      "path",
+      "stairs"
+    ],
+    "goal-follow-through": [
+      "stairs",
+      "stone",
+      "path",
+      "sunrise",
+      "gate"
+    ],
+    "procrastination": [
+      "mountain",
+      "key",
+      "stairs",
+      "seed",
+      "hands"
+    ],
+    "self-discipline": [
+      "roots",
+      "stone",
+      "stairs",
+      "sun",
+      "moon"
+    ],
+    "money-mindset": [
+      "key",
+      "mirror",
+      "seed",
+      "stone",
+      "river"
+    ],
+    "money-blocks": [
+      "gate",
+      "key",
+      "bridge",
+      "shield",
+      "sunrise"
+    ],
+    "financial-stability": [
+      "house",
+      "roots",
+      "stone",
+      "garden",
+      "nest"
+    ],
+    "income-growth": [
+      "stream",
+      "tree",
+      "sunrise",
+      "bridge",
+      "seed"
+    ],
+    "entrepreneurship": [
+      "door",
+      "seed",
+      "garden",
+      "key",
+      "window"
+    ],
+    "career-growth": [
+      "stairs",
+      "mountain",
+      "lantern",
+      "compass",
+      "bridge"
+    ],
+    "leadership": [
+      "lantern",
+      "circle",
+      "gate",
+      "compass",
+      "hands"
+    ],
+    "business-decisions": [
+      "compass",
+      "bridge",
+      "key",
+      "book",
+      "gate"
+    ],
+    "loneliness": [
+      "window",
+      "house",
+      "nest",
+      "thread",
+      "moon"
+    ],
+    "fear-being-alone": [
+      "house",
+      "stone",
+      "hearth",
+      "tree",
+      "lantern"
+    ],
+    "breakup-recovery": [
+      "river",
+      "boat",
+      "moon",
+      "sunrise",
+      "garden"
+    ],
+    "unrequited-love": [
+      "rose",
+      "bridge",
+      "book",
+      "door",
+      "window"
+    ],
+    "find-love": [
+      "door",
+      "rose",
+      "garden",
+      "bridge",
+      "key"
+    ],
+    "ready-relationship": [
+      "shield",
+      "house",
+      "rose",
+      "thread",
+      "gate"
+    ],
+    "dating": [
+      "lantern",
+      "window",
+      "rose",
+      "hands",
+      "door"
+    ],
+    "choosing-partner": [
+      "compass",
+      "bridge",
+      "mirror",
+      "gate",
+      "shield"
+    ],
+    "relationship-problems": [
+      "circle",
+      "thread",
+      "bridge",
+      "mirror",
+      "stone"
+    ],
+    "couple-communication": [
+      "hands",
+      "thread",
+      "window",
+      "bridge",
+      "hearth"
+    ],
+    "couple-conflict": [
+      "rain",
+      "bridge",
+      "stone",
+      "hearth",
+      "hands"
+    ],
+    "rebuilding-trust": [
+      "bridge",
+      "tree",
+      "stone",
+      "thread",
+      "roots"
+    ],
+    "emotional-intimacy": [
+      "rose",
+      "hands",
+      "hearth",
+      "nest",
+      "circle"
+    ],
+    "fear-intimacy": [
+      "door",
+      "shield",
+      "bridge",
+      "nest",
+      "moon"
+    ],
+    "emotional-dependency": [
+      "roots",
+      "island",
+      "tree",
+      "bridge",
+      "boat"
+    ],
+    "family-relationships": [
+      "house",
+      "tree",
+      "hearth",
+      "roots",
+      "circle"
+    ],
+    "everyday-overload": [
+      "clouds",
+      "stone",
+      "window",
+      "meadow",
+      "stream"
+    ],
+    "evening-fatigue": [
+      "moon",
+      "house",
+      "hearth",
+      "lake",
+      "nest"
+    ],
+    "mental-tiredness": [
+      "clouds",
+      "lake",
+      "window",
+      "stone",
+      "book"
+    ],
+    "recovery-after-load": [
+      "nest",
+      "spring",
+      "tree",
+      "meadow",
+      "moon"
+    ],
+    "body-awareness": [
+      "stone",
+      "roots",
+      "hands",
+      "tree",
+      "meadow"
+    ],
+    "breathing-practices": [
+      "stream",
+      "clouds",
+      "meadow",
+      "ocean",
+      "hands"
+    ],
+    "muscle-relaxation": [
+      "hands",
+      "stone",
+      "river",
+      "lake",
+      "nest"
+    ],
+    "healthy-habits": [
+      "seed",
+      "stairs",
+      "garden",
+      "sunrise",
+      "spring"
+    ],
+    "low-energy": [
+      "fire",
+      "spring",
+      "nest",
+      "sunrise",
+      "stone"
+    ],
+    "morning-energy": [
+      "sunrise",
+      "sun",
+      "bird",
+      "stream",
+      "seed"
+    ],
+    "motivation-drive": [
+      "fire",
+      "key",
+      "sun",
+      "path",
+      "stairs"
+    ],
+    "mental-clarity": [
+      "window",
+      "lake",
+      "sun",
+      "compass",
+      "clouds"
+    ],
+    "self-confidence": [
+      "mountain",
+      "stone",
+      "sun",
+      "tree",
+      "shield"
+    ],
+    "low-self-esteem": [
+      "mirror",
+      "seed",
+      "tree",
+      "garden",
+      "rose"
+    ],
+    "self-acceptance": [
+      "garden",
+      "mirror",
+      "meadow",
+      "tree",
+      "flower"
+    ],
+    "calm-presence": [
+      "stone",
+      "roots",
+      "lantern",
+      "mountain",
+      "sunrise"
+    ],
+    "stress-relief": [
+      "stream",
+      "meadow",
+      "stone",
+      "clouds",
+      "nest"
+    ],
+    "chronic-stress": [
+      "river",
+      "stone",
+      "roots",
+      "house",
+      "moon"
+    ],
+    "work-stress": [
+      "door",
+      "shield",
+      "tree",
+      "hearth",
+      "path"
+    ],
+    "burnout": [
+      "spring",
+      "nest",
+      "moon",
+      "garden",
+      "seed"
+    ],
+    "constant-anxiety": [
+      "lantern",
+      "stone",
+      "bridge",
+      "nest",
+      "lake"
+    ],
+    "anxiety-no-reason": [
+      "clouds",
+      "lake",
+      "stone",
+      "window",
+      "moon"
+    ],
+    "panic-attacks": [
+      "lake",
+      "stone",
+      "hands",
+      "lantern",
+      "nest"
+    ],
+    "phobias": [
+      "shield",
+      "bridge",
+      "gate",
+      "lantern",
+      "path"
+    ],
+    "childhood-trauma": [
+      "house",
+      "nest",
+      "tree",
+      "stone",
+      "hearth"
+    ],
+    "inner-child": [
+      "garden",
+      "flower",
+      "nest",
+      "hands",
+      "book"
+    ],
+    "rejection-wounds": [
+      "house",
+      "circle",
+      "hearth",
+      "door",
+      "rose"
+    ],
+    "abandonment-wounds": [
+      "nest",
+      "thread",
+      "house",
+      "roots",
+      "lantern"
+    ],
+    "low-mood": [
+      "window",
+      "sunrise",
+      "garden",
+      "moon",
+      "stream"
+    ],
+    "apathy": [
+      "spring",
+      "seed",
+      "fire",
+      "meadow",
+      "sunrise"
+    ],
+    "loss-joy": [
+      "flower",
+      "bird",
+      "garden",
+      "sun",
+      "butterfly"
+    ],
+    "emotional-emptiness": [
+      "hearth",
+      "thread",
+      "moon",
+      "lake",
+      "seed"
+    ]
+  }
+}

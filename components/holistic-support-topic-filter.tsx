@@ -133,6 +133,17 @@ const copy = {
 export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale }) {
   const [activeTopic, setActiveTopic] = useState<Topic>("business");
   const [orderKind, setOrderKind] = useState<SupportRequestKind | null>(null);
+  useEffect(() => {
+    const onOtherOrder = (event: Event) => {
+      if ((event as CustomEvent<{source?: string}>).detail?.source !== "topics") setOrderKind(null);
+    };
+    window.addEventListener("hh-support-order-open", onOtherOrder);
+    return () => window.removeEventListener("hh-support-order-open", onOtherOrder);
+  }, []);
+  const openOrder = (value: SupportRequestKind) => {
+    window.dispatchEvent(new CustomEvent("hh-support-order-open", {detail:{source:"topics"}}));
+    setOrderKind(value);
+  };
   const initialGoal: Record<Topic, string> = {
     business: "Work and money",
     love: "Connection and relationships",
@@ -200,7 +211,7 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
                   <button type="button" className={styles.titleButton}
                     aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
                     aria-controls="holistic-inline-order"
-                    onClick={() => setOrderKind(id === "talisman" ? "talisman" : "energy")}>
+                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
                     {selected.cards[id].title}
                   </button>
                 )}</h3>
@@ -214,7 +225,7 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
                     data-holistic-order-trigger={id}
                     aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
                     aria-controls="holistic-inline-order"
-                    onClick={() => setOrderKind(id === "talisman" ? "talisman" : "energy")}>
+                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
                     {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
                   </button>
                 )}

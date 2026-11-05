@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -21,7 +21,7 @@ const copy = {
     shortTitle: "Free express review",
     lead: "One personal written review. Choose what your question is about; the service stays the same.",
     legend: "What is your request about?",
-    reveal: "Request my free review", close: "Close request form",
+    secureAlternative: "Use the secure website form instead", close: "Close request form",
     areas: {
       situation: { title: "My situation", short: "Situation", hint: "A decision, relationship, work or something that feels stuck.", tag: "Situation" },
       energy: { title: "Energy & health", short: "Energy / health", hint: "Your energy, wellbeing and everyday resources — not a medical diagnosis.", tag: "Energy and wellbeing" },
@@ -40,7 +40,7 @@ const copy = {
     shortTitle: "Экспресс-диагностика",
     lead: "Один личный письменный разбор. Выберите тему обращения — это не разные услуги.",
     legend: "С чем связан ваш запрос?",
-    reveal: "Заказать бесплатную диагностику", close: "Свернуть форму",
+    secureAlternative: "Заполнить защищённую форму на сайте", close: "Свернуть форму",
     areas: {
       situation: { title: "По ситуации", short: "Ситуация", hint: "Решение, отношения, работа или вопрос, в котором вы застряли.", tag: "Ситуация" },
       energy: { title: "По энергии и здоровью", short: "Энергия", hint: "Самочувствие, энергия и ресурсы — без медицинской диагностики.", tag: "Энергия и самочувствие" },
@@ -59,7 +59,7 @@ const copy = {
     shortTitle: "Revisión exprés gratuita",
     lead: "Una sola revisión personal escrita. Elige el tema de tu pregunta, no un servicio diferente.",
     legend: "¿Sobre qué es tu consulta?",
-    reveal: "Solicitar mi revisión gratuita", close: "Cerrar formulario",
+    secureAlternative: "Usar el formulario seguro de esta web", close: "Cerrar formulario",
     areas: {
       situation: { title: "Mi situación", short: "Situación", hint: "Decisiones, relaciones, trabajo o algo que te bloquea.", tag: "Situación" },
       energy: { title: "Energía y salud", short: "Energía / salud", hint: "Bienestar y recursos personales, sin diagnóstico médico.", tag: "Energía y bienestar" },
@@ -85,8 +85,20 @@ export function PersonalExpressEnquiry({
   const [focus, setFocus] = useState<Focus>("situation");
   const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeDisclosure = useCallback(() => {
+    // A delayed hashchange after Escape can re-open the folded form in WebKit.
+    // Remove only our form anchor; never clear search params or client identity.
+    if (window.location.hash === "#request-free-review") {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
+    setExpanded(false);
+  }, []);
 
   // The compact mobile capture begins at the top of the visible card after opening.
   useEffect(() => {
@@ -136,13 +148,13 @@ export function PersonalExpressEnquiry({
     if (!expanded) return;
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && panelRef.current?.contains(document.activeElement)) {
-        setExpanded(false);
+        closeDisclosure();
         revealRef.current?.focus();
       }
     };
     document.addEventListener("keydown", onEscape);
     return () => document.removeEventListener("keydown", onEscape);
-  }, [expanded]);
+  }, [expanded, closeDisclosure]);
   const whatsappUrl = whatsappEnquiryUrl({
     locale, service: t.service, request: t.request, pagePath: pathname,
     // Deliberately omit the selected focus and all health/personal information
@@ -153,7 +165,7 @@ export function PersonalExpressEnquiry({
     <div className={styles.wrapper} data-personal-express-review>
       {intro}
       <section className={styles.capture} id="request-free-review" data-personal-express-enquiry
-        data-expanded={expanded ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
+        data-expanded={expanded ? "true" : "false"} data-express-hydrated={hydrated ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
         <div className={styles.photo}>
           <Image src="/images/holistic-house/andy-about.png" alt={t.alt}
             fill sizes="(max-width: 720px) 90px, 38vw" />
@@ -163,14 +175,15 @@ export function PersonalExpressEnquiry({
           <p className={styles.eyebrow}><MessageCircle size={15} aria-hidden="true" />{t.label}</p>
           <h2 id="express-enquiry-title"><span className={styles.longTitle}>{t.title}</span><span className={styles.shortTitle}>{t.shortTitle}</span></h2>
           <p className={styles.lead}>{t.lead}</p>
-          <button ref={revealRef} type="button" className={styles.reveal}
-            data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
-            onClick={() => setExpanded(open => !open)}>
-            {expanded ? <X size={20} aria-hidden="true" /> : <MessageCircle size={20} aria-hidden="true" />}
-            <span>{expanded ? t.close : t.reveal}</span>
-            <ChevronDown className={styles.revealChevron} size={19} aria-hidden="true" />
-          </button>
           <TelegramDiagnosticEntry locale={locale} />
+          <button ref={revealRef} type="button" className={styles.reveal}
+            data-express-reveal disabled={!hydrated} aria-expanded={expanded} aria-controls="express-request-form"
+            aria-label={expanded ? t.close : t.secureAlternative}
+            onClick={() => { if (expanded) closeDisclosure(); else setExpanded(true); }}>
+            {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
+            <span>{expanded ? t.close : t.secureAlternative}</span>
+            <ChevronDown className={styles.revealChevron} size={16} aria-hidden="true" />
+          </button>
           <div ref={panelRef} className={styles.disclosure} id="express-request-form"
             data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
             role="region" aria-label={t.title}>
@@ -178,7 +191,8 @@ export function PersonalExpressEnquiry({
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
               <label className={styles.choice} data-express-focus={area} key={area}
-                data-selected={focus === area ? "true" : "false"}>
+                data-selected={focus === area ? "true" : "false"}
+                onClick={() => { if (!focusLocked) setFocus(area); }}>
                 <input type="radio" name="express-review-focus" value={area}
                   checked={focus === area} onChange={() => setFocus(area)} />
                 {area === "situation" ? <MessageCircle size={19} aria-hidden="true" /> : <HeartPulse size={19} aria-hidden="true" />}

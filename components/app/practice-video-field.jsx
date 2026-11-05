@@ -3,6 +3,7 @@ import {useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {PRESENTATION_MAX_BYTES} from '@/lib/practitioners/presentation-contract.js'
 import ServiceIntroductionEditor from './service-introduction-editor'
+import PracticeYoutubeShare from './practice-youtube-share'
 
 const copy={
   en:{title:'Video presentation',tip:'Introduce yourself or explain this service in a short video. It will be reviewed before appearing publicly.',
@@ -92,6 +93,7 @@ function LegacyPracticeVideoField({value,onChange,locale='en',onBusyChange=()=>{
        </div>}
    {value&&<button type="button" className="hh-practice-presentation-remove" disabled={busy}
      onClick={()=>{onChange(null);setFilename('');setError('')}}>{t.remove}</button>}
+   {value?.kind==='upload'&&<PracticeYoutubeShare video={value} locale={locale} initialTitle="Master presentation"/>}
    {error&&<p role="alert" className="hh-practice-error">{error}</p>}
    <p className="hh-fine">{t.notice}</p>
  </section>

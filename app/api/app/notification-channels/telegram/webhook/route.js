@@ -12,7 +12,7 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 // Independent free-model calls plus one real synthesis run within a bounded webhook.
-export const maxDuration=120
+export const maxDuration=300
 
 export async function POST(request){
  if(!verifyClientTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token')))
@@ -39,6 +39,10 @@ export async function POST(request){
    }
    const audio=await receiveOwnerTelegramAudioWebhook(config,update)
   if(audio.handled){
+    if(audio.background)after(async()=>{
+      try{await audio.background()}
+      catch{console.error('HH_OWNER_AUDIO_DOT_AFTER_FAILED')}
+    })
     if(audio.retry)return NextResponse.json({ok:false},{status:503,headers:PRIVATE_HEADERS})
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }

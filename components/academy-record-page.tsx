@@ -20,7 +20,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
 import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { TantraReikiTestimonials } from "@/components/tantra-reiki-testimonials";
-import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
+import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, findAcademyRecord, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -103,6 +103,14 @@ const tantraReikiLevelSummary: Record<PublicLocale, {
   },
 };
 
+// PsiMaster historical curricula and original lesson recordings share related
+// subject matter, but not an identical syllabus. Preserve each original route.
+const originalMysteryVideoIds: Record<string, string[]> = {
+  "mysteries/maya-aztec/feathered-serpent": ["videos/maya-archetypes"],
+  "mysteries/egypt/high-wisdom": ["videos/egypt-osiris"],
+  "mysteries/greece-rome/beauty-and-power": ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
+};
+
 export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; record: AcademySourceRecord }) {
   const text = academyCopy[locale];
   const sourceNotice = sourceLanguageNotice(record, locale);
@@ -128,6 +136,20 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   // A native video course always shows every original lesson. Other archive
   // pages retain their existing media cap for layout and performance.
   const videos = record.direction === "videos" ? allVideos : allVideos.slice(0, 48);
+  const relatedMysteryVideos = locale === "ru"
+    ? (originalMysteryVideoIds[record.logicalId] ?? []).flatMap((logicalId) => {
+      const originalVideo = findAcademyRecord(logicalId, locale);
+      if (!originalVideo) return [];
+      const videoCount = mediaForRecord(originalVideo)
+        .filter((media) => Boolean(youtubeIdFromUrl(media.mediaUrl))).length;
+      return videoCount ? [{
+        id: logicalId,
+        title: academyDisplayTitle(originalVideo, locale),
+        href: "/" + locale + "/academy/" + originalVideo.routeKey,
+        videoCount,
+      }] : [];
+    })
+    : [];
   const sourceImages = isVerbatimTantraArchive ? tantraReikiFullArchive.images[archiveLocale] : [];
   const sourceVideos = isVerbatimTantraArchive ? tantraReikiFullArchive.html5Videos[archiveLocale] : [];
   const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
@@ -186,6 +208,19 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
             </Link>
           </aside>
+        ) : null}
+        {relatedMysteryVideos.length > 0 ? (
+          <section className="academy-mystery-video-bridge" aria-label="Оригинальные русскоязычные видеокурсы PsiMaster">
+            <h2>Оригинальные видеоуроки из PsiMaster</h2>
+            <p>Сохранённые записи отдельных циклов. Содержание программы включает и другие темы, для которых видеозаписи пока не подтверждены.</p>
+            <div className="academy-resource-links">
+              {relatedMysteryVideos.map((video) => (
+                <Link key={video.id} href={video.href} prefetch={false}>
+                  {video.title} · {video.videoCount} видео <span aria-hidden="true">→</span>
+                </Link>
+              ))}
+            </div>
+          </section>
         ) : null}
         {isVerbatimTantraArchive ? (
           <>

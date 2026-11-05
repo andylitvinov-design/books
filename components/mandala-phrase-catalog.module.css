@@ -1,0 +1,38 @@
+.root{--ink:#143457;--accent:#137f89;--border:#d8e6ec;color:var(--ink);padding:17px 13px 18px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(155deg,#f6fcff 0%,#ffffff 48%,#fffaf4 100%);box-shadow:0 7px 22px #1434570c;font-size:16px;line-height:1.4}
+.header{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.header h4{font-size:21px;line-height:1.2;font-weight:800;margin:0;color:#153b62}
+.header p{font-size:15px;line-height:1.35;color:#526979;margin:5px 0 0}
+.icon{display:grid;place-items:center;width:48px;height:48px;flex:none;border-radius:16px;background:#deefff;color:#146e98}
+.field{border:0;padding:0;margin:13px 0 0;min-width:0}
+.field legend{font-size:17px;line-height:1.3;font-weight:800;margin-bottom:8px;padding:0}
+.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 8px;scrollbar-width:thin}
+.categories button{white-space:nowrap;flex:1 0 auto;min-height:47px;border-radius:12px;font-size:16px;padding:10px 13px}
+.topics,.stories,.ideas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.root button{font:inherit;cursor:pointer;transition:background .15s,border-color .15s;touch-action:manipulation}
+.root button:disabled{opacity:.58;cursor:not-allowed}
+.root button:focus-visible{outline:3px solid #2389cf;outline-offset:2px}
+.categories button,.topics button,.stories button,.ideas button,.filter button{background:#fff;color:#213f61;border:1px solid #cedee8;font-weight:650}
+.topics button,.ideas button{padding:12px 9px;min-height:55px;text-align:left;font-size:15.5px;line-height:1.28;border-radius:13px}
+.stories button{padding:12px 9px;min-height:67px;display:flex;align-items:center;gap:7px;font-size:15.5px;text-align:left;border-radius:14px}
+.stories button span{flex:1}
+.ideas button{display:flex;align-items:center;gap:8px}
+.ideas button svg{flex:none;color:#e47e82}
+.categories button[aria-pressed=true],.topics button[aria-pressed=true],.stories button[aria-pressed=true],.ideas button[aria-pressed=true],.filter button[aria-pressed=true]{background:#dff5f5;color:#0c5864;border-color:#168d91;box-shadow:inset 0 0 0 1px #168d91}
+.filterPanel{margin-top:15px;padding:13px 11px 14px;border-radius:17px;background:#f1f7fb;border:1px solid #dfebf1}
+.filter{min-width:0}
+.filter>span{display:block;font-size:15.5px;font-weight:800;margin-bottom:8px}
+.filter>div{display:flex;gap:6px;flex-wrap:wrap}
+.filter button{padding:9px 11px;border-radius:10px;min-height:42px;font-size:15px}
+.filterGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.results{margin-top:17px}
+.results h5{display:flex;gap:7px;align-items:center;margin:0 0 10px;color:#16466b;font-weight:850;font-size:18px}
+.phrase{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:14px 12px;text-align:left;background:#fff;border:1px solid #d5e4e9;border-radius:15px;margin:0 0 8px;color:#163d5e;min-height:69px}
+.phrase[aria-pressed=true]{background:#e1f7ee;border-color:#2a9c74}
+.quote{font-size:17px;white-space:pre-line;font-weight:600;line-height:1.36}
+.action{display:flex;gap:4px;align-items:center;justify-content:center;flex:none;border-radius:12px;padding:8px 10px;background:#eaf5fd;color:#176b82;font-size:13.5px;font-weight:800}
+.note{font-size:14px;color:#5d7080;margin:8px 0 0}
+@media(min-width:650px){.root{padding:19px 22px}.topics,.stories,.ideas{grid-template-columns:repeat(4,minmax(0,1fr))}.header h4{font-size:23px}}
+@media(max-width:370px){.filterGrid{grid-template-columns:1fr}.quote{font-size:16px}.action{font-size:12px;padding:7px}.field legend{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.root button{transition:none}}
+.audioNext{display:flex;width:100%;justify-content:center;align-items:center;gap:9px;min-height:56px;margin-top:13px;padding:12px 13px;background:linear-gradient(135deg,#159b76,#0e796c);border:1px solid #0d8170;border-radius:15px;color:#fff;font-size:16.5px;font-weight:850;box-shadow:0 6px 17px #0f846b25;line-height:1.25}
+.audioNext svg:last-child{margin-left:auto;flex:none}

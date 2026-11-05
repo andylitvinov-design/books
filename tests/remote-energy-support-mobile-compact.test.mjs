@@ -10,17 +10,20 @@ test("focus-first: compact choice and optional preferences before published spec
   const route = read("app/[locale]/services/remote-energy-support/page.tsx");
   assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf('id="remote-intention"'));
   assert.ok(jsx.indexOf('id="remote-intention"') < jsx.indexOf('data-remote-find-options'));
-  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("masters.map((master) => {"));
-  assert.match(jsx, /maxLength=\{500\} rows=\{2\}/);
+  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.match(jsx, /maxLength=\{1000\} rows=\{2\}/);
   assert.match(jsx, /master\.photo\s*\?\s*<img src=\{master\.photo\} alt=""/);
   assert.match(jsx, /master\.description \|\| t\.defaultDescription/);
   assert.match(jsx, /<details className=\{styles\.cardDetails\}>/);
   assert.match(jsx, /className=\{styles\.requestButton\}/);
   assert.match(jsx, /\{isOpen && \(requestKind === "talisman" \? \(/);
-  assert.match(jsx, /<div id=\{"remote-request-" \+ master\.serviceId\} className=\{styles\.bookingForm\}>/);
-  assert.match(jsx, /\) : \(\s*<div id=/);
+  assert.match(jsx, /<form id=\{"remote-request-" \+ master\.serviceId\} className=\{styles\.bookingForm\} onSubmit=\{submit\}>/);
+  // Inline flow now groups the existing booking form and a separate opt-in contact step.
+  assert.match(jsx, /\) : \(\s*<>\s*<form id=/);
+  assert.match(jsx, /data-remote-public-order-contact/);
+  assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
   assert.match(jsx, /disabled=\{requestKind === "energy" && !offers\.length\}/);
   const sharedOffers = read("lib/practitioners/public-remote-support-masters.ts");
   assert.match(route, /listRemoteEnergySupportMasters\(locale\)/);
@@ -35,7 +38,7 @@ test("focus-first: compact choice and optional preferences before published spec
 
 test("only published duration and price pairs are displayed, never invented options", () => {
   const jsx = read("components/remote-energy-support-booking.tsx");
-  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0\)/);
+  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0 &&/);
   assert.match(jsx, /REMOTE_SUPPORT_DURATIONS\.map/);
   assert.match(jsx, /disabled=\{!published\} checked=\{duration === minutes\}/);
   assert.match(jsx, /<span>\{minutes\} \{t\.minutes\}<\/span>/);
@@ -44,39 +47,28 @@ test("only published duration and price pairs are displayed, never invented opti
   assert.match(jsx, /Sin confirmar · Sin pago/);
   assert.match(jsx, /not a confirmed appointment/);
   assert.match(jsx, /not medical treatment/);
-  assert.match(jsx, /Confirm request/);
+  assert.match(jsx, /Continue to request/);
   assert.doesNotMatch(jsx, /createPaymentIntent|checkoutSession|stripe\./i);
 });
 
-test("guests confirm a consented request inline without a private cabinet redirect", () => {
+test("private intention is not in URLs, browser storage, analytics or public booking data", () => {
   const jsx = read("components/remote-energy-support-booking.tsx");
-  const guest = read("components/remote-support-enquiry-contact.tsx");
-  assert.match(jsx, /<RemoteSupportEnquiryContact locale=\{locale\} master=\{master\}/);
-  assert.match(jsx, /kind="energy"/);
-  assert.match(jsx, /kind="talisman"/);
-  assert.match(guest, /fetch\("\/api\/service-enquiries"/);
-  assert.match(guest, /contactConsent: true/);
-  assert.match(guest, /setSavedReference\(result\.referenceCode\)/);
-  assert.match(guest, /data-remote-order-confirmation/);
-  assert.match(guest, /!response\.ok \|\| result\.saved !== true/);
-  assert.doesNotMatch(guest, /router\.push|window\.location\.assign|sessionStorage|localStorage/);
-  assert.doesNotMatch(jsx, /router\.push|window\.sessionStorage\.setItem/);
-  assert.match(jsx, /maxLength=\{500\} rows=\{2\}/);
-});
-
-test("preferred date/time are optional and closed by default", () => {
-  const jsx = read("components/remote-energy-support-booking.tsx");
-  const css = read("components/remote-energy-support-booking.module.css");
-  const guest = read("components/remote-support-enquiry-contact.tsx");
-  assert.match(jsx, /<details className=\{styles\.timeGroup\} data-optional-session-time/);
-  assert.match(jsx, /scheduleOptional: "Указать удобное время \(необязательно\)"/);
-  assert.match(jsx, /scheduleOptional: "Suggest a date and time \(optional\)"/);
-  assert.match(jsx, /scheduleOptional: "Elegir fecha y hora \(opcional\)"/);
-  assert.doesNotMatch(jsx, /type="date" required|type="time" required/);
-  assert.match(jsx, /if \(!event\.currentTarget\.open\) \{ setDay\(""\); setTime\(""\); \}/);
-  assert.match(css, /\.timeToggle/);
-  assert.match(guest, /if \(\(day && !time\) \|\| \(!day && time\)\)/);
-  assert.match(guest, /"Not specified"/);
+  const bridge = read("lib/practitioners/remote-energy-support.js");
+  const cabinet = read("components/app/app-workspace.jsx");
+  const block = jsx.slice(jsx.indexOf("const publicDraft = {"), jsx.indexOf("window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY"));
+  assert.ok(block.startsWith("const publicDraft = {"));
+  assert.doesNotMatch(block, /intention|privateIntention/);
+  assert.doesNotMatch(jsx, /stageRemoteSupportPrivateIntention\(selected\.serviceId, intention\)|router\.push/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
+  assert.match(bridge, /let pendingPrivateIntention = null/);
+  assert.match(bridge, /pendingPrivateIntention = null\s*return staged\?\.serviceId/);
+  const handoff = bridge.slice(bridge.indexOf("let pendingPrivateIntention = null"))
+    .replace(/\/\/[^\n]*/g, "");
+  assert.doesNotMatch(handoff, /sessionStorage|localStorage|document\.cookie|navigator\.sendBeacon|fetch\(/);
+  assert.match(cabinet, /takeRemoteSupportPrivateIntention\(service\.id\)/);
+  assert.match(cabinet, /message: note/);
+  assert.match(cabinet, /await appFetch\('requests', body\)/);
+  assert.match(jsx, /window\.sessionStorage\.setItem\(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON\.stringify\(publicDraft\)\)/);
 });
 
 test("expanded phone session compactness preserves truthful price and disclosure", () => {
@@ -119,4 +111,35 @@ test("one-screen EN/RU/ES finder has five approved categories, an optional note 
   assert.match(css, /\.focusChips button\{[^}]*min-height:44px/);
   assert.match(css, /\.findButton\{[^}]*min-height:48px/);
   assert.match(css, /\.results\[hidden\]\{display:none\}/);
+});
+
+test("public energy and talisman enquiries keep existing consented CRM without private redirects", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  const css = read("components/remote-energy-support-booking.module.css");
+  const contact = read("components/contact-channel-chooser.tsx");
+  assert.doesNotMatch(jsx, /router\.push|REMOTE_SUPPORT_DRAFT_KEY|TALISMAN_REQUEST_DRAFT_KEY/);
+  assert.match(jsx, /data-optional-session-time/);
+  assert.match(css, /\.timeToggle\{/);
+  assert.doesNotMatch(jsx, /required=\{mode !== "inline"\}/);
+  assert.match(jsx, /setTalismanRequested\(true\)/);
+  assert.match(jsx, /talismanRequested && \(/);
+  assert.match(jsx, /\{contactDraft\?\.serviceId === master\.serviceId && \(/);
+  assert.match(jsx, /quick cartContact stayAfterSave/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
+  assert.match(jsx, /Boolean\(day\) !== Boolean\(time\)/);
+  assert.match(contact, /fetch\("\/api\/service-enquiries"/);
+  assert.match(contact, /contactConsent: true/);
+  assert.match(contact, /telegramEnquiryUrlFromWhatsApp/);
+});
+
+test("guest talisman source stays catalog-grounded, localized, and consent-first", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  assert.match(jsx, /talismanFromCatalog\(catalogId\)\?\.goal === goal/);
+  assert.match(jsx, /publicTopic=\{talismanFromCatalog\(catalogId\)/);
+  for (const copy of ["Continue to contact", "Указать контакт", "Indicar contacto"]) {
+    assert.ok(jsx.includes(copy), "Missing public contact action " + copy);
+  }
+  assert.doesNotMatch(jsx, /Continue to private enquiry|Continuar a la solicitud privada|Перейти к личной заявке/);
+  assert.match(jsx, /setTalismanRequested\(true\)/);
+  assert.match(jsx, /setContactDraft\(null\)/);
 });

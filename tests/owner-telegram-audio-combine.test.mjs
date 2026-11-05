@@ -52,6 +52,9 @@ function callback(data){
     from:{id:555555,is_bot:false}}}
 }
 test('owner-only commands and legitimate private callback buttons',()=>{
+  assert.equal(parseOwnerAudioCommand(message('/start combine'),NOW)?.action,'combine')
+  assert.equal(parseOwnerAudioCommand(message('/start@Andydotbot combine'),NOW)?.action,'combine')
+  assert.equal(parseOwnerAudioCommand(message('/start invalid'),NOW),null)
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
