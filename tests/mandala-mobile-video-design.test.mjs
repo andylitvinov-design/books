@@ -318,7 +318,7 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const top=[
-    "data-video-quick-builder",'<nav className={videoStyles.quickVideoNav} data-video-quick-controls',
+    "data-video-quick-builder","data-video-quick-controls",
     'data-video-quick-section="1"',"data-video-live-stage",'id="video-hero"',
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",

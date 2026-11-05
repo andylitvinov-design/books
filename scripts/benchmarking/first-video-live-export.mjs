@@ -132,10 +132,9 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Owner-approved Goals -> Ideas entry keeps the storyboard out of the
-  // first mobile screen. Follow the real visible Continue action, verify the
-  // Ideas tab, then return to Goals and use the original All stories control.
-  // Never click hidden elements or mutate React state to fake E2E readiness.
+  // Owner flow: Goals -> one green Continue -> Ideas -> Goals. Only after
+  // that authentic user interaction may the advanced four-story director open.
+  // Do not click a hidden element or mutate React state to spoof export E2E.
   const continueButton=page.locator('[data-video-continue-ideas]');
   await continueButton.waitFor({state:'visible',timeout:40000});
   await continueButton.click();
@@ -143,8 +142,7 @@ try {
   await ideasTab.waitFor({state:'visible',timeout:15000});
   assert.equal(await ideasTab.getAttribute('aria-pressed'),'true',
     'CONTINUE_MUST_OPEN_IDEAS');
-  assert.equal(await ideasTab.getAttribute('aria-label'),'Идеи',
-    'IDEAS_TAB_LABEL_MUST_MATCH_OWNER_DECISION');
+  await page.locator('[data-video-ideas-compact]').waitFor({state:'visible',timeout:15000});
   const goalsTab=page.locator('[data-video-quick-control="video"]');
   await goalsTab.click();
   assert.equal(await goalsTab.getAttribute('aria-pressed'),'true',

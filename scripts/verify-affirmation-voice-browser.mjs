@@ -43,14 +43,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
-    const goals=page.locator('[data-video-quick-control="video"]');
-    const ideas=page.locator('[data-video-quick-control="phrases"]');
+    const goalTab=page.locator('[data-video-quick-control="video"]');
+    const ideasTab=page.locator('[data-video-quick-control="phrases"]');
     assert.deepEqual(await page.locator('[data-video-quick-controls] button')
       .evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-video-quick-control"))),
-      ["video","phrases","editor","effects","practices","pro"],
-      "Goals precedes Ideas; Montage follows third");
-    await expect(goals).toHaveAttribute("aria-pressed","true");
-    await expect(ideas).toHaveAttribute("aria-label",locale==="ru"?"Идеи":"Ideas");
+      ["video","phrases","editor","effects","practices","pro"]);
+    await expect(goalTab).toHaveAttribute("aria-pressed","true");
+    await expect(goalTab).toHaveAttribute("aria-label",locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal");
+    await expect(ideasTab).toHaveAttribute("aria-label",locale==="ru"?"Идеи":"Ideas");
     await expect(allStories).toBeEnabled();
     await expect(allStories).toBeHidden();
     const input=page.locator('[data-video-request-after-topic] [data-auto-video-input]');
@@ -60,19 +60,17 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(next).toBeEnabled();
     await expect(page.locator('[data-video-request-design]')).toBeHidden();
     await next.click();
-    await expect(ideas).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // The original four-scene director is still accessible when returning to
-    // Goals; it no longer traps a new visitor before the Ideas step.
-    await goals.click();
-    await expect(goals).toHaveAttribute("aria-pressed","true");
+    await expect(ideasTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-compact]')).toBeVisible();
+    await goalTab.click();
+    await expect(goalTab).toHaveAttribute("aria-pressed","true");
     await expect(input).toHaveValue("Хочу обрести уверенность в себе");
     await expect(allStories).toBeVisible();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
-    await ideas.click();
-    await expect(ideas).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+    await ideasTab.click();
+    await expect(ideasTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-compact]')).toBeVisible();
   }finally{release();await context.close();}
 }
 // Linux WebKit often lacks Canvas capture codecs. Run the very same real

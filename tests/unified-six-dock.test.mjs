@@ -6,8 +6,8 @@ import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("owner-approved exact six dock destinations, no seventh or displaced center AI",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","ai","practice","master","profile"]);
+test("one seven-button dock reuses six Practice actions and the existing Free Analysis",()=>{
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","ai","practice","master","profile","analysis"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
@@ -15,7 +15,8 @@ test("owner-approved exact six dock destinations, no seventh or displaced center
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/holistic-support/mobile",
    "/"+locale+"/practice",
-   "/"+(locale==="es"?"en":locale)+"/app/portrait"
+   "/"+(locale==="es"?"en":locale)+"/app/portrait",
+   "/"+locale+"/services/free-situation-review"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
  }
@@ -24,7 +25,7 @@ test("owner-approved exact six dock destinations, no seventh or displaced center
 });
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
- assert.ok(dock.includes('["mytube", "video", "practice", "master"].includes(id)'));
+ assert.ok(dock.includes('["mytube", "video", "practice", "master", "analysis"].includes(id)'));
  assert.ok(dock.includes('window.matchMedia?.("(display-mode: standalone)")'));
  assert.ok(dock.includes('(window.navigator as Navigator & {standalone?: boolean}).standalone'));
  assert.ok(dock.includes("event.preventDefault();"));
@@ -35,32 +36,36 @@ test("standalone public tabs bypass native link handoff but not private CSP",()=
  assert.ok(csp.includes("window.location.assign(url.href)"));
 });
 
-test("installed Home uses the six-tab Practice dock but browser keeps seven journeys",()=>{
+test("Holistic House Home and Free Analysis share exactly one fixed seven-button dock",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const shell=read("app/unified-mobile-dock.css");
+ const legacy=read("components/mobile-bottom-navigation.tsx");
+ const review=read("app/[locale]/services/free-situation-review/page.tsx");
  const menu=read("components/site-navigation.tsx");
- const routes=read("lib/site-navigation-model.js");
+ const model=read("lib/site-navigation-model.js");
  for(const path of ["/","/ru","/en","/es","/ru/","/en/"]){
   assert.ok(isUnifiedMobileDockHomePath(path),path);
   assert.ok(isUnifiedMobileDockPath(path),path);
-  assert.equal(unifiedMobileDockActive(path),null,"homepage is not a selected app tab");
+  assert.equal(unifiedMobileDockActive(path),null,"homepage has no artificially selected app tab");
  }
  for(const path of ["/ru/mytube","/en/app/portrait","/ru/practice"])
   assert.equal(isUnifiedMobileDockHomePath(path),false);
  assert.ok(dock.includes("data-hh-home-route={homeRoute || undefined}"));
- assert.ok(shell.includes("@media (display-mode: standalone)"));
- assert.ok(shell.includes("@media not (display-mode: standalone)"));
- assert.ok(shell.includes("[data-hh-unified-dock][data-hh-home-route]"));
- assert.ok(shell.includes("body:has([data-hh-unified-dock]:not([data-hh-home-route])) .mobile-bottom-navigation"));
- assert.ok(routes.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
+ assert.ok(shell.includes("body:has([data-hh-unified-dock]) .mobile-bottom-navigation{display:none!important}"));
+ assert.ok(!shell.includes("@media not (display-mode: standalone)"));
+ assert.ok(shell.includes("body:has([data-hh-unified-dock][data-hh-home-route])"));
+ assert.ok(shell.includes('[data-free-entry-landing="situation"]'));
+ assert.ok(legacy.includes("isUnifiedMobileDockPath(pathname)"));
+ assert.ok(review.includes('FreeEntryLanding locale={locale} kind="situation"'));
+ assert.ok(model.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
  assert.ok(menu.includes("id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile'"));
- for(const language of ["Practice","Практика","Práctica"])assert.ok(routes.includes(language));
+ for(const language of ["Practice","Практика","Práctica"])assert.ok(model.includes(language));
 });
 
 test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
  for(const locale of ["en","ru","es"]){
   for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
-   "app/messages","app/portrait","app/practice","temple-insights"]){
+   "app/messages","app/portrait","app/practice","temple-insights","services/free-situation-review"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
@@ -71,6 +76,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"master");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"analysis");
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/app/document-view"),false);
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/private-selector"),false);
  }
@@ -78,7 +84,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
  assert.equal(isUnifiedMobileDockPath("/ru/app/runs"),false);
  assert.equal(isUnifiedMobileDockPath("/ru/holistic-support/mandala-evil"),false);
 });
-test("one screenshot-1 style six-button dock and protected old docks removed visually",()=>{
+test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
  const page=read("app/layout.tsx");
  const dock=read("components/unified-mobile-dock.tsx");
  const css=read("components/unified-mobile-dock.module.css");
@@ -89,7 +95,7 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(dock,/data-unified-dock-item=\{id\}/);
  assert.match(dock,/aria-current=\{active === id \? "page" : undefined\}/);
  assert.match(dock,/data-keyboard-open/);
- assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
  // Keep the iPhone dock anchored to the viewport; Safari's native bottom

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, Sparkles, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
@@ -11,12 +11,12 @@ import { visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
 const icons = {
   mytube: Clapperboard, video: Film, ai: MessageCircle,
-  practice: Leaf, master: BriefcaseBusiness, profile: UserRound,
+  practice: Leaf, master: BriefcaseBusiness, profile: UserRound, analysis: Sparkles,
 } as const;
 const labels = {
-  ru: { mytube: "MyTube", video: "Видео", ai: "ИИ/Чат", practice: "Практика", master: "Мастер", profile: "Профиль" },
-  en: { mytube: "MyTube", video: "Video", ai: "AI/Chat", practice: "Practice", master: "Master", profile: "Profile" },
-  es: { mytube: "MyTube", video: "Vídeo", ai: "IA/Chat", practice: "Práctica", master: "Master", profile: "Perfil" },
+  ru: { mytube: "MyTube", video: "Видео", ai: "ИИ/Чат", practice: "Практика", master: "Мастер", profile: "Профиль", analysis: "Разбор" },
+  en: { mytube: "MyTube", video: "Video", ai: "AI/Chat", practice: "Practice", master: "Master", profile: "Profile", analysis: "Analysis" },
+  es: { mytube: "MyTube", video: "Vídeo", ai: "IA/Chat", practice: "Práctica", master: "Master", profile: "Perfil", analysis: "Análisis" },
 } as const;
 
 /** Exactly one screenshot-1 inspired fixed dock on app journeys, for guests and accounts.
@@ -140,14 +140,17 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       if (!href) return null;
       const Icon = icons[id];
       const label = labels[locale][id];
+      const ariaLabel = id === "analysis"
+        ? (locale === "ru" ? "Бесплатный экспресс-разбор" : locale === "es" ? "Revisión personal exprés gratuita" : "Free personal express review")
+        : label;
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}
-        aria-label={label} aria-current={active === id ? "page" : undefined}
+        aria-label={ariaLabel} aria-current={active === id ? "page" : undefined}
         onClick={event => {
           if (id === "video") setHash("");
           // Keep public tabs in an installed iPhone app's current document.
           // AI and Profile retain their separate private CSP reload.
-          if (!["mytube", "video", "practice", "master"].includes(id) ||
+          if (!["mytube", "video", "practice", "master", "analysis"].includes(id) ||
               event.defaultPrevented || event.button !== 0 || event.metaKey ||
               event.ctrlKey || event.shiftKey || event.altKey) return;
           const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches ||

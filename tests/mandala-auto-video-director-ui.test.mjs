@@ -1,5 +1,6 @@
 import test from "node:test";
 import "./free-film-source-loader.test.mjs";
+import "./mandala-video-ideas-eight-axes.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
@@ -126,11 +127,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });
 
-test("mobile six workspaces use Goals and Ideas localized tabs with real shared panels",()=>{
+test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Цели","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
-  en:["Goals","Ideas","Hypno effect","Practice course","Montage","PRO"],
-  es:["Objetivos","Ideas","Efecto hipno","Curso práctico","Montaje","PRO"],
+  ru:["Цель","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
+  en:["Goal","Ideas","Hypno effect","Practice course","Montage","PRO"],
+  es:["Objetivo","Ideas","Efecto hipno","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -438,19 +439,25 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 });
 
 
-test("text edits, profile changes and explicit Design all invalidate stale MyTube plots",()=>{
- const handlers=[
-  ["const requestField=<label","const requestInput=<div"],
+test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
+ // Request JSX now renders requestField; the real input onChange and explicit
+ // Design button sit outside requestInput after category-intake consolidation.
+ // Check EVERY actual handler instead of relying on an obsolete JSX boundary.
+ for(const [start,end] of [
   ["const applyProfile=","const designFromRequest="],
-  ["const designFromRequest=","const analyzedPath="]
- ];
- for(const [start,end] of handlers){
+  ["const designFromRequest=","const analyzedPath="],
+  ["const requestField=","const requestInput="],
+ ]){
   const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
-  assert.ok(from>=0&&to>from,start+" has a real, bounded handler");
+  assert.ok(from>=0&&to>from,start+" handler exists");
   const handler=director.slice(from,to);
-  for(const setter of ["setSelectedSubcategoryId","setSelectedTopicId",
-    "setSelectedScenarioId","setSelectedPlotId","setSymbolicPlotFallback",
-    "setTimelineEdits","setConfirmedTimelineKey"])
-    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
+  for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
+   assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
+ const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
+ const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
+ assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
+ assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
+ assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
+ assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
 });

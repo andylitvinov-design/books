@@ -6,7 +6,6 @@ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",i
 const page=readFileSync(new URL("../app/[locale]/holistic-support/mandala/page.tsx",import.meta.url),"utf8");
 const pageCss=readFileSync(new URL("../components/mandala-meditation.module.css",import.meta.url),"utf8");
 const browser=readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
-const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
 
 test("video entry is goal, topic, request and actionable next step",()=>{
  const keys=["data-video-director-goal-controls","data-video-director-topic-controls",
@@ -57,46 +56,35 @@ test("only the first mobile screen is compact; original actions remain at step t
  assert.match(browser,/await continueButton\.click\(\)/);
 });
 
-test("single first-screen Continue runs the same local classifier as the second-step Design control",()=>{
- assert.match(studio,/document\.querySelector<HTMLButtonElement>\("\[data-video-request-design\]"\)/);
- assert.match(studio,/if\(designButton&&!designButton\.disabled\)designButton\.click\(\)/);
- assert.match(director,/data-video-request-design/);
- assert.match(director,/onClick=\{designFromRequest\}/);
- assert.match(director,/classifyMyTubeRequest\(goal,locale\)/);
- assert.match(css,/data-active-workspace="video"[\s\S]*?data-video-request-composer\]>\[data-video-request-design\]/);
- assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-video-request-composer\]>\[data-video-request-analysis\]/);
- assert.match(browser,/await expect\(quick\.locator\("\[data-video-request-design\]"\)\)\.toBeHidden\(\)/);
- assert.match(browser,/await expect\(quick\.locator\("\[data-video-request-design\]"\)\)\.toBeHidden\(\)/);
-});
-
-test("owner 05-Nov: Goals is first, Ideas second and receives the ONLY green CTA",()=>{
- const tabs=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
- assert.ok(tabs,"registered tab destinations");
- assert.deepEqual([...tabs.matchAll(/id:"([a-z]+)"/g)].map(x=>x[1]),
+test("one primary action takes Goals to the existing eight-axis Ideas workspace",()=>{
+ const reg=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
+ assert.ok(reg,"real six-tab registry remains mounted");
+ assert.deepEqual([...reg.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]),
    ["video","phrases","editor","effects","practices","pro"]);
- for(const label of ['video:{tab:"Цели"','phrases:{tab:"Идеи"',
-   'video:{tab:"Goals"','phrases:{tab:"Ideas"','video:{tab:"Objetivos"'])
+ for(const label of ['video:{tab:"Цель"','phrases:{tab:"Идеи"',
+   'video:{tab:"Goal"','phrases:{tab:"Ideas"','video:{tab:"Objetivo"'])
    assert.ok(studio.includes(label),label);
- for(const small of ['video:"Цели"','phrases:"Идеи"','video:"Goals"',
-   'phrases:"Ideas"','video:"Metas"'])
-   assert.ok(studio.includes(small),small);
  assert.match(studio,/data-video-continue-ideas="true"/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
- assert.match(studio,/setStudioMode\("pump"\)/);
+ assert.match(studio,/querySelector<HTMLButtonElement>\("\[data-video-request-design\]"\)/);
+ assert.match(studio,/if\(designButton&&!designButton\.disabled\)designButton\.click\(\)/);
+ assert.match(studio,/<MandalaVideoIdeas locale=\{locale\}/);
+ assert.match(studio,/active=\{activeWorkspace==="phrases"\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas/g)||[]).length,1);
  assert.match(browser,/await expect\(ideasTab\)\.toHaveAttribute\("aria-pressed","true"\)/);
- assert.match(browser,/await expect\(quick\.locator\('\[data-video-quick-phrases\]'\)\)\.toBeVisible\(\)/);
- assert.match(browser,/await goalsTab\.click\(\)/);
+ assert.match(browser,/await goalTab\.click\(\)/);
 });
-test("owner 05-Nov: Studio Warm Peach brand palette has one vivid emerald CTA",()=>{
+test("owner Studio Warm Peach renders one emerald CTA with no second Design button",()=>{
  for(const token of ["--hh-studio-canvas:#FFF7F3","--hh-studio-surface:#FFFCFA",
    "--hh-studio-border:#EADFD9","--hh-studio-emerald:#07885F",
-   "--hh-studio-forest:#14523F","--hh-studio-ink:#142B3D"]){
+   "--hh-studio-forest:#14523F","--hh-studio-ink:#142B3D"])
    assert.ok(css.includes(token),token);
- }
  assert.match(pageCss,/\.page\[data-mandala-mode="video"\]\{[\s\S]*?#FFF7F3/);
+ assert.match(css,/studio\[data-active-workspace="video"\] \[data-video-request-composer\]>\[data-video-request-design\]\{\s*display:none!important/);
  assert.match(css,/quickPromptContinue\{[\s\S]*?background:var\(--hh-studio-emerald\)!important/);
- assert.match(browser,/assert\.equal\(colors\.primary,"rgb\(7, 136, 95\)"/);
- assert.match(browser,/assert\.equal\(colors\.card,"rgb\(255, 252, 250\)"/);
- assert.match(css,/\[data-video-request-composer\]>\[data-video-request-design\]\{\s*display:none!important/);
+ assert.match(browser,/assert\.equal\(brand\.cta,"rgb\(7, 136, 95\)"/);
+ assert.match(browser,/assert\.equal\(brand\.surface,"rgb\(255, 252, 250\)"/);
+ assert.match(browser,/const checkFirstScreen=async height/);
+ assert.match(browser,/g\.cta\.bottom<=g\.visibleBottom-6/);
 });
