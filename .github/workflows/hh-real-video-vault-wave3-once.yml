@@ -23,6 +23,7 @@ jobs:
           node-version: '22'
       - name: Validate source identities and safety gate
         run: |
+          test -f data/video-catalog/dareful-verified-candidate-wave2-20261101.json
           node --check scripts/review-dareful-cinematic-wave3-20261105.mjs
           node --test tests/cinematic-hd-footage-wave3-contract.test.mjs
       - name: Inspect real moving licensed video with free local FFmpeg

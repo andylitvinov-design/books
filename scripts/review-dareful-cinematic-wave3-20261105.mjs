@@ -31,7 +31,7 @@ if(manifest.schemaVersion!=="hh-dareful-cinematic-wave3-v1"||
 const current=JSON.parse(readFileSync(resolve(root,"data/video-catalog/free-stock-scenes.json"),"utf8"));
 const usedPages=new Set(current.flatMap(x=>(x.sources||[]).map(y=>y.sourcePage)));
 const oldWaves=["dareful-verified-candidate-wave-20261101.json",
-"dareful-verified-candidate-wave3-20261101.json",
+"dareful-verified-candidate-wave2-20261101.json",
 "dareful-verified-candidate-wave3-20261103.json"];
 for(const wave of oldWaves){
   const p=JSON.parse(readFileSync(resolve(root,"data/video-catalog/"+wave),"utf8"));

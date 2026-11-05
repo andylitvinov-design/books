@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const file=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const wave=JSON.parse(file("data/video-catalog/dareful-cinematic-hd-candidates-wave3-20261105.json"));
-const previous=["dareful-verified-candidate-wave-20261101.json","dareful-verified-candidate-wave3-20261101.json",
+const previous=["dareful-verified-candidate-wave-20261101.json","dareful-verified-candidate-wave2-20261101.json",
   "dareful-verified-candidate-wave3-20261103.json"].flatMap(name=>
     JSON.parse(file("data/video-catalog/"+name)).sources);
 const released=JSON.parse(file("data/video-catalog/free-stock-scenes.json")).flatMap(s=>s.sources);
