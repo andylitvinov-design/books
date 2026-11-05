@@ -54,9 +54,10 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(showcase.includes('TOOLS.map('))
 })
 
-test('approved practice keeps functional internal actions and uses the shared mobile dock', () => {
+test('approved practice keeps functional internal actions and uses the shared seven-destination dock', () => {
   assert.ok(promoBanner.includes('The standalone practitioner mockup'))
   assert.ok(promoBanner.includes('/practice'))
+  assert.ok(siteBottomNavigation.includes('The shared seven-destination app dock owns Home, Practice, Studio,'))
   assert.ok(siteBottomNavigation.includes('isUnifiedMobileDockPath(pathname)'))
   assert.ok(siteBottomNavigation.includes('practice|mytube|temple-insights'))
   assert.ok(rootLayout.includes('<UnifiedMobileDock initialLocale={lang} />'))

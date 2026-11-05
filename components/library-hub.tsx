@@ -12,6 +12,7 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
+import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
@@ -375,7 +376,7 @@ export function buildPublicVideoDiscoveryItems(
     ...approvedAcademyDiscoveryVideos(locale),
     ...approvedMeditations,
     ...feedItems.filter(item => item.kind === "video"),
-  ]).map(video => ({...video, ...rankPublicMyTubeVideo(video, {locale})}));
+  ]).map(video => ({...video, mytubeFormat:classifyMyTubeFormat(video), ...rankPublicMyTubeVideo(video, {locale})}));
 }
 
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {

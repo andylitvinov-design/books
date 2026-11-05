@@ -123,7 +123,7 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages uses the one seven-destination global dock; legacy five-dock stays unmounted',()=>{
+test('Messages uses the seven-destination global dock with Free Analysis; legacy five-dock stays unmounted',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const layout=read('app/layout.tsx')
   const dock=read('components/unified-mobile-dock.tsx')
@@ -151,6 +151,7 @@ test('Messages uses the one seven-destination global dock; legacy five-dock stay
     assert.ok(unifiedMobileDockHref(locale,'video'))
     assert.ok(unifiedMobileDockHref(locale,'mytube'))
     assert.ok(unifiedMobileDockHref(locale,'profile'))
+    assert.equal(unifiedMobileDockHref(locale,'analysis'),'/'+locale+'/services/free-situation-review')
   }
 })
 

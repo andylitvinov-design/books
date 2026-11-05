@@ -112,39 +112,7 @@ function visibleMobileLabel(locale, id) {
   return names[locale][id]
 }
 
-function unifiedHomeBottomNavigation(locale) {
-  // The new approved Home app dock has seven DIFFERENT destinations from the
-  // legacy public marketing footer, which still appears on discovery routes.
-  const labels={
-    en:{mytube:'MyTube',video:'Video',ai:'AI/Chat',practice:'Practice',master:'Master',profile:'Profile',analysis:'Analysis'},
-    ru:{mytube:'MyTube',video:'Видео',ai:'ИИ/Чат',practice:'Практика',master:'Мастер',profile:'Профиль',analysis:'Разбор'},
-    es:{mytube:'MyTube',video:'Vídeo',ai:'IA/Chat',practice:'Práctica',master:'Master',profile:'Perfil',analysis:'Análisis'},
-  };
-  const analysisAria={
-    en:'Free personal express review',ru:'Бесплатный экспресс-разбор',es:'Revisión personal exprés gratuita'
-  };
-  return UNIFIED_DOCK_IDS.map(id=>({
-    id,href:unifiedMobileDockHref(locale,id),visibleText:labels[locale][id],
-    ariaLabel:id==='analysis'?analysisAria[locale]:labels[locale][id]
-  }));
-}
-
 async function assertPublicBottomNavigation(bottom, { locale, surface, label }) {
-  if(surface==='home'){
-    const expected=unifiedHomeBottomNavigation(locale);
-    const links=bottom.locator('[data-unified-dock-item]');
-    assert.deepEqual(await links.evaluateAll(elements=>elements.map(el=>({
-      id:el.getAttribute('data-unified-dock-item'),href:el.getAttribute('href')
-    }))),expected.map(({id,href})=>({id,href})),label+': exact seven Home app destinations');
-    await expect(links).toHaveCount(7);
-    const visible=await bottom.isVisible();
-    for(let i=0;i<expected.length;i++){
-      await expect(links.nth(i)).toHaveText(expected[i].visibleText);
-      if(visible)await expect(links.nth(i)).toHaveAccessibleName(expected[i].ariaLabel);
-    }
-    await expect(bottom.locator('[aria-current="page"]')).toHaveCount(0);
-    return expected;
-  }
   const expected = expectedMobileNavigation(locale)
   const links = bottom.locator('[data-nav-item]')
   assert.deepEqual(await links.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(({ id, href }) => ({ id, href })), label + ': exact seven bottom destinations')
@@ -161,6 +129,48 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
   if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
   return expected
+}
+
+// The approved Home and free-review routes use a NEW single seven-item app dock,
+// not the editorial public footer. Assert the real rendered destination list,
+// visible tap geometry, keyboard order and absence of a second overlapping dock.
+async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visible=true}){
+  const dock=page.locator('[data-hh-unified-dock]')
+  const legacy=page.locator('.mobile-bottom-navigation')
+  await expect(dock).toHaveCount(1)
+  await expect(legacy).toHaveCount(0)
+  const items=UNIFIED_DOCK_IDS.map(id=>({id,href:unifiedMobileDockHref(locale,id)}))
+  assert.equal(items.length,7,label+': seven approved destinations')
+  assert.ok(items.every(item=>typeof item.href==='string'&&item.href.startsWith('/')))
+  const links=dock.locator('[data-unified-dock-item]')
+  assert.deepEqual(await links.evaluateAll(nodes=>nodes.map(el=>({
+    id:el.getAttribute('data-unified-dock-item'),href:el.getAttribute('href')}))),
+    items,label+': exact global seven-dock destinations')
+  await expect(links).toHaveCount(7)
+  await expect(dock.locator('[aria-current="page"]')).toHaveCount(active?1:0)
+  if(active)await expect(dock.locator('[data-unified-dock-item="'+active+'"]')).toHaveAttribute('aria-current','page')
+  if(visible){
+    await expect(dock).toBeVisible()
+    await links.first().focus()
+    let previousRight=0
+    const viewport=page.viewportSize()
+    for(let index=0;index<items.length;index++){
+      const link=links.nth(index)
+      await expect(link).toBeVisible()
+      await expect(link).toBeFocused()
+      await expect(link).toHaveAccessibleName(/\S+/)
+      const box=await link.boundingBox()
+      assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=previousRight-1
+        &&box.x+box.width<=viewport.width+1&&box.y>=-1
+        &&box.y+box.height<=viewport.height+1,
+        label+': non-overlapping keyboard-focusable 44px global destination '+items[index].id)
+      previousRight=box.x+box.width
+      if(index<items.length-1)await link.press('Tab')
+    }
+  }else await expect(dock).toBeHidden()
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+    label+': shared dock horizontal overflow')
+  return dock
 }
 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
@@ -339,34 +349,36 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         await expect(trigger).toBeFocused()
         await inViewport(trigger, label + '/language-after-escape')
         await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        const homeDock=surface==='home'
-        const bottom=page.locator(homeDock?'[data-hh-unified-dock]':'.mobile-bottom-navigation')
-        const expectedBottom=await assertPublicBottomNavigation(bottom,{locale,surface,label})
-        const attribute=homeDock?'data-unified-dock-item':'data-nav-item'
-        const bottomLinks=bottom.locator('['+attribute+']')
-        assert.deepEqual(await bottomLinks.evaluateAll((elements,attribute)=>elements.map(el=>({
-          id:el.getAttribute(attribute),href:el.getAttribute('href')
-        })),attribute),expectedBottom.map(({id,href})=>({id,href})),label+': exact seven real bottom destinations')
-        await expect(bottomLinks).toHaveCount(7)
-        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(0)
-        if (width < 768) {
-          await inViewport(bottom, label + '/bottom-navigation')
-          await bottomLinks.first().focus()
-          let previousRight = 0
-          for (let index = 0; index < expectedBottom.length; index++) {
-            const link = bottomLinks.nth(index)
-            await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
-            await expect(link).toHaveAccessibleName(expectedBottom[index].ariaLabel)
-            await expect(link).toBeFocused()
-            const box = await link.boundingBox()
-            assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
-            previousRight = box.x + box.width
-            if (index < expectedBottom.length - 1) await link.press('Tab')
+        if(surface==='home'){
+          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+          if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-'+surface+'-'+width+'.png'})
+        }else{
+          const bottom = page.locator('.mobile-bottom-navigation')
+          const expectedBottom = await assertPublicBottomNavigation(bottom, { locale, surface, label })
+          const bottomLinks = bottom.locator('[data-nav-item]')
+          assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact seven bottom destinations')
+          await expect(bottomLinks).toHaveCount(7)
+          await expect(bottom.locator('[aria-current="page"]')).toHaveCount(surface === 'home' ? 1 : 0)
+          if (surface === 'home') await expect(bottom.locator('[data-nav-item="home"]')).toHaveAttribute('aria-current', 'page')
+          if (width < 768) {
+            await inViewport(bottom, label + '/bottom-navigation')
+            await bottomLinks.first().focus()
+            let previousRight = 0
+            for (let index = 0; index < expectedBottom.length; index++) {
+              const link = bottomLinks.nth(index)
+              await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
+              await expect(link).toHaveAccessibleName(expectedBottom[index].ariaLabel)
+              await expect(link).toBeFocused()
+              const box = await link.boundingBox()
+              assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
+              previousRight = box.x + box.width
+              if (index < expectedBottom.length - 1) await link.press('Tab')
+            }
+            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
+            await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+          } else {
+            await expect(bottom).toBeHidden()
           }
-          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
-          await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        } else {
-          await expect(bottom).toBeHidden()
         }
         await verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport })
         pass('Public navigation: ' + label)
@@ -420,22 +432,21 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
     // A working link is not evidence of booking or payment.
     for (const locale of locales) {
       await resizePublicViewport(page, { width: 390, height: 900 })
-      const from='/' + locale + '/services/free-situation-review'
-      assert.equal((await go(page,from)).status(),200,locale+': free-review entry')
-      const dock=page.locator('[data-hh-unified-dock]')
-      await expect(dock.locator('[data-unified-dock-item]')).toHaveCount(7)
-      await expect(dock.locator('[data-unified-dock-item="analysis"]')).toHaveAttribute('aria-current','page')
-      // Alchemy is now available through the accessible expanded site menu,
-      // not a phantom eighth mobile tab. This remains a genuine click journey.
+      const from = '/' + locale + '/services/free-situation-review'
+      assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'analysis'})
+      // Alchemy remains accessible in the existing expanded public menu;
+      // it is no longer a bottom-dock destination on this route.
       const menu=page.locator('header.house-header--services details.site-main-menu')
+      await expect(menu).toHaveCount(1)
       await menu.locator('summary').click()
-      const alchemy=menu.locator('a[href="/'+locale+'/services/alchemy-of-soul"]')
-      await alchemy.scrollIntoViewIfNeeded()
+      await expect(menu).toHaveJSProperty('open',true)
+      const alchemy=menu.locator('.site-main-menu-panel a[href="/'+locale+'/services/alchemy-of-soul"]')
       await expect(alchemy).toBeVisible()
       await alchemy.click()
-      await expect(page).toHaveURL(origin+'/'+locale+'/services/alchemy-of-soul')
+      await expect(page).toHaveURL(origin + '/' + locale + '/services/alchemy-of-soul')
       await expect(page.locator('[data-alchemy-soul-landing]')).toHaveCount(1)
-      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current','page')
+      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
     }
   await resizePublicViewport(page, originalViewport)
   pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in ' + locales.join('/'))

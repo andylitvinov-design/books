@@ -15,10 +15,12 @@ const settings=src('components/app/notification-settings.jsx')
 const preferences=src('lib/app/notification-repository.js')
 const vercel=JSON.parse(src('vercel.json'))
 
-test('direct messages notify only after new committed send, never read, start or duplicate',()=>{
+test('provider-backed CRM sends never trigger legacy private push and require the verified server lane',()=>{
   assert.match(route,/case 'send':/)
-  assert.match(route,/data=await store\.send\(actor,body\)/)
-  assert.match(route,/body\.action==='send'&&data\.saved===true&&data\.duplicate===false/)
+  assert.match(route,/data=await verified\.send\(actor,body\)/)
+  assert.doesNotMatch(route,/data=await store\.send\(actor,body\)/)
+  assert.match(route,/createVerifiedCrmCabinet\(config\)/)
+  assert.match(route,/body\.action==='send'&&data\.saved===true&&data\.duplicate===false&&data\.providerBacked!==true/)
   assert.match(route,/after\(/)
   assert.match(route,/dispatchDirectMessagePush\(config,data\.id\)/)
   assert.doesNotMatch(route,/dispatchDirectMessagePush\(config,body\./)
