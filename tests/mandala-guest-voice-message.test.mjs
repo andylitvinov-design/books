@@ -26,3 +26,13 @@ test("guest voice messages are real recordings, not paid or cloned provider outp
   "Telegram","WhatsApp","настоящая запись","real recording","grabación"])
   assert.ok(ui.includes(phrase),phrase);
 });
+
+test("WebKit always retains a single mocked voice route after the Sofia refusal",()=>{
+ const source=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(source,/let rejectSofiaSample=false/);
+ assert.match(source,/if\(rejectSofiaSample && body\?\.mode==="sample" && body\?\.voiceId==="sofia"\)/);
+ assert.match(source,/rejectSofiaSample=true/);
+ assert.match(source,/rejectSofiaSample=false;/);
+ assert.doesNotMatch(source,/page\.unroute\(".*holistic-support\/voice"/);
+ assert.doesNotMatch(source,/page\.route\(".*holistic-support\/voice",refuseSofia/);
+});

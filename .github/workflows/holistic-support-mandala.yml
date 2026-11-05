@@ -307,6 +307,8 @@ jobs:
         run: node --test tests/mentalica-photo-mandala.test.mjs
       - name: Voice provider contract and negative cases
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
+      - name: Guest real voice message consent and device-only handoff contracts
+        run: node --test tests/mandala-guest-voice-message.test.mjs
 
       # One deliberately bounded real PRODUCTION request for a fixed public
       # phrase in the selected Leon/Puck Gemini voice. Runs once per owner PR

@@ -132,6 +132,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         if(code.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:"))errors.push(code);
       });
       page.on("crash",()=>phase(engine,"page-crashed"));
+      // Single permanent fixture route. Dynamically refuse only Sofia while
+      // testing provider errors; stacking/unrouting Playwright handlers can
+      // leave the following REAL browser affirmation POST unmatched in WebKit.
+      let rejectSofiaSample=false;
       await page.route("**/api/holistic-support/voice",async route=>{
         const req=route.request();
         if(req.method()==="GET"){
@@ -139,6 +143,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           return;
         }
         const body=req.postDataJSON();
+        if(rejectSofiaSample && body?.mode==="sample" && body?.voiceId==="sofia"){
+          await route.fulfill({status:503,contentType:"application/json",
+            body:JSON.stringify({error:"TTS_PROVIDER_UNAVAILABLE"})});
+          return;
+        }
         payloads.push(body);
         await route.fulfill({status:200,contentType:"audio/wav",body:wav()});
       });
@@ -257,22 +266,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
       // A refused provider response must release all three choices and show
       // the failure, rather than leaving the screenshot's frozen Loading UI.
-      const refuseSofia=async route=>{
-        const request=route.request();
-        if(request.method()==="POST"&&request.postDataJSON()?.mode==="sample"&&
-          request.postDataJSON()?.voiceId==="sofia"){
-          await route.fulfill({status:503,contentType:"application/json",
-            body:JSON.stringify({error:"TTS_PROVIDER_UNAVAILABLE"})});
-        }else await route.fallback();
-      };
-      await page.route("**/api/holistic-support/voice",refuseSofia);
+      rejectSofiaSample=true;
       const sofiaPreview=chooserPending.locator('[data-video-affirmation-voice-preview="sofia"]');
       await sofiaPreview.click();
       await expect(sofiaPreview).toHaveAttribute("aria-busy","false",{timeout:10000});
       await expect(chooserPending.locator('[data-video-affirmation-voice-preview="maya"]')).toBeEnabled();
       await expect(page.locator('[data-video-affirmation-voice-select] [role="status"]'))
         .toContainText(locale==="ru"?"Не удалось прослушать":"Could not load");
-      await page.unroute("**/api/holistic-support/voice",refuseSofia);
+      rejectSofiaSample=false;
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
       // WebKit can return from a click before React commits the visitor's
       // approved phrases. Wait for actual approved, selected transcript state,
