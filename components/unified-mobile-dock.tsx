@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -23,6 +23,7 @@ const labels = {
  * Every destination is a REAL existing public/protected workflow. */
 export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const localeMatch = pathname.match(/^\/(ru|en|es)(?:\/|$)/);
   const locale = (localeMatch?.[1] || initialLocale) as PublicLocale;
   const visible = isUnifiedMobileDockPath(pathname);
@@ -142,7 +143,19 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}
         aria-label={label} aria-current={active === id ? "page" : undefined}
-        onClick={id === "video" ? () => setHash("") : undefined}>
+        onClick={event => {
+          if (id === "video") setHash("");
+          // Keep public tabs in an installed iPhone app's current document.
+          // AI and Profile retain their separate private CSP reload.
+          if (!["mytube", "video", "practice", "master"].includes(id) ||
+              event.defaultPrevented || event.button !== 0 || event.metaKey ||
+              event.ctrlKey || event.shiftKey || event.altKey) return;
+          const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches ||
+            (window.navigator as Navigator & {standalone?: boolean}).standalone === true;
+          if (!standalone) return;
+          event.preventDefault();
+          router.push(href);
+        }}>
         <Icon size={24} strokeWidth={2} aria-hidden="true" /><span>{label}</span>
       </Link>;
     })}
