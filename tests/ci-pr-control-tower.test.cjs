@@ -1515,3 +1515,22 @@ test('mismatched Watchdog evidence never claims verified blockers or authorizes 
  assert.equal(result.watchdogSample,null);
  assert.equal(result.dispatchAccepted,0);
 });
+
+test('previous DIRTY conflict handoff cannot starve manual cloud preflight',async()=>{
+ const old=pr(204,'repair',{mergeable:false,mergeable_state:'dirty',
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]});
+ const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
+ const f=fixture([old],{comments:{204:[{body:marker+'\\nEarlier owner handoff; no source write.'}]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.legacyPrepEligible,1);
+ assert.equal(r.nonmanualRouted,0);
+ assert.equal(r.legacyDispatchAccepted,1);
+ assert.equal(r.repairDispatchAccepted,0);
+ assert.equal(r.blocked.CONFLICT_ALREADY_HANDED_OFF||0,0);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
+ assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
+ assert.equal(f.calls.reserved.length,1,'signed exact-HEAD reservation precedes dispatch');
+ assert.equal(f.calls.labels.length,0,'do not change any manual/consent hold');
+ assert.equal(f.calls.removed.length,0,'do not remove conflict/manual labels');
+});
