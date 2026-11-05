@@ -4056,3 +4056,19 @@
     padding-top:5px!important;padding-bottom:5px!important;
   }
 }
+
+/* Integrate the 05-Nov classified request without a duplicate mobile CTA.
+   The existing Design handler is programmatically invoked by Continue, then
+   visible again for deliberate edits on the original second-step director. */
+@media(max-width:759px){
+  .studio[data-active-workspace="video"][data-video-scenario-open="false"]
+    [data-video-request-composer]>[data-video-request-design],
+  .studio[data-active-workspace="video"][data-video-scenario-open="false"]
+    [data-video-request-composer]>[data-video-request-analysis]{
+    display:none!important;
+  }
+  .studio[data-active-workspace="video"][data-video-scenario-open="false"]
+    [data-video-request-composer]{
+    gap:0!important;
+  }
+}

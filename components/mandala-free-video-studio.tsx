@@ -4107,6 +4107,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const openVideoScenarioStep = () => {
+    // One real Continue action also runs the existing local taxonomy classifier.
+    // Avoid a second first-screen Design button; no provider or client-data upload.
+    const designButton=document.querySelector<HTMLButtonElement>("[data-video-request-design]");
+    if(designButton&&!designButton.disabled)designButton.click();
     setVideoScenarioOpen(true);
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-auto-video-director]")?.scrollIntoView({

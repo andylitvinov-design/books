@@ -188,6 +188,8 @@ const runEngine = async ([engine, browserType]) => {
         await expect(customInput).toBeVisible({timeout:12000});
         await expect(continueButton).toBeEnabled();
         await expect(initialStories.first()).toBeHidden();
+        await expect(quick.locator("[data-video-request-design]")).toBeHidden();
+        await expect(quick.locator("[data-video-request-analysis]")).toBeHidden();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeHidden();
         await expect(quick.locator("[data-video-procedural-options]")).toBeHidden();
         await expect(page.locator("[data-mentalica-studio-mode]")).toBeHidden();
@@ -255,8 +257,13 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await topicCards.nth(2).isEnabled(),true,"deselecting frees one choice");
         assert.equal(await initialStories.count(),4,"the four licensed choices stay mounted for step 2");
         await expect(initialStories.first()).toBeHidden();
+        const submittedRequest=await customInput.inputValue();
         await continueButton.click();
         await expect(initialStories.first()).toBeVisible({timeout:20000});
+        await expect(quick.locator("[data-video-request-design]")).toBeVisible();
+        if(submittedRequest.trim()){
+          await expect(quick.locator("[data-video-request-analysis]")).toBeVisible();
+        }
         await expect(quick.locator("[data-auto-video-confirm]")).toBeVisible();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeVisible();
         const initialAdvanced=quick.locator("[data-video-advanced-toggle]");

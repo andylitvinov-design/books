@@ -6,6 +6,7 @@ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",i
 const page=readFileSync(new URL("../app/[locale]/holistic-support/mandala/page.tsx",import.meta.url),"utf8");
 const pageCss=readFileSync(new URL("../components/mandala-meditation.module.css",import.meta.url),"utf8");
 const browser=readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
+const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
 
 test("video entry is goal, topic, request and actionable next step",()=>{
  const keys=["data-video-director-goal-controls","data-video-director-topic-controls",
@@ -54,4 +55,16 @@ test("only the first mobile screen is compact; original actions remain at step t
  assert.match(browser,/height of \[820,700\]/);
  assert.match(browser,/g\.cta\.bottom<=g\.visibleBottom-6/);
  assert.match(browser,/await continueButton\.click\(\)/);
+});
+
+test("single first-screen Continue runs the same local classifier as the second-step Design control",()=>{
+ assert.match(studio,/document\.querySelector<HTMLButtonElement>\("\[data-video-request-design\]"\)/);
+ assert.match(studio,/if\(designButton&&!designButton\.disabled\)designButton\.click\(\)/);
+ assert.match(director,/data-video-request-design/);
+ assert.match(director,/onClick=\{designFromRequest\}/);
+ assert.match(director,/classifyMyTubeRequest\(goal,locale\)/);
+ assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-video-request-composer\]>\[data-video-request-design\]/);
+ assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-video-request-composer\]>\[data-video-request-analysis\]/);
+ assert.match(browser,/await expect\(quick\.locator\("\[data-video-request-design\]"\)\)\.toBeHidden\(\)/);
+ assert.match(browser,/await expect\(quick\.locator\("\[data-video-request-design\]"\)\)\.toBeVisible\(\)/);
 });
