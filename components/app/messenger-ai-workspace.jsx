@@ -1,7 +1,6 @@
 'use client'
 import {useState} from 'react'
-import Link from 'next/link'
-import {Film,Flower2,Layers3,Flame,Sparkles,Zap,ArrowUpRight} from 'lucide-react'
+import {Film,Flower2,Layers3,Flame,Zap} from 'lucide-react'
 import {HolisticAgentChat} from '../holistic-agent-chat'
 import css from './messenger-ai-workspace.module.css'
 
@@ -65,18 +64,7 @@ export default function MessengerAiWorkspace({locale='en'}){
      })}
    </aside>
    <div className={css.content}>
-     <div className={css.welcome}>
-       <img src="/images/holistic-house/assessment-lotus.svg" alt="" width="54" height="54" aria-hidden="true"/>
-       <div><h2><Sparkles size={18} aria-hidden="true"/>{t.title}</h2><p>{t.subtitle}</p></div>
-     </div>
-     {selected&&<p className={css.prepared} role="status">{t.ready}</p>}
      <HolisticAgentChat locale={locale} compact quickPrompt={quickPrompt}/>
-     <div className={css.footer}>
-       <span>{t.actual}</span>
-       <Link href={'/'+locale+'/holistic-support/mandala#video-director-chat'} prefetch={false}>
-         {t.videoLink}<ArrowUpRight size={15} aria-hidden="true"/>
-       </Link>
-     </div>
    </div>
  </div>
 }

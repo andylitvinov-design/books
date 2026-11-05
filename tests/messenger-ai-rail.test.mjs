@@ -30,10 +30,13 @@ test('five narrow quick actions are explicit user choices, not fake renders or e
  assert.doesNotMatch(workspace,/fetch\(/)
  assert.doesNotMatch(workspace,/data-hh-unified-dock/)
 })
-test('global AI/Chat goes to Messenger; video director stays an explicit tool',()=>{
+test('global AI/Chat goes to a chat-first Messenger without an extra director footer',()=>{
  const dock=read('lib/unified-mobile-dock.mjs')
  const workspace=read('components/app/messenger-ai-workspace.jsx')
  assert.match(dock,/case "ai": return prefix\+"\/app\/messages\?section=ai"/)
- assert.match(workspace,/holistic-support\/mandala#video-director-chat/)
+ assert.doesNotMatch(workspace,/holistic-support\/mandala#video-director-chat/)
+ assert.doesNotMatch(workspace,/css\.(welcome|prepared|footer)/)
+ assert.match(read('components/holistic-agent-chat.tsx'),/\{compact&&settings\}/)
+ assert.match(read('components/holistic-agent-chat.tsx'),/\{!compact&&<details className=\{styles.programPanel\}/)
  assert.match(read('app/unified-mobile-dock.css'),/data-hh-unified-dock/)
 })

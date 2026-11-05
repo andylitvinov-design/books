@@ -160,3 +160,35 @@
   order:2;flex:none;margin:0 auto
  }
 }
+
+/* Compact Messenger: settings, source, error and verified options live INSIDE the scrollable log.
+   Only composer/actions reserve height; standalone course outline is not mounted. */
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact]>.thread{
+  flex:1 1 auto;min-height:0;max-height:none;gap:9px;padding:10px;
+  background:#fffdfb;border:1px solid #e9e0d6;border-radius:16px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings{
+  flex:none;align-self:flex-start;margin:0 0 2px;padding:0 8px;border-radius:10px;
+  background:#fffaf4;border:1px solid #ede4dc;max-width:100%
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings>summary{
+  min-height:30px;display:flex;align-items:center;padding:5px 3px;
+  font-size:11px;color:#5d6d64
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings[open]{align-self:stretch}
+ :global(.hh-messages-page) .root[data-compact] .thread .choices{
+  flex:none;max-height:none;overflow:visible;margin:2px 0 0;
+  border-top:1px solid #ece6df;padding-top:8px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread .choices h2{font-size:13px;margin:0}
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactDisclosure{
+  flex:none;font-size:11px;line-height:1.4;margin:0;color:#706c64
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form{
+  flex:none;padding:6px 0 0;gap:5px;margin:0;border-top:0;background:transparent
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form textarea{
+  min-height:46px;height:46px;max-height:100px;padding:10px 12px
+ }
+}

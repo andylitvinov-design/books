@@ -111,3 +111,11 @@
  [data-keyboard-open="true"] .prepared,
  [data-keyboard-open="true"] .footer{display:none}
 }
+
+/* The five presets stay as quick prompts; the conversation owns the remaining height. */
+@media(max-width:760px){
+ .layout{gap:5px;height:100%;min-height:0;overflow:hidden}
+ .rail{flex:none;gap:4px}
+ .rail button{height:46px;min-height:46px;padding:4px 2px;gap:2px}
+ .content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:6px}
+}

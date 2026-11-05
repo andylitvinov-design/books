@@ -21,7 +21,7 @@ const copy = {
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
     consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
-    loading:"Формирую ответ…",error:"Ответ сейчас недоступен. Проверьте вход в кабинет и попробуйте ещё раз.",
+    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Для ответа войдите в кабинет Holistic House.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
     option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
@@ -45,7 +45,7 @@ const copy = {
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
     consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
-    loading:"Preparing a reply…",error:"Reply unavailable. Check that you're signed into your cabinet and try again.",
+    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"Sign in to your Holistic House cabinet to receive a reply.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
     option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
@@ -69,7 +69,7 @@ const copy = {
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
     consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
-    loading:"Preparando una respuesta…",error:"Respuesta no disponible. Comprueba el inicio de sesión e inténtalo de nuevo.",
+    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Inicia sesión en Holistic House para recibir una respuesta.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
     option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
@@ -136,7 +136,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     }else if(messages.length){
       setNewBelow(true);
     }
-  },[messages.length]);
+  },[messages.length,status,choices.length]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -180,7 +180,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     const prior=messages.slice(-6).map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
-    controller.current=abort;setBusy(true);setStatus("");setDraft("");
+    followTail.current=true;setNewBelow(false);
+    controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
       const response=await fetch("/api/holistic-agent/turn",{
@@ -194,7 +195,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           usePrivateHistory:useSavedHistory,
           feedback:{dismissedIds,completedIds}}),
       });
-      if(!response.ok)throw Error("CHAT_UNAVAILABLE");
+      if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
       const data=await response.json() as AgentReply;
       let reply=data.reply,used=data.source||"none";
       if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
@@ -226,18 +227,18 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       setHistoryUsed(data.usedSavedVideoHistory===true);
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
-    } catch {
-      if(!abort.signal.aborted)setStatus(t.error);
+    } catch (error) {
+      if(!abort.signal.aborted){
+        const reason=error instanceof Error?error.message:"";
+        setStatus(reason==="SIGN_IN_REQUIRED"?t.signIn:reason==="MODE_UNAVAILABLE"?t.modeError:t.error);
+      }
     } finally {
       setBusy(false);controller.current=null;
     }
   }
-  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
-    data-has-messages={messages.length>0||undefined}>
-    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
-    {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
+  const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
-      <summary>{locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy"}</summary>
+      <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
     <label className={styles.mode}>{t.mode}
       <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
         <option value="rules">{t.rules}</option>
@@ -278,19 +279,20 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       {t.consent}
     </label>}
     </details>
+  );
+  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
+    data-has-messages={messages.length>0||undefined}>
+    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
+    {!compact&&settings}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
+      {compact&&settings}
+      {compact&&!messages.length&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
       {!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
-    </div>
-    {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
-      followTail.current=true;
-      if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
-      setNewBelow(false);
-    }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -306,7 +308,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           </div>)}
         <small className={styles.muted}>{t.localFeedback}</small>
       </div>}
-    {status&&<p role="status">{status}</p>}
+    {status&&<p role="alert" className={styles.assistant}>{status}</p>}
+    </div>
+    {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
+      followTail.current=true;
+      if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
+      setNewBelow(false);
+    }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
@@ -316,7 +324,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
     </form>
-    <details className={styles.programPanel} data-hh-eight-session-preview>
+    {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
       <summary>{t.programTitle}</summary>
       <p className={styles.muted}>{t.programInfo}</p>
       <form onSubmit={createOutline} className={styles.form}>
@@ -358,6 +366,6 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           <small>{t.programNoMedia}</small>
         </li>)}</ol>
       </section>}
-    </details>
+    </details>}
   </section>;
 }

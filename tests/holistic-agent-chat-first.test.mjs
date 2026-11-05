@@ -1,0 +1,50 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {explainUserQuestion} from '../lib/holistic-support/guide-dialogue.mjs'
+import {prepareNaturalDialogue,finishNaturalDialogue} from '../lib/holistic-support/natural-dialogue.mjs'
+const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('authenticated no-model chat stays available with experimental inference disabled',()=>{
+ const route=source('app/api/holistic-agent/turn/route.js')
+ assert.ok(route.includes('await auth.verified()'))
+ assert.ok(route.includes('requireSameOrigin(request,config)'))
+ assert.ok(route.includes('if(body.mode!=="rules"&&!experimentalEnabled)'))
+ assert.ok(route.includes('process.env.HH_AGENT_PRODUCTION_APPROVED'))
+ assert.ok(route.includes('ownedInferenceConsent'))
+ const auth=route.indexOf('await auth.verified()')
+ const parse=route.indexOf('const body = inputOf(await readBody')
+ const gated=route.indexOf('if(body.mode!=="rules"&&!experimentalEnabled)')
+ assert.ok(auth>=0&&parse>auth&&gated>parse,'only authenticated validated requests reach the rules endpoint')
+})
+
+test('reviewed question responses answer user identity/process/pricing in RU EN ES',async()=>{
+ for(const [locale,question] of [['en','Are you human?'],['ru','Ты человек?'],['es','¿Eres humano?']]){
+  const reply=explainUserQuestion(question,locale,{status:'clarify'})
+  assert.ok(typeof reply==='string'&&reply.length>30,locale)
+  const prepared=prepareNaturalDialogue({locale,message:question,decision:{status:'clarify',message:reply}})
+  const result=await finishNaturalDialogue(prepared)
+  assert.equal(result.text,reply)
+  assert.equal(result.modelUsed,false)
+ }
+ const price=explainUserQuestion('How much does it cost?','en',{status:'no_match'})
+ assert.ok(price&&price.includes('price'))
+ assert.equal(explainUserQuestion('Are you human?','en',{status:'safety_handoff'}),null)
+})
+
+test('the mobile transcript contains sent messages, inline errors, settings and approved suggestions',()=>{
+ const agent=source('components/holistic-agent-chat.tsx')
+ const start=agent.indexOf('ref={threadRef}')
+ const end=agent.indexOf('    </div>\n    {newBelow',start)
+ assert.ok(start>0&&end>start,'chat scroll log bounds found')
+ const log=agent.slice(start,end)
+ for(const text of ['{compact&&settings}','messages.map','className={styles.choices}','role="alert"'])
+  assert.ok(log.includes(text),text)
+ assert.ok(agent.includes('followTail.current=true;setNewBelow(false)'))
+ assert.ok(agent.includes('response.status===401'))
+ assert.ok(agent.includes('response.status===503'))
+ assert.ok(agent.includes('{!compact&&<details className={styles.programPanel}'))
+ const workspace=source('components/app/messenger-ai-workspace.jsx')
+ assert.doesNotMatch(workspace,/css\.(welcome|prepared|footer)/)
+ assert.ok(workspace.includes('<HolisticAgentChat locale={locale} compact quickPrompt={quickPrompt}/>'))
+})
