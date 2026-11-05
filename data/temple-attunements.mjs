@@ -3,6 +3,7 @@
 // Telegram archive records are reused by the public page; their source assets are not duplicated.
 // Historical lyric translations, invented coordinates and arbitrary stock imagery are excluded.
 import { expandedTempleAttunements } from "./temple-attunements-expansion.mjs";
+import { restoredTempleAttunements } from "./temple-attunements-restored.mjs";
 
 export const templeTraditions = Object.freeze([
   {
@@ -314,6 +315,19 @@ export const templeTraditions = Object.freeze([
         "aliases": [
           "Маат"
         ]
+      },
+      {
+        "id": "ba",
+        "name": {
+          "ru": "Ба · Полёт души",
+          "en": "Ba · Soul flight",
+          "es": "Ba · Vuelo del alma"
+        },
+        "aliases": [
+          "Полёт Ба",
+          "Полет Ба",
+          "Ba flight"
+        ]
       }
     ]
   },
@@ -516,6 +530,86 @@ export const templeTraditions = Object.freeze([
           "es": "K'inich Ajaw"
         },
         "aliases": []
+      },
+      {
+        "id": "k-uh",
+        "name": {
+          "ru": "К’ух",
+          "en": "K'uh",
+          "es": "K'uh"
+        },
+        "aliases": [
+          "К'ух",
+          "Кух",
+          "Kuh",
+          "K'uh"
+        ]
+      },
+      {
+        "id": "vision-serpent",
+        "name": {
+          "ru": "Змей Видения",
+          "en": "Vision Serpent",
+          "es": "Serpiente de la Visión"
+        },
+        "aliases": [
+          "Змей видения",
+          "Vision Snake"
+        ]
+      },
+      {
+        "id": "chulel",
+        "name": {
+          "ru": "Ч’улель",
+          "en": "Ch'ulel",
+          "es": "Ch'ulel"
+        },
+        "aliases": [
+          "Ч'улель",
+          "Чулель",
+          "Chulel"
+        ]
+      },
+      {
+        "id": "ik",
+        "name": {
+          "ru": "Ик’ · Ветер",
+          "en": "Ik' · Wind",
+          "es": "Ik' · Viento"
+        },
+        "aliases": [
+          "Ик",
+          "Ик'",
+          "Ik",
+          "K'uh Ik"
+        ]
+      },
+      {
+        "id": "ixmucane",
+        "name": {
+          "ru": "Ишмукане",
+          "en": "Ixmucane",
+          "es": "Ixmucané"
+        },
+        "aliases": [
+          "ИшМук'ане",
+          "Шмукане",
+          "Ixmukane",
+          "Xmucane"
+        ]
+      },
+      {
+        "id": "kaah",
+        "name": {
+          "ru": "Каах · Земля и род",
+          "en": "Kaah · Land and ancestry",
+          "es": "Kaah · Tierra y linaje"
+        },
+        "aliases": [
+          "Каах",
+          "Kaah",
+          "K'aah"
+        ]
       }
     ]
   }
@@ -1234,6 +1328,7 @@ export const templeAttunements = Object.freeze([
   }
 ],
   ...expandedTempleAttunements,
+  ...restoredTempleAttunements,
 ]);
 
 export function normalizeTempleSearch(value) {
@@ -1254,7 +1349,7 @@ export function findTempleAttunements({ traditionId = "", channelId = "", query 
     const tradition = templeTraditions.find((item) => item.id === entry.traditionId);
     const channel = getTempleChannel(entry.traditionId, entry.channelId);
     const haystack = normalizeTempleSearch([
-      ...Object.values(entry.title), entry.textRu, ...Object.values(entry.place.city),
+      entry.id, ...Object.values(entry.title), entry.textRu, ...Object.values(entry.place.city),
       ...Object.values(entry.place.site), ...Object.values(entry.place.country),
       ...Object.values(tradition?.name ?? {}), ...Object.values(channel?.name ?? {}),
       ...(channel?.aliases ?? [])

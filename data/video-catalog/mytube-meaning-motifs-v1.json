@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "mytube-meaning-motifs-v1",
+  "status": "editorial_only",
+  "hierarchy": [
+    "category",
+    "subcategory",
+    "topic",
+    "meaningAxis",
+    "motif",
+    "filmScenario"
+  ],
+  "meaningAxisIds": [
+    "anchor",
+    "connection",
+    "freedom",
+    "agency",
+    "dignity",
+    "wholeness",
+    "meaning",
+    "growth"
+  ],
+  "motifsByAxis": {
+    "anchor": [
+      "roots",
+      "stone",
+      "nest",
+      "house"
+    ],
+    "connection": [
+      "bridge",
+      "hands",
+      "garden",
+      "flower"
+    ],
+    "freedom": [
+      "key",
+      "window",
+      "path",
+      "compass"
+    ],
+    "agency": [
+      "stairs",
+      "key",
+      "seed",
+      "sunrise"
+    ],
+    "dignity": [
+      "mirror",
+      "flower",
+      "hands",
+      "garden"
+    ],
+    "wholeness": [
+      "tree",
+      "stream",
+      "path",
+      "sunrise"
+    ],
+    "meaning": [
+      "compass",
+      "lantern",
+      "path",
+      "window"
+    ],
+    "growth": [
+      "seed",
+      "tree",
+      "sunrise",
+      "garden"
+    ]
+  },
+  "scenariosPerMotif": 4,
+  "filters": {
+    "emotionalTransition": "independent",
+    "confirmedMeaningIdea": "independent",
+    "visualStyle": "optional"
+  },
+  "legacyScenarioIdsRemainStable": true,
+  "exportRequiresVerifiedLicensedMedia": true
+}
