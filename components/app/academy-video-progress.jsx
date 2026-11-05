@@ -16,6 +16,9 @@ const buttonStyle={minHeight:44,border:'1px solid #bed1c1',borderRadius:11,paddi
 
 export default function AcademyVideoProgress({videoId,title,locale='en'}) {
   const lang=Object.hasOwn(WORDS,locale)?locale:'en'
+  // The private cabinet currently supports EN/RU; keep Spanish public copy,
+  // but route guest sign-in to the existing EN account progress screen.
+  const accountLang=lang==='es'?'en':lang
   const t=WORDS[lang]
   const [state,setState]=useState('loading')
   const [status,setStatus]=useState(null)
@@ -45,7 +48,7 @@ export default function AcademyVideoProgress({videoId,title,locale='en'}) {
   }
   return <div data-academy-video-learning-progress
     style={{marginTop:12,padding:'12px 13px',background:'#faf8f2',border:'1px solid #ebe4d5',borderRadius:13,fontSize:13}}>
-    {state==='guest' ? <Link href={'/'+lang+'/app/progress'} prefetch={false}>{t.login}</Link> :
+    {state==='guest' ? <Link href={'/'+accountLang+'/app/progress'} prefetch={false}>{t.login}</Link> :
       state==='ready'||state==='saving' ?
       <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
         <button type="button" style={buttonStyle} disabled={state==='saving'||Boolean(status)}
