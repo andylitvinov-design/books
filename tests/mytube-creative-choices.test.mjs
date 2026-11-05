@@ -187,4 +187,6 @@ test("existing mobile director exposes five motifs & collapsible styles without 
 
 // STSE extends this established Mandala/MyTube specialist test lane; no extra workflow.
 import "./state-transition-scenarios.test.mjs";
-\n// Reuse existing Mandala specialist MyTube lane without new workflow/runners.\nimport "./mytube-media-coverage.test.mjs";\n
+
+// Reuse existing Mandala specialist MyTube lane without new workflow/runners.
+import "./mytube-media-coverage.test.mjs";
