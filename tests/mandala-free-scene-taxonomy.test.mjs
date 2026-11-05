@@ -16,7 +16,7 @@ const optionUi=read("components/mandala-cinematic-director.tsx");
 
 test("all approved first-party MP4s have local footage, poster, category, tags, RU/EN/ES description",()=>{
  assert.ok(scenes.length>=44,'never lose the original approved MP4s');
- assert.equal(new Set(scenes.map(item=>item.id)).size,44);
+ assert.equal(new Set(scenes.map(item=>item.id)).size,48);
  const themeCounts={};
  for(const scene of scenes){
    assert.equal(scene.status,"approved");
@@ -42,7 +42,7 @@ test("all approved first-party MP4s have local footage, poster, category, tags, 
 test("the 24 new four-shot scenarios cover every CC-BY Dareful film",()=>{
  assert.equal(presets.length,24);
  const ids=new Set();
- const used=new Set(presets.flatMap(p=>p.clips));
+ const used=new Set(presets.flatMap(p=>[...p.clips,...(p.portraitClips||[])]));
  const extras=scenes.filter(s=>s.collection==="film-collection-v3");
  assert.ok(extras.length>=12);
  for(const p of presets){

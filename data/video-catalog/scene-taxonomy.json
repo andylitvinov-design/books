@@ -1,7 +1,7 @@
 {
   "version": "hh-free-film-catalog-v2",
   "sourcePolicy": "Local approved MP4 masters only; never redistribute raw stock",
-  "count": 44,
+  "count": 48,
   "scenes": [
     {
       "id": "golden-rain",
@@ -1684,6 +1684,251 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "sun-trees-forest",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/sun-trees-forest.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/sun-trees-forest.jpg",
+      "label": {
+        "ru": "Солнечный зимний лес",
+        "en": "Sunlit snowy forest",
+        "es": "Bosque nevado al sol"
+      },
+      "description": {
+        "en": "Sunlit snow-covered trees in winter",
+        "ru": "Солнечный свет среди заснеженных деревьев",
+        "es": "Luz solar entre los árboles nevados"
+      },
+      "categories": [
+        "health",
+        "nature",
+        "cinematic"
+      ],
+      "tags": [
+        "forest",
+        "snow",
+        "winter",
+        "sunlight",
+        "nature"
+      ],
+      "motifs": [
+        "forest",
+        "snow",
+        "sunlight"
+      ],
+      "pace": "slow",
+      "sourceFormat": "portrait_9x16_only",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "width": 720,
+      "height": 1280,
+      "fps": 24,
+      "technicalQuality": {
+        "score": 100,
+        "sha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+        "decodedFrame": true,
+        "editorialApproved": true,
+        "reviewedFrames": 120,
+        "reviewer": "assistant_editorial_screen",
+        "sourceOriginalLandscapeCrop": true,
+        "sourceNativeWidth": 1920,
+        "sourceNativeHeight": 1080
+      },
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/sun-trees-forest/",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourcePage": "https://dareful.com/sun-trees-forest/"
+      }
+    },
+    {
+      "id": "warm-clouds-sunset",
+      "theme": "relationships",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.jpg",
+      "label": {
+        "ru": "Тёплые облака на закате",
+        "en": "Warm sunset clouds",
+        "es": "Nubes cálidas al atardecer"
+      },
+      "description": {
+        "en": "Slow-moving sunset clouds over a distant horizon",
+        "ru": "Закатные облака над дальним горизонтом",
+        "es": "Nubes al atardecer sobre el horizonte"
+      },
+      "categories": [
+        "relationships",
+        "nature",
+        "cinematic"
+      ],
+      "tags": [
+        "sky",
+        "clouds",
+        "sunset",
+        "nature",
+        "calm"
+      ],
+      "motifs": [
+        "sky",
+        "clouds",
+        "sunset"
+      ],
+      "pace": "slow",
+      "sourceFormat": "portrait_9x16_only",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "width": 720,
+      "height": 1280,
+      "fps": 24,
+      "technicalQuality": {
+        "score": 100,
+        "sha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+        "decodedFrame": true,
+        "editorialApproved": true,
+        "reviewedFrames": 120,
+        "reviewer": "assistant_editorial_screen",
+        "sourceOriginalLandscapeCrop": true,
+        "sourceNativeWidth": 1920,
+        "sourceNativeHeight": 1080
+      },
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/warm-clouds-sunset/",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourcePage": "https://dareful.com/warm-clouds-sunset/"
+      }
+    },
+    {
+      "id": "fall-foliage-forest",
+      "theme": "life",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.jpg",
+      "label": {
+        "ru": "Осенний лес",
+        "en": "Autumn forest canopy",
+        "es": "Bosque otoñal"
+      },
+      "description": {
+        "en": "Colourful autumn forest canopy from above",
+        "ru": "Цветной осенний лес с высоты",
+        "es": "Bosque otoñal colorido visto desde arriba"
+      },
+      "categories": [
+        "life",
+        "nature",
+        "cinematic"
+      ],
+      "tags": [
+        "forest",
+        "trees",
+        "autumn",
+        "nature",
+        "renewal"
+      ],
+      "motifs": [
+        "forest",
+        "trees",
+        "autumn"
+      ],
+      "pace": "moderate",
+      "sourceFormat": "portrait_9x16_only",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "width": 720,
+      "height": 1280,
+      "fps": 24,
+      "technicalQuality": {
+        "score": 100,
+        "sha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+        "decodedFrame": true,
+        "editorialApproved": true,
+        "reviewedFrames": 120,
+        "reviewer": "assistant_editorial_screen",
+        "sourceOriginalLandscapeCrop": true,
+        "sourceNativeWidth": 1920,
+        "sourceNativeHeight": 1080
+      },
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/fall-foliage-forest/",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourcePage": "https://dareful.com/fall-foliage-forest/"
+      }
+    },
+    {
+      "id": "snow-forest-winter",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/snow-forest-winter.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/snow-forest-winter.jpg",
+      "label": {
+        "ru": "Зимний лес",
+        "en": "Snowy winter forest",
+        "es": "Bosque invernal nevado"
+      },
+      "description": {
+        "en": "Snow-covered trees and moving winter stream",
+        "ru": "Зимний лес и движущийся снежный ручей",
+        "es": "Árboles nevados y arroyo invernal"
+      },
+      "categories": [
+        "health",
+        "nature",
+        "cinematic"
+      ],
+      "tags": [
+        "forest",
+        "water",
+        "snow",
+        "winter",
+        "nature",
+        "calm"
+      ],
+      "motifs": [
+        "forest",
+        "snow",
+        "water"
+      ],
+      "pace": "slow",
+      "sourceFormat": "portrait_9x16_only",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "width": 720,
+      "height": 1280,
+      "fps": 24,
+      "technicalQuality": {
+        "score": 100,
+        "sha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+        "decodedFrame": true,
+        "editorialApproved": true,
+        "reviewedFrames": 120,
+        "reviewer": "assistant_editorial_screen",
+        "sourceOriginalLandscapeCrop": true,
+        "sourceNativeWidth": 1920,
+        "sourceNativeHeight": 1080
+      },
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/snow-forest-winter/",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourcePage": "https://dareful.com/snow-forest-winter/"
       }
     }
   ]
