@@ -89,10 +89,42 @@ test('Gemini Free Tier retries an explicit 503 once on stable free 3.6 only',asy
   assert.equal(result.status,'ok')
   assert.equal(result.model,GEMINI_FREE_FALLBACK_MODEL)
 })
-test('Gemini never retries 400, 403, 429, incomplete, or ambiguous timeout',async()=>{
+test('Gemini one safe Free Tier fallback on explicit 404/429; no paid or unknown retry',async()=>{
   const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
     HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
-  for(const http of [400,403,429]){
+  for(const code of [404,429]){
+    const paths=[]
+    const result=await reviewGemini(report,env,async url=>{
+      paths.push(String(url))
+      if(paths.length===1)return json({},code)
+      return json({candidates:[{finishReason:'STOP',
+        content:{parts:[{text:long}]}}]})
+    },{retryDelayMs:0})
+    assert.equal(result.status,'ok')
+    assert.equal(result.model,GEMINI_FREE_FALLBACK_MODEL)
+    assert.deepEqual(paths.map(x=>x.match(/models\/(.*?):generateContent/)[1]),[
+      GEMINI_MODEL,GEMINI_FREE_FALLBACK_MODEL
+    ])
+  }
+})
+test('Gemini synthesis asks for JSON and keeps chat timeout independent from daily job',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  const result=await reviewGemini(null,env,async(url,opt)=>{
+    const request=JSON.parse(opt.body)
+    assert.equal(request.generationConfig.responseMimeType,'application/json')
+    assert.equal(request.generationConfig.thinkingConfig.thinkingLevel,'low')
+    assert.ok(request.generationConfig.maxOutputTokens>=3000)
+    return json({candidates:[{finishReason:'STOP',content:{
+      parts:[{text:'{"answer":"Это тест проверяемого формата JSON"}'}]
+    }}]})
+  },{chat:true,prompt:'Составь JSON',synthesis:true})
+  assert.equal(result.status,'ok')
+})
+test('Gemini never retries 400, 403, incomplete, or ambiguous timeout',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  for(const http of [400,403]){
     let attempts=0
     const r=await reviewGemini(report,env,async()=>{
       attempts++
@@ -383,8 +415,8 @@ test('Studio inference timeout or truncated output must not trigger a second pro
 test('Gemini daily audit uses bounded free-first output and no retry on timeout',async()=>{
   const source=readFileSync(new URL('../lib/practitioners/council-free-models.mjs',import.meta.url),'utf8')
   assert.match(source,/const MAX_INPUT=11500/)
-  assert.match(source,/maxOutputTokens:options\.chat===true\?1600:2700/)
-  assert.match(source,/AbortSignal\.timeout\(26000\)/)
+  assert.match(source,/maxOutputTokens:chat\?\(options\.synthesis===true\?3200:2000\):2700/)
+  assert.match(source,/AbortSignal\.timeout\(chat\?35000:26000\)/)
   const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic-key',
     HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
   let count=0

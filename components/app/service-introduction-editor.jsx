@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react'
 import {Camera,Check,Globe2,Link2,Mic,Plus,Square,Trash2,Upload} from 'lucide-react'
 import {PRESENTATION_MAX_BYTES} from '@/lib/practitioners/presentation-contract.js'
 import {uploadPractitionerPresentationFile} from '@/lib/practitioners/browser-presentation-upload.js'
+import PracticeYoutubeShare from './practice-youtube-share'
 import s from './service-introduction-editor.module.css'
 
 const NAMES={en:'English',ru:'Русский',es:'Español'}
@@ -183,6 +184,9 @@ export default function ServiceIntroductionEditor({locale='en',value=[],onChange
   {selected&&<div className={s.saved}><span><Check size={15}/>{t.saved} · {NAMES[language]} · {selected.type}</span>
     <button type="button" disabled={busy} onClick={()=>{onChange(messages.filter(x=>x.language!==language));clearTake()}}>
       <Trash2 size={14}/>{t.remove}</button></div>}
+  {selected?.type==='video'&&selected.media?.kind==='upload'&&
+    <PracticeYoutubeShare video={selected.media} locale={locale}
+      initialTitle={'Video introduction · '+NAMES[language]}/>}
   {messages.length===1&&<div className={s.extra}><Plus size={14}/>{t.another}
     {languages.filter(([key])=>key!==messages[0].language).map(([key,name])=>
       <button type="button" key={key} disabled={busy} onClick={()=>chooseLanguage(key)}>{name}</button>)}</div>}

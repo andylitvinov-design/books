@@ -98,6 +98,14 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   const showFeatured = (activeCategory === "alchemy" && !normalizedQuery) || (Boolean(normalizedQuery) && featuredMatches);
   const showCatalog = Boolean(activeCategory || normalizedQuery);
   const hasResults = showFeatured || visibleBooks.length > 0;
+  const templeGuides = {
+    maya: { bookId: "maya-egregor-gods", filter: "maya" },
+    egypt: { bookId: "egypt-osiris-temple-magic", filter: "egyptian" },
+    greek: { bookId: "greek-metaphysics-planning", filter: "greek" },
+  } as const;
+  const templeGuide = activeCategory && activeCategory in templeGuides
+    ? templeGuides[activeCategory as keyof typeof templeGuides]
+    : null;
 
   return (
     <main className="catalog-shell" lang={locale}>
@@ -136,6 +144,28 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
           setQuery("");
         }}
       />
+
+      {templeGuide && !normalizedQuery ? (
+        <section className="catalog-reading-path" aria-label={locale === "ru" ? "Две отдельные коллекции традиции" : "Two separate tradition collections"}>
+          <div className="catalog-reading-path-heading">
+            <p className="catalog-kicker">{locale === "ru" ? "Материалы традиции" : "Tradition materials"}</p>
+            <h2>{locale === "ru" ? "Методичка и карточки настроек" : "Manual and attunement cards"}</h2>
+            <span>{locale === "ru"
+              ? "Описание традиции — в книге. Стихотворные настройки богов и мест силы — в отдельной картотеке с поиском по каналам."
+              : "Read the tradition overview in a manual, then browse original author-written verses by deity, channel or place in the separate card index."}</span>
+          </div>
+          <div className="catalog-reading-steps">
+            <Link href={`/${locale}/books/${templeGuide.bookId}`}>
+              <small>{locale === "ru" ? "01 · Описание традиции" : "01 · Tradition manual"}</small>
+              <strong>{locale === "ru" ? "Читать методичку" : "Read the manual"}</strong>
+            </Link>
+            <Link href={`/${locale}/temple-channels?tradition=${templeGuide.filter}`}>
+              <small>{locale === "ru" ? "02 · Отдельная картотека" : "02 · Separate card collection"}</small>
+              <strong>{locale === "ru" ? "Найти настройки по каналам" : "Search deity and place attunements"}</strong>
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {!normalizedQuery && !activeCategory ? <DaoHexagramLibraryLink locale={locale} /> : null}
 
@@ -206,7 +236,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
                     height={600}
                     priority={!showFeatured && index === 0}
                     src={bookCoverArtworkUrl(book.id, "/media/" + book.mediaSeries + "/" + book.cover)}
-                    unoptimized={hasBookCoverArtwork(book.id)}
+                    unoptimized={hasBookCoverArtwork(book.id) || book.cover.endsWith('.svg')}
                     width={800}
                   />
                 </figure>

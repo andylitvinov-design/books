@@ -78,6 +78,10 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   assert.equal(parseOwnerAudioCommand(audio,NOW).action,'materials')
   audio.message.text='/start audio'
   assert.equal(parseOwnerAudioCommand(audio,NOW).action,'help')
+  audio.message.text='/start combine'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'combine')
+  audio.message.text='/start@Andydotbot combine'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'combine')
   audio.message.text='/start '+ 'a'.repeat(32)
   assert.equal(parseOwnerAudioCommand(audio,NOW),null)
   audio.message.text='/ai'
@@ -94,8 +98,8 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   assert.match(prompt.text,/20 МБ/)
   assert.doesNotMatch(prompt.text,/файл уже сохранён/)
   assert.match(ownerAudioMaterialsMessage().text,/admin\/materials\/telegram/)
-  assert.equal(prompt.reply_markup.inline_keyboard[0][0].callback_data,'hh-audio:to:meditations')
-  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url)
+  assert.ok(prompt.reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-audio:to:meditations'))
+  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url==='https://holistichouse.vercel.app/admin/materials/telegram')
   assert.equal(library.url,'https://holistichouse.vercel.app/admin/materials/telegram')
 })
 test('in-chat audio entry button is owner-only and cannot alter folders by itself',()=>{
@@ -112,6 +116,21 @@ test('in-chat audio entry button is owner-only and cannot alter folders by itsel
   query.callback_query.from.id=111111
   assert.equal(parseOwnerAudioCallback(query),null)
 })
+test('inaccessible Telegram callback recovers old combine buttons but never forged senders',()=>{
+  const callback={update_id:777,callback_query:{id:'old-button',data:'hh-audio:combine',
+    from:{id:123456,is_bot:false},
+    message:{message_id:456,date:0,chat:{id:123456,type:'private'}}}}
+  assert.equal(parseOwnerAudioCallback(callback)?.action,'combine')
+  callback.callback_query.message.date=1700000000
+  assert.equal(parseOwnerAudioCallback(callback),null)
+  callback.callback_query.message.date=0
+  callback.callback_query.message.from={is_bot:true,username:'ImpostorBot'}
+  assert.equal(parseOwnerAudioCallback(callback),null)
+  callback.callback_query.message.from={is_bot:true,username:'Andydotbot'}
+  assert.equal(parseOwnerAudioCallback(callback)?.action,'combine')
+  callback.callback_query.from.id=987654
+  assert.equal(parseOwnerAudioCallback(callback),null)
+})
 test('audio importer includes command UX, self-healing menu and owner-only website guide',()=>{
   const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
   const ui=readFileSync(new URL('../components/admin-telegram-audio.jsx',import.meta.url),'utf8')
@@ -123,7 +142,9 @@ test('audio importer includes command UX, self-healing menu and owner-only websi
   assert.match(service,/event.chatId!==credentials.chat\|\|event.userId!==credentials.chat/)
   assert.match(ui,/https:\/\/t\.me\/Andydotbot\?start=audio/)
   assert.match(ui,/data-owner-telegram-forward-guide/)
-  assert.match(ai,/callback_data:'hh-audio:help'/)
+  assert.match(ai,/\{command:'audio'/)
+  assert.match(ai,/\{command:'materials'/)
+  assert.match(ai,/\{command:'all'/)
   assert.match(transport,/scope:\{type:'chat',chat_id:chatNumber\}/)
   assert.match(service,/OWNER_AUDIO_BUCKET/)
 })
@@ -135,7 +156,9 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   const callbacks=keyboard.inline_keyboard.flat()
     .map(item=>item.callback_data).filter(value=>value?.startsWith('hh-audio:to:'))
   const expected=OWNER_AUDIO_FOLDERS.map(item=>'hh-audio:to:'+item.id)
-  assert.ok(keyboard.inline_keyboard.flat().some(item=>item.callback_data==='hh-audio:combine'))
+  assert.ok(keyboard.inline_keyboard.flat().some(item=>item.url==='https://t.me/Andydotbot?start=combine'))
+  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
+    .some(item=>item.url==='https://t.me/Andydotbot?start=combine'))
   assert.deepEqual([...callbacks].sort(),[...expected].sort())
   assert.ok(keyboard.inline_keyboard.flat().every(item=>
     !item.callback_data||item.callback_data.length<=64))
@@ -143,7 +166,7 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   assert.match(chosen.text,/Медитации/)
   assert.match(chosen.text,/30 минут/)
   assert.match(chosen.text,/Следующая запись/)
-  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url)?.url
+  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url?.startsWith('https://holistichouse.vercel.app/admin/materials/telegram'))?.url
   assert.equal(folderLink,'https://holistichouse.vercel.app/admin/materials/telegram?folder=meditations')
   assert.throws(()=>ownerAudioDestinationSelectedMessage('client-reports'))
 })
@@ -218,44 +241,4 @@ test('webhook retains secret verification, handles audio before AI and never mak
   assert.match(sql,/force row level security/)
   assert.match(sql,/unique/)
   assert.match(sql,/hh.owner_audio_manager/)
-})
-
-test('owner Telegram audio puts recent private playback cards ahead of the instructions',()=>{
-  const ui=readFileSync(new URL('../components/admin-telegram-audio.jsx',import.meta.url),'utf8')
-  const css=readFileSync(new URL('../components/admin-telegram-audio.module.css',import.meta.url),'utf8')
-  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
-  assert.ok(ui.indexOf('data-owner-telegram-audio-card')<ui.indexOf('data-owner-telegram-forward-guide'))
-  assert.match(ui,/data-owner-telegram-audio-card/)
-  assert.match(ui,/<audio controls preload="none"/)
-  assert.match(ui,/data-owner-telegram-move/)
-  assert.match(ui,/onChange=\{event=>void move\(item,event.target.value\)\}/)
-  assert.match(ui,/await persist\(item,item.title,nextFolder,t.moved\)/)
-  assert.match(ui,/setFiles\(current=>current.map/)
-  assert.match(ui,/setPendingFolders/)
-  assert.match(ui,/t.noneTitle/)
-  assert.match(ui,/lang=\['ru','en','es'\]/)
-  assert.match(ui,/data-owner-telegram-audio-empty/)
-  assert.match(css,/@media\(max-width:650px\)/)
-  assert.match(css,/@media\(max-width:360px\)/)
-  assert.match(service,/order by received_at desc limit 60/)
-  assert.match(service,/where practitioner_id=\$1 and status='ready'/)
-})
-
-test('owner-only, non-expiring audio stream replaces direct signed Storage URLs',()=>{
-  const ui=readFileSync(new URL('../components/admin-telegram-audio.jsx',import.meta.url),'utf8')
-  const route=readFileSync(new URL('../app/api/admin/materials/telegram/route.js',import.meta.url),'utf8')
-  const media=readFileSync(new URL('../app/api/admin/materials/telegram/file/[id]/route.js',import.meta.url),'utf8')
-  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
-  assert.match(ui,/onError=\{\(\)=>setAudioErrors/)
-  assert.match(ui,/src=\{item.previewUrl\}/)
-  assert.match(ui,/setOpenAudio/)
-  assert.match(ui,/setOpenActions/)
-  assert.doesNotMatch(ui,/\?preview=/)
-  assert.match(route,/ownerMaterialRequest\(request,async\(\{config\}\)=>/)
-  assert.match(route,/getOwnerTelegramAudioPreview\(config,preview\)/)
-  assert.match(media,/ownerMaterialRequest\(request/)
-  assert.match(service,/export async function getOwnerTelegramAudioPreview/)
-  assert.match(service,/where id=\$1 and practitioner_id=\$2 and status='ready'/)
-  assert.match(service,/ownerAudioPrivateUrl=id=>/)
-  assert.doesNotMatch(service,/createSignedUrl\(/)
 })

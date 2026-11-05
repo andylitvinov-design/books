@@ -1,196 +1,184 @@
-.layout { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
-.layout * { box-sizing: border-box; }
-.hero { margin: 14px 0 0; padding: clamp(18px, 3vw, 30px); border: 1px solid #dfd3c6; border-radius: 23px; background: linear-gradient(117deg, #fff9f1, #f5ecdf); color: #352c27; overflow: hidden; }
-.identity { display: flex; align-items: center; gap: clamp(16px, 2.8vw, 28px); min-width: 0; }
-.portrait,.portraitFallback { flex: none; display: block; width: 144px; height: 168px; object-fit: cover; object-position: center 27%; border-radius: 18px; border: 3px solid #fff; box-shadow: 0 7px 20px #442d1d17; background: #eee5db; }
-.portraitFallback { display: grid; place-items: center; color: #87563e; font: 64px/1 Georgia, serif; }
-.identityCopy { min-width: 0; flex: 1; }
-.kicker { margin: 0 0 7px; color: #8a533c; font: 750 10px/1.45 system-ui,sans-serif; letter-spacing: .13em; text-transform: uppercase; }
-.identityCopy h1 { margin: 0; color: #342b26; font: 400 clamp(37px, 5.1vw, 66px)/.99 Georgia,serif; letter-spacing: -.04em; overflow-wrap: anywhere; }
-.professionalTitle { margin: 8px 0 0; color: #403a34; font: 500 clamp(13px, 1.55vw, 17px)/1.35 system-ui,sans-serif; }
-.location { margin: 8px 0 0; color: #75695d; font: 500 12px/1.4 system-ui,sans-serif; }
-.badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
-.badges span { display: inline-flex; min-width: 0; padding: 5px 9px; border: 1px solid #e0d3c7; border-radius: 99px; background: #fffcf8; color: #775440; font: 650 10px/1.3 system-ui,sans-serif; }
-.heroBio { max-width: 750px; margin: 18px 0 0; color: #5d534b; font: 400 14px/1.55 system-ui,sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.heroActions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; }
-.primary { display: inline-flex; justify-content: space-between; align-items: center; gap: 22px; min-height: 46px; padding: 10px 19px; border-radius: 13px; background: #872f4a; color: #fff !important; text-decoration: none !important; font: 750 13px/1.3 system-ui,sans-serif; }
-.primary:hover { background: #71263e; }
-.secondary { display: inline-flex; align-items: center; min-height: 44px; color: #294762; font: 700 12px/1.4 system-ui,sans-serif; text-decoration: underline; text-underline-offset: 4px; }
-.services { margin: 23px 0 0; scroll-margin-top: 14px; }
-.sectionHeading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 12px; min-width: 0; }
-.sectionHeading h2, .about h2, .articles h2 { margin: 0; color: #372d28; font: 400 clamp(28px, 3vw, 39px)/1.12 Georgia,serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
-.count { flex: none; margin-bottom: 3px; border-radius: 99px; border: 1px solid #e0d4c7; padding: 6px 10px; color: #665b52; background: #fffaf5; font: 650 11px/1.25 system-ui,sans-serif; white-space: nowrap; }
-.emptyServices { margin: 12px 0; padding: 20px; border: 1px solid #e7d9ca; border-radius: 15px; color: #675c51; background: #fffaf5; font: 13px/1.5 system-ui,sans-serif; }
-.about { display: grid; grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: 24px; padding: 23px 0; margin: 23px 0 0; border-top: 1px solid #dcd0c3; border-bottom: 1px solid #dcd0c3; }
-.aboutContent { min-width: 0; display: grid; align-content: start; gap: 13px; }
-.aboutContent h3 { margin: 0 0 9px; color: #55483c; font: 750 12px/1.4 system-ui,sans-serif; }
-.tags { list-style: none; display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 0; }
-.tags li { min-width: 0; max-width: 100%; border: 1px solid #dfd6ca; border-radius: 99px; background: #fffaf5; padding: 7px 11px; color: #665348; font: 600 11px/1.3 system-ui,sans-serif; overflow-wrap: anywhere; }
-.languages { color: #675b51; margin: 0; font: 12px/1.4 system-ui,sans-serif; }
-.disclosure,.credentials { min-width: 0; padding: 0 15px; border: 1px solid #e3d5c5; border-radius: 13px; background: #fffaf5; }
-.disclosure summary,.credentials summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; min-height: 43px; color: #3b5269; font: 700 12px/1.45 system-ui,sans-serif; }
-.disclosure summary::-webkit-details-marker,.credentials summary::-webkit-details-marker { display: none; }
-.disclosure[open] summary span,.credentials[open] summary span { transform: rotate(180deg); }
-.disclosure p { margin: 0 0 14px; color: #63574d; font: 13px/1.6 system-ui,sans-serif; white-space: pre-line; overflow-wrap: anywhere; }
-.note { margin: 0; color: #75695f; font: 11px/1.55 system-ui,sans-serif; }
-.credentials { margin: 18px 0; }
-.credentialsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; padding: 0 0 15px; }
-.credentialsGrid article,.articleGrid article { min-width: 0; border: 1px solid #e3d8cb; border-radius: 13px; background: #fffdfa; padding: 14px; }
-.credentialsGrid h3,.articleGrid h3 { margin: 0 0 7px; color: #352e27; font: 400 21px/1.25 Georgia,serif; }
-.credentialsGrid p,.articleGrid p { margin: 0 0 10px; color: #695d52; font: 12px/1.55 system-ui,sans-serif; }
-.credentialsGrid small { color: #715e52; font: 650 10px/1.4 system-ui,sans-serif; }
-.articles { margin: 22px 0; }
-.articles h2 { margin-bottom: 12px; }
-.articleGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
-.articleGrid a { color: #8d3450; font: 750 12px/1.4 system-ui,sans-serif; text-decoration: underline; text-underline-offset: 3px; }
-.layout a:focus-visible, .layout summary:focus-visible { outline: 3px solid #a34e68; outline-offset: 3px; }
-@media (max-width: 650px) {
-  .hero { margin-top: 10px; padding: 15px 14px 14px; border-radius: 18px; }
-  .identity { gap: 12px; align-items: center; }
-  .portrait,.portraitFallback { width: 94px; height: 111px; border-radius: 14px; border-width: 2px; }
-  .portraitFallback { font-size: 43px; }
-  .identityCopy h1 { font-size: clamp(34px, 8.5vw, 43px); line-height: 1; }
-  .kicker { margin-bottom: 5px; font-size: 9px; letter-spacing: .08em; }
-  .professionalTitle { font-size: 12px; margin-top: 5px; }
-  .location { font-size: 10px; margin-top: 6px; }
-  .badges { margin-top: 7px; }
-  .badges span { font-size: 9px; padding: 4px 7px; }
-  .heroBio { font-size: 12px; line-height: 1.48; margin-top: 12px; -webkit-line-clamp: 3; }
-  .heroActions { margin-top: 12px; gap: 6px; }
-  .primary { min-height: 44px; width: 100%; padding: 9px 14px; border-radius: 12px; font-size: 12px; }
-  .secondary { min-height: 32px; font-size: 11px; }
-  .services { margin-top: 17px; }
-  .sectionHeading { margin-bottom: 10px; }
-  .sectionHeading h2,.about h2,.articles h2 { font-size: 29px; }
-  .count { padding: 5px 8px; font-size: 10px; }
-  .about { display: grid; grid-template-columns: 1fr; gap: 13px; margin-top: 21px; padding: 21px 0; }
-  .credentialsGrid,.articleGrid { grid-template-columns: 1fr; }
-}
-@media (max-width: 360px) {
-  .identity { gap: 9px; }
-  .portrait,.portraitFallback { width: 80px; height: 100px; }
-  .identityCopy h1 { font-size: 32px; }
-  .sectionHeading h2 { font-size: 26px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .primary { transition: none; }
-}
-
-
-/* Master storefront · reuse approved services, course media and published article sources. */
-.breadcrumbs{display:flex;align-items:center;gap:10px;min-width:0;padding:15px 3px 0;color:#846e60;font:600 12px/1.3 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.breadcrumbs a{color:#724b3b;text-decoration:none;flex:none}
-.breadcrumbs a:hover{text-decoration:underline}
-.breadcrumbs span:last-child{overflow:hidden;text-overflow:ellipsis}
-.hero{position:relative;isolation:isolate;padding:clamp(22px,3.5vw,43px);border-color:#dbc5b1;border-radius:26px;background:linear-gradient(116deg,#fff7ec 0%,#f1dbc2 100%);box-shadow:0 14px 35px #6038230d}
-.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(255,248,238,.97) 0%,rgba(255,247,234,.83) 58%,rgba(255,247,234,.24) 100%),url("/images/holistic-house/reiki-practitioner-sunrise.webp") center 55%/cover no-repeat;opacity:.82;pointer-events:none}
-.identity{display:flex;gap:clamp(15px,3vw,33px)}
-.portrait,.portraitFallback{width:clamp(126px,16vw,186px);height:clamp(148px,18vw,208px);border-radius:22px;border:4px solid #fff;box-shadow:0 14px 33px #4f2c2026}
-.identityCopy h1{font-size:clamp(39px,5.4vw,66px);line-height:1.05;letter-spacing:-.035em}
-.professionalTitle{max-width:550px;font-size:clamp(14px,1.6vw,17px);line-height:1.43}
-.heroFacts{display:flex;align-items:center;flex-wrap:wrap;gap:7px 16px;margin-top:10px}
-.location{margin:0;color:#6d5240;font-size:12px}
-.badges span{border-color:#d8bda7;background:#fff9f0;color:#704532}
-.heroBio{margin-top:17px;font-size:clamp(14px,1.45vw,16px);line-height:1.65;max-width:630px;color:#4d3b31;-webkit-line-clamp:4}
-.heroHint{max-width:630px;margin:8px 0 0;color:#715b4d;font:500 12px/1.5 system-ui,sans-serif}
-.heroActions{margin-top:20px}
-.primary{min-height:48px;background:#80263f;border-radius:14px;box-shadow:0 8px 20px #80263f25}
-.primary:hover{background:#671d32}
-.secondary{color:#6a3348;text-underline-offset:3px}
-.sectionNav{display:flex;gap:8px;align-items:center;min-width:0;max-width:100%;padding:11px 0 7px;margin:4px 0 5px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity}
-.sectionNav a{flex:none;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:9px 17px;border-radius:99px;border:1px solid #e8d6c4;color:#613f34;background:#fff8f0;text-decoration:none;font:700 12px/1.25 system-ui,sans-serif;scroll-snap-align:start}
-.sectionNav a:first-child{background:#f2e0cf;border-color:#ddbea7}
-.sectionNav a:hover{background:#ead1bd}
-.services,.meditations,.articles{padding:clamp(19px,2.8vw,29px) 0 0;margin:0;scroll-margin-top:20px}
-.sectionHeading{align-items:center;margin-bottom:6px}
-.sectionHeading h2,.about h2,.articles h2{font-size:clamp(29px,3.5vw,42px);line-height:1.12;color:#3c2922}
-.kicker{color:#93563f}
-.count{border-color:#e8d7c6;background:#fff9f2}
-.sectionLead{margin:0 0 16px;max-width:670px;color:#6d5d53;font:13px/1.55 system-ui,sans-serif}
-.meditations{border-top:1px solid #e9d7c8;margin-top:26px}
-.meditationGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0 16px}
-.meditationCard{display:grid;grid-template-columns:minmax(110px,38%) minmax(0,1fr);min-width:0;overflow:hidden;border:1px solid #e4d6c7;border-radius:18px;color:#3e2b25!important;background:#fffcf8;text-decoration:none!important;box-shadow:0 8px 22px #4b34210c}
-.meditationArtwork{display:grid;place-items:center;min-height:135px;font:700 40px Georgia,serif;color:#fff;background:linear-gradient(145deg,#e4b9758c,#83543b73),url("/images/holistic-house/reiki-practitioner-sunrise.webp") center/cover}
-.meditationCopy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;min-width:0;padding:13px}
-.meditationCopy small,.articleCopy small{color:#936248;font:750 10px/1.3 system-ui,sans-serif;letter-spacing:.06em}
-.meditationCopy strong{font:600 clamp(17px,2vw,21px)/1.22 Georgia,serif;overflow-wrap:anywhere}
-.meditationCopy>span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#665851;font:12px/1.45 system-ui,sans-serif}
-.meditationCopy em{color:#822e49;font:750 12px/1.45 system-ui,sans-serif;font-style:normal}
-.meditationCard:hover,.articleCard:hover{border-color:#c99b7b;box-shadow:0 13px 26px #55352215}
-.approvedVideoGallery>section{max-width:none;width:100%;margin:14px 0 0;padding:0}
-.approvedVideoGallery>section header h2{font-family:Georgia,serif;color:#3d2a24}
-.approvedVideoGallery>section>div>article{border-color:#e5d8c9;background:#fffaf5}
-.approvedVideoGallery>section>div>article h3{color:#452f25}
-.approvedVideoGallery>section>div>article span{word-break:normal}
-.about{scroll-margin-top:20px;margin-top:27px;border-color:#e9dacc;background:linear-gradient(130deg,#fffaf4,#f5e8d9);border:1px solid #e7d8c9;padding:24px;border-radius:20px;grid-template-columns:minmax(160px,.65fr) minmax(0,1.35fr)}
-.disclosure,.credentials{background:#fffdf9}
-.articles{margin-top:26px;padding-top:24px;border-top:1px solid #ead8c9}
-.articleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.articleGrid .articleCard{padding:0;border:1px solid #e6d8c9;overflow:hidden;border-radius:18px;background:#fffcf8;box-shadow:0 8px 20px #47311a0d}
-.articleCover,.articleCoverPlaceholder{width:100%;height:135px;object-fit:cover;display:block;background:linear-gradient(135deg,#f2dfc1,#ab7e55)}
-.articleCoverPlaceholder{display:grid;place-items:center;color:#fff7e6;font-size:54px}
-.articleCopy{padding:13px 15px 16px}
-.articleCopy h3{margin:6px 0 7px;font-size:21px;line-height:1.23}
-.articleCopy p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:39px;font-size:12px}
-.articleCopy a{min-height:44px;display:inline-flex;align-items:center}
-.welcomeVideo{margin-top:12px;overflow:hidden;border-radius:18px;background:#fffaf5}
-.welcomeVideo>section{max-width:none;margin:0}
-.finalCta{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:26px 0 38px;padding:25px clamp(18px,3vw,32px);border-radius:22px;border:1px solid #d9bca0;background:linear-gradient(115deg,#fff4e7 0%,#ecc6a4 100%)}
-.finalCta h2{max-width:650px;margin:0;color:#402a23;font:500 clamp(24px,3vw,36px)/1.15 Georgia,serif}
-.finalCta p:last-child{margin:9px 0 0;color:#6a5044;font:13px/1.5 system-ui,sans-serif}
-.finalCta .primary{flex:none}
-.layout a:focus-visible,.sectionNav a:focus-visible{outline:3px solid #a34e68;outline-offset:3px}
-/* Published audio is a separate opt-in snapshot, never a link to private inbox media. */
-.sharedAudioSection{margin:20px 0 8px;border-top:1px solid #ead8c9;padding-top:17px}
-.sharedAudioSection h3{font:600 clamp(20px,2.5vw,26px)/1.2 Georgia,serif;color:#4d3128;margin:0 0 12px}
-.sharedAudioGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-.sharedAudioCard{display:grid;gap:8px;min-width:0;border:1px solid #e5d1c0;border-radius:14px;background:#fffcf6;padding:14px}
-.sharedAudioCard strong{font:600 15px/1.3 Georgia,serif;color:#4d3029;overflow-wrap:anywhere}
-.sharedAudioCard small{font:650 10px system-ui,sans-serif;color:#8b6b53}
+/* Holistic House master storefront — editorial scenic hero, emerald actions and swipeable collections. */
+.layout{width:min(1120px,100%);min-width:0;margin:0 auto;padding-bottom:24px;box-sizing:border-box}
+.layout *{box-sizing:border-box}
+.hero{position:relative;margin:18px 0 0;overflow:hidden;border:1px solid #ded9cc;border-radius:27px;background:#fffaf3;box-shadow:0 16px 42px rgba(36,48,36,.09);color:#342c26}
+.heroMedia{position:relative;isolation:isolate;min-height:328px;padding:19px clamp(18px,3vw,33px) 32px;background:linear-gradient(180deg,rgba(5,30,28,.52) 0%,rgba(8,36,31,.25) 37%,rgba(10,33,29,.78) 100%),url("/images/holistic-house/report-lighthouse-coast.webp") center 48%/cover no-repeat;color:#fff}
+.heroTop{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:1}
+.backLink{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:#fff!important;text-decoration:none!important;font:700 14px/1.3 system-ui,sans-serif;text-shadow:0 1px 5px #13262280}
+.backLink>span{display:grid;place-items:center;width:38px;height:38px;border:1px solid #fffcf0b3;border-radius:50%;background:#fffdf5f0;color:#32533e;font-size:22px;text-shadow:none}
+.heroTools{display:flex;gap:9px;align-items:center}
+.toolButton{display:grid;place-items:center;flex:none;width:43px;height:43px;padding:0;border:1px solid #ffffffba;border-radius:50%;background:#fffffff0;color:#1d5847;cursor:pointer;transition:transform .2s,background .2s}
+.toolButton svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.toolButton:hover{transform:translateY(-2px);background:#fff}
+.activeTool{color:#08734e;background:#d6f4e5}
+.activeTool svg{fill:#08734e22}
+.shareStatus{position:absolute;top:51px;right:0;max-width:min(280px,80vw);margin:0;padding:8px 12px;border-radius:11px;background:#fffdf5;color:#1c5d42;box-shadow:0 3px 12px #0002;font:600 12px/1.4 system-ui,sans-serif}
+.identity{display:flex;align-items:center;gap:clamp(17px,3vw,29px);margin-top:52px;min-width:0}
+.portrait,.portraitFallback{flex:none;display:block;width:clamp(142px,17vw,180px);height:clamp(157px,19vw,192px);border:4px solid #fff;border-radius:23px;object-fit:cover;object-position:center 27%;box-shadow:0 12px 28px #0007;background:#e9e0d2}
+.portraitFallback{display:grid;place-items:center;background:linear-gradient(130deg,#e4d1b7,#8db69a);color:#fff;font:68px/1 Georgia,serif}
+.identityCopy{min-width:0;flex:1}
+.kicker{margin:0 0 7px;color:#9b6649;font:800 11px/1.35 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.identityCopy .kicker{display:inline-block;max-width:100%;padding:6px 12px;border:1px solid #fff9e9a8;border-radius:30px;color:#fff;font-size:10px;letter-spacing:.08em;background:#153f3499}
+.identityCopy h1{margin:4px 0 0;color:#fff;font:400 clamp(41px,5.6vw,70px)/1 Georgia,serif;letter-spacing:-.035em;text-shadow:0 2px 12px #082c2875;overflow-wrap:anywhere}
+.professionalTitle{margin:8px 0 0;max-width:530px;color:#fffaf0;font:550 clamp(14px,1.6vw,18px)/1.35 system-ui,sans-serif;text-shadow:0 1px 6px #0005}
+.heroFacts{display:flex;align-items:center;flex-wrap:wrap;gap:7px 15px;margin-top:10px}
+.location{color:#fff8e8;font:550 12px/1.4 system-ui,sans-serif}
+.badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.badges span{display:inline-flex;align-items:center;max-width:100%;padding:6px 11px;border:1px solid #fff6e4b8;border-radius:99px;background:#fff9edf2;color:#654534;font:700 11px/1.3 system-ui,sans-serif}
+.heroBody{position:relative;padding:0 clamp(19px,3vw,33px) 27px;background:linear-gradient(150deg,#fffdf8 0%,#f4f0e7 100%)}
+.highlights{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:-17px;overflow:hidden;border:1px solid #ffffffec;border-radius:18px;background:#ffffffed;box-shadow:0 7px 22px #183b2a13;backdrop-filter:blur(12px)}
+.highlights>div{display:grid;place-content:center;justify-items:center;gap:3px;min-height:78px;padding:10px 9px;text-align:center;min-width:0}
+.highlights>div+div{border-left:1px solid #ebebe4}
+.highlights strong{color:#117655;font:750 24px/1.1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.highlights span{color:#5b6258;font:650 11px/1.35 system-ui,sans-serif}
+.heroBio{margin:19px 0 0;color:#433b35;font:450 clamp(14px,1.6vw,16px)/1.65 system-ui,sans-serif;white-space:pre-line;max-width:810px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.heroHint{margin:10px 0 0;color:#786c61;font:500 13px/1.55 system-ui,sans-serif;max-width:700px}
+.heroActions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:20px}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:14px;min-height:51px;padding:12px 24px;border:1px solid #0b7f55;border-radius:999px;background:linear-gradient(110deg,#0d8862,#04734d);color:#fff!important;font:750 14px/1.3 system-ui,sans-serif;text-decoration:none!important;box-shadow:0 7px 17px #05724e26;transition:background .18s,transform .18s}
+.primary:hover{background:#086b4f;transform:translateY(-1px)}
+.primary span:last-child{margin-left:auto;font-size:20px}
+.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border:1px solid #ddddd3;border-radius:99px;background:#fffaf4;color:#186d50!important;font:700 12px/1.4 system-ui,sans-serif;text-decoration:none!important}
+.secondary:hover{background:#e9f4ea}
+.sectionNav{display:flex;align-items:center;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;max-width:100%;margin:15px 0 5px;padding:3px 0 8px}
+.sectionNav::-webkit-scrollbar{display:none}
+.sectionNav a{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:8px;min-height:45px;padding:10px 18px;border:1px solid #e2ddd2;border-radius:99px;background:#fffdfa;color:#37473e;text-decoration:none!important;font:700 13px/1.3 system-ui,sans-serif;scroll-snap-align:start;box-shadow:0 3px 10px #35372908}
+.sectionNav a:first-child{border-color:#0c8d61;background:linear-gradient(100deg,#0d9570,#086f51);color:#fff;box-shadow:0 6px 16px #086e511c}
+.sectionNav a:hover{border-color:#2c9473}
+.navGlyph{font-size:19px;line-height:1}
+.services,.meditations,.articles{padding:21px 0 0;margin:0;scroll-margin-top:25px}
+.sectionHeading{display:flex;align-items:end;justify-content:space-between;gap:12px;min-width:0;margin-bottom:15px}
+.sectionHeading h2,.about h2,.articles h2{margin:0;color:#49332a;font:400 clamp(28px,3.3vw,41px)/1.13 Georgia,serif;letter-spacing:-.025em;overflow-wrap:anywhere}
+.count{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:31px;min-height:31px;margin-bottom:3px;padding:5px 10px;border:1px solid #e6d9ca;border-radius:50px;color:#75665b;background:#fffaf4;font:700 11px/1.25 system-ui,sans-serif;white-space:nowrap}
+.sectionLead{max-width:720px;margin:0 0 16px;color:#746b61;font:500 13px/1.6 system-ui,sans-serif}
+.emptyServices{margin:10px 0;padding:22px;border:1px solid #e8ddcf;border-radius:17px;background:#fffdf9;color:#766a5f;font:500 13px/1.55 system-ui,sans-serif}
+.meditations{border-top:1px solid #e5d9c9;margin-top:29px}
+.approvedVideoGallery>section{width:100%;max-width:none;margin:4px 0 15px;padding:0}
+.approvedVideoGallery>section header h2{font:500 clamp(23px,2.8vw,29px)/1.2 Georgia,serif;color:#48332b}
+.approvedVideoGallery>section header p{font-size:12px}
+.meditationGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 17px}
+.meditationCard{display:flex;flex-direction:column;overflow:hidden;min-width:0;border:1px solid #e6dcd0;border-radius:18px;background:#fffcf7;color:#463429!important;text-decoration:none!important;box-shadow:0 7px 23px #4033210c}
+.meditationArtwork{display:grid;place-items:center;min-height:130px;background:linear-gradient(140deg,#032c2d33,#20463251),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:#fff;font:700 34px Georgia,serif}
+.meditationCopy{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;padding:14px}
+.meditationCopy small,.articleCopy small{color:#9b654f;font:750 10px/1.3 system-ui,sans-serif;letter-spacing:.04em}
+.meditationCopy strong{font:600 clamp(17px,2vw,21px)/1.25 Georgia,serif;overflow-wrap:anywhere}
+.meditationCopy>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#695d56;font:12px/1.45 system-ui,sans-serif}
+.meditationCopy em{color:#0d7656;font:750 12px/1.4 system-ui,sans-serif;font-style:normal}
+.sharedAudioSection{padding-top:18px;margin:20px 0 0;border-top:1px solid #e5d9c9}
+.sharedAudioSection h3{font:500 clamp(20px,2.5vw,25px)/1.25 Georgia,serif;color:#48332b}
+.sharedAudioGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sharedAudioCard{display:grid;gap:8px;padding:14px;min-width:0;border:1px solid #e6dacc;border-radius:16px;background:#fffdf7}
+.sharedAudioCard strong{font:600 15px/1.35 Georgia,serif;color:#48332b;overflow-wrap:anywhere}
+.sharedAudioCard small{font:750 11px system-ui,sans-serif;color:#177151}
 .sharedAudioCard audio{width:100%;max-width:100%}
-@media(max-width:650px){.sharedAudioGrid{grid-template-columns:1fr}}
+.about{display:grid;grid-template-columns:minmax(160px,.55fr) minmax(0,1.45fr);gap:18px;scroll-margin-top:25px;margin:27px 0 0;padding:clamp(18px,3vw,29px);border:1px solid #e6d7c5;border-radius:24px;background:linear-gradient(123deg,#fffaf3,#f4e7d7)}
+.aboutContent{display:grid;align-content:start;gap:15px;min-width:0}
+.aboutContent h3{margin:0 0 9px;color:#685043;font:750 13px/1.4 system-ui,sans-serif}
+.tags{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0}
+.tags li{max-width:100%;padding:8px 13px;border:1px solid #e0d6c8;border-radius:99px;background:#fffdf8;color:#645345;font:650 12px/1.35 system-ui,sans-serif;overflow-wrap:anywhere}
+.languages{margin:0;color:#66564b;font:500 13px/1.5 system-ui,sans-serif}
+.disclosure,.credentials{min-width:0;padding:0 15px;border:1px solid #e4d8cb;border-radius:15px;background:#fffdf8}
+.disclosure summary,.credentials summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:47px;list-style:none;cursor:pointer;color:#177154;font:750 13px/1.45 system-ui,sans-serif}
+.disclosure summary::-webkit-details-marker,.credentials summary::-webkit-details-marker{display:none}
+.disclosure[open] summary span,.credentials[open] summary span{transform:rotate(180deg)}
+.disclosure p{margin:0 0 16px;color:#65574e;font:13px/1.65 system-ui,sans-serif;white-space:pre-line;overflow-wrap:anywhere}
+.note{margin:0;color:#78685c;font:12px/1.5 system-ui,sans-serif}
+.welcomeVideo{margin:4px 0;overflow:hidden;border-radius:17px;background:#fffdf8}
+.welcomeVideo>section{max-width:none;margin:0}
+.credentials{margin:18px 0}
+.credentialsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-bottom:15px}
+.credentialsGrid article{padding:14px;border:1px solid #eaded0;border-radius:13px;background:#fff}
+.credentialsGrid h3{margin:0 0 8px;color:#443329;font:500 19px/1.3 Georgia,serif}
+.credentialsGrid p{margin:0 0 7px;color:#6b5e52;font:12px/1.5 system-ui,sans-serif}
+.credentialsGrid small{color:#0b7958;font:700 11px/1.4 system-ui,sans-serif}
+.articles{margin-top:25px;border-top:1px solid #e6d9c9}
+.articleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.articleCard{min-width:0;overflow:hidden;border:1px solid #e8dbcd;border-radius:18px;background:#fffcf7;box-shadow:0 6px 18px #4d322110}
+.articleCover,.articleCoverPlaceholder{display:block;width:100%;height:148px;object-fit:cover;background:linear-gradient(130deg,#b9bfa7,#d8a988)}
+.articleCoverPlaceholder{display:grid;place-items:center;font-size:50px;color:#fffaf2}
+.articleCopy{padding:14px}
+.articleCopy h3{margin:8px 0;color:#48352e;font:500 21px/1.24 Georgia,serif}
+.articleCopy p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#746558;font:13px/1.5 system-ui,sans-serif}
+.articleCopy a{display:inline-flex;align-items:center;min-height:44px;color:#087654;font:750 12px/1.4 system-ui,sans-serif}
+.finalCta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:28px 0 32px;padding:clamp(20px,3vw,31px);border:1px solid #d6bfa6;border-radius:23px;background:linear-gradient(115deg,#fff7ed,#f1d9be)}
+.finalCta h2{margin:0;color:#4c3229;font:400 clamp(25px,3vw,35px)/1.2 Georgia,serif}
+.finalCta p:last-child{margin:9px 0 0;color:#715c4e;font:500 13px/1.5 system-ui,sans-serif}
+.finalCta .primary{flex:none}
+.layout :is(a,button,summary):focus-visible{outline:3px solid #e1b55e;outline-offset:3px}
 @media (max-width: 760px){
-  .meditationGrid{grid-template-columns:1fr}
-  .articleGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .meditationGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .about{grid-template-columns:1fr}
+ .articleGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width: 650px){
-  .breadcrumbs{padding-top:10px;font-size:11px}
-  .hero{margin-top:10px;padding:16px 14px 17px;border-radius:19px}
-  .hero::before{background:linear-gradient(90deg,rgba(255,248,238,.96),rgba(255,248,238,.72)),url("/images/holistic-house/reiki-practitioner-sunrise.webp") center/cover}
-  .identity{gap:12px;align-items:center}
-  .portrait,.portraitFallback{width:100px;height:122px;border-radius:15px;border-width:2px}
-  .identityCopy h1{font-size:clamp(30px,7.8vw,42px)}
-  .professionalTitle{font-size:12px}
-  .heroFacts{gap:3px 8px;margin-top:7px}
-  .heroFacts .location{font-size:10px}
-  .heroBio{font-size:13px;margin-top:14px;line-height:1.5}
-  .heroHint{font-size:11px}
-  .heroActions{margin-top:14px}
-  .sectionNav{margin-top:5px;gap:7px}
-  .sectionNav a{padding:9px 13px;min-height:44px;font-size:12px}
-  .services,.meditations,.articles{padding-top:17px}
-  .sectionHeading h2,.about h2,.articles h2{font-size:29px}
-  .about{padding:16px;margin-top:20px;grid-template-columns:1fr}
-  .articleGrid{grid-template-columns:1fr}
-  .articleGrid .articleCard{display:grid;grid-template-columns:110px minmax(0,1fr);min-height:124px}
-  .articleCover,.articleCoverPlaceholder{height:100%;min-height:124px}
-  .articleCopy{padding:11px}
-  .articleCopy h3{font-size:18px}
-  .articleCopy p{font-size:11px;min-height:0}
-  .finalCta{display:grid;gap:14px;padding:19px;margin-bottom:23px}
-  .finalCta .primary{width:100%}
+ .layout{padding-bottom:16px}
+ .hero{margin:9px 0 0;border-radius:22px}
+ .heroMedia{min-height:301px;padding:13px 14px 30px;background-position:center 39%}
+ .backLink{gap:8px;font-size:12px}
+ .backLink>span{width:35px;height:35px}
+ .toolButton{width:38px;height:38px}
+ .identity{gap:12px;margin-top:52px;align-items:center}
+ .portrait,.portraitFallback{width:112px;height:133px;border-radius:20px;border-width:3px}
+ .identityCopy .kicker{font-size:8px;padding:5px 8px;letter-spacing:.04em}
+ .identityCopy h1{font-size:clamp(34px,8.3vw,43px)}
+ .professionalTitle{margin-top:5px;font-size:12px}
+ .heroFacts{gap:3px 7px;margin-top:7px}
+ .location{font-size:10px}
+ .badges{margin-top:7px}
+ .badges span{padding:5px 7px;font-size:9px}
+ .heroBody{padding:0 15px 17px}
+ .highlights{border-radius:15px}
+ .highlights>div{min-height:69px;padding:10px 4px}
+ .highlights strong{font-size:20px}
+ .highlights span{font-size:9px}
+ .heroBio{margin-top:14px;font-size:13px;line-height:1.5;-webkit-line-clamp:3}
+ .heroHint{margin-top:8px;font-size:11px}
+ .heroActions{display:grid;gap:8px;margin-top:15px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .heroActions .primary{grid-column:1/-1;min-height:48px;padding:11px 17px;font-size:13px}
+ .heroActions .secondary{min-width:0;padding:8px 6px;font-size:10px;text-align:center}
+ .heroActions .secondary:only-of-type{grid-column:1/-1}
+ .sectionNav{gap:7px;margin-top:11px;padding-bottom:8px}
+ .sectionNav a{gap:6px;min-height:43px;padding:9px 13px;font-size:11px}
+ .navGlyph{font-size:16px}
+ .services,.meditations,.articles{padding-top:19px}
+ .sectionHeading{margin-bottom:12px}
+ .sectionHeading h2,.about h2,.articles h2{font-size:29px}
+ .count{font-size:10px;padding:5px 9px}
+ .sectionLead{font-size:12px}
+ .meditations{margin-top:24px}
+ .meditationGrid{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:9px;scrollbar-width:none}
+ .meditationGrid::-webkit-scrollbar{display:none}
+ .meditationCard{flex:0 0 min(70vw,250px);scroll-snap-align:start}
+ .meditationArtwork{min-height:116px}
+ .meditationCopy{padding:12px}
+ .meditationCopy strong{font-size:17px}
+ .sharedAudioGrid{grid-template-columns:1fr}
+ .about{padding:18px;margin-top:22px}
+ .tags li{font-size:11px}
+ .credentialsGrid{grid-template-columns:1fr}
+ .articleGrid{grid-template-columns:1fr}
+ .articleCard{display:grid;grid-template-columns:115px minmax(0,1fr)}
+ .articleCover,.articleCoverPlaceholder{height:100%;min-height:135px}
+ .articleCopy{padding:11px}
+ .articleCopy h3{font-size:18px}
+ .articleCopy p{font-size:11px}
+ .finalCta{display:grid;gap:14px;margin-bottom:19px;padding:19px}
+ .finalCta .primary{width:100%}
 }
 @media (max-width: 360px){
-  .hero{padding:14px 12px}
-  .portrait,.portraitFallback{width:79px;height:99px}
-  .identityCopy h1{font-size:29px}
-  .heroFacts{flex-direction:column;align-items:flex-start}
-  .meditationCard{grid-template-columns:100px minmax(0,1fr)}
-  .meditationArtwork{min-height:132px}
-  .meditationCopy{padding:10px}
-  .meditationCopy strong{font-size:17px}
-  .articleGrid .articleCard{grid-template-columns:90px minmax(0,1fr)}
+ .heroMedia{padding-left:11px;padding-right:11px;min-height:300px}
+ .identity{gap:9px}
+ .portrait,.portraitFallback{width:94px;height:117px;border-radius:16px}
+ .identityCopy h1{font-size:32px}
+ .identityCopy .kicker{font-size:7.5px}
+ .location{font-size:9px}
+ .heroBody{padding-left:11px;padding-right:11px}
+ .heroActions .secondary{font-size:9px}
+ .sectionNav a{padding:8px 11px;font-size:10px}
+ .sectionHeading h2{font-size:26px}
+ .meditationCard{flex-basis:255px}
+ .articleCard{grid-template-columns:98px minmax(0,1fr)}
 }
 @media (prefers-reduced-motion: reduce){
-  .sectionNav{scroll-behavior:auto}
+ .toolButton,.primary{transition:none}
+ .sectionNav,.meditationGrid{scroll-behavior:auto}
 }

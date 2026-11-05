@@ -176,3 +176,21 @@ test('live mobile compact v2 keeps native consent, single lead and optional secu
   assert.match(wizard, /<details className=\{styles\.optionalName\}>/)
   for (const privacy of ['no medical details','без медицинских данных','sin datos médicos']) assert.ok(wizard.includes(privacy))
 })
+
+test('resume useEffect lists every translated message it reads, so exhaustive-deps stays silent', () => {
+  const wizard = read('components/free-express-wizard.tsx')
+  const start = wizard.indexOf('attempted.current = true;')
+  const deps = wizard.indexOf('}, [locale, onSaved, onRestoredFocus', start)
+  assert.ok(start > -1, 'resume effect not found')
+  assert.ok(deps > start, 'resume effect dependency array not found')
+  const effect = wizard.slice(start, deps)
+  const listed = new Set(
+    [...effect.matchAll(/t\.([A-Za-z]+)/g)].map(m => m[1]),
+  )
+  const dependencyArray = wizard.slice(deps, wizard.indexOf(']);', deps))
+  for (const key of listed) {
+    assert.match(dependencyArray, new RegExp(`\\bt\\.${key}\\b`),
+      `resume useEffect reads t.${key} but does not list it in its dependency array`)
+  }
+  assert.ok(listed.has('timeout'), 'resume effect must read t.timeout so guests get the settled timeout copy')
+})

@@ -129,7 +129,8 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 6, 'All six menu link groups close their disclosure, including Shop and Cart');
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 7, 'All seven menu link groups close their disclosure, including Shop, Cart and Free App');
+  assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');
@@ -228,9 +229,9 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
-  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(verifier, /Reset must restore the exact paid request/);
+  assert.match(verifier, /option\[value="30-min"\].*€50/);
+  assert.match(verifier, /option\[value="60-min"\].*€100/);
+  assert.match(verifier, /No enquiry without explicit reply consent/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
@@ -243,6 +244,25 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
+test('release audit verifies current compact paid capture and safe synthetic handoff', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-safe-handoff'"), verifier.indexOf('if (width === 390)'));
+  assert.match(paid, /data-service-visual-screen="final-capture"/);
+  assert.match(paid, /data-compact-hydrated/);
+  assert.match(paid, /option\[value="30-min"\].*€50/);
+  assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /services\/free-situation-review/);
+  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
+  assert.match(paid, /attribution\)\.not\.toBeChecked/);
+  assert.match(paid, /assertSyntheticLoopback\(paidPage\.url\(\)\)/);
+  assert.match(paid, /assert\.equal\(submissions, 0/);
+  assert.match(paid, /assert\.equal\(submissions, 1/);
+  assert.match(paid, /submitted\.contactConsent, true/);
+  assert.match(paid, /data-lead-saved/);
+  assert.match(paid, /enquiry-qa%40example\.test/);
+  assert.match(paid, /liveConsentSubmitted:false/);
+});
+
 test('initial navigation effect and identical replay preserve preopened native menus', () => {
   const { menus, context, cleanup } = navigationHarness();
   navigationEffect(['pathname', 'activeLocale'], context);
@@ -250,4 +270,21 @@ test('initial navigation effect and identical replay preserve preopened native m
   assert.ok(menus.every(menu => menu.open));
   assert.ok(menus.every(menu => menu.focusCount === 0));
   cleanup();
+});
+
+test('release audit preserves all four browser lanes while isolating CI process load', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const segment = verifier.match(/const browserLanes = \[([\s\S]*?)\];/)?.[1] || '';
+  const lanes = [...segment.matchAll(/\['(chromium|webkit)',\s*(chromium|webkit),\s*(390|1365)\]/g)];
+  assert.deepEqual(lanes.map(row => row[1] + '/' + row[3]),
+    ['webkit/390', 'webkit/1365', 'chromium/390', 'chromium/1365']);
+  assert.ok(lanes.every(row => row[1] === row[2]), 'Browser names must match launchers');
+  assert.match(verifier, /for \(const \[engine, browserType, width\] of browserLanes\) \{/);
+  assert.match(verifier, /await exercise\(engine, browserType, width\)/);
+  assert.doesNotMatch(verifier, /Promise\.all\(\[exercise\(/);
+  assert.match(verifier, /console\.info\('\[release-reaudit\] public route '/);
+  for (const safety of ["check('public-page'", "check('csp-navigation-and-history'",
+    "check('private-anonymous'", "check('api-video-csp-restrictive'"]) {
+    assert.ok(verifier.includes(safety), 'Preserve release safety contract: ' + safety);
+  }
 });

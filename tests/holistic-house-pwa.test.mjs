@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {UNIFIED_DOCK_IDS,unifiedMobileDockHref} from '../lib/unified-mobile-dock.mjs'
 test('private Cabinet advertises a dedicated installable Holistic House PWA',()=>{
  const manifest=JSON.parse(readFileSync('public/holistic-house-app.webmanifest','utf8'))
  const layout=readFileSync('app/[locale]/app/layout.jsx','utf8')
@@ -41,6 +42,24 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
   assert.doesNotMatch(page,/manifest: path\[0\] === 'course'/)
 })
 
+test('installed canonical root scope covers all seven tab routes',()=>{
+ const origin='https://holistichouse.vercel.app';
+ for(const locale of ['en','ru','es']){
+  const name='public/holistic-house-app'+(locale==='en'?'':'-'+locale)+'.webmanifest';
+  const m=JSON.parse(readFileSync(name,'utf8'));
+  const scope=new URL(m.scope,origin);
+  const start=new URL(m.start_url,origin);
+  assert.equal(start.origin,scope.origin);
+  assert.ok(start.pathname.startsWith(scope.pathname));
+  for(const id of UNIFIED_DOCK_IDS){
+   const url=new URL(unifiedMobileDockHref(locale,id),origin);
+   assert.equal(url.origin,scope.origin,id);
+   assert.ok(url.pathname.startsWith(scope.pathname),id);
+  }
+ }
+ assert.notEqual(new URL('https://codex-public-book-library.vercel.app/ru/holistic-support/mobile').origin,origin);
+});
+
 test('install landing is public, bilingual and links to real protected messaging settings',()=>{
   const guide=readFileSync('app/[locale]/install/page.jsx','utf8')
   const icon=readFileSync('app/holistic-house-icon/[size]/route.js','utf8')
@@ -73,6 +92,7 @@ test('public Holistic House pages default to the correct Home Screen app without
   const localeLayout=readFileSync('app/[locale]/layout.tsx','utf8')
   const psiLayout=readFileSync('app/[locale]/homeopathy/layout.tsx','utf8')
   const psiSpanish=readFileSync('app/es/homeopathy/layout.tsx','utf8')
+  const esLayout=readFileSync('app/es/layout.tsx','utf8')
   const psi=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'))
   assert.match(root,/manifest: "\/holistic-house-app.webmanifest"/)
   assert.match(root,/applicationName: "Holistic House"/)
@@ -82,6 +102,7 @@ test('public Holistic House pages default to the correct Home Screen app without
   assert.match(root,/appleWebApp: \{ capable: true, title: "Holistic House"/)
   assert.match(psiLayout,/manifest: "\/manifest.webmanifest"/)
   assert.match(psiSpanish,/manifest: "\/manifest.webmanifest"/)
+  assert.match(esLayout,/holistic-house-app-es\.webmanifest/)
   assert.equal(psi.name,'PsiAlchemy')
   assert.equal(psi.start_url,'/ru/homeopathy')
 })

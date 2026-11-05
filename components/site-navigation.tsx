@@ -22,19 +22,19 @@ const siteMenuCopy = {
     open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu',
     start: 'Free review', freeTitle: 'Free situation review',
     freeDetail: 'Short questionnaire and drawing · personal written response',
-    quick: 'Main sections', more: 'Explore more',
+    quick: 'Main sections', more: 'Explore more', install: 'Install free app',
   },
   ru: {
     open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню',
     start: 'Бесплатный разбор', freeTitle: 'Бесплатный разбор ситуации',
     freeDetail: 'Короткая анкета и рисунок · личный письменный ответ',
-    quick: 'Основные разделы', more: 'Другие разделы',
+    quick: 'Основные разделы', more: 'Другие разделы', install: 'Установить приложение бесплатно',
   },
   es: {
     open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú',
     start: 'Revisión gratis', freeTitle: 'Revisión gratuita de tu situación',
     freeDetail: 'Cuestionario y dibujo · respuesta personal por escrito',
-    quick: 'Secciones principales', more: 'Explorar más',
+    quick: 'Secciones principales', more: 'Explorar más', install: 'Instalar app gratis',
   },
 } as const;
 
@@ -120,6 +120,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
 
   // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
   extraMenuItems.push(
+    // Direct bridge from the marketing home to the approved six-tab Practice
+    // without replacing the existing Holistic Support catalogue.
+    { id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile', ariaLabel: text.practice, external: false },
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
     { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
   );
@@ -188,6 +191,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
           </Link>
           <Link href={`/${activeLocale}/cart`} prefetch={false} data-nav-item="cart" onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
             {activeLocale === 'ru' ? 'Корзина' : activeLocale === 'es' ? 'Carrito' : 'Cart'}
+          </Link>
+          <Link href={`/${activeLocale}/install`} prefetch={false} data-nav-item="install"
+            aria-current={pathname === `/${activeLocale}/install` ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {siteMenu.install}
           </Link>
           {extraMenuItems.map(item => (
             <Link

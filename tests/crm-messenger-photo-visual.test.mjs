@@ -19,7 +19,18 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
     '/en/app/messages/someone-else','/admin']){
     assert.equal(guardedPaths.test(path),false,path)
   }
-  assert.match(middleware,/\(ownerMessengerImages \? ' blob:' : ''\)/)
+  // Blob previews remain route-scoped: owner inbox, public Mandala, Support,
+  // and the authenticated private photo cabinet. Neither public marketing
+  // pages nor other account routes receive unrestricted blob image access.
+  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''\)/)
+  const privateCabinet=middleware.match(/const privateSupportPhotoCabinet = (\/\^.+\/)\.test\(pathname\)/)
+  assert.ok(privateCabinet,'private photo signed-image CSP requires exact cabinet route')
+  const onlyCabinet=runInNewContext(privateCabinet[1])
+  for(const path of ['/en/app/videos','/ru/app/videos','/es/app/videos/']) assert.equal(onlyCabinet.test(path),true,path)
+  for(const path of ['/','/en','/en/client/123','/en/app/messages','/en/app/portrait']) assert.equal(onlyCabinet.test(path),false,path)
+  assert.match(middleware,/directMessageStorageOrigin/)
+  assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
+  assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
   assert.match(middleware,/"frame-src 'none'"/)
   assert.match(middleware,/"object-src 'none'"/)
 })
@@ -36,8 +47,17 @@ test('Photos are resolved only in authenticated owner CRM thread and have retrie
   assert.match(ui,/onLoad=\{\(\)=>setState\('ready'\)\}/)
   assert.match(ui,/onError=\{\(\)=>setState\('error'\)\}/)
   assert.match(ui,/setRetry\(value=>value\+1\)/)
-  assert.match(ui,/aria-expanded=\{expanded\}/)
-  assert.match(css,/\.media\[data-expanded="true"\]/)
+  assert.match(ui,/<PrivateChatPhoto src=\{src\}/)
+  const viewer=read('components/app/private-chat-photo.jsx')
+  const viewerCss=read('components/app/private-chat-photo.module.css')
+  assert.match(viewer,/aria-expanded=\{open\}/)
+  assert.match(viewer,/role="dialog" aria-modal="true"/)
+  assert.match(viewer,/event.key==='Escape'/)
+  assert.match(viewer,/trigger.current\?\.focus\(\)/)
+  assert.match(viewer,/createPortal\(/)
+  assert.match(viewerCss,/position:fixed;inset:0/)
+  assert.match(viewerCss,/safe-area-inset-top/)
+  assert.doesNotMatch(viewer,/api.telegram.org|file_id|sessionStorage|localStorage/)
   assert.doesNotMatch(ui,/api\.telegram\.org|file_id|telegramPhotoFileId/)
 })
 
