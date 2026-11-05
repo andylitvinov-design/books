@@ -229,7 +229,7 @@ function formatAnswers(draft: Draft, locale: PublicLocale) {
   return lines.join("\n");
 }
 
-export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
+export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: { locale: PublicLocale; initialPrivateCopyMode?: boolean }) {
   const t = copy[locale];
   const [draft, setDraft] = useState<Draft>(blank);
   const [saved, setSaved] = useState<Saved | null>(null);
@@ -237,7 +237,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [consent, setConsent] = useState(false);
   // Only an explicit private-copy link opens the legacy personal-account tools.
   // Standard Telegram/public questionnaires have one CRM submission, not two save choices.
-  const [privateCopyMode, setPrivateCopyMode] = useState(false);
+  const [privateCopyMode, setPrivateCopyMode] = useState(initialPrivateCopyMode);
   const [dirty, setDirty] = useState(false);
   const [collision, setCollision] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -421,7 +421,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     } catch { setError(t.deleteError); } finally { setBusy(false); }
   }
   async function submitDiagnostic() {
-    if (leadBusy || leadReceipt || busy || collision) return;
+    if (privateCopyMode || leadBusy || leadReceipt || busy || collision) return;
     if(telegramStatus==="checking"){setLeadError(t.telegramChecking);return;}
     if(telegramEntry && !miniLinked && !telegramHandoff){
       setLeadError(t.telegramUnavailable);return;
@@ -501,7 +501,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    {privateCopyMode ? <div className={styles.authBar}>
+    {privateCopyMode ? <div className={styles.authBar} data-coaching-private-copy>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
         {auth === "guest" ? <small>{t.temporary}</small> : null}
@@ -566,7 +566,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     </section>)}
 
     <section className={styles.finish} aria-label={locale === "ru" ? "Сохранение анкеты" : locale === "es" ? "Guardar formulario" : "Save questionnaire"}>
-      <div className={styles.requestBox} data-coaching-request>
+      {!privateCopyMode ? <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
         <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:t.sendLead}</p>
@@ -608,7 +608,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
         </>}
-      </div>
+      </div> : null}
       {privateCopyMode ? <>
       <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
