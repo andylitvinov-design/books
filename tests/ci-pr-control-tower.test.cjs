@@ -1466,7 +1466,7 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
  assert.equal(report.actionable,16,'manual preflight candidates count as routable');
  assert.equal(report.nonmanualRouted,0,'no manual source write was permitted');
  assert.equal(report.legacyPrepEligible,16);
- assert.equal(report.candidates,1,'exactly one stable old preflight candidate');
+ assert.equal(report.candidates,4,'four bounded old candidate probes, not four dispatches');
  assert.equal(report.dispatchAccepted,0,'the mock never proves capacity or a lease');
  assert.match(report.reason,/^CAPACITY_UNVERIFIED:/);
  assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
@@ -1533,4 +1533,27 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
  assert.equal(f.calls.reserved.length,1,'signed exact-HEAD reservation precedes dispatch');
  assert.equal(f.calls.labels.length,0,'do not change any manual/consent hold');
  assert.equal(f.calls.removed.length,0,'do not remove conflict/manual labels');
+});
+
+test('handled old PR is skipped and next legacy candidate dispatches once',async()=>{
+ const old=[204,205,206].map(number=>pr(number,'repair',{
+  mergeable:false,mergeable_state:'dirty',
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
+ }));
+ const picked=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
+ assert.equal(picked.length,3);
+ const first=picked[0],second=picked[1];
+ const done={...first,state:'PREPARED'};
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody(done)};
+ const f=fixture(old,{comments:{[first.pr_number]:[bot]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.blocked.ALREADY_HANDLED,1);
+ assert.equal(result.legacyDispatchAccepted,1);
+ assert.equal(result.repairDispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,1,'one worker per sweep');
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,String(second.pr_number));
+ assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
 });

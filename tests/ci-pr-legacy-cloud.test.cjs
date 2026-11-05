@@ -38,13 +38,13 @@ test('stable old candidate survives arbitrary delayed cron ticks and rotates hou
  const at=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
  const late=planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy');
  const next=planCandidates(old,NOW+1200000).filter(x=>x.lane==='legacy');
- assert.equal(at.length,1);
- assert.equal(late.length,1,'late :50 tick must still admit a candidate');
- assert.equal(late[0].pr_number,at[0].pr_number,
-  'a second 10-minute tick of one hour reuses the exact same task');
- assert.equal(next.length,1);
- assert.notEqual(next[0].pr_number,at[0].pr_number,
-  'next UTC hour rotates without waiting for :40');
+ assert.equal(at.length,4);
+ assert.equal(late.length,4,'late :50 tick preserves the same bounded pool');
+ assert.deepEqual(late.map(x=>x.pr_number),at.map(x=>x.pr_number),
+  'a repeated 10-minute tick in one hour probes the same signed tasks');
+ assert.equal(next.length,4);
+ assert.notDeepEqual(next.map(x=>x.pr_number),at.map(x=>x.pr_number),
+  'next UTC hour rotates to avoid starvation');
  const receipt=task.taskFor(old[0],{tier:'P4',direction:'academy-courses'});
  assert.equal(task.reservationStatus(receipt,
   [{body:task.commentBody({...receipt,state:'PREPARED'})}],NOW),

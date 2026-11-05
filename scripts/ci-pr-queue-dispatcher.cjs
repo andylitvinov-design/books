@@ -111,14 +111,17 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
- // Scheduled GitHub cron can arrive many minutes late. Pick the same old PR
- // in a UTC hour, regardless of when the only available sweep is delivered.
- // Exact task receipts prevent duplicate execution on later ticks in that
- // hour; no new cron, workflow, runner class or provider.
+ // Bounded rotation: the first exact-HEAD manual task may already have a
+ // signed terminal receipt. Inspect up to four old PRs in the SAME existing
+ // Watchdog cycle and skip handled ones; do not starve 80+ other old PRs.
+ // At most ONE new legacy worker is accepted per sweep (guard below).
  const legacy=ranked.filter(pr=>laneOf(pr)==='legacy')
   .sort((a,b)=>a.number-b.number);
- const old=legacy.length?
-  legacy[Math.floor(now/3600000)%legacy.length]:null;
+ const LEGACY_PROBE_LIMIT=4;
+ const legacyStart=legacy.length?
+  (Math.floor(now/3600000)*LEGACY_PROBE_LIMIT)%legacy.length:0;
+ const oldCandidates=Array.from({length:Math.min(LEGACY_PROBE_LIMIT,legacy.length)},
+  (_,i)=>legacy[(legacyStart+i)%legacy.length]);
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -130,7 +133,7 @@ function planCandidates(prs,now){
   const fast=conflicts.slice(0,Math.min(2,room));
   const tail=conflicts.slice(fast.length),rotating=room-fast.length;
   const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
-  return [...(old?[old]:[]),...fast,
+  return [...oldCandidates,...fast,
    ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
    .slice(0,MAX_CONFLICT_ONLY_INSPECT)
    .map(pr=>taskFor(pr,priorityFor(pr,now)));
@@ -138,7 +141,8 @@ function planCandidates(prs,now){
  const picked=[],chosen=new Set();
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
  if(fairnessTurn)add(conflict);
- add(source[0]);add(ci);add(old);
+ add(source[0]);add(ci);
+ for(const old of oldCandidates)add(old);
  // Keep priority among the first three sources and rotate the remainder.
  for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
@@ -492,6 +496,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const ordered=candidates;
  for(const task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
+  if(task?.lane==='legacy'&&summary.legacyDispatchAccepted>=1)continue;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
