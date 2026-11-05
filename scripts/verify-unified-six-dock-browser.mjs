@@ -11,6 +11,51 @@ const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","ai","practice","master","profile"];
+
+// The fixed dock belongs to the ROOT shell, not to individual pages. Check
+// every user-reported route: guest public Studio/Practice/Master, public MyTube,
+// and the signed-out shell for protected AI Messenger/Profile. Authenticated
+// iPhone E2E is a separate acceptance requirement, never impersonated here.
+async function assertPinnedSixDock(page, id, active) {
+  const dock=page.locator("[data-hh-unified-dock]");
+  await dock.waitFor({state:"visible",timeout:30000});
+  await page.waitForFunction(expected=>{
+    const node=document.querySelector("[data-hh-unified-dock]");
+    return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
+  },active,{timeout:15000});
+  const buttons=await dock.locator("[data-unified-dock-item]").evaluateAll(
+    els=>els.map(el=>el.dataset.unifiedDockItem));
+  assert.deepEqual(buttons,ids,id+" one consistent six-item navigation");
+  const oldDock='[data-support-mobile-bottom-nav]:visible,'+
+    '[data-mandala-support-bottom-nav]:visible,.hh-mobile-app-nav:visible,'+
+    '.hh-practice-inner-dock:visible,[data-legacy-practice-bottom-nav]:visible,'+
+    '.mobile-bottom-navigation:visible';
+  assert.equal(await page.locator(oldDock).count(),0,id+" no duplicated legacy footer");
+  for(const point of ["top","middle","bottom","top"]){
+    await page.evaluate(async point=>{
+      const root=document.scrollingElement||document.documentElement;
+      const max=Math.max(0,root.scrollHeight-window.innerHeight);
+      const top=point==="bottom"?max:point==="middle"?max/2:0;
+      window.scrollTo({top,behavior:"instant"});
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    },point);
+    const position=await dock.evaluate(node=>{
+      const rect=node.getBoundingClientRect(),v=window.visualViewport;
+      const style=window.getComputedStyle(node);
+      return {css:style.position,bottom:style.bottom,rectBottom:rect.bottom,
+        visibleBottom:v?v.offsetTop+v.height:window.innerHeight,
+        staleInset:document.body.style.getPropertyValue("--hh-unified-viewport-inset"),
+        height:rect.height};
+    });
+    assert.equal(position.css,"fixed",id+" "+point+" dock is fixed");
+    assert.equal(position.bottom,"0px",id+" "+point+" no viewport offset");
+    assert.equal(position.staleInset,"",id+" "+point+" no stale JS correction");
+    assert.ok(position.height>=52,id+" "+point+" accessible dock height");
+    assert.ok(Math.abs(position.rectBottom-position.visibleBottom)<=3,
+      id+" "+point+" dock stays at the visual bottom: "+JSON.stringify(position));
+  }
+}
+
 async function inspect(browserType,locale,width){
  const browser=await browserType.launch({headless:true});
  const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,
@@ -177,6 +222,28 @@ async function inspect(browserType,locale,width){
    await page.screenshot({path:folder+"/mytube-webkit-ru-390-filtered.png",fullPage:false});
   results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
     overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
+  // Route matrix reuses the existing WebKit/Chromium context, avoiding another
+  // runner or browser launch. Exercise Safari scrolling at 320/390/430 in RU,
+  // and check EN/ES at 390. ES Profile intentionally uses the existing EN
+  // account route; never add an unauthorised new private locale.
+  if(locale==="ru" || width===390){
+    const prefix="/"+locale;
+    const routeCases=[
+      ["practice",prefix+"/holistic-support/mobile"],
+      ["video",prefix+"/holistic-support/mandala"],
+      ["ai",prefix+"/app/messages?section=ai"],
+      ["master",prefix+"/practice"],
+      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
+    ];
+    for(const [active,path] of routeCases){
+      const marker=id+":"+active;
+      await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
+      await assertPinnedSixDock(page,marker,active);
+      if(browserType===webkit && locale==="ru" && width===390)
+        await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
+      results.push({id:marker,pinned:true,route:path,authenticated:false});
+    }
+  }
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){
