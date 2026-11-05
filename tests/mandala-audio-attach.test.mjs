@@ -54,7 +54,9 @@ test("choice is preview; only attached voice plus explicitly selected original m
   assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/musicBed\.id!=="none"\s*\?await startLayeredVideoAudio\(/);
-  assert.match(studio,/attachedAudio\?\.kind==="file"&&audioRights&&musicBed\.id!=="none"/);
+  assert.match(studio,/const activeBed=attached\.kind==="file"&&audioRights&&musicBed\.id!=="none"/);
+  assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
+  assert.match(studio,/if\(musicBed\.id!=="none"\)files\.push\(/);
   assert.match(studio,/startLayeredVideoAudio\(\s*attachedAudio\.file,musicBed\.id,soundVolume,musicBed\.volumePercent/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
