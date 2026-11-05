@@ -84,7 +84,7 @@ test('coaching intake reuses consented attribution and existing owner-only notif
   // returns null when the visitor has not consented to source attribution.
   assert.match(route,/readPublicEnquiryAttribution\(request\)/)
   assert.match(standard,/readPublicEnquiryAttribution\(request\)/)
-  assert.match(route,/createPublicServiceEnquiry\(config, input, readPublicEnquiryAttribution\(request\)\)/)
+  assert.match(route,/createPublicServiceEnquiry\(\s*config,input,readPublicEnquiryAttribution\(request\),\{linkedTelegram:handoff\}\)/)
   // The message is sent only after a successful encrypted CRM commit. The
   // provider failure must not convert a saved lead into a failed submission.
   assert.match(route,/result\.saved === true/)

@@ -410,11 +410,13 @@ test("approved first screen keeps six tabs above a real 16:9 Canvas and one righ
  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
 
-test("single prompt input precedes goal filters, topic chooser and four story candidates",()=>{
+test("goal, topic and one free-text prompt precede the four scenario choices",()=>{
  const prompt=studio.indexOf("data-video-request-prompt");
  const goal=studio.indexOf("data-video-director-goal-controls");
  const topic=studio.indexOf("data-video-director-topic-controls");
- assert.ok(prompt>=0&&prompt<goal&&goal<topic);
+ assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
+ assert.match(studio,/data-video-continue-scenarios/);
+ assert.match(studio,/setVideoScenarioOpen\(true\)/);
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
