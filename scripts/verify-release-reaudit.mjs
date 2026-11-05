@@ -660,8 +660,9 @@ async function exercise(engine, browserType, width) {
           });
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
+          const evidenceFetches = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]'));
           const unexpectedErrors = cspErrors.filter(error => {
-            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace });
+            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches });
             if (attribution) navigationCancellations.push(attribution);
             return !attribution;
           });

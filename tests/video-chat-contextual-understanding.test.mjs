@@ -27,7 +27,7 @@ const examples=[
  ["Without captions or music, landscape 15 seconds","review","edit",{phrases:false,music:"none",aspect:"landscape",duration:15}],
  ["романтическая музыка","music","edit",{music:"love"}],
  ["медитативная музыка","music","edit",{music:"meditation"}],
- ["Фразы не надо, музыку оставь","review","edit",{phrases:false,music:"harmony"}],
+ ["Фразы не надо, музыку оставь","review","edit",{phrases:false}],
  ["добавь горы","review","append_goal",{}],
  ["хочу озвучку голосом","review","audio",{}],
  ["Сделай видео","category","clarify",{}],
@@ -46,6 +46,8 @@ test("safety: contradictory and unsupported options never silently override sele
  assert.equal(understand("45 секунд","review").reason,"unsupported_duration");
  assert.equal(understand("20-30 секунд","duration").reason,"ambiguous");
  assert.equal(understand("15 или 30 секунд","review").reason,"ambiguous");
+ assert.equal(understand("Фразы не надо, музыку оставь","review").filters.music,undefined,
+  "explicitly preserved soundtrack must not reset to generic harmony");
  assert.equal(understand("нет","review").kind,"clarify");
 });
 test("explicit confirmation and rendering stay in separate stages",()=>{
