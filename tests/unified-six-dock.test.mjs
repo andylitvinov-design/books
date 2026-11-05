@@ -22,7 +22,7 @@ test("owner-approved exact six dock destinations, no seventh or displaced center
  assert.equal(unifiedMobileDockHref("ru","unknown"),null);
  assert.equal(unifiedMobileDockHref("../../admin","profile"),null);
 });
-test("installed Home uses the six-tab Practice dock but the marketing browser keeps seven journeys",()=>{
+test("installed Home uses the six-tab Practice dock but browser keeps seven journeys",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const shell=read("app/unified-mobile-dock.css");
  const menu=read("components/site-navigation.tsx");
@@ -30,17 +30,17 @@ test("installed Home uses the six-tab Practice dock but the marketing browser ke
  for(const path of ["/","/ru","/en","/es","/ru/","/en/"]){
   assert.ok(isUnifiedMobileDockHomePath(path),path);
   assert.ok(isUnifiedMobileDockPath(path),path);
-  assert.equal(unifiedMobileDockActive(path),null,"the homepage is not a selected app tab");
+  assert.equal(unifiedMobileDockActive(path),null,"homepage is not a selected app tab");
  }
  for(const path of ["/ru/mytube","/en/app/portrait","/ru/practice"])
   assert.equal(isUnifiedMobileDockHomePath(path),false);
- assert.match(dock,/data-hh-home-route=\\{homeRoute \\|\\| undefined\\}/);
- assert.match(shell,/@media \\(display-mode: standalone\\)/);
- assert.match(shell,/@media not \\(display-mode: standalone\\)/);
- assert.match(shell,/\\[data-hh-unified-dock\\]\\[data-hh-home-route\\]/);
- assert.match(shell,/body:has\\(\\[data-hh-unified-dock\\]:not\\(\\[data-hh-home-route\\]\\)\\) \\.mobile-bottom-navigation/);
- assert.match(routes,/compactNavigationIds = \\['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple'\\]/);
- assert.match(menu,/id: 'practice', label: text.practice, href: '\\/' \\+ activeLocale \\+ '\\/holistic-support\\/mobile'/);
+ assert.ok(dock.includes("data-hh-home-route={homeRoute || undefined}"));
+ assert.ok(shell.includes("@media (display-mode: standalone)"));
+ assert.ok(shell.includes("@media not (display-mode: standalone)"));
+ assert.ok(shell.includes("[data-hh-unified-dock][data-hh-home-route]"));
+ assert.ok(shell.includes("body:has([data-hh-unified-dock]:not([data-hh-home-route])) .mobile-bottom-navigation"));
+ assert.ok(routes.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
+ assert.ok(menu.includes("id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile'"));
  for(const language of ["Practice","Практика","Práctica"])assert.ok(routes.includes(language));
 });
 
