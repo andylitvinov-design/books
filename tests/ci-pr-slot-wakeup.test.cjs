@@ -19,8 +19,10 @@ test('normal capacity and safe emergency rescue under global CI overload',()=>{
   assert.equal(admission(11,5,[],NOW),'DISPATCH');
   assert.equal(admission(12,0,[],NOW),'DISPATCH_STALE_CI');
   assert.equal(admission(0,6,[],NOW),'DISPATCH_STALE_CI');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-15*60_000).toISOString()}],NOW),'CI_BUSY');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-31*60_000).toISOString()}],NOW),'DISPATCH_STALE_CI');
+  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-14*60_000).toISOString()}],NOW),'CI_BUSY');
+  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-15*60_000).toISOString()}],NOW),'DISPATCH_STALE_CI');
+  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-16*60_000).toISOString()}],NOW),'DISPATCH_STALE_CI');
+  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-60*60_000).toISOString(),updated_at:new Date(NOW-8*60_000).toISOString()}],NOW),'WATCHDOG_RECENT');
   assert.equal(admission(0,null,[],NOW),'CAPACITY_UNKNOWN');
   assert.equal(admission(19,133,null,NOW),'WATCHDOG_HISTORY_UNVERIFIED');
   assert.equal(admission(19,133,[{event:'workflow_dispatch',status:'queued',created_at:new Date(NOW-90*60_000).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
@@ -79,7 +81,7 @@ test('busy CI does not dispatch even on trusted Core completion',async()=>{
     createWorkflowDispatch:async()=>{calls++;}
   }},request:async()=>({data:{workflow_runs:[{
     event:'workflow_dispatch',status:'completed',
-    created_at:new Date(NOW-15*60_000).toISOString()
+    created_at:new Date(NOW-14*60_000).toISOString()
   }]}})};
   const core={info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
   const r=await run({github,core,context:event,now:NOW});
@@ -104,7 +106,7 @@ test('slot wakeup inspects only real schedule and workflow_dispatch runs',async(
 // still be permitted, without editing a PR or bypassing exact-HEAD admission.
 test('stale Watchdog executes one real rescue dispatch despite a saturated CI queue',async()=>{
   let calls=0;
-  const github={rest:{actions:{
+  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
     listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?133:19}}),
     createWorkflowDispatch:async p=>{
       calls++;
@@ -152,4 +154,18 @@ test('incomplete queue evidence does not create a speculative success-triggered 
  const result=await run({github,core,context:event,now:NOW});
  assert.equal(result.decision,'BACKLOG_UNVERIFIED');
  assert.equal(dispatches,0);
+});
+
+// A saturated queue and missed schedule are not themselves proof of work.
+test('stale cron under saturation never dispatches without proven backlog',async()=>{
+  let dispatched=0,checked=0;
+  const github={graphql:async()=>{checked++;return {ci:{nodes:[]},repair:{nodes:[]},conflict:{nodes:[]}}},
+    rest:{actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?133:19}}),
+      createWorkflowDispatch:async()=>{dispatched++}}},
+    request:async()=>({data:{workflow_runs:[{event:'schedule',status:'completed',
+      created_at:new Date(NOW-16*60_000).toISOString()}]}})};
+  const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+  const result=await run({github,core,context:event,now:NOW});
+  assert.equal(result.decision,'NO_ACTIONABLE_BACKLOG');
+  assert.equal(result.backlog,false);assert.equal(checked,1);assert.equal(dispatched,0);
 });

@@ -3,7 +3,7 @@
 // Fall back to at most one real reconcile every ten minutes when cron is delayed.
 const MAX_ACTIVE=12,MAX_QUEUED=6,COOLDOWN_MS=10*60_000;
 // Global CI saturation must not suppress the only working watchdog backstop.
-const STALE_RESCUE_MS=30*60_000;
+const STALE_RESCUE_MS=15*60_000;
 const CORE='HH PR core release gate';
 const PATH='.github/workflows/hh-pr-core-release.yml';
 const REPO='andylitvinov-design/books';
@@ -59,15 +59,16 @@ function admission(active,queued,runs,now=Date.now()) {
       'HH watchdog / direct handoff',
     ].includes(r.display_title))continue;
     if(['queued','in_progress','pending','requested','waiting'].includes(r.status))return 'WATCHDOG_ALREADY_ACTIVE';
-    const t=Date.parse(r.created_at||'');
+    // A completed reconciliation cools down after its real exit, not its queued start.
+    const t=Date.parse((r.status==='completed' && (r.updated_at||r.created_at)) || r.created_at||'');
     if(!Number.isFinite(t)||t>now+60_000)return 'WATCHDOG_HISTORY_UNVERIFIED';
     latestReconcileAt=latestReconcileAt===null?t:Math.max(latestReconcileAt,t);
     if(now-t>=-60_000&&now-t<COOLDOWN_MS)return 'WATCHDOG_RECENT';
   }
   if(active>=MAX_ACTIVE||queued>=MAX_QUEUED){
     // Do not wake into ordinary CI congestion. If every real scheduled/manual
-    // reconciliation is at least 30 minutes old (or none ever arrived), allow
-    // one rescue dispatch. Queued/running Watchdog and the cooldown above
+    // reconciliation finished at least 15 minutes ago (or none ever arrived),
+    // allow one guarded rescue dispatch. Queued/running Watchdog and the cooldown above
     // still block duplicates. Actual Worker/exact-HEAD admission is unchanged.
     return latestReconcileAt===null||now-latestReconcileAt>=STALE_RESCUE_MS
       ?'DISPATCH_STALE_CI':'CI_BUSY';
@@ -102,7 +103,9 @@ async function run({github,core,context,now=Date.now()}){
   report.decision=admission(report.active,report.queued,realHistory,now);
   // For ordinary successful Core events, no queue means no reason to scan
   // the entire repository a second time. Emergency stale-cron rescue remains.
-  if(report.decision==='DISPATCH'){
+  // A stale schedule by itself is not evidence of actionable PR work.
+  // Reuse the same read-only backlog proof even in saturated Actions queues.
+  if(report.decision==='DISPATCH'||report.decision==='DISPATCH_STALE_CI'){
     try{
       report.backlog=await hasDurableBacklog(github,owner,repo);
       if(!report.backlog)report.decision='NO_ACTIONABLE_BACKLOG';
