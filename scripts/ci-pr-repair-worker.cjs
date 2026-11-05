@@ -663,7 +663,8 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   const detailCode=state==='MANUAL'||state==='FAILED'?
     agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
-    head_sha:expectedSha,lane:'repair',state,reason_code:reason,strategy,
+    head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
+    state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':

@@ -912,3 +912,31 @@ test('repair_started requires an actual trusted Actions fix-step timestamp',()=>
  assert.deepEqual(parseComment(comment).map(x=>x.stage),['repair_started']);
  assert.equal(parseComment({...comment,performed_via_github_app:{slug:'other',id:1}}).length,0);
 });
+
+
+test('verified cloud legacy fix yields terminal PREPARED only after fix job and retains manual hold',async()=>{
+ const f=fixture();
+ const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'legacy',fixResult:'success',
+  candidateStatus:'prepared',publishResult:'skipped'});
+ assert.equal(r.state,'PREPARED');
+ assert.equal(r.lane,'legacy');
+ assert.equal(r.reason_code,'LEGACY_CLOUD_PREFLIGHT_NO_SOURCE_WRITE');
+ assert.equal(r.source_published,false);
+ assert.equal(r.new_sha,null);
+ assert.equal(f.log.labels,0,'read-only preflight must not alter manual source holds');
+ assert.equal(f.log.removed.length,0);
+ assert.match(f.log.commentBodies.at(-1),/LEGACY_CLOUD_PREFLIGHT_NO_SOURCE_WRITE/);
+});
+test('failed legacy preflight reports truthful terminal FAILED and never a source commit',async()=>{
+ const f=fixture();
+ const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'legacy',fixResult:'failure',
+  candidateStatus:'',publishResult:'skipped'});
+ assert.equal(r.state,'FAILED');
+ assert.equal(r.lane,'legacy');
+ assert.equal(r.reason_code,'LEGACY_PREFLIGHT_INCOMPLETE');
+ assert.equal(r.source_published,false);
+});

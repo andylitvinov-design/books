@@ -88,10 +88,14 @@ test('cloud worker records PREPARED without demanding a fake source SHA',()=>{
   state:'FAILED',claim_status:'claimed',source_published:false}),true);
  const yml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(yml,/needs.claim.outputs.strategy == 'legacy'/);
+ // No terminal result until the isolated preflight has actually completed.
+ const claim=yml.split('\n  claim:\n')[1].split('\n  fix:\n')[0];
+ assert.match(claim,/steps.select.outputs.strategy != 'legacy'/);
+ assert.match(yml,/needs.claim.result == 'success'/);
  assert.match(yml,/HH_LEGACY_CLOUD_PREFLIGHT_V1/);
  assert.match(yml,/name: hh-legacy-preflight/);
  assert.match(yml,/needs.claim.outputs.strategy == 'legacy'/);
- assert.match(yml,/needs.fix.result == 'success'/);
+ assert.match(yml,/needs.claim.result == 'success'/);
  assert.match(yml,/runs-on: ubuntu-24.04/);
  assert.doesNotMatch(yml,/runs-on: (?:self-hosted|ubuntu-latest-large)/);
 });
