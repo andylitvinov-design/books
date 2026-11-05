@@ -115,7 +115,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
   assert.match(backend,/on conflict do nothing/i)
   assert.match(backend,/contactConsent|replyConsent/)
   assert.match(backend,/seal\(\{\s*displayName: contact\.displayName/)
-  assert.match(backend,/contactProvenance: manuallyRecorded\?\.submittedByVisitor/)
+  assert.match(backend,/contactProvenance: row\.telegram_thread_id\?'consented_telegram_thread':\s*manuallyRecorded\?\.submittedByVisitor/)
   assert.match(backend,/enquiry: \{ referenceCode, serviceTitle, sourcePath \}/)
   assert.match(endpoint,/requireSameOrigin\(request, config\)/)
   assert.match(endpoint,/consumeRate/)
@@ -159,7 +159,9 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
 test('new guest enquiry links only the contact created by the same committed operation',()=>{
   const backend=read('lib/practitioners/public-service-enquiry.js')
   const schema=read('supabase/migrations/20261104155150_hh_public_enquiry_contact_links_v1.sql')
-  const posEnquiry=backend.indexOf('const inserted=await db.query(insert.text,insert.values)')
+  // The optional Telegram handoff wraps the same enquiry insert in a replay-safe
+  // try/catch; the contact insert must still follow the committed enquiry.
+  const posEnquiry=backend.indexOf('inserted=await db.query(insert.text,insert.values)')
   const posContact=backend.indexOf('const contactInsert=await db.query(')
   const posLink=backend.indexOf('insert into app_private.public_enquiry_contact_links')
   assert.ok(posEnquiry>0&&posContact>posEnquiry&&posLink>posContact,
