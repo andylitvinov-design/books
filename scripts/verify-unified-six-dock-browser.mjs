@@ -291,7 +291,14 @@ try{
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
  const videoHeader=page.locator("[data-video-hypno-scroll-start]");
  await videoHeader.waitFor({state:"visible",timeout:45000});
- assert.equal((await videoHeader.innerText()).trim(),"Видео-мандала","Video has a single short mobile title");
+ // The approved compact video-first header deliberately hides its older
+ // standalone title and shows the branded studio identity instead. Assert
+ // the ACTUAL visible mobile design, not a retired screenshot-era label.
+ const studioIdentity=videoHeader.locator('[class*="quickBrandIdentity"]');
+ assert.equal((await studioIdentity.innerText()).trim(),"Holistic House\nВидеостудия · Создание видео",
+   "Video has the approved compact Holistic House studio identity");
+ assert.equal(await videoHeader.locator('[class*="quickBrandMobileTitle"]').isVisible(),false,
+   "the retired alternate mobile title stays hidden to avoid double heading");
  assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,
    "no duplicate end-of-page header");
  assert.equal(await page.locator("[data-mandala-support-bottom-nav]:visible").count(),0,
