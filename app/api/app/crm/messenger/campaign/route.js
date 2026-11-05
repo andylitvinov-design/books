@@ -37,10 +37,10 @@ async function handle(request){
       if(!body.payload||typeof body.payload!=='object'||Array.isArray(body.payload))
         throw new AppError('INVALID_BODY',400)
       if(body.action==='create'){
-        onlyKeys(body.payload,['templateId','locale'])
+        onlyKeys(body.payload,['templateId','locale','sender'])
         data=await repo.withOwner(actor,store=>store.createDraft({
           templateId:body.payload.templateId,locale:body.payload.locale,
-          channel:'telegram',segment:'all_opted_in',
+          channel:'telegram',segment:'all_opted_in',sender:body.payload.sender,
         }))
       }else if(body.action==='stats'){
         onlyKeys(body.payload,['campaignId'])

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { toPublishedProfessionalSource } from "@/lib/mandala/professional-public-source.mjs";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
@@ -7,13 +8,15 @@ import { getAppConfig } from "@/lib/app/config";
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
 import { MeditationWriterPreview } from "@/components/meditation-writer-preview";
 import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
+import { MentalicaPhotoMandala } from "@/components/mentalica-photo-mandala";
+import photoStyles from "@/components/mentalica-photo-mandala.module.css";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "@/components/mandala-meditation.module.css";
 
-type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ pro?: string; master?: string; service?: string }> };
+type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ pro?: string; master?: string; service?: string; mode?: string }> };
 
 const meta = {
   en: {
@@ -70,17 +73,27 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
     }
   }
   const professionalMode = query?.pro === "1" || Boolean(professionalSource);
+  const photoMode = query?.mode === "photo";
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
 
-      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
-        professionalSource={professionalSource} professionalMode={professionalMode} />
+      <nav className={photoStyles.modeNav} aria-label={locale === "ru" ? "Режим мандалы" : locale === "es" ? "Modo mandala" : "Mandala mode"} data-mentalica-studio-mode>
+        <Link href={"/"+locale+"/holistic-support/mandala"} prefetch={false} aria-current={!photoMode ? "page" : undefined}>
+          {locale === "ru" ? "Видео" : locale === "es" ? "Vídeo" : "Video"}
+        </Link>
+        <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false} aria-current={photoMode ? "page" : undefined}>
+          {locale === "ru" ? "Фотомандалы" : locale === "es" ? "Mandalas de fotos" : "Photo mandalas"}
+        </Link>
+      </nav>
+      {photoMode ? <MentalicaPhotoMandala locale={locale} /> :
+        <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
+          professionalSource={professionalSource} professionalMode={professionalMode} />}
       {process.env.HH_MEDITATION_WRITER_BRIEF_ENABLED === "true" &&
         (process.env.VERCEL_ENV !== "production" ||
          process.env.HH_MEDITATION_WRITER_PRODUCTION_APPROVED === "true") ?
           <MeditationWriterPreview locale={locale} /> : null}
-      <HolisticSupportMandalaDock locale={locale} />
+      <HolisticSupportMandalaDock locale={locale} photoMode={photoMode} />
     </main>
   );
 }

@@ -144,7 +144,17 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
 }
 const direct=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(direct){
-  importScenarioMediaBatch(process.argv[2],{apply:process.argv.includes("--import")})
-    .then(report=>console.log(JSON.stringify(report,null,2)))
-    .catch(e=>{console.error("Video import rejected: "+e.message);process.exitCode=1;});
+  const args=process.argv.slice(2);
+  if(args.includes("--target=r2")){
+    // Additive private R2 mode: keep the original Dareful --import path intact.
+    // The new implementation is a local-file, rights/cost-gated CLI.
+    import("./video-vault-ingest.mjs")
+      .then(module=>module.runVideoVaultIngest(args))
+      .then(report=>console.log(JSON.stringify(report,null,2)))
+      .catch(e=>{console.error("Video Vault import rejected: "+e.message);process.exitCode=1;});
+  }else{
+    importScenarioMediaBatch(process.argv[2],{apply:args.includes("--import")})
+      .then(report=>console.log(JSON.stringify(report,null,2)))
+      .catch(e=>{console.error("Video import rejected: "+e.message);process.exitCode=1;});
+  }
 }

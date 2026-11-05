@@ -41,3 +41,13 @@ test("reviewed MP3s use the existing native Video Studio player and video-export
   assert.match(engine,/startPresetMixAudio\(/);
   assert.doesNotMatch(studio,/api\.higgsfield\.ai|api\.heygen\.com|api\.kling\.ai/i);
 });
+
+test('recording registry accepts measured fractional seconds while rejecting invalid durations',async()=>{
+  const {safeRecord}=await import('../lib/mandala/curated-audio-recommendations.mjs');
+  const row={id:'curated-test',recordingLicense:'CC-BY-4.0',compositionRights:'licensed_for_commercial_sync',
+    url:'/audio/mandala/curated/curated-test.mp3',audioSha256:'a'.repeat(64),sourcePage:'https://example.org/source',
+    recordingLicenseEvidence:'https://example.org/license',categories:['body'],moods:['calm'],pace:'slow',voiceSafe:true,
+    durationSeconds:89.473,name:{ru:'тест',en:'test',es:'prueba'}};
+  assert.equal(safeRecord(row),true);
+  for(const durationSeconds of [NaN,Infinity,0,181])assert.equal(Boolean(safeRecord({...row,durationSeconds})),false);
+});

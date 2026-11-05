@@ -35,6 +35,27 @@ try {
   const more = page.locator('[data-free-film-more]');
   if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
   await preset.click();
+  // React can commit the selected original-motion plan after Playwright's
+  // pointer action resolves. Wait for the actual selection, not a fixed delay;
+  // fail closed with diagnostic evidence if the real application never commits.
+  try {
+    await page.waitForFunction(() =>
+      document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') === 'true',
+      undefined, { timeout: 8000 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      pressed: document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') ?? null,
+      selected: [...document.querySelectorAll('[data-free-film-preset][aria-pressed="true"]')]
+        .map(node => node.getAttribute('data-free-film-preset')),
+      sourceIds: [...document.querySelectorAll('[data-free-film-source]')]
+        .map(node => node.getAttribute('data-free-film-source')),
+      readiness: document.querySelector('[data-free-film-readiness]')?.textContent?.slice(0, 180) ?? null,
+    }));
+    console.error('HH_ORIGINAL_MOTION_PRESET_SELECTION_DIAGNOSTICS '+JSON.stringify({engine,state,errors}));
+    throw error;
+  }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
@@ -63,9 +84,18 @@ try {
     console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
     throw error;
   }
-  const download = page.waitForEvent('download', { timeout: 30000 });
+  // The production Save action opens a chooser; only Files starts a download.
+  // Retain the real exported MP4/audio FFprobe gate after this delivery handoff.
   await save.click();
-  await (await download).saveAs(movie);
+  const delivery = page.locator('[data-video-messenger-delivery]');
+  await delivery.waitFor({state: 'visible', timeout: 10000});
+  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
+  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
+  const [download] = await Promise.all([
+    page.waitForEvent('download', {timeout: 30000}),
+    delivery.locator('[data-video-save-direct-choice]').click(),
+  ]);
+  await download.saveAs(movie);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));

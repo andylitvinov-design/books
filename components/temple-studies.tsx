@@ -8,6 +8,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { TempleInitiationChooser } from "@/components/temple-initiation-chooser";
+import { TempleChannelLibrary } from "@/components/temple-channel-library";
 import { TempleCourseHashSync } from "@/components/temple-course-hash-sync";
 import {
   academyDisplayTitle,
@@ -192,6 +193,8 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
             </header>
 
             <TempleInitiationChooser locale={locale} />
+
+            <TempleChannelLibrary locale={locale} />
 
             <section className="temple-learning-intro" aria-labelledby="temple-attunements-library-title">
               <p className="homeopathy-kicker">Temple Studies · {locale === "ru" ? "Архив" : locale === "es" ? "Archivo" : "Archive"}</p>

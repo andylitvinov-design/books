@@ -14,5 +14,9 @@
 .confirm input{width:18px;height:18px;flex:none;margin-top:3px;accent-color:#167553}
 .footer{display:grid;gap:8px;font-size:.9rem}
 .footer button{justify-self:start;background:transparent;color:#236a54}
+.sender{display:grid;gap:12px;margin:0;padding:12px;border:1px solid #c9e1d5;border-radius:14px}
+.sender legend{font-weight:700;padding:0 7px}
+.sender input[type=text],.sender textarea{font:inherit;padding:10px;min-height:44px;border:1px solid #abc8bc;border-radius:12px;max-width:100%;width:100%;box-sizing:border-box;background:white;color:#21493d}
+.sender p{font-size:.9rem;color:#5a7569}
 .error{color:#a23b30!important}
 @media(max-width:480px){.panel{padding:14px;margin:16px 0}.controls{display:grid}.controls label{min-width:0}.panel button{width:100%}.summary{padding:12px}.footer button{width:100%}}
