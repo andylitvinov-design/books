@@ -10,7 +10,8 @@ test("Service carousel shows an on-slide quick enquiry and all categories direct
   assert.match(hero, /data-services-slide-request=\{slide.kind\}/);
   assert.match(hero, /slide\.kind !== "free"/);
   assert.match(hero, /data-services-slide-action=\{slide.kind\}/);
-  assert.ok(hero.indexOf('className={styles.topicList}') < hero.indexOf('className={styles.finderTop}'));
+  assert.ok(hero.indexOf('className={styles.filterHeader}') < hero.indexOf('className={styles.topicList}'));
+  assert.ok(hero.indexOf('className={styles.modeToggle}') < hero.indexOf('className={styles.topicList}'));
   assert.match(hero, /onClick=\{\(\) => chooseTopic\(kind\)\}/);
   assert.match(hero, /if \(kind === "reiki" \|\| kind === "free"\) setMode\("online"\)/);
   assert.match(css, /\.finder \.topicList \{ display:grid; grid-template-columns:repeat\(6/);
@@ -18,6 +19,26 @@ test("Service carousel shows an on-slide quick enquiry and all categories direct
   assert.match(css, /\.slider\[data-request-open="true"\]/);
   assert.match(css, /\.requestPanel/);
   assert.match(css, /@media\(max-width:365px\)/);
+});
+
+test("Online and Toronto format buttons sit compactly beside the question on desktop and phones", () => {
+  const hero = read("components/services-conversion-hero.tsx");
+  const css = read("components/services-conversion-hero.module.css");
+  assert.match(hero, /className=\{styles\.filterHeader\}/);
+  assert.match(hero, /className=\{styles\.modeToggle\} role="group" aria-label=\{t\.modeTitle\}/);
+  assert.match(hero, /data-services-mode="online"/);
+  assert.match(hero, /data-services-mode="toronto"/);
+  assert.match(hero, /aria-pressed=\{mode === "online"\}/);
+  assert.match(hero, /aria-pressed=\{mode === "toronto"\}/);
+  assert.match(hero, /inPerson: "In person"/);
+  assert.match(hero, /inPerson: "Лично"/);
+  assert.match(hero, /inPerson: "Presencial"/);
+  assert.doesNotMatch(hero, /className=\{styles\.finderTop\}/);
+  assert.match(css, /\.filterHeader \{ display:grid; grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(css, /\.filterHeader > p \{ grid-column:1\/-1;/);
+  assert.match(css, /\.modeToggle \{ display:grid; grid-template-columns:1fr; width:104px;/);
+  assert.match(css, /\.filterHeader \{ grid-template-columns:minmax\(0,1fr\) 98px;/);
+  assert.doesNotMatch(css, /\.finder \.finderTop/);
 });
 
 test("Quick contact form is consented, idempotent and reuses encrypted CRM-backed API", () => {

@@ -52,8 +52,8 @@ test('Enrollment lead only after explicit teacher consent; learner can keep priv
 
 test('After five lessons, the student explicitly submits an initiation-choice application as lead 2',()=>{
   assert.match(curriculum,/id: "end-01"/)
-  assert.match(curriculum,/Choose your personal Reiki initiation/)
-  assert.match(curriculum,/Выберите личную Рейки-инициацию/)
+  assert.match(curriculum,/Choose your Reiki initiation format/)
+  assert.match(curriculum,/Выберите формат Рейки-инициации/)
   assert.match(schema,/ENERGYWORK_REPORT_IDS = Object\.freeze\(\['flight-04','tan-04','kun-04','ygg-04','end-01'\]\)/)
   assert.match(repo,/body\.action === 'apply'/)
   assert.match(repo,/body\.confirmed !== true/)
@@ -61,6 +61,9 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(leads,/progress\.status !== 'completed'/)
   assert.match(leads,/reikiInitiationRequestValid\(reason\)/)
   assert.match(leads,/formatReikiInitiationRequest\(reason\)/)
+  assert.match(leads,/initiationRequest,\s*answers,/)
+  assert.match(learner,/data-reiki-personal-choices/)
+  assert.match(learner,/personalSession: option\.id/)
   assert.match(leads,/findLead\(db, actor\.id, 'application'/)
   assert.match(leads,/reiki-initiation-application-v1/)
   assert.match(learner,/applicationConsented/)
@@ -70,15 +73,15 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 63 steps, private meditation reports and course progress remain intact',()=>{
+test('All 68 steps, private meditation reports and course progress remain intact',()=>{
   const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
   // Tantra Reiki now has five question screens; historical retired IDs remain private.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,63)
+  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,68)
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
   assert.match(repo,/deleteReikiLeads/)
-  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
+  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable" \|\|/)
   assert.doesNotMatch(leads,/insert into app\.crm_contacts/i)
   assert.doesNotMatch(leads,/select \* from app_private\.academy_course_progress/i)
 })

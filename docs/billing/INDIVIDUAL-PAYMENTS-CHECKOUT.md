@@ -40,7 +40,7 @@ To enable Square payment links after owner verification:
 4. After confirming link ownership and **exact CAD amounts** on Square, set HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED=true and HH_SQUARE_CAD_AMOUNTS_APPROVED=true. Set HH_SQUARE_CAD_LINKS_ENABLED=true **last**. Turning any flag off is a kill switch.
 5. Provider URLs must be exact HTTPS square.link/u/… or checkout.square.site/… with no query, fragments, credentials or redirects supplied by users. All three links must be distinct, with increasing prices. The site fails closed if any mapping is missing or malformed.
 6. Verify a legitimate paid test/real charge with Square, check balance and refund reconciliation independently. Square links do **not** automatically settle the app's internal service-order ledger, so continue manual verification.
-7. The Square option remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured card button must never pretend to be ready.
+7. The **EUR-catalog Square cart option** remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured cart button must never pretend to be ready. The separately verified CA$40 and CA$50 session links are documented below and never mapped to EUR products.
 
 ## Legacy integrations
 - Existing Stripe Checkout / Stripe Payment Links remain unconfigured and are NOT displayed in the personal public cart. Never present Stripe signup as a prerequisite for personal PayPal.
@@ -67,6 +67,21 @@ To enable Square payment links after owner verification:
 - The /en/payments, /ru/payments and /es/payments pages now have direct PayPal links; the combined amount comes only from the fixed catalog.
 - Owner must verify the public payee is their PayPal account and that a real Goods & Services transaction reaches that account. Successful redirect does not mean a payment arrived.
 
+### Owner-supplied standalone Square session link — 27 October 2026
+
+- On 27 Oct the owner supplied a Square Buy Button / public URL `https://square.link/u/Kv0TfvaP`. Independent live page readback: `Session - Holistic House`, seller display `Holistic House`, **CA$50.00**, Square-hosted checkout at `checkout.square.site/merchant/.../checkout/...`. Do not copy the Square-supplied pop-up script: its click binding relies on an unspecified DOM id; opening the canonical clean URL directly is sufficient.
+- The public `/{en,ru,es}/payments` page offers this **separate explicitly labelled CA$50 session payment** only on Vercel Production, with an optional emergency flag `HH_SQUARE_CAD_50_SESSION_DISABLED=true`. It does **not** mean the established **EUR €50/30min** price is now CAD $50, does **not** compute an FX quote and does **not** assign or settle any cart SKU or CRM order. Show the card in a distinct section with EN/RU/ES warnings: client must first agree a specific CA$50 amount/session with Andrey and inspect the exact recipient/final total on Square.
+- The clean public link is not a secret. It is intentionally reused in existing `lib/commerce/square-payment-links.js` via `configuredStandaloneSquareSessionCad50`, rather than activating the **three-link EUR-cart Square mode**. Other individual `HH_SQUARE_CAD_*_LINK` mappings remain fail-closed until separately approved.
+- After payment, client sends only transaction ID by WhatsApp. Owner must independently check the transaction inside their Square Dashboard, gross amount/currency/refund state, and match it to the agreed consultation before any `paid` or fulfilment update. A click, return URL or WhatsApp claim is not settlement. No provider-side charge, refund or settlement was initiated during integration.
+- Before treating this as a business-complete payment flow, confirm actual Square payout/KYC, any tax or refund terms, and a consented small real payment + refund or reconciliation. If the dashboard changes the live link's amount/payee, **disable the public link immediately** until it is re-verified. Neither link should be reused for a different price without updating its independently verified public label.
+
+### Additional owner-supplied CA$40 Square session — 27 October 2026
+
+- The owner supplied `https://square.link/u/tQheRKN2` as a new, independent fixed-price button. Live read-only Square checkout verification on 27 Oct: **Session 40 - Holistic House**, seller **Holistic House**, **CA$40.00**, Square-hosted. It resolves to the same Square merchant ID as the separately approved CA$50 `https://square.link/u/Kv0TfvaP`; no payment was submitted or captured by this verification.
+- The existing EN/RU/ES `/payments` page offers **both** CA$40 and CA$50 standalone buttons. Neither is a conversion of the catalog EUR €50 / €100 prices; neither is assigned to an EUR SKU, cart, booked appointment, CRM paid ledger, subscription or entitlement. Clients must agree on the exact CAD amount with Andrey before paying, verify merchant and total on Square, and manually send only a Square transaction ID for owner review.
+- Use the clean HTTPS URL as a normal link with `rel="noopener noreferrer"` and `referrerPolicy="no-referrer"`; do not embed Square's popup JS/iframe or append tracking/payer data. `configuredStandaloneSquareSessionCad40` is available only in Vercel Production and can be disabled independently of CA$50 with server-only `HH_SQUARE_CAD_40_SESSION_DISABLED=true` plus redeploy.
+- Merchant payout, taxes/refunds, a completed real transaction and verified Square provider/CRM reconciliation remain separate E2E gates. If amount/merchant changes, disable the corresponding link rather than displaying a misleading fixed-price button. The static direct link does not activate `HH_SQUARE_API_ENABLED` or the three-link EUR-cart mapping.
+
 ### Interac: do not create a web link
 - Customers click Request Interac for one consultation or ask via the validated cart for combined services.
 - Reply personally on WhatsApp with the verified AutoDeposit recipient (email/phone), agreed CAD total, payment reference and availability. Do not advertise unknown CAD conversion on site.
@@ -84,3 +99,107 @@ To enable Square payment links after owner verification:
 ### What is automated and what is not
 - Automated: fixed-price selection, PayPal EUR links, direct Interac enquiry, optional guarded Square CAD links and mobile EN/RU/ES navigation.
 - Not automated: provider identity onboarding, bank/card payout setup, proof of incoming funds, CRM paid settlement or appointment booking. Never treat a redirect, reference or user message as proof of payment.
+
+## Square-first audit — 2026-10-24
+
+**Merchant decision:** Square is the preferred card-payment provider for Holistic House;
+do not point new card checkout to Stripe. An individual/sole-proprietor Square account
+still requires Square's independent identity, activity and payout verification.
+Existing PayPal/Interac/Wise alternatives are not automatic Square receipts.
+
+**Verified production configuration:** the current Vercel Production environment
+has none of the `HH_SQUARE_*` names listed above. Consequently all three Square
+buttons safely remain hidden; a merchant signup or login email alone does not
+prove checkout eligibility. No active Square orders or payments have been
+verified in this audit.
+
+**Source UX correction:** when all three Square CAD links and payee/amount flags
+are independently verified, Square comes first in the existing EN/RU/ES cart
+and the payments page. Individual and combined-card CTA show *CAD* totals;
+Square receipt requests carry Square and the correct CAD amount, not PayPal/EUR.
+PayPal receipt requests remain separately labeled. This is provider handoff
+only, **not** a claim of capture, CRM paid status, booking or fulfilment.
+
+**Production handoff (owner dashboard; no secrets in chat):**
+1. Open [Square Payment Links](https://squareup.com/dashboard/payment-links) and
+   verify card acceptance/payout eligibility. If the precise dashboard path
+   redirects, use Payments & orders → Payment links in the Square Dashboard.
+2. Create or verify fixed one-time CAD links for the canonical site totals
+   €50, €100, and €150; turn *off* customer-entered price and tipping. Review
+   merchant name, tax/refund wording, and exact CAD amounts.
+3. Configure the nine `HH_SQUARE_*` Production variables listed above in
+   [Vercel project settings](https://vercel.com/super10/codex-public-book-library/settings/environment-variables),
+   enabling flags last only after validation. Do not put Square API tokens
+   or webhook signature keys into public `NEXT_PUBLIC_*` variables.
+4. Execute an owner-approved small real charge, verify the Square transaction
+   and payout readback, and test cancellation/refund. Until then, keep the
+   feature flags OFF.
+
+**Dynamic Square Checkout API (source implemented; not activated as of 2026-10-24):** reusable static
+Square Payment Links do not identify a verified Holistic House buyer/order.
+Automatic `paid` status and CRM/entitlements require authenticated, server-created
+per-order Square Checkout API sessions with Square order/reference ID, a
+private owner-bound idempotent payment ledger, signature-verified webhook using
+the *raw request body*, an independent Square API payment readback (merchant,
+CAD amount, order, completed state), and refund/dispute reconciliation.
+Never set `paid` from a return URL, browser parameter or customer-supplied
+transaction reference. Keep the separate billing entitlement migration/approval
+gate closed until security/RLS, sandbox and genuine provider E2E pass.
+
+## Real per-order Square cart integration — 24 October 2026
+
+A separate, **feature-gated Square Checkout API** path now exists in the existing
+`/en|ru|es/cart` pages. Unlike generic Dashboard Payment Links, it creates a
+**single-use** Square checkout for each authenticated account's immutable cart,
+with a fixed CAD price and stable operation ID. Source is deliberately dormant
+in production while merchant credentials and acceptance checks are absent.
+
+Flow: account sign-in → session + origin + rate limit → RLS-owned private order
+(`app_private.square_service_orders`) → Square CreatePaymentLink with same
+idempotency key on retry → Square-hosted CAD card payment → return to cart →
+read-only authenticated order status / provider order+payment readback →
+signed raw-body Square webhook → verified merchant, Square order/location, CAD
+amount and COMPLETED receipt → append protected paid state. Refund/dispute
+holds are sticky; **no checkout redirect or user-provided transaction reference
+can mark a payment paid**. No clinical text or test scores are sent to Square.
+
+Production server-only environment keys:
+- `HH_SQUARE_API_ENABLED=true`, `HH_SQUARE_API_MODE=production`
+- `HH_SQUARE_API_TOKEN` (Square Developer production access token; never expose)
+- `HH_SQUARE_MERCHANT_ID`, `HH_SQUARE_LOCATION_ID`
+- `HH_SQUARE_WEBHOOK_SIGNATURE_KEY` and
+  `HH_SQUARE_WEBHOOK_URL=https://holistichouse.vercel.app/api/payments/square/webhook`
+- CAD price pairs `HH_SQUARE_CAD_50_MINOR`, `HH_SQUARE_CAD_100_MINOR`,
+  `HH_SQUARE_CAD_150_MINOR` **separately approved by owner**.
+- Security approvals: `HH_SQUARE_API_SCHEMA_APPROVED`,
+  `HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED`,
+  `HH_SQUARE_CAD_AMOUNTS_APPROVED`,
+  `HH_SQUARE_TAX_REVIEW_APPROVED`,
+  `HH_SQUARE_REFUND_TERMS_APPROVED`,
+  `HH_SQUARE_API_PRODUCTION_APPROVED`.
+- All gates are required; turn on `HH_SQUARE_API_ENABLED` **last**.
+
+Square developer permissions for Checkout API: ORDERS_READ, ORDERS_WRITE,
+PAYMENTS_WRITE; include PAYMENTS_READ for independent payment readback.
+Subscribe the exact production URL to `payment.created`, `payment.updated`,
+`refund.created` and `refund.updated`; copy the subscription-specific webhook
+signature key into Vercel **secret** settings. Sandbox uses a separate app token
+and explicit HTTPS sandbox webhook URL, never production keys.
+
+Do not configure until Square account/Canadian payout setup, business activity,
+CAD prices, tax and refund terms are approved by Square/owner. Additive private
+SQL file `supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql`
+requires isolated PostgreSQL 17 RLS tests and a reviewed Supabase migration
+application before setting `HH_SQUARE_API_SCHEMA_APPROVED`.
+Keep static checkout links optional and PayPal/Interac/Wise manual alternatives.
+No transaction fee, real charge, refund, booking, marketing campaign or
+entitlement has been initiated by this source change.
+
+**Limitations:** only existing one-time fixed-price 30/60 minute sessions and their
+combination; programmes and subscriptions remain excluded. New checkout requires
+an authenticated, activated Holistic House account. 'Paid' means a verified
+Square receipt in the private payment ledger, **not** booked/attended nor an
+automatic CRM lead/contact or course entitlement. Owner fulfilment and CRM
+invoice/booking association need separate authorized E2E after sandbox and first
+legitimate received funds. A failed/unknown provider checkout must be reconciled;
+never force-create another payment with a different idempotency key.

@@ -232,31 +232,30 @@
 }
 
 
-/* HOLISTIC HOUSE PREMIUM WOOD EXECUTIVE V4
+/* HOLISTIC HOUSE PREMIUM WOOD EXECUTIVE V5
    A scoped walnut / parchment / brass system for the Business & Career course.
    Light wood is the default; dark executive is a local cosmetic preference.
    One final visual layer replaces historical cyan course overrides.
 */
 .root{
-  --wood-paper:#fffaf2;--wood-bg:#f6ecdc;--wood-soft:#f0e1cd;--wood-tint:#ead7be;
-  --wood-ink:#35261d;--wood-muted:#685140;--wood-note:#7a5e46;
-  --wood-edge:#d5ba99;--wood-line:#e4d0b8;--wood-accent:#ab7c48;
-  --wood-brass:#d8ae74;--wood-walnut:#503424;--wood-deep:#302017;
-  --wood-good:#3e6146;--wood-ring:#af7739;
-  color:var(--wood-ink);background:radial-gradient(ellipse at 98% 0%,#d6b78824,transparent 40%),
-    linear-gradient(180deg,var(--wood-bg),var(--wood-paper))!important;
+  --wood-paper:#fffdf8;--wood-bg:#f6f5f0;--wood-soft:#edf1eb;--wood-tint:#e1ebe2;
+  --wood-ink:#273a35;--wood-muted:#4f5e57;--wood-note:#65756c;
+  --wood-edge:#cfdcd3;--wood-line:#e2e8e1;--wood-accent:#2f7162;
+  --wood-brass:#ba956b;--wood-walnut:#37544b;--wood-deep:#233a33;
+  --wood-good:#2f7157;--wood-ring:#256e5e;
+  color:var(--wood-ink);background:linear-gradient(180deg,var(--wood-bg),var(--wood-paper))!important;
   border:1px solid var(--wood-edge)!important;
   border-radius:24px!important;max-width:1080px;
-  box-shadow:0 14px 34px #563a2120;
+  box-shadow:0 8px 24px #273a3510;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 .root[data-wood-mode=dark]{
-  --wood-paper:#342821;--wood-bg:#241a15;--wood-soft:#423126;--wood-tint:#503b2b;
-  --wood-ink:#fff2df;--wood-muted:#e0c6a8;--wood-note:#d4b28b;
-  --wood-edge:#866448;--wood-line:#654a35;--wood-accent:#e6b77c;
-  --wood-brass:#e8c18c;--wood-walnut:#302018;--wood-deep:#1a100d;
-  --wood-good:#b0d1a8;--wood-ring:#efc083;
-  box-shadow:0 14px 38px #14090366;
+  --wood-paper:#23302c;--wood-bg:#182520;--wood-soft:#304139;--wood-tint:#355347;
+  --wood-ink:#fff6e8;--wood-muted:#d8e0d5;--wood-note:#c0d0c5;
+  --wood-edge:#5d7469;--wood-line:#455c50;--wood-accent:#a9d0b7;
+  --wood-brass:#dbbc91;--wood-walnut:#263a32;--wood-deep:#131f1b;
+  --wood-good:#b8e2ca;--wood-ring:#b3dbcd;
+  box-shadow:0 8px 24px #101c1866;
 }
 .root :is(h1,h2,h3,h4){color:var(--wood-ink);font-family:Georgia,"Times New Roman",serif;letter-spacing:-.024em}
 .root p{color:var(--wood-muted)}
@@ -287,25 +286,24 @@
 /* The two-tone walnut hero stays warm even in dark reading mode */
 .hero{isolation:isolate;position:relative;overflow:hidden;display:grid;
   grid-template-columns:minmax(0,1fr) minmax(185px,260px);gap:clamp(16px,3vw,31px);
-  align-items:center;padding:clamp(21px,3.4vw,38px);border:1px solid #795334;
-  border-radius:24px;background:linear-gradient(112deg,#38251b,#5b3d29 55%,#785335);
-  color:#fff7eb;box-shadow:0 15px 36px #38220f48}
+  align-items:center;padding:clamp(17px,2.8vw,27px);border:1px solid var(--wood-edge);
+  border-radius:19px;background:linear-gradient(112deg,#f8f6ee,#e7eee7 65%,#f1ede2);
+  color:var(--wood-ink);box-shadow:0 5px 15px #273a350d}
 .hero::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:repeating-linear-gradient(91deg,transparent 0 10px,#f5d6aa08 11px,#120a0524 12px,
-  transparent 15px,transparent 29px),radial-gradient(ellipse at 75% 10%,#efbd7130,transparent 57%)}
+  background:radial-gradient(ellipse at 82% 0%,#bdd0bd52,transparent 62%)}
 .heroCopy,.heroArt{position:relative;z-index:1;min-width:0}
-.hero :is(h1,h2){color:#fff7e8!important;line-height:1.12;font-size:clamp(28px,4.3vw,44px)}
-.hero p{color:#f2debf!important;font-size:clamp(13px,1.8vw,16px);max-width:53ch}
+.hero :is(h1,h2){color:#273a35!important;line-height:1.12;font-size:clamp(27px,4vw,39px)}
+.hero p{color:#4f5e57!important;font-size:clamp(13px,1.8vw,16px);max-width:53ch}
 .heroKicker{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.11em;
-  color:#f0c691;margin-bottom:12px}
-.heroInfo{color:#edd5b3!important;align-items:flex-start;gap:8px;font-size:11px;line-height:1.45}
-.heroInfo svg{flex:0 0 15px;color:#e5bb80}
-.statRow{color:#f4e0c3;font-size:11px;gap:9px 14px}
-.statRow svg{color:#e6bd82}
-.statRow strong{color:#fff8eb}
-.progressMeta{color:#f5ddbb;font-size:11px}
-.progressMeta span{color:#f0cc94}
-.overallTrack{height:9px;background:#f5e1bb40}
+  color:#2f7162;margin-bottom:12px}
+.heroInfo{color:#4f5e57!important;align-items:flex-start;gap:8px;font-size:11px;line-height:1.45}
+.heroInfo svg{flex:0 0 15px;color:#2f7162}
+.statRow{color:#4f5e57;font-size:11px;gap:9px 14px}
+.statRow svg{color:#2f7162}
+.statRow strong{color:#273a35}
+.progressMeta{color:#4f5e57;font-size:11px}
+.progressMeta span{color:#2f7162}
+.overallTrack{height:7px;background:#d7e2d9}
 .overallTrack>span,.moduleStatTrack>span,.track>span{
   background:linear-gradient(90deg,#b88750,#e6bd81);transition:width .2s ease}
 .heroArt{aspect-ratio:1.4;border:1px solid #c9a171;border-radius:18px;
@@ -362,10 +360,10 @@
 .intakeBody{background:var(--wood-bg);border-color:var(--wood-line)}
 .root .fields :is(input,select,textarea),.root .metricForm :is(input,select){min-height:44px}
 .root .fields small{color:var(--wood-muted)}
-.root .primary{min-height:49px;background:linear-gradient(110deg,#654831,#402b20)!important;
-  color:#fff9ee!important;border:1px solid #453023!important;border-bottom:4px solid #24160e!important;
-  box-shadow:0 7px 17px #4627112e;border-radius:13px!important;font-weight:840;font-size:13px!important}
-.root .primary:hover:not(:disabled){background:linear-gradient(110deg,#503521,#312017)!important}
+.root .primary{min-height:49px;background:linear-gradient(110deg,#326b5b,#234b41)!important;
+  color:#fffdf8!important;border:1px solid #234b41!important;border-bottom:2px solid #193c32!important;
+  box-shadow:0 3px 10px #234b411e;border-radius:13px!important;font-weight:840;font-size:13px!important}
+.root .primary:hover:not(:disabled){background:linear-gradient(110deg,#275a4d,#1b3d35)!important}
 .root .primary:disabled{opacity:.51;box-shadow:none}
 .root .backButton,.root .skipButton,.root .courseMapButton,.root .print,
 .root .editGoalsToggle,.root .paging button,.root .review button,.root .footerActions button{
@@ -683,4 +681,556 @@
 }
 @media print{
  .lessonBrowse,.lessonStageNav,.questionnaire,.trackChoices{display:none!important}
+}
+
+
+/* Business skill journey: Reiki/OPORA-inspired learning rhythm, scoped to this course.
+   Five accessible compact steps, optional private reflection and a post-save celebration.
+   Reuses Executive Wood v2 tokens, not a new visual system. */
+.lessonStageNav{grid-template-columns:repeat(5,minmax(0,1fr))}
+.lessonStageNav button:disabled{opacity:.46;cursor:not-allowed}
+.lessonStageNav button:focus-visible,.reflectionChoices button:focus-visible,
+.focusControls button:focus-visible{outline:3px solid var(--wood-accent);outline-offset:2px}
+.skillRecap{padding:9px 12px;margin-bottom:12px;border-radius:11px;
+  border:1px solid var(--wood-edge);background:var(--wood-soft)}
+.skillRecap>strong{display:block;color:var(--wood-muted);font-size:11px;margin-bottom:5px}
+.skillRecap>small{color:var(--wood-muted);font-size:12px}
+.skillRecapChips{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.skillRecapChips>span{display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  padding:5px 9px;border-radius:9px;background:var(--wood-paper);border:1px solid var(--wood-edge);
+  color:var(--wood-ink);font-size:11px;line-height:1.3}
+.skillRecapChips svg{flex-shrink:0;color:var(--wood-good)}
+.oneIdea .skillTarget{color:var(--wood-ink);font:700 clamp(16px,2.25vw,21px)/1.3 Georgia,serif;
+  margin:6px 0 11px}
+.focusTimer{display:block;margin-top:14px;padding:11px 13px;
+  border:1px solid var(--wood-edge);border-radius:12px;background:var(--wood-soft)}
+.focusTimer>span,.focusTimer>small{font-size:11px;line-height:1.4;color:var(--wood-muted)}
+.focusTimerRow{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.focusTimerRow>strong{color:var(--wood-ink);font-size:24px;font-variant-numeric:tabular-nums;
+  line-height:1;letter-spacing:.03em}
+.focusControls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.focusControls button{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:44px;min-width:44px;padding:8px 10px;border:1px solid var(--wood-edge);
+  border-radius:10px;background:var(--wood-paper);color:var(--wood-ink);
+  font-size:11px;font-weight:750;cursor:pointer}
+.focusControls button:first-child{background:var(--wood-walnut);border-color:var(--wood-walnut);color:#fff7e8}
+.focusControls button:disabled{opacity:.55;cursor:not-allowed}
+.oneIdea .reflectionFocus{font:700 clamp(17px,2.6vw,22px)/1.35 Georgia,serif;
+  color:var(--wood-ink);margin:8px 0}
+.reflectionChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
+.reflectionChoices button{min-width:0;min-height:46px;padding:8px 10px;
+  border-radius:11px;border:1px solid var(--wood-edge);background:var(--wood-paper);
+  color:var(--wood-ink);font-size:12px;font-weight:750;cursor:pointer}
+.reflectionChoices button[aria-pressed=true]{border:2px solid var(--wood-walnut);
+  color:var(--wood-ink);background:var(--wood-tint)}
+.reflectionChoices button:disabled{opacity:.6;cursor:not-allowed}
+.savedCelebration{text-align:center;max-width:650px;margin:0 auto}
+.celebrationMark{display:grid;place-items:center;width:50px;height:50px;margin:0 auto 10px;
+  border-radius:50%;background:var(--wood-tint);color:var(--wood-good)}
+.savedCelebration>strong{display:block;font-size:12px;color:var(--wood-muted);margin-top:9px}
+.savedCelebration>blockquote{margin:9px 0;padding:10px 13px;border-inline-start:3px solid var(--wood-accent);
+  background:var(--wood-soft);border-radius:8px;text-align:start;
+  color:var(--wood-ink);font-size:13px;line-height:1.48;overflow-wrap:anywhere}
+.savedCelebration>small{display:block;color:var(--wood-muted);font-size:11px}
+.lessonSaveBar .backButton:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:620px){
+ .lessonStageNav{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+ .lessonStageNav button{min-height:44px;flex-direction:column;gap:3px;
+   padding:5px 2px;font-size:9.5px;line-height:1.15}
+ .lessonStageNav button>span{width:18px;height:18px;flex-basis:18px}
+ .skillRecap{padding:7px 9px;margin-bottom:8px}
+ .skillRecapChips>span{font-size:10px;padding:4px 7px}
+ .oneIdea .skillTarget{font-size:17px;margin:5px 0 8px}
+ .focusTimer{padding:9px 10px;margin-top:9px}
+ .focusTimerRow>strong{font-size:21px}
+ .focusControls button{min-height:44px}
+ .reflectionChoices{gap:5px;margin:8px 0}
+ .reflectionChoices button{padding:6px 3px;font-size:10.5px}
+ .celebrationMark{width:43px;height:43px;margin-bottom:7px}
+ .savedCelebration>blockquote{font-size:12px;max-height:85px;overflow:auto}
+}
+@media(max-width:350px){
+ .lessonStageNav button{font-size:9px}
+ .focusTimerRow{gap:8px}
+ .focusControls button{font-size:10px;padding:7px}
+ .lessonSaveBar .draftButton{order:1}
+ .lessonSaveBar .primary{flex-basis:100%;order:2}
+}
+@media print{
+ .focusTimer,.lessonStageNav,.lessonSaveBar{display:none!important}
+}
+
+/* Optional track-specific worked example: subordinate to the real skill/action. */
+.trackExample{margin:10px 0 2px;border:1px solid var(--wood-edge);
+  border-radius:11px;background:var(--wood-soft)}
+.trackExample summary{display:flex;align-items:center;justify-content:space-between;
+  gap:7px;min-height:44px;padding:8px 12px;list-style:none;
+  color:var(--wood-ink);font-size:12px;font-weight:750;cursor:pointer}
+.trackExample summary::-webkit-details-marker{display:none}
+.trackExample summary svg{flex-shrink:0;transition:transform .15s ease}
+.trackExample[open] summary svg{transform:rotate(180deg)}
+.trackExample p{margin:0;padding:0 12px 11px;font-size:12px;line-height:1.45;
+  color:var(--wood-muted)}
+.trackExample summary:focus-visible{outline:3px solid var(--wood-accent);outline-offset:2px}
+@media(max-width:620px){
+ .trackExample{margin:7px 0 1px}
+ .trackExample summary{font-size:11px;padding:7px 9px}
+ .trackExample p{padding:0 9px 9px;font-size:11px}
+}
+
+/* Balanced sage/wood reading modes, no stock artwork or new image requests. */
+.root[data-wood-mode=dark] .hero{background:linear-gradient(112deg,#30443b,#24362f);box-shadow:none}
+.root[data-wood-mode=dark] .hero :is(h1,h2){color:var(--wood-ink)!important}
+.root[data-wood-mode=dark] .hero p,.root[data-wood-mode=dark] .hero .heroInfo{color:var(--wood-muted)!important}
+.root[data-wood-mode=dark] .hero :is(.statRow,.statRow strong){color:var(--wood-ink)}
+.root[data-wood-mode=dark] .hero .heroKicker{color:var(--wood-accent)}
+.lessonTopbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:start;position:relative}
+.lessonTopbar .lessonBrowse{margin:0;min-width:0;position:relative;z-index:5}
+.lessonTopbar .moduleCompact{min-width:0}
+.lessonBrowseContent{position:absolute;inset-block-start:calc(100% + 5px);inset-inline-end:0;
+  width:min(390px,calc(100vw - 24px));max-height:min(65dvh,450px);overflow-y:auto;overscroll-behavior:contain;
+  border:1px solid var(--wood-edge);border-radius:13px;padding:10px;
+  background:var(--wood-paper);box-shadow:0 12px 36px #15292133;z-index:10}
+.lessonBrowse:not([open]) .lessonBrowseContent{display:none}
+.lessonBrowseContent .lessonNavigation,.lessonBrowseContent .weekDayNav{margin:7px 0}
+.lessonBrowseContent .review{margin:9px 0}
+.skillRecap{margin:12px 0 0}
+.skillRecap>summary,.focusTimer>summary,.savedResult>summary{display:flex;align-items:center;justify-content:space-between;
+  gap:8px;min-height:36px;list-style:none;cursor:pointer;color:var(--wood-muted);font-size:12px;font-weight:700}
+.skillRecap>summary::-webkit-details-marker,.focusTimer>summary::-webkit-details-marker,
+.savedResult>summary::-webkit-details-marker{display:none}
+.skillRecap[open] .skillRecapChips{margin-top:7px}
+.focusTimer>span,.focusTimer>small{display:block;margin-bottom:7px}
+.focusTimer .focusTimerRow{margin-top:7px}
+.savedResult{margin:9px 0;border:1px solid var(--wood-edge);border-radius:12px;background:var(--wood-soft);padding:0 12px}
+.savedResult blockquote{margin:4px 0 12px;padding:9px 11px;border-inline-start:3px solid var(--wood-accent);
+  color:var(--wood-ink);font-size:13px;line-height:1.48;overflow-wrap:anywhere;white-space:pre-wrap}
+.resumeCourse{min-height:44px;border-radius:11px;border:1px solid var(--wood-accent);
+  background:var(--wood-tint);color:var(--wood-ink);display:inline-flex;align-items:center;gap:8px;padding:9px 14px}
+/* The daily lesson is a single mobile card; plans and reports keep normal scrolling. */
+@media(max-width:620px){
+  .root[data-business-course-screen=welcome],.root[data-business-current-tab=today]{
+    padding:7px!important;border-radius:13px!important;margin:0 auto 5px;box-shadow:none}
+  .root[data-business-course-screen=welcome] .themeBar{display:none}
+  .root[data-business-course-screen=welcome] .hero{padding:10px 12px;border-radius:12px}
+  .root[data-business-course-screen=welcome] .heroKicker{margin-bottom:3px}
+  .root[data-business-course-screen=welcome] .hero h1{font-size:21px!important}
+  .root[data-business-course-screen=welcome] .hero p{font-size:11px!important;line-height:1.3;margin:3px 0}
+  .root[data-business-course-screen=welcome] .heroInfo{display:none}
+  .root[data-business-course-screen=welcome] .intake{margin-top:7px;padding:10px;border:0;box-shadow:none}
+  .root[data-business-course-screen=welcome] .intakeSteps{margin:5px 0}
+  .root[data-business-course-screen=welcome] .intakeBody{padding:6px 0}
+  .root[data-business-course-screen=welcome] .trackChoices button{
+    min-height:44px;border-radius:11px;font-size:12px;padding:8px 10px}
+  .root[data-business-course-screen=welcome] .intakeControls{margin-top:7px}
+  .root[data-business-current-tab=today] .hero{padding:8px 11px;border-radius:12px;box-shadow:none}
+  .root[data-business-current-tab=today] .heroKicker{display:none}
+  .root[data-business-current-tab=today] .hero h1{font-size:17px!important;margin:0!important}
+  .root[data-business-current-tab=today] .hero p{display:none!important}
+  .root[data-business-current-tab=today] .statRow{margin-top:5px}
+  .root[data-business-current-tab=today] .statRow>span:nth-child(n+2){display:none}
+  .root[data-business-current-tab=today] .overallTrack{height:3px;margin-top:5px}
+  .root[data-business-current-tab=today] .tabs{margin:5px 0;padding:2px;border-radius:10px}
+  .root[data-business-current-tab=today] .tabs button{min-height:34px;padding:4px 2px;font-size:10px}
+  .root[data-business-current-tab=today] .tabs button svg{display:none}
+  .root[data-business-current-tab=today] .panel{margin:0;padding:7px;border-radius:12px;box-shadow:none}
+  .root[data-business-current-tab=today] .lessonTopbar{gap:3px}
+  .root[data-business-current-tab=today] .moduleCompact{min-height:37px;padding:4px 7px;background:transparent;border:0}
+  .root[data-business-current-tab=today] .moduleCompact .moduleStat{display:none}
+  .root[data-business-current-tab=today] .moduleCompact>div:first-child strong{font-size:14px}
+  .root[data-business-current-tab=today] .moduleEyebrow{font-size:10px;letter-spacing:.025em}
+  .root[data-business-current-tab=today] .lessonBrowse{border:0;background:transparent}
+  .root[data-business-current-tab=today] .lessonBrowse>summary{
+    min-height:37px;padding:5px;font-size:11px;gap:4px;color:var(--wood-accent)}
+  .root[data-business-current-tab=today] .lessonBrowse>summary span,
+  .root[data-business-current-tab=today] .lessonBrowse>summary svg:first-child{display:none}
+  .root[data-business-current-tab=today] .lessonBrowseContent{width:min(300px,calc(100vw - 22px));padding:8px}
+  .root[data-business-current-tab=today] .lessonStageNav{gap:3px;margin:4px 0}
+  .root[data-business-current-tab=today] .lessonStageNav button{
+    min-height:40px;padding:3px 1px;border-color:transparent;background:transparent;color:var(--wood-muted);font-size:10px}
+  .root[data-business-current-tab=today] .lessonStageNav button[aria-current=step]{
+    border-color:var(--wood-edge);background:var(--wood-tint);color:var(--wood-ink)}
+  .root[data-business-current-tab=today] .lessonSlide[data-lesson-stage]{
+    padding:13px 14px;min-height:160px;border:0;border-radius:12px;box-shadow:none;background:var(--wood-bg)}
+  .root[data-business-current-tab=today] .lessonIdentity{display:none}
+  .root[data-business-current-tab=today] .oneIdea h2{
+    font:800 11px/1.2 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--wood-accent);margin:0 0 9px}
+  .root[data-business-current-tab=today] .oneIdea .skillTarget{
+    font:700 clamp(20px,5.8vw,24px)/1.23 Georgia,serif;margin:0 0 11px;color:var(--wood-ink)}
+  .root[data-business-current-tab=today] .oneIdea>p{
+    font-size:clamp(13px,3.7vw,14px);line-height:1.4;margin:5px 0 10px}
+  .root[data-business-current-tab=today] .oneIdea>small{font-size:11px;line-height:1.4}
+  .root[data-business-current-tab=today] .oneIdea .textareaLabel textarea{
+    min-height:80px;max-height:110px;resize:vertical;font-size:16px;line-height:1.35}
+  .root[data-business-current-tab=today] .optionalNotes{margin-top:6px}
+  .root[data-business-current-tab=today] .focusTimer{margin-top:9px}
+  .root[data-business-current-tab=today] .reflectionChoices{margin:9px 0}
+  .root[data-business-current-tab=today] .savedCelebration>.celebrationMark{width:38px;height:38px;margin-bottom:5px}
+  .root[data-business-current-tab=today] .savedCelebration>strong{margin-top:4px}
+  .root[data-business-current-tab=today] .savedCelebration>small{margin-top:8px}
+  .root[data-business-current-tab=today] .lessonSaveBar{
+    position:relative!important;bottom:auto!important;display:flex;flex-wrap:nowrap;
+    gap:6px;margin:7px 0 0;padding:0;border:0;box-shadow:none}
+  .root[data-business-current-tab=today] .lessonSaveBar .backButton{
+    font-size:0!important;flex:0 0 44px;min-width:44px;padding:7px}
+  .root[data-business-current-tab=today] .lessonSaveBar .backButton svg{width:18px;height:18px}
+  .root[data-business-current-tab=today] .lessonSaveBar .draftButton{
+    flex:0 1 94px;min-width:62px;font-size:11px;padding:6px 4px;order:0}
+  .root[data-business-current-tab=today] .lessonSaveBar .primary{
+    flex:1 1 auto;flex-basis:auto;min-width:0;min-height:44px;margin:0;order:0;padding:7px 8px}
+  .root[data-business-current-tab=today] .lessonSaveState{position:absolute!important;
+    width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%);
+    white-space:nowrap!important}
+}
+@media(max-width:620px) and (max-height:700px){
+  .root[data-business-current-tab=today] .hero{display:none}
+  .root[data-business-current-tab=today] .tabs{margin-top:0}
+  .root[data-business-current-tab=today] .tabs button{min-height:31px;font-size:9px}
+  .root[data-business-current-tab=today] .lessonSlide[data-lesson-stage]{
+    padding:10px 11px;min-height:135px}
+  .root[data-business-current-tab=today] .lessonStageNav button{min-height:37px}
+  .root[data-business-current-tab=today] .oneIdea .skillTarget{font-size:19px}
+  .root[data-business-course-screen=welcome] .hero{padding:7px 10px}
+}
+@media(max-width:620px) and (max-height:550px){
+  .root[data-business-current-tab=today] .tabs{display:none}
+  .root[data-business-current-tab=today] .lessonSlide[data-lesson-stage]{padding:8px 10px}
+}
+
+
+/* HH BUSINESS · REIKI IMMERSIVE LEARNING SHELL
+   Deliberately shares the Reiki / OPORA course slide language:
+   fullscreen focus, navy/cyan/mint, one photograph and one learning idea,
+   one fixed action row. The non-learning plan/report retain their layout.
+   No new remote imagery or backend calls. */
+.root[data-business-immersive=reiki][data-business-current-tab=today],
+.root[data-business-immersive=reiki][data-business-course-screen=welcome]{
+  --wood-paper:#fff;--wood-bg:#f8feff;--wood-soft:#eef9fb;
+  --wood-tint:#ddf8f5;--wood-ink:#173c5b;--wood-muted:#456b80;
+  --wood-note:#638599;--wood-edge:#cde6ec;--wood-line:#e3eff2;
+  --wood-accent:#076e81;--wood-brass:#50bed0;--wood-walnut:#126f80;
+  --wood-deep:#12354e;--wood-good:#137b70;--wood-ring:#078ca3;
+  position:fixed!important;inset:0!important;z-index:2147483000;
+  display:flex!important;flex-direction:column;align-items:center;
+  width:100%!important;max-width:none!important;height:100dvh!important;
+  min-height:0;margin:0!important;padding:0!important;border:0!important;
+  border-radius:0!important;box-shadow:none!important;overflow:hidden!important;
+  overscroll-behavior:contain;background:linear-gradient(130deg,#e8f8fc,#f2fffc)!important;
+  color:#173c5b!important;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.root[data-business-immersive=reiki] .immersiveHeader{
+  position:relative;z-index:12;display:flex;align-items:center;gap:13px;
+  flex:0 0 auto;width:min(100%,700px);min-height:72px;
+  padding:calc(10px + env(safe-area-inset-top)) clamp(14px,3.5vw,25px) 10px;
+  background:#fff;border-bottom:1px solid #e1edf1;
+}
+.root[data-business-immersive=reiki] .immersiveClose,
+.root[data-business-immersive=reiki] .immersiveMenu>summary{
+  display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+  border:1px solid #d7edf0;border-radius:14px;background:#eff9fa;
+  color:#315f75!important;text-decoration:none;cursor:pointer;
+}
+.root[data-business-immersive=reiki] .immersiveProgress{min-width:0;flex:1;display:grid;gap:7px}
+.root[data-business-immersive=reiki] .immersiveProgress>small{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#48758a;
+  font-size:12px;font-weight:800;line-height:1.15;letter-spacing:.01em;
+}
+.root[data-business-immersive=reiki] .immersiveProgress>div{
+  height:9px;border-radius:99px;background:#e1edf3;overflow:hidden;
+}
+.root[data-business-immersive=reiki] .immersiveProgress>div>span{
+  display:block;height:100%;border-radius:inherit;
+  background:linear-gradient(90deg,#27bed1,#0695b0);transition:width .25s ease;
+}
+.root[data-business-immersive=reiki] .immersiveCount{
+  flex:0 0 auto;padding:8px 11px;border-radius:99px;
+  color:#067689;background:#e0f9f5;font-size:12px;font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+.root[data-business-immersive=reiki] .immersiveMenu{position:relative;flex:0 0 44px}
+.root[data-business-immersive=reiki] .immersiveMenu>summary{list-style:none}
+.root[data-business-immersive=reiki] .immersiveMenu>summary::-webkit-details-marker{display:none}
+.root[data-business-immersive=reiki] .immersiveMenuPanel{
+  position:absolute;z-index:20;inset-inline-end:0;inset-block-start:calc(100% + 10px);
+  display:grid;gap:3px;width:min(260px,calc(100vw - 24px));
+  padding:7px;border:1px solid #cbe6e9;border-radius:16px;
+  box-shadow:0 13px 38px #14425d32;background:#fff;
+}
+.root[data-business-immersive=reiki] .immersiveMenuPanel button{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;min-height:45px;padding:10px 12px;border:0;border-radius:10px;
+  text-align:start;background:#fff;color:#204962;font-size:13px;font-weight:700;
+}
+.root[data-business-immersive=reiki] .immersiveMenuPanel button:hover,
+.root[data-business-immersive=reiki] .immersiveMenuPanel button[aria-current=page]{
+  background:#e6f9f9;color:#067a90;
+}
+/* Today: the embedded dashboard header is replaced by the course header. */
+.root[data-business-immersive=reiki][data-business-current-tab=today]>.hero,
+.root[data-business-immersive=reiki][data-business-current-tab=today]>.tabs{
+  display:none!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today]>.panel{
+  display:flex!important;flex-direction:column;flex:1;min-height:0;
+  width:min(100%,700px);max-width:700px;margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:#fff!important;
+  box-shadow:0 14px 38px #11506a10!important;overflow:hidden;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonTopbar{
+  flex:0 0 auto;align-items:center;gap:8px;margin:0;
+  padding:12px clamp(15px,4vw,29px) 2px;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .moduleCompact{
+  padding:0!important;min-height:42px;border:0!important;
+  background:transparent!important;box-shadow:none;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .moduleCompact>div:first-child strong{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:800 16px/1.22 system-ui,sans-serif;color:#173c5b;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .moduleEyebrow{
+  font-size:11px;letter-spacing:.055em;color:#067689;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .moduleStat{
+  display:none;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonBrowse{
+  z-index:6;min-width:0;margin:0;border:0;background:transparent;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonBrowse>summary{
+  min-height:44px;gap:6px;padding:7px 9px;
+  border-radius:12px;background:#e8f9fa;
+  color:#13778c;font-size:11px;font-weight:750;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonBrowseContent{
+  background:#fff;color:#244b65;border-color:#cce7eb;
+  box-shadow:0 15px 42px #103b5538;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{
+  flex:0 0 auto;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:5px;margin:0;padding:9px clamp(15px,4vw,29px) 12px;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button{
+  display:flex;flex-direction:column;gap:4px;min-width:0;min-height:46px;
+  padding:5px 2px!important;border:1px solid #d5eaf0!important;
+  border-radius:12px;background:#f8fdfe!important;
+  color:#52788e!important;font:760 10px/1.2 system-ui,sans-serif!important;
+  cursor:pointer;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button>span{
+  width:19px;height:19px;flex-basis:19px;background:#e4f1f5;color:#466e81;
+  font-size:10px;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button[aria-current=step]{
+  background:#e2f9f6!important;color:#067689!important;
+  border-color:#2fb8c5!important;box-shadow:0 3px 12px #1ba5b019;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button[aria-current=step]>span{
+  background:#078da1;color:#fff;
+}
+/* Like Reiki's slide player, only the slide scrolls; the CTA stays anchored. */
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSlide[data-lesson-stage]{
+  display:flex;flex-direction:column;flex:1 1 auto;min-height:0!important;
+  margin:0 clamp(15px,4vw,29px)!important;padding:0!important;
+  border:0!important;border-radius:20px!important;background:#fff!important;
+  box-shadow:none!important;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b4dfe5 transparent;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto{
+  position:relative;display:block;flex:0 0 auto;overflow:hidden;
+  width:100%;height:clamp(140px,25dvh,225px);border-radius:20px;
+  background:linear-gradient(110deg,#e3f7fa,#d5eeec);
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto img{
+  display:block;width:100%;height:100%;object-fit:cover;object-position:center 48%;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,#113f6424,transparent 65%),linear-gradient(0deg,#e7f9f715,transparent);
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonIdentity{display:none!important}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea{
+  flex:1;min-height:0;padding:18px 3px 8px;background:transparent!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea h2{
+  margin:0 0 11px!important;color:#087d96!important;
+  font:830 12px/1.3 system-ui,sans-serif!important;letter-spacing:.09em;text-transform:uppercase;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea .skillTarget{
+  margin:0 0 13px!important;font:830 clamp(22px,4.5vw,31px)/1.21 system-ui,sans-serif!important;
+  letter-spacing:-.035em;color:#173c5b!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea>p:not(.skillTarget){
+  margin:7px 0 12px;color:#244b64!important;
+  font:650 clamp(16px,2.8vw,19px)/1.48 system-ui,sans-serif!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea>small{
+  color:#48738a;font-size:12px;line-height:1.48;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .reflectionChoices button[aria-pressed=true]{
+  border:2px solid #16aabb;background:#e6faf7;color:#047a8d;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea .textareaLabel textarea{
+  max-height:30dvh;min-height:100px;resize:vertical;
+  border-radius:16px!important;border-color:#bcdce6!important;
+  background:#fbffff!important;color:#173c5b!important;font-size:16px!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center;gap:9px;flex:0 0 auto;position:relative!important;bottom:auto!important;
+  width:100%;margin:0!important;
+  padding:13px clamp(15px,4vw,29px) calc(12px + env(safe-area-inset-bottom))!important;
+  border:0!important;border-top:1px solid #e2eff2!important;border-radius:0!important;
+  background:linear-gradient(180deg,#fff,#f8fdff)!important;
+  box-shadow:0 -8px 22px #124f6a0b!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar .backButton{
+  display:flex;justify-content:center;align-items:center;gap:5px;flex:0 0 49px;
+  min-width:49px;min-height:49px;margin:0;padding:10px!important;
+  border:1px solid #d4e8eb!important;border-radius:15px!important;
+  background:#f8fdfe!important;color:#587d8d!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar .draftButton{
+  flex:0 1 105px;min-width:65px;min-height:49px;order:0;margin:0;padding:7px!important;
+  border:1px solid #cae5e9!important;border-radius:13px!important;
+  background:#eef9f9!important;color:#1b6e80!important;
+  font-size:12px!important;font-weight:800;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar .primary{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  flex:1 1 auto;min-width:0;min-height:54px;order:0;
+  margin:0!important;padding:10px 13px!important;
+  border:0!important;border-bottom:4px solid #076c84!important;
+  border-radius:16px!important;background:linear-gradient(110deg,#08758c,#036a7c)!important;
+  box-shadow:0 8px 19px #0799b124!important;color:#fff!important;
+  font:830 clamp(12px,2.5vw,16px)/1.2 system-ui,sans-serif!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar .primary:disabled{
+  opacity:.55;box-shadow:none!important;
+}
+/* First visit uses the same fullscreen course frame and a photo-backed welcome. */
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .themeBar{display:none!important}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero{
+  display:flex!important;flex:0 0 auto;align-items:end;
+  width:min(100%,700px);min-height:clamp(148px,25dvh,235px);
+  margin:0!important;padding:24px clamp(18px,4vw,31px)!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  background:linear-gradient(90deg,#0c324ecf,#0b476c79 65%,#17394a3a),
+    url('/images/holistic-house/books-library.webp') center 49%/cover no-repeat!important;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero::before{display:none!important}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .heroArt{display:none!important}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero h1{
+  font:850 clamp(23px,4.4vw,36px)/1.16 system-ui,sans-serif!important;
+  letter-spacing:-.035em;color:#fff!important;margin:8px 0 9px!important;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero .heroKicker,
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero p,
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero .heroInfo{
+  color:#f0fdff!important;text-shadow:0 1px 10px #092e51a8;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero p{
+  margin:3px 0 0!important;font-size:clamp(12px,2vw,14px)!important;line-height:1.45!important;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .heroInfo{display:none!important}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intake{
+  flex:1;min-height:0;width:min(100%,700px);margin:0!important;
+  padding:clamp(14px,3.5vw,27px)!important;overflow-y:auto;
+  border:0!important;border-radius:0!important;background:#fff!important;
+  box-shadow:none!important;overscroll-behavior:contain;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeHeader h2{
+  font-family:system-ui,sans-serif!important;color:#173c5b!important;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeSteps>span[aria-current=step]{
+  border-color:#1ab0c0;background:#e3f9f8;color:#087c8c;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeSteps>span[aria-current=step] b{
+  background:#076c84;color:#fff;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeBody{
+  padding:10px 0!important;border:0!important;background:#fff!important;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .trackChoices button{
+  min-height:56px;border-color:#cce7eb;background:#fbfeff;color:#244b63;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .trackChoices button[aria-pressed=true]{
+  border-color:#0a9dad;background:#e2f9f7;color:#08778c;
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeControls{
+  position:sticky;bottom:0;z-index:1;padding:12px 0 calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,#fff 80%,#ffffffed);
+}
+.root[data-business-immersive=reiki][data-business-course-screen=welcome] .primary{
+  background:linear-gradient(110deg,#08758c,#036a7c)!important;
+  border-bottom:4px solid #076c84!important;border-radius:16px!important;
+  color:#fff!important;min-height:53px;
+}
+@media(max-width:620px){
+  .root[data-business-immersive=reiki] .immersiveHeader{min-height:64px;padding:calc(7px + env(safe-area-inset-top)) 12px 8px}
+  .root[data-business-immersive=reiki] .immersiveProgress>small{font-size:10.5px}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonTopbar{
+    padding:7px 13px 0;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .moduleCompact>div:first-child strong{
+    font-size:15px;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonBrowse>summary{font-size:11px}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{
+    padding:5px 13px 9px;gap:4px;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button{
+    min-height:44px;padding:4px 1px!important;font-size:9.5px!important;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSlide[data-lesson-stage]{
+    margin:0 13px!important;border-radius:17px!important;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto{
+    height:clamp(118px,21dvh,190px);border-radius:16px;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea{
+    padding:14px 2px 7px;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea h2{font-size:11px!important}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea .skillTarget{
+    font-size:clamp(21px,5.6vw,27px)!important;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar{
+    gap:7px;padding:9px 13px calc(9px + env(safe-area-inset-bottom))!important;
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonSaveBar .primary{
+    min-height:51px;padding:8px!important;
+  }
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero{
+    min-height:clamp(148px,22dvh,195px);padding:18px!important;
+  }
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero h1{
+    font-size:clamp(22px,6vw,29px)!important;
+  }
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero p{
+    font-size:12px!important;
+  }
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome] .trackChoices{
+    grid-template-columns:1fr;gap:7px;
+  }
+}
+@media(max-width:620px) and (max-height:700px){
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto{height:104px}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{padding-bottom:5px}
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome] .hero{min-height:118px}
+}
+@media(max-width:620px) and (max-height:550px){
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto{height:78px}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea{padding-top:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .root[data-business-immersive=reiki] .immersiveProgress>div>span{transition:none}
+}
+@media print{
+  .root[data-business-immersive=reiki][data-business-current-tab=today],
+  .root[data-business-immersive=reiki][data-business-course-screen=welcome]{
+    position:static!important;width:100%!important;height:auto!important;overflow:visible!important;
+  }
+  .root[data-business-immersive=reiki] .immersiveHeader{display:none}
 }

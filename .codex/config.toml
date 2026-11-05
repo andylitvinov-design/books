@@ -1,0 +1,18 @@
+# Project-scoped MCP defaults for trusted local Codex sessions.
+# Nothing is installed or authenticated merely by committing this file.
+# Review and trust the workspace before running browsers or granting Figma access.
+
+[mcp_servers.holistic_playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.83", "--isolated", "--headless", "--block-service-workers"]
+startup_timeout_sec = 30
+tool_timeout_sec = 90
+
+[mcp_servers.holistic_chrome_devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@1.12.0", "--isolated", "--headless", "--no-usage-statistics", "--no-performance-crux"]
+startup_timeout_sec = 30
+tool_timeout_sec = 90
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"

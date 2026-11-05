@@ -33,7 +33,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 63)
+  assert.equal(energyworkSequence().length, 68)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
@@ -43,7 +43,11 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
   assert.deepEqual([...REIKI_INTRO_LESSONS], ['flight','tantra','kundalini','yggdrasil','initiation'])
   for (const [intro, meditation, key] of ids) {
     const seq = energyworkSequence()
-    assert.equal(seq.indexOf(meditation),seq.indexOf(intro)+1)
+    const videoIntro = { 'tan-01': 'tan-intro-video', 'kun-01': 'kun-intro-video', 'ygg-01': 'ygg-intro-video' }[intro]
+    const audioIntro = intro.replace('-01', '-audio')
+    assert.equal(seq.indexOf(meditation),seq.indexOf(intro)+(videoIntro ? 3 : 2))
+    if (videoIntro) assert.equal(seq[seq.indexOf(intro)+1], videoIntro)
+    assert.equal(seq[seq.indexOf(meditation)-1], audioIntro)
     const start = curriculum.indexOf('id: "'+intro+'"')
     const end = curriculum.indexOf('id: "'+meditation+'"',start)
     assert.ok(start > 0 && end > start)

@@ -29,14 +29,14 @@ test("Academy home groups free courses, study programs and verified live events 
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
 });
 
-test("EN RU ES course search is local, keeps all eight real destinations and preserves video archive access", () => {
+test("EN RU ES course search includes Personal Coaching Session and existing destinations", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   for (const title of [
     "Find your learning path", "Найдите свою программу обучения", "Encuentra tu ruta de aprendizaje",
   ]) assert.ok(discovery.includes(title), title);
   for (const id of [
-    "academy-free-opora", "academy-featured-principles-energywork",
+    "academy-free-personal-coaching", "academy-free-opora", "academy-featured-principles-energywork", "academy-featured-egypt-priesthood",
     "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction",
     "academy-featured-yggdrasil", "academy-featured-tantra-reiki",
     "academy-featured-kundalini-reiki", "academy-featured-temple-studies",
@@ -44,7 +44,7 @@ test("EN RU ES course search is local, keeps all eight real destinations and pre
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 4);
+  assert.equal((hub.match(/free: true/g) || []).length, 6);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
@@ -53,7 +53,10 @@ test("EN RU ES course search is local, keeps all eight real destinations and pre
   assert.match(discovery, /academy\?view=videos/);
   assert.match(hub, /<AcademyVideoCourses locale=\{locale\}/);
   assert.match(hub, /id="academy-video-courses"/);
-  assert.match(read("app/[locale]/academy/[[...slug]]/page.tsx"), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\}/);
+  const academyRoute=read("app/[locale]/academy/[[...slug]]/page.tsx");
+  assert.match(academyRoute, /if \(key === "free-ai-courses"\) return/);
+  assert.match(academyRoute, /<PublicGrowthCourses locale=\{locale\}/);
+  assert.match(academyRoute, /<PublicPractitionerCourses locale=\{locale\}/);
   assert.doesNotMatch(discovery, /fetch\(|localStorage\.|sessionStorage\./);
 });
 
@@ -90,7 +93,7 @@ test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki
   const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
   const discovery = read("components/academy-discovery.tsx");
   const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
-  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 8, "Every course needs its own hint");
+  assert.equal((hub.match(/detailsHint:/g) || []).length, 10, "All remaining Academy offers need a specific explanation");
   for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
   for (const example of [
     "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",
@@ -148,23 +151,64 @@ test("Featured programme buttons open their own landings; only real AI lessons s
 });
 
 
-test("Academy quick path pills and three headings remain mobile-friendly in English, Russian and Spanish", () => {
+test("Academy photo-led first screen mirrors Holistic Support at mobile widths in EN RU ES", () => {
   const source = read("components/academy-discovery.tsx");
   const styles = read("components/academy-discovery.module.css");
-  const hub = read("components/academy-hub.tsx");
-  for (const words of ["Free Courses", "Study Programs", "Live Events", "Бесплатные курсы", "Программы обучения", "Живые встречи", "Cursos gratis", "Programas de estudio", "Eventos en vivo"]) {
-    assert.ok(source.includes(words), words);
-  }
+  const support = read("components/holistic-support-choices.tsx");
+
+  for (const word of [
+    "Free Courses", "Study Programs", "Live Events",
+    "Бесплатные курсы", "Программы обучения", "Живые встречи",
+    "Cursos gratis", "Programas de estudio", "Eventos en vivo",
+    "How would you like to begin?", "С чего хотите начать?", "¿Por dónde quieres empezar?",
+  ]) assert.ok(source.includes(word), word);
+
+  assert.match(source, /data-academy-first-screen/);
+  assert.match(support, /data-holistic-first-screen/);
   assert.match(source, /<nav className=\{styles\.quickPaths\}/);
-  assert.match(source, /<BookOpen size=\{16\}/);
-  assert.match(source, /<GraduationCap size=\{16\}/);
-  assert.match(source, /<CalendarDays size=\{16\}/);
-  assert.match(styles, /\.quickPaths\s*\{/);
-  assert.match(styles, /grid-template-columns:\s*repeat\(3,\s*minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@media \(max-width: 620px\)/);
-  assert.match(styles, /\.eventUpper\s*\{/);
-  assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);
-  assert.match(hub, /events=\{PUBLIC_EVENTS\}/);
+  assert.match(source, /<Image src="\/images\/holistic-house\/hero-olive-incense\.webp" alt="" fill priority/);
+  assert.match(source, /data-academy-path="free"/);
+  assert.match(source, /data-academy-path="study"/);
+  assert.match(source, /data-academy-path="events"/);
+  assert.match(source, /<BookOpen size=\{18\}/);
+  assert.match(source, /<GraduationCap size=\{18\}/);
+  assert.match(source, /<CalendarDays size=\{18\}/);
+
+  for (const path of [
+    "/images/holistic-house/reiki-practitioner-sunrise.webp",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  ]) assert.ok(source.includes(path), path);
+  for (const section of ["academy-free-courses", "academy-study-programs", "academy-live-events"]) {
+    assert.ok(source.includes('href="#' + section + '"'), section);
+    assert.ok(source.includes('id="' + section + '"'), section);
+  }
+
+  assert.match(styles, /\.quickPaths \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.quickPaths \{ grid-template-columns: minmax\(0,1fr\); gap: 7px; \}/);
+  assert.match(styles, /@media \(max-width: 350px\)/);
+  assert.match(styles, /@media \(max-width: 700px\) and \(max-height: 700px\)/);
+  assert.match(styles, /\.pathCard:focus-visible/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
+});
+
+test("Academy keeps search, archive, video tab and personal cabinet below the photo entry", () => {
+  const source = read("components/academy-discovery.tsx");
+  const hero = source.indexOf("data-academy-first-screen");
+  const results = source.indexOf('id="academy-programs"');
+  const myCourses = source.indexOf("<AcademyMyCourses locale={locale} />");
+  const finder = source.indexOf("data-academy-course-finder");
+  const search = source.indexOf('id="academy-program-query"');
+  const heading = source.indexOf('id="academy-course-results"');
+  assert.ok(hero >= 0 && hero < results && results < myCourses && myCourses < finder && finder < search && search < heading);
+  assert.match(source, /role="search" onSubmit=\{submitSearch\}/);
+  assert.match(source, /onChange=\{\(event\) => setQuery\(event\.target\.value\)\}/);
+  assert.match(source, /document\.getElementById\("academy-course-results"\)/);
+  assert.match(source, /href="#academy-psimaster-courses"/);
+  assert.match(source, /<DiscoverySectionTabs locale=\{locale\} active="courses" \/>/);
+  assert.match(source, /href="#academy-video-courses"/);
+  assert.match(source, /<AcademyLiveEventList locale=\{locale\} events=\{matchedEvents\}/);
+  assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
 });
 
 test("Live academy cards show only confirmed future events with real registration links", () => {
@@ -180,4 +224,28 @@ test("Live academy cards show only confirmed future events with real registratio
   assert.match(source, /setExpandedEvent\(expanded \? null : event\.id\)/);
   assert.ok(source.includes('href={"/" + locale + "/events"}'));
   assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
+});
+
+test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and Greek only in Coaching", () => {
+ const hub=read("components/academy-hub.tsx");
+ const discovery=read("components/academy-discovery.tsx");
+ const css=read("components/academy-discovery.module.css");
+ const lounge=read("components/public-coaching-discovery.jsx");
+ const art=read("lib/coaching/public-session-art.js");
+ assert.ok(hub.includes("const coachingItem: AcademyCourseItem = "));
+ assert.ok(hub.includes("coachingItem={coachingItem}"));
+ assert.ok(discovery.includes("data-academy-coaching-session"));
+ assert.ok(discovery.includes("coachingSpotlightPhoto"));
+ assert.ok(discovery.includes("const freeItems = matchedItems.filter"));
+ assert.doesNotMatch(hub,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/);
+ assert.match(css,/coachingSpotlightCTA/);
+ for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
+ for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
+ assert.match(art,/coaching-ancient\/egyptian-cover\.jpg/);
+ assert.match(art,/coaching-ancient\/greek-cover\.jpg/);
+ // Commons source filenames remain build-time metadata; the application uses
+ // safe, normalized first-party paths generated by cache-ancient-coaching-photos.
+ const cache=read("scripts/cache-ancient-coaching-photos.mjs");
+ assert.match(cache,/Egypt_bookofthedead\.jpg/);
+ assert.match(cache,/Marble statue of Athena, Louvre\.jpg/);
 });

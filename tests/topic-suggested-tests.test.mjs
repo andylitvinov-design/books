@@ -10,7 +10,7 @@ const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf
 
 test('each direction offers exactly two distinct, startable, rights-cleared assessments in EN/RU', () => {
   for (const locale of ['ru', 'en']) {
-    const catalog = new Map(buildExplorerEntries({locale,audience:'account'}).map(item => [item.key,item]))
+    const catalog = new Map(buildExplorerEntries({locale,audience:'guest'}).map(item => [item.key,item]))
     for (const journey of TOPIC_JOURNEYS) {
       const suggestions = buildTopicTestSuggestions(journey,locale)
       for (const selected of ['',journey.topics[0].id, journey.topics[2].id]) {
@@ -22,6 +22,8 @@ test('each direction offers exactly two distinct, startable, rights-cleared asse
           const original = catalog.get(item.key)
           assert.ok(original?.selectable, item.key)
           assert.equal(original.rightsStatus, 'cleared')
+          assert.equal(original.guestEligible, true, 'One-tap link must work without Google sign-in')
+          assert.equal(original.startable, true)
           assert.notEqual(original.starterEligible, false)
           assert.ok(original.definition, 'No executable definition for ' + item.key)
           assert.equal(item.definition.key, original.definition.key)

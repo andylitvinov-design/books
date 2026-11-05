@@ -4,144 +4,165 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { WHATSAPP_NUMBER, whatsappEnquiryUrl } from "../lib/whatsapp-enquiry.js";
 
-const source = readFileSync(new URL("../components/tantra-initiation-form.tsx", import.meta.url), "utf8");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.CommonJS,
-    jsx: ts.JsxEmit.ReactJSX,
-    esModuleInterop: true,
-  },
-}).outputText;
+const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+const serverSource = read("components/tantra-initiation-form.tsx");
+const clientSource = read("components/tantra-initiation-choice.tsx");
+const chooser = read("components/contact-channel-chooser.tsx");
+function compile(source) {
+  return ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+    },
+  }).outputText;
+}
 
-// Render the real server component with an inert JSX runtime. No browsers,
-// files or messaging services are touched; only the URL drafts are inspected.
+// Render both real components with inert JSX; no effects, network or private data.
 const jsx = (type, props) => ({ type, props });
+let currentChoice = "free";
+let ClientChoice;
 const dependencies = (name) => {
   if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
+  if (name === "react") return {
+    useState: () => [currentChoice, value => { currentChoice = value; }],
+    useEffect: () => {},
+  };
   if (name === "lucide-react") return new Proxy({}, { get: (_, key) => key });
   if (name === "@/lib/whatsapp-enquiry") return { whatsappEnquiryUrl };
   if (name === "@/components/contact-channel-chooser") return { ContactChannelChooser: "contact-channel-chooser" };
-  if (name.endsWith(".module.css")) {
-    return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) };
-  }
+  if (name === "@/components/tantra-initiation-choice") return { TantraInitiationChoice: ClientChoice };
+  if (name.endsWith(".module.css")) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) };
   throw new Error("Unexpected import: " + name);
 };
-
-const compiledModule = { exports: {} };
-new Function("require", "module", "exports", compiled)(
-  dependencies,
-  compiledModule,
-  compiledModule.exports,
-);
-const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = compiledModule.exports;
+const instantiate = source => {
+  const module = { exports: {} };
+  new Function("require", "module", "exports", compile(source))(
+    dependencies, module, module.exports,
+  );
+  return module.exports;
+};
+ClientChoice = instantiate(clientSource).TantraInitiationChoice;
+const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = instantiate(serverSource);
 
 function flatten(node) {
   if (!node || typeof node !== "object") return [];
   if (Array.isArray(node)) return node.flatMap(flatten);
   return [node, ...flatten(node.props?.children)];
 }
+function render(locale, choice = "free") {
+  currentChoice = choice;
+  const wrapper = TantraInitiationForm({ locale });
+  assert.equal(wrapper.type, ClientChoice);
+  const nodes = flatten(ClientChoice(wrapper.props));
+  return {
+    nodes,
+    links: nodes.filter(node => node.type === "contact-channel-chooser"),
+    selects: nodes.filter(node => node.type === "select"),
+    options: nodes.filter(node => node.type === "option"),
+    anchors: nodes.filter(node => node.type === "span" && /^apply-/.test(node.props?.id || "")),
+  };
+}
+const intents = ["free", "personal", "session", "answers", "feedback"];
 
-function render(locale) {
+function flatten(node) {
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) return node.flatMap(flatten);
+  return [node, ...flatten(node.props?.children)];
+}
+function render(locale, choice = "free") {
+  currentChoice = choice;
   const nodes = flatten(TantraInitiationForm({ locale }));
   return {
     nodes,
-    links: nodes.filter((node) => node.type === "contact-channel-chooser"),
+    links: nodes.filter(node => node.type === "contact-channel-chooser"),
+    selects: nodes.filter(node => node.type === "select"),
+    options: nodes.filter(node => node.type === "option"),
+    anchors: nodes.filter(node => node.type === "span" && /^apply-/.test(node.props?.id || "")),
   };
 }
 
-test("EN/RU/ES capture renders five messenger choices including feedback", () => {
+test("EN/RU/ES shows one choice, five deep links and one CRM-first phone handoff", () => {
   for (const locale of ["en", "ru", "es"]) {
-    const { links } = render(locale);
-    assert.deepEqual(links.map((link) => link.props.id), [
-      "apply-free",
-      "apply-personal",
-      "apply-session",
-      "apply-answers",
-      "apply-feedback",
-    ]);
-    assert.equal(links.length, 5);
-    for (const link of links) {
-      const url = new URL(link.props.whatsappUrl);
-      assert.equal(url.origin, "https://wa.me");
-      assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
-      assert.equal(link.type, "contact-channel-chooser");
-      assert.ok(url.searchParams.get("text"));
+    const { links, selects, options, anchors, nodes } = render(locale);
+    assert.equal(links.length, 1);
+    assert.equal(links[0].props.compactPhone, true);
+    assert.equal(links[0].props.stayAfterSave, true);
+    assert.equal(links[0].props.resetKey, "tantra-initiation-" + locale + "-free");
+    assert.equal(selects.length, 1);
+    assert.equal(selects[0].props.value, "free");
+    assert.deepEqual(options.map(option => option.props.value), intents);
+    assert.deepEqual(anchors.map(node => node.props.id), intents.map(intent => "apply-" + intent));
+    assert.ok(nodes.some(node => node.props?.["data-tantra-whatsapp-capture"] !== undefined));
+    assert.equal(nodes.filter(node => node.type === "form").length, 0, "No second signup form");
+  }
+});
+
+test("switching intent updates the one chooser, topic and localized messenger draft", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const initial = render(locale);
+    initial.selects[0].props.onChange({ target: { value: "personal" } });
+    assert.equal(currentChoice, "personal");
+    const personal = render(locale, currentChoice);
+    assert.equal(personal.links[0].props.whatsappUrl, tantraInitiationWhatsAppUrl(locale, "personal"));
+    assert.ok(personal.links[0].props.publicTopic.includes("€50 / 30"));
+    personal.selects[0].props.onChange({ target: { value: "unknown" } });
+    assert.equal(currentChoice, "personal", "Unknown intent cannot be selected");
+    for (const intent of intents) {
+      const { links } = render(locale, intent);
+      assert.equal(links.length, 1);
+      assert.equal(links[0].props.whatsappUrl, tantraInitiationWhatsAppUrl(locale, intent));
+      assert.ok(links[0].props.publicTopic, intent);
     }
   }
 });
 
-test("free, initiation, personal session and answers WhatsApp links keep distinct localized requests", () => {
+test("all five localized drafts retain original service, pricing and feedback intent", () => {
   for (const locale of ["en", "ru", "es"]) {
-    const { links } = render(locale);
-    const messages = links.map((link) => new URL(link.props.whatsappUrl).searchParams.get("text"));
+    const messages = intents.map(intent => {
+      const url = new URL(tantraInitiationWhatsAppUrl(locale, intent));
+      assert.equal(url.origin, "https://wa.me");
+      assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
+      const draft = url.searchParams.get("text");
+      assert.ok(draft.includes("holistichouse.vercel.app/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
+      assert.match(draft, /Tantra Reiki|Тантра Рейки/);
+      return draft;
+    });
     assert.equal(new Set(messages).size, 5);
-    const service = locale === "ru" ? "Тантра Рейки" : "Tantra Reiki";
-    for (const message of messages) {
-      assert.ok(message.includes(service), message);
-      assert.ok(message.includes("holistichouse.vercel.app/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
-    }
-    assert.ok(/free|бесплатн|gratuit/i.test(messages[0]));
+    assert.match(messages[0], /free|бесплатн|gratuit/i);
     assert.ok(messages[1].includes("€50 / 30"));
     assert.match(messages[2], /100\s?€|€100/);
     assert.match(messages[2], /60\s?(minutes|минут|minutos)/);
-    assert.ok(/seven|7|siete/i.test(messages[3]));
+    assert.match(messages[3], /seven|7|siete/i);
+    assert.match(messages[4], /review|impressions|practice|отзыв|impresiones|práctica/);
+    assert.match(messages[4], /flow|поток|flujo/);
   }
 });
 
-test("answers go into the user's WhatsApp draft, not a hidden uploaded document", () => {
-  for (const locale of ["en", "ru", "es"]) {
-    const direct = tantraInitiationWhatsAppUrl(locale, "answers");
-    const fromCard = render(locale).links[3].props.whatsappUrl;
-    assert.equal(fromCard, direct);
-    const draft = new URL(direct).searchParams.get("text");
-    assert.match(draft, /1–7|seven|siete|выбранном мессенджере/);
-    assert.ok(!draft.includes("filename="));
-    assert.ok(!draft.includes("base64"));
-  }
+test("personal and feedback deep links select the appropriate option on load/hash change", () => {
+  assert.match(clientSource, /window\.location\.hash === "#apply-" \+ option\.intent/);
+  assert.match(clientSource, /selectFromHash\(\)/);
+  assert.match(clientSource, /window\.addEventListener\("hashchange", selectFromHash\)/);
+  assert.match(clientSource, /window\.removeEventListener\("hashchange", selectFromHash\)/);
+  assert.ok(!clientSource.includes("localStorage"));
+  assert.ok(!clientSource.includes('type="email"'));
+  assert.ok(!clientSource.includes("<textarea"));
 });
 
-test("capture has no form, inputs, file upload, internal state or hidden submissions", () => {
+test("the phone is saved only after explicit consent and never attached to a messenger URL", () => {
+  const save = chooser.slice(chooser.indexOf("  async function saveEnquiry(channel?"), chooser.indexOf("\n  let preparedWhatsApp"));
+  assert.match(save, /!consent/);
+  assert.match(save, /fetch\("\/api\/service-enquiries"/);
+  assert.match(save, /contact: \{ displayName: displayName\.trim\(\), email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : "" \}/);
+  assert.match(save, /setSaved\(\{ saved: true, referenceCode: data\.referenceCode \}\)/);
+  assert.match(save, /handoffWindow\.location\.replace\(destination\)/);
+  assert.doesNotMatch(save, /request: .*phone|text.*cleanedPhone/);
   for (const locale of ["en", "ru", "es"]) {
-    const { nodes } = render(locale);
-    const prohibited = ["form", "input", "textarea", "select", "button", "label"];
-    assert.deepEqual(nodes.filter((node) => prohibited.includes(node.type)), []);
-    assert.ok(!nodes.some((node) => node.props?.onSubmit || node.props?.onChange || node.props?.onClick));
-  }
-  assert.doesNotMatch(source, /navigator\.|window\.|localStorage|FormData|<input\b|<textarea\b/);
-});
-
-test("the site only prepares WhatsApp drafts; it never sends messages automatically", () => {
-  const ru = render("ru");
-  const t = ru.links[0].props.whatsappUrl;
-  assert.match(t, /^https:\/\/wa\.me\/\d+\?text=/);
-  const draft = new URL(t).searchParams.get("text");
-  assert.ok(draft.includes("Запрос:"));
-  assert.ok(draft.includes("Услуга:"));
-  assert.ok(draft.includes("Хочу запросить бесплатную"));
-  assert.ok(!draft.includes("Ваше имя:"));
-  assert.ok(!draft.includes("Email:"));
-});
-
-test("review-after-video is a distinct localized WhatsApp draft and does not send automatically", () => {
-  for (const locale of ["en", "ru", "es"]) {
-    const url = new URL(tantraInitiationWhatsAppUrl(locale, "feedback"));
-    assert.equal(url.origin, "https://wa.me");
-    assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
+    const url = new URL(tantraInitiationWhatsAppUrl(locale, "answers"));
     const message = url.searchParams.get("text");
-    assert.ok(message.includes("Tantra Reiki") || message.includes("Тантра Рейки"));
-    assert.match(message, /review|impressions|practice|отзыв|impresiones|práctica/);
-    assert.match(message, /flow|поток|flujo/);
-    assert.ok(message.includes("/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
-    assert.notEqual(url.href, render(locale).links[3].props.whatsappUrl);
-  }
-});
-
-test("the fifth step's personal distance initiation is optional and has its own enquiry", () => {
-  for (const locale of ["en", "ru", "es"]) {
-    const message = new URL(tantraInitiationWhatsAppUrl(locale, "personal")).searchParams.get("text");
-    assert.match(message, /online|дистанционную|distancia/);
-    assert.ok(message.includes("€50 / 30"));
-    assert.notEqual(message, new URL(tantraInitiationWhatsAppUrl(locale, "free")).searchParams.get("text"));
+    assert.match(message, /1–7|seven|siete|выбранном мессенджере/);
+    assert.ok(!message.includes("filename="));
+    assert.ok(!message.includes("base64"));
   }
 });

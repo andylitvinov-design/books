@@ -4,12 +4,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
+import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PageVideo } from "@/components/page-video";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PublicPathwayStrip } from "@/components/public-pathway-strip";
+import refreshStyles from "@/components/public-journey-refresh.module.css";
 import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { existingAboutIntroVideo } from "@/lib/site-videos/defaults";
-import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { getPublishedSiteVideo } from "@/lib/site-videos/public";
 import { videoKey } from "@/lib/site-videos/model";
 import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
@@ -17,39 +20,6 @@ import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = { params: Promise<{ locale: string }> };
-
-const videoTestimonials = [
-  { id: "m9RfDgK76PU", ru: "Антон Корчинский — отзыв о работе", en: "Anton Korchinsky — testimonial" },
-  { id: "5oj0BIbLT4w", ru: "Елена Бахтина — отзыв клиента", en: "Elena Bakhtina — client testimonial" },
-  { id: "MIVLm1GUTtM", ru: "Юрий Гончаренко — отзыв клиента", en: "Yuri Goncharenko — client testimonial" },
-] as const;
-
-const testimonialCopy = {
-  ru: {
-    kicker: "Отзывы",
-    title: "Видео-отзывы",
-    text: "Несколько видео-отзывов, ранее опубликованных на моём сайте PsiMaster.",
-    archiveTitle: "Фото и письменные отзывы",
-    archiveText: "Часть старых отзывов и учебных эссе сохранилась в архиве PsiMaster. Эти ссылки ведут к оригинальным публикациям.",
-    archiveAction: "Открыть архив PsiMaster",
-    archiveCards: [
-      { title: "Отзывы: сеанс образной терапии", text: "Архив отзывов о личных консультациях и образной работе.", href: "https://psimaster.net/node/786", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15" },
-      { title: "Отзывы и материалы школы", text: "Архив отзывов, эссе участников и материалов старого центра PsiMaster.", href: "https://psimaster.net/node/789", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g" },
-    ],
-  },
-  en: {
-    kicker: "Testimonials",
-    title: "Video testimonials",
-    text: "A few video testimonials that were previously published on my PsiMaster website.",
-    archiveTitle: "Photo & written reviews",
-    archiveText: "Some older reviews and participant essays remain in the PsiMaster archive. These links open the original publications.",
-    archiveAction: "Open PsiMaster archive",
-    archiveCards: [
-      { title: "Imagery therapy & personal sessions", text: "Archived reviews related to personal consultations and imagery-based work.", href: "https://psimaster.net/node/786", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2.jpg?itok=8hSPbZ15" },
-      { title: "School reviews & participant materials", text: "Archived reviews, participant essays, and materials from the earlier PsiMaster center.", href: "https://psimaster.net/node/789", image: "https://psimaster.net/sites/default/files/styles/medium/public/article/%D0%B0%D0%BD%D0%B4%D1%80%D0%B5%D0%B9-%D0%BB%D0%B8%D1%82%D0%B2%D0%B8%D0%BD%D0%BE%D0%B2-%D1%80%D0%B5%D0%B9%D0%BA%D0%B8-%D0%B8%D0%B3%D0%B3%D0%B4%D1%80%D0%B0%D1%81%D0%B8%D0%BB%D1%8C-%D0%B0%D1%81%D1%81%D0%B3%D0%B0%D1%80%D0%B4-%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9-%D0%B6%D1%83%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%B2_0.jpg?itok=chWp4-7g" },
-    ],
-  },
-} as const;
 
 const consultationCopy = {
   en: {
@@ -92,17 +62,16 @@ export default async function AboutPage({ params }: PageProps) {
 
   const typedLocale = locale as Locale;
   const current = aboutBiography[typedLocale];
-  const testimonials = testimonialCopy[typedLocale];
   const consultation = consultationCopy[typedLocale];
-  const aboutIntro = (await getPublishedSiteVideos())[videoKey("about-intro", typedLocale)];
+  const aboutIntro = await getPublishedSiteVideo(videoKey("about-intro", typedLocale));
 
   return (
-    <main className="about-shell" lang={typedLocale}>
+    <main className={"about-shell " + refreshStyles.page} lang={typedLocale} data-public-design-migration="wave1">
       <PublicSiteHeader locale={typedLocale} />
 
       {aboutIntro && (typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId
         ? <PsychicAlchemyIntroVideo video={aboutIntro} />
-        : <section className="site-video-block" data-video-slot="about-intro" data-video-locale={typedLocale} aria-label={aboutIntro.title}><SiteVideoPlayer video={aboutIntro} locale={typedLocale} minimal={typedLocale === "ru"} posterPriority /></section>)}
+        : <section className="site-video-block" data-video-slot="about-intro" data-video-locale={typedLocale} aria-label={aboutIntro.title}><SiteVideoPlayer video={aboutIntro} locale={typedLocale} minimal={typedLocale === "ru"} posterPriority internalOnly /></section>)}
 
       <section className="about-introduction" aria-labelledby="about-title">
         <div className="about-portrait">
@@ -114,6 +83,8 @@ export default async function AboutPage({ params }: PageProps) {
           {current.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </div>
       </section>
+
+      <PublicPathwayStrip locale={typedLocale} />
 
       <article className="about-biography">
         {current.sections.map((section) => (
@@ -131,38 +102,9 @@ export default async function AboutPage({ params }: PageProps) {
         <nav aria-label={current.explore.heading}>{current.explore.links.map((link) => <Link href={link.href} key={link.href}>{link.label}<span aria-hidden="true">→</span></Link>)}</nav>
       </section>
 
-      <section className="about-testimonials" aria-labelledby="testimonials-title">
-        <div className="about-section-heading">
-          <p className="homeopathy-kicker">{testimonials.kicker}</p>
-          <h2 id="testimonials-title">{testimonials.title}</h2>
-          <p>{testimonials.text}</p>
-        </div>
-        <div className="about-video-grid">
-          {videoTestimonials.map((video) => (
-            <SiteVideoPlayer
-              key={video.id}
-              video={{ youtubeId: video.id, title: video[typedLocale], language: "ru" }}
-              locale={typedLocale}
-              compact
-            />
-          ))}
-        </div>
-      </section>
+      <PersonalTestimonials locale={typedLocale} variant="about" />
 
-      <section className="about-review-archive" aria-labelledby="archive-title">
-        <div className="about-section-heading"><p className="homeopathy-kicker">{testimonials.archiveTitle}</p><h2 id="archive-title">{testimonials.archiveTitle}</h2><p>{testimonials.archiveText}</p></div>
-        <div className="about-review-grid">
-          {testimonials.archiveCards.map((card) => (
-            <a href={card.href} key={card.href} rel="noreferrer" target="_blank">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="" loading="lazy" src={card.image} />
-              <div><h3>{card.title}</h3><p>{card.text}</p><span>{testimonials.archiveAction} →</span></div>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <PageVideo slot="consultation" locale={typedLocale} />
+      <PageVideo slot="consultation" locale={typedLocale} internalOnly />
 
       <section className="about-consultation" aria-labelledby="personal-consultation-title">
         <div className="about-consultation-copy">
@@ -170,7 +112,7 @@ export default async function AboutPage({ params }: PageProps) {
           <h2 id="personal-consultation-title">{consultation.heading}</h2>
           <p>{consultation.text}</p>
         </div>
-        <PersonalConsultationForm locale={typedLocale} />
+        <PersonalConsultationForm locale={typedLocale} onSiteContact />
       </section>
 
       <section className="about-client-cabinet" aria-labelledby="client-cabinet-title">
@@ -180,7 +122,7 @@ export default async function AboutPage({ params }: PageProps) {
           {consultation.cabinetAction}<span aria-hidden="true">→</span>
         </Link>
         <p className="about-client-cabinet-prompt">{current.cabinet.prompt}</p>
-        <a href={current.cabinet.href} rel="noreferrer" target="_blank">{current.cabinet.action}<span aria-hidden="true">→</span></a>
+        <Link href={current.cabinet.href}>{current.cabinet.action}<span aria-hidden="true">→</span></Link>
       </section>
     </main>
   );

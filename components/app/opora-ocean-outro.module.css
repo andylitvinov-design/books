@@ -47,3 +47,23 @@
  .sea[data-playing=true] .seaCircle{animation:none}
  .track span{transition:none}
 }
+
+/* Reuse the original two-minute audio behaviour inside the practice card. */
+.outro.compact{
+  gap:8px;padding:11px 12px;border:1px solid #c7dedb;border-radius:16px;
+  background:rgba(249,255,252,.94);box-shadow:0 3px 12px rgba(31,95,103,.07);
+}
+.compact .player{gap:7px}
+.compact .counter{font-size:clamp(24px,6.9vw,29px);min-width:57px}
+.compact .play{min-height:46px;padding:8px 9px;font-size:clamp(13px,3.6vw,16px);border-radius:12px}
+.compact .restart{min-height:46px;flex:0 0 44px;padding:7px;border-radius:12px}
+.compact .track{height:6px}
+.compact .soundToggle{min-height:42px;font-size:12px}
+.compact .status{font-size:12px;text-align:left}
+@media(max-width:345px){
+  .outro.compact{padding:9px 8px;gap:7px}
+  .compact .player{gap:5px}
+  .compact .counter{font-size:24px;min-width:50px}
+  .compact .play{padding:7px 6px;font-size:13px}
+  .compact .restart{flex-basis:42px}
+}

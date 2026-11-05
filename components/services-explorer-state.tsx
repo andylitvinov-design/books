@@ -6,13 +6,14 @@ export type ServiceMode = "online" | "toronto";
 export type ServiceTopic = "all" | "personal" | "relationships" | "business" | "reiki" | "free";
 export type StudioServiceId =
   | "tests" | "situation" | "dao"
-  | "alchemy" | "hypnotherapy" | "constellations" | "business" | "remote-energy-support";
+  | "alchemy" | "hypnotherapy" | "constellations" | "business" | "remote-energy-support" | "monthly-support";
 
 /** Existing approved offers only. Toronto means a session enquiry, never a confirmed booking. */
 const facets: Record<StudioServiceId, { modes: readonly ServiceMode[]; topics: readonly ServiceTopic[] }> = {
   tests: { modes: ["online"], topics: ["free"] },
   situation: { modes: ["online"], topics: ["free"] },
   dao: { modes: ["online"], topics: ["free"] },
+  "monthly-support": { modes: ["online", "toronto"], topics: ["personal", "relationships", "business"] },
   alchemy: { modes: ["online", "toronto"], topics: ["personal", "relationships"] },
   hypnotherapy: { modes: ["online", "toronto"], topics: ["personal"] },
   constellations: { modes: ["online", "toronto"], topics: ["relationships"] },

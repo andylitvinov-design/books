@@ -181,12 +181,8 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          // The Spanish DAO route still uses CoreServiceDetail with the same
-          // privacy-gated ContactChannelChooser. EN/RU now use FreeEntryLanding.
-          const daoSelector = locale === "es"
-            ? 'main[data-core-service-detail="dao"] [data-contact-channel-chooser]'
-            : 'main[data-free-entry-landing="dao"] [data-free-resource-enquiry="dao"] [data-contact-channel-chooser]';
-          cases.push({path:"/"+locale+"/services/dao-health-profile",selector:daoSelector,min:1});
+          // EN/RU/ES Dao now share one consented first-party CRM landing.
+          // None use a parallel messenger chooser; verify them after the loop.
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
@@ -213,6 +209,35 @@ async function runEngine(name, engine) {
               assert.match(text || "", /PERSONAL|ЛИЧНУЮ/i, "The new selection must be in the prepared message");
               await button.click();
             }
+          }
+          {
+            const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
+              {waitUntil:"domcontentloaded",timeout:60000});
+            assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
+            const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
+            await daoForm.waitFor({state:"visible",timeout:25000});
+            const consent = daoForm.locator('input[type="checkbox"][required]');
+            assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
+            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
+              "Dao form cannot submit without an opt-in");
+            assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
+              "Dao uses approved first-party contact capture, not a second messenger funnel");
+            // The network request is intercepted above; synthetic consent
+            // validates the CRM handoff without touching a real lead/account.
+            const previous = submissions.length;
+            const submit = daoForm.locator('button[type="submit"]');
+            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
+            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
+            await consent.check();
+            await submit.click();
+            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
+            const enquiry = submissions.at(-1);
+            assert.equal(enquiry.locale,locale);
+            assert.equal(enquiry.contactConsent,true);
+            assert.equal(enquiry.contact.email,"qa-browser@example.test");
+            assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
+            assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
           }
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});

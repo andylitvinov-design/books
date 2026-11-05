@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors,
+  portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors, portraitSectorReadouts,
   portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
@@ -93,4 +93,29 @@ test('selected category scales occupy full 360°, not their old quarter',()=>{
   // Existing domain membership remains unchanged, so no test scoring or
   // report/result storage migration is needed for the new presentation.
   assert.deepEqual(PORTRAIT_SECTOR_KEYS,['body','work','relationships','growth'])
+})
+
+test('All reads the latest current source score per area, never coverage or an average',()=>{
+  const portrait={axes:{
+    stress:{mode:'directional',rawValue:1,min:0,max:5,percent:80,measuredAt:'2026-10-20T12:00:00Z'},
+    energy:{mode:'directional',rawValue:3,min:0,max:5,percent:20,measuredAt:'2026-10-23T12:00:00Z'},
+    clarity:{mode:'directional',rawValue:2,min:1,max:4,percent:33,measuredAt:'2026-10-23T12:00:00Z'},
+    relationships:{mode:'descriptive',rawValue:3,min:1,max:5,percent:null,measuredAt:'2026-10-22T12:00:00Z'},
+    meaning:{mode:'directional',rawValue:1,min:0,max:10,percent:10,measuredAt:'2026-10-23T12:00:00Z'},
+  }}
+  const summary=portraitSectorReadouts(portrait)
+  assert.equal(summary.length,4)
+  assert.deepEqual(summary.map(row=>row.axis),['energy','clarity','relationships','meaning'])
+  assert.deepEqual(summary.map(row=>row.percent),[20,33,null,10])
+  assert.deepEqual(summary.map(row=>row.measurement?.rawValue),[3,2,3,1])
+  // Descriptive source remains numeric, but cannot create a favorable ray.
+  assert.equal(summary[2].measurement.max,5)
+  assert.equal(summary[2].percent,null)
+  // Reject malformed/out-of-range results, and never fall back to staleAxes.
+  const invalid=portraitSectorReadouts({axes:{
+    stress:{mode:'directional',rawValue:8,min:0,max:5,percent:80},
+    energy:{mode:'directional',rawValue:2,min:0,max:5,percent:NaN},
+  },staleAxes:{clarity:{mode:'directional',rawValue:3,min:0,max:5,percent:60}}})
+  assert.deepEqual(invalid.map(row=>row.axis),[null,null,null,null])
+  assert.deepEqual(portraitSectorReadouts(null).map(row=>row.axis),[null,null,null,null])
 })

@@ -10,6 +10,9 @@ export interface PublishedSiteVideo {
   transcript?: string;
   language: VideoLocale;
   durationSeconds?: number;
+  /** Public approved practitioner profile, never a private client identity. */
+  practitionerSlug?: string;
+  practitionerName?: string;
 }
 
 export interface SiteVideoDraft extends PublishedSiteVideo {
@@ -42,11 +45,13 @@ export interface SiteVideoChange {
   durationSeconds?: number | string;
   youtubeVisibility?: 'unlisted' | 'public';
   reviewed?: boolean;
+  practitionerSlug?: string;
+  practitionerName?: string;
 }
 
 export interface SiteVideoStore {
   list(options?: { timeoutMs?: number }): Promise<SiteVideoRecord[]>;
-  get(key: string): Promise<SiteVideoRecord | null>;
+  get(key: string, options?: { timeoutMs?: number }): Promise<SiteVideoRecord | null>;
   save(record: SiteVideoRecord, expectedRevision: number): Promise<void>;
 }
 

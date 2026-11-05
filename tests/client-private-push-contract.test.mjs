@@ -70,7 +70,7 @@ test('tap preserves a request through sign-in while read remains participant sco
   const messages=source('lib/practitioners/client-messages.js')
   assert.match(api,/continueTo === 'consultations'/)
   assert.match(api,/app\/consultations\?request=/)
-  assert.match(cabinet,/autoOpen=\{requestedMessageId === request\.id\}/)
+  assert.match(cabinet,/autoOpen=\{requestedMessageId === request\.id \|\| Number\(request\.newMessageCount\)>0\}/)
   assert.match(messages,/if\(!isRequester&&!isPractitioner\)throw new AppError\('NOT_FOUND',404\)/)
 })
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { ArrowRight, BookOpen, ChevronDown, Compass, Layers3, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
@@ -72,6 +73,40 @@ const copy = {
   },
 } as const
 
+// First-screen service summaries are intentionally concise; detailed service copy stays in the source offers.
+const compactOffers: Record<Locale, Record<string, { name: string; summary: string }>> = {
+  en: {
+    free: { name: 'Free Business Snapshot', summary: 'Your question and a simple sketch → a personal written reflection.' },
+    express: { name: 'Strategy Clarity', summary: '30 minutes to clarify a decision and choose your next step.' },
+    full: { name: 'Business Mapping & Goals', summary: '60 minutes to explore your goals and outline a practical plan.' },
+  },
+  ru: {
+    free: { name: 'Бесплатный бизнес-разбор', summary: 'Вопрос и рисунок «Я — цель — препятствие» → письменный ответ.' },
+    express: { name: 'Ясность стратегии', summary: '30 минут: разберём одно решение и следующий шаг.' },
+    full: { name: 'Карта бизнеса и цели', summary: '60 минут: исследуем систему и наметим план действий.' },
+  },
+  es: {
+    free: { name: 'Diagnóstico empresarial gratis', summary: 'Tu pregunta y un dibujo → reflexión personal por escrito.' },
+    express: { name: 'Claridad estratégica', summary: '30 min para aclarar una decisión y elegir el próximo paso.' },
+    full: { name: 'Mapa del negocio y metas', summary: '60 min para explorar tus metas y definir un plan práctico.' },
+  },
+}
+
+// Reuse published first-party imagery, avoiding third-party requests, consent or image hosting changes.
+const servicePhotos: Record<string, string> = {
+  free: '/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp',
+  express: '/images/holistic-house/books-library.webp',
+  full: '/images/holistic-house/hero-olive-incense.webp',
+  mentoring: '/images/holistic-house/andy-about.png',
+  constellations: '/images/holistic-house/homepage-constellations.svg',
+  imagery: '/images/holistic-house/homepage-guided-imagery.svg',
+}
+const mobileActionCopy = {
+  en: { choose: 'Request', details: 'Details' },
+  ru: { choose: 'Заявка', details: 'Детали' },
+  es: { choose: 'Solicitar', details: 'Detalles' },
+} as const
+
 function businessOffers(locale: Locale): Offer[] {
   const t = copy[locale]
   const offers = businessConsultingCopy[locale].offers
@@ -133,26 +168,50 @@ export function BusinessServiceBrowser({locale}: {locale: Locale}) {
       <h2 id="business-services-title">{t.title}</h2>
       <p className={styles.lead}>{t.lead}</p>
       <div className={styles.cards} aria-live="polite">
-        {shown.map((item,index)=><article className={styles.card} key={item.id}
-          data-business-service-card={item.id}>
-          <div className={styles.cardTop}>
-            <span className={styles.num}>{String(index+1).padStart(2,'0')}</span>
-            {item.format ? <Compass size={19} aria-hidden="true"/> : <BookOpen size={19} aria-hidden="true"/>}
-          </div>
-          <h3>{item.name}</h3>
-          <p>{item.description}</p>
-          <strong className={styles.price}>{item.price}</strong>
-          {item.format ?
-            <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
-              prefetch={false} className={styles.action} attributes={{
-                'data-business-direct-option': item.format,
-                'data-business-service-request': item.id,
-              }}>{t.choose}<ArrowRight size={16} aria-hidden="true"/></AcquisitionEventLink>
-            : <AcquisitionEventLink href={item.href || '/'+locale+'/services'} event="service_view"
-              prefetch={false} className={styles.action} attributes={{
-                'data-business-service-details': item.id,
-              }}>{t.details}<ArrowRight size={16} aria-hidden="true"/></AcquisitionEventLink>}
-        </article>)}
+        {shown.map((item,index)=>{
+          const compact = compactOffers[locale][item.id]
+          return <article className={styles.card} key={item.id} data-business-service-card={item.id}>
+            <div className={styles.cardMedia} data-business-service-photo={item.id} aria-hidden="true">
+              <Image src={servicePhotos[item.id]} alt="" fill
+                sizes="(max-width: 760px) 120px, (max-width: 1100px) 150px, 110px"
+                loading="lazy" unoptimized />
+            </div>
+            <div className={styles.cardBody}>
+              <div className={styles.cardTop}>
+                <span className={styles.num}>{String(index+1).padStart(2,'0')}</span>
+                {item.format ? <Compass size={19} aria-hidden="true"/> : <BookOpen size={19} aria-hidden="true"/>}
+              </div>
+              <h3 aria-label={item.name}>
+                {compact ? <>
+                  <span className={styles.titleFull}>{item.name}</span>
+                  <span className={styles.titleSmall} aria-hidden="true">{compact.name}</span>
+                </> : item.name}
+              </h3>
+              <p className={styles.summary} aria-label={item.description}>{compact?.summary ?? item.description}</p>
+              <div className={styles.cardFooter}>
+                <strong className={styles.price}>{item.price}</strong>
+                {item.format ?
+                  <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
+                    prefetch={false} className={styles.action} attributes={{
+                      'data-business-direct-option': item.format,
+                      'data-business-service-request': item.id,
+                    }}>
+                    <span className={styles.actionText}>{t.choose}</span>
+                    <span className={styles.actionShort} aria-hidden="true">{mobileActionCopy[locale].choose}</span>
+                    <ArrowRight size={16} aria-hidden="true"/>
+                  </AcquisitionEventLink>
+                : <AcquisitionEventLink href={item.href || '/'+locale+'/services'} event="service_view"
+                    prefetch={false} className={styles.action} attributes={{
+                      'data-business-service-details': item.id,
+                    }}>
+                    <span className={styles.actionText}>{t.details}</span>
+                    <span className={styles.actionShort} aria-hidden="true">{mobileActionCopy[locale].details}</span>
+                    <ArrowRight size={16} aria-hidden="true"/>
+                  </AcquisitionEventLink>}
+              </div>
+            </div>
+          </article>
+        })}
       </div>
       {!filtered.length && <p role="status" className={styles.empty}>{t.empty}</p>}
       {remaining>0 ? <button type="button" className={styles.showMore}

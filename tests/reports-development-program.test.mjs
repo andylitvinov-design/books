@@ -114,6 +114,24 @@ test('reports UI uses the authenticated account and an owner-checked encrypted A
   assert.doesNotMatch(migration,/grant .+ to authenticated/i)
 })
 
+test('goal editors separate user targets from actual test coverage on every area', () => {
+  const view = file('components/app/development-program.jsx')
+  const css = file('components/app/development-program.module.css')
+  const empty = rankDevelopmentGaps([], goals())
+  assert.equal(empty.sectors.find(sector => sector.key === 'relationships').current, null)
+  assert.equal(empty.sectors.find(sector => sector.key === 'relationships').measuredAxes, 0)
+  assert.match(view, /data-development-current=\{hasMeasurements \? 'available' : 'unmeasured'\}/)
+  assert.match(view, /data-development-target-editor/)
+  assert.match(view, /hasMeasurements \? measuredAxes \+ ' \/ ' \+ sector\.axes\.length/)
+  assert.match(view, /: t\.notMeasured/)
+  assert.match(view, /ariaLabel=\{sector\.label\[lang\] \+ ' · ' \+ t\.target\}/)
+  assert.match(view, /revision === 0 && !dirty \? t\.exampleTarget/)
+  assert.match(view, /targetNote: 'An editable target, not a test result\.'/)
+  assert.doesNotMatch(view, /<TargetSlider title=\{sector\.label\[lang\]\}/)
+  assert.match(css, /\.currentRow\{/)
+  assert.match(css, /\.targetArea\{/)
+})
+
 test('Development programme presents two independent, collapsed links for goals and recommendations', () => {
   const view = file('components/app/development-program.jsx')
   const css = file('components/app/development-program.module.css')

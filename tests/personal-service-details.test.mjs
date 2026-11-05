@@ -14,7 +14,8 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
     assert.match(page,/isPublicLocale/);
   }
   const component = read("components/personal-service-landing.tsx");
-  assert.match(component, /<PersonalConsultationForm locale={locale} service={t.orderLabel}/);
+  assert.match(component, /<CompactLeadCapture/);
+  assert.match(component, /data-service-visual-screen="final-capture"/);
   assert.match(component, /id="request-session"/);
   assert.match(component, /href="#request-session"/);
   assert.match(component, /t\.questions\.map/);
@@ -41,28 +42,35 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\}/);
 });
 
-test("free written review keeps personal scope, optional long questionnaire and no paid or false clinical claims", () => {
+test("free written review keeps personal scope, optional private questionnaire and no paid or clinical claims", () => {
   const route = read("app/[locale]/services/free-situation-review/page.tsx");
   const landing = read("components/free-entry-landing.tsx");
-  const enquiry = read("components/free-resource-enquiry.tsx");
+  const express = read("components/personal-express-enquiry.tsx");
   const css = read("components/free-entry-landing.module.css");
   assert.match(route, /kind="situation"/);
   assert.match(landing, /t\.steps\.map/);
-  assert.match(landing, /t\.faq\.map/);
+  assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\{locale\}/);
   assert.match(landing, /"request-free-review"/);
+  // The current Free Express introduction is an initial written review.
+  // An optional paid consultation is separate, and clinical data stays private.
   for (const phrase of [
-    "It does not include a video call or live consultation",
-    "Он не включает видеозвонок",
-    "No incluye videollamada ni consulta en directo",
+    "no appointment or call is needed",
+    "без записи на звонок",
+    "sin cita o videollamada",
+    "Live consultations are separate and optional",
+    "Живая консультация — отдельно и по желанию",
+    "Una consulta en directo es opcional y aparte",
     "educational and symbolic",
     "не диагностируют и не лечат заболевания",
-    "no diagnostican ni tratan enfermedades",
+    "No diagnostican ni tratan enfermedades",
   ]) assert.ok(landing.includes(phrase), phrase);
-  assert.match(enquiry, /<ContactChannelChooser/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
-  assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
+  assert.match(express, /data-personal-express-enquiry/);
+  assert.match(express, /data-express-inline-disclosure/);
+  assert.doesNotMatch(landing, /guaranteed cure|medical diagnosis provided|€50|€100/i);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /min-height:calc\(100svh - 150px\)/);
 });
@@ -82,7 +90,7 @@ test("all personal services have source-backed educational language, approved pr
   assert.match(css, /min-height:56px/);
 });
 
-test("paid individual services retain contextual handoff without a compulsory intake form", () => {
+test("paid individual services end in voluntary CRM capture with receipt", () => {
   const wrapper = read("components/personal-consultation-form.tsx");
   const shared = read("components/consultation-choice-capture.tsx");
   const landing = read("components/personal-service-landing.tsx");
@@ -95,6 +103,9 @@ test("paid individual services retain contextual handoff without a compulsory in
   assert.match(shared, /service: service \|\|/);
   assert.match(shared, /This is an enquiry, not a confirmed booking or payment/);
   assert.match(landing, /id="request-session"/);
-  assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
-  assert.match(css, /\.order :global\(\[data-consultation-capture="service"\]\)/);
+  assert.match(landing, /<CompactLeadCapture/);
+  assert.match(landing, /sourcePath=/);
+  assert.match(landing, /formatOptions=/);
+  assert.match(css, /\.captureContent :global/);
+  assert.match(read("components/compact-lead-capture.tsx"), /result\?\.saved !== true/);
 });

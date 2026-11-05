@@ -10,10 +10,11 @@ import styles from './business-consultation-finder.module.css'
 type Locale = 'en' | 'ru' | 'es'
 type Need = 'clarity' | 'income' | 'growth'
 type Format = 'free' | 'express' | 'full' | 'mentoring'
+type PaidFormat = Exclude<Format, 'free'>
 type Choice = { label: string; help: string }
 
 const needs = ['clarity', 'income', 'growth'] as const
-const formats = BUSINESS_FINDER_FORMATS as readonly Format[]
+const paidFormats = (BUSINESS_FINDER_FORMATS as readonly Format[]).filter((format): format is PaidFormat => format !== 'free')
 // Editorial mapping onto the existing approved matcher and CRM formats.
 // No questionnaire answers, sensitive data, identifiers or diagnosis are collected.
 const needIssues = {
@@ -24,21 +25,24 @@ const needIssues = {
 
 const words: Record<Locale, {
   title: string; match: string; focus: string; change: string;
-  request: string; other: string; available: string; consent: string; noBooking: string;
+  request: string; freeAction: string; freeKicker: string; paidKicker: string;
+  other: string; available: string; consent: string; noBooking: string;
   mentorPrice: string; reasons: Record<Format, string>; choices: Record<Need, Choice>;
 }> = {
   en: {
     title: 'Find your starting point',
-    match: 'A starting point for you', focus: 'Your focus', change: 'Change my answer',
-    request: 'Request this consultation', other: 'See other formats', available: 'Available consultation formats',
+    match: 'Choose how to begin', focus: 'Your focus', change: 'Change my answer',
+    request: 'Request a personal session', freeAction: 'Start free written review',
+    freeKicker: 'FREE · WRITTEN REVIEW', paidKicker: 'LIVE WITH ANDREY',
+    other: 'Other paid formats', available: 'Personal session formats',
     consent: 'Only an enquiry you submit with consent goes to Andrey. Your choice stays on this page until then.',
     noBooking: 'A request is not a booked or paid appointment. Time is confirmed personally; business results are not guaranteed.',
     mentorPrice: 'By arrangement',
     reasons: {
-      free: 'Start with a free written reflection on your situation. A live call is not included.',
-      express: 'A focused 30-minute conversation to clarify a decision and choose one realistic next step.',
-      full: 'A 60-minute conversation offers more space to map obstacles, options and a practical action plan.',
-      mentoring: 'For ongoing work, ask about individually arranged follow-up sessions.',
+      free: 'Share a question and an I–Goal–Obstacle drawing. Written reply, no call.',
+      express: '30-minute live session to clarify one decision and next step.',
+      full: '60-minute live session to map obstacles, options and an action plan.',
+      mentoring: 'Arrange ongoing follow-up sessions personally.',
     },
     choices: {
       clarity: {label: 'I need clarity', help: 'One important business decision'},
@@ -48,16 +52,18 @@ const words: Record<Locale, {
   },
   ru: {
     title: 'Найдите подходящий формат',
-    match: 'С чего можно начать', focus: 'Ваш запрос', change: 'Изменить ответ',
-    request: 'Оставить заявку', other: 'Другие форматы', available: 'Доступные форматы консультаций',
+    match: 'Два способа начать', focus: 'Ваш запрос', change: 'Изменить ответ',
+    request: 'Запросить личную сессию', freeAction: 'Начать бесплатный разбор',
+    freeKicker: 'БЕСПЛАТНО · ПИСЬМЕННО', paidKicker: 'СЕССИЯ С АНДРЕЕМ',
+    other: 'Другие платные форматы', available: 'Форматы личных сессий',
     consent: 'Только заявка с вашим согласием отправляется Андрею. До этого выбор остаётся на странице.',
     noBooking: 'Заявка — ещё не запись и не оплата. Время согласуется лично; результаты для бизнеса не гарантируются.',
     mentorPrice: 'По договорённости',
     reasons: {
-      free: 'Начните с бесплатного письменного разбора. Живой созвон не входит.',
-      express: '30 минут, чтобы прояснить одно решение и наметить реалистичный следующий шаг.',
-      full: 'За 60 минут можно подробнее рассмотреть препятствия, варианты и практический план.',
-      mentoring: 'Для длительной поддержки можно согласовать индивидуальные повторные встречи.',
+      free: 'Вопрос и рисунок «Я — цель — препятствие»; письменный ответ без созвона.',
+      express: '30 минут с Андреем: решение и ближайший шаг.',
+      full: '60 минут с Андреем: варианты, препятствия и план.',
+      mentoring: 'Регулярные встречи по личной договорённости.',
     },
     choices: {
       clarity: {label: 'Нужна ясность', help: 'Одно важное решение'},
@@ -67,16 +73,18 @@ const words: Record<Locale, {
   },
   es: {
     title: 'Encuentra tu punto de partida',
-    match: 'Una opción para empezar', focus: 'Tu tema', change: 'Cambiar respuesta',
-    request: 'Solicitar esta consulta', other: 'Otras modalidades', available: 'Modalidades de consulta',
+    match: 'Dos formas de empezar', focus: 'Tu tema', change: 'Cambiar respuesta',
+    request: 'Solicitar una sesión personal', freeAction: 'Empezar revisión gratuita',
+    freeKicker: 'GRATIS · POR ESCRITO', paidKicker: 'EN VIVO CON ANDREY',
+    other: 'Otras opciones de pago', available: 'Modalidades de sesiones personales',
     consent: 'Solo enviamos tu solicitud con tu consentimiento. Hasta entonces, tu elección queda en la página.',
     noBooking: 'Solicitar no confirma una cita ni un pago. El horario se acuerda personalmente, sin promesas económicas.',
     mentorPrice: 'Por acuerdo',
     reasons: {
-      free: 'Empieza con una reflexión escrita gratuita. No incluye una llamada.',
-      express: '30 minutos para aclarar una decisión y elegir un próximo paso realista.',
-      full: '60 minutos para explorar obstáculos, opciones y un plan práctico.',
-      mentoring: 'Si deseas continuidad, solicita encuentros de seguimiento acordados personalmente.',
+      free: 'Pregunta y dibujo Yo–Meta–Obstáculo; respuesta escrita, sin llamada.',
+      express: '30 minutos para aclarar una decisión y el siguiente paso.',
+      full: '60 minutos para explorar opciones, obstáculos y un plan de acción.',
+      mentoring: 'Seguimiento continuo, por acuerdo personal.',
     },
     choices: {
       clarity: {label: 'Necesito claridad', help: 'Una decisión importante'},
@@ -89,10 +97,10 @@ const words: Record<Locale, {
 export function BusinessConsultationFinder({locale}: {locale: Locale}) {
   const t = words[locale]
   const [need, setNeed] = useState<Need | null>(null)
-  const [preferred, setPreferred] = useState<Format | null>(null)
+  const [preferred, setPreferred] = useState<PaidFormat | null>(null)
   const issue = need ? needIssues[need] : null
   const suggested = issue ? suggestBusinessConsultation(issue) as Format | null : null
-  const selected = preferred || suggested
+  const selected: PaidFormat = preferred || (suggested === 'full' || suggested === 'mentoring' ? suggested : 'express')
   const offers = businessConsultingCopy[locale].offers
   const offerCopy: Record<Format, {name: string; price: string}> = {
     free: {name: offers[0].name, price: offers[0].price},
@@ -121,27 +129,49 @@ export function BusinessConsultationFinder({locale}: {locale: Locale}) {
         </button>)}
       </div>
       <p className={styles.privacy}><ShieldCheck size={14} aria-hidden="true"/>{t.consent}</p>
-    </> : selected ? <div className={styles.recommendation} data-business-finder-result aria-live="polite">
+    </> : <div className={styles.recommendation} data-business-finder-result aria-live="polite">
       <button className={styles.change} data-business-finder-reset type="button"
         onClick={()=>{setNeed(null);setPreferred(null)}}><RotateCcw size={14} aria-hidden="true"/>{t.change}</button>
-      <p className={styles.resultEyebrow}>{t.match}</p>
-      <div className={styles.resultTitle}>
-        <h3>{offerCopy[selected].name}</h3>
-        <strong className={styles.selectedPrice}>{offerCopy[selected].price}</strong>
+      <div className={styles.resultIntro}>
+        <p className={styles.resultEyebrow}>{t.match}</p>
+        <p className={styles.needSummary}>{t.focus}: <strong>{t.choices[need].label}</strong></p>
       </div>
-      <p className={styles.reason}>{t.reasons[selected]}</p>
-      <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
-        prefetch={false} className={styles.primary} attributes={{
-          'data-business-direct-option': selected,
-          'data-business-finder-context': context,
-          'data-business-finder-start': 'website-form',
-        }}>
-        {t.request}<ArrowRight size={18} aria-hidden="true"/>
-      </AcquisitionEventLink>
+      <div className={styles.ways} data-business-finder-ways>
+        <article className={styles.way} data-business-result-path="free">
+          <div className={styles.wayHeading}>
+            <span className={styles.wayKicker}>{t.freeKicker}</span>
+            <strong className={styles.selectedPrice}>{offerCopy.free.price}</strong>
+          </div>
+          <h3>{offerCopy.free.name}</h3>
+          <p className={styles.reason}>{t.reasons.free}</p>
+          <AcquisitionEventLink
+            href={'/'+locale+'/services/free-situation-review?topic=business'}
+            event="service_request_start" prefetch={false} className={styles.freePrimary}
+            attributes={{ 'data-business-finder-start': 'free-review' }}>
+            {t.freeAction}<ArrowRight size={17} aria-hidden="true"/>
+          </AcquisitionEventLink>
+        </article>
+        <article className={styles.way} data-business-result-path="paid">
+          <div className={styles.wayHeading}>
+            <span className={styles.wayKicker}>{t.paidKicker}</span>
+            <strong className={styles.selectedPrice}>{offerCopy[selected].price}</strong>
+          </div>
+          <h3>{offerCopy[selected].name}</h3>
+          <p className={styles.reason}>{t.reasons[selected]}</p>
+          <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
+            prefetch={false} className={styles.primary} attributes={{
+              'data-business-direct-option': selected,
+              'data-business-finder-context': context,
+              'data-business-finder-start': 'website-form',
+            }}>
+            {t.request}<ArrowRight size={17} aria-hidden="true"/>
+          </AcquisitionEventLink>
+        </article>
+      </div>
       <details className={styles.otherFormats}>
         <summary>{t.other}</summary>
         <div className={styles.formats} role="group" aria-label={t.available}>
-          {formats.map(key=><button key={key} type="button" className={styles.format}
+          {paidFormats.map(key=><button key={key} type="button" className={styles.format}
             aria-pressed={selected===key} data-business-format-choice={key}
             onClick={()=>setPreferred(key)}>
             <span>{selected===key && <Check size={15} aria-hidden="true"/>}{offerCopy[key].name}</span>
@@ -150,6 +180,6 @@ export function BusinessConsultationFinder({locale}: {locale: Locale}) {
         </div>
       </details>
       <p className={styles.noBooking}>{t.noBooking}</p>
-    </div> : null}
+    </div>}
   </section>
 }

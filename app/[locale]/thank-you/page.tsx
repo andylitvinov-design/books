@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import "@/app/site-videos.css";
 
 import { ServiceEnquiryThankYou } from "@/components/service-enquiry-thank-you";
-import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { getPublishedSiteVideo } from "@/lib/site-videos/public";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,11 +19,11 @@ export default async function ThankYouPage({
   const { locale } = await params;
   if (locale !== "en" && locale !== "ru" && locale !== "es") notFound();
   // Only intentionally published, vetted public media. No draft/Drive URLs.
-  const videos = await getPublishedSiteVideos();
+  const video = await getPublishedSiteVideo("thank-you:" + locale);
   return (
     <ServiceEnquiryThankYou
       locale={locale}
-      video={videos["thank-you:" + locale] ?? null}
+      video={video ?? null}
     />
   );
 }

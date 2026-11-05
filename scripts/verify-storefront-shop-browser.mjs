@@ -31,21 +31,32 @@ try {
     })
     context.setDefaultTimeout(18000)
     const page = await context.newPage()
-    const failures = []
+    const failures = [], syntheticEnquiries = []
     page.on('pageerror', error => failures.push(error.message))
     // Never send a synthetic browser test to a live PSP, CRM or external site.
     await context.route('**/*', async route => {
       const req = route.request()
       const url = new URL(req.url())
+      // Deterministic local-only CRM success stub. No production lead is created.
+      if (url.origin === origin && url.pathname === '/api/service-enquiries' && req.method() === 'POST') {
+        syntheticEnquiries.push(req.postDataJSON())
+        return route.fulfill({ status: 201, contentType: 'application/json',
+          body: JSON.stringify({ saved: true, referenceCode: 'HH-A1B2C3D4E5F6' }) })
+      }
       if (url.origin !== origin || !['GET','HEAD'].includes(req.method())) return route.abort('blockedbyclient')
       return route.continue()
     })
     const location = origin + '/' + locale + '/shop'
     try {
-      const response = await page.goto(location, { waitUntil: 'networkidle', timeout: 30000 })
+      const response = await page.goto(location, { waitUntil: 'domcontentloaded', timeout: 30000 })
       assert.equal(response?.status(), 200, locale + ': shop route HTTP')
       const shop = page.locator('[data-service-storefront]')
-      await shop.waitFor({ state: 'visible' })
+      await shop.waitFor({ state: 'visible', timeout: 15000 })
+      // Await the real React filter before checkout and consent assertions.
+      await page.waitForFunction(() => {
+        const button = document.querySelector('[data-shop-filter="program"]');
+        return !!button && Object.keys(button).some(key => key.startsWith('__reactProps$'));
+      }, null, { timeout: 15000 });
       assert.equal(await page.locator('[data-shop-product]').count(), 7)
       assert.equal(await page.locator('[data-shop-filter]').count(), 4)
       assert.equal(await page.locator('[data-shop-add]').count(), 2)
@@ -97,6 +108,130 @@ try {
         const element = document.querySelector('[data-personal-service-cart]')
         return element && /50/.test(element.textContent || '')
       })
+      // The cart is now a two-step flow: no payment controls before a saved,
+      // reply-consented CRM order. Inspect only; never submit a synthetic lead.
+      assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
+      await cart.locator('[data-cart-start-order]').click()
+      const contactForm = cart.locator('[data-cart-contact-form]')
+      await contactForm.waitFor({ state: 'visible' })
+      // SSR DOM can appear before React has attached real consent handlers.
+      // This marker is published only by a committed client hydration effect.
+      await contactForm.locator('form[data-contact-hydrated="true"]')
+        .waitFor({ state: 'visible', timeout: 20000 })
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Order must require a contact and explicit reply-only opt-in')
+      assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
+        'The visitor must consent before the first-party CRM save')
+      assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
+        'No payment step before the CRM confirms an order')
+      // The country-number input is also controlled by React. Never type
+      // before *its* onChange is hydrated: an unhandled native fill can leave
+      // the form state with no phone even when the input visually looks full.
+      await page.waitForFunction(() => {
+        const input = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="tel"]')
+        const key = Object.keys(input || {}).find(k => k.startsWith("__reactProps$"));
+        return Boolean(key && typeof input[key]?.onChange === "function");
+      }, null, {timeout:30000});
+      await contactForm.locator('input[type="tel"]').fill('416 555 1234');
+      await page.waitForFunction(() => {
+        const input = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="tel"]');
+        if (!(input instanceof HTMLInputElement) || !input.value.includes('416')) return false;
+        const key = Object.keys(input).find(k => k.startsWith('__reactProps$'));
+        return Boolean(key && String(input[key]?.value || '').includes('416'));
+      }, null, {timeout:10000});
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Phone without reply-only opt-in is insufficient');
+      // Wait for the controlled React opt-in handler before the real click.
+      // Pre-hydration native checkbox changes can be reverted on commit.
+      await page.waitForFunction(() => {
+        const checkbox = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="checkbox"][required]');
+        const key = Object.keys(checkbox || {}).find(k => k.startsWith("__reactProps$"));
+        return Boolean(key && typeof checkbox[key]?.onChange === "function");
+      }, null, {timeout:30000});
+      const requiredConsent = contactForm.locator('input[type="checkbox"][required]')
+      // Playwright check() reads the native bit immediately after the click,
+      // which can race a controlled React checkbox commit. Exercise the same
+      // real user click, then require the committed consent AND enabled CTA.
+      // Never use force, a synthetic change event, or bypass the CRM guard.
+      const waitForRealConsentAndEnabledSubmit = () => page.waitForFunction(() => {
+        const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form]')
+        const checkbox = form?.querySelector('input[type="checkbox"][required]')
+        const submit = form?.querySelector('button[type="submit"]')
+        return checkbox instanceof HTMLInputElement && checkbox.checked === true &&
+          submit instanceof HTMLButtonElement && submit.disabled === false
+      }, null, { timeout: 10000 })
+      await requiredConsent.click()
+      try {
+        await waitForRealConsentAndEnabledSubmit()
+      } catch (firstClickError) {
+        // Controlled hydration may undo an early genuine WebKit click. Make at
+        // most ONE more real user click, never force/check via JavaScript.
+        // A checked consent with a disabled submit is a genuine guard failure.
+        const snapshot = await page.evaluate(() => {
+          const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] form')
+          const checkbox = form?.querySelector('input[type="checkbox"][required]')
+          const submit = form?.querySelector('button[type="submit"]')
+          const phone = form?.querySelector('input[type="tel"]')
+          const key = Object.keys(phone || {}).find(k => k.startsWith('__reactProps$'))
+          return {
+            hydrated: form?.getAttribute('data-contact-hydrated') === 'true',
+            consentChecked: checkbox instanceof HTMLInputElement && checkbox.checked,
+            submitDisabled: submit instanceof HTMLButtonElement && submit.disabled,
+            phoneCommitted: Boolean(key && String(phone[key]?.value || '').includes('416')),
+          }
+        })
+        if (!snapshot.hydrated || snapshot.consentChecked ||
+            !snapshot.submitDisabled || !snapshot.phoneCommitted) {
+          throw new Error('Real cart consent/phone guard did not commit: ' +
+            JSON.stringify({locale,width,engine,snapshot}), {cause:firstClickError})
+        }
+        await requiredConsent.click()
+        await waitForRealConsentAndEnabledSubmit()
+      }
+      assert.equal(await requiredConsent.isChecked(), true,
+        'Required reply-only consent must remain selected before the mocked CRM order')
+      const submitButton=contactForm.locator('button[type="submit"]')
+      assert.equal(await submitButton.isEnabled(),true,
+        'The real CTA must become enabled only after a committed phone and consent')
+      // Make the actual mobile button available above the fixed app dock.
+      await submitButton.evaluate(node=>node.scrollIntoView({behavior:'auto',block:'center'}))
+      await page.waitForFunction(() => {
+        const node=document.querySelector('[data-cart-contact-form] button[type="submit"]')
+        if(!node||node.disabled)return false
+        const box=node.getBoundingClientRect(), nav=document.querySelector('.mobile-bottom-navigation')
+        if(box.top<0||box.bottom>innerHeight+1)return false
+        if(nav&&getComputedStyle(nav).display!=='none'&&box.bottom>=nav.getBoundingClientRect().top-5)return false
+        const hit=document.elementFromPoint(box.left+box.width/2,box.top+box.height/2)
+        return hit===node||node.contains(hit)
+      },null,{timeout:10000})
+      if(width<600)await submitButton.tap()
+      else await submitButton.click()
+      try{
+        await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]')
+          .waitFor({state:'visible',timeout:18000})
+      }catch(error){
+        const detail=await contactForm.evaluate(form=>({
+          alerts:[...form.querySelectorAll('[role="alert"]')].map(e=>e.textContent),
+          consent:form.querySelector('input[type="checkbox"][required]')?.checked,
+          submitEnabled:form.querySelector('button[type="submit"]')?.disabled===false,
+          ready:document.querySelector('[data-cart-order-registration]')?.getAttribute('data-cart-order-ready')
+        }))
+        console.error(JSON.stringify({phase:'consented-native-submit',locale,width,
+          syntheticRequests:syntheticEnquiries.length,detail}))
+        throw error
+      }
+      await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
+      assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
+      assert.equal(syntheticEnquiries[0].contactConsent, true)
+      assert.equal(syntheticEnquiries[0].contact.phone, '+14165551234')
+      assert.equal(syntheticEnquiries[0].sourcePath, '/' + locale + '/cart')
+      assert.equal(syntheticEnquiries[0].serviceTitle.includes('30'), true)
+      assert.equal(await cart.locator('[data-cart-order-saved]').count(), 1)
+      assert.equal(await cart.locator('fieldset input[type="radio"]').count() > 0, true,
+        'Payment choices only after saved CRM reference')
       // No provider navigation: inspect only that the canonical payee/price are retained.
       const manual = page.locator('[data-cart-paypal-personal]')
       if (await manual.count()) {

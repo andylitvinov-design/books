@@ -23,10 +23,12 @@ const story = {
     authorBioArchiveTitle: "Andrey’s original biography · historical source",
     authorBioArchiveNote: "Preserved translation of the original Russian biography from the earlier Tantra Reiki page. Qualifications and professional titles are quoted historically, not independently verified as current.",
     teacherTitle: "Learn Tantra Reiki with Andy",
-    teacherIntro: "I guide personal and group explorations of inner experience, body awareness, archetypes and the Reiki traditions.",
+    teacherIntro: "Explore body awareness, inner growth and Reiki traditions through personal and group practice.",
     teacherLink: "Meet Andy",
-    experience: "Years of work with groups and personal growth",
-    reiki: "Exploring Tantra, Kundalini and Runic Reiki traditions since 2004",
+    historyTitle: "History & biography",
+    originalSource: "Original source",
+    experience: "Individual and group work since 2002",
+    reiki: "Tantra, Kundalini & Runic Reiki since 2004",
   },
   ru: {
     kicker: "Настоящие люди · живой опыт",
@@ -38,10 +40,12 @@ const story = {
     authorBioArchiveTitle: "Моя исходная биография · архивный текст",
     authorBioArchiveNote: "Сохранённый авторский текст русской страницы. Перечисленные профессиональные названия и квалификации относятся к историческому описанию, а не к подтверждению актуального статуса.",
     teacherTitle: "Тантра Рейки с Андреем",
-    teacherIntro: "Я веду личные и групповые практики, объединяющие внутреннюю работу, телесное осознавание, архетипы и традиции Рейки.",
+    teacherIntro: "Телесное осознавание, внутренняя работа и традиции Рейки — в личной и групповой практике.",
     teacherLink: "Познакомиться со мной",
-    experience: "Личная и групповая работа с 2002 года",
-    reiki: "Исследование традиций Tantra, Kundalini и Runic Reiki с 2004 года",
+    historyTitle: "История и биография",
+    originalSource: "Первоисточник",
+    experience: "Личная и групповая практика с 2002 года",
+    reiki: "Тантра, Кундалини и Рунное Рейки с 2004 года",
   },
   es: {
     kicker: "Personas reales · experiencias auténticas",
@@ -53,10 +57,12 @@ const story = {
     authorBioArchiveTitle: "Biografía original de Andrey · archivo",
     authorBioArchiveNote: "Traducción al inglés del texto biográfico ruso conservado. Sus títulos y credenciales se muestran como contenido histórico.",
     teacherTitle: "Aprende Tantra Reiki con Andy",
-    teacherIntro: "Guío prácticas personales y grupales basadas en la conciencia corporal, los arquetipos y las tradiciones de Reiki.",
+    teacherIntro: "Explora la conciencia corporal, el crecimiento interior y Reiki en prácticas personales y grupales.",
     teacherLink: "Conoce a Andy",
-    experience: "Prácticas de desarrollo personal y grupal desde 2002",
-    reiki: "Estudio de Tantra, Kundalini y Runic Reiki desde 2004",
+    historyTitle: "Historia y biografía",
+    originalSource: "Fuente original",
+    experience: "Práctica individual y grupal desde 2002",
+    reiki: "Tantra, Kundalini y Runic Reiki desde 2004",
   },
 } as const;
 
@@ -84,7 +90,7 @@ export function TantraReikiFestivalMoments({locale}:{locale:PublicLocale}) {
   );
 }
 
-export function TantraReikiTeacher({locale}:{locale:PublicLocale}) {
+export function TantraReikiTeacher({locale, sourceUrl}:{locale:PublicLocale; sourceUrl:string}) {
   const text = story[locale];
   const about = aboutBiography[locale === "es" ? "en" : locale];
   return (
@@ -108,24 +114,30 @@ export function TantraReikiTeacher({locale}:{locale:PublicLocale}) {
           <span>{text.reiki}</span>
         </div>
         <Link href={"/" + locale + "/about"}>{text.teacherLink} <span aria-hidden="true">↗</span></Link>
-        <details className="tantra-source-disclosure tantra-teacher__history" id="tantra-original-academy-history">
-          <summary>{text.schoolArchiveTitle}</summary>
-          <p className="tantra-source-disclosure__note">{text.schoolArchiveNote}</p>
-          <div lang="en">
-            {historicalSchoolIndices.map((index) => {
-              const block = tantraReikiArchive.blocks.en[index];
-              return block.type === "li" ? <p key={index}>• {block.text}</p> : <p key={index}>{block.text}</p>;
-            })}
-          </div>
-        </details>
-        <details className="tantra-source-disclosure tantra-teacher__history" id="tantra-original-author-biography">
-          <summary>{text.authorBioArchiveTitle}</summary>
-          <p className="tantra-source-disclosure__note">{text.authorBioArchiveNote}</p>
-          <div lang={locale === "ru" ? "ru" : "en"}>
-            {historicalBiographyIndices.map((index) => {
-              const block = locale === "ru" ? tantraReikiArchive.blocks.ru[index] : englishTranslation.blocks[index];
-              return block.type === "li" ? <p key={index}>• {block.text}</p> : <p key={index}>{block.text}</p>;
-            })}
+        <details className="tantra-source-disclosure tantra-teacher__history" id="tantra-teacher-archive">
+          <summary>{text.historyTitle}<span className="tantra-teacher__history-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="tantra-teacher__history-body">
+            <a href={sourceUrl} target="_blank" rel="noreferrer">{text.originalSource} <span aria-hidden="true">↗</span></a>
+            <section className="tantra-teacher__history-section" id="tantra-original-academy-history">
+              <h3>{text.schoolArchiveTitle}</h3>
+              <p className="tantra-source-disclosure__note">{text.schoolArchiveNote}</p>
+              <div lang="en">
+                {historicalSchoolIndices.map((index) => {
+                  const block = tantraReikiArchive.blocks.en[index];
+                  return block.type === "li" ? <p key={index}>• {block.text}</p> : <p key={index}>{block.text}</p>;
+                })}
+              </div>
+            </section>
+            <section className="tantra-teacher__history-section" id="tantra-original-author-biography">
+              <h3>{text.authorBioArchiveTitle}</h3>
+              <p className="tantra-source-disclosure__note">{text.authorBioArchiveNote}</p>
+              <div lang={locale === "ru" ? "ru" : "en"}>
+                {historicalBiographyIndices.map((index) => {
+                  const block = locale === "ru" ? tantraReikiArchive.blocks.ru[index] : englishTranslation.blocks[index];
+                  return block.type === "li" ? <p key={index}>• {block.text}</p> : <p key={index}>{block.text}</p>;
+                })}
+              </div>
+            </section>
           </div>
         </details>
       </div>

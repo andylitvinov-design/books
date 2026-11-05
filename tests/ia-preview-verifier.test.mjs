@@ -48,3 +48,22 @@ test('private-note exclusion remains executable and rejects a leaked practitione
   await privacy({ content: async () => 'Synthetic client-visible report' }, assert)
   await assert.rejects(privacy({ content: async () => 'DO NOT DISPLAY — PRIVATE SYNTHETIC PRACTITIONER NOTE' }, assert))
 })
+
+test('IA owner browser uses the real verified bridge with loopback-only synthetic identity', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ia-v2.yml', import.meta.url), 'utf8')
+  assert.match(workflow, /postgres:17-alpine/)
+  assert.match(workflow, /tests\/helpers\/app-db-setup\.mjs/)
+  assert.match(source, /HH_APP_TEST_RUNTIME.*isolated/)
+  assert.match(source, /context\.request\.post\(origin \+ '\/api\/app\/practitioner\/open'/)
+  assert.match(source, /legacy admin cookie must remain unauthorized/)
+  assert.match(source, /real verified practitioner bridge/)
+})
+
+
+test('IA isolated browser fixture migrates real Materials SQL before public feed without a stub', () => {
+  const setup = readFileSync(new URL('./helpers/app-db-setup.mjs', import.meta.url), 'utf8')
+  const material = setup.indexOf('sql/practitioner-material-library-20261015.sql')
+  const feed = setup.indexOf('20261018014000_hh_public_materials_library_feed.sql')
+  assert.ok(material > 0 && feed > material, 'run released table SQL before public feed metadata')
+  assert.ok(setup.includes('function assertIsolated()'), 'fixture must remain local-only')
+})

@@ -168,12 +168,14 @@ test('closing a course uses a keyboard-dismissable native dialog and cancellatio
   const closed = []
   const h = mount('my-courses-dashboard', { props: { courses: [courseA], canManageCourses: true, membership: { occupiedCount: 1, maxActiveCourses: 1 }, onClose: course => closed.push(course.id) } })
   await h.settle()
-  findButton(tiles(h.tree)[0], 'Close course').props.onClick(); await h.settle()
+  const cross = () => nodes(tiles(h.tree)[0]).find(node => node.props?.['data-course-close-cross'] !== undefined)
+  assert.match(cross().props['aria-label'], /Close course/)
+  cross().props.onClick(); await h.settle()
   const dialog = nodes(h.tree).find(node => node.type === 'dialog')
   assert.equal(dialog.props.ref.current.open, true)
   dialog.props.onCancel(); await h.settle()
   assert.deepEqual(closed, [])
-  findButton(tiles(h.tree)[0], 'Close course').props.onClick(); await h.settle()
+  cross().props.onClick(); await h.settle()
   findButton(h.tree, 'Close and save history').props.onClick(); await h.settle()
   assert.deepEqual(closed, ['course-a'])
   h.unmount()
@@ -294,7 +296,11 @@ test('a slow billing-triggered read cannot roll back a course mutation that has 
 test('lifecycle actions stay disabled until the server enables multi-course storage', async () => {
   const h = mount('my-courses-dashboard', { props: { courses: [courseA, courseB], membership: { occupiedCount: 2, maxActiveCourses: 5 }, canManageCourses: false } })
   await h.settle()
-  assert.ok(tiles(h.tree).every(tile => findButton(tile, 'Close course').props.disabled))
+  const cards=tiles(h.tree)
+  assert.equal(cards.length,2)
+  assert.ok(cards.every(tile => nodes(tile).some(button =>
+    button.type==='button' && button.props['aria-label']?.startsWith('Close course: ') && button.props.disabled)),
+    'each course has a disabled accessible close action until permitted')
   assert.equal(findButton(tiles(h.tree)[1], 'Make main').props.disabled, true)
   h.unmount()
 })

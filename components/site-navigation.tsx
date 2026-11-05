@@ -2,22 +2,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { ArrowRight, LayoutDashboard, Menu, Sparkles } from 'lucide-react';
+import { ArrowRight, Menu, Sparkles } from 'lucide-react';
 import { CartNavLink } from '@/components/commerce/cart-nav-link';
+import { SiteSearch } from '@/components/site-search';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
+import { HomePersonalSpaceNavEntry } from './home-personal-space';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
-
-const cabinetEntryCopy = {
-  en: { full: 'Cabinet', compact: 'Cabinet', aria: 'Open personal cabinet' },
-  ru: { full: 'Кабинет', compact: 'Кабинет', aria: 'Открыть личный кабинет' },
-  es: { full: 'Gabinete', compact: 'Gabinete', aria: 'Abrir gabinete personal' },
-} as const;
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 
@@ -26,19 +22,19 @@ const siteMenuCopy = {
     open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu',
     start: 'Free review', freeTitle: 'Free situation review',
     freeDetail: 'Short questionnaire and drawing · personal written response',
-    quick: 'Main sections', more: 'Explore more',
+    quick: 'Main sections', more: 'Explore more', install: 'Install free app',
   },
   ru: {
     open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню',
     start: 'Бесплатный разбор', freeTitle: 'Бесплатный разбор ситуации',
     freeDetail: 'Короткая анкета и рисунок · личный письменный ответ',
-    quick: 'Основные разделы', more: 'Другие разделы',
+    quick: 'Основные разделы', more: 'Другие разделы', install: 'Установить приложение бесплатно',
   },
   es: {
     open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú',
     start: 'Revisión gratis', freeTitle: 'Revisión gratuita de tu situación',
     freeDetail: 'Cuestionario y dibujo · respuesta personal por escrito',
-    quick: 'Secciones principales', more: 'Explorar más',
+    quick: 'Secciones principales', more: 'Explorar más', install: 'Instalar app gratis',
   },
 } as const;
 
@@ -48,8 +44,8 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const siteMenuRef = useRef<HTMLDetailsElement>(null);
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
+  const previousNavigation = useRef({ pathname, locale: activeLocale });
   const text = navigationCopy[activeLocale];
-  const cabinet = cabinetEntryCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const menuCurrent = activeCompactNavigationId(pathname);
@@ -94,6 +90,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   }, []);
 
   useEffect(() => {
+    const previous = previousNavigation.current;
+    if (previous.pathname === pathname && previous.locale === activeLocale) return;
+    previousNavigation.current = { pathname, locale: activeLocale };
     if (languageRef.current) languageRef.current.open = false;
     if (siteMenuRef.current) siteMenuRef.current.open = false;
   }, [pathname, activeLocale]);
@@ -112,32 +111,28 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     return available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
   }
 
-  // One canonical six-item navigation, shared by the hamburger and bottom bar.
+  // One canonical seven-item navigation, shared by the hamburger and bottom bar.
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses' || item.id === 'events',
+    item => ['energy', 'love', 'business', 'library', 'events'].includes(item.id),
+  );
+
+  // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
+  extraMenuItems.push(
+    { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
+    { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
     <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
-    {getSiteNavigation(activeLocale).filter(item => item.id === 'services').map(item => item.external
+    {getSiteNavigation(activeLocale).filter(item => ['energy', 'love', 'business'].includes(item.id)).map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
-    <Link
-      className="site-cabinet-entry"
-      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
-      prefetch={false}
-      data-nav-item="cabinet"
-      aria-current={current === 'cabinet' ? 'page' : undefined}
-      aria-label={cabinet.aria}
-      lang={activeLocale === 'es' ? 'en' : undefined}
-    >
-      <LayoutDashboard aria-hidden="true" />
-      <span className="site-cabinet-entry__full">{cabinet.full}</span>
-      <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
-    </Link>
+    <SiteSearch locale={activeLocale} pathname={pathname} />
+    <HomePersonalSpaceNavEntry locale={activeLocale}
+      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
       {shopMenuCopy[activeLocale]}
@@ -194,13 +189,18 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
           <Link href={`/${activeLocale}/cart`} prefetch={false} data-nav-item="cart" onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
             {activeLocale === 'ru' ? 'Корзина' : activeLocale === 'es' ? 'Carrito' : 'Cart'}
           </Link>
+          <Link href={`/${activeLocale}/install`} prefetch={false} data-nav-item="install"
+            aria-current={pathname === `/${activeLocale}/install` ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {siteMenu.install}
+          </Link>
           {extraMenuItems.map(item => (
             <Link
               key={item.id}
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={menuCurrent === item.id ? 'page' : undefined}
+              aria-current={current === item.id && !(menuCurrent === 'alchemy' && item.id === 'services') ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}

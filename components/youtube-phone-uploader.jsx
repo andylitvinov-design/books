@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from 'react'
 import Link from 'next/link'
 import styles from './youtube-phone-uploader.module.css'
-import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl} from '@/lib/youtube/phone-upload-protocol.mjs'
+import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl, validatedOwnerTelegramCut, isOwnerTelegramMp4} from '@/lib/youtube/phone-upload-protocol.mjs'
 import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedDetails} from '@/lib/youtube/browser-upload'
 import {completeYoutubeUpload, hasUnarchivedCompletedUpload, retainUploadEntry, uploadNeedsRecovery} from '@/lib/youtube/upload-completion.mjs'
 import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction, configureYoutubeWebOauthAction} from '@/app/admin/youtube-upload/actions'
@@ -19,11 +19,16 @@ const copy = {
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
     config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
     setupTitle:'Первое подключение Google YouTube',
+    reusedConfig:'Google OAuth уже настроен для Holistic House. Повторно вводить Client ID не нужно. Выберите Google-аккаунт и подтвердите доступ. Если страница открыта внутри Telegram, используйте Safari.',
     setupHelp:'В Google Cloud включите YouTube Data API v3, создайте OAuth Client (тип Web application) и добавьте разрешённый JavaScript origin: https://holistichouse.vercel.app. Укажите здесь только публичный Client ID, без секрета.',
     setupGoogle:'Открыть Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
     setupSave:'Подключить OAuth-клиент',setupSaving:'Сохранение…',setupChange:'Настроить / заменить Google OAuth',
 
+    telegramCutImport:'📥 Взять обрезанный MP4 из Telegram',
+    telegramCutLoading:'Получаем приватный MP4…',
+    telegramCutImported:'Обрезанный MP4 добавлен. Проверьте запись и только после этого нажмите «Загрузить на YouTube».',
+    telegramCutHint:'Возьмите текущую обрезанную версию из закрытого кабинета. Загрузки нет до вашего подтверждения. Только русский канал.',
     historyUnavailable:'Хранилище истории временно недоступно. Загрузка отключена, чтобы не потерять ссылки на готовые видео.',
     target:'Куда загрузить?', ru:'Русский YouTube', en:'English YouTube',
     connect:'Выбрать Google / YouTube-аккаунт', reconnect:'Сменить YouTube-аккаунт',
@@ -51,7 +56,7 @@ const copy = {
     stay:'Оставляйте Safari открытым, а экран активным до завершения передачи. После обновления страницы файлы придётся выбрать заново.',
     more:'Для нового канала сначала завершите или уберите незаконченные файлы из очереди.',
     errors:{
-      google_unavailable:'Не удалось открыть Google OAuth. Попробуйте Safari без блокировщиков.',
+      google_unavailable:'Google OAuth не открылся. Откройте страницу в Safari, а не во встроенном браузере Telegram, и повторите.',
       youtube_permission:'Разрешения Google отсутствуют или срок входа истёк. Переподключите YouTube.',
       youtube_quota:'Лимит загрузок YouTube исчерпан или действует ограничение канала.',
       wrong_channel:'Авторизован другой канал. Выберите правильный YouTube в окне Google.',
@@ -62,6 +67,8 @@ const copy = {
       channel_conflict:'Английский канал уже привязан к другому ID. Загрузка остановлена для защиты.',
       invalid_channel:'Неверный канал YouTube.',
       invalid_file:'Выберите видеофайл ненулевого размера.',
+      telegram_cut_unavailable:'Обрезанный приватный MP4 недоступен или ссылка устарела. Проверьте «Мои материалы».',
+      telegram_cut_state:'Сначала подключите русский YouTube и завершите другие загрузки.',
       too_many:'За один раз можно выбрать не более 10 видео.',
       invalid_title:'Название видео должно быть от 1 до 100 символов.',
       invalid_description:'Описание слишком длинное.',
@@ -86,11 +93,16 @@ const copy = {
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
     config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
     setupTitle:'Connect Google YouTube once',
+    reusedConfig:'Google OAuth is already configured for Holistic House. No Client ID entry is needed. Select your Google account and approve channel access. If this page is inside Telegram, open it in Safari.',
     setupHelp:'In Google Cloud enable YouTube Data API v3, create a Web application OAuth client, and authorize this JavaScript origin: https://holistichouse.vercel.app. Enter the public Client ID only, never a secret.',
     setupGoogle:'Open Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
     setupSave:'Connect OAuth client',setupSaving:'Saving…',setupChange:'Configure / change Google OAuth',
 
+    telegramCutImport:'📥 Use trimmed Telegram MP4',
+    telegramCutLoading:'Reading private MP4…',
+    telegramCutImported:'Trimmed MP4 added. Review it, then explicitly press Upload to YouTube.',
+    telegramCutHint:'Import your current private cut from the cabinet. Nothing uploads until you approve. Russian channel only.',
     historyUnavailable:'Your saved-link archive is unavailable. Uploads are disabled to prevent lost video links.',
     target:'Upload to which channel?', ru:'Russian YouTube', en:'English YouTube',
     connect:'Choose Google / YouTube account', reconnect:'Switch YouTube account',
@@ -118,7 +130,7 @@ const copy = {
     stay:'Keep Safari open and the phone awake until transfer finishes. A page reload requires choosing the files again.',
     more:'Finish or remove incomplete uploads before changing channels.',
     errors:{
-      google_unavailable:'Google OAuth failed to open. Try Safari without blockers.',
+      google_unavailable:'Google OAuth failed to open. Use Safari instead of Telegram’s in-app browser and retry.',
       youtube_permission:'Missing Google permissions or expired sign-in. Reconnect YouTube.',
       youtube_quota:'YouTube upload quota or channel limit reached.',
       wrong_channel:'The wrong channel is authorized. Select the intended YouTube channel in Google.',
@@ -129,6 +141,8 @@ const copy = {
       channel_conflict:'English channel is already paired to another ID. Upload is blocked.',
       invalid_channel:'Invalid YouTube channel.',
       invalid_file:'Choose a non-empty video file.',
+      telegram_cut_unavailable:'The selected private MP4 is unavailable or out of date. Check My Materials.',
+      telegram_cut_state:'Connect the correct Russian channel and finish other uploads first.',
       too_many:'You can select at most 10 videos in a batch.',
       invalid_title:'Video title must be 1 to 100 characters.',
       invalid_description:'Description is too long.',
@@ -158,10 +172,10 @@ function mergeHistory(old, record) {
   return [record, ...old.filter(item => item.videoId !== record.videoId)]
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
-export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, initialChannels,
-  initialHistory=[], historyReady=false}) {
+export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, oauthSource='missing', initialChannels,
+  initialHistory=[], historyReady=false, importTelegramCut=false, approvedMeditation=null}) {
   const t = copy[locale] || copy.ru
-  const [target, setTarget] = useState('ru')
+  const [target, setTarget] = useState(approvedMeditation?.language==='en'?'en':'ru')
   const [channels, setChannels] = useState(initialChannels || {ru:null,en:null})
   const [connected, setConnected] = useState(null)
   const [candidate, setCandidate] = useState(null)
@@ -174,6 +188,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const [madeForKids, setMadeForKids] = useState(false)
   const [busy, setBusy] = useState(false)
   const [pairBusy, setPairBusy] = useState(false)
+  const [importingTelegramCut,setImportingTelegramCut] = useState(false)
+  const [importingMeditation,setImportingMeditation] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [history, setHistory] = useState(initialHistory)
@@ -284,7 +300,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }, [enabled,clientId,locale])
 
   function chooseTarget(next) {
-    if (busy || authPending || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
+    if (busy || authPending || importingTelegramCut || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
       setError(t.more);return
     }
     if (next === target) return
@@ -307,7 +323,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   function connect() {
-    if (!oauthClient.current || busy || authPending) {setError(t.errors.google_unavailable);return}
+    if (!oauthClient.current || busy || authPending || importingTelegramCut) {setError(t.errors.google_unavailable);return}
     setAuthPending(true)
     pendingTarget.current = target
     setError('')
@@ -351,6 +367,9 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   function addFiles(event) {
     const files = Array.from(event.target.files || [])
     event.target.value = ''
+    queueFiles(files)
+  }
+  function queueFiles(files,ownerCut=false,sourceCutUrl=null,meditationId=null) {
     if (files.length === 0) return
     if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
@@ -359,10 +378,103 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
     alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
-      target, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
+      target, ownerCut, sourceCutUrl, meditationId, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
     setError('')
     setMessage('')
+  }
+  async function importSelectedTelegramCut() {
+    // This reuses the already implemented Phone GIS OAuth rather than
+    // implying a persistent server-side Google refresh token was granted.
+    // No publication: owner must separately click "Upload to YouTube".
+    if (!importTelegramCut || importingTelegramCut || !enabled || !historyStatus ||
+        !authReady || busy || authPending || pairBusy || target !== 'ru' ||
+        connected?.id !== channels.ru?.id || connected?.target !== 'ru' ||
+        entriesRef.current.some(item => item.state !== 'done')) {
+      setError(t.errors.telegram_cut_state)
+      return
+    }
+    setImportingTelegramCut(true)
+    setError('')
+    setMessage('')
+    try {
+      const response=await fetch('/api/admin/telegram-video/drafts',{
+        credentials:'same-origin',redirect:'error',cache:'no-store',
+        signal:AbortSignal.timeout(15000)
+      })
+      if(!response.ok)throw Error('telegram_cut_unavailable')
+      const metadata=await response.json()
+      const selected=validatedOwnerTelegramCut(metadata?.selected)
+      const fileResponse=await fetch(selected.url,{
+        credentials:'same-origin',redirect:'error',cache:'no-store',
+        signal:AbortSignal.timeout(90000)
+      })
+      if(!fileResponse.ok||!String(fileResponse.headers.get('content-type')||'').startsWith('video/mp4'))
+        throw Error('telegram_cut_unavailable')
+      const length=fileResponse.headers.get('content-length')
+      if(length!==null&&Number(length)!==selected.bytes)
+        throw Error('telegram_cut_unavailable')
+      const bytes=new Uint8Array(await fileResponse.arrayBuffer())
+      if(!isOwnerTelegramMp4(bytes,selected.bytes))
+        throw Error('telegram_cut_unavailable')
+      const ruToken=authorizedChannels.current.get('ru')
+      if(targetRef.current!=='ru'||ruToken?.details?.id!==channelsRef.current.ru?.id||
+        ruToken.token.expiresAt<Date.now()+30_000||
+        entriesRef.current.some(item=>item.state!=='done'))
+        throw Error('telegram_cut_state')
+      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})],true,selected.url)
+      setMessage(t.telegramCutImported)
+    }catch(reason){setError(humanError(reason,t))}
+    finally{setImportingTelegramCut(false)}
+  }
+  async function importApprovedMeditation(){
+    if(!approvedMeditation||!enabled||!historyStatus||busy||authPending||pairBusy||
+      importingTelegramCut||importingMeditation||
+      target!==approvedMeditation.language||
+      connected?.id!==channels[target]?.id||connected?.target!==target||
+      entriesRef.current.some(item=>item.state!=='done')){
+      setError(t.more);return
+    }
+    setImportingMeditation(true);setError('');setMessage('')
+    try{
+      const base='/api/admin/practitioners/meditations/'+approvedMeditation.id+'/handoff'
+      const metadataResponse=await fetch(base,{credentials:'same-origin',redirect:'error',
+        cache:'no-store',signal:AbortSignal.timeout(15000)})
+      if(!metadataResponse.ok)throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
+      const meta=await metadataResponse.json()
+      if(meta.id!==approvedMeditation.id||meta.language!==target||!['video/mp4','video/webm'].includes(meta.mime)||
+        !Number.isSafeInteger(meta.bytes)||meta.bytes<128||meta.bytes>45000000)
+        throw Error('MEDITATION_HANDOFF_MISMATCH')
+      const response=await fetch(base+'?download=1',{credentials:'same-origin',redirect:'error',
+        cache:'no-store',signal:AbortSignal.timeout(120000)})
+      if(!response.ok||(response.headers.get('content-type')||'').split(';')[0]!==meta.mime)
+        throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
+      const size=Number(response.headers.get('content-length'))
+      if(size!==meta.bytes)throw Error('MEDITATION_HANDOFF_MISMATCH')
+      const bytes=new Uint8Array(await response.arrayBuffer())
+      if(bytes.byteLength!==meta.bytes||
+        (meta.mime==='video/mp4'?String.fromCharCode(...bytes.subarray(4,8))!=='ftyp':
+          !(bytes[0]===0x1a&&bytes[1]===0x45&&bytes[2]===0xdf&&bytes[3]===0xa3)))
+        throw Error('MEDITATION_HANDOFF_MISMATCH')
+      if(targetRef.current!==meta.language||connected?.id!==channelsRef.current[meta.language]?.id||
+        entriesRef.current.some(item=>item.state!=='done'))
+        throw Error('MEDITATION_HANDOFF_CHANGED')
+      const filename=String(meta.title||'Meditation')
+        .replace(/[^\p{L}\p{N}\s_-]/gu,'').trim().slice(0,75)||'Meditation'
+      queueFiles([new File([bytes],filename+(meta.mime==='video/webm'?'.webm':'.mp4'),{type:meta.mime})],false,null,meta.id)
+      setMessage(locale==='ru'
+        ?'Одобренная медитация импортирована. Проверьте язык, канал, видео и нажмите «Загрузить на YouTube».'
+        :'Approved meditation imported. Check channel and playback, then press Upload to YouTube.')
+    }catch(reason){setError(humanError(reason,t)||String(reason?.message||'MEDITATION_HANDOFF_UNAVAILABLE'))}
+    finally{setImportingMeditation(false)}
+  }
+  async function verifyMeditationReceipt(entry,videoId,auth){
+    const response=await fetch('/api/admin/practitioners/meditations/youtube-verify',{
+      method:'POST',credentials:'same-origin',cache:'no-store',headers:{'content-type':'application/json'},
+      body:JSON.stringify({id:entry.meditationId,videoId,accessToken:auth.value})})
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok)throw Error(result.error||'YOUTUBE_READBACK_UNAVAILABLE')
+    if(!result.processed)throw Error('readback_unverified')
   }
   async function saveLink(entryId, videoId, privacyStatus, title, targetKey, channelId) {
     try {
@@ -385,9 +497,14 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   async function finish(entry, resultId, auth, channelId) {
+    if(entry.meditationId){
+      // Remember the provider ID before verification: retries must never upload twice.
+      update(entry.id,{videoId:resultId,state:'verifying'})
+      await verifyMeditationReceipt(entry,resultId,auth)
+    }
     await completeYoutubeUpload({
       videoId:resultId,channelId,
-      readDetails:() => readUploadedDetails(resultId,auth.value),
+      readDetails:() => readUploadedDetails(resultId,auth.value,undefined,{requireProcessed:entry.ownerCut===true}),
       update:partial => update(entry.id,partial),
       save:details => saveLink(entry.id,resultId,details.privacyStatus,entry.title,entry.target,details.channelId),
     })
@@ -419,12 +536,35 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
           await finish(entry,entry.videoId,auth,desired.id)
           continue
         }
+        // Prevent a selected private cut from silently changing between
+        // importing into the browser and pressing the YouTube upload button.
+        // If an upload session already started, only resume/probe it.
+        if (entry.ownerCut===true && !sessions.current.has(entry.id)) {
+          const latest=await fetch('/api/admin/telegram-video/drafts',{
+            credentials:'same-origin',redirect:'error',cache:'no-store',signal:controller.signal
+          })
+          if(!latest.ok)throw Error('telegram_cut_unavailable')
+          const selected=validatedOwnerTelegramCut((await latest.json()).selected)
+          if(selected.url!==entry.sourceCutUrl||selected.bytes!==entry.file.size)
+            throw Error('telegram_cut_unavailable')
+        }
         const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',language:target,synthetic,madeForKids})
         update(entry.id,{state:'sending'})
         let session = sessions.current.get(entry.id)
         const previousSession = Boolean(session)
         if (!session) {
           session = await beginUpload(entry.file,auth.value,metadata,controller.signal)
+          if(entry.meditationId){
+            // Persist an irreversible server lock before sending the first video byte.
+            // A browser crash after transfer must never silently create a duplicate.
+            const locked=await fetch('/api/admin/practitioners/meditations/youtube-start',{
+              method:'POST',credentials:'same-origin',cache:'no-store',
+              headers:{'content-type':'application/json'},
+              body:JSON.stringify({id:entry.meditationId,language:entry.target,channelId:desired.id}),
+              signal:controller.signal})
+            const payload=await locked.json().catch(()=>({}))
+            if(!locked.ok)throw Error(payload.error||'MEDITATION_YOUTUBE_LOCKED')
+          }
           sessions.current.set(entry.id,session)
         }
         let offset = 0
@@ -483,7 +623,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const pending = entries.filter(item => item.state !== 'done')
   const unresolvedUpload = entries.some(uploadNeedsRecovery)
   const canUpload = Boolean(enabled && historyStatus && connectedCorrectly && !busy && !authPending && pending.length &&
-    !hasUnarchivedCompletedUpload(entries) &&
+    !hasUnarchivedCompletedUpload(entries) && !importingTelegramCut &&
     pending.every(item => item.target === target))
   const filteredHistory = historyFilter === 'all' ? history : history.filter(item => item.target === historyFilter)
   return (
@@ -497,6 +637,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </div>
       {!enabled && !setupAvailable && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {enabled && oauthSource === 'owner_video' && <p className={styles.muted} role="status">{t.reusedConfig}</p>}
       {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
         type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
       {setupAvailable && showSetup && <div className={styles.pairing}>
@@ -519,7 +660,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </button>
       </div>}
       {!historyStatus && <p className={styles.unavailable} role="status">{t.historyUnavailable}</p>}
-      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy}>
+      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy || importingTelegramCut}>
         <legend>{t.target}</legend>
         <div className={styles.targets}>
           {(['ru','en']).map(lang => (
@@ -532,7 +673,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </fieldset>
       {enabled && <div className={styles.connect}>
-        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || !historyStatus} onClick={connect}>
+        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || importingTelegramCut || !historyStatus} onClick={connect}>
           {authPending ? t.signing : connectedCorrectly ? t.reconnect : t.connect}
         </button>
         {connectedCorrectly && <span className={styles.channel}>✓ {t.connected}: <strong>{connected.name}</strong></span>}
@@ -550,10 +691,35 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
       )}
       {selectedConfig && connected && !connectedCorrectly && <p className={styles.error}>{t.incorrect}</p>}
       <div className={styles.form}>
+        {approvedMeditation&&<div data-private-meditation-import className={styles.pairing}>
+          <h3>{locale==='ru'?'Одобренная медитация':'Approved meditation'}</h3>
+          <p>{approvedMeditation.title} · {approvedMeditation.language.toUpperCase()} · Unlisted</p>
+          <p className={styles.muted}>{locale==='ru'
+            ?'Перед загрузкой обязательно проверьте канал и содержание. Никакой автопубликации без вашего подтверждения.'
+            :'Check the channel and content before publishing. Upload requires your explicit confirmation.'}</p>
+          <button type="button" className={styles.secondary} onClick={importApprovedMeditation}
+            disabled={!enabled||!historyStatus||busy||authPending||pairBusy||
+              importingMeditation||importingTelegramCut||!connectedCorrectly||
+              target!==approvedMeditation.language||unresolvedUpload||
+              entries.some(item=>item.state!=='done')}>
+            {importingMeditation?(locale==='ru'?'Загружаем приватный MP4…':'Loading private MP4…'):
+              (locale==='ru'?'Добавить одобренную медитацию в очередь':'Add approved meditation to queue')}
+          </button>
+        </div>}
+        {importTelegramCut&&<div data-private-telegram-cut-import>
+          <p className={styles.muted}>{t.telegramCutHint}</p>
+          <button type="button" className={styles.secondary}
+            disabled={importingTelegramCut||!enabled||!historyStatus||busy||authPending||
+              pairBusy||!connectedCorrectly||target!=='ru'||unresolvedUpload||
+              entries.some(item=>item.state!=='done')}
+            onClick={importSelectedTelegramCut}>
+            {importingTelegramCut?t.telegramCutLoading:t.telegramCutImport}
+          </button>
+        </div>}
         <label className={styles.picker}>
           <span>＋ {t.select}</span>
           <input type="file" accept="video/*,.mp4,.mov,.m4v,.webm" multiple
-            disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly || unresolvedUpload}
+            disabled={!configured || !historyStatus || busy || authPending || pairBusy || importingTelegramCut || !connectedCorrectly || unresolvedUpload}
             onChange={addFiles}/>
         </label>
         {entries.length > 0 && <div className={styles.files}>
