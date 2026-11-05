@@ -18,6 +18,10 @@ function makeTestWorld(opts={}){
  const github={
   rest:{
    pulls:{get:async()=>({data:pr})},
+   checks:{listForRef:async()=>({data:{
+     total_count:(opts.checkRuns??[]).length,
+     check_runs:opts.checkRuns??[]
+   }})},
    issues:{listComments:async({page,per_page})=>({data:
      comments.slice((page-1)*per_page,page*per_page)})}
   },
@@ -112,4 +116,31 @@ test('hourly and event-driven coordinators share the guard and never direct merg
  assert.ok(hourly.includes('mergeSafety.auditNativeMerge({'));
  assert.ok(hourly.includes('MERGE_SAFETY_'));
  assert.ok(hourly.includes('"--auto"'));
+});
+
+test('independent Mandala red on exact HEAD blocks native merge after green Core',async()=>{
+ const real={name:'focused-unit-types-build',status:'completed',
+   conclusion:'failure',head_sha:HEAD,app:{slug:'github-actions'}};
+ assert.equal((await check(makeTestWorld({checkRuns:[real]}))).reason,
+   'CRITICAL_CHECK_FAILED:focused-unit-types-build');
+ // Unrelated optional failures must not reintroduce blanket CI blocking.
+ assert.equal((await check(makeTestWorld({checkRuns:[
+   {...real,name:'unrelated-option'}]}))).ok,true);
+});
+test('critical domain jobs must be current, terminal and passing/skipped',async()=>{
+ const job={name:'read-only-mobile',status:'in_progress',
+   conclusion:null,head_sha:HEAD,app:{slug:'github-actions'}};
+ assert.equal((await check(makeTestWorld({checkRuns:[job]}))).reason,
+   'CRITICAL_CHECK_PENDING:read-only-mobile');
+ assert.equal((await check(makeTestWorld({checkRuns:[
+   {...job,status:'completed',conclusion:'success'}]}))).ok,true);
+ assert.equal((await check(makeTestWorld({checkRuns:[
+   {...job,status:'completed',conclusion:'skipped'}]}))).ok,true);
+ assert.equal((await check(makeTestWorld({checkRuns:[
+   {...job,status:'completed',conclusion:'success',head_sha:BASE}]}))).reason,
+   'CRITICAL_CHECK_PROOF_UNVERIFIED:read-only-mobile');
+ const noApi=makeTestWorld();delete noApi.github.rest.checks;
+ assert.equal((await check(noApi)).reason,'CRITICAL_CHECK_API_UNAVAILABLE');
+ const workflow=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.match(workflow,/^  checks: read$/m);
 });

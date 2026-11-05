@@ -75,6 +75,34 @@ async function inspectReviews({github,owner,repo,number,expectedHead,minimumAppr
  }
  return {ok:false,reason:'REVIEW_THREAD_HISTORY_TOO_LARGE'};
 }
+// Independent critical domain checks can finish RED while Core is GREEN.
+// Block native ARM on those REAL current-HEAD results (incident #3577/#3580).
+// Missing optional check runs are not invented, but known RED/PENDING is fatal.
+const CRITICAL_DOMAIN_CHECKS=new Set([
+ 'focused-unit-types-build','read-only-mobile','webkit_preflight','voice-webkit-macos'
+]);
+async function auditIndependentDomainChecks({github,owner,repo,expectedHead}){
+ if(typeof github?.rest?.checks?.listForRef!=='function')
+  return {ok:false,reason:'CRITICAL_CHECK_API_UNAVAILABLE'};
+ const data=(await github.rest.checks.listForRef({
+  owner,repo,ref:expectedHead,per_page:100,filter:'latest'
+ })).data;
+ if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
+    data.total_count>100||!Array.isArray(data.check_runs)||
+    data.check_runs.length!==data.total_count)
+  return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
+ for(const name of CRITICAL_DOMAIN_CHECKS){
+  const matches=data.check_runs.filter(c=>c?.name===name);
+  if(matches.some(c=>c.head_sha!==expectedHead||
+     c.app?.slug!=='github-actions'))
+   return {ok:false,reason:'CRITICAL_CHECK_PROOF_UNVERIFIED:'+name};
+  if(matches.some(c=>c.status!=='completed'))
+   return {ok:false,reason:'CRITICAL_CHECK_PENDING:'+name};
+  if(matches.some(c=>!['success','skipped'].includes(c.conclusion)))
+   return {ok:false,reason:'CRITICAL_CHECK_FAILED:'+name};
+ }
+ return {ok:true,reason:'CRITICAL_DOMAIN_CHECKS_NOT_RED'};
+}
 async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedBase}){
  const deny=reason=>({ok:false,reason});
  if(!github?.rest?.pulls?.get||!github?.rest?.issues?.listComments||
@@ -118,6 +146,9 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
   const review=await inspectReviews({github,owner,repo,number,
     expectedHead,minimumApprovals});
   if(!review.ok)return review;
+  // This same read-only guard is shared by hourly and event-driven merge lanes.
+  const critical=await auditIndependentDomainChecks({github,owner,repo,expectedHead});
+  if(!critical.ok)return critical;
   // Last fresh read before GitHub's --match-head-commit atomic enforcement.
   const final=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(!sameHead(final,identity))return deny('PR_CHANGED_BEFORE_ARM');
@@ -133,4 +164,4 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
    'MERGE_PREFLIGHT_EVIDENCE_UNAVAILABLE');
  }
 }
-module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,mergeable,held,inspectReviews,auditNativeMerge};
+module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,CRITICAL_DOMAIN_CHECKS};
