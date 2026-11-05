@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 import {
   MENTALICA_GEOMETRIES,
   MENTALICA_STYLES,
+  MENTALICA_CONSTRUCTOR_TYPES,
+  MENTALICA_LAYOUT_VARIANTS,
+  MENTALICA_BACKGROUND_TONES,
+  mentalicaPhotoLayout,
   mentalicaPhotoSlots,
   defaultMentalicaPhotoProject,
   sanitizeMentalicaPhotoProject
@@ -91,4 +95,104 @@ test("photo constructor uses the original client-N slot identity, no paid image 
   assert.doesNotMatch(ui,/fetch\(|\/api\/|SUPABASE|openrouter|gemini|stripe|cloudinary|localStorage\.setItem/);
   assert.match(css, /@media\(max-width:560px\)/);
   assert.match(css, /\.modeNav a\[aria-current="page"\]/);
+});
+
+
+test("Mentalica family engine keeps original eight constructor names and source slot identities",()=>{
+  assert.deepEqual(MENTALICA_CONSTRUCTOR_TYPES,
+    ["client","altar","business","zodiac","star","chess","dao","dao-layout"]);
+  const sizes=[
+    ["client", "classic", 8, "client-8"],
+    ["altar", "classic", 7, "altar-support-2"],
+    ["business","one-zone",3,"business-structure-1"],
+    ["business","three-zones",9,"business-structure-3"],
+    ["zodiac","classic",12,"zodiac-12"],
+    ["zodiac","zodiac-2-12",24,"zodiac-inner-12"],
+    ["zodiac","plus-8",12,"zodiac-plus-4"],
+    ["star","closed",5,"star-5"],
+    ["star","open",5,"star-5"],
+    ["star","star-2-10",10,"star-extra-5"],
+    ["chess","classic-14",14,"chess-14"],
+    ["chess","classic-8",8,"chess-8"],
+    ["chess","plus-8",8,"chess-8"],
+    ["chess","compact-5",5,"chess-5"],
+    ["dao","style-1",5,"dao-metal"],
+    ["dao","talisman-2",5,"dao-metal"],
+    ["dao-layout","roof_double_line",5,"dao-metal"]
+  ];
+  for(const [constructorType,variant,count,lastId] of sizes){
+    const project={...defaultMentalicaPhotoProject(),constructorType,variant,geometry:12};
+    const layout=mentalicaPhotoLayout(project);
+    assert.equal(layout.slots.length,count,constructorType+"/"+variant);
+    assert.equal(layout.slots.at(-1).id,lastId,constructorType+"/"+variant);
+    assert.equal(layout.type,constructorType);
+    assert.equal(layout.variant,variant);
+    assert.equal(new Set(layout.slots.map(s=>s.id)).size,count,"unique refs "+constructorType+"/"+variant);
+    assert.ok(layout.slots.every(slot=>
+      Number.isFinite(slot.x)&&Number.isFinite(slot.y)&&
+      slot.x>=0&&slot.x<=100&&slot.y>=0&&slot.y<=100&&
+      slot.diameter>0&&["circle","square"].includes(slot.shape)),constructorType+"/"+variant);
+    assert.ok(Number.isFinite(layout.center.x)&&Number.isFinite(layout.center.y));
+  }
+  for(const type of MENTALICA_CONSTRUCTOR_TYPES)
+    for(const variant of MENTALICA_LAYOUT_VARIANTS[type]){
+      const layout=mentalicaPhotoLayout({constructorType:type,variant,geometry:8});
+      assert.equal(layout.type,type);
+      assert.equal(layout.variant,variant);
+      assert.ok(layout.slots.length>=2);
+    }
+  assert.deepEqual(MENTALICA_BACKGROUND_TONES,
+    ["mentalica","gold","forest","night","fire","water"]);
+});
+test("original Mentalica non-client geometry landmarks",()=>{
+  const preview=(constructorType,variant)=>mentalicaPhotoLayout({constructorType,variant,geometry:8});
+  assert.deepEqual(preview("star","closed").slots.slice(0,2).map(s=>[s.x,s.y]),
+    [[50,8],[87,36]]);
+  assert.deepEqual(preview("chess","plus-8").slots.slice(0,4).map(s=>[s.x,s.y]),
+    [[15,15],[85,15],[15,85],[85,85]]);
+  assert.deepEqual(preview("chess","compact-5").slots.at(0).x,50);
+  assert.deepEqual(preview("altar","classic").center,{x:50,y:58,diameter:30});
+  assert.deepEqual(preview("business","three-zones").slots.map(s=>s.id).slice(0,3),
+    ["business-goal-1","business-goal-2","business-goal-3"]);
+  assert.deepEqual(preview("dao","style-1").slots.map(s=>s.id),
+    ["dao-water","dao-wood","dao-fire","dao-earth","dao-metal"]);
+});
+test("saved original projects migrate safely and new types survive JSON export/import",()=>{
+  const legacy=defaultMentalicaPhotoProject();
+  delete legacy.constructorType;delete legacy.variant;delete legacy.tone;
+  const migrated=sanitizeMentalicaPhotoProject(legacy);
+  assert.equal(migrated.constructorType,"client");
+  assert.equal(migrated.variant,"classic");
+  assert.equal(migrated.tone,"mentalica");
+  const data="data:image/jpeg;base64,"+"a".repeat(64);
+  const fresh=sanitizeMentalicaPhotoProject({
+    ...defaultMentalicaPhotoProject(),constructorType:"dao-layout",variant:"roof_double_line",tone:"forest",
+    assets:[{id:"avatar",name:"Test",data}],
+    assignments:{"dao-water":"avatar","__center_image":"avatar","client-99":"avatar"},
+    transforms:{"dao-water":{x:22,y:78,zoom:1.25,rotate:-15}}
+  });
+  assert.equal(fresh.variant,"roof_double_line");
+  assert.equal(fresh.constructorType,"dao-layout");
+  assert.equal(fresh.tone,"forest");
+  assert.equal(fresh.assignments["dao-water"],"avatar");
+  assert.equal(fresh.assignments["client-99"],undefined);
+  assert.deepEqual(sanitizeMentalicaPhotoProject(JSON.parse(JSON.stringify(fresh))),fresh);
+  assert.equal(sanitizeMentalicaPhotoProject({...fresh,constructorType:"wrong",tone:"danger"}).constructorType,"client");
+});
+test("PNG and live preview use one scene plan, position/rotation and tone",()=>{
+  assert.match(ui,/const layout = useMemo\(\(\) => mentalicaPhotoLayout\(project\)/);
+  assert.match(ui,/layout\.slots\.forEach/);
+  assert.match(ui,/slots\.map\(slot=>imageButton/);
+  assert.match(ui,/layout\.guides\.map/);
+  assert.match(ui,/data-photo-mandala-constructor=\{layout\.type\}/);
+  assert.match(ui,/data-photo-mandala-tone=\{project\.tone\}/);
+  assert.match(ui,/const size=2048/);
+  assert.match(ui,/function drawCover/);
+  assert.match(ui,/objectPosition:transform\.x/);
+  assert.match(ui,/layout\.center\.x/);
+  assert.match(ui,/MENTALICA_CONSTRUCTOR_TYPES\.map/);
+  assert.match(ui,/MENTALICA_LAYOUT_VARIANTS\[layout\.type\]/);
+  assert.match(css,/\.constructorPills/);
+  assert.match(css,/\.guides polyline/);
+  assert.match(css,/data-photo-mandala-tone="forest"/);
 });
