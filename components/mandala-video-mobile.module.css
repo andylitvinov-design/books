@@ -3754,3 +3754,131 @@
 }
 @media(max-width:360px){.audioBedControls{grid-template-columns:1fr}
  .audioBedControls label:first-child{grid-column:auto}}
+
+/* 05-Nov compact Video entry: goal → topic → free text → next-step director.
+   One existing Canvas, one existing director, no second recorder or profile strip. */
+.quickPromptStep{display:grid;gap:8px;min-width:0;width:100%;padding-top:9px;border-top:1px solid #e9e6dc}
+.quickPromptTitle{margin:0;color:#1c5141;font:800 15px/1.2 Arial,Helvetica,sans-serif}
+.quickPromptContinue{display:flex;align-items:center;justify-content:center;gap:9px;
+  min-width:0;width:100%;min-height:48px;padding:10px 13px;
+  border:1px solid #0a9674;border-radius:14px;
+  background:linear-gradient(110deg,#087858,#08a178);color:#fff;cursor:pointer;
+  font:800 15px/1.2 Arial,Helvetica,sans-serif;box-shadow:0 4px 10px #15735b24}
+.quickPromptContinue span{flex:1;min-width:0;text-align:center}
+.quickPromptContinue svg{flex:none}
+.quickPromptContinue:disabled{opacity:.6;cursor:not-allowed}
+.quickPromptContinue:focus-visible{outline:3px solid #d4aa57;outline-offset:3px}
+.studio[data-active-workspace="video"] [data-video-profile-recommendation]{display:none!important}
+@media(max-width:759px){
+  /* A true, bounded 16:9 player, not the long cinematic banner. */
+  .studio[data-active-workspace="video"] .quickBuilder{gap:6px!important;padding-bottom:10px}
+  .studio[data-active-workspace="video"] .quickBuilder>.quickBrandBar{
+    min-height:42px!important;padding:0 3px!important}
+  .studio[data-active-workspace="video"] .quickBrandMobileTitle{display:none!important}
+  .studio[data-active-workspace="video"] .quickBrandIdentity{
+    display:grid!important;gap:1px}
+  .studio[data-active-workspace="video"] .quickBrandIdentity strong{
+    font:800 clamp(16px,4.3vw,19px)/1.08 Georgia,serif}
+  .studio[data-active-workspace="video"] .quickBrandIdentity small{
+    font-size:10px;line-height:1.16}
+  .studio[data-active-workspace="video"] .quickBuilder>.quickVideoNav{
+    gap:3px!important;margin:0!important}
+  .studio[data-active-workspace="video"] .quickVideoNav button{
+    min-height:47px!important;padding:4px 1px!important;gap:2px!important;
+    border-radius:11px!important;font-size:clamp(9px,2.5vw,11px)!important}
+  .studio[data-active-workspace="video"] .quickVideoNav button svg{
+    width:17px!important;height:17px!important}
+  .studio[data-active-workspace="video"] .quickBuilder>.previewStage{margin:0!important}
+  .studio[data-active-workspace="video"] .previewStage>.heroWithRail{
+    position:relative;display:block!important;width:100%;max-width:335px;
+    margin:0 auto!important}
+  .studio[data-active-workspace="video"] .previewStage .heroWithRail>.hero{
+    display:block;width:100%!important;min-width:0;min-height:0!important;
+    max-height:none!important;aspect-ratio:16/9!important;
+    border-radius:15px!important;margin:0!important}
+  .studio[data-active-workspace="video"] .previewStage .heroRail{display:none!important}
+  .studio[data-active-workspace="video"] .previewStage .heroPlay{
+    left:50%!important;top:50%!important;width:44px!important;height:44px!important}
+  .studio[data-active-workspace="video"] .heroEditorial{
+    left:9px;bottom:8px;max-width:59%;gap:2px}
+  .studio[data-active-workspace="video"] .heroEditorial h2{
+    font-size:clamp(16px,4.4vw,20px)!important}
+  .studio[data-active-workspace="video"] .heroEditorial p{
+    font-size:clamp(9px,2.55vw,11px)!important;line-height:1.16!important}
+  /* Goal and topic are intentionally separate compact sections. */
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"]{
+    order:3!important;gap:4px;padding:9px 9px 8px!important;border-radius:15px}
+  .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{
+    order:4!important;gap:5px;padding:9px!important;border-radius:15px}
+  .studio[data-active-workspace="video"] [data-video-quick-section="1"] .quickSectionHeading h3{
+    font-size:clamp(15px,4vw,18px)!important;line-height:1.18}
+  .studio[data-active-workspace="video"] [data-video-quick-section="1"] .quickSectionHeading>a,
+  .studio[data-active-workspace="video"] .quickStepHint,
+  .studio[data-active-workspace="video"] .quickGoalLabel,
+  .studio[data-active-workspace="video"] .quickProfileHost{
+    display:none!important}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]{gap:2px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]  > [role="group"]{
+    gap:5px;padding:2px 1px 4px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]  > [role="group"] button{
+    flex-basis:clamp(57px,17.6vw,72px);max-width:72px;min-height:64px;
+    padding:6px 3px 5px;border-radius:12px;gap:3px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]  > [role="group"] [data-auto-video-category] > span:first-child{
+    width:24px;height:24px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]  > [role="group"] [data-auto-video-category] > span:first-child svg{
+    width:21px;height:21px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel]  > [role="group"] button strong{
+    font-size:clamp(10px,2.7vw,12px)}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories]{
+    gap:3px;margin:0;padding:3px 0 0}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories]>p:first-child{
+    display:none!important}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [role="group"]{
+    gap:5px;padding:1px 1px 2px}
+  .studio[data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [role="group"] button{
+    min-height:37px;padding:6px 8px;border-radius:10px;font-size:11px}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel]{gap:4px}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child h3{
+    font-size:clamp(15px,4.1vw,18px);line-height:1.16}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child h3 svg{
+    width:19px;height:19px}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child>button{
+    min-width:0;max-width:115px;min-height:33px;padding:4px 7px;border-radius:10px;
+    font-size:10px;line-height:1.15}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child>button span{
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    line-clamp:2;overflow:hidden}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel]>p:first-of-type{
+    display:none!important}
+  .studio[data-active-workspace="video"] [data-mytube-subcategories]{
+    display:flex;flex-wrap:nowrap;gap:5px;max-width:100%;overflow-x:auto;
+    padding:2px 1px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .studio[data-active-workspace="video"] [data-mytube-subcategories]::-webkit-scrollbar{
+    display:none}
+  .studio[data-active-workspace="video"] [data-mytube-subcategories] button{
+    flex:0 0 auto;min-height:38px;max-width:158px;padding:5px 9px;
+    border-radius:11px;font-size:11px;box-shadow:none}
+  /* Portal targets remain visible, but the real four-scene director is step 2. */
+  .studio[data-active-workspace="video"][data-video-scenario-open="false"]
+    [data-auto-video-popular-topics]{display:none!important}
+  .studio[data-active-workspace="video"][data-video-scenario-open="false"]
+    .quickBuilder>[data-auto-video-director]{display:none!important}
+  .studio[data-active-workspace="video"] .quickBuilder>[data-auto-video-director]{
+    order:5!important;scroll-margin-top:14px}
+  .studio[data-active-workspace="video"] .quickPromptStep{gap:5px;padding-top:7px}
+  .studio[data-active-workspace="video"] .quickPromptTitle{
+    font-size:clamp(13px,3.55vw,15px)}
+  .studio[data-active-workspace="video"] .quickRequestHost [data-auto-video-input]{
+    min-height:44px;height:44px;padding:9px 12px;border-radius:11px;
+    font:500 16px/1.2 Arial,Helvetica,sans-serif}
+  .studio[data-active-workspace="video"] .quickPromptContinue{
+    min-height:46px;padding:8px 11px;border-radius:12px;
+    font-size:clamp(12px,3.35vw,15px)}
+}
+@media(max-width:354px){
+  .studio[data-active-workspace="video"] .previewStage>.heroWithRail{max-width:292px}
+  .studio[data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child>button{
+    max-width:88px}
+}
