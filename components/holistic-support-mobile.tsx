@@ -13,6 +13,7 @@ import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportInlineGuide, type SupportGuideTest } from "@/components/holistic-support-inline-guide";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
+import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
@@ -490,10 +491,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", initialTheme = "all", guideTests = {} }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], learningItems = [], initialChoice = "meditation", initialTheme = "all", guideTests = {} }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
+  learningItems?: LearningCatalogItem[];
   initialChoice?: SupportMobileChoice;
   initialTheme?: Theme;
   guideTests?: Record<string, SupportGuideTest[]>;
@@ -946,7 +948,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
-              {choice === "pump" && courses.length > 0 ? (
+              {choice === "pump" ? <section className={styles.learningCatalogBlock}
+              data-support-learning-catalog aria-label={t.coursesAll}>
+            <HolisticSupportLearningCatalog locale={locale} items={learningItems} />
+            <details className={styles.learningGoalPicker} data-learning-goal-picker>
+              <summary>{locale === "ru" ? "Дополнительно: обучение по моему профилю" :
+                locale === "es" ? "Opcional: cursos según mi perfil" : "Optional: courses by my profile"}</summary>
+              <HolisticSupportCourseProfiles locale={locale} courses={courses}
+                savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
+                onTests={() => changeChoice("tests")}
+                onFillProfile={openCourseProfileFilter}
+                onRecommendations={showCourseProfileRecommendations} />
+            </details>
+          </section> : null}
+          {choice === "pump" && courses.length > 0 ? (
                 <div className={styles.mysteryPicker} data-support-mystery-courses>
                   <div className={styles.mysteryPickerHeading}>
                     <strong>{t.mysteryCourses}</strong><span>{t.mysterySource}</span>
