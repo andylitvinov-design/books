@@ -79,9 +79,10 @@ function admission(lane,capacity){
 async function snapshot(github,owner,repo){
  // GitHub may update total_count while an Actions run moves between states.
  // A single disagreeing count must not permanently idle the dispatch queue.
- // Retry the read once, but never infer spare capacity from partial data.
+ // Only when two reads severely disagree, retry twice more using idempotent
+ // GETs. Missing run IDs NEVER count as free capacity.
  let active,queued,aCount,qCount,confidence='VERIFIED';
- for(let attempt=0;attempt<2;attempt++){
+ for(let attempt=0;attempt<4;attempt++){
   const [a,q]=await Promise.all(['in_progress','queued'].map(status=>
    github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:100})));
   active=a?.data?.workflow_runs;
@@ -100,16 +101,19 @@ async function snapshot(github,owner,repo){
     return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount};
   }
   if(aCount===active.length&&qCount===queued.length)break;
-  if(attempt===1){
-    // GitHub sometimes reports 17 active runs but returns 16 during active
-    // status transitions. A discrepancy of at most two can be conservatively
-    // admitted for *Repair only*, after checking every listed runner job and
-    // independently verifying the target workflow has no active run.
-    if(Math.abs(aCount-active.length)>2||Math.abs(qCount-queued.length)>2){
+  if(attempt>=1){
+    // Preserve the original <=2 conservative partial behavior for Repair.
+    // A worse drift may be transient GitHub Actions total_count lag.
+    if(Math.abs(aCount-active.length)<=2&&Math.abs(qCount-queued.length)<=2){
+      confidence='BOUNDED_PARTIAL';
+      break;
+    }
+    if(attempt===3){
       return {known:false,reason:'INCONSISTENT_RUN_INVENTORY',activeRuns:aCount,
         queuedRuns:qCount,listedActive:active.length,listedQueued:queued.length};
     }
-    confidence='BOUNDED_PARTIAL';
+    // Keep the hard limits, no optimistic capacity, no new workflow or runner.
+    await new Promise(resolve=>setTimeout(resolve,attempt===1?200:400));
   }
  }
  if(Math.max(aCount,active.length)>LIMIT.maxJobReads){
