@@ -184,3 +184,6 @@ test("existing mobile director exposes five motifs & collapsible styles without 
   assert.match(ui,/disabled=\{disabled\|\|plotLacksApprovedClips\}/);
   assert.match(ui,/disabled=\{disabled\|\|!canCreate\|\|plotLacksApprovedClips\}/);
 });
+
+// STSE extends this established Mandala/MyTube specialist test lane; no extra workflow.
+import "./state-transition-scenarios.test.mjs";
