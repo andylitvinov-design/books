@@ -247,7 +247,7 @@ export function MandalaAutoVideoDirector({
  // Build the four narrative beats from the selected category before using
  // any preset. The planner proves real source geometry from published manifests.
  const categoryPlan=useMemo(()=>planMyTubeCategory({
-   categoryId:taxonomyCategoryForGoal[selectedCategoryId],locale,aspect,
+   categoryId:selectedCategoryId,locale,aspect,
    durationSeconds:length,styleId:selectedStyleId||null,
    excludedMotifs:proposal?.excludedMotifs||[],scenes,
  }),[selectedCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,scenes]);
