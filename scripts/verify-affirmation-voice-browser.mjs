@@ -44,9 +44,12 @@ async function verifyWorkspaceHydration(browser,locale){
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
-    await allStories.click();
-    await expect(studio).toHaveAttribute("data-video-advanced-open","true");
+    // The legacy all-stories header is not visible on the compact first screen.
+    // Verify the first *visible* workspace tap after hydration, never a forced
+    // click on hidden controls. The actual encoded WebKit video/voice gate below
+    // still runs unmodified after this client-readiness preflight.
     const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toBeVisible({timeout:15000});
     await expect(phrases).toBeEnabled();
     await phrases.click();
     await expect(phrases).toHaveAttribute("aria-pressed","true");
