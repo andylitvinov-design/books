@@ -86,16 +86,19 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   const mobile = read("components/holistic-support-mobile.tsx");
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/remote-energy-support-booking.module.css");
-  assert.match(jsx, /if \(mode === "inline"\) \{[\s\S]*?setContactDraft\(publicDraft\);\s*return;/);
+  assert.match(jsx, /const publicDraft = \{/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
+  assert.match(jsx, /Boolean\(day\) !== Boolean\(time\)/);
   assert.match(jsx, /data-remote-public-order-contact/);
   assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
   assert.match(jsx, /onSaved=\{\(\) => \{/);
   assert.match(jsx, /readRemoteSupportPublicDraft\(window\.sessionStorage, selected\.serviceId\)/);
-  assert.match(jsx, /required=\{mode !== "inline"\}/);
+  assert.match(jsx, /data-optional-session-time/);
+  assert.doesNotMatch(jsx, /required=\{mode !== "inline"\}/);
   assert.match(jsx, /"Заказать"/);
-  assert.match(jsx, /const topic = goal \|\| \(mode === "inline" && requestKind === "energy" \? "Personal intention" : ""\)/);
+  assert.match(jsx, /const topic = goal \|\| \(requestKind === "talisman"/);
   assert.match(jsx, /try \{ window\.sessionStorage\.setItem\(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY/);
-  assert.match(jsx, /catch \{ \/\* Keep the consented phone form usable without storage\. \*\/ \}/);
+  assert.match(jsx, /catch \{ \/\* Contact\/consent works even if private browsing denies storage\. \*\/ \}/);
   assert.match(jsx, /"Выберите и дату, и время или оставьте оба поля пустыми."/);
   assert.match(jsx, /pending\?\.service !== remoteSupportPublicServiceTitle\(draft\)/);
   assert.match(jsx, /remoteSupportPublicRequestSummary\(contactDraft, locale\)/);
@@ -104,8 +107,9 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   assert.match(gallery, /setSelectedId\(master\.serviceId\);\s*setOrderOpen\(true\)/);
   assert.match(css, /\.publicContact\{display:grid/);
   assert.match(css, /@media\(max-width:650px\)/);
-  // Unchanged standalone flow still offers the private structured booking.
-  assert.match(jsx, /source=remote-energy-support/);
+  // Standalone and inline support must both keep the guest in the consented CRM form.
+  assert.match(jsx, /talismanRequested && \(/);
+  assert.doesNotMatch(jsx, /router\.push|source=remote-energy-support/);
   assert.match(jsx, /setError\("past"\)/);
   assert.doesNotMatch(jsx, /createPaymentIntent|markAsPaid|paymentCaptured/);
 });

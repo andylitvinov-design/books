@@ -128,7 +128,10 @@ test("public energy and talisman enquiries keep existing consented CRM without p
   assert.match(jsx, /setContactDraft\(publicDraft\)/);
   assert.match(jsx, /Boolean\(day\) !== Boolean\(time\)/);
   assert.match(contact, /fetch\("\/api\/service-enquiries"/);
-  assert.match(contact, /contactConsent: true/);
+  assert.match(contact, /contactConsent: consent/);
+  assert.match(contact, /if \(!consent\) \{/);
+  assert.match(contact, /if \(!response\.ok \|\| data\.saved !== true/);
+  assert.match(contact, /onSaved\?\.\(data\.referenceCode\)/);
   assert.match(contact, /telegramEnquiryUrlFromWhatsApp/);
 });
 

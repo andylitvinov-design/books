@@ -78,7 +78,9 @@ test("price-filtered results preserve verified practitioner booking and real con
   assert.match(jsx, /matchesHolisticEuroBudget\(/);
   assert.match(jsx, /published.*price/i);
   assert.match(jsx, /currentPrice\.price/);
-  assert.match(jsx, /stageRemoteSupportPrivateIntention\(selected\.serviceId, intention\)/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
+  assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
+  assert.doesNotMatch(jsx, /stageRemoteSupportPrivateIntention|router\.push/);
   assert.match(chooser, /&kind=consultation/);
   assert.match(api, /kind === "consultation"/);
   assert.match(api, /listPublishedConsultationOffers\(locale\)/);

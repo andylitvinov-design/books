@@ -107,13 +107,15 @@ test("all owned EN/RU/ES public service offers keep original route and booking o
   const remote=read("components/remote-energy-support-booking.tsx");
   assert.match(remote,/data-public-visual-landing=\{compactFinder \? undefined : "remote-energy"\}/);
   assert.match(remote,/data-remote-visual-screen="final-capture"/);
-  // Same-tab app navigation deliberately preserves the private in-memory intention.
-  // A hard reload would lose that ephemeral handoff and is not the approved contract.
-  assert.match(remote,/stageRemoteSupportPrivateIntention\(selected\.serviceId, intention\)/);
-  assert.match(remote,/router\.push\(/);
-  assert.match(remote,/source=remote-energy-support/);
-  assert.match(remote,/REMOTE_SUPPORT_DRAFT_KEY/);
-  assert.doesNotMatch(remote,/CompactLeadCapture|\/api\/service-enquiries/);
+  // Both standalone and inline requests stay public until an explicit consented CRM commit.
+  // The existing ContactChannelChooser owns secure contact submission and real receipts.
+  assert.match(remote, /setContactDraft\(publicDraft\)/);
+  assert.match(remote, /setTalismanRequested\(true\)/);
+  assert.match(remote, /data-optional-session-time/);
+  assert.match(remote, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
+  assert.match(remote, /remoteSupportPublicRequestSummary\(contactDraft, locale\)/);
+  assert.doesNotMatch(remote, /stageRemoteSupportPrivateIntention|router\.push\(|REMOTE_SUPPORT_DRAFT_KEY/);
+  assert.doesNotMatch(remote, /CompactLeadCapture|createPaymentIntent|checkoutSession|\/api\/service-enquiries/);
 });
 test("no duplicate generic lead footer on migrated templates",()=>{
   const css=read("app/sitewide-capture.css");

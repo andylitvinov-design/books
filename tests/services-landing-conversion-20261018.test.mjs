@@ -33,7 +33,9 @@ test("Alchemy hero visibly distinguishes consultation pricing from unconfirmed r
 
 test("remote energy booking preserves request confirmation and offers an alternative when full", () => {
   const booking = read("components/remote-energy-support-booking.tsx");
-  assert.match(booking, /REMOTE_SUPPORT_DRAFT_KEY/);
+  assert.match(booking, /REMOTE_SUPPORT_PUBLIC_DRAFT_KEY/);
+  assert.doesNotMatch(booking, /router\.push|TALISMAN_REQUEST_DRAFT_KEY/);
+  assert.match(booking, /data-remote-public-order-contact/);
   assert.match(booking, /No practitioners are currently taking remote energy support requests/);
   assert.match(booking, /freeReiki/);
   assert.match(booking, /academy\/reiki\/yggdrasil\/free-initiation/);
