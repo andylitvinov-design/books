@@ -34,6 +34,7 @@ async function inspect(browserType,locale,width){
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
+  const moreControls=page.locator("#mytube-more-controls");
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
     id+" deeper filters are initially collapsed");
   assert.equal(await rail.isVisible(),true,
@@ -106,11 +107,16 @@ async function inspect(browserType,locale,width){
   }
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
-    id+" one filter action reveals deeper taxonomy");
-  assert.equal(await refined.isVisible(),true,
-    id+" extra controls become visible");
+    id+" one filter action reveals additional filters");
+  await moreControls.waitFor({state:"visible",timeout:15000});
+  assert.ok(await moreControls.locator("select").count()>=2,
+    id+" language and sort controls are available after opening filters");
+  // Subcategory controls are intentionally empty until a direction is chosen.
+  assert.equal(await refined.isVisible(),false,
+    id+" no empty subcategory panel when all directions are selected");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
+  await refined.waitFor({state:"visible",timeout:15000});
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
   const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');

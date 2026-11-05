@@ -10,6 +10,9 @@ import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
+import {listStateTransitionScenarios,getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
+import {motifDetails} from "@/lib/mandala/state-transition/state-catalog.mjs";
+import {StateTransitionSelector} from "./mandala-state-transition-selector";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
@@ -19,6 +22,9 @@ import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
+
+// Explicit opt-in only; preserves the original Video Director until QA.
+const STSE_ENABLED=process.env.NEXT_PUBLIC_HH_STSE_ENABLED==="true";
 
 type Preset={
   id:string;theme:VideoTheme;
@@ -206,6 +212,9 @@ export function MandalaAutoVideoDirector({
  },[]);
  useEffect(()=>{
    if(!selectedScenarioId){setPlotData(null);setPlotsLoading(false);return;}
+   if(STSE_ENABLED&&/-s[5-8]$/.test(selectedScenarioId)){
+     setPlotData({scenarioId:selectedScenarioId,locale,plots:[]});setPlotsLoading(false);return;
+   }
    let active=true;
    setPlotsLoading(true);
    // Download only the chosen category's plots, not the entire 1,024-plot catalog.
@@ -217,8 +226,15 @@ export function MandalaAutoVideoDirector({
  const taxonomySubcategories=listMyTubeSubcategories(taxonomyCategoryForGoal[selectedCategoryId],locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(taxonomyCategoryForGoal[selectedCategoryId],selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
- const taxonomyScenarios=selectedTopicId?listMyTubeScenarios(selectedTopicId,locale):[];
- const suggestedVisualMotifs=selectedScenarioId?listMyTubeScenarioMotifs(selectedScenarioId,locale):[];
+ const taxonomyScenarios=selectedTopicId?(STSE_ENABLED?
+   listStateTransitionScenarios(selectedTopicId,locale):listMyTubeScenarios(selectedTopicId,locale)):[];
+ const stseScenario=STSE_ENABLED&&selectedScenarioId?
+   getStateTransitionScenario(selectedScenarioId,locale):null;
+ const suggestedVisualMotifs=selectedScenarioId?(stseScenario?.newExpansion?
+   stseScenario.motifIds.map((id:string)=>motifDetails(id,locale))
+     .filter((item):item is NonNullable<typeof item>=>Boolean(item))
+     .map((item,index)=>({...item,recommended:index===0,rank:index+1,status:"editorial_symbol_not_verified_footage"})):
+   listMyTubeScenarioMotifs(selectedScenarioId,locale)):[];
  const availableVisualStyles=listMyTubeStyles(locale);
  const taxonomyPlots=plotData?.scenarioId===selectedScenarioId&&plotData.locale===locale?plotData.plots:[];
  const selectedTaxonomyPlot=taxonomyPlots.find(plot=>plot.id===selectedPlotId);
@@ -263,7 +279,7 @@ export function MandalaAutoVideoDirector({
  });
  const creativeSelectionUnavailable=Boolean(selectedScenarioId&&(selectedMotifId||selectedStyleId)&&
    (!topicMediaCoverage?.dedicatedFourSceneReady||!activeTimelineEdits||!creativeMontageEvidence.ok));
- const plotLacksApprovedClips=Boolean((selectedPlotId&&
+ const plotLacksApprovedClips=Boolean((STSE_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
    !selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
  const availableReplacements=stageClipIds.map(currentId=>
@@ -589,8 +605,15 @@ export function MandalaAutoVideoDirector({
          onClick={()=>chooseTaxonomyTopic(item.id)}><span>{item.label}</span></button>)}
      </div>
    </>:null}
-   {selectedTopicId&&taxonomyScenarios.length===4?<div className={css.storyChoices} data-mytube-scenario-concepts>
-     <p className={css.variantsTitle}>{locale==="ru"?"Четыре сценария для выбранной темы":locale==="es"?"Cuatro escenarios para este tema":"Four scenarios for this topic"}</p>
+   {STSE_ENABLED&&selectedTopicId?<StateTransitionSelector
+     key={selectedTopicId} locale={locale} topicId={selectedTopicId} disabled={disabled}
+     selectedScenarioId={selectedScenarioId} onChooseScenario={chooseTaxonomyScenario}/>:null}
+   {selectedTopicId&&taxonomyScenarios.length>=4?<div className={css.storyChoices} data-mytube-scenario-concepts>
+     <p className={css.variantsTitle}>{STSE_ENABLED?
+       (locale==="ru"?"Восемь сюжетов: четыре исходных и четыре новые редакционные концепции":
+         locale==="es"?"Ocho historias: cuatro originales y cuatro conceptos nuevos":
+           "Eight stories: four existing and four new editorial concepts"):
+       (locale==="ru"?"Четыре сценария для выбранной темы":locale==="es"?"Cuatro escenarios para este tema":"Four scenarios for this topic")}</p>
      {taxonomyScenarios.map((scenario,index)=>{
        const coverage=recommendMyTubeTopicStoryClips({topicId:selectedTopicId,
          scenarioId:scenario.id,scenes,excludedMotifs:proposal?.excludedMotifs||[]});
@@ -676,6 +699,11 @@ export function MandalaAutoVideoDirector({
          <small>{plot.synopsis}</small>
        </button>)}
      </div>:null}
+   {STSE_ENABLED&&stseScenario?.newExpansion?<p role="status" className={css.warning} data-stse-media-unbound>
+     {locale==="ru"?"Новый сценарий ожидает редакционной проверки и привязки реальных разрешённых видеосцен. Экспорт пока отключён.":
+       locale==="es"?"Este nuevo guion espera revisión editorial y vídeo autorizado. La exportación está desactivada.":
+         "This new script awaits editorial review and licensed footage binding. Export is disabled."}
+   </p>:null}
    {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==4?
      <p className={css.warning} data-mytube-plots-unavailable>
        {locale==="ru"?"Четыре сюжета пока недоступны; сценарий остаётся без выбранного сюжета.":
