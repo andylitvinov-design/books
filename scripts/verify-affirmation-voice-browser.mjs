@@ -38,11 +38,21 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    // #3617 intentionally hides all story controls on the compact first
+    // screen. Verify they are not offered before hydration or the user's
+    // explicit Continue action, rather than clicking hidden content.
+    const continueToScenes=page.locator('[data-video-continue-scenarios]');
     const allStories=page.locator('[data-auto-video-all-scenes]');
-    await expect(allStories).toBeDisabled();
+    await expect(continueToScenes).toBeDisabled();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","false");
+    await expect(allStories).toBeHidden();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    await expect(continueToScenes).toBeEnabled();
+    await continueToScenes.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible();
     await expect(allStories).toBeEnabled();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");

@@ -54,3 +54,24 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.match(browser,/assert\.deepEqual\(providerPosts,\[\]/);
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
+
+test("macOS WebKit hydration follows the actual compact video scenario entry",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const style=read("components/mandala-video-mobile.module.css");
+ for(const expected of [
+  "data-video-continue-scenarios",
+  'toHaveAttribute("data-video-scenario-open","false")',
+  'toHaveAttribute("data-video-scenario-open","true")',
+  "await continueToScenes.click()",
+  "await expect(allStories).toBeVisible()",
+  "await allStories.click()",
+  'toHaveAttribute("data-video-advanced-open","true")',
+ ]){
+  assert.ok(browser.includes(expected),expected);
+ }
+ assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
+ assert.match(studio,/onClick=\{openVideoScenarioStep\}/);
+ assert.match(style,/\[data-video-scenario-open="false"\]/);
+ assert.ok(!browser.includes("allStories.click({force:true})"),"hidden scenario controls cannot be clicked forcefully");
+});
