@@ -22,6 +22,9 @@
       '<script src="/pr-merge-velocity-ui.js?v=20261105-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-velocity-three-lines.css?v=20261105-v1">'+
       '<script src="/pr-velocity-three-lines.js?v=20261105-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-queue-recovery.css?v=20261105-queue-v1">'+
+      '<script src="/pr-open-queue.js?v=20261105-queue-v1" defer><\/script>'+
+      '<script src="/pr-trends-recovery.js?v=20261105-history-v1" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
