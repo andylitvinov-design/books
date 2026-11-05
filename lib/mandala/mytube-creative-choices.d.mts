@@ -59,6 +59,7 @@ export function videoMatchesMyTubeVisualFilter(video:{
   mytubeVisualTagEvidence?:string;mytubeMotifIds?:readonly string[];mytubeStyleIds?:readonly string[];
 },filters?:{motifId?:string|null;styleId?:string|null}):boolean;
 export function auditMyTubeCreativeChoices():{
+  mappingDiversity:{ordered:number;unordered:number};
   ok:boolean;counts:{scenarios:number;motifs:number;styles:number;suggestions:number};
   errors:string[];
 };
