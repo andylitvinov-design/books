@@ -317,7 +317,7 @@ export function MandalaAffirmationVoice({
         if(job!==sampleJobRef.current)return;
         if(saved){
           const seconds=wavDurationFromHeader(await saved.slice(0,256).arrayBuffer());
-          if(seconds>=.2&&seconds<=60){
+          if(typeof seconds==="number"&&seconds>=.2&&seconds<=60){
             uri=URL.createObjectURL(saved);
             sampleCacheRef.current.set(cacheKey,uri);
           }
