@@ -439,7 +439,7 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 
 
 test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
+ for(const [start,end] of [["const requestField=","const requestInput="],["const applyProfile=","const requestInput="]]){
   const handler=director.slice(director.indexOf(start),director.indexOf(end));
   assert.ok(handler.length>0,start+" exists");
   for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
