@@ -45,6 +45,7 @@ function world(options={}){
    pulls:{get:async()=>({data:(reads++,options.prAfter&&reads>=2?options.prAfter:pr)})},
    repos:{
     getBranch:async()=>({data:{protected:true,commit:{sha:LIVE},...options.branch}}),
+    getCommit:async()=>({data:options.mergeCommit||{sha:'f'.repeat(40),parents:[]}}),
     compareCommits:async()=>({data:{status:'ahead',ahead_by:1,behind_by:0,
      total_commits:1,commits:[{sha:LIVE}],
      base_commit:{sha:OLD},merge_base_commit:{sha:OLD},...options.compare}})
@@ -132,4 +133,51 @@ test('changed HEAD under source lease, code review hold or base movement remains
   assert.equal(r.status,'SKIPPED');
   assert.equal(w.updated()===0||r.reason==='UPDATE_NOT_ACCEPTED',true);
  }
+});
+
+test('synthetic Core merge SHA proves source HEAD and historical tested BASE before sync',async()=>{
+ const template=world().context.payload.workflow_run;
+ const synthetic='d'.repeat(40);
+ const w=world({
+  event:{head_sha:synthetic,pull_requests:[{...template.pull_requests[0],
+   base:{ref:'codex/public-book-library',sha:LIVE}}]},
+  run:{head_sha:synthetic},
+  mergeCommit:{sha:synthetic,parents:[{sha:OLD},{sha:HEAD}]}
+ });
+ const r=await run(w);
+ assert.equal(r.status,'UPDATED');
+ assert.equal(w.updated(),1,'one native update for exact PR source SHA');
+});
+test('synthetic Core association rejects any missing or false merge-parent evidence',async()=>{
+ const synthetic='d'.repeat(40);
+ for(const bad of [
+  {sha:synthetic,parents:[]},
+  {sha:synthetic,parents:[{sha:OLD},{sha:'e'.repeat(40)}]},
+  {sha:'f'.repeat(40),parents:[{sha:OLD},{sha:HEAD}]},
+  {sha:synthetic,parents:[{sha:OLD}]}
+ ]){
+  const w=world({event:{head_sha:synthetic},run:{head_sha:synthetic},mergeCommit:bad});
+  const r=await run(w);
+  assert.equal(r.reason,'RUN_MERGE_PARENTS_UNVERIFIED');
+  assert.equal(w.updated(),0);
+ }
+});
+test('synthetic Core source lease is checked on PR SHA, never synthetic merge SHA',async()=>{
+ const synthetic='d'.repeat(40);
+ const lease={user:{login:'existing-source-writer'},body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',owner:'active-writer',
+   lease_id:'w1',head_sha:HEAD,state:'active'
+  })};
+ const w=world({event:{head_sha:synthetic},run:{head_sha:synthetic},
+  mergeCommit:{sha:synthetic,parents:[{sha:OLD},{sha:HEAD}]},
+  comments:[lease]});
+ const r=await run(w);
+ assert.equal(r.reason,'ACTIVE_OR_UNVERIFIED_SOURCE_LEASE');
+ assert.equal(w.updated(),0);
+});
+test('direct failed-Core handoff never loads a newer control SHA partway through execution',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,2);
+ assert.doesNotMatch(wf,/ref: codex\/bootstrap-books/);
 });
