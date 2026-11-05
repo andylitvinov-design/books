@@ -285,7 +285,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
-        provider: providerChoice === 'telegram' ? 'telegram' : 'google',
+        ...(providerChoice === 'telegram' ? { provider: 'telegram' } : {}),
         ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
         ...(page === 'practice'
           ? native
@@ -529,8 +529,8 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'course' && state !== 'unavailable')
     return (
       <main className="hh-app hh-app--course-guest">
-        <CourseGuestLanding locale={locale} onStart={()=>signin('google')} onTelegramStart={()=>signin('telegram')}
-          telegramAvailable={telegramAvailable} busy={busy} stressSignup={stressSignup} compact
+        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+          onTelegramStart={()=>signin('telegram')} telegramAvailable={telegramAvailable}
           errorMessage={error ? message(error, c) : undefined}
           onRetry={state === 'error' ? load : undefined}
           legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
