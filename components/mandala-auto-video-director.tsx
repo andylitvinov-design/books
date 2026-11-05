@@ -1014,7 +1014,8 @@ export function MandalaAutoVideoDirector({
                "The idea is too long for a caption. Shorten the wording or disable the caption."}</p>:null}
        </div>:null}
        <button type="button" data-auto-video-confirm className={css.confirm}
-         disabled={disabled||plotLacksApprovedClips||meaningCaptionTooLong} onClick={()=>{
+         disabled={disabled||plotLacksApprovedClips} onClick={()=>{
+           if(meaningCaptionTooLong)return;
            const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
              clipIds:stageClipIds,durationSecondsByStage:stageDurations,
              excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
