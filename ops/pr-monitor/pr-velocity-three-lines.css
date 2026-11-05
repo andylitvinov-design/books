@@ -1,0 +1,8 @@
+/* Coexists with existing hhv-card layout; no nested frames or scrolling. */
+#hh-merge-velocity .hhv-legend{display:flex;flex-wrap:wrap;column-gap:11px;row-gap:6px}
+#hh-merge-velocity .hhv-legend [data-hh-line-key]{display:inline-flex;align-items:center;white-space:normal;font-size:11px;line-height:1.25}
+#hh-merge-velocity .hhv-three-note{margin:8px 0 0;color:#a8c5da;font-size:10px;line-height:1.4}
+#hh-merge-velocity .hhv-buckets .hhv-bin [data-hh-extraline]{display:block;font-size:10px;line-height:1.25;color:#c1dcf0;margin-top:3px}
+#hh-merge-velocity .hhv-buckets .hhv-bin [data-hh-extraline="head"]{color:#c8a5ff}
+#hh-merge-velocity .hhv-graph svg{max-width:100%;display:block}
+@media(max-width:390px){#hh-merge-velocity .hhv-legend [data-hh-line-key]{font-size:10px}#hh-merge-velocity .hhv-buckets .hhv-bin [data-hh-extraline]{font-size:9px}}
