@@ -262,7 +262,7 @@ export function MandalaAutoVideoDirector({
    clipIds:stageClipIds,scenes,motifId:selectedMotifId||null,styleId:selectedStyleId||null,
  });
  const creativeSelectionUnavailable=Boolean(selectedScenarioId&&(selectedMotifId||selectedStyleId)&&
-   (!topicMediaCoverage?.dedicatedFourSceneReady||!creativeMontageEvidence.ok));
+   (!topicMediaCoverage?.dedicatedFourSceneReady||!activeTimelineEdits||!creativeMontageEvidence.ok));
  const plotLacksApprovedClips=Boolean((selectedPlotId&&
    !selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
@@ -653,7 +653,7 @@ export function MandalaAutoVideoDirector({
      {selectedMotifId||selectedStyleId?<p role="status" data-mytube-creative-availability
        data-ready={creativeSelectionUnavailable?"false":"true"}>
        {creativeSelectionUnavailable?
-         (locale==="ru"?"В библиотеке пока нет четырёх разрешённых сцен с подходящими тегами (мотив минимум в одном кадре, стиль минимум в двух). Выберите другой образ/стиль или «Авто».":locale==="es"?"No hay suficientes clips aprobados para este motivo y estilo. Prueba otra opción o Automático.":"Not enough approved clips tagged for this motif/style. Choose another option or Auto."):
+         (locale==="ru"?"В библиотеке пока нет четырёх разрешённых сцен с подходящими тегами (мотив минимум в одной сцене, стиль минимум в трёх). Выберите другой образ/стиль или «Авто».":locale==="es"?"No hay suficientes clips aprobados para este motivo y estilo. Prueba otra opción o Automático.":"Not enough approved clips tagged for this motif/style. Choose another option or Auto."):
          (locale==="ru"?"Подобраны тематические кандидаты по тегам. Проверьте, что мотив действительно виден в кадрах перед экспортом.":locale==="es"?"Coinciden las etiquetas; comprueba las imágenes antes de exportar.":"Catalog tags match; visually review the images before export.")}
      </p>:null}
    </div>:null}
