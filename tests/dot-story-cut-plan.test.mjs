@@ -136,3 +136,12 @@ test('unique owner montage fails closed rather than recycling scenes',()=>{
  assert.equal(result.requiredCount,36);
  assert.equal(result.approvedRelevantCount,6);
 });
+
+test('strict montage rejects two cropped variants of one original master',()=>{
+ const ids=scenes.slice(0,4).map(s=>s.id);
+ const same=scenes.map((s,i)=>({...s,
+   originMasterKeys:[i===4||i===5?'same':'source-'+i]}));
+ const result=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:30000,
+   scenes:same,stageClipIds:ids,allowRepetition:false});
+ assert.equal(result.code,'UNIQUE_FILMED_SOURCES_INSUFFICIENT');
+});

@@ -23,6 +23,7 @@ const manifests={
  moneyManifest:{sourceLicense:'https://supareels.com/stock-footage-licence',scenes:[]},
  filmManifest:{license:'https://supareels.com/stock-footage-licence',scenes:scenes.map(s=>({
   id:s.id,video:s.video,bytes:12000,durationSeconds:5,
+  width:1280,height:720,originalSourcePage:'https://example.org/shot/'+s.id,
  }))},
  stockManifest:[],
 };
@@ -39,6 +40,9 @@ test('all candidates require a distinct approved first-party physical record',()
  assert.equal(selected.length,4);
  assert.equal(selected[0].expectedSha256,null);
  assert.equal(selected[0].durationSeconds,5);
+ assert.deepEqual(selected[0].allowedAspects,['landscape']);
+ assert.equal(selected[0].width,1280);
+ assert.equal(selected[0].originMasterKeys.length,1);
  assert.throws(()=>storySceneCandidates({...manifests,
   catalog:{count:4,scenes:[...scenes.slice(0,3),{...scenes[3],status:'pending'}]},
  }),/NOT_APPROVED/);
@@ -116,7 +120,7 @@ test('storyboard choice preview is honest about editorial coverage and physical 
   const proof=inspectStoryPlotCoverage(plot.id);
   assert.equal(proof.minimumSources,4);
   assert.equal(proof.physicalMediaVerified,false);
-  assert.equal(proof.readyForPlanning,proof.candidateCount>=4);
+  assert.equal(proof.readyForPlanning,false); // no native 16:9 masters published
   assert.equal(proof.plotId,plot.id);
  }
  const invalid=inspectStoryPlotCoverage('invalid--plot');
@@ -147,8 +151,8 @@ test('CC BY credits contain original page, author, licence, adaptation and survi
 test('actual MyTube topic coverage enables real matched story clips; unbound concepts do not',()=>{
  for(const plot of listTelegramStoryPlots('stress-relief-s1')){
   const result=inspectStoryPlotCoverage(plot.id);
-  assert.equal(result.readyForPlanning,true,plot.id);
-  assert.ok(result.candidateCount>=4);
+  assert.equal(result.readyForPlanning,false,plot.id);
+  assert.equal(result.candidateCount,0);
   assert.equal(result.mediaFidelity,'topic_matched_symbolic_approximation');
   assert.equal(result.physicalMediaVerified,false);
  }
@@ -157,4 +161,23 @@ test('actual MyTube topic coverage enables real matched story clips; unbound con
   assert.equal(result.readyForPlanning,false,plot.id);
   assert.equal(result.physicalMediaVerified,false);
  }
+});
+
+test('landscape verification rejects a physically portrait source',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'hh-dot-story-'));
+ try{
+  const candidates=storySceneCandidates(manifests);
+  await assert.rejects(verifyStoryShotSources({
+    scenes:candidates,sceneIds:candidates.map(s=>s.id),tempDir:dir,
+    executable:'/usr/bin/ffmpeg',fetcher:fakeFetch,
+    requireAspect:'landscape',
+    probe:async()=>({durationMs:5000,width:720,height:1280}),
+  }),/PHYSICAL_ASPECT_MISMATCH/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+test('missing physical source dimensions cannot masquerade as horizontal',()=>{
+ const fm={...manifests.filmManifest,
+   scenes:manifests.filmManifest.scenes.map(s=>({...s,width:undefined}))};
+ assert.throws(()=>storySceneCandidates({...manifests,filmManifest:fm}),
+   /SOURCE_GEOMETRY_MISSING/);
 });

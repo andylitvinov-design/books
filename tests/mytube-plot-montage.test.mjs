@@ -149,3 +149,12 @@ test('real owner Telegram path uses ranked alternatives and 16:9 by default',()=
   assert.match(code,/const sceneIds=matched\.map\(scene=>scene\.id\)/);
   assert.match(code,/sceneIds,tempDir:dir,executable,fetcher/);
 });
+
+test('edits of one original do not count as four independent films',async()=>{
+ const [plot]=await listMyTubePlots('money-mindset-s1','ru');
+ const same=stock.scenes.map(scene=>({...scene,originMasterKeys:['one-original']}));
+ const output=recommendMyTubePlotMontage({plot,scenes:same});
+ assert.equal(output.hasFourApprovedSources,false);
+ assert.deepEqual(output.clipIds,[]);
+ assert.deepEqual(output.additionalClipIds,[]);
+});
