@@ -96,6 +96,11 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
    assert.ok(source.includes(step),step);
  assert.equal(source.split('await consentBox.click();').length-1,3);
  assert.ok(!source.includes("await consentLabel.click()"));
- assert.match(source,/\}finally\{await recipient\.close\(\);\}[\s\S]{0,260}?await page\.bringToFront\(\);/,
-  "headed Safari must restore original tab focus before a real consent tap");
+ const firstClick=source.indexOf("await consentBox.click();");
+ const recipientOpen=source.indexOf("const recipient=await context.newPage();");
+ const recipientClose=source.indexOf("finally{await recipient.close();}");
+ assert.ok(firstClick>0&&recipientOpen>firstClick&&recipientClose>recipientOpen,
+  "headed WebKit must complete a real original-page click before opening the invitee tab");
+ assert.ok(!source.includes("await page.bringToFront()"),
+  "no original-tab interaction should depend on restoring focus after another tab");
 });

@@ -98,18 +98,6 @@ async function verifyGuestVoiceConsent(browser,locale){
     assert.equal(uri.search,"","the invited phrase must not enter server query or logs");
     assert.equal(uri.hash,"#t="+encodeURIComponent(phrase));
     await expect(page.locator("[data-guest-message-copy]")).toBeEnabled();
-    const recipient=await context.newPage();
-    try{
-      await recipient.goto(uri.href,{waitUntil:"domcontentloaded",timeout:90000});
-      await expect(recipient.locator("[data-guest-voice-message]")).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
-      await expect(recipient.locator("[data-guest-message-phrase]")).toHaveValue(phrase,{timeout:15000});
-      await expect(recipient.locator("[data-guest-message-consent]")).toHaveAttribute("aria-checked","false");
-      await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();
-    }finally{await recipient.close();}
-    // In headed macOS WebKit, opening/closing the invitee tab can leave the
-    // original guest page in the background; restore foreground for a real tap.
-    // Do not force consent state or bypass a user gesture.
-    await page.bringToFront();
     await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
     await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
     await page.locator("[data-guest-message-phrase]").fill(phrase);
@@ -129,6 +117,16 @@ async function verifyGuestVoiceConsent(browser,locale){
     await expect(start).toBeEnabled();
     await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
     await expect(page.locator("[data-guest-message-save]")).toHaveCount(0);
+    // The caller's consent is exercised while its tab has never left the foreground.
+    // Only afterwards open the independent recipient and prove no consent inherits.
+    const recipient=await context.newPage();
+    try{
+      await recipient.goto(uri.href,{waitUntil:"domcontentloaded",timeout:90000});
+      await expect(recipient.locator("[data-guest-voice-message]")).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
+      await expect(recipient.locator("[data-guest-message-phrase]")).toHaveValue(phrase,{timeout:15000});
+      await expect(recipient.locator("[data-guest-message-consent]")).toHaveAttribute("aria-checked","false");
+      await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();
+    }finally{await recipient.close();}
     assert.deepEqual(providerPosts,[],"guest invitation or consent cannot call a cloud TTS API");
   }finally{await context.close();}
 }
