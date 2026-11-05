@@ -14,7 +14,7 @@ Owner requested to release STSE rather than leave its UI permanently disabled. T
 - User selects one of 64 verified topic IDs, then one Now and one Want canonical state. No client diagnostic percentages, no crisis diagnosis, no required long survey.
 - Offline-only state normalizer, path planner, deterministic ranker. Optional intensity and self-described energy affect gentle pacing; one primary option + up to two diverse alternatives and localized explanations.
 - Current public recommendation pool: 4 legacy scenarios per topic = **256**. Every suggestion remains a symbolic editorial concept until existing licensed footage validation succeeds; no misleading `render_ready` status is returned by the text recommender.
-- User explicitly confirms a choice; canonical state IDs + optional energy + approved scenario ID, transition template/motif/style ID are kept only in sessionStorage (no free emotional prose and no cloud telemetry). Topic and previously confirmed legacy scenario are restored after refresh in the same tab.
+- User explicitly confirms a choice; canonical state IDs + optional energy + approved scenario ID, transition template/motif/style ID are kept only in sessionStorage (no free emotional prose and no cloud telemetry). The dedicated STSE selector remembers only canonical state IDs, optional energy and the user's confirmed choice within the current tab. The parent Video Director intentionally does NOT store topic navigation across refresh: users reselect a topic before applying a film, preserving its existing privacy and editor contracts.
 - The **existing** MyTube topic/story media resolver and `validateMontageClips` perform the real rights/media gates before compiling 4 verified MP4s. Existing phrase, voice, music, montage, timeline and export modules are preserved, without new API or paid provider.
 
 ## Expanded editorial atlas (not playable)
@@ -36,3 +36,6 @@ Owner requested to release STSE rather than leave its UI permanently disabled. T
 2. Owner-confirmed per-source media rights, playable MP4, visual approval and strong topic/plot/beat coverage, then status change from unbound only on evidence.
 3. Real iOS Safari/Chromium/WebKit gesture playback/export and audio compatibility for selected new scenario families before expansion goes public.
 4. Exact served Vercel production SHA + alias + true user-flow smoke; CI or `READY` alone is not proof.
+
+## Verified regression correction · 2026-11-05
+The first public-release PR #3577 auto-merged while independent Mandala tests were red: legacy Director-level no-storage safeguards (`tests/mandala-auto-video-director-ui.test.mjs` and `tests/stage-caption-track.test.mjs`) correctly rejected `sessionStorage` added directly to the shared Director. The smallest source repair removes only the parent-level topic/session persistence while **retaining** the dedicated opt-in STSE selector's canonical, tab-only choice record. The tests and their assertions remain unchanged. This is a separate mandatory production correction, not proof of new video coverage or a browser export.
