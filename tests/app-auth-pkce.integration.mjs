@@ -300,3 +300,7 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
  const rejected=await route.POST(forbidden,{params:Promise.resolve({path:['auth','start']})})
  assert.equal(rejected.status,400)
 })
+
+// Run the Telegram OIDC identity-proof and multilingual-entry suite inside the
+// existing mandatory App R1 PKCE job; never leave this security test orphaned.
+await import('./app-telegram-oidc-login.test.mjs')
