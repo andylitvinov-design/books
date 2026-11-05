@@ -203,24 +203,24 @@ const translations = {
 
 const workspaceCopy = {
  ru:{
-  video:{tab:"Стиль видео",title:"Стиль видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
-  phrases:{tab:"Фразы и гипнокоррекция",title:"Фразы и гипнокоррекция",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
+  video:{tab:"Цели",title:"Цели видео",desc:"Выберите цель и тему, опишите запрос для будущего видео."},
+  phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Идеи, фразы поддержки и по желанию голос и музыка."},
   effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
   editor:{tab:"Монтаж",title:"Быстрая генерация",desc:"Видеостиль, фото, голос и музыка — основные настройки видео."}
  },
  en:{
-  video:{tab:"Video style",title:"Video style",desc:"Real film scenes, atmosphere and visual direction."},
-  phrases:{tab:"Phrases & hypnocorrection",title:"Phrases & hypnocorrection",desc:"Your intention, support phrases and optional voice or music."},
+  video:{tab:"Goals",title:"Video goals",desc:"Choose your goal and topic, then describe the video you want."},
+  phrases:{tab:"Ideas",title:"Video ideas",desc:"Ideas, supportive phrases and optional voice or music."},
   effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
   editor:{tab:"Montage",title:"Quick generation",desc:"Video styles, photo, voice and music — the essential settings."}
  },
  es:{
-  video:{tab:"Estilo vídeo",title:"Estilo de vídeo",desc:"Escenas reales, ambiente y estilo visual."},
-  phrases:{tab:"Frases e hipnocorrección",title:"Frases e hipnocorrección",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
+  video:{tab:"Objetivos",title:"Objetivos del vídeo",desc:"Elige tu objetivo y tema y describe el vídeo que deseas."},
+  phrases:{tab:"Ideas",title:"Ideas para el vídeo",desc:"Ideas, frases de apoyo y voz o música opcionales."},
   effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
@@ -229,14 +229,14 @@ const workspaceCopy = {
 } as const;
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"editor",Icon:Scissors},
- {id:"phrases",Icon:Heart},{id:"effects",Icon:Sparkles},
+ {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
+ {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
  {id:"practices",Icon:Leaf},{id:"pro",Icon:Zap}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Стиль",editor:"Монтаж",phrases:"Фразы",effects:"Гипно",practices:"Курс",pro:"PRO"},
- en:{video:"Style",editor:"Edit",phrases:"Phrases",effects:"Hypno",practices:"Course",pro:"PRO"},
- es:{video:"Estilo",editor:"Montaje",phrases:"Frases",effects:"Hipno",practices:"Curso",pro:"PRO"}
+ ru:{video:"Цели",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO"},
+ en:{video:"Goals",editor:"Edit",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO"},
+ es:{video:"Metas",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO"}
 } as const;
 
 const studioCopy = {
@@ -4117,6 +4117,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         behavior:"smooth",block:"start",
       })));
   };
+  const continueToIdeas = () => {
+    // The sole primary action: interpret the local request through the existing
+    // classification handler, preserve the draft, then advance to Ideas.
+    // No new renderer, network request or separate media workspace is created.
+    const designButton=document.querySelector<HTMLButtonElement>("[data-video-request-design]");
+    if(designButton&&!designButton.disabled)designButton.click();
+    // Keep the original storyboard discoverable when Goals is revisited.
+    setVideoScenarioOpen(true);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+    setIntroPlaying(false);
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-quick-controls]")?.scrollIntoView({
+        behavior:"instant" as ScrollBehavior,block:"start",
+      })));
+  };
   const deepAudioPane = (
       <section className={videoStyles.audioSection} id="video-audio" data-video-audio-section aria-labelledby="video-audio-heading">
         <div className={videoStyles.blockHeading}>
@@ -4851,12 +4868,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"3. Describe tu idea":"3. Describe your request"}</h4>
             <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
             <button type="button" className={videoStyles.quickPromptContinue}
-              data-video-continue-scenarios
+              data-video-continue-scenarios data-video-continue-ideas="true"
               disabled={!studioHydrated||recording||preparing}
-              onClick={openVideoScenarioStep}>
-              <Film size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Продолжить к созданию видео":
-                locale==="es"?"Continuar para crear el vídeo":"Continue to video creation"}</span>
+              onClick={continueToIdeas}>
+              <Heart size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее: идеи для видео":
+                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>

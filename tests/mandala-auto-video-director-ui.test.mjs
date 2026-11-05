@@ -438,11 +438,19 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 });
 
 
-test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
-  const handler=director.slice(director.indexOf(start),director.indexOf(end));
-  assert.ok(handler.length>0,start+" exists");
-  for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
-   assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
+test("text edits, profile changes and explicit Design all invalidate stale MyTube plots",()=>{
+ const handlers=[
+  ["const requestField=<label","const requestInput=<div"],
+  ["const applyProfile=","const designFromRequest="],
+  ["const designFromRequest=","const analyzedPath="]
+ ];
+ for(const [start,end] of handlers){
+  const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
+  assert.ok(from>=0&&to>from,start+" has a real, bounded handler");
+  const handler=director.slice(from,to);
+  for(const setter of ["setSelectedSubcategoryId","setSelectedTopicId",
+    "setSelectedScenarioId","setSelectedPlotId","setSymbolicPlotFallback",
+    "setTimelineEdits","setConfirmedTimelineKey"])
+    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
 });

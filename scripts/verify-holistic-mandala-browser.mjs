@@ -187,7 +187,16 @@ const runEngine = async ([engine, browserType]) => {
         const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
         await expect(customInput).toBeVisible({timeout:12000});
         await expect(continueButton).toBeEnabled();
+        await expect(continueButton).toHaveAttribute("data-video-continue-ideas","true");
         await expect(initialStories.first()).toBeHidden();
+        assert.deepEqual(await quick.locator("[data-video-quick-controls] button")
+          .evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-video-quick-control"))),
+          ["video","phrases","editor","effects","practices","pro"],
+          engine+" "+locale+" "+width+" Goals must be followed immediately by Ideas");
+        await expect(quick.locator('[data-video-quick-control="video"]'))
+          .toHaveAttribute("aria-label",locale==="ru"?"Цели":locale==="es"?"Objetivos":"Goals");
+        await expect(quick.locator('[data-video-quick-control="phrases"]'))
+          .toHaveAttribute("aria-label",locale==="ru"?"Идеи":"Ideas");
         await expect(quick.locator("[data-video-request-design]")).toBeHidden();
         await expect(quick.locator("[data-video-request-analysis]")).toBeHidden();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeHidden();
@@ -259,8 +268,16 @@ const runEngine = async ([engine, browserType]) => {
         await expect(initialStories.first()).toBeHidden();
         const submittedRequest=await customInput.inputValue();
         await continueButton.click();
+        const ideasTab=quick.locator('[data-video-quick-control="phrases"]');
+        const goalsTab=quick.locator('[data-video-quick-control="video"]');
+        await expect(ideasTab).toHaveAttribute("aria-pressed","true");
+        await expect(quick.locator('[data-video-quick-phrases]')).toBeVisible();
+        await expect(initialStories.first()).toBeHidden();
+        await goalsTab.click();
+        await expect(goalsTab).toHaveAttribute("aria-pressed","true");
+        await expect(customInput).toHaveValue(submittedRequest);
         await expect(initialStories.first()).toBeVisible({timeout:20000});
-        await expect(quick.locator("[data-video-request-design]")).toBeVisible();
+        await expect(quick.locator("[data-video-request-design]")).toBeHidden();
         if(submittedRequest.trim()){
           await expect(quick.locator("[data-video-request-analysis]")).toBeVisible();
         }
@@ -280,6 +297,28 @@ const runEngine = async ([engine, browserType]) => {
           "extra suggestions belong to step two; the editable brief stays in the first step");
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
+        const colors=await page.evaluate(()=>{
+          const style=selector=>{
+            const node=document.querySelector(selector);
+            return node?getComputedStyle(node):null;
+          };
+          return {
+            canvas:style('main[data-mandala-mode="video"]')?.backgroundImage||"",
+            card:style('[data-video-quick-section="1"]')?.backgroundColor||"",
+            primary:style('[data-video-continue-ideas]')?.backgroundColor||"",
+            active:style('[data-video-quick-control="video"]')?.backgroundColor||""
+          };
+        });
+        if(width<=759){
+          assert.match(colors.canvas,/rgb\(255, 247, 243\)/,
+            "Design Bible v1.3 warm peach canvas: "+JSON.stringify(colors));
+          assert.equal(colors.card,"rgb(255, 252, 250)",
+            "Design Bible warm ivory surface");
+          assert.equal(colors.primary,"rgb(7, 136, 95)",
+            "one Design Bible emerald CTA");
+          assert.equal(colors.active,"rgb(7, 136, 95)",
+            "selected Goals tab uses the same emerald");
+        }
         // Free Help is a real launcher for #2913's existing AI Director; it
         // cannot start AI requests until the user checks the explicit opt-in.
         const helpDetails=quick.locator("[data-video-director-chat-details]");

@@ -9,12 +9,12 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","editor","phrases","effects","practices","pro"]);
+ assert.deepEqual(ids,["video","phrases","editor","effects","practices","pro"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/Фразы и гипнокоррекция/);
+ assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
  assert.match(studio,/Гипноэффекты/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -181,7 +181,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Стиль видео"','tab:"Фразы и гипнокоррекция"','tab:"Гипноэффект"',
+  const expected=['tab:"Цели"','tab:"Идеи"','tab:"Гипноэффект"',
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -216,7 +216,7 @@ test("unified Hypnocorrection editor appears first in the Phrases workspace",()=
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ["Фразы и гипнокоррекция","Phrases & hypnocorrection","Frases e hipnocorrección"])
+ for(const label of ['video:{tab:"Цели"','phrases:{tab:"Идеи"','video:{tab:"Goals"','phrases:{tab:"Ideas"','video:{tab:"Objetivos"'])
    assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
@@ -231,7 +231,8 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
  const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
- assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second");
+ assert.ok(tabs.indexOf('id:"video"')<tabs.indexOf('id:"phrases"') &&
+   tabs.indexOf('id:"phrases"')<tabs.indexOf('id:"editor"'),"Goals then Ideas, then Montage");
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");

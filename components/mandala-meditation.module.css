@@ -262,3 +262,11 @@
     padding-top:0!important;
   }
 }
+
+/* Design Bible v1.3: Studio Warm Peach only for the Video entry on phones.
+   Photo Mandala and other site surfaces retain their existing approved theme. */
+@media(max-width:759px){
+  .page[data-mandala-mode="video"]{
+    background:linear-gradient(180deg,#FFF7F3 0%,#FFF0E8 100%)!important;
+  }
+}
