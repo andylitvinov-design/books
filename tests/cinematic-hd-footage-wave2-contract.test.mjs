@@ -47,6 +47,9 @@ test("one-time video review yields two real H264 MP4 aspect edits, mandatory tec
  assert.match(src,/editorialApproval:false/);
  assert.match(src,/readyForPublication:false/);
  assert.match(src,/notNativePortraitHD:true/);
- assert.match(src,/output=resolve\(root,"artifacts\/cinematic-dareful-wave2-20261105"\)/);
+ assert.match(src,/artifacts\/cinematic-dareful-wave2-20261105/);
+ assert.match(src,/HH_CINEMATIC_RETRY_ZERO/);
+ assert.match(src,/retryIds=new Set/);
+ assert.match(src,/cinematic-dareful-wave2-retry-20261105/);
  assert.doesNotMatch(src,/writeFileSync\([^\n]*public\//);
 });
