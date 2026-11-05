@@ -182,6 +182,66 @@ const runEngine = async ([engine, browserType]) => {
         })));
         assert.ok(goalRects.every(rect=>Math.abs(rect.y-goalRects[0].y)<=2),
           engine+" "+locale+" "+width+" five categories must share one row: "+JSON.stringify(goalRects));
+        const continueButton=quick.locator("[data-video-continue-scenarios]");
+        const customInput=quick.locator("[data-video-request-after-topic] [data-auto-video-input]");
+        const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
+        await expect(customInput).toBeVisible({timeout:12000});
+        await expect(continueButton).toBeEnabled();
+        await expect(initialStories.first()).toBeHidden();
+        await expect(quick.locator("[data-video-practice-shortcuts]")).toBeHidden();
+        await expect(quick.locator("[data-video-procedural-options]")).toBeHidden();
+        await expect(page.locator("[data-mentalica-studio-mode]")).toBeHidden();
+        await expect(quick.locator("[data-video-open-photo-mandala]")).toBeVisible();
+        assert.match(await quick.locator("[data-video-open-photo-mandala]").getAttribute("href") || "",
+          /\?mode=photo$/,"Photo Mandala remains accessible without a duplicate tall tab bar");
+        // Fixed bottom dock, page content and Safari-like short viewports:
+        // this checks actual DOM geometry, not just CSS selectors or HTTP 200.
+        const checkFirstScreen=async height=>{
+          await page.setViewportSize({width,height});
+          return page.evaluate(()=>{
+            const rect=selector=>{
+              const el=document.querySelector(selector);
+              if(!el)return null;
+              const b=el.getBoundingClientRect();
+              return {x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom,right:b.right};
+            };
+            const fixedDocks=Array.from(document.querySelectorAll("nav")).flatMap(node=>{
+              const style=getComputedStyle(node),b=node.getBoundingClientRect();
+              return (style.position==="fixed"||style.position==="sticky") &&
+                b.height>=44 && b.y>=innerHeight*0.55 && b.y<innerHeight
+                ?[b.top]:[];
+            });
+            return {height:innerHeight,width:innerWidth,
+              pageWidth:document.documentElement.scrollWidth,
+              hero:rect("[data-video-mandala-hero]"),
+              goals:rect("[data-video-director-goal-controls]"),
+              topic:rect("[data-video-director-topic-controls]"),
+              input:rect("[data-video-request-after-topic] [data-auto-video-input]"),
+              cta:rect("[data-video-continue-scenarios]"),
+              visibleBottom:Math.min(innerHeight,...fixedDocks)};
+          });
+        };
+        for(const height of [820,700]){
+          if(height===700 && width!==320 && width!==390)continue;
+          const g=await checkFirstScreen(height);
+          assert.ok(g.hero&&g.goals&&g.topic&&g.input&&g.cta,
+            engine+" "+locale+" "+width+" missing source-backed entry controls");
+          assert.ok(g.pageWidth<=width+2,
+            engine+" "+locale+" "+width+" horizontal overflow: "+JSON.stringify(g));
+          assert.ok(g.hero.width/g.hero.height>1.69&&g.hero.width/g.hero.height<1.87,
+            engine+" "+locale+" "+width+" preview must be true 16:9: "+JSON.stringify(g.hero));
+          assert.ok(g.hero.bottom<g.goals.y&&g.goals.bottom<g.topic.y&&
+            g.topic.bottom<=g.input.y&&g.input.bottom<g.cta.y,
+            engine+" "+locale+" "+width+" compact flow order: "+JSON.stringify(g));
+          assert.ok(g.cta.y>=0&&g.cta.bottom<=g.visibleBottom-6,
+            engine+" "+locale+" "+width+" "+height+"px CTA blocked by dock/below fold: "+JSON.stringify(g));
+          if(locale==="ru"&&width===390&&height===700){
+            mkdirSync("artifacts/mandala-audio",{recursive:true});
+            await page.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-390-first-screen-700.png",
+              animations:"disabled",timeout:30000});
+          }
+        }
+        if(width===320||width===390)await page.setViewportSize({width,height:820});
         await expect(topicCards.first()).toBeVisible({timeout:10000});
         assert.equal(await topicCards.count(),6,"six subcategories visible on entry");
         await goalCards.nth(1).click();
@@ -193,22 +253,24 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await topicCards.nth(2).isDisabled(),true,"third choice is blocked");
         await topicCards.nth(1).click();
         assert.equal(await topicCards.nth(2).isEnabled(),true,"deselecting frees one choice");
-        const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
+        assert.equal(await initialStories.count(),4,"the four licensed choices stay mounted for step 2");
+        await expect(initialStories.first()).toBeHidden();
+        await continueButton.click();
         await expect(initialStories.first()).toBeVisible({timeout:20000});
-        assert.equal(await initialStories.count(),4,"four verified scenario choices are visible before a click");
         await expect(quick.locator("[data-auto-video-confirm]")).toBeVisible();
+        await expect(quick.locator("[data-video-practice-shortcuts]")).toBeVisible();
         const initialAdvanced=quick.locator("[data-video-advanced-toggle]");
         assert.equal(await initialAdvanced.count(),1,"advanced style settings stay reusable in Montage");
         assert.equal(await initialAdvanced.isVisible(),false,
           "old Video-level advanced button is not displayed");
         const topicPanel=quick.locator("[data-auto-video-topic-panel]");
         const recommendations=topicPanel.locator("[data-auto-video-popular-topics]");
-        const customInput=topicPanel.locator("[data-auto-video-input]");
         await expect(recommendations).toBeVisible();
         await expect(customInput).toBeVisible();
         const topicOrder=await Promise.all([recommendations,customInput].map(async node=>
           node.evaluate(el=>el.getBoundingClientRect().top)));
-        assert.ok(topicOrder[1]>topicOrder[0],"popular suggestions must precede manual input");
+        assert.ok(topicOrder[1]>topicOrder[0],
+          "extra suggestions belong to step two; the editable brief stays in the first step");
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
         // Free Help is a real launcher for #2913's existing AI Director; it

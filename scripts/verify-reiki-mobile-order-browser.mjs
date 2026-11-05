@@ -106,7 +106,23 @@ try {
         [path,"Reiki support · Andy · 30 min"]);
       await page.goto(origin + path + "?hh_enquiry=google", {waitUntil:"domcontentloaded"});
       const resumed = page.locator('dialog[open] [data-remote-public-order-contact]');
-      await resumed.waitFor({state:"visible",timeout:30000});
+      try {
+        await resumed.waitFor({state:"visible",timeout:30000});
+      } catch (error) {
+        // Boolean-only synthetic diagnostics; never print private draft,
+        // account identity, phone, contact, token or session contents.
+        const status = await page.evaluate(() => ({
+          path: window.location.pathname,
+          healing: Boolean(document.querySelector('[data-support-healing-panel]')),
+          dialogOpen: Boolean(document.querySelector('dialog[open][aria-labelledby="support-master-order-title"]')),
+          contactVisible: Boolean(document.querySelector('[data-remote-public-order-contact]')),
+          publicDraftPresent: Boolean(window.sessionStorage.getItem('hh:remote-energy-support:public-enquiry:v1')),
+          oauthMarkerPresent: Boolean(window.sessionStorage.getItem('hh-google-enquiry-return')),
+        }));
+        console.error("REIKI_PUBLIC_RESUME_DIAGNOSTICS", JSON.stringify(status),
+          "pageErrorCount=" + errors.length);
+        throw error;
+      }
       assert.equal(new URL(page.url()).pathname,path,locale+": resumes same public modal");
       assert.equal(await resumed.locator('button[type="submit"]').isDisabled(),true);
       await resumed.locator('input[type="tel"]').fill("416 555 1234");

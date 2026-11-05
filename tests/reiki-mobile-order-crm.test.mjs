@@ -130,3 +130,25 @@ test("the existing Google or phone consent path writes only after a real server 
   assert.match(endpoint, /createPublicServiceEnquiry\(config, payload, readPublicEnquiryAttribution\(request\)\)/);
   assert.match(read("lib/practitioners/public-service-enquiry.js"), /app\.crm_contacts/);
 });
+
+test("Google return restores a vetted public Reiki draft without skipping consent", () => {
+  const page = read("app/[locale]/holistic-support/mobile/page.tsx");
+  const mobile = read("components/holistic-support-mobile.tsx");
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const booking = read("components/remote-energy-support-booking.tsx");
+  const browser = read("scripts/verify-reiki-mobile-order-browser.mjs");
+  assert.match(page, /query\.hh_enquiry === "google"/);
+  assert.match(page, /resumePublicEnquiry \? "healing"/);
+  assert.match(page, /resumePublicEnquiry=\{resumePublicEnquiry\}/);
+  assert.match(mobile, /resumePublicEnquiry=\{resumePublicEnquiry && choice === "healing"\}/);
+  assert.match(gallery, /readRemoteSupportPublicDraft\(window\.sessionStorage, item\.serviceId\)/);
+  assert.match(gallery, /remoteSupportPublicServiceTitle\(draft\)/);
+  assert.match(gallery, /draft\.practitioner !== item\.name/);
+  assert.match(gallery, /setSelectedId\(master\.serviceId\);\s*setOrderOpen\(true\)/);
+  assert.match(booking, /if \(!markerValid && !resumePublicEnquiry\) return/);
+  assert.match(booking, /draft\.practitioner !== selected\.name/);
+  assert.match(browser, /REIKI_PUBLIC_RESUME_DIAGNOSTICS/);
+  assert.match(browser, /await resumed\.waitFor\(\{state:"visible",timeout:30000\}\)/);
+  assert.match(browser, /requests\[0\]\.contactConsent,true/);
+  assert.doesNotMatch(booking, /router\.push|createPaymentIntent/);
+});

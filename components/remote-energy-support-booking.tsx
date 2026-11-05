@@ -279,6 +279,7 @@ function localDateToday() {
 export function RemoteEnergySupportBooking({
   locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
   initialGoal = "", initialIntention = "", initialTalismanId = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
+  resumePublicEnquiry = false,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
@@ -289,6 +290,8 @@ export function RemoteEnergySupportBooking({
   /** Shown for review; never submitted until the user confirms the secure enquiry. */
   initialIntention?: string;
   initialTalismanId?: string;
+  /** May restore only a vetted public selection; consent is never implied. */
+  resumePublicEnquiry?: boolean;
   onKindChange?: (kind: SupportRequestKind) => void;
   compactFinder?: boolean;
   priceBudget?: PriceBudget;
@@ -363,8 +366,12 @@ export function RemoteEnergySupportBooking({
       const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
       const draft = readRemoteSupportPublicDraft(window.sessionStorage, selected.serviceId);
       if (!draft) return;
-      if (pending?.path !== window.location.pathname ||
-          pending?.service !== remoteSupportPublicServiceTitle(draft)) return;
+      const markerValid = pending?.path === window.location.pathname &&
+        pending?.service === remoteSupportPublicServiceTitle(draft);
+      // An existing verified public draft may outlive its one-use OAuth marker.
+      // The server-provided same-origin return flag never grants CRM consent.
+      if (!markerValid && !resumePublicEnquiry) return;
+      if (draft.practitioner !== selected.name) return;
       setContactDraft(draft);
       setGoal(draft.goal);
       setMethod(draft.method);
@@ -374,7 +381,7 @@ export function RemoteEnergySupportBooking({
       setTime(draft.time);
       setTimezone(draft.timezone);
     } catch { /* An unavailable store never creates an order or payment. */ }
-  }, [mode, selected?.serviceId]);
+  }, [mode, selected?.serviceId, selected?.name, resumePublicEnquiry]);
   useEffect(() => {
     if (!contactDraft) return;
     window.requestAnimationFrame(() =>
