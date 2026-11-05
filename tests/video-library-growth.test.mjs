@@ -20,7 +20,8 @@ test("catalog plan counts real approved clips, not candidate HLS URLs or editori
   assert.ok(args.catalog.scenes.length>=44);
   assert.equal(plan.currentApprovedCatalogRecords,args.catalog.scenes.length);
   assert.equal(plan.minimumAdditionalApprovedMasters,Math.max(0,320-args.catalog.scenes.length));
-  assert.equal(plan.pendingCandidateSources,16);
+  assert.equal(plan.pendingCandidateSources,12);
+  assert.equal(plan.candidateSourcesAlreadyInPublishedProvenance,4);
   assert.equal(plan.newlyPublishedByThisPlanner,0);
   assert.equal(plan.editorialCategories,4);
   assert.equal(plan.editorialTopics,64);

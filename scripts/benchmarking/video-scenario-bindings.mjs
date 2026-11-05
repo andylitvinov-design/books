@@ -18,10 +18,10 @@ const fail=()=>{throw Error('VIDEO_SCENARIO_CANDIDATE_AUDIT_FAILED');};
 export function auditCanonicalVideoScenarioCandidates({scenes,evidence}){
   const taxonomy=auditVideoGoalTaxonomy();
   if(taxonomy.ok!==true||taxonomy.scenarios!==120||
-     !Array.isArray(scenes)||scenes.length!==44||new Set(scenes.map(s=>s.id)).size!==44||
+     !Array.isArray(scenes)||scenes.length<44||new Set(scenes.map(s=>s.id)).size!==scenes.length||
      evidence?.status!=='pass'||evidence?.schemaVersion!=='hh-verified-assets-v1'||
-     evidence?.assets?.length!==44||
-     new Set(evidence.assets.map(x=>x.id)).size!==44)fail();
+     evidence?.assets?.length!==scenes.length||
+     new Set(evidence.assets.map(x=>x.id)).size!==scenes.length)fail();
   // Evidence must match the *actual* exact scene paths/hashes for all 44.
   // Merely declaring status=pass is never sufficient proof.
   if(scenes.some(scene=>inspectVerifiedVideoAsset(scene,evidence).status!=='technical_ready'))fail();

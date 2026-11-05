@@ -95,7 +95,7 @@ test("insufficient plot media offers only explicitly opted-in, rights-validated 
   assert.match(ui,/setSymbolicPlotFallback\(true\)/);
   assert.match(ui,/setSelectedPlotId\(plotId\);setSymbolicPlotFallback\(false\)/);
   assert.match(ui,/setSelectedScenarioId\(""\);setSelectedPlotId\(""\);setSymbolicPlotFallback\(false\)/);
-  assert.match(ui,/validateMontageClips\(\[\.\.\.chosen\.clips\],scenes,proposal\?\.excludedMotifs\|\|\[\]\)/);
+  assert.match(ui,/validateMontageClips\(\[\.\.\.chosen\.clips\],scenes,proposal\?\.excludedMotifs\|\|\[\],aspect\)/);
   assert.match(ui,/data-plot-media-mode/);
   assert.match(ui,/fallbackEnabled&&selectedTaxonomyPlot&&chosen/);
   assert.match(ui,/plotLacksApprovedClips/);
