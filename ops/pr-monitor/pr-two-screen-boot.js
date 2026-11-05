@@ -16,9 +16,14 @@
       '<script src="/pr-two-screen.js?v=20261104-evidence-3501" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261104-kpi1">'+
       '<script src="/pr-three-kpi-ui.js?v=20261104-kpi1" defer><\/script>';
-    // Disable only the old layout reordering script, without removing any
-    // source asset or changing any KPI/event processing modules.
-    html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js" ><\/script>');
+    // Preserve the manually deployed LIVE monitor extensions; source archives in
+    // GitHub intentionally contain only a subset of the 100+ production assets.
+    additions += '<link rel="stylesheet" href="/pr-monitor-fluid.css?v=20261105-v1">'+
+      '<script src="/pr-merge-velocity-ui.js?v=20261105-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-velocity-three-lines.css?v=20261105-v1">'+
+      '<script src="/pr-velocity-three-lines.js?v=20261105-v1" defer><\/script>';
+    // Disable only old layout reordering, preserving all sources and working APIs.
+    html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
     document.open();document.write(html);document.close();
   } catch(e) {
