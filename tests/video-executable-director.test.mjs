@@ -62,12 +62,16 @@ test("negated visuals are not scored as positive subjects",()=>{
 });
 test("requested silence and no captions remain silent and caption-free",()=>{
   const script=compileExecutableVideoScenario({...base,
-    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}});
+    draft:{...draft,duration:10,aspect:"portrait",music:"none",phrases:false}});
   assert.equal(script.audio.kind,"silent");
   assert.equal(script.audio.trackId,"none");
   assert.ok(script.edit.captionTexts.every(x=>x===""));
   assert.equal(script.shots.reduce((sum,s)=>sum+s.durationSeconds,0),10);
   assert.ok(script.shots.every(s=>s.durationSeconds>=2));
+  // No square-native MP4 is in this rights-checked inventory.
+  assert.throws(()=>compileExecutableVideoScenario({...base,
+    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}}),
+    /unlicensed_or_excluded_video_scene/);
 });
 test("AI cannot invent clip, duplicate source, bypass excluded motif or distort duration",()=>{
   const candidates=executableSceneCandidates({presetId:base.selectedPresetId,

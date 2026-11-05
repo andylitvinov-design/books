@@ -153,7 +153,7 @@ test('actual MyTube topic coverage enables real matched story clips; unbound con
   const result=inspectStoryPlotCoverage(plot.id);
   assert.equal(result.readyForPlanning,false,plot.id);
   assert.equal(result.candidateCount,0);
-  assert.equal(result.mediaFidelity,'topic_matched_symbolic_approximation');
+  assert.equal(result.mediaFidelity,'unverified_editorial_plot');
   assert.equal(result.physicalMediaVerified,false);
  }
  for(const plot of listTelegramStoryPlots('life-purpose-s1')){
