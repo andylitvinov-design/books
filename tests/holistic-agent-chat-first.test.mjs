@@ -46,5 +46,23 @@ test('the mobile transcript contains sent messages, inline errors, settings and 
  assert.ok(agent.includes('{!compact&&<details className={styles.programPanel}'))
  const workspace=source('components/app/messenger-ai-workspace.jsx')
  assert.doesNotMatch(workspace,/css\.(welcome|prepared|footer)/)
- assert.ok(workspace.includes('<HolisticAgentChat locale={locale} compact quickPrompt={quickPrompt}/>'))
+ assert.ok(workspace.includes('<HolisticAgentChat locale={locale} compact/>'))
+ assert.ok(agent.includes('data-hh-ai-welcome'))
+ assert.ok(agent.includes('data-hh-ai-start="video"'))
+ assert.ok(agent.includes('data-hh-ai-start="meditation"'))
+ assert.ok(agent.includes('isCasualGreeting(text)'))
+})
+
+test('RU EN ES greetings answer without a paid model; focused iPhone editor fills visible viewport',()=>{
+ for(const [locale,message] of [['ru','Привет Ау'],['ru','Ау'],['en','Hello'],['es','Hola']]){
+  const reply=explainUserQuestion(message,locale,{status:'clarify'})
+  assert.ok(reply&&reply.length>20,locale+': '+message)
+ }
+ const hub=source('components/app/messages-orders-clients.jsx')
+ const navCss=source('app/unified-mobile-dock.css')
+ assert.ok(hub.includes('const limit=editing?bottom:Math.min(bottom'))
+ assert.ok(navCss.includes('data-chat-editing="true"'))
+ const css=source('components/holistic-agent-chat.module.css')
+ assert.ok(css.includes('.startActions button'))
+ assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))
 })

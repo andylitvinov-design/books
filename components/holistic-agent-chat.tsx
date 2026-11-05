@@ -90,6 +90,38 @@ const copy = {
     programStep:"Paso",programNoMedia:"Esquema escrito; no es un vídeo listo."},
 } as const;
 
+const messengerStarter = {
+ ru:{
+  welcome:"Приветствую! Я помогу вам создать отличное видео или подобрать медитацию. С чего начнём? Или напишите, что вам сейчас актуально.",
+  hello:"Я здесь! Давайте начнём: хотите создать видео, подобрать медитацию или обсудить другую задачу?",
+  video:"Создать видео",meditation:"Подобрать медитацию",actions:"Выберите, с чего начать",
+  videoIntent:"Хочу создать видео",meditationIntent:"Хочу подобрать медитацию",
+  videoQuestion:"С удовольствием! Для начала расскажите, о чём будет видео и что вы хотите почувствовать или изменить после просмотра.",
+  meditationQuestion:"Конечно! Как вы себя чувствуете сейчас и к какому состоянию хотите прийти с помощью медитации?",
+ },
+ en:{
+  welcome:"Welcome! I can help you create a beautiful personal video or find a meditation. Which shall we start with? Or tell me what matters to you now.",
+  hello:"I'm here! Would you like to create a video, find a meditation, or talk about something else?",
+  video:"Create a video",meditation:"Find a meditation",actions:"Choose where to start",
+  videoIntent:"I want to create a video",meditationIntent:"I want to find a meditation",
+  videoQuestion:"Of course! What would you like the video to be about, and how would you like to feel after watching it?",
+  meditationQuestion:"Of course! How do you feel right now, and how would you like to feel after the meditation?",
+ },
+ es:{
+  welcome:"¡Bienvenido! Puedo ayudarte a crear un bonito vídeo personal o encontrar una meditación. ¿Por dónde empezamos? O escribe lo que necesitas hoy.",
+  hello:"¡Aquí estoy! ¿Quieres crear un vídeo, elegir una meditación o hablar de otra cosa?",
+  video:"Crear un vídeo",meditation:"Elegir una meditación",actions:"Elige cómo empezar",
+  videoIntent:"Quiero crear un vídeo",meditationIntent:"Quiero elegir una meditación",
+  videoQuestion:"¡Claro! ¿De qué te gustaría que tratara el vídeo y cómo quieres sentirte después de verlo?",
+  meditationQuestion:"¡Claro! ¿Cómo te sientes ahora y cómo te gustaría sentirte después de la meditación?",
+ },
+} as const;
+function isCasualGreeting(raw:string):boolean {
+ const text=raw.toLocaleLowerCase().normalize("NFKC").replace(/[!?,.¿¡]+/g," ").replace(/\s+/g," ").trim();
+ // Only exact simple greetings. Do not intercept risk, privacy or other requests.
+ return /^(?:привет|приветик|здравствуй|здравствуйте|доброе утро|добрый день|добрый вечер|ау|ауу|алло|привет ау|ау привет|ты тут|hi|hello|hey|hi there|hello there|hola|buenas|buenos dias)$/.test(text);
+}
+
 type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
   destroy?:()=>void };
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
@@ -99,6 +131,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
  locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null
 }) {
   const t=copy[locale];
+  const starter=messengerStarter[locale];
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -110,6 +143,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
+  const [entryOpen,setEntryOpen]=useState(true);
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [status,setStatus]=useState("");
@@ -171,10 +205,28 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     finally{setOutlineBusy(false);}
   }
 
+  function startGuided(kind:"video"|"meditation") {
+    if(busy)return;
+    followTail.current=true;setNewBelow(false);
+    setFormat(kind==="video"?"video":"audio");
+    setEntryOpen(false);setStatus("");setSource("");setChoices([]);
+    setDraft("");
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:kind==="video"?starter.videoIntent:starter.meditationIntent},
+      {role:"assistant" as const,text:kind==="video"?starter.videoQuestion:starter.meditationQuestion},
+    ].slice(-30));
+  }
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
+    if(compact&&isCasualGreeting(text)){
+      followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:starter.hello}].slice(-30));
+      return;
+    }
+    setEntryOpen(false);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
     // Bound unusually long assistant replies without altering user risk cues.
     const prior=messages.slice(-6).map(row=>({
@@ -289,10 +341,19 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&settings}
-      {compact&&!messages.length&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
-      {!messages.length&&<p className={styles.muted}>{t.start}</p>}
+      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
+      {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+        <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
+          <span aria-hidden="true">🎬</span>{starter.video}
+        </button>
+        <button type="button" data-hh-ai-start="meditation" disabled={busy} onClick={()=>startGuided("meditation")}>
+          <span aria-hidden="true">🪷</span>{starter.meditation}
+        </button>
+      </div>}
+      {compact&&settings}
+      {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -319,7 +380,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>

@@ -66,3 +66,9 @@ body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
  [data-hh-unified-dock][data-hh-home-route]{display:none!important}
  body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
 }
+
+/* During editing the composer owns the iOS visual viewport, even while the keyboard animates. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-chat-editing="true"]) [data-hh-unified-dock]{display:none!important}
+ body:has(.hh-messages-page [data-chat-editing="true"]) .hh-app.hh-messages-page{padding-bottom:0!important}
+}

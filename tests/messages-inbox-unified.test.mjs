@@ -123,7 +123,7 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages uses the one six-destination global dock; legacy five-dock stays unmounted',()=>{
+test('Messages uses the one seven-destination global dock; legacy five-dock stays unmounted',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const layout=read('app/layout.tsx')
   const dock=read('components/unified-mobile-dock.tsx')
@@ -142,7 +142,7 @@ test('Messages uses the one six-destination global dock; legacy five-dock stays 
   assert.match(oldNav,/className="hh-mobile-app-nav"/)
   assert.match(workspace,/const mobileNav = \[/)
   assert.match(css,/data-keyboard-open="true"/)
-  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','ai','practice','master','profile'])
+  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','ai','practice','master','profile','analysis'])
   for(const locale of ['en','ru','es']){
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
