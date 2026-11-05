@@ -38,7 +38,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/golden-rain.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "cosmic-flow",
@@ -76,7 +85,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/cosmic-flow.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "abundance-tree",
@@ -115,7 +133,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/abundance-tree.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "opportunity-falls",
@@ -152,7 +179,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/opportunity-falls.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "money-magnet",
@@ -189,7 +225,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/money-magnet.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "path-to-goals",
@@ -224,7 +269,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/path-to-goals.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "partners",
@@ -258,7 +312,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/partners.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "infinite-flow",
@@ -295,7 +358,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/infinite-flow.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "golden-shield",
@@ -330,7 +402,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/golden-shield.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "abundance-circle",
@@ -367,7 +448,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/abundance-circle.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "life-gifts",
@@ -404,7 +494,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/life-gifts.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "dreams",
@@ -441,7 +540,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 720,
+      "height": 1280,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "legacy-export:/videos/holistic-house/money-films-v1/dreams.mp4"
+      ],
+      "originEvidenceLevel": "legacy_export_only"
     },
     {
       "id": "wealth-sunrise",
@@ -479,7 +587,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/mountains/aerial-snow-ridge"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "golden-harvest",
@@ -516,7 +633,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/forest/golden-path"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "radiant-portal",
@@ -553,7 +679,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/desert/canyon-slot-light"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "prosperity-coast",
@@ -594,7 +729,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/beach/aerial-coastline"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "solar-surge",
@@ -632,7 +776,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/mountains/aerial-snow-ridge"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "ocean-pulse",
@@ -673,7 +826,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/beach/waves-rolling"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "sunbeam-flow",
@@ -711,7 +873,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/forest/sunbeams-mist"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "river-power",
@@ -749,7 +920,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/waterfalls/river-rapids-rocks"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "desert-light",
@@ -786,7 +966,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/desert/canyon-slot-light"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "mountain-air",
@@ -823,7 +1012,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/mountains/valley-mist-dawn"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "wildflower-dance",
@@ -861,7 +1059,16 @@
       "pace": "moderate",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/meadow/wildflower-close"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "fern-awakening",
@@ -898,7 +1105,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/forest/moss-ferns"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "coastal-freedom",
@@ -937,7 +1153,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/beach/aerial-coastline"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "lone-tree",
@@ -975,7 +1200,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/meadow/lone-tree-field"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "meadow-morning",
@@ -1012,7 +1246,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/meadow/mist-meadow-dawn"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "calm-sea",
@@ -1052,7 +1295,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/beach/sunset-golden"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "morning-dew",
@@ -1087,7 +1339,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/meadow/dew-grass-dawn"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "mossy-stream",
@@ -1128,7 +1389,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/forest/creek-rocks"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "gentle-falls",
@@ -1166,7 +1436,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/waterfalls/mossy-falls-detail"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "sea-breeze",
@@ -1205,7 +1484,16 @@
       "pace": "slow",
       "rightsReference": {
         "kind": "existing_approved_first_party_master"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://supareels.com/b-roll/beach/palm-shade"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "lake-mist-dawn",
@@ -1245,7 +1533,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/autumn-fall-lake/",
+        "original:https://dareful.com/foggy-water-lake/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "flower-softening",
@@ -1283,7 +1581,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/flower-bloom-nature/",
+        "original:https://dareful.com/white-wild-flowers/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "petal-hope",
@@ -1321,7 +1629,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/pink-wild-flower/",
+        "original:https://dareful.com/wild-pink-flower/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "ocean-release",
@@ -1364,7 +1682,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/ocean-sea-waves/",
+        "original:https://dareful.com/sand-beach-waves/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "shore-breath",
@@ -1404,7 +1732,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/island-ocean-coast/",
+        "original:https://dareful.com/rocky-jetty-coast/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "river-grounding",
@@ -1445,7 +1783,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/forest-fall-autumn/",
+        "original:https://dareful.com/river-forest-landscape-2/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "forest-renewal",
@@ -1485,7 +1833,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/forest-fall-autumn/",
+        "original:https://dareful.com/wild-pink-flower/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "soft-horizon",
@@ -1524,7 +1882,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/island-ocean-coast/",
+        "original:https://dareful.com/sand-beach-waves/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "heart-flow",
@@ -1564,7 +1932,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/flower-bloom-nature/",
+        "original:https://dareful.com/ocean-sea-waves/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "clear-morning",
@@ -1605,7 +1983,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/foggy-water-lake/",
+        "original:https://dareful.com/river-forest-landscape-2/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "still-water",
@@ -1645,7 +2033,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/autumn-fall-lake/",
+        "original:https://dareful.com/rocky-jetty-coast/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "garden-acceptance",
@@ -1684,7 +2082,17 @@
       "rightsReference": {
         "kind": "dareful_cc_by_4_0",
         "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
-      }
+      },
+      "width": 1080,
+      "height": 1920,
+      "allowedAspects": [
+        "portrait"
+      ],
+      "originMasterKeys": [
+        "original:https://dareful.com/pink-wild-flower/",
+        "original:https://dareful.com/white-wild-flowers/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "sun-trees-forest",
@@ -1745,7 +2153,11 @@
         "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/sun-trees-forest/",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "sourcePage": "https://dareful.com/sun-trees-forest/"
-      }
+      },
+      "originMasterKeys": [
+        "original:https://dareful.com/sun-trees-forest/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "warm-clouds-sunset",
@@ -1806,7 +2218,11 @@
         "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/warm-clouds-sunset/",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "sourcePage": "https://dareful.com/warm-clouds-sunset/"
-      }
+      },
+      "originMasterKeys": [
+        "original:https://dareful.com/warm-clouds-sunset/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "fall-foliage-forest",
@@ -1867,7 +2283,11 @@
         "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/fall-foliage-forest/",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "sourcePage": "https://dareful.com/fall-foliage-forest/"
-      }
+      },
+      "originMasterKeys": [
+        "original:https://dareful.com/fall-foliage-forest/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     },
     {
       "id": "snow-forest-winter",
@@ -1929,7 +2349,11 @@
         "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/snow-forest-winter/",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "sourcePage": "https://dareful.com/snow-forest-winter/"
-      }
+      },
+      "originMasterKeys": [
+        "original:https://dareful.com/snow-forest-winter/"
+      ],
+      "originEvidenceLevel": "source_page_verified"
     }
   ]
 }

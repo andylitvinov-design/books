@@ -132,7 +132,9 @@ test('ranked landscape alternatives are unique and exclude portrait-only footage
   const choice=recommendMyTubePlotMontage({
     plot,scenes:stock.scenes,targetAspect:'landscape',
   });
-  assert.equal(choice.hasFourApprovedSources,true);
+  // The existing 48 physical masters are all portrait; default 16:9
+  // must not use letterboxed or falsely tagged portrait inputs.
+  assert.equal(choice.hasFourApprovedSources,false);
   assert.ok(Array.isArray(choice.additionalClipIds));
   assert.ok(choice.additionalClipIds.length<=12);
   const ids=[...choice.clipIds,...choice.additionalClipIds];
@@ -157,4 +159,15 @@ test('edits of one original do not count as four independent films',async()=>{
  assert.equal(output.hasFourApprovedSources,false);
  assert.deepEqual(output.clipIds,[]);
  assert.deepEqual(output.additionalClipIds,[]);
+});
+
+test('all 48 published legacy master geometries are explicit and 16:9 fails closed',()=>{
+  assert.equal(stock.scenes.length,48);
+  assert.ok(stock.scenes.every(s=>s.width<s.height&&
+    s.allowedAspects.length===1&&s.allowedAspects[0]==='portrait'));
+  assert.ok(stock.scenes.every(s=>s.originMasterKeys.length>0));
+  const deep=stock.scenes.find(s=>s.id==='river-grounding');
+  const other=stock.scenes.find(s=>s.id==='forest-renewal');
+  assert.ok(deep&&other);
+  assert.ok(deep.originMasterKeys.some(k=>other.originMasterKeys.includes(k)));
 });
