@@ -248,7 +248,7 @@ export function MandalaAutoVideoDirector({
  }):null,[selectedTaxonomyPlot,scenes,proposal?.excludedMotifs,selectedMotifId,selectedStyleId]);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const fallbackSourcesValid=Boolean(selectedTaxonomyPlot&&!selectedPlotMedia?.hasFourApprovedSources&&
-   chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[])&&
+   chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[],aspect)&&
    !selectedMotifId&&!selectedStyleId);
  const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
  const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
@@ -300,7 +300,7 @@ export function MandalaAutoVideoDirector({
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
  const availableReplacements=stageClipIds.map(currentId=>
    montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
-     excludedMotifs:proposal?.excludedMotifs||[],limit:12})
+     excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
      .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0))
      .slice(0,6));
  const editTimeline=(clipIds:readonly string[],durations:readonly number[],
