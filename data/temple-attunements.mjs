@@ -1,6 +1,9 @@
 // Temple tradition -> deity channel -> individual author-recorded attunement.
-// Exact Russian source stanzas. No editorial hymns, translations, guessed coordinates or private Drive URLs.
-// The "author-described" location is archival attribution, not an independently verified historical site.
+// Sources: verified author excerpts from "Античность — модуль 1–2" and "3. Античность".
+// Telegram archive records are reused by the public page; their source assets are not duplicated.
+// Historical lyric translations, invented coordinates and arbitrary stock imagery are excluded.
+import { expandedTempleAttunements } from "./temple-attunements-expansion.mjs";
+
 export const templeTraditions = Object.freeze([
   {
     "id": "greek",
@@ -122,6 +125,109 @@ export const templeTraditions = Object.freeze([
         },
         "aliases": [
           "Эрота"
+        ]
+      },
+      {
+        "id": "apollo",
+        "name": {
+          "ru": "Аполлон",
+          "en": "Apollo",
+          "es": "Apolo"
+        },
+        "aliases": [
+          "Аполлона"
+        ]
+      },
+      {
+        "id": "artemis",
+        "name": {
+          "ru": "Артемида",
+          "en": "Artemis",
+          "es": "Artemisa"
+        },
+        "aliases": [
+          "Артемиды"
+        ]
+      },
+      {
+        "id": "ares",
+        "name": {
+          "ru": "Арес",
+          "en": "Ares",
+          "es": "Ares"
+        },
+        "aliases": [
+          "Ареса"
+        ]
+      },
+      {
+        "id": "pan",
+        "name": {
+          "ru": "Пан",
+          "en": "Pan",
+          "es": "Pan"
+        },
+        "aliases": [
+          "Пана"
+        ]
+      },
+      {
+        "id": "heracles",
+        "name": {
+          "ru": "Геракл",
+          "en": "Heracles",
+          "es": "Heracles"
+        },
+        "aliases": [
+          "Геракла",
+          "Геркулес"
+        ]
+      },
+      {
+        "id": "hermes",
+        "name": {
+          "ru": "Гермес",
+          "en": "Hermes",
+          "es": "Hermes"
+        },
+        "aliases": [
+          "Гермеса"
+        ]
+      },
+      {
+        "id": "leto",
+        "name": {
+          "ru": "Лето",
+          "en": "Leto",
+          "es": "Leto"
+        },
+        "aliases": [
+          "Латона",
+          "Латонида"
+        ]
+      },
+      {
+        "id": "helios",
+        "name": {
+          "ru": "Гелиос",
+          "en": "Helios",
+          "es": "Helios"
+        },
+        "aliases": [
+          "Гелиоса"
+        ]
+      },
+      {
+        "id": "tyche",
+        "name": {
+          "ru": "Тихе",
+          "en": "Tyche",
+          "es": "Tique"
+        },
+        "aliases": [
+          "Фортуна",
+          "Тихи",
+          "Тюхе"
         ]
       }
     ]
@@ -251,6 +357,41 @@ export const templeTraditions = Object.freeze([
         "aliases": [
           "Минервы"
         ]
+      },
+      {
+        "id": "fortuna",
+        "name": {
+          "ru": "Фортуна",
+          "en": "Fortuna",
+          "es": "Fortuna"
+        },
+        "aliases": [
+          "Фортуны"
+        ]
+      },
+      {
+        "id": "emperor",
+        "name": {
+          "ru": "Римский император",
+          "en": "Roman emperor",
+          "es": "Emperador romano"
+        },
+        "aliases": [
+          "Адриан",
+          "Император",
+          "Траян"
+        ]
+      },
+      {
+        "id": "jupiter",
+        "name": {
+          "ru": "Юпитер",
+          "en": "Jupiter",
+          "es": "Júpiter"
+        },
+        "aliases": [
+          "Юпитера"
+        ]
       }
     ]
   },
@@ -347,7 +488,17 @@ export const templeTraditions = Object.freeze([
       "en": "Daoist",
       "es": "Taoísta"
     },
-    "channels": []
+    "channels": [
+      {
+        "id": "dao",
+        "name": {
+          "ru": "Дао",
+          "en": "Dao",
+          "es": "Dao"
+        },
+        "aliases": []
+      }
+    ]
   },
   {
     "id": "maya",
@@ -356,11 +507,22 @@ export const templeTraditions = Object.freeze([
       "en": "Maya",
       "es": "Maya"
     },
-    "channels": []
+    "channels": [
+      {
+        "id": "kinich-ahau",
+        "name": {
+          "ru": "Кинич-Ахау",
+          "en": "Kinich Ahau",
+          "es": "K'inich Ajaw"
+        },
+        "aliases": []
+      }
+    ]
   }
 ]);
 
 export const templeAttunements = Object.freeze([
+  ...[
   {
     "id": "asclepius-sofia",
     "traditionId": "greek",
@@ -1040,7 +1202,7 @@ export const templeAttunements = Object.freeze([
     },
     "format": "verse",
     "language": "ru",
-    "textRu": "Музей (И здесь тоже ведь проявляется активность силы)\nНе сдержит - толпа вашей огненной силы.\nНе смоют моря ваших вкрадчивых знаний.\nДокажем - судьбе мудрость истинной веры.\nВ победу ума над невежеством сером.\n(Над невежества пылью, прахом, мраком, смрадом)",
+    "textRu": "Не сдержит - толпа вашей огненной силы.\nНе смоют моря ваших вкрадчивых знаний.\nДокажем - судьбе мудрость истинной веры.\nВ победу ума над невежеством сером.\n(Над невежества пылью, прахом, мраком, смрадом)",
     "place": {
       "city": {
         "ru": "Не указан",
@@ -1070,6 +1232,8 @@ export const templeAttunements = Object.freeze([
     "visibility": "public",
     "photoContext": "Images included only where matched to a source section; no stock substitutions."
   }
+],
+  ...expandedTempleAttunements,
 ]);
 
 export function normalizeTempleSearch(value) {
