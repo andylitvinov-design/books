@@ -912,3 +912,17 @@ test('repair_started requires an actual trusted Actions fix-step timestamp',()=>
  assert.deepEqual(parseComment(comment).map(x=>x.stage),['repair_started']);
  assert.equal(parseComment({...comment,performed_via_github_app:{slug:'other',id:1}}).length,0);
 });
+
+
+test('failed legacy cloud preflight stays FAILED and never publishes an unverified source commit',async()=>{
+ const f=fixture();
+ const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'legacy',fixResult:'failure',
+  candidateStatus:'',publishResult:'skipped'});
+ assert.equal(r.state,'FAILED');
+ assert.equal(r.lane,'legacy');
+ assert.equal(r.reason_code,'LEGACY_PREFLIGHT_INCOMPLETE');
+ assert.equal(r.source_published,false);
+ assert.equal(r.new_sha,null);
+});
