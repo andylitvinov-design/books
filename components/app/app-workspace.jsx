@@ -66,6 +66,7 @@ import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
+import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
 import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -542,6 +543,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
       <main className="hh-app hh-app--cabinet-guest">
+        <ProfileHubTabs locale={locale} active="view" />
         <CabinetGuestOverview
           locale={locale} busy={busy} onSignin={()=>signin('google')}
           onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
@@ -555,6 +557,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready')
     return (
       <main className="hh-app">
+        {['portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : 'results'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
@@ -698,11 +701,13 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
+          {['portrait','portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? 'view' : 'results'} resultCount={page === 'portrait' ? (data.results || []).length : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
             <>
+              <ProfileResultsArchive locale={locale} results={data.results || []} />
               <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
               <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
