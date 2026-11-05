@@ -13,6 +13,9 @@ test('verified non-runtime GitHub CI changes do not create redundant Vercel buil
   ]), true);
   assert.equal(maySkipBuild(['.github/workflows/hh-pr-sweep-guard.yml', 'tests/ci-vercel-nonruntime.test.mjs']), true);
   assert.equal(maySkipBuild(['README.md']), true);
+  // Exact #3555 test-only verifier must not consume a production build.
+  assert.equal(maySkipBuild(['scripts/verify-unified-six-dock-browser.mjs']), true);
+  assert.equal(maySkipBuild(['scripts/verify-unified-six-dock-browser.mjs', 'tests/ci-vercel-nonruntime.test.mjs']), true);
 });
 
 test('site code, configuration, secrets, dependency and test fixtures always build', () => {
@@ -21,6 +24,7 @@ test('site code, configuration, secrets, dependency and test fixtures always bui
     'app/api/auth/route.js', 'lib/app/session.js', 'supabase/migrations/20260101000000_test.sql',
     'package.json', 'package-lock.json', 'next.config.ts', 'vercel.json',
     'scripts/vercel-ignore-build.mjs', 'tests/fixtures/sample.data.mjs',
+    'scripts/verify-other-browser.mjs', 'scripts/verify-unified-six-dock-browser.mjs.bak',
     'tests/checkout-security.test.mjs', 'lib/ci/../app/auth.mjs',
     'docs/myspace/../../app/page.md', 'scripts/ci-../build.mjs',
   ];

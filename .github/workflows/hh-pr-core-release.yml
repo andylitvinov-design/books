@@ -233,6 +233,9 @@ jobs:
       # For strictly CI-only PRs we run policy/test contracts, not the product
       # encoder or Next build. Keep reproducible npm lockfile install without
       # optional lifecycle downloads on that route ONLY.
+      - name: Load pinned FFmpeg only for real runtime Core
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
       - name: Install dependencies for verified Core route
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         shell: bash
@@ -243,6 +246,11 @@ jobs:
           else
             npm ci --no-audit --no-fund
           fi
+      - name: Materialize pinned FFmpeg after npm for exact Next trace
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
+        with:
+          stage: materialize
       # When full Mandala browser QA is advisory, Core retains a mandatory
       # bounded, exact-tested-merge source gate for narration/privacy and codecs.
       # The Specialist aggregator checks this trusted marker on BASE before
@@ -280,7 +288,15 @@ jobs:
             checked_base="$(git rev-parse HEAD)"
           fi
           args=(--base "$checked_base")
-          if [[ "${{ steps.diff.outputs.ci_only }}" != true ]]; then args+=(--full-types); fi
+          # Type-impacting PR files already trigger full next typegen + tsc
+          # through the immutable source-preflight impactsTypes() classifier.
+          # For CSS/data-only PRs, Next production build still does its own
+          # mandatory whole-project typecheck; avoid an earlier duplicate.
+          # Keep explicit full types on non-PR/manual/merge_group and on the
+          # DOCK lane (it omits Next build).
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "${{ steps.fast.outputs.route }}" == DOCK ]]; then
+            args+=(--full-types)
+          fi
           node scripts/ci-source-preflight.mjs "${args[@]}"
       - name: Upload Source Preflight root diagnostics on failure
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (failure() && steps.source_preflight.outcome == 'failure') }}

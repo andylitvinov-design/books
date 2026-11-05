@@ -6,16 +6,18 @@ import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
+import {planMyTubeCategory,verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
 import {listMyTubeMeaningAxes,listMyTubeMeaningMotifs,listMyTubeMotifScenarios} from "@/lib/mandala/mytube-meaning-hierarchy.mjs";
 import {listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
 import {getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
 
 import {StateTransitionSelector} from "./mandala-state-transition-selector";
 import {MandalaMeaningIdeaSelector,type ConfirmedMeaningHandoff} from "./mandala-meaning-idea-selector";
-import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
+import {allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
@@ -211,6 +213,8 @@ export function MandalaAutoVideoDirector({
  const [profileDetails,setProfileDetails]=useState("");
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
+ const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
+ const [promptDesignedFor,setPromptDesignedFor]=useState<string|null>(null);
  const [timelineEdits,setTimelineEdits]=useState<{
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
  }|null>(null);
@@ -262,6 +266,13 @@ export function MandalaAutoVideoDirector({
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
  const length=seconds||proposal?.durationSeconds||30;
+ // Build the four narrative beats from the selected category before using
+ // any preset. The planner proves real source geometry from published manifests.
+ const categoryPlan=useMemo(()=>planMyTubeCategory({
+   categoryId:taxonomyCategoryForGoal[selectedCategoryId],locale,aspect,
+   durationSeconds:length,styleId:selectedStyleId||null,
+   excludedMotifs:proposal?.excludedMotifs||[],scenes,
+ }),[selectedCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,scenes]);
  const activeTimelineEdits=chosen&&timelineEdits?.presetId===chosen.id&&
    timelineEdits.totalSeconds===length?timelineEdits:null;
  // One local licensed source is chosen for EACH storyboard beat, not merely
@@ -273,9 +284,16 @@ export function MandalaAutoVideoDirector({
  }),[goal,theme,scenes,proposal,chosen]);
  const personalizedShotIds=(!overrideId&&promptShotPlan.mode==="personalized"&&
    promptShotPlan.canExport)?promptShotPlan.clipIds:null;
- const stageClipIds=chosen?(activeTimelineEdits?.clipIds||personalizedShotIds||[...chosen.clips]):[];
+ // The existing exporter accepts exactly four physical shots. Only bind the
+ // new ranked plan when it fits that contract; longer plans remain previews.
+ const categoryClipIds=categoryPlan.ok&&categoryPlan.shots.length===4&&
+   !selectedTopicId&&!selectedScenarioId&&!selectedPlotId?
+   categoryPlan.shots.map((shot:{sceneId:string})=>shot.sceneId):null;
+ const stageClipIds=chosen?(activeTimelineEdits?.clipIds||categoryClipIds||
+   personalizedShotIds||[...chosen.clips]):[];
  const stageDurations=chosen?(activeTimelineEdits?.durations||
-   allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
+   (categoryClipIds?allocateFreeFilmTimeline(length,stageClipIds):
+    allocateAdaptiveFilmTimeline(length,stageClipIds)).map(shot=>shot.durationSeconds)):[];
  const manualStageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
  // Confirmed creative meaning is offered as an optional final caption.
  // Client-authored captions, music, voice and physical footage always win.
@@ -298,9 +316,17 @@ export function MandalaAutoVideoDirector({
  const creativeMontageEvidence=evaluateMyTubeMontageCreativeMatch({
    clipIds:stageClipIds,scenes,motifId:selectedMotifId||null,styleId:selectedStyleId||null,
  });
+ // A pretty 16:9 Canvas is NOT proof that the input MP4s were landscape.
+ // Block old four-shot export if any source is vertical, too short or reused.
+ const physicalClipProof=stageClipIds.map(id=>verifiedCategorySource(sceneById.get(id)));
+ const physicalClipReady=stageClipIds.length===4&&stageDurations.length===4&&
+   physicalClipProof.every((scene,index)=>Boolean(scene&&
+     verifiedSceneAspect(scene,aspect)&&scene.durationSeconds>=stageDurations[index]))&&
+   new Set(physicalClipProof.map(scene=>canonicalSourceMasterKey(scene))).size===4&&
+   (Boolean(selectedTopicId)||Boolean(categoryPlan.ok));
  const creativeSelectionUnavailable=Boolean(selectedScenarioId&&(selectedMotifId||selectedStyleId)&&
    (!topicMediaCoverage?.dedicatedFourSceneReady||!activeTimelineEdits||!creativeMontageEvidence.ok));
- const plotLacksApprovedClips=Boolean((STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
+ const plotLacksApprovedClips=Boolean(!physicalClipReady||(STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
    !selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
  const availableReplacements=stageClipIds.map(currentId=>
@@ -337,13 +363,14 @@ export function MandalaAutoVideoDirector({
  const timelineForTopic=(topicId:string,scenarioId:string|null,
    recommended:ReturnType<typeof recommendAutoVideo>,plot:MyTubePlot|null=null,
    requestedSeconds?:10|15|20|30|60,presetOverride?:string,
-   motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null)=>{
+   motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null,
+   meaningAxisId:string|null=selectedMeaningAxisId||null)=>{
    if(!recommended.presetId)return null;
    const clipIds=plot?recommendMyTubePlotMontage({
      plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
    }).clipIds:recommendMyTubeTopicStoryClips({
      topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,
-     meaningAxisId:selectedMeaningAxisId||null,targetAspect:aspect,
+     meaningAxisId,targetAspect:aspect,
    }).clipIds;
    if(clipIds.length!==4)return null;
    const desiredSeconds=requestedSeconds||recommended.durationSeconds;
@@ -364,6 +391,7 @@ export function MandalaAutoVideoDirector({
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
    if(!item||disabled)return;
    const nextIds=selectedGoalIds.includes(goalId)
@@ -384,6 +412,7 @@ export function MandalaAutoVideoDirector({
      fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
    onInvalidate?.();onCategoryChange?.(nextTheme);
@@ -397,6 +426,7 @@ export function MandalaAutoVideoDirector({
      preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
    if(!item)return;
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
@@ -409,6 +439,7 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:item.label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomyTopic=(topicId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const found=getMyTubeTopic(topicId);if(!found)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    const label=found.topic.label[locale];
@@ -500,6 +531,7 @@ export function MandalaAutoVideoDirector({
 
  // Device-only profile recommender. Never persists answers or contacts an external AI.
  const applyProfile=()=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    const category=videoGoalCategories.find(item=>item.id===profileCategory);
    if(!category)return;
@@ -517,13 +549,47 @@ export function MandalaAutoVideoDirector({
      fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
    setProfileMode(null);
  };
- const requestInput=<label className={css.topicInput} data-video-request-input>
+ // Interpret only when the visitor explicitly presses Design. Reuse existing
+ // canonical category/topic UI and the same verified four-shot film renderer.
+ const designFromRequest=()=>{
+  if(disabled||!goal.trim())return;
+  const classification=classifyMyTubeRequest(goal,locale);
+  onInvalidate?.();
+  setPromptClassification(classification);setPromptDesignedFor(goal);
+  setSelectedGoalId(null);setSelectedGoalIds([]);
+  setSelectedSubcategoryId(classification?.subcategoryId||"");
+  setSelectedTopicId(classification?.topicId||"");
+  setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+  setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+  setMeaningHandoff(null);setIncludeMeaningCaption(false);
+  setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+  const nextTheme=(classification?legacyThemeForSubcategory[classification.subcategoryId]:null)||theme;
+  if(classification){
+   const nextCategory:keyof typeof popularTopicOrder=
+    classification.categoryId==="stress-anxiety"?"calm":
+    classification.categoryId==="energy-confidence"?"strength":
+    classification.categoryId==="love-relationships"?"love":
+    nextTheme==="money"?"possibilities":"growth";
+   setSelectedCategoryId(nextCategory);setSubcategoriesOpen(true);
+   onCategoryChange?.(nextTheme);
+  }
+  const recommended=recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
+   preferredTheme:classification?nextTheme:null,presets,scenes});
+  setProposalContext({goal,theme:nextTheme});setProposal(recommended);
+  setTimelineEdits(classification?timelineForTopic(
+   classification.topicId,null,recommended,null,undefined,undefined,null,null,null
+  ):null);
+ };
+ const analyzedPath=promptClassification?getMyTubeTopic(promptClassification.topicId):null;
+ const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
    <input type="text" data-auto-video-input value={goal}
      maxLength={160} disabled={disabled} placeholder={t.placeholder}
+     onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
        const value=event.currentTarget.value;
        onInvalidate?.();onGoalChange(value);
+    setPromptDesignedFor(null);setPromptClassification(null);
        setProposalContext({goal:value,theme});
        setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
        setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
@@ -531,6 +597,38 @@ export function MandalaAutoVideoDirector({
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}/>
  </label>;
+ const requestInput=<div className={css.requestComposer} data-video-request-composer>
+  {requestField}
+  <button type="button" data-video-request-design className={css.designRequest}
+   disabled={disabled||!goal.trim()} onClick={designFromRequest}>
+   <Sparkles size={17} aria-hidden="true"/>
+   <span>{locale==="ru"?"Спроектировать видео":locale==="es"?"Diseñar mi vídeo":"Design my video"}</span>
+   <ArrowRight size={17} aria-hidden="true"/>
+  </button>
+  {promptDesignedFor===goal?<div className={css.requestAnalysis}
+   data-video-request-analysis data-confidence={promptClassification?.confidence||"unresolved"}
+   role="status" aria-live="polite">
+   {promptClassification&&analyzedPath?<>
+    <strong>{promptClassification.confidence==="low"?
+      (locale==="ru"?"Предварительный вариант — проверьте":locale==="es"?"Propuesta preliminar — compruébala":"Provisional suggestion — please check"):
+      (locale==="ru"?"Запрос разобран":locale==="es"?"Solicitud interpretada":"Request interpreted")}</strong>
+    <span data-video-request-taxonomy>
+     {analyzedPath.category.label[locale]} → {analyzedPath.subcategory.label[locale]} → {analyzedPath.topic.label[locale]}
+    </span>
+    <button type="button" className={css.requestJump} data-video-request-open-plan
+     onClick={()=>document.querySelector<HTMLElement>("[data-auto-video-proposal]")?.scrollIntoView({
+      behavior:"smooth",block:"start"
+     })}>
+     {locale==="ru"?"Посмотреть план из 4 сцен":locale==="es"?"Ver plan de 4 escenas":"See the 4-shot plan"}
+     <ArrowRight size={14} aria-hidden="true"/>
+    </button>
+   </>:<p>{locale==="ru"?
+    "Пока недостаточно данных для определения темы. Уточните запрос или выберите тему ниже.":
+    locale==="es"?"No se puede determinar el tema. Aclara la petición o selecciona el tema.":
+    "Unable to match a reliable topic. Refine your request or select a topic below."}</p>}
+  </div>:null}
+ </div>;
+ 
  const profilePanel=<div className={css.profilePanel} data-video-profile-recommendation>
    <div className={css.profileSummary}>
      <span><Sparkles size={19} aria-hidden="true"/>
@@ -833,6 +931,32 @@ export function MandalaAutoVideoDirector({
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
+   <div className={css.notice} data-mytube-category-storyboard
+     data-storyboard-status={categoryPlan.status}>
+     <strong>{locale==="ru"?"Раскадровка по категории":locale==="es"?
+       "Storyboard por categoría":"Category storyboard"} ·
+       {" "}{aspect==="portrait"?"9:16":aspect==="landscape"?"16:9":"1:1"}</strong>
+     <ol>{categoryPlan.stages.map((stage:{stage:number;name:string;purpose:string;requiredTags:string[]})=><li key={stage.stage}>
+       <strong>{stage.stage}. {stage.name}</strong>
+       <small>{" · "+stage.requiredTags.slice(0,4).join(" · ")}</small>
+       <p><small>{stage.purpose}</small></p>
+     </li>)}</ol>
+     <p role="status">{categoryPlan.ok
+       ?(locale==="ru"?"Подобраны "+categoryPlan.shots.length+" разных MP4; для экспорта нужна проверка монтажа.":
+         locale==="es"?"Se sugieren "+categoryPlan.shots.length+" clips únicos; se requiere verificar el montaje.":
+         categoryPlan.shots.length+" different MP4s suggested; export needs montage verification.")
+       :(locale==="ru"?"Недостаточно подтверждённых уникальных видео нужного формата и стиля. Повторы запрещены.":
+         locale==="es"?"No hay suficientes vídeos únicos verificados para este formato y estilo.":
+         "Insufficient unique verified media for this aspect and style. No repeating footage.")}</p>
+     {categoryPlan.ok&&categoryPlan.shots.some((shot:{symbolicFallback?:boolean})=>shot.symbolicFallback)
+       ?<p role="note">{locale==="ru"?"Некоторые кадры подходят только символически: показанное действие требует визуальной проверки.":
+         locale==="es"?"Algunas escenas son simbólicas y necesitan revisión visual.":
+         "Some footage is only a symbolic match and still needs visual review."}</p>:null}
+     {!physicalClipReady?<p role="status">{locale==="ru"
+       ?"Четырёхклиповый экспорт пока заблокирован: нужен подходящий формат и достаточная длительность каждого MP4.":
+       locale==="es"?"Exportación de cuatro clips bloqueada hasta contar con material del formato y duración correctos.":
+       "Four-clip export blocked until physical format and source durations are verified."}</p>:null}
+   </div>
      {!goal.trim()?<p className={css.demoNote} data-auto-video-preview-example>
        {locale==="ru"?"Пример сценария · выберите тему или напишите цель":locale==="es"
          ?"Historia de ejemplo · elige o escribe tu objetivo":"Sample storyboard · choose or write your goal"}

@@ -104,7 +104,7 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
         try {commitStatus=await read('/repos/'+repo+'/commits/'+pr.merge_commit_sha+'/status');}
         catch(err) {errors.push('vercel-status:'+pr.number+':'+String(err.message||err));}
       }
-      const row=analyzePrLoss(pr,selected,jobRows,comments,new Date(now).toISOString());
+      const row=analyzePrLoss(pr,selected,jobRows,comments,new Date(now).toISOString(),timeline);
       row.core_waves=analyzeCoreWaveGaps(pr,selected,jobRows,timeline,{
         runHistoryComplete:result.total_count<=100&&
           result.workflow_runs.length===result.total_count&&matched.length===selected.length&&
@@ -167,12 +167,12 @@ export function formatSummary(report) {
   }
   lines.push('','*New HEAD = first exact-SHA CI observation, not remote push time. Vercel READY = provider status only, not independent API/alias proof. Vercel skipped = verified ignored build on the merged commit, never READY. Functional smoke requires independent exact-release interaction evidence. Unknown never means zero. See JSON provenance and partial coverage.*');
   lines.push('','### Core CI wave gaps — verified pairs, not assumed causes');
-  lines.push('| PR | Core observed | Same HEAD repeats | New HEAD waves | Measured gaps | Gap mean / p50 / p95 (min) | Runner wait mean (min) | Core work mean (min) | History |');
-  lines.push('| ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- |');
+  lines.push('| PR | Core observed | Historical HEADs relinked | Same HEAD repeats | New HEAD waves | Measured gaps | Gap mean / p50 / p95 (min) | Runner wait mean (min) | Core work mean (min) | History |');
+  lines.push('| ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- |');
   for(const row of report.rows) {
     const w=row.core_waves;
     if(!w)continue;
-    lines.push('| #'+row.pr+' | '+w.observed_core_runs+' | '+w.same_head_repeat_runs+
+    lines.push('| #'+row.pr+' | '+w.observed_core_runs+' | '+w.historical_core_runs_relinked+' | '+w.same_head_repeat_runs+
       ' | '+w.new_head_runs+' | '+w.gaps_measured.n+' | '+
       [w.gaps_measured.mean_minutes,w.gaps_measured.p50_minutes,w.gaps_measured.p95_minutes]
         .map(fmt).join(' / ')+' | '+fmt(w.first_runner_wait.mean_minutes)+

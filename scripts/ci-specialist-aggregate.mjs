@@ -233,10 +233,11 @@ export function optionalProfileWriterSkip(files, branch) {
   if (typeof source !== 'string' || typeof candidate !== 'string' ||
       (source !== candidate && !approvedMigration) ||
       typeof branch !== 'string' || !branch ||
-      branch === 'feat/meditation-writer-device-voice-v1-20261030') return false;
+      (branch === 'feat/meditation-writer-device-voice-v1-20261030' ||
+       branch === 'fix/ci-ffmpeg-verified-github-asset-20261105')) return false;
   const onlyWriter = [
     '  writer-practical-focused:',
-    "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}",
+    "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && (github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105') }}",
     '    runs-on: ubuntu-24.04',
   ].join('\n');
   const requiredAxis = [
