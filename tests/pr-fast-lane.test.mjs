@@ -65,7 +65,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(opora.includes("fromJSON(github.event_name == 'pull_request'"), 'OPORA browser matrix must route by event');
   assert.ok(opora.includes("'[\"chromium\"]'"), 'Ready PR runs one isolated Chromium');
   assert.ok(opora.includes("'[\"chromium\",\"webkit\"]'"), 'manual and feature-push still cover WebKit');
-  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual jobs cannot be cancelled by unrelated PRs');
+  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'manual jobs cannot be cancelled by unrelated PRs');
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
@@ -112,6 +112,19 @@ test('OPORA test-only edits do not start the unrelated App R1 suite', () => {
 });
 
 
+test('public-service browser CI verifies real pinned engines without an apt cold-start', () => {
+  const src = workflow('hh-public-services-production.yml');
+  assert.match(src, /^    container:\n      image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble$/m);
+  assert.match(src, /^    defaults:\n      run:\n        shell: bash$/m);
+  assert.match(src, /npm install --prefix \/tmp\/hh-public-services-tools .*playwright@1\.63\.0/);
+  assert.match(src, /for \(const \[name, engine\] of engines\) \{/);
+  assert.match(src, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
+  assert.doesNotMatch(src, /playwright install --with-deps/);
+  assert.match(src, /^    timeout-minutes: 20$/m);
+  assert.match(src, /Production build and public browser acceptance/);
+  assert.match(src, /verify-public-services-production\.mjs/);
+});
+
 test('single post-migration status requires actual Core and Specialist without legacy wrapper runners', () => {
   const source=workflow('hh-pr-core-release.yml');
   assert.match(source,/^  pull_request:/m);
@@ -124,14 +137,16 @@ test('single post-migration status requires actual Core and Specialist without l
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   const unified=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(specialist && unified,'real specialist and unified status required');
-  assert.doesNotMatch(specialist,/^    needs:/m,'specialist must be queued concurrently with scope');
-  assert.match(specialist,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist,/^    needs: \[scope\]$/m,'Specialist must follow passing Core before polling');
+  assert.match(specialist,/^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m,
+    'Only successful Core on Ready PR can launch the Specialist');
   assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'Mobile Dock still uses the immutable exact-head Specialist aggregator');
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'DOCK'/,'DOCK must still run the trusted specialist aggregator');
-  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code/);
+  assert.match(specialist,/needs\.scope\.result == 'success'/);
   assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -284,7 +299,15 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       GIT_AUTHOR_NAME: 'Synthetic', GIT_AUTHOR_EMAIL: 'synthetic@example.invalid',
       GIT_COMMITTER_NAME: 'Synthetic', GIT_COMMITTER_EMAIL: 'synthetic@example.invalid' };
     const run = (command, args, extra = {}, allowFailure = false) => {
-      const result = spawnSync(command, args, { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 });
+      const options = { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 };
+      let result = spawnSync(command, args, options);
+      // On a busy ubuntu-slim runner, the first cold git init can time out.
+      // Retry only this idempotent fixture setup command, not classifier logic,
+      // failed Git commits, or negative safety assertions.
+      if (command === 'git' && args[2] === 'init' && result.error?.code === 'ETIMEDOUT') {
+        console.warn('Fast-lane fixture: cold git init timed out; retrying once');
+        result = spawnSync(command, args, { ...options, timeout: 30_000 });
+      }
       assert.ifError(result.error);
       if (allowFailure) return result;
       assert.equal(result.status, 0, `${command}: ${result.stderr}`);
@@ -513,7 +536,7 @@ test('two confirmed source-only specialist suites delegate duplicate TypeScript 
   for(const filename of ['hh-kling-video.yml']) {
     const s=workflow(filename);
     assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
-    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
+    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' \}\}/);
   }
 });
 
@@ -541,8 +564,8 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
 });
 
 
-const prOnlyCancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
-const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+const prOnlyCancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
     ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
@@ -599,8 +622,8 @@ test('video About and Library cancel only superseded PR checks, preserving speci
 
 
 test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
-  const suffix="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const guard="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const suffix="${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const guard="${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   const specs=[
     ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
     ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
@@ -748,7 +771,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
   const requiredPrefixes = [
     'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
-    'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
+    'feat/video-120-scenario-media-bindings-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
     'feat/video-chat-context-understanding-'
   ];
   for (const prefix of requiredPrefixes)
@@ -758,6 +781,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
     'Install isolated Chromium and WebKit (no external account)',
     'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
     'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
+    'Audit 120 scenario physical candidates without auto-publication',
     'Public mandala photo, PNG and video browser flow · 320/390/430px'
   ]) assert.equal(mediaIfFor(name), mediaCondition,
     'real media step must share the protected build guard: '+name);
@@ -884,12 +908,12 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
 
-test('Core cancels superseded first attempts, never manually rerun current HEAD', () => {
+test('Core cancels superseded first attempts and Draft transitions, never manual or edited runs', () => {
   const source = workflow('hh-pr-core-release.yml');
   const group = "group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
+  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}";
   assert.ok(source.includes(group), 'first-attempt HEADs of one PR share concurrency');
-  assert.ok(source.includes(cancel), 'only a newer synchronize attempt cancels older checks');
+  assert.ok(source.includes(cancel), 'only newer source HEAD or Draft transition cancels expensive Core');
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'), 'no obsolete SHA groups');
 });
 
@@ -1161,7 +1185,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
@@ -1344,10 +1368,11 @@ test('post-migration live gate preserves parallel source checks and removes redu
   const source=workflow('hh-pr-core-release.yml');
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(specialist);
-  assert.doesNotMatch(specialist,/^    needs:/m,'schedule specialist alongside scope');
+  assert.match(specialist,/^    needs: \[scope\]$/m,'do not allocate Specialist before Core has passed');
   assert.match(specialist,/ci-specialist-aggregate\.mjs/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
-  assert.doesNotMatch(specialist,/needs\.code|needs\.scope/);
+  assert.doesNotMatch(specialist,/needs\.code/);
+  assert.match(specialist,/needs\.scope\.result == 'success'/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
@@ -1441,7 +1466,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
@@ -1464,8 +1489,8 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
-  assert.match(specialist,/if: \$\{\{ !cancelled\(\) \}\}/);
-  assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
+  assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
+  assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
@@ -1481,11 +1506,11 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
-  assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
-  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
+  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(gate, /Unified Core gate passed/);
@@ -1497,7 +1522,7 @@ test('required hh-merge-check uses ubuntu-slim and keeps fail-closed Core/Specia
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
@@ -1563,4 +1588,49 @@ test('seven costly PR workflows cancel obsolete first-attempt HEAD without push-
     assert.ok(match[2].includes("github.run_attempt == 1") && match[2].includes("github.event.action == 'synchronize'"), file + ': first-attempt synchronize only');
     assert.doesNotMatch(match[2], /github\.event\.(?:before|after)/, file + ': push-only fields never cancel PR runs');
   }
+});
+
+
+// CI-only planner and its deterministic contracts do not touch Next runtime.
+// Real production-path changes still route through full Core/Specialist checks.
+test('Public Services planner/source test stay in the narrow Core CI-only lane', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const scope = core.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0] || '';
+  for (const name of ['scripts/ci-public-services-plan.mjs', 'tests/ci-public-services-plan.test.mjs']) {
+    assert.ok(scope.includes(name + '|\\'), 'CI-only route missing for ' + name);
+  }
+  assert.match(core, /name: hh-merge-check/, 'required protected gate is not optional');
+  assert.match(core, /needs: \[scope, hh-specialist\]/, 'real Specialist remains mandatory');
+});
+
+test('App R1 banner matrix runs REAL preinstalled Playwright only when applicable, never repeated apt install',()=>{
+  const source=workflow('hh-app-r1.yml');
+  const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
+  assert.ok(section,'course-banner-browser must exist');
+  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/timeout-minutes: 15/);
+  assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(section,/docker run --rm --init --ipc=host --network none/);
+  assert.match(section,/-e HH_TEST_BROWSER="\$HH_TEST_BROWSER"/);
+  assert.match(section,/node tests\/course-banner\/browser\.mjs/);
+  assert.match(section,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.doesNotMatch(section,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(section,/continue-on-error:\s*true/);
+});
+test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Noble image',()=>{
+  const s=workflow('tantra-testimonials.yml');
+  assert.match(s,/runs-on: ubuntu-24\.04/);
+  assert.match(s,/image: mcr\.microsoft\.com\/playwright:v1\.64\.0-noble/);
+  assert.match(s,/defaults:\s*\n\s*run:\s*\n\s*shell: bash/);
+  assert.match(s,/@playwright\/test@1\.64\.0/);
+  assert.match(s,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.match(s,/for \(const \[name, engine\] of \[\['chromium', chromium\], \['webkit', webkit\]\]\)/);
+  assert.match(s,/await engine\.launch\(\{headless:true,timeout:15000\}\)/);
+  assert.match(s,/node scripts\/verify-tantra-testimonials\.mjs/);
+  assert.match(s,/npm run build/);
+  assert.doesNotMatch(s,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });

@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-aggregate.mjs';
 
-// Deliberate one-time migration proof: changing this exact contract file
-// dispatches every affected specialist under both old and new BASE/HEAD manifests.
-// Later edits to an unrelated optional workflow YAML run Core/actionlint/Guard,
-// not that workflow's expensive product browser suite.
+// The one-time specialist-route migration (#3509) has completed.
+// Neither the retired marker nor this shared test should launch optional owners.
+// Owned product, security and dependency changes retain their specialist suites.
+// Core, Guard and actionlint still verify CI routing and workflow changes.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
   "dao-iching-library.yml",
@@ -39,19 +39,24 @@ const ownerWorkflows = [
   "practice-google-browser.yml"
 ];
 const highRiskSelfChecks = ["opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
-const contractFile = 'tests/ci-pr-selective-workflows.test.mjs';
+const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
+const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
 
-test('optional workflow edits are owned by actionlint; shared contract migration remains independently verified', () => {
+test('optional workflow routes exclude retired shared fan-out triggers and retain owned coverage', () => {
   assert.equal(new Set(ownerWorkflows).size, ownerWorkflows.length);
   for (const name of ownerWorkflows) {
     const routes = trigger(name);
-    assert.ok(routes?.paths?.includes(contractFile), name + ': shared migration contract absent');
+    assert.ok(routes?.paths?.length, name + ': owner lost product routing');
+    assert.equal(routes.paths.includes(contractFile), false,
+      name + ': retired migration marker must not dispatch optional owners');
     assert.equal(routes.paths.includes('.github/workflows/' + name), false,
       name + ': self-edit must not launch expensive product checks');
-    assert.equal(matchesTrigger(routes, [contractFile], TARGET), true,
-      name + ': initial migration must still dispatch genuine exact-HEAD QA');
+    assert.equal(matchesTrigger(routes, [contractFile], TARGET), false,
+      name + ': retired migration marker must never fan out product QA');
+    assert.equal(matchesTrigger(routes, [legacyTrigger], TARGET), false,
+      name + ': legacy policy-test edits must not start unrelated product QA');
     assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), false,
       name + ': config-only edit must be delegated to actionlint and Guard');
   }
@@ -62,8 +67,10 @@ test('optional workflow edits are owned by actionlint; shared contract migration
     assert.equal(matchesTrigger(actionlint, [file], TARGET), true, name + ': actionlint lost coverage');
     assert.equal(matchesTrigger(core, [file], TARGET), true, name + ': Core lost coverage');
   }
-  assert.equal(matchesTrigger(trigger('hh-pr-sweep-guard.yml'), [contractFile], TARGET), true,
-    'Guard must execute contract on every scope-policy update');
+  for (const file of [contractFile, legacyTrigger]) {
+    assert.equal(matchesTrigger(trigger('hh-pr-sweep-guard.yml'), [file], TARGET), true,
+      'Guard must cover shared CI policy: ' + file);
+  }
 });
 
 test('unrelated library and sitemap edits do not awaken Dao and growth browser owners', () => {

@@ -12,6 +12,7 @@ import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
 import {moneyScenes} from "@/lib/mandala/money-flow-effects";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-cinematic-director.module.css";
 
@@ -19,7 +20,10 @@ export type CinematicShot={id:string;number:number;title:string;theme:VideoTheme
   startSeconds:number;durationSeconds:number;camera:string;providerPrompt:string;visualCue:string;
   overlayText?:string;
   transitionIn?:"soft"|"cut"|"fade_black"|"flash_white";
-  colorLook?:"original"|"warm"|"cool"|"dream";};
+  colorLook?:"original"|"warm"|"cool"|"dream";
+  motion?:MyTubeMotion|null;
+  sourcePhasePercent?:number;
+  sourceSpeed?:number;};
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:readonly CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;

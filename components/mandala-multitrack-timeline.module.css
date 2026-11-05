@@ -92,3 +92,59 @@
   .audioOffset{order:9}
   .hint{order:10}
 }
+
+
+/* Compact native edit history controls, readable on narrow iPhones. */
+.transportActions button.historyAction{
+  width:34px;height:34px;min-width:34px;
+  border:1px solid #d4e2d9;border-radius:10px;
+  background:#f6faf6;color:#245748;
+}
+.transportActions button.historyAction:disabled{
+  opacity:.35;cursor:not-allowed;
+}
+@media(max-width:359px){
+  .transportActions{gap:4px}
+  .transportActions button.historyAction{width:30px;height:30px;min-width:30px}
+}
+
+
+/* CapCut-class caption styling uses the same safe on-canvas composition. */
+.captionAppearance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.captionAppearance label{display:grid;gap:4px;min-width:0;font-size:11px;font-weight:750}
+.captionAppearance select{display:block;width:100%;min-width:0;min-height:42px;border:1px solid #cadcd1;
+  border-radius:10px;background:#fffdfa;color:#21483c;font-size:12px;padding:5px}
+.captionAppearance select:disabled{opacity:.42}
+@media(max-width:359px){
+  .captionAppearance{grid-template-columns:1fr 1fr}
+  .captionAppearance label:last-child{grid-column:1/-1}
+}
+
+
+/* Clip-local camera keyframes. Optional inspector; no duplicate video player. */
+.motionInspector{display:grid;gap:8px;padding:10px;border:1px solid #d4e4dc;
+  background:#f7faf7;border-radius:12px;color:#225346}
+.motionInspector>label{display:grid;gap:5px;font-size:12px;font-weight:750}
+.motionInspector select{width:100%;min-height:42px;padding:6px 10px;
+  background:#fffdfa;color:#183e33;border:1px solid #c3dacd;border-radius:9px}
+.motionInspector details{display:grid;gap:7px}
+.motionInspector summary{cursor:pointer;min-height:36px;font-size:12px;font-weight:800;
+  color:#26614d;display:list-item;padding:7px 3px}
+.motionSliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.motionSliders label{display:grid;gap:6px;font-size:11px;min-width:0;font-weight:650}
+.motionSliders input{width:100%;min-height:30px;accent-color:#0b9577}
+@media(max-width:359px){.motionSliders{grid-template-columns:1fr}}
+@media(max-width:759px){.motionInspector{order:9}.audioOffset{order:10}.hint{order:11}}
+
+
+/* Slip editing and source speed only; source rights and timeline stay fixed. */
+.sourceTimingInspector{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:9px;
+  border:1px solid #c7ddd2;border-radius:12px;padding:11px;background:#f7faf5}
+.sourceTimingInspector strong{grid-column:1/-1;font-size:12px;color:#215342}
+.sourceTimingInspector label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:700}
+.sourceTimingInspector select{border:1px solid #c4d8cc;border-radius:8px;min-height:40px;
+  min-width:0;padding:6px;background:#fffdfa;color:#153e35}
+.sourceTimingInspector input{width:100%;min-height:34px;accent-color:#079777}
+.sourceTimingInspector small{grid-column:1/-1;color:#697b71;font-size:10px}
+@media(max-width:380px){.sourceTimingInspector{grid-template-columns:1fr}}
+@media(max-width:759px){.sourceTimingInspector{order:10}.audioOffset{order:11}.hint{order:12}}

@@ -7,7 +7,7 @@ import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound }
 import type { PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
-import { visualDockBottomCorrection } from "@/lib/mobile-visual-bottom.mjs";
+import { visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
 const icons = {
   mytube: Clapperboard, video: Film, ai: MessageCircle,
@@ -33,12 +33,11 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
     if (!visible) return;
     let frame = 0;
     const viewport = window.visualViewport;
-    // Most Safari versions already pin CSS fixed:bottom:0 to the visible edge.
-    // Measure the real rectangle before correcting older layout-viewport cases.
-    // Never stack a vh/dvh guess with a VisualViewport guess.
-    const resetDockCorrection = () => {
-      document.body.style.removeProperty("--hh-unified-viewport-inset");
-    };
+    let lastUnfocusedVisualHeight = viewport?.height ?? window.innerHeight;
+    // Let CSS position:fixed own the bottom anchor. Safari browser chrome
+    // changes visualViewport while scrolling; writing a new bottom offset on
+    // every scroll causes the user's observed up/down feedback oscillation.
+    // Only measure the dock's height and detect a real focused keyboard here.
     const update = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
@@ -50,54 +49,43 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
           document.body.style.setProperty("--hh-unified-nav-height", rect.height + "px");
         const focused = document.activeElement as HTMLElement | null;
         const editing = focused?.matches("input, textarea, [contenteditable=true]") || focused?.isContentEditable;
-        const visualBottom = viewport ? viewport.offsetTop + viewport.height : innerHeight;
-        const hideForKeyboard = Boolean(editing && innerHeight - visualBottom > 140);
-        setKeyboardOpen(previous => previous === hideForKeyboard ? previous : hideForKeyboard);
-        const style = window.getComputedStyle(node);
-        if (hideForKeyboard || style.display === "none" || style.visibility === "hidden" ||
-            style.position !== "fixed" || rect.height < 1) {
-          resetDockCorrection();
-          return;
-        }
-        const currentInset = Number.parseFloat(
-          document.body.style.getPropertyValue("--hh-unified-viewport-inset"),
-        ) || 0;
-        const inset = visualDockBottomCorrection({
-          dockBottom: rect.bottom,
-          visualBottom,
-          currentInset,
+        const visualHeight = viewport?.height ?? innerHeight;
+        const visualOffsetTop = viewport?.offsetTop ?? 0;
+        const hideForKeyboard = visualKeyboardOpen({
+          editing: Boolean(editing), layoutHeight: innerHeight, visualHeight,
+          visualOffsetTop, lastUnfocusedVisualHeight,
         });
-        // This converges after one layout pass, including toolbar expand/collapse,
-        // scroll restoration and iPhone orientation changes. Avoid 1px flicker.
-        if (Math.abs(inset - currentInset) > 1) {
-          if (inset === 0) resetDockCorrection();
-          else document.body.style.setProperty("--hh-unified-viewport-inset", inset + "px");
-        }
+        if (!editing && visualHeight > lastUnfocusedVisualHeight - 140)
+          lastUnfocusedVisualHeight = visualHeight;
+        setKeyboardOpen(previous => previous === hideForKeyboard ? previous : hideForKeyboard);
+        // Share measured iOS keyboard visibility with the single Messenger page.
+        // Retained focus after keyboard dismissal must not hide the composer.
+        const messengerPage = document.querySelector<HTMLElement>(".hh-messages-page");
+        if (messengerPage) messengerPage.dataset.hhMobileKeyboardOpen = hideForKeyboard ? "true" : "false";
       });
     };
     update();
     const observer = navRef.current ? new ResizeObserver(update) : null;
     if (observer && navRef.current) observer.observe(navRef.current);
     window.addEventListener("resize", update, { passive: true });
-    window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("pageshow", update);
-    window.addEventListener("orientationchange", update);
+    const onOrientationChange = () => {
+      lastUnfocusedVisualHeight = viewport?.height ?? window.innerHeight;
+      update();
+    };
+    window.addEventListener("orientationchange", onOrientationChange);
     document.addEventListener("focusin", update);
     document.addEventListener("focusout", update);
     viewport?.addEventListener("resize", update, { passive: true });
-    viewport?.addEventListener("scroll", update, { passive: true });
     return () => {
       observer?.disconnect();
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update);
       window.removeEventListener("pageshow", update);
-      window.removeEventListener("orientationchange", update);
+      window.removeEventListener("orientationchange", onOrientationChange);
       document.removeEventListener("focusin", update);
       document.removeEventListener("focusout", update);
       viewport?.removeEventListener("resize", update);
-      viewport?.removeEventListener("scroll", update);
-      resetDockCorrection();
       document.body.style.removeProperty("--hh-unified-nav-height");
     };
   }, [visible, pathname]);

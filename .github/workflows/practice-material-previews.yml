@@ -36,12 +36,11 @@ on:
       - 'tests/practice-material-preview-url.test.mjs'
       - 'tests/practice-course-materials-navigation.test.mjs'
       - 'tests/practitioner-approved-v4-ui.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
 permissions:
   contents: read
 concurrency:
-  group: practice-material-previews-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: practice-material-previews-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   unit-types-build:
     runs-on: ubuntu-latest

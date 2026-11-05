@@ -8,13 +8,12 @@ on:
       - 'data/spanish-remedies.json'
       - 'content/remedies/**'
       - 'tests/sitemap-runtime-assets.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: sitemap-runtime-assets-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: sitemap-runtime-assets-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   sitemap-packaging:
     runs-on: ubuntu-latest

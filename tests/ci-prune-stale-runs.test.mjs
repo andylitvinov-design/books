@@ -331,12 +331,17 @@ test('metrics monitor counts new checks separately from jobs actually running', 
 test('optional conflict grouping cannot falsely fail a successful protected CI prune',()=>{
  const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
  const marker='- name: Group unresolved PR merge-conflict candidates (read-only)';
- const idx=yaml.indexOf(marker);
- assert.ok(idx>0);
- const prune=yaml.slice(0,idx);
+ const reportMarker='- name: P1 PR-minute loss report — verified time stamps and TOP-3 sample';
+ const idx=yaml.indexOf(marker), reportIdx=yaml.indexOf(reportMarker);
+ assert.ok(idx>reportIdx && reportIdx>0);
+ const prune=yaml.slice(0,reportIdx);
+ const report=yaml.slice(reportIdx,idx);
  const diag=yaml.slice(idx);
  assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
- assert.doesNotMatch(prune,/continue-on-error: true/);
+ assert.doesNotMatch(prune,/continue-on-error: true/,'the mutating prune must remain fatal');
+ assert.match(report,/node scripts\/ci-pr-loss-report\.mjs/);
+ assert.match(report,/continue-on-error: true/,'read-only metrics must never block cleanup');
+ assert.match(report,/timeout-minutes: 3/);
  assert.match(diag,/id: conflict_diagnostic/);
  assert.match(diag,/continue-on-error: true/);
  assert.match(diag,/timeout-minutes: 2/);
@@ -442,7 +447,8 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
   assert.ok(source.includes('group: hh-pr-core-' +
     "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"),
+    'Core cancellation is limited to first-attempt synchronize or Draft transition');
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
 });

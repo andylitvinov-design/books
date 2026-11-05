@@ -8,7 +8,7 @@ import MessengerAiWorkspace from './messenger-ai-workspace'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
- en:{title:'Messages',subtitle:'Orders and conversations in one place.',
+ en:{title:'Messages',subtitle:'AI · Orders · Clients',
   introOrders:'Your orders and conversations with practitioners',introOrdersBody:'Status, messages and materials together.',introClients:'Your incoming client messages',introClientsBody:'Answer requests through existing protected conversations.',searchOrders:'Search orders, services or practitioners',filterOrders:'Filter by status',chatIndicator:'Order conversation',
   orders:'My orders',clients:'My clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
   all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',emptyHelp:'Your order status and conversation with a practitioner will appear here.',
@@ -25,7 +25,7 @@ const TEXT={
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
   notifyTitle:'Do not miss your practitioner’s reply',notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',notifyAction:'Notification settings'},
- ru:{title:'Сообщения',subtitle:'Заказы и общение',
+ ru:{title:'Сообщения',subtitle:'ИИ · Заказы · Клиенты',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
   all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',emptyHelp:'После оформления здесь появятся статус заказа и переписка с мастером.',
@@ -42,7 +42,7 @@ const TEXT={
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
   notifyTitle:'Не пропустите ответ мастера',notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',notifyAction:'Настроить уведомления'},
- es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
+ es:{title:'Mensajes',subtitle:'IA · Pedidos · Clientes',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
   all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',emptyHelp:'Aquí verás el estado de tus pedidos y el chat con el profesional.',
@@ -92,7 +92,11 @@ function priceOf(order,t){
 export default function MessagesOrdersClients({locale='en',children}){
   const searchParams=useSearchParams()
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
-  const [section,setSection]=useState('ai')
+  const [section,setSection]=useState(()=>{
+    const requested=searchParams.get('section')
+    return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
+      requested==='orders'||searchParams.has('order')?'orders':'ai'
+  })
   const [ordersData,setOrdersData]=useState(null)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(true)
@@ -103,15 +107,23 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [search,setSearch]=useState('')
   const [clientCount,setClientCount]=useState(0)
   const [clientDetailOpen,setClientDetailOpen]=useState(false)
+  const [clientsVisited,setClientsVisited]=useState(()=>section==='clients')
+  useEffect(()=>{if(section==='clients')setClientsVisited(true)},[section])
   const [selectedId,setSelectedId]=useState('')
   const orderChatRef=useRef(null)
+  const hubRef=useRef(null)
+  const aiAccountRef=useRef(null)
+  const [aiSession,setAiSession]=useState(0)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
     const requested=q.get('section')
     setSection(requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':
       requested==='orders'||q.has('order')?'orders':'ai')
     const id=q.get('order')
-    setSelectedId(id&&/^[0-9a-f-]{36}$/i.test(id)?id:'')
+    // Switching folders removes ?order= from the URL, but must not discard
+    // the private conversation still mounted behind the current tab.
+    if(id&&/^[0-9a-f-]{36}$/i.test(id))setSelectedId(id)
+    else if(requested==='orders')setSelectedId('')
   },[searchParams])
   const reload=useCallback(()=>setGeneration(v=>v+1),[])
   useEffect(()=>{
@@ -128,6 +140,19 @@ export default function MessagesOrdersClients({locale='en',children}){
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
   },[generation,locale])
+  // A normal account bootstrap must not erase the AI draft in progress.
+  // Clear it only on a verified account switch or explicit sign-out.
+  useEffect(()=>{
+    const account=ordersData?.accountId
+    if(account){
+      if(aiAccountRef.current&&aiAccountRef.current!==account)
+        setAiSession(value=>value+1)
+      aiAccountRef.current=account
+    }else if(signedOut&&aiAccountRef.current){
+      aiAccountRef.current=null
+      setAiSession(value=>value+1)
+    }
+  },[ordersData?.accountId,signedOut])
   const orders=ordersData?.orders||[]
   const visible=useMemo(()=>{
     const term=search.trim().toLocaleLowerCase()
@@ -136,52 +161,107 @@ export default function MessagesOrdersClients({locale='en',children}){
         row.remoteBooking?.serviceTitle].some(value=>String(value||'').toLocaleLowerCase().includes(term))))
   },[orders,filter,search,locale,status])
   const selected=orders.find(order=>order.id===selectedId)||null
-  // The iPhone keyboard changes visualViewport, not always CSS dvh. Keep the
-  // real private composer within the visible area, above the fixed app dock.
+  // Real iPhone visual viewport is authoritative: an open order chat occupies
+  // the *visible* screen, not the area below its order details.
   useEffect(()=>{
     const pane=orderChatRef.current
     if(!pane||section!=='orders'||!selectedId)return
-    let frameId=0
+    let frame=0
     const update=()=>{
-      if(!window.matchMedia('(max-width:700px)').matches){
+      if(!window.matchMedia('(max-width:760px)').matches){
+        pane.style.removeProperty('--hh-order-chat-top')
         pane.style.removeProperty('--hh-order-chat-height')
         return
       }
-      const viewport=window.visualViewport
-      const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight
-      const sharedDock=document.querySelector('[data-hh-unified-dock]')
-      const nav=sharedDock&&getComputedStyle(sharedDock).display!=='none'
-        ?sharedDock:document.querySelector('.hh-messages-page .hh-mobile-app-nav')
-      const editing=pane.contains(document.activeElement)&&
-        /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
-      const navTop=nav&&!editing&&getComputedStyle(nav).display!=='none'
-        ?nav.getBoundingClientRect().top:bottom
-      const available=Math.max(205,Math.floor(Math.min(bottom,navTop)-
-        pane.getBoundingClientRect().top-7))
-      const cap=Math.max(205,Math.floor(viewport?.height||window.innerHeight))
-      pane.style.setProperty('--hh-order-chat-height',Math.min(available,cap)+'px')
+      const visual=window.visualViewport
+      pane.style.setProperty('--hh-order-chat-top',Math.max(0,Math.round(visual?.offsetTop||0))+'px')
+      pane.style.setProperty('--hh-order-chat-height',
+        Math.max(1,Math.floor(visual?.height||window.innerHeight))+'px')
     }
-    const schedule=()=>{
-      window.cancelAnimationFrame(frameId)
-      frameId=window.requestAnimationFrame(update)
-    }
+    const schedule=()=>{window.cancelAnimationFrame(frame);frame=requestAnimationFrame(update)}
     schedule()
-    const viewport=window.visualViewport
-    for(const event of ['resize','scroll'])window.addEventListener(event,schedule,{passive:true})
-    viewport?.addEventListener('resize',schedule)
-    viewport?.addEventListener('scroll',schedule)
+    const visual=window.visualViewport
+    window.addEventListener('resize',schedule)
+    window.addEventListener('orientationchange',schedule)
+    window.addEventListener('pageshow',schedule)
     document.addEventListener('focusin',schedule)
     document.addEventListener('focusout',schedule)
+    visual?.addEventListener('resize',schedule)
+    visual?.addEventListener('scroll',schedule)
     return()=>{
-      window.cancelAnimationFrame(frameId)
-      for(const event of ['resize','scroll'])window.removeEventListener(event,schedule)
-      viewport?.removeEventListener('resize',schedule)
-      viewport?.removeEventListener('scroll',schedule)
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize',schedule)
+      window.removeEventListener('orientationchange',schedule)
+      window.removeEventListener('pageshow',schedule)
       document.removeEventListener('focusin',schedule)
       document.removeEventListener('focusout',schedule)
+      visual?.removeEventListener('resize',schedule)
+      visual?.removeEventListener('scroll',schedule)
+      pane.style.removeProperty('--hh-order-chat-top')
       pane.style.removeProperty('--hh-order-chat-height')
     }
   },[section,selectedId,ordersData?.accountId])
+
+  // The AI workspace has its own scrolling conversation and pinned composer.
+  // Measure the actual visible viewport; the one existing dock takes space
+  // only while it is visible and no chat editor is focused.
+  useEffect(()=>{
+    const hub=hubRef.current
+    if(!hub)return
+    let frame=0
+    const update=()=>{
+      if(!window.matchMedia('(max-width:760px)').matches||section!=='ai'){
+        for(const name of ['--hh-messenger-top','--hh-messenger-height'])
+          hub.style.removeProperty(name)
+        delete hub.dataset.chatEditing
+        delete hub.dataset.keyboardOpen
+        return
+      }
+      const visual=window.visualViewport
+      const top=Math.max(0,Math.round(visual?.offsetTop||0))
+      const bottom=top+(visual?.height||window.innerHeight)
+      const active=document.activeElement
+      const editing=Boolean(hub.querySelector('[data-hh-messenger-ai]')?.contains(active))&&
+        Boolean(active?.matches?.('textarea,input:not([type="file"]),[contenteditable="true"]'))
+      const keyboard=editing&&(window.innerHeight-bottom>115||
+        (visual?.height||window.innerHeight)<window.innerHeight*0.75)
+      hub.dataset.chatEditing=editing?'true':'false'
+      hub.dataset.keyboardOpen=keyboard?'true':'false'
+      const sharedDock=document.querySelector('[data-hh-unified-dock]')
+      const fallbackDock=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const dock=[sharedDock,fallbackDock].find(el=>el&&getComputedStyle(el).display!=='none'&&
+        el.getBoundingClientRect().height>0)
+      const navTop=dock?.getBoundingClientRect().top
+      const limit=keyboard?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
+      hub.style.setProperty('--hh-messenger-top',top+'px')
+      hub.style.setProperty('--hh-messenger-height',Math.max(1,Math.floor(limit-top-4))+'px')
+    }
+    const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(update)}
+    const visual=window.visualViewport
+    schedule()
+    window.addEventListener('resize',schedule)
+    window.addEventListener('orientationchange',schedule)
+    window.addEventListener('pageshow',schedule)
+    document.addEventListener('focusin',schedule)
+    document.addEventListener('focusout',schedule)
+    visual?.addEventListener('resize',schedule)
+    visual?.addEventListener('scroll',schedule)
+    return()=>{
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize',schedule)
+      window.removeEventListener('orientationchange',schedule)
+      window.removeEventListener('pageshow',schedule)
+      document.removeEventListener('focusin',schedule)
+      document.removeEventListener('focusout',schedule)
+      visual?.removeEventListener('resize',schedule)
+      visual?.removeEventListener('scroll',schedule)
+      for(const name of ['--hh-messenger-top','--hh-messenger-height'])
+        hub.style.removeProperty(name)
+      delete hub.dataset.chatEditing
+      delete hub.dataset.keyboardOpen
+    }
+  },[section])
+
   function chooseSection(value){
     if(!['ai','orders','clients'].includes(value))return
     setSection(value)
@@ -192,8 +272,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       url.searchParams.delete('to')
       url.searchParams.delete('requestId')
     }
-    if(value!=='orders'){url.searchParams.delete('order');setSelectedId('')}
-    setClientDetailOpen(false)
+    if(value!=='orders')url.searchParams.delete('order')
+    else if(selectedId)url.searchParams.set('order',selectedId)
+    // Preserve selected client/order and their unsent drafts while changing folders.
     window.history.replaceState(window.history.state,'',url)
   }
   function chooseOrder(id){
@@ -204,34 +285,19 @@ export default function MessagesOrdersClients({locale='en',children}){
     window.history.replaceState(window.history.state,'',url)
   }
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
-  const detailMode=Boolean(selected)||(section==='clients'&&clientDetailOpen)
-  return <section className={styles.root} data-orders-clients-hub
-    data-detail-open={detailMode||undefined} data-section={section}>
-    <header className={styles.head}>
-      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{section==='ai'?
-        (locale==='ru'?'ИИ · Заказы · Клиенты — всё в одном месте':locale==='es'?'IA · Pedidos · Clientes':'AI · Orders · Clients'):
-        section==='clients'&&ordersData?.hasPractice?
-        (locale==='ru'?'Клиенты и входящие':locale==='es'?'Clientes y mensajes':'Clients and messages'):t.subtitle}</p></div>
-      <span className={styles.headerActions}>
-        <Link prefetch={false} className={styles.notificationSettings}
-          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
-          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
-          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
-          <Bell size={17} aria-hidden="true"/>
-        </Link>
-        <button type="button" onClick={reload} className={styles.refresh}
-          aria-label={t.retry} title={t.retry}>
-          <RefreshCw size={19} aria-hidden="true"/>
-        </button>
-      </span>
-    </header>
-    {section!=='ai'&&!detailMode&&!loading&&!error&&ordersData&&<div className={styles.introCard}>
+  const detailMode=(section==='orders'&&Boolean(selected))||(section==='clients'&&clientDetailOpen)
+  // Load-dependent helper lives inside the active panel, not above the tabs.
+  const listHelper=section!=='ai'&&!detailMode&&!loading&&!error&&Boolean(ordersData)&&(
+    <div className={styles.introCard} data-messenger-list-helper>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
         <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
       <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
         loading="lazy" width="118" height="104" className={styles.introArt}/>
-    </div>}
+    </div>
+  )
+  return <section ref={hubRef} className={styles.root} data-orders-clients-hub
+    data-detail-open={detailMode||undefined} data-section={section}>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
@@ -251,10 +317,26 @@ export default function MessagesOrdersClients({locale='en',children}){
         {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
       </button>
     </div>
-    {section==='ai'&&<div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai>
-      <MessengerAiWorkspace locale={locale}/>
-    </div>}
-    {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
+    <header className={styles.head}>
+      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
+      <span className={styles.headerActions}>
+        <Link prefetch={false} className={styles.notificationSettings}
+          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
+          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
+          <Bell size={17} aria-hidden="true"/>
+        </Link>
+        <button type="button" onClick={reload} className={styles.refresh}
+          aria-label={t.retry} title={t.retry}>
+          <RefreshCw size={19} aria-hidden="true"/>
+        </button>
+      </span>
+    </header>
+    <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
+      <MessengerAiWorkspace key={aiSession} locale={locale}/>
+    </div>
+    <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
+      {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&
         <aside className={styles.notifyInvite}>
           <Bell size={19} aria-hidden="true"/>
@@ -352,8 +434,12 @@ export default function MessagesOrdersClients({locale='en',children}){
           <p><Clock3 size={15} aria-hidden="true"/>{dateOf(selected.createdAt,locale)}</p>
           <p className={styles.note}><Bell size={15} aria-hidden="true"/>{t.paymentInfo}</p>
         </details>
-        <div className={styles.conversation} ref={orderChatRef}>
-          <h3><MessageCircle size={19} aria-hidden="true"/>{t.chat}</h3>
+        <div className={styles.conversation} ref={orderChatRef} data-hh-order-active-chat>
+          <div className={styles.chatBar}>
+            <button type="button" className={styles.back} onClick={()=>chooseOrder('')}
+              aria-label={t.back}><ArrowLeft size={20} aria-hidden="true"/>{t.back}</button>
+            <h3><MessageCircle size={18} aria-hidden="true"/>{t.chat}</h3>
+          </div>
           <PracticeRequestConversation key={selected.id} requestId={selected.id} accountId={ordersData.accountId}
             locale={locale} inline autoOpen initialMessage={selected.message||''}
             createdAt={selected.createdAt} onSaved={reload} onViewed={reload}/>
@@ -364,10 +450,11 @@ export default function MessagesOrdersClients({locale='en',children}){
           <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.myPractice}<ArrowRight size={18}/></Link>
         </div>
       </div>}
-    </div>}
-    {section==='clients'&&<div id="hh-clients-panel" role="tabpanel" className={styles.clients}>
-      {isValidElement(children)?cloneElement(children,{
-        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children}
-    </div>}
+    </div>
+    <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
+      {listHelper}
+      {clientsVisited&&(isValidElement(children)?cloneElement(children,{
+        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+    </div>
   </section>
 }

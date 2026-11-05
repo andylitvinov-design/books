@@ -20,8 +20,32 @@ async function inspect(browserType,locale,width){
  try{
   await page.goto(origin+"/"+locale+"/mytube",{waitUntil:"domcontentloaded",timeout:75000});
   await page.locator("[data-mytube-page]").waitFor({timeout:45000});
+  assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
+    id+" video feed must not display the global free-review promotion");
   const dock=page.locator("[data-hh-unified-dock]");
   await dock.waitFor({state:"visible",timeout:20000});
+  await page.waitForFunction(()=>{
+    const page=document.querySelector("[data-mytube-page]");
+    return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
+  },null,{timeout:20000});
+  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
+    id+" dark dock applies only to MyTube");
+  const moreFilters=page.locator("[data-mytube-filter-toggle]");
+  const rail=page.locator("[data-mytube-category-rail]");
+  const refined=page.locator("#mytube-refine-controls");
+  const moreControls=page.locator("#mytube-more-controls");
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
+    id+" deeper filters are initially collapsed");
+  assert.equal(await rail.isVisible(),true,
+    id+" selected direction is always directly visible");
+  assert.equal(await refined.isVisible(),false,
+    id+" deeper taxonomy must not push videos down by default");
+  assert.equal(await page.locator("[data-mytube-duration-tabs] button").count(),3,
+    id+" All Shorts Study are visible");
+  const filterBounds=await moreFilters.boundingBox();
+  assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
+    id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
   const bounds=await links.evaluateAll(els=>els.map(el=>{
@@ -62,13 +86,37 @@ async function inspect(browserType,locale,width){
   // retired general-library four life-area filter. Wait for hydration so Safari
   // cannot swallow the real first click on a server-rendered category.
   const categories=page.locator('[data-mytube-categories] [data-mytube-category]:not([data-mytube-category="all"])');
-  assert.equal(await categories.count(),4,id+" four unique directions");
+  assert.equal(await categories.count(),4,id+" four unique swipeable directions");
+  assert.ok(await rail.evaluate(el=>el.scrollWidth>el.clientWidth),
+    id+" direction choices must be horizontally scrollable");
+  await rail.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  assert.ok(await rail.evaluate(el=>el.scrollLeft)>0,id+" swipe rail actually scrolls");
+  await rail.evaluate(el=>{el.scrollLeft=0;});
   await page.waitForFunction(()=>{
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
+  if(browserType===webkit&&locale==="ru"&&width===390){
+   await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
+   await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
+  }
+  for(const mode of ["shorts","study","all"]){
+    const control=page.locator('[data-mytube-duration-mode="'+mode+'"]');
+    await control.click();
+    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
+  }
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
+    id+" one filter action reveals additional filters");
+  await moreControls.waitFor({state:"visible",timeout:15000});
+  assert.ok(await moreControls.locator("select").count()>=2,
+    id+" language and sort controls are available after opening filters");
+  // Subcategory controls are intentionally empty until a direction is chosen.
+  assert.equal(await refined.isVisible(),false,
+    id+" no empty subcategory panel when all directions are selected");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
+  await refined.waitFor({state:"visible",timeout:15000});
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
   const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
@@ -85,6 +133,13 @@ async function inspect(browserType,locale,width){
   await page.locator('[data-mytube-category="all"]').click();
   await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
     null,{timeout:15000});
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
+    id+" closing filters restores the compact video-first layout");
+  assert.equal(await refined.isVisible(),false,
+    id+" additional filters are hidden after collapse");
+  assert.equal(await rail.isVisible(),true,
+    id+" horizontal directions remain visible");
   const cards=page.locator('[data-video-layout="mytube"] article');
   const publishedCount=await cards.count();
   // A local CI server without approved database content must show an honest
@@ -119,7 +174,7 @@ async function inspect(browserType,locale,width){
     playerClick=true;
   }
   if(browserType===webkit&&locale==="ru"&&width===390)
-   await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
+   await page.screenshot({path:folder+"/mytube-webkit-ru-390-filtered.png",fullPage:false});
   results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
     overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
  }finally{await context.close();await browser.close();}

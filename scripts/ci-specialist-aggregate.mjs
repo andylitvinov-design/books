@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -85,11 +85,17 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         continue;
       }
       if (response.ok) return response.json();
-      const rateLimited = response.status === 403 &&
-        (response.headers?.get('x-ratelimit-remaining') === '0' ||
+      // Retryable HTTP 500 and network failures are different from a
+      // genuine quota exhaustion. Waiting 0.4/1.2/2.4 seconds cannot reset
+      // a primary/secondary GitHub rate window, and multiplied across
+      // concurrent specialists those retries make 403 storms worse.
+      const rateLimited = (response.status === 403 || response.status === 429) &&
+        (response.status === 429 ||
+         response.headers?.get('x-ratelimit-remaining') === '0' ||
          Boolean(response.headers?.get('retry-after')));
-      const transientStatus = response.status === 429 ||
-        (response.status >= 500 && response.status <= 504) || rateLimited;
+      if (rateLimited)
+        throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status + ' RATE_LIMITED');
+      const transientStatus = response.status >= 500 && response.status <= 504;
       if (!transientStatus || attempt >= retryDelaysMs.length)
         throw Error('GitHub read ' + endpoint + ' HTTP ' + response.status);
       await sleep(retryDelaysMs[attempt]);
@@ -112,6 +118,26 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
     pr: (n) => get('/pulls/' + n),
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
+    // Targeted fallback for GitHub's eventually consistent HEAD-wide index:
+    // only probe a required workflow known missing after the initial grace.
+    runsForWorkflow: async (sha, filename) => {
+      if (!/^[0-9a-f]{40}$/.test(sha) ||
+          !/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(filename))
+        throw Error('INVALID_WORKFLOW_FALLBACK_ARGUMENTS');
+      const workflow = filename.slice(WORKFLOW_PREFIX.length);
+      const result = await get('/actions/workflows/' + workflow +
+        '/runs?head_sha=' + sha + '&event=pull_request&per_page=100');
+      if (!Number.isSafeInteger(result?.total_count) || result.total_count > 100 ||
+          result.total_count < 0 || !Array.isArray(result.workflow_runs) ||
+          result.workflow_runs.length > result.total_count) throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+      return result.workflow_runs;
+    },
+    runById: async id => {
+      if (!Number.isSafeInteger(id) || id < 1) throw Error('INVALID_RUN_FALLBACK_ID');
+      const row = await get('/actions/runs/' + id);
+      if (row?.id !== id) throw Error('MISMATCHED_RUN_FALLBACK_ID');
+      return row;
+    },
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
     // PR event payloads may retain the base SHA from when the PR was opened.
     // Read the actual protected target ref, not pulls/:number.base.sha.
@@ -248,6 +274,50 @@ export function requiresCurrentProductionBase(changed) {
   );
 }
 
+// Verified one-time owner selector migration: changing a path filter alone
+// cannot change runtime, permissions or job bodies. A rising production BASE
+// must not turn an otherwise green CI-maintenance PR red. This exception is
+// used only with exact status rows from the immutable GitHub test-merge diff.
+const OPTIONAL_SELECTOR_OWNERS = new Set([".github/workflows/admin-seo-dashboard.yml",".github/workflows/dao-iching-library.yml",".github/workflows/hh-benchmark-program.yml",".github/workflows/hh-benchmark-public-browser.yml",".github/workflows/hh-course-presets.yml",".github/workflows/hh-direct-video-notes.yml",".github/workflows/hh-energywork-ai.yml",".github/workflows/hh-event-referral-contract.yml",".github/workflows/hh-first-video-live-export.yml",".github/workflows/hh-growth-journey.yml",".github/workflows/hh-growth-studio.yml",".github/workflows/hh-home-conversation.yml",".github/workflows/hh-ideas-coaching-public.yml",".github/workflows/hh-live-audio-ci.yml",".github/workflows/hh-live-seo-audit.yml",".github/workflows/hh-personal-coaching-session.yml",".github/workflows/hh-public-performance-audit.yml",".github/workflows/hh-salesbot-remaster-feature.yml",".github/workflows/hh-sitemap-runtime-assets.yml",".github/workflows/hh-static-image-cost-guard.yml",".github/workflows/hh-support-guided-recommendations.yml",".github/workflows/hh-video-feature-lab.yml",".github/workflows/holistic-house-native.yml",".github/workflows/holistic-house-ocean-audio.yml",".github/workflows/library-public-feed.yml",".github/workflows/mentor-community-acceptance.yml",".github/workflows/practice-google-browser.yml",".github/workflows/practice-material-previews.yml",".github/workflows/practice-visual-browser.yml"]);
+const OPTIONAL_SELECTOR_OLD = "      - 'tests/ci-pr-selective-workflows.test.mjs'";
+const OPTIONAL_SELECTOR_NEW = "      - 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md'";
+const OPTIONAL_SELECTOR_GUARD = '.github/workflows/hh-pr-sweep-guard.yml';
+const OPTIONAL_SELECTOR_MARKER = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
+const OPTIONAL_SELECTOR_TESTS = new Set(['tests/ci-pr-selective-workflows.test.mjs',
+  'tests/growth-studio-benchmark-quick-compose.test.mjs']);
+export function verifiedOptionalOwnerSelectorMigration(files, rows) {
+  if (!(files?.base instanceof Map) || !(files?.current instanceof Map) ||
+      !Array.isArray(rows) || rows.length < 3 || rows.length > 34) return false;
+  let owners = 0, marker = 0;
+  const seen = new Set();
+  for (const row of rows) {
+    const {filename: path, status} = row || {};
+    if (typeof path !== 'string' || seen.has(path) || row.previous_filename) return false;
+    seen.add(path);
+    if (OPTIONAL_SELECTOR_OWNERS.has(path)) {
+      const original = files.base.get(path), candidate = files.current.get(path);
+      if (status !== 'M' || typeof original !== 'string' ||
+          original.split(OPTIONAL_SELECTOR_OLD).length !== 2 ||
+          original.includes(OPTIONAL_SELECTOR_NEW) ||
+          candidate !== original.replace(OPTIONAL_SELECTOR_OLD,OPTIONAL_SELECTOR_NEW)) return false;
+      owners++;
+      continue;
+    }
+    if (path === OPTIONAL_SELECTOR_GUARD) {
+      const original = files.base.get(path), candidate = files.current.get(path);
+      if (status !== 'M' || typeof original !== 'string' ||
+          original.split(OPTIONAL_SELECTOR_OLD).length !== 2 ||
+          original.includes(OPTIONAL_SELECTOR_NEW) ||
+          candidate !== original.replace(OPTIONAL_SELECTOR_OLD,
+            OPTIONAL_SELECTOR_OLD + '\n' + OPTIONAL_SELECTOR_NEW)) return false;
+      continue;
+    }
+    if (path === OPTIONAL_SELECTOR_MARKER && status === 'A') { marker++; continue; }
+    if (OPTIONAL_SELECTOR_TESTS.has(path) && status === 'M') continue;
+    return false; // no runtime, checkout, auth, dependency, mixed or unknown changes
+  }
+  return owners >= 1 && marker === 1;
+}
 // A precise PR state reason is actionable; a generic HEAD/BASE message is not.
 // Keep the fail-closed prefix for existing consumers and expose the precise cause.
 export function classifyPrState(pr, ctx, requireCurrentBase = false) {
@@ -337,13 +407,19 @@ export async function verify(api,ctx,files,options={}) {
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
   const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
-  // A registered queued/requested/waiting workflow is evidence of dispatch,
-  // NOT a failed check. Do not fail at an arbitrary 15-minute queue threshold
-  // while its runner is still waiting. Give it the same absolute 35-minute
-  // bounded deadline as running workflows; the parent job has a 45m timeout.
-  // Missing workflows retain their short discovery grace; genuine failures
-  // still abort immediately. An override may shorten, never extend, the cap.
-  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? maxWait, 40*60_000));
+  // An expected workflow can be created on GitHub but temporarily absent
+  // from its HEAD-indexed Actions list while other specialists are queued.
+  // Never certify a missing job; only postpone NOT_TRIGGERED for the bounded
+  // period in which independent required jobs are demonstrably pending.
+  // No reruns, commits, privileged permissions or paid services are needed.
+  const correlatedMissingGrace = Math.min(maxWait,
+    boundedMs(options.correlatedMissingGraceMs ?? 5*60_000, 8*60_000));
+  // Registered queued/requested/waiting checks are dispatched, not failed.
+  // Unlike actual execution, idle runner allocation must not occupy this
+  // read-only aggregation runner for 35 minutes. Keep a 10-minute default,
+  // with an explicit bounded override for confirmed long GitHub queue periods.
+  // Exhaustion blocks merge as RUNNER_QUEUE, never as failed application code.
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
   // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
@@ -363,7 +439,8 @@ export async function verify(api,ctx,files,options={}) {
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   // BASE/HEAD workflow definitions and the actual merge snapshot stay
   // immutable even when the production target moves after the check started.
-  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  const requireCurrentBase=!pinnedChangeRows || (requiresCurrentProductionBase(changed) &&
+    !verifiedOptionalOwnerSelectorMigration(files,changedRows));
   const approvedBaseChanges = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
@@ -390,8 +467,31 @@ export async function verify(api,ctx,files,options={}) {
       // application source may have advanced without new proposed-merge CI.
       const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
         safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
-      if (!documentationOnly && !independentlyRevalidated) {
+      // Independently tested public media source advances cannot change a
+      // candidate that edits ONLY detached Specialist policy code/tests. The
+      // immutable PR HEAD, actual successful Core and every Specialist job
+      // remain mandatory; auth/billing/workflows/CI/unknown paths stay red.
+      const isolatedCiPolicy = pinnedChangeRows &&
+        changedRows.every(row => row.status === 'M' || row.status === 'A' ||
+          row.status === 'modified' || row.status === 'added') &&
+        safeIndependentPublicMediaAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Do not invalidate a long-running sensitive PR just because another
+      // already-protected PR shipped *only* independent CI telemetry/tests or
+      // one-line retired optional-owner trigger removals. GitHub's full
+      // ancestor/commit/file proof and strict no-overlap check are required.
+      // Never reuse green checks over real runtime, Core, Guard, actionlint,
+      // Specialist, dependency or security policy changes.
+      const unrelatedCiMaintenance = pinnedChangeRows &&
+        safeIndependentCiMaintenanceAdvance(diff, ctx.base, liveBaseSha, changed);
+      if (!documentationOnly && !independentlyRevalidated &&
+          !isolatedCiPolicy && !unrelatedCiMaintenance) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (unrelatedCiMaintenance) {
+        console.log('CI_BASE_ADVANCE_REUSED: exact-HEAD checks retained after unrelated protected CI maintenance; no second CI wave');
+        if (process.env.GITHUB_STEP_SUMMARY)
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '- CI target advanced by independently proven, disjoint maintenance; reuse original exact-HEAD checks (no rebuild)\n');
       }
       approvedBaseChanges.add(liveBaseSha);
     }
@@ -452,46 +552,140 @@ export async function verify(api,ctx,files,options={}) {
   const missingDeadline = start + missingGrace;
   const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
+  let incompleteSince = null;
+  const recovered = new Map();
+  const probeTimes = new Map();
+  const refreshTimes = new Map();
   for (;;) {
-    const allRuns=await api.runs(ctx.head);
+    const indexed = await api.runs(ctx.head);
+    // Cache only GitHub-returned evidence. A recovered pending workflow must
+    // still finish successfully; refresh its immutable ID if the HEAD index lags.
+    if (typeof api.runById === 'function') {
+      const indexedIds = new Set(indexed.map(row => row.id));
+      for (const [filename, row] of recovered) {
+        if (indexedIds.has(row.id)) { recovered.delete(filename); continue; }
+        if (row.status === 'completed') continue;
+        if (now() - (refreshTimes.get(filename) ?? -Infinity) < 60_000) continue;
+        recovered.set(filename, await api.runById(row.id));
+        refreshTimes.set(filename, now());
+      }
+    }
+    const allRuns=[...indexed,...recovered.values()];
     fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
-    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) && !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory)),pr});
+    const eligibleRuns = rows => rows.filter(run =>
+      !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
+      !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
+    state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
+    if (state.missing.length && now() - start >= missingGrace &&
+        typeof api.runsForWorkflow === 'function') {
+      for (const filename of state.missing) {
+        if (now() - (probeTimes.get(filename) ?? -Infinity) < 120_000) continue;
+        const rows = await api.runsForWorkflow(ctx.head, filename);
+        if (!Array.isArray(rows) || rows.length > 100)
+          throw Error('INCOMPLETE_WORKFLOW_FALLBACK');
+        // The BASE-owned verifier proves exact HEAD, branch, repository and
+        // PR association. A source-less or unrelated run cannot be recovered.
+        const proof = inspectWorkflowRuns({expected:[filename],runs:rows,pr});
+        if (!proof.missing.length) {
+          const candidates = rows.filter(run =>
+            run.head_sha === ctx.head &&
+            String(run.path || '').split('@')[0] === filename &&
+            run.event === 'pull_request' &&
+            run.head_branch === pr.head.ref &&
+            run.head_repository?.full_name === pr.base.repo.full_name &&
+            Array.isArray(run.pull_requests) && run.pull_requests.some(item =>
+              item.number === pr.number && item.base?.ref === TARGET));
+          if (candidates.length) {
+            const latest = candidates.sort((left,right) =>
+              right.id - left.id || Number(right.run_attempt||1)-Number(left.run_attempt||1))[0];
+            recovered.set(filename,latest);
+          }
+        }
+        probeTimes.set(filename,now());
+      }
+      state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
+    }
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.orphanFailures.length ||
-        unregistered.length || retiredProblems.length) {
+    const unexpected = [...new Set([...unregistered, ...retiredProblems])];
+    const withConclusion = endings => unexpected.filter(item =>
+      endings.some(conclusion => item.endsWith(':' + conclusion)));
+    const unexpectedFailures = withConclusion(['failure']);
+    const unexpectedCancelled = withConclusion(['cancelled']);
+    const unexpectedInterrupted = withConclusion(['timed_out', 'startup_failure']);
+    const unexpectedNotExecuted = withConclusion(['skipped', 'neutral', 'action_required']);
+    const known = new Set([...unexpectedFailures, ...unexpectedCancelled,
+      ...unexpectedInterrupted, ...unexpectedNotExecuted]);
+    const unexpectedIncomplete = unexpected.filter(item => !known.has(item));
+    // Only an actual terminal failure is a failed source check. Cancelled,
+    // infrastructure-interrupted and skipped dependencies also block release,
+    // but must never create a false source-repair task.
+    if (state.failed.length || state.orphanFailures.length || unexpectedFailures.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
-        failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
-        unregistered, retired:retiredProblems,
+        failed:state.failed, orphan:state.orphanFailures,
+        unregistered:unregistered.filter(item => unexpectedFailures.includes(item)),
+        retired:retiredProblems.filter(item => unexpectedFailures.includes(item)),
       }));
     }
+    if (state.cancelled.length || state.orphanCancelled.length || unexpectedCancelled.length) {
+      throw Error('SPECIALIST_DEPENDENCY_CANCELLED:' + JSON.stringify({
+        cancelled:state.cancelled, orphan:state.orphanCancelled, unexpected:unexpectedCancelled,
+      }));
+    }
+    if (state.interrupted.length || state.orphanInterrupted.length || unexpectedInterrupted.length) {
+      throw Error('SPECIALIST_DEPENDENCY_INTERRUPTED:' + JSON.stringify({
+        interrupted:state.interrupted, orphan:state.orphanInterrupted, unexpected:unexpectedInterrupted,
+      }));
+    }
+    if (state.notExecuted.length || state.orphanNotExecuted.length || unexpectedNotExecuted.length) {
+      throw Error('SPECIALIST_DEPENDENCY_NOT_EXECUTED:' + JSON.stringify({
+        notExecuted:state.notExecuted, orphan:state.orphanNotExecuted, unexpected:unexpectedNotExecuted,
+      }));
+    }
+    const incomplete = [...state.uncertain, ...state.orphanIncomplete, ...unexpectedIncomplete];
+    if (incomplete.length) {
+      if (incompleteSince === null) incompleteSince = now();
+      const remaining = Math.min(deadline - now(), 30_000 - (now() - incompleteSince));
+      if (remaining <= 0) {
+        throw Error('SPECIALIST_DEPENDENCY_INCOMPLETE:' + JSON.stringify({incomplete}));
+      }
+      // GitHub sometimes publishes completed without its terminal conclusion
+      // for one index read. Recheck briefly, never call it a source failure.
+      await sleep(Math.max(1, Math.min(5_000, pollMs, remaining)));
+      continue;
+    }
+    incompleteSince = null;
     if (!state.missing.length && !state.pending.length) break;
     // GitHub may take a few seconds to register a newly triggered workflow.
     // After the short discovery grace, absence is a configuration/dispatch
     // failure, NOT a 35-minute running test. Never waive an expected workflow.
     const timestamp = now();
-    if (state.missing.length && timestamp >= missingDeadline) {
+    const missingStateDeadline = state.pending.length
+      ? start + correlatedMissingGrace : missingDeadline;
+    if (state.missing.length && timestamp >= missingStateDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
         JSON.stringify({missing:state.missing,pending:state.pending}));
     }
     // A registered but queued/requested/waiting workflow is not an executing
     // test. Give the GitHub runner queue a separate bounded startup window.
-    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    const notStarted = state.queued;
     if (notStarted.length && timestamp >= queuedDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
-        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+        JSON.stringify({queued:notStarted,running:state.running}));
     }
     if (timestamp >= deadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
-        JSON.stringify({pending:state.pending}));
+        JSON.stringify({running:state.running,queued:state.queued}));
     }
     const nextDeadline = Math.min(deadline,
-      state.missing.length ? missingDeadline : Infinity,
+      state.missing.length ? missingStateDeadline : Infinity,
       notStarted.length ? queuedDeadline : Infinity);
-    // Discover absent workflows quickly; registered queued jobs need slower
-    // polling to avoid rate-limit amplification under CI runner pressure.
-    const interval = state.missing.length ? Math.min(pollMs, 10_000) : pollMs;
+    // Poll a sole missing workflow quickly; a mixed pending/missing set
+    // uses the existing slower cadence to conserve GitHub API quota.
+    const interval = state.missing.length && !state.pending.length
+      ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
@@ -506,6 +700,20 @@ export async function verify(api,ctx,files,options={}) {
       if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
       // No workflow dispatch or retry; keep independent green runs untouched.
       await sleep(Math.max(1, Math.min(pollMs, 5_000, jobDeadline - now())));
+    }
+    // GitHub's jobs endpoint may lag a completed workflow. After the bounded
+    // grace, a still-running job is incomplete evidence, not a failed test.
+    const pendingJobs = jobs.filter(job => job.status !== 'completed');
+    if (pendingJobs.length) {
+      throw Error('SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT:' + JSON.stringify({
+        pending:pendingJobs.map(job => run.path + ':' + job.name + ':' + (job.status || 'unknown')),
+      }));
+    }
+    const cancelledJobs = jobs.filter(job => job.conclusion === 'cancelled');
+    if (cancelledJobs.length) {
+      throw Error('SPECIALIST_DEPENDENCY_JOB_CANCELLED:' + JSON.stringify({
+        cancelled:cancelledJobs.map(job => run.path + ':' + job.name),
+      }));
     }
     // Branch-conditional macOS is excluded from generic optional jobs.
     // Admit it separately only if the immutable BASE macOS job and source
@@ -616,13 +824,19 @@ export function diagnoseAggregateError(error) {
     ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
     ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Keep merge blocked. After every named queued exact-HEAD workflow finishes successfully, retry only the failed hh-specialist job once (by job ID), never re-run green Core or the whole workflow.'],
     ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
+    ['SPECIALIST_DEPENDENCY_CANCELLED:','DEPENDENCY_CANCELLED','A cancelled exact-HEAD dependency did not run successfully. Check current HEAD and rerun only the affected check when safe; do not open a source repair task.'],
+    ['SPECIALIST_DEPENDENCY_INTERRUPTED:','DEPENDENCY_INTERRUPTED','Inspect timed-out/startup-failed infrastructure or job duration; do not presume application test failure.'],
+    ['SPECIALIST_DEPENDENCY_NOT_EXECUTED:','DEPENDENCY_NOT_EXECUTED','Inspect skipped/neutral/approval-required dispatch; required CI remains blocked.'],
+    ['SPECIALIST_DEPENDENCY_INCOMPLETE:','DEPENDENCY_INCOMPLETE','GitHub provided an incomplete/unknown terminal state; inspect the exact run and recover valid evidence.'],
+    ['SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT:','DEPENDENCY_JOB_PENDING','The jobs API still reports unfinished jobs after its bounded consistency grace.'],
+    ['SPECIALIST_DEPENDENCY_JOB_CANCELLED:','DEPENDENCY_JOB_CANCELLED','Inspect the cancelled required job; rerun only verified interrupted work on current HEAD.'],
     ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
     ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
     ['MISSING_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_MISSING','Check the immutable BASE job contract and exact-HEAD evidence, not independent green workflows.'],
     ['NO_EXECUTED_REQUIRED_SPECIALIST_JOB:','REQUIRED_JOB_NOT_EXECUTED','Inspect the required job dispatch, not unrelated green jobs.'],
     ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
     ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
-    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
+    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions and quota; never repeat exhausted 403 requests.'],
   ];
   const found = rules.find(([prefix]) => message.startsWith(prefix));
   const category = found?.[1] || 'CI_UNKNOWN_FAILURE';
@@ -644,8 +858,11 @@ export function diagnoseAggregateError(error) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }
-  if (category === 'WORKFLOW_NOT_TRIGGERED' || category === 'RUNNER_QUEUE' || category === 'CHECK_TIMEOUT') {
-    for (const field of ['missing','pending','queued','running']) {
+  if (['WORKFLOW_NOT_TRIGGERED','RUNNER_QUEUE','CHECK_TIMEOUT','DEPENDENCY_CANCELLED',
+    'DEPENDENCY_INTERRUPTED','DEPENDENCY_NOT_EXECUTED','DEPENDENCY_INCOMPLETE',
+    'DEPENDENCY_JOB_PENDING','DEPENDENCY_JOB_CANCELLED'].includes(category)) {
+    for (const field of ['missing','pending','queued','running','cancelled',
+      'interrupted','notExecuted','incomplete','unexpected','orphan']) {
       for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
     }
   }

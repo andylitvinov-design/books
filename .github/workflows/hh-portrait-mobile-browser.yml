@@ -24,8 +24,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   synthetic-mobile:
@@ -38,7 +38,8 @@ jobs:
     timeout-minutes: 23
     services:
       postgres:
-        image: postgres:17-alpine
+        # PR executes source contracts only; PostgreSQL is reserved for manual QA.
+        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin

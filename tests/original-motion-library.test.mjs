@@ -187,3 +187,11 @@ test('actual Canvas painter draws an approved original motion video instead of a
  paint('goals',clip.id,{...video,readyState:1});
  assert.equal(calls.pop(),'procedural','a source without decoded data is never treated as a video frame');
 });
+
+test('real original-motion browser gate reports bounded export diagnostics',()=>{
+  const script=readFileSync(resolve(root,'scripts/benchmarking/verify-original-motion-export.mjs'),'utf8');
+  assert.match(script,/getAttribute\('aria-expanded'\)/);
+  assert.match(script,/HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS/);
+  assert.match(script,/HH_WEBKIT_MP4_EXPORT_FAILURE/);
+  assert.match(script,/timeout: 150000/);
+});

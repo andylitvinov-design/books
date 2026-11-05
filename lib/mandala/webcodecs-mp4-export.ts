@@ -19,6 +19,7 @@ export type BrowserMovieAudio={
 };
 export type BrowserMovieOptions={
   canvas:HTMLCanvasElement;
+  allowProceduralBrowser?:boolean;
   seconds:number;
   frameRate:number;
   renderFrame:(seconds:number)=>boolean;
@@ -35,7 +36,11 @@ export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
   if(typeof window==="undefined"||typeof navigator==="undefined")return false;
   const ua=navigator.userAgent;
   return /AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua)&&
-    typeof VideoEncoder!=="undefined"&&
+    supportsProceduralWebCodecsMp4(needsAudio);
+}
+
+function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
+  return typeof VideoEncoder!=="undefined"&&
     typeof VideoEncoder.isConfigSupported==="function"&&
     typeof VideoFrame!=="undefined"&&
     (!needsAudio || (
@@ -49,7 +54,7 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
   if(!audio.files.length||audio.files.length>3)throw new Error("unsupported_audio_count");
   if(!Number.isFinite(audio.volume)||audio.volume<0||audio.volume>100)
     throw new Error("invalid_audio_volume");
-  const offline=new OfflineAudioContext(1,Math.ceil(SAMPLE_RATE*seconds),SAMPLE_RATE);
+  const offline=new OfflineAudioContext(2,Math.ceil(SAMPLE_RATE*seconds),SAMPLE_RATE);
   const gainValue=(audio.volume/100)/Math.sqrt(audio.files.length);
   for(const entry of audio.files){
     let file:File|Blob;
@@ -100,7 +105,9 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
-  if(!supportsLocalWebCodecsMp4(Boolean(audio)))throw new Error("webcodecs_not_supported");
+  if(!(supportsLocalWebCodecsMp4(Boolean(audio))||
+    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(Boolean(audio)))))
+    throw new Error("webcodecs_not_supported");
   if(!Number.isFinite(seconds)||seconds<3||seconds>MAX_DURATION||
     !Number.isFinite(frameRate)||frameRate<6||frameRate>25||
     canvas.width<160||canvas.height<160||canvas.width*canvas.height>1920*1080)
@@ -119,7 +126,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   if(!h264)throw new Error("webcodecs_h264_unsupported");
   if(audio){
     const aac=await canEncodeAudio("aac",{
-      sampleRate:SAMPLE_RATE,numberOfChannels:1,
+      sampleRate:SAMPLE_RATE,numberOfChannels:2,
       quality:new Quality({bitrate:128000}),
     });
     if(!aac)throw new Error("webcodecs_aac_unsupported");
@@ -150,22 +157,40 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     // Canvas frames, stage captions, phrases and actual source scenes.
     const frames=Math.ceil(seconds*frameRate);
     const startedAt=performance.now();
+    // An actual native WebKit video decoder can temporarily withhold the
+    // NEXT licensed shot while seeking. Wait for its genuine decoded frame,
+    // but never replace it with a stale/fake shot or drop the chosen sound.
+    // Bound BOTH per-frame and whole-export decoder waits.
+    let decoderHoldMs=0;
+    const maxFrameDecoderWaitMs=1400;
+    const maxTotalDecoderWaitMs=4800;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+(i*1000/frameRate)-performance.now();
+      const remaining=startedAt+decoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
-      // The same logical timestamp must drive shot selection and MP4 PTS.
-      // A stalled encoder must fail rather than speed up the story or drift
-      // across approved cut boundaries.
+      // MP4 presentation timestamps remain exact even when a native decoder
+      // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
-      if(performance.now()-startedAt > time*1000+750)
+      if(performance.now()-startedAt > time*1000+decoderHoldMs+750)
         throw new Error("video_encoder_timeline_drift");
-      if(!renderFrame(time))throw new Error("licensed_scene_frame_unavailable");
+      let decodedRealFrame=renderFrame(time);
+      if(!decodedRealFrame){
+        const waitStarted=performance.now();
+        do{
+          if(!shouldContinue())throw new Error("export_cancelled");
+          if(performance.now()-waitStarted>=maxFrameDecoderWaitMs ||
+             decoderHoldMs+performance.now()-waitStarted>=maxTotalDecoderWaitMs)break;
+          await new Promise<void>(resolve=>setTimeout(resolve,40));
+          decodedRealFrame=renderFrame(time);
+        }while(!decodedRealFrame);
+        decoderHoldMs+=performance.now()-waitStarted;
+        if(!decodedRealFrame)throw new Error("licensed_scene_frame_unavailable");
+      }
       await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
       if((i%Math.max(1,Math.ceil(frameRate/3)))===0)
         onProgress?.(Math.min(99,Math.floor(i/frames*100)));
-      if(performance.now()-startedAt>(seconds+20)*1000)
+      if(performance.now()-startedAt>(seconds+20)*1000+decoderHoldMs)
         throw new Error("video_encoder_too_slow");
     }
     videoSource.close();

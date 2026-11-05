@@ -34,6 +34,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
 });
 
+
+test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]
+    ?.split('      - name: Install checksum-verified actionlint')[0];
+  assert.ok(fast, 'fast deterministic ESLint contract must remain');
+  assert.match(fast, /node --test tests\/ci-deterministic-eslint-repair\.test\.mjs/);
+  assert.doesNotMatch(fast, /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'synthetic Git topology fixtures must run once under mandatory Core, not twice on ubuntu-slim');
+  assert.match(workflow('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/,
+    'Core must retain the complete fail-closed topology regression');
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+  assert.doesNotMatch(lint, /continue-on-error:\s*true/);
+});
+
 test('deleted workflow-only changes cannot hide an unverified YAML removal', () => {
   const s = workflow('hh-actionlint.yml');
   assert.match(s, /git diff --no-renames --name-status -z/);
@@ -48,8 +64,8 @@ test('Portrait PR runs focused current contracts while the old synthetic DB/brow
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
-  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
     'PR routing must not allocate two private DB/browser runners');
@@ -74,8 +90,8 @@ test('Portrait PR runs focused current contracts while the old synthetic DB/brow
 });
 
 test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
-  const suffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-  const cancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  const suffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
   const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   for (const [file, prefix, job] of [
     ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
@@ -144,11 +160,17 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'for (const [name, engine] of engines)',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"
   ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  // Prebuilt version-matched browser images replace per-job apt installs,
+  // not genuine Chromium/WebKit launch and risk-scoped acceptance.
+  assert.match(s, /image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(s, /playwright@1\.63\.0/);
+  assert.match(s, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
+  assert.doesNotMatch(s, /playwright install --with-deps/);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
@@ -239,6 +261,30 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.match(s, /path: \.next\/cache/);
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
+});
+
+test('Core recovery never reruns a superseded HEAD or generic failure',()=>{
+  const source=workflow('hh-native-auto-merge.yml');
+  const job=source.split('  recover-interrupted-core:')[1].split('  prune-head:')[0];
+  assert.match(job,/contains\(fromJSON\('\["timed_out","startup_failure"\]'\), github\.event\.workflow_run\.conclusion\)/);
+  assert.match(job,/new Set\(\["timed_out","startup_failure"\]\)/);
+  assert.ok(job.includes('live.head.sha !== reference.head.sha'), 'exact source HEAD association must remain');
+  assert.ok(job.includes('fresh.head_sha !== event.head_sha'), 'no stale workflow evidence may be retried');
+  assert.ok(job.includes('(reference.base?.sha && reference.base?.sha !== live.base.sha)'), 'live protected base must remain unchanged');
+  assert.ok(job.includes('event.head_repository?.full_name !== fullRepo'), 'cross-repository workflows cannot receive trusted retry');
+  assert.match(job,/event\.head_sha !== live\.head\.sha/,'immutable Core run must match live PR HEAD or exact synthetic merge');
+  assert.match(job,/parents\[1\]\?\.sha !== live\.head\.sha/,'synthetic merge must have this PR source as second parent');
+  assert.match(job,/parents\[0\]\?\.sha !== live\.base\.sha/,'synthetic merge must have current protected base as first parent');
+  // A cancelled *job* may be evidence of a genuinely interrupted run; a
+  // cancelled or failed *Core workflow* must not trigger an automatic rerun.
+  // Inspect only event-level predicates, never broad text across comments.
+  const eventAllowed=[...job.matchAll(/contains\(fromJSON\('([^']+)'\),\s*github\.event\.workflow_run\.conclusion\)/g)];
+  assert.ok(eventAllowed.length>=1,'interrupted Core trigger must have an event-level allowlist');
+  for(const match of eventAllowed){
+    assert.deepEqual(JSON.parse(match[1]),['timed_out','startup_failure']);
+  }
+  assert.doesNotMatch(job, /event\.conclusion\s*={2,3}\s*['"](?:cancelled|failure)['"]/);
+  assert.match(job,/\["cancelled","skipped","timed_out"\]\.includes\(job\.conclusion\)/);
 });
 
 test('IA and Mandala browsers allocate expensive runners only after cheap exact-HEAD preflight', () => {

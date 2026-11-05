@@ -20,16 +20,42 @@ await context.route('**/*', route => {
   return new URL(request.url()).origin === origin && ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort();
 });
 const page = await context.newPage();
-const errors = [];
+const errors = [], safeWarnings = [];
 page.on('pageerror', error => errors.push(error.message));
+page.on('console', message => {
+  const text=message.text();
+  if (/^HH_WEBKIT_MP4_EXPORT_FAILURE:[a-z_]+$/.test(text)) safeWarnings.push(text);
+});
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   await page.locator('[data-auto-video-all-scenes]').click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
-  if (!await preset.isVisible()) await page.locator('[data-free-film-more]').click();
+  const more = page.locator('[data-free-film-more]');
+  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
   await preset.click();
+  // React can commit the selected original-motion plan after Playwright's
+  // pointer action resolves. Wait for the actual selection, not a fixed delay;
+  // fail closed with diagnostic evidence if the real application never commits.
+  try {
+    await page.waitForFunction(() =>
+      document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') === 'true',
+      undefined, { timeout: 8000 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      pressed: document.querySelector('[data-free-film-preset="motion-film-goal-achievement"]')
+        ?.getAttribute('aria-pressed') ?? null,
+      selected: [...document.querySelectorAll('[data-free-film-preset][aria-pressed="true"]')]
+        .map(node => node.getAttribute('data-free-film-preset')),
+      sourceIds: [...document.querySelectorAll('[data-free-film-source]')]
+        .map(node => node.getAttribute('data-free-film-source')),
+      readiness: document.querySelector('[data-free-film-readiness]')?.textContent?.slice(0, 180) ?? null,
+    }));
+    console.error('HH_ORIGINAL_MOTION_PRESET_SELECTION_DIAGNOSTICS '+JSON.stringify({engine,state,errors}));
+    throw error;
+  }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
@@ -47,10 +73,29 @@ try {
   await attach.click();
   await generate.click();
   const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({ state: 'visible', timeout: 150000 });
-  const download = page.waitForEvent('download', { timeout: 30000 });
+  try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
+  catch (error) {
+    const state=await page.evaluate(()=>({
+      generateDisabled:document.querySelector('[data-video-quick-generate]')?.disabled??null,
+      progress:document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')??null,
+      originalFallback:Boolean(document.querySelector('[data-video-original-fallback]')),
+      hasResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+    }));
+    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
+    throw error;
+  }
+  // The production Save action opens a chooser; only Files starts a download.
+  // Retain the real exported MP4/audio FFprobe gate after this delivery handoff.
   await save.click();
-  await (await download).saveAs(movie);
+  const delivery = page.locator('[data-video-messenger-delivery]');
+  await delivery.waitFor({state: 'visible', timeout: 10000});
+  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
+  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
+  const [download] = await Promise.all([
+    page.waitForEvent('download', {timeout: 30000}),
+    delivery.locator('[data-video-save-direct-choice]').click(),
+  ]);
+  await download.saveAs(movie);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));

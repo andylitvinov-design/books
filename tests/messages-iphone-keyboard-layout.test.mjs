@@ -34,7 +34,8 @@ test('mobile Messages listens for visualViewport resize, scroll, and focus to re
   assert.match(jsx,/ref=\{inboxWindowRef\}/)
   assert.match(css,/height:var\(--hh-mobile-window-height,calc\(100dvh - 152px\)\)/)
   assert.match(css,/min-height:0/)
-  assert.match(app,/:has\(input:focus,textarea:focus\) \.hh-mobile-app-nav/)
+  assert.ok(app.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
+  assert.ok(!app.includes(':has(input:focus,textarea:focus)'))
   assert.match(app,/display:none!important/)
 })
 
@@ -76,7 +77,7 @@ test('selected client conversation is full screen and follows visualViewport whe
   assert.match(css,/\.shell\[data-detail-open="true"\] \.window,[\s\S]*?position:fixed;z-index:4000/)
   assert.match(css,/top:var\(--hh-mobile-window-top,0px\)/)
   assert.match(css,/window\[data-keyboard-open="true"\] \.personBar/)
-  assert.match(app,/data-simple-messages\]\[data-detail-open="true"\]\) \.hh-mobile-app-nav/)
+  assert.ok(app.includes('[data-simple-messages][data-detail-open="true"]) [data-hh-unified-dock]'))
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot\{[\s\S]*?position:relative/)
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot \[role="region"\]\{[\s\S]*?position:static/)
   assert.match(crm,/min-height:44px;height:44px/)

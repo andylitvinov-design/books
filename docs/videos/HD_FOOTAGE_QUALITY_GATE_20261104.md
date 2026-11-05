@@ -38,3 +38,7 @@ Performed offline against all **320 actual MP4 files** in the previously exporte
 - Technical validity is not artistic quality; independent videos can share compositional structure. This explains why adding hundreds of recoloured procedural scenes would fail the user's quality requirement.
 
 The four weak-metric sources are **review candidates, not automatically deleted clips**. Removing them without a curated replacement would silently break existing four-shot presets. The new director tie-breaker prefers individually reviewed higher-definition sources when relevance is identical.
+
+
+## Final release scope (4 Nov 2026)
+Four selected moving H.264 HD-encoded portrait excerpts were approved through direct user instruction to complete and release this PR, following assistant editorial review of all 120 frames per five-second clip and confirmation of four individual official Dareful CC BY 4.0 source pages. The user did not separately watch each clip, and this is not represented as per-clip owner review. Four other technically passing candidates and eight unsuccessful technical candidates stay unpublished. Live source count is 48 licensed + 684 procedural MP4s = 732 after verified merge and deployment. The four new master crops must only be used for 9:16 portrait export, and are NOT native portrait Full HD. Visible credits: /videos/holistic-house/film-collection-v3/hd-credits-20261105.html.

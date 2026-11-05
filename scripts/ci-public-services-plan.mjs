@@ -838,6 +838,16 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     }
     const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
     if(practitionerMediaPlan)return practitionerMediaPlan;
+    // A change confined to EXISTING public unit-test files cannot modify the
+    // deployed service routes, browser harness, consent or payment flow.
+    // Run these exact changed tests, not thirteen unrelated browser journeys.
+    // A new/deleted/renamed test, script, mixed runtime, or unknown file stays FULL.
+    const modifiedPublicUnitTest = /^tests\/(?:holistic-|alchemy-|remote-|direction-|public-service)[a-z0-9._-]*\.test\.mjs$/i;
+    if (rows.length >= 2 && rows.length <= 24 &&
+        rows.every((item,i) => i % 2 === 0 ? item === 'M' : modifiedPublicUnitTest.test(item))) {
+      return {mode:'contracts',reason:'MODIFIED_PUBLIC_TESTS_ONLY',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
     let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;

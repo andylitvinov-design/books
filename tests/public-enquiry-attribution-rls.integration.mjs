@@ -32,11 +32,28 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
     create table app.practitioners(id uuid primary key,trusted_auth_user_id uuid,active boolean,status text,public_profile jsonb);
     insert into app.practitioners values('${practitioner}',null,true,'approved','{"title":"Synthetic"}');
     grant select on app.practitioners to hh_app_backend;
+    -- The isolated fixture models the existing production catalog as a public
+    -- owner-scoped, read-only relation. No production schema is changed.
+    create table app.service_offerings (
+      id uuid primary key,
+      practitioner_id uuid not null references app.practitioners(id),
+      active boolean not null,
+      status text not null,
+      localized_copy jsonb not null
+    );
+    insert into app.service_offerings values
+      ('fcef611f-e68b-5b30-b9f4-b0aa5614654d','${practitioner}',true,'published',
+       '{"en":{"title":"Synthetic service"}}');
+    alter table app.service_offerings enable row level security;
+    alter table app.service_offerings force row level security;
+    create policy published_catalog_read on app.service_offerings for select to hh_app_backend
+      using (active and status='published');
+    grant select on app.service_offerings to hh_app_backend;
     create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
     create function app_private.account_active() returns boolean language sql stable as $$ select false $$;
     grant execute on function auth.uid(),app_private.account_active() to hh_app_backend;`)
   await db.query(migration)
-  await db.query('alter table app.public_service_enquiries add column booking_sku text, add column attribution jsonb')
+  await db.query('alter table app.public_service_enquiries add column booking_sku text, add column attribution jsonb, add column service_offering_id uuid references app.service_offerings(id)')
   await db.query('begin')
   await db.query('set local role hh_app_backend')
   await db.query("select set_config('hh.public_enquiry_operation',$1,true)",[op])
@@ -59,6 +76,13 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
   const saved=await repository.createPublicServiceEnquiry(config,input,attribution)
   assert.equal(saved.saved,true)
   assert.equal(saved.attributionStatus,'saved')
+  assert.equal(saved.serviceOfferingId,'fcef611f-e68b-5b30-b9f4-b0aa5614654d',
+    'an unambiguous published title is linked only to its owner-scoped offering')
+  // A client-supplied UUID must never assign an unpublished or foreign offering.
+  const rejected={...input,operationId:'20000000-0000-4000-8000-000000000017',
+   serviceOfferingId:'11111111-1111-4111-8111-111111111111'}
+  await assert.rejects(repository.createPublicServiceEnquiry(config,rejected,attribution),
+   err=>err.code==='SERVICE_OFFERING_NOT_VERIFIED')
   const {readPublicEnquiryNoticeMetadata}=await import('../lib/app/public-enquiry-telegram.js')
   const notice=await readPublicEnquiryNoticeMetadata(config,saved.id,input.operationId)
   assert.equal(notice.referenceCode,saved.referenceCode)

@@ -20,7 +20,6 @@ on:
       - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
       - 'tests/crm-event-channel-attribution.test.mjs'
       - '.github/workflows/hh-crm-event-channels.yml'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: [codex/public-book-library]
     paths:
@@ -47,8 +46,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-event-referrals-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-event-referrals-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   tracked-handoff-regression:
