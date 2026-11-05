@@ -4088,7 +4088,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setNotice("");
     // The Ideas page may be scrolled to its bottom CTA; show the third tab and player.
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-      document.querySelector<HTMLElement>('[data-video-quick-controls]')?.scrollIntoView({behavior:"auto",block:"start"});
+      document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"});
     }));
   };
 
