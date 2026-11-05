@@ -6,7 +6,7 @@
 .field{display:grid;gap:8px;font-weight:700;font-size:15px}
 .field textarea,.field input{border:1px solid #b7bdb7;border-radius:14px;width:100%;background:#fff;color:#143d3a;padding:12px 14px;font:inherit;font-size:16px}
 .field textarea{min-height:82px;resize:vertical}
-.check{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.5}.check input{flex:none;width:22px;height:22px;margin:0;accent-color:#067a67}
+.check{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;color:inherit;background:transparent;border:0;padding:0;font:inherit;font-size:15px;line-height:1.5;cursor:pointer}.checkIcon{flex:none;width:22px;height:22px;border:2px solid #067a67;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;color:#fff}.check[aria-checked="true"] .checkIcon{background:#067a67}
 .actions{display:flex;flex-wrap:wrap;gap:10px}.button,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:52px;text-decoration:none;font-size:15px;font-weight:800;text-align:center;border-radius:14px;padding:10px 16px;cursor:pointer}
 .button{color:white;background:#067a67;border:2px solid #067a67}.secondary{color:#143d3a;background:#f5ecdc;border:2px solid #d9d0c3}
 .button:disabled{opacity:.5;cursor:not-allowed}.page :is(button,input,textarea,a):focus-visible{outline:3px solid #176e6e;outline-offset:3px}

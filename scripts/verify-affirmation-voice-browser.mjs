@@ -87,7 +87,7 @@ async function verifyGuestVoiceConsent(browser,locale){
     await expect(guest).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
     const start=page.locator("[data-guest-message-start]");
     await expect(start).toBeDisabled();
-    await expect(page.locator("[data-guest-message-consent]")).not.toBeChecked();
+    await expect(page.locator("[data-guest-message-consent]")).toHaveAttribute("aria-checked","false");
     const phrase=locale==="ru"?"Я рядом и поддерживаю тебя.":"I am here to support you.";
     await page.locator("[data-guest-message-phrase]").fill(phrase);
     await expect(page.locator("[data-guest-message-phrase]")).toHaveValue(phrase);
@@ -103,25 +103,25 @@ async function verifyGuestVoiceConsent(browser,locale){
       await recipient.goto(uri.href,{waitUntil:"domcontentloaded",timeout:90000});
       await expect(recipient.locator("[data-guest-voice-message]")).toHaveAttribute("data-guest-voice-hydrated","true",{timeout:30000});
       await expect(recipient.locator("[data-guest-message-phrase]")).toHaveValue(phrase,{timeout:15000});
-      await expect(recipient.locator("[data-guest-message-consent]")).not.toBeChecked();
+      await expect(recipient.locator("[data-guest-message-consent]")).toHaveAttribute("aria-checked","false");
       await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();
     }finally{await recipient.close();}
     await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
     await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
     await page.locator("[data-guest-message-phrase]").fill(phrase);
-    // Full native-label tap in iPhone WebKit: consent, revocation, re-consent.
-    // The recorder still uses React onChange state; no synthetic checkbox force.
+    // Native Safari implicit-label toggling failed on real macOS WebKit.
+    // Check explicit user-triggered React consent and its revocation.
     const consentBox=page.locator("[data-guest-message-consent]");
-    const consentLabel=page.locator("[data-guest-message-consent-label]");
-    await expect(consentBox).not.toBeChecked();
-    await consentLabel.click();
-    await expect(consentBox).toBeChecked({timeout:10000});
+    await expect(consentBox).toHaveAttribute("role","checkbox");
+    await expect(consentBox).toHaveAttribute("aria-checked","false");
+    await consentBox.click();
+    await expect(consentBox).toHaveAttribute("aria-checked","true",{timeout:10000});
     await expect(start).toBeEnabled();
-    await consentLabel.click();
-    await expect(consentBox).not.toBeChecked();
+    await consentBox.click();
+    await expect(consentBox).toHaveAttribute("aria-checked","false");
     await expect(start).toBeDisabled();
-    await consentLabel.click();
-    await expect(consentBox).toBeChecked();
+    await consentBox.click();
+    await expect(consentBox).toHaveAttribute("aria-checked","true");
     await expect(start).toBeEnabled();
     await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
     await expect(page.locator("[data-guest-message-save]")).toHaveCount(0);

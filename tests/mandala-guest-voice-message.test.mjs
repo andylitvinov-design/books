@@ -76,18 +76,24 @@ test("macOS WebKit hydration follows the actual compact video scenario entry",()
  assert.ok(!browser.includes("allStories.click({force:true})"),"hidden scenario controls cannot be clicked forcefully");
 });
 
-test("macOS WebKit checks adult native consent and revocation without a provider call",()=>{
+test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{
  const source=read("scripts/verify-affirmation-voice-browser.mjs");
  const ui=read("components/mandala-guest-voice-message.tsx");
- assert.ok(ui.includes('data-guest-message-consent-label'));
- assert.ok(ui.includes('type="checkbox" defaultChecked={false}'));
- assert.ok(!ui.includes('checked={approved}'));
- assert.ok(ui.includes('onChange={e=>setApproved(e.currentTarget.checked)}'));
+ const css=read("components/mandala-guest-voice-message.module.css");
+ assert.match(ui,/type="button" role="checkbox" aria-checked=\{approved\}/);
+ assert.ok(ui.includes('onClick={()=>setApproved(current=>!current)}'));
+ assert.ok(ui.includes('data-guest-message-consent'));
+ assert.ok(ui.includes('disabled={!approved}'));
  assert.ok(ui.includes('if(!approved||busy||pending.current'));
- for(const step of ['await consentLabel.click();','await expect(consentBox).toBeChecked({timeout:10000});',
-  'await expect(consentBox).not.toBeChecked();','await expect(start).toBeDisabled();',
-  'await expect(start).toBeEnabled();','assert.deepEqual(providerPosts,[]'])
-  assert.ok(source.includes(step),step);
- assert.equal(source.split('await consentLabel.click();').length-1,3);
- assert.ok(!source.includes('page.locator("[data-guest-message-consent]").check()'));
+ assert.ok(!ui.includes('type="checkbox"'));
+ assert.ok(css.includes('.check[aria-checked="true"] .checkIcon'));
+ for(const step of ['await consentBox.click();',
+  'await expect(consentBox).toHaveAttribute("aria-checked","true",{timeout:10000});',
+  'await expect(consentBox).toHaveAttribute("aria-checked","false");',
+  'await expect(start).toBeDisabled();',
+  'await expect(start).toBeEnabled();',
+  'assert.deepEqual(providerPosts,[]'])
+   assert.ok(source.includes(step),step);
+ assert.equal(source.split('await consentBox.click();').length-1,3);
+ assert.ok(!source.includes("await consentLabel.click()"));
 });

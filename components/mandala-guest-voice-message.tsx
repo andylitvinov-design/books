@@ -122,9 +122,10 @@ export function MandalaGuestVoiceMessage({locale}:{locale:Locale}){
    </section>
    <section className={styles.card}>
     <h2>{ui.record}</h2>
-    <label className={styles.check} data-guest-message-consent-label><input type="checkbox" defaultChecked={false}
-     onChange={e=>setApproved(e.currentTarget.checked)} data-guest-message-consent/>
-     {ui.consent}</label>
+    <button className={styles.check} type="button" role="checkbox" aria-checked={approved}
+     onClick={()=>setApproved(current=>!current)} data-guest-message-consent>
+     <span className={styles.checkIcon} aria-hidden="true">{approved?"✓":""}</span>
+     <span>{ui.consent}</span></button>
     <div className={styles.actions}>
      {busy?<button className={styles.button} type="button" onClick={stop} data-guest-message-stop>{ui.stop}</button>:
       <button className={styles.button} type="button" disabled={!approved}
