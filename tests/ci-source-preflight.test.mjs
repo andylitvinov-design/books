@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -85,4 +85,27 @@ test('unreadable changed JavaScript fails closed instead of silently passing',()
   } finally {
     rmSync(dir,{recursive:true,force:true});
   }
+});
+
+test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain type-safe',()=>{
+  const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
+  const block=workflow.split('      - name: Source Preflight — syntax and TypeScript before costly Next build')[1]
+    ?.split('      - name: Upload Source Preflight root diagnostics on failure')[0];
+  assert.ok(block,'early preflight missing');
+  assert.match(block,/steps\.fast\.outputs\.route/);
+  assert.match(block,/GITHUB_EVENT_NAME/);
+  assert.match(block,/DOCK/);
+  assert.match(block,/args\+=\(--full-types\)/);
+  assert.match(block,/node scripts\/ci-source-preflight\.mjs/);
+  assert.match(source,/const typechecked=fullTypes\|\|impactsTypes\(paths\)/);
+  assert.equal(impactsTypes(['app/[locale]/about/page.module.css','public/images/home.webp']),false);
+  assert.equal(impactsTypes(['app/[locale]/about/page.tsx']),true);
+  assert.equal(impactsTypes(['components/app/messages-bottom-navigation.jsx']),true);
+  assert.equal(impactsTypes(['tsconfig.json']),true);
+  assert.equal(impactsTypes(['package-lock.json']),true);
+  assert.match(workflow,/name: Exact proposed release production build and TypeScript check/);
+  assert.match(workflow,/run: npm run build/);
+  assert.match(workflow,/^  hh-specialist:/m);
+  assert.match(workflow,/^  hh-merge-check:/m);
 });

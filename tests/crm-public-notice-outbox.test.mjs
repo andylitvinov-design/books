@@ -11,7 +11,10 @@ test('a customer enquiry commits an owner notice intent before optional provider
    insert.indexOf('insert into app_private.notification_public_enquiry_intents'))
  assert.match(insert,/notification_public_enquiry_intents \(enquiry_id,owner_id\)/)
  assert.match(insert,/CRM_NOTICE_INTENT_FAILED/)
- assert.match(insert,/if \(contact\) \{/)
+  assert.match(insert,/if\s*\(contact\)\s*\{/)
+  // A contactless Telegram handoff has no contact ciphertext and cannot insert
+  // an owner alert intent without its verified production RLS precondition.
+  assert.doesNotMatch(insert,/if\s*\(\s*contact\s*\|\|\s*linkedTelegram\s*\)/)
  for(const handler of [route,coaching]){
    assert.match(handler,/result\.saved === true/)
    assert.match(handler,/after\(async \(\) => \{/)
