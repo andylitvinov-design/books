@@ -55,4 +55,12 @@ jobs:
           script: |
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-direction-watcher.cjs');
             const dryRun=String(context.payload.inputs?.dry_run ?? 'false')==='true';
-            await worker.run({github,core,context,dryRun});
+            const summary=await worker.run({github,core,context,dryRun});
+            // Reuse the existing bounded, strictly authenticated stale-cron
+            // backstop on this already-running Actions job. No extra cron,
+            // workflow, external provider, repository scan or paid runner.
+            const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-control-tower-wakeup.cjs');
+            const backstop=await wakeStaleWatchdog({github,context,summary,
+              dryRun,log:message=>core.info(message)});
+            core.info('HH_DIRECTION_WATCHDOG_LIVENESS '+JSON.stringify(backstop));
