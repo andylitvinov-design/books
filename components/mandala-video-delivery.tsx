@@ -205,7 +205,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   }catch{setNotice(t.error);}
   finally{setBusy(false);}
  }
- if(!open)return null;
+ if(!open)return notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
  const accountLocale=locale==="es"?"en":locale;
  return <section className={css.root} aria-label={t.title} data-video-messenger-delivery>
   <div className={css.heading}><h4>{t.title}</h4>
