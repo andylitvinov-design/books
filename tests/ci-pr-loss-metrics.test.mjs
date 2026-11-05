@@ -414,3 +414,91 @@ test('Core CI-only install avoids optional ffmpeg-static fetch without weakening
   assert.match(core,/^  hh-specialist:/m);
   assert.match(core,/^  hh-merge-check:/m);
 });
+
+
+test('OPEN #3623-style old Core runs: mutated PR link needs complete committed-SHA proof',()=>{
+  const repository='andylitvinov-design/books';
+  const original='42ed63139c8662a97cc6a568196ba0c748f8972f';
+  const middle='5f6c5ee60a804992be4cd730fa05dc2222ba68d3';
+  const current='c90f064e2d57e4c9d4f65e60cd367ec9bef4c4a0';
+  const ref='fix/video-one-screen-classifier-20261105';
+  const live=pr({number:3623,created_at:'2026-11-05T19:02:21Z',
+    merged_at:null,draft:false,commits:3,
+    head:{sha:current,ref,repo:{full_name:repository}}});
+  const mutableLink=[{number:3623,base:{ref:'codex/public-book-library'},
+    head:{sha:current,ref}}];
+  const base=(id,sha,created,updated)=>run(id,created,updated,{
+    head_sha:sha,head_branch:ref,pull_requests:mutableLink,
+    head_repository:{full_name:repository},conclusion:'failure'});
+  const first=base(42090031625,original,'2026-11-05T19:02:26Z','2026-11-05T19:06:00Z');
+  const mid=base(42097500397,middle,'2026-11-05T19:49:06Z','2026-11-05T19:54:00Z');
+  const last=base(42100202002,current,'2026-11-05T20:06:12Z','2026-11-05T20:09:00Z');
+  const timeline=[{event:'committed',sha:original},{event:'committed',sha:middle},
+    {event:'committed',sha:current}];
+  assert.equal(lifecycleConnected(first,live,null),false);
+  assert.equal(lifecycleConnected(first,live,timeline),true);
+  assert.equal(lifecycleConnected(mid,live,timeline),true);
+  const jobs=Object.fromEntries([first,mid,last].map((r,i)=>[r.id,{
+    total_count:1,jobs:[job(900+i,'core-lint-types-build',r.created_at,
+      new Date(Date.parse(r.created_at)+1000).toISOString(),r.updated_at,'failure')]
+  }]));
+  const lifecycle=analyzePrLifecycle(live,[last,mid,first],jobs,[],timeline,null,
+    {runHistoryComplete:true});
+  assert.equal(lifecycle.timestamps.first_ci_at,'2026-11-05T19:02:26.000Z');
+  assert.equal(lifecycle.durations_minutes.ready_to_first_ci,0.08);
+  assert.equal(lifecycle.evidence.historical_core_runs_relinked,2);
+  const waves=analyzeCoreWaveGaps(live,[last,mid,first],jobs,timeline,{runHistoryComplete:true});
+  assert.equal(waves.observed_core_runs,3);
+  assert.equal(waves.historical_core_runs_relinked,2);
+  assert.equal(waves.new_head_runs,2);
+  assert.equal(analyzePrLoss(live,[last,mid,first],jobs,[],
+    '2026-11-05T20:20:00Z',timeline).runs_considered,3);
+  for(const bad of [
+    {...first,pull_requests:[{...mutableLink[0],number:999}]},
+    {...first,pull_requests:[{...mutableLink[0],base:{ref:'main'}}]},
+    {...first,pull_requests:[{...mutableLink[0],head:{...mutableLink[0].head,ref:'other'}}]},
+    {...first,head_branch:'another-branch'},
+    {...first,head_repository:{full_name:'foreign/repo'}},
+    {...first,created_at:'2026-11-05T18:00:00Z'},
+    {...first,head_sha:'9'.repeat(40)},
+    {...first,pull_requests:[]}
+  ])assert.equal(lifecycleConnected(bad,live,timeline),false);
+  assert.equal(lifecycleConnected(first,live,[]),false);
+  assert.equal(lifecycleConnected(first,live,
+    Array.from({length:100},()=>({event:'committed',sha:original}))),false);
+});
+test('P1 collector restores true first Core despite GitHub moving old PR link SHA',async()=>{
+  const repo='andylitvinov-design/books',now=Date.parse('2026-11-05T20:20:00Z');
+  const earlier=run(801,'2026-11-05T19:02:26Z','2026-11-05T19:06:00Z',{
+    head_sha:old,head_branch:'feature/99',head_repository:{full_name:repo},
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},
+      head:{ref:'feature/99',sha:head}}]});
+  const latest=run(802,'2026-11-05T19:49:06Z','2026-11-05T19:53:00Z',{
+    head_branch:'feature/99',head_repository:{full_name:repo},
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},
+      head:{ref:'feature/99',sha:head}}]});
+  const read=async path=>{
+    if(path.startsWith('/search/issues?'))return {total_count:1,
+      items:[{number:99,created_at:'2026-11-05T19:02:21Z'}]};
+    if(path.endsWith('/pulls/99'))return pr({created_at:'2026-11-05T19:02:21Z',
+      merged_at:null,commits:2,draft:false,
+      head:{sha:head,ref:'feature/99',repo:{full_name:repo}}});
+    if(path.includes('/issues/99/timeline?'))return [
+      {event:'committed',sha:old},{event:'committed',sha:head}];
+    if(path.includes('/actions/runs?'))return {total_count:2,workflow_runs:[latest,earlier]};
+    if(path.includes('/actions/runs/801/jobs?'))return {total_count:1,
+      jobs:[job(810,'core-lint-types-build','2026-11-05T19:02:26Z',
+        '2026-11-05T19:02:27Z','2026-11-05T19:06:00Z')]};
+    if(path.includes('/actions/runs/802/jobs?'))return {total_count:1,
+      jobs:[job(820,'core-lint-types-build','2026-11-05T19:49:06Z',
+        '2026-11-05T19:49:07Z','2026-11-05T19:53:00Z')]};
+    throw Error('Unexpected read '+path);
+  };
+  const report=await collectCohort(read,repo,{now,prLimit:1,runLimit:5});
+  assert.equal(report.rows[0].lifecycle.evidence.run_history_complete,true);
+  assert.equal(report.rows[0].lifecycle.timestamps.first_ci_at,'2026-11-05T19:02:26.000Z');
+  assert.equal(report.rows[0].core_waves.historical_core_runs_relinked,1);
+  assert.equal(report.rows[0].core_waves.observed_core_runs,2);
+  assert.equal(report.rows[0].runs_considered,2);
+  assert.match(formatSummary(report),/Historical HEADs relinked/);
+});
