@@ -112,3 +112,29 @@ test('ambiguous duplicated receipts do not create false measured intervals',()=>
  assert.equal(x.receipt_substages.ready_to_triage.coverage_pct,0);
  assert.equal(x.rows[0].authenticated_receipt_intervals.ready_to_triage,null);
 });
+
+
+test('unique Ready receipt partitions otherwise opaque pre-final-CI window without assigning a cause',()=>{
+ const events=[{pr:1,head:SHA,kind:'stage',stage:'ready',at:'2026-11-03T10:04:00Z'}];
+ const r=audit({prs:[pr(1)],runs:[run(1)],jobs:jobs(1),events,start:from,end:to});
+ assert.equal(r.rows[0].before_final_head_ci_ready_partition.status,'AUTHENTICATED_READY_BOUNDS_NOT_CAUSAL');
+ assert.equal(r.rows[0].before_final_head_ci_ready_partition.created_to_ready_minutes,4);
+ assert.equal(r.rows[0].before_final_head_ci_ready_partition.ready_to_final_head_ci_minutes,56);
+ assert.equal(r.receipt_substages.ready_to_final_head_ci_observed.mean,56);
+ assert.equal(r.bottleneck.largest_observed_phase.stage,'before_final_head_ci');
+ const ambiguous=audit({prs:[pr(1)],runs:[run(1)],jobs:jobs(1),events:[...events,{...events[0],head:OLD}],start:from,end:to});
+ assert.equal(ambiguous.rows[0].before_final_head_ci_ready_partition.status,'READY_BOUNDARY_UNVERIFIED');
+ assert.equal(ambiguous.receipt_substages.ready_to_final_head_ci_observed.mean,null);
+});
+test('deployment READY receipt is counted without fabricated feature-specific smoke',()=>{
+ const mergeSha='d'.repeat(40),e={pr:1,head:SHA,kind:'live_verified',production:true,
+  mergeSha,aliasVerified:true,smokeVerified:false,at:'2026-11-03T11:45:00Z'};
+ const data={prs:[pr(1,{mergeSha})],runs:[run(1)],jobs:jobs(1),start:from,end:to};
+ const r=audit({...data,events:[e]});
+ assert.equal(r.receipt_substages.merged_to_deployment_ready_observed.mean,5);
+ assert.equal(r.receipt_substages.merged_to_live_verified.mean,null);
+ assert.equal(audit({...data,events:[{...e,aliasVerified:false}]}).receipt_substages.merged_to_deployment_ready_observed.mean,null);
+ const tested=audit({...data,events:[e,{...e,smokeVerified:true,at:'2026-11-03T11:50:00Z'}]});
+ assert.equal(tested.receipt_substages.merged_to_deployment_ready_observed.mean,5);
+ assert.equal(tested.receipt_substages.merged_to_live_verified.mean,10);
+});
