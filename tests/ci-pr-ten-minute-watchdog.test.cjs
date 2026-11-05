@@ -1685,3 +1685,50 @@ test('unknown Core steps and Specialist-only base drift cannot create source Rep
 });
 // The existing Watchdog contract suite runs this isolated, no-token classifier suite.
 require('./ci-pr-red-ci-classifier.test.cjs');
+
+test('capacity retries a severe inconsistent Actions run inventory only twice more',async()=>{
+ const {snapshot,admission}=require('../scripts/ci-pr-capacity.cjs');
+ const other=id=>({id,name:'Holistic House public services production acceptance',status:'in_progress'});
+ let activeReads=0,jobReads=0;
+ const github={rest:{actions:{
+   listWorkflowRunsForRepo:async({status})=>{
+     if(status==='queued')return {data:{total_count:0,workflow_runs:[]}};
+     activeReads++;
+     return {data:{total_count:activeReads<=2?5:3,
+       workflow_runs:[other(1),other(2),...(activeReads<=2?[]:[other(3)])]}};
+   },
+   listJobsForWorkflowRun:async()=>{jobReads++;return {data:{total_count:1,
+     jobs:[{status:'completed',conclusion:'success'}]}};},
+ }}};
+ const capacity=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(activeReads,3,'one extra read when counts stabilize on third attempt');
+ assert.equal(jobReads,3,'read all verified active jobs only after the count stabilizes');
+ assert.equal(capacity.known,true);
+ assert.equal(capacity.inventoryConfidence,'VERIFIED');
+ assert.equal(capacity.activeRuns,3);
+ assert.equal(capacity.unknownActiveRuns,0);
+ assert.equal(admission('repair',capacity),'ADMIT');
+});
+test('capacity keeps repair blocked when GitHub inventory stays severely inconsistent',async()=>{
+ const {snapshot,admission,LIMIT}=require('../scripts/ci-pr-capacity.cjs');
+ let activeReads=0,jobReads=0;
+ const github={rest:{actions:{
+   listWorkflowRunsForRepo:async({status})=>{
+     if(status==='queued')return {data:{total_count:0,workflow_runs:[]}};
+     activeReads++;
+     return {data:{total_count:8,workflow_runs:[
+       {id:1,name:'Other 1',status:'in_progress'},
+       {id:2,name:'Other 2',status:'in_progress'}]}};
+   },
+   listJobsForWorkflowRun:async()=>{jobReads++;return {data:{total_count:0,jobs:[]}};},
+ }}};
+ const capacity=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(activeReads,4,'at most two additional inventory attempts');
+ assert.equal(jobReads,0,'never invent jobs for missing runs');
+ assert.equal(capacity.known,false);
+ assert.equal(capacity.reason,'INCONSISTENT_RUN_INVENTORY');
+ assert.equal(admission('repair',capacity),'CAPACITY_UNKNOWN');
+ assert.equal(admission('ci',capacity),'CAPACITY_UNKNOWN');
+ assert.equal(LIMIT.maxActiveRuns,24);
+ assert.equal(LIMIT.maxRepairWorkerRuns,2);
+});
