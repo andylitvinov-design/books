@@ -162,6 +162,7 @@ jobs:
     outputs:
       candidate_status: ${{ steps.legacy_scan.outputs.candidate_status || steps.build_candidate.outputs.candidate_status }}
       candidate_detail: ${{ steps.legacy_scan.outputs.candidate_detail || steps.build_candidate.outputs.candidate_detail }}
+      candidate_snapshot: ${{ steps.legacy_scan.outputs.candidate_snapshot }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
@@ -261,9 +262,23 @@ jobs:
             report.local_tests=test.status===0?'FOCUSED_PASS':'FOCUSED_FAIL_OR_UNAVAILABLE';
           }
           fs.writeFileSync('legacy-prep.json',JSON.stringify(report,null,2));
+          // Only six bounded integer counts cross the untrusted-HEAD job boundary.
+          // Blob IDs, paths and source text never enter the signed receipt.
+          const snapshot=report.source_snapshot;
+          const sc=snapshot?.counts;
+          const summaryNumbers=sc?[
+            snapshot.paths,sc.identical,sc.divergent,
+            sc.only_legacy,sc.only_production,sc.unknown]:[];
+          const snapshotSummary=summaryNumbers.length===6 &&
+            summaryNumbers.every(n=>Number.isSafeInteger(n)&&n>=0&&n<=8) &&
+            summaryNumbers[0]>0 &&
+            summaryNumbers.slice(1).reduce((a,b)=>a+b,0)===summaryNumbers[0]
+              ? summaryNumbers.join(','):'';
+
           fs.appendFileSync(process.env.GITHUB_OUTPUT,
             'candidate_status=prepared\n'+
-            'candidate_detail='+report.base_compare+'\n');
+            'candidate_detail='+report.base_compare+'\n'+
+            'candidate_snapshot='+snapshotSummary+'\n');
           console.log('HH_LEGACY_PREPARED '+JSON.stringify(report));
           NODE
       - uses: actions/upload-artifact@v4
@@ -639,6 +654,7 @@ jobs:
           HH_PUBLISH_SHA: ${{ steps.publish_source.outputs.publish_sha }}
           HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
           HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
+          HH_CANDIDATE_SNAPSHOT: ${{ needs.fix.outputs.candidate_snapshot }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -667,6 +683,7 @@ jobs:
               publishSha:process.env.HH_PUBLISH_SHA,
               candidateStatus:process.env.HH_CANDIDATE_STATUS,
               candidateDetail:process.env.HH_CANDIDATE_DETAIL,
+              candidateSnapshot:process.env.HH_CANDIDATE_SNAPSHOT,
               dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
             // The authenticated final outcome is recorded before the job can fail.
@@ -729,6 +746,7 @@ jobs:
           HH_PUBLISH_SHA: ${{ needs.publish.outputs.publish_sha }}
           HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
           HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
+          HH_CANDIDATE_SNAPSHOT: ${{ needs.fix.outputs.candidate_snapshot }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -755,5 +773,6 @@ jobs:
               publishSha:process.env.HH_PUBLISH_SHA,
               candidateStatus:process.env.HH_CANDIDATE_STATUS,
               candidateDetail:process.env.HH_CANDIDATE_DETAIL,
+              candidateSnapshot:process.env.HH_CANDIDATE_SNAPSHOT,
               dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
