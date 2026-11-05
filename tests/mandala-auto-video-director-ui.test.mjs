@@ -75,11 +75,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/taxonomySubcategories\.map\(item=>/);
  assert.match(director,/taxonomyTopics\.map\(item=>/);
- assert.match(director,/taxonomyScenarios\.length>=4/);
+ assert.match(director,/taxonomyScenarios\.length===4/);
  assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED!=="false"/);
  assert.match(director,/const STSE_DRAFTS_ENABLED=STSE_ENABLED&&process\.env\.NEXT_PUBLIC_HH_STSE_CONTENT_EXPANSION_ENABLED==="true"/);
- assert.match(director,/allowEditorialDrafts=\{STSE_DRAFTS_ENABLED\}/);
- assert.match(director,/STSE_DRAFTS_ENABLED\?\s*listStateTransitionScenarios\(selectedTopicId,locale\):listMyTubeScenarios\(selectedTopicId,locale\)/);
+ assert.match(director,/allowEditorialDrafts=\{false\}/);
+ assert.match(director,/listMyTubeMotifScenarios\(selectedTopicId,selectedMeaningAxisId,selectedMotifId,locale\)/);
  assert.match(director,/data-stse-media-unbound/);
  assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
 
