@@ -363,11 +363,9 @@ async function handle(request, { params }) {
       // not a private editor that can only show an old sign-in shell.
       const failedPracticeDestination = continueTo === 'practice-preview'
         ? `${origin}/${locale}/practice` : destination
-      const failedIdentityDestination = linkedAccount
-        ? `${origin}/${locale}/app/settings` : failedPracticeDestination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedIdentityDestination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -379,7 +377,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedIdentityDestination); url.searchParams.set('auth', value); return url.href; })('failed'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
