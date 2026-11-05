@@ -199,7 +199,9 @@ test('diagnostic webhook forwards committed reply as Bot API text, not a missing
   const provider=source('lib/crm/messenger-provider.js')
   assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
   assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en',webAppUrl=null\}/)
+  assert.match(provider,/INVALID_WEBAPP_LINK/)
+  assert.match(route,/webAppUrl:intake\.webAppUrl\|\|null/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })
 
