@@ -28,6 +28,7 @@ jobs:
           echo '73b9b29de526496875bd69557c1911523b8387d6a92dbbf30a48b445866c8ea6  tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip' | sha256sum -c -
           unzip -oq tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip -d "$RUNNER_TEMP/hh-wave4-src"
           cp -a "$RUNNER_TEMP/hh-wave4-src/hh-wave4/." "$GITHUB_WORKSPACE/"
+          node tools/video-vault/wave4-source-fix.mjs
           node --check scripts/dareful-wave4-discover.mjs
           node --check scripts/dareful-wave4-review.mjs
           node --test tests/dareful-wave4.test.mjs
@@ -75,6 +76,7 @@ jobs:
           echo '73b9b29de526496875bd69557c1911523b8387d6a92dbbf30a48b445866c8ea6  tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip' | sha256sum -c -
           unzip -oq tools/video-vault/HH_Video_Vault_Wave4_60_Candidates_QA_20261105.zip -d "$RUNNER_TEMP/hh-wave4-src"
           cp -a "$RUNNER_TEMP/hh-wave4-src/hh-wave4/." "$GITHUB_WORKSPACE/"
+          node tools/video-vault/wave4-source-fix.mjs
       - uses: actions/download-artifact@v4
         with:
           name: hh-dareful-wave4-source-research
