@@ -1,6 +1,7 @@
 name: Holistic House Messages wellness two-folder release
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
     branches: [codex/public-book-library]
     paths:
       - 'app/**/app/messages/**'
