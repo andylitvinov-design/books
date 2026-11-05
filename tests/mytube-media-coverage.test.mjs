@@ -35,8 +35,8 @@ test("portrait-specific HD sources never inflate landscape or square inventories
   const landscape=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"landscape"});
   const square=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"square"});
   assert.equal(portrait.footageInventory.eligibleLocalLicensedCatalogRows,48);
-  assert.equal(landscape.footageInventory.eligibleLocalLicensedCatalogRows,44);
-  assert.equal(square.footageInventory.eligibleLocalLicensedCatalogRows,44);
+  assert.equal(landscape.footageInventory.eligibleLocalLicensedCatalogRows,0);
+  assert.equal(square.footageInventory.eligibleLocalLicensedCatalogRows,0);
   assert.ok(portrait.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount>0);
   assert.equal(landscape.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount,0);
   assert.ok(portrait.scenarioMotifs.some(x=>x.motifTaggedCount>0));
