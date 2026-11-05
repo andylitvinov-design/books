@@ -121,7 +121,7 @@ test("Mentalica family engine keeps original eight constructor names and source 
     ["dao-layout","roof_double_line",5,"dao-metal"]
   ];
   for(const [constructorType,variant,count,lastId] of sizes){
-    const project={...defaultMentalicaPhotoProject(),constructorType,variant,geometry:12};
+    const project={...defaultMentalicaPhotoProject(),constructorType,variant,geometry:constructorType==="client"?8:12};
     const layout=mentalicaPhotoLayout(project);
     assert.equal(layout.slots.length,count,constructorType+"/"+variant);
     assert.equal(layout.slots.at(-1).id,lastId,constructorType+"/"+variant);
