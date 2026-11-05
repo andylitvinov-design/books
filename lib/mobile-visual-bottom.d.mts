@@ -11,3 +11,12 @@ export interface VisualDockBottomCorrectionInput {
   currentInset?: number;
 }
 export declare function visualDockBottomCorrection(input?: VisualDockBottomCorrectionInput): number;
+
+export interface VisualKeyboardInput {
+  editing?: boolean;
+  layoutHeight?: number;
+  visualHeight?: number;
+  visualOffsetTop?: number;
+  lastUnfocusedVisualHeight?: number;
+}
+export declare function visualKeyboardOpen(input?: VisualKeyboardInput): boolean;

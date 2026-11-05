@@ -1032,6 +1032,98 @@
         "reframe": 91,
         "integration": 75
       }
+    },
+    {
+      "sceneId": "sun-trees-forest",
+      "topics": [
+        {
+          "topicId": "recovery-after-load",
+          "score": 92
+        },
+        {
+          "topicId": "low-energy",
+          "score": 81
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 68
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 68,
+        "shelter": 94,
+        "reframe": 77,
+        "integration": 72
+      }
+    },
+    {
+      "sceneId": "snow-forest-winter",
+      "topics": [
+        {
+          "topicId": "recovery-after-load",
+          "score": 90
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 84
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 67
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 65,
+        "shelter": 95,
+        "reframe": 77,
+        "integration": 76
+      }
+    },
+    {
+      "sceneId": "fall-foliage-forest",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 95
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 84
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 73
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 83,
+        "shelter": 77,
+        "reframe": 86,
+        "integration": 92
+      }
+    },
+    {
+      "sceneId": "warm-clouds-sunset",
+      "topics": [
+        {
+          "topicId": "evening-fatigue",
+          "score": 95
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 86
+        },
+        {
+          "topicId": "loss-joy",
+          "score": 62
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 59,
+        "shelter": 96,
+        "reframe": 81,
+        "integration": 87
+      }
     }
   ]
 }

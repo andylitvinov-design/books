@@ -241,3 +241,14 @@ test('Spanish hide and replacement persist independently of English and Russian'
   await reloaded.save(replacement, 1)
   assert.equal(toPublishedSiteVideo(await configuredStore(database).get(esAboutKey)).youtubeId, youtubeId)
 })
+
+
+test('all already-reviewed public site videos are correctly attributed to approved Andy profile',()=>{
+  for(const record of builtInSiteVideoRecords()){
+    assert.equal(record.published.practitionerSlug,'andy-litvinov')
+    assert.equal(record.published.practitionerName,'Andy')
+    assert.equal(record.draft.practitionerSlug,'andy-litvinov')
+    assert.equal(isSiteVideoRecord(record),true)
+    assert.equal(toPublishedSiteVideo(record).practitionerSlug,'andy-litvinov')
+  }
+})

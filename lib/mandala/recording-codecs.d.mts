@@ -4,3 +4,4 @@ export function orderRecordingMimes(args:{
   preferWebm?:boolean; forceMp4?:boolean;
   userAgent?:string; maxTouchPoints?:number;
 }):string[];
+export function proceduralMp4Route(args?:{nativeAvc?:boolean;webCodecs?:boolean;nativeWebm?:boolean;preferNativeWebm?:boolean}):'native'|'native-webm'|'webcodecs'|'unsupported';

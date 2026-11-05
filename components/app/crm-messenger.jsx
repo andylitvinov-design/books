@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {ArrowLeft, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
+import {ArrowLeft, BellRing, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
@@ -35,6 +35,7 @@ const copy={
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
 const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
@@ -200,6 +201,10 @@ function replyReason(reason,lang){
     CONTACT_BLOCKED:{en:'Contact opted out',ru:'Контакт заблокировал сообщения',es:'Contacto bloqueado'},
     CHANNEL_NOT_CONNECTED:{en:'Provider not connected',ru:'Канал ещё не подключён',es:'Canal no conectado'},
     CONSENT_REQUIRED:{en:'Client must confirm /agree in Telegram. Refresh this chat afterward.',ru:'Клиенту нужно подтвердить /agree в Telegram. Затем обновите чат.',es:'El cliente debe confirmar /agree en Telegram. Actualiza el chat después.'},
+    REPLY_BLOCKED:{en:'Reply blocked. Check consent and channel status.',ru:'Отправка заблокирована. Проверьте согласие и канал.',es:'Respuesta bloqueada. Revisa el consentimiento y el canal.'},
+    PROVIDER_REJECTED:{en:'Provider rejected this message; check the channel.',ru:'Провайдер отклонил сообщение. Проверьте канал.',es:'El proveedor rechazó el mensaje. Revisa el canal.'},
+    PROVIDER_STATUS_UNKNOWN:{en:'Delivery result unknown. Do not resend automatically.',ru:'Результат отправки неизвестен. Не повторяйте автоматически.',es:'Resultado desconocido. No reenvíes automáticamente.'},
+    TEST_RECIPIENT_ONLY:{en:'This channel is limited to approved test recipients.',ru:'Канал ограничен разрешёнными тестовыми получателями.',es:'El canal está limitado a destinatarios de prueba autorizados.'},
   }
   return labels[reason]?.[lang]||reason||''
 }
@@ -208,6 +213,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const [botCheck,setBotCheck]=useState(null)
+  const [noticeBusy,setNoticeBusy]=useState(false)
+  const [noticeFeedback,setNoticeFeedback]=useState('')
   const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
   const focusRefreshAt=useRef(0)
@@ -476,6 +483,38 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     if(result&&activeRef.current===threadId)setStatus(w.completed)
   }
+  const noticeActions={
+    en:{button:'Recover missed enquiry alerts',busy:'Checking…',none:'No unattempted enquiry alerts.',
+      off:'Pending enquiries cannot be delivered through Telegram currently.',
+      result:(accepted,attempted)=>'Telegram accepted '+accepted+' of '+attempted+
+        ' attempts. This does not confirm delivery or reading.',error:'Could not check missed alerts.'},
+    ru:{button:'Проверить пропущенные уведомления',busy:'Проверка…',none:'Пропущенных попыток уведомления нет.',
+      off:'Есть заявки, но отправка через Telegram сейчас недоступна.',
+      result:(accepted,attempted)=>'Telegram принял '+accepted+' из '+attempted+
+        ' попыток. Это не подтверждает доставку или прочтение.',error:'Не удалось проверить уведомления.'},
+    es:{button:'Revisar avisos no enviados',busy:'Comprobando…',none:'No hay avisos pendientes sin intento.',
+      off:'Hay solicitudes pero el envío por Telegram no está disponible.',
+      result:(accepted,attempted)=>'Telegram aceptó '+accepted+' de '+attempted+
+        ' intentos. No confirma entrega ni lectura.',error:'No se pudieron revisar los avisos.'},
+  }[lang]
+  async function recoverPendingNotices(){
+    if(busy||noticeBusy||!accountId||!data)return
+    setNoticeBusy(true);setNoticeFeedback('')
+    try{
+      const response=await fetch('/api/app/crm/notification-recovery',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'X-HH-Account-Id':accountId},
+      })
+      if(!response.ok)throw new Error('NOTICE_RECOVERY_UNAVAILABLE')
+      const report=await response.json()
+      if(report?.mode!=='manual_missing_claims_only'||
+        !Number.isInteger(report.scanned)||!Number.isInteger(report.attempted)||
+        !Number.isInteger(report.accepted))throw new Error('INVALID_NOTICE_RECOVERY')
+      setNoticeFeedback(report.scanned===0?noticeActions.none:report.attempted===0?
+        noticeActions.off:noticeActions.result(report.accepted,report.attempted))
+    }catch{setNoticeFeedback(noticeActions.error)}
+    finally{setNoticeBusy(false)}
+  }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
@@ -497,12 +536,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           <Settings2 size={16} aria-hidden="true"/>{t.channels}
           <span>{data?.accounts?.filter(item=>item.connected).length||0}/4</span>
         </button>}
+        <button type="button" className={styles.plainButton}
+          aria-label={noticeActions.button} title={noticeActions.button}
+          disabled={busy||noticeBusy||!data} onClick={()=>void recoverPendingNotices()}>
+          {compact?<BellRing size={17} aria-hidden="true"/>:
+            noticeBusy?noticeActions.busy:noticeActions.button}
+        </button>
         <button type="button" aria-label={t.refresh} className={styles.plainButton}
           disabled={busy} onClick={()=>refresh()}>
           {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
         </button>
       </div>
     </header>}
+    {!conversationOnly&&noticeFeedback&&<p className={styles.notice} role="status">{noticeFeedback}</p>}
     {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
     {!conversationOnly&&(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
@@ -630,7 +676,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}</small>
+            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -696,6 +742,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
+              {m.failure?.code&&<small>{replyReason(m.failure.code,lang)||t.sendError}</small>}
             </div>)}
           </div>
           {!conversationOnly&&(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">

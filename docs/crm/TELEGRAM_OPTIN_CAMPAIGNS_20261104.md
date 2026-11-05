@@ -22,3 +22,21 @@ WhatsApp, Instagram and Facebook Messenger broadcasts are **not activated**: pro
 ## Important
 
 No existing customer has been subscribed automatically. Never send a real marketing campaign until the customer has explicitly subscribed and approved copy and consent evidence have been reviewed. Database migration 20261104141404 is additive and was applied before shipping frontend code; it cannot by itself send anything.
+
+## Commercial sender identification · additive safeguard
+
+Canadian CASL may apply to promotional instant messages. Existing opt-in and
+simple unsubscribes are necessary but not enough: commercial messages also
+need a verified-by-owner business/sender name, valid mailing address and
+contact method. The owner must supply a public business mailing address in
+the campaign form and explicitly attest that it can be disclosed to recipients.
+A mailing address is not inferred from a client, profile or private file.
+Any Telegram campaign draft without these fields fails closed on stats/send;
+every new campaign includes the business name, mailing address, canonical
+Holistic House contact page and explicit news/global opt-out directions.
+This is not legal certification and the owner remains responsible for the
+truth and ongoing validity of the contact information.
+
+Reservations use a per-owner transaction advisory lock before counting the
+30 messages per rolling day, so concurrent owner browser tabs cannot bypass
+the daily free limit.

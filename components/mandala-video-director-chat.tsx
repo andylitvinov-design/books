@@ -14,6 +14,7 @@ import {initialVideoChatTree,nextVideoChatTreeStep,videoChatTreeOptions,
  recognizeVideoChatTreeOption,recognizeVideoChatPhraseStyle} from "@/lib/mandala/video-chat-tree.mjs";
 import {isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import {understandVideoChatReply} from "@/lib/mandala/video-chat-understanding.mjs";
+import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -37,7 +38,7 @@ type Props={
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
  onGoalChange:(text:string)=>void;onInvalidate:()=>void;
  onConfirm:(selection:{scenario:ReturnType<typeof compileExecutableVideoScenario>})=>boolean;
- onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
+ onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenDelivery:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
 const copy={
  ru:{title:"AI-видеорежиссёр",subtitle:"Подбираю реальные видеосюжеты · бесплатно",intro:"Привет! Создадим ваше видео: выберем цель, тему, сценарий, идею и слова поддержки. Нажимайте готовые ответы прямо в чате или пишите своими словами.",
@@ -48,7 +49,7 @@ const copy={
   unsupported:"Для указанного конкретного объекта пока нет подходящего реального MP4. Могу предложить символический монтаж из доступных видеосцен — он не будет изображать запрошенный объект.",
   missing:"Подходящий монтаж из разрешённых сцен не найден. Измените тему или откройте редактор.", symbolic:"Предложить метафорический сюжет",retryGoal:"Изменить запрос",alternate:"Другой сюжет",confirm:"Подтвердить сценарий",create:"Создать видео",creating:"Собираем видео на устройстве…",loading:"Загружаем выбранные видеосцены…",open:"Открыть готовое видео",editor:"Расширенный редактор",startAgain:"Новый ролик",edit:"Изменить настройки",note:"Видео собирается из разрешённых MP4, не из новых AI-кадров. Ваш текст не передаётся внешним AI-сервисам.",
   noteAi:"С вашего разрешения текст идеи и выбранные настройки отправляются подтверждённому бесплатному AI. Фото и голос остаются на устройстве.",
-  placeholder:"Напишите, что хотите создать или изменить…",send:"Отправить",photo:"Добавить своё фото",audio:"Настроить аудиогид, музыку и голос",promptChanged:"Обновил параметры. Проверьте сценарий снова.",chatHelp:"Опишите пожелание своими словами. Я помогу выбрать цель, тему, сценарий, идею и фразы. Можно сказать «второй вариант», «выбери сам», «назад», «без музыки» или изменить любую настройку.",chatAmbiguous:"В запросе несколько противоречащих вариантов. Какой выбрать?",chatDuration:"Доступная длительность: 10, 15, 20, 30 или 60 секунд. Уточните выбор.",chatUnknown:"Я не уверен, что понял выбор. Напишите иначе, выберите вариант ниже или скажите «выбери сам».",chatAlternateMissing:"Сейчас нет другого подтверждённого видеомонтажа. Выберите другую идею или измените тему.",chatAudio:"Настройки голоса и аудиогида открываются отдельно; музыка и фразы на экране настраиваются независимо.",chatConfirmFirst:"Сначала подтвердите сценарий; только затем запускается создание видео.",
+  placeholder:"Напишите, что хотите создать или изменить…",send:"Отправить",photo:"Добавить своё фото",audio:"Настроить аудиогид, музыку и голос",promptChanged:"Обновил параметры. Проверьте сценарий снова.",chatHelp:"Опишите пожелание своими словами. Я помогу выбрать цель, тему, сценарий, идею и фразы. Можно сказать «второй вариант», «выбери сам», «назад», «без музыки» или изменить любую настройку.",chatAmbiguous:"В запросе несколько противоречащих вариантов. Какой выбрать?",chatDuration:"Доступная длительность: 10, 15, 20, 30 или 60 секунд. Уточните выбор.",chatUnknown:"Я не уверен, что понял выбор. Напишите иначе, выберите вариант ниже или скажите «выбери сам».",chatAlternateMissing:"Сейчас нет другого подтверждённого видеомонтажа. Выберите другую идею или измените тему.",chatAudio:"Настройки голоса и аудиогида открываются отдельно; музыка и фразы на экране настраиваются независимо.",chatConfirmFirst:"Сначала подтвердите сценарий; только затем запускается создание видео.",chatPreserved:"Оставил эту настройку без изменений.",chatUndoEmpty:"Предыдущее изменение ещё не сохранено.",chatReject:"Понял, этот вариант не подходит. Выберите другой или опишите желаемое.",chatSuggest:"Могу предложить наиболее подходящий вариант автоматически, если нажмёте «Выбери сам».",aiUnderstanding:"Сопоставляю ответ с доступными вариантами…",aiSemanticFound:"Возможно, вы имеете в виду: ",aiSemanticFallback:"Не удалось уверенно определить выбор. Уточните или нажмите вариант ниже.",
   aiConsent:"Разрешить бесплатному AI уточнять вопрос и предлагать реальный монтаж (передать идею и фильтры внешнему сервису)",aiPlan:"AI: подобрать сцены и монтаж",aiPlanBusy:"AI подбирает монтаж…",aiPlanReady:"AI предложил проверенный монтаж. Проверьте кадры и подтвердите.",aiPlanFailed:"AI-монтаж недоступен или не прошёл проверку — локальный сценарий сохранён.",planLocal:"Локальный режиссёр",planAi:"AI · проверенный сценарий",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
   assetTimeout:"Сцены или права на запись пока недоступны. Выберите другой сюжет либо проверьте настройки.",
   auto:"Подобрать настройки автоматически",timeout:"Запись не началась. Проверьте доступность сцен и попробуйте снова.",blocked:"Результат не прошёл проверку или запись не удалась. Воспользуйтесь настройками и повторите создание.",stages:["Начало","Погружение","Развитие","Завершение"],
@@ -63,7 +64,7 @@ const copy={
   unsupported:"That specific subject is not available in our verified MP4 catalog. I can propose a symbolic story using existing footage, but it won't show that subject.",
   missing:"No compatible licensed clips were found. Change the goal or open the editor.",symbolic:"Use a symbolic story",retryGoal:"Change idea",alternate:"Another story",confirm:"Confirm story",create:"Create video",creating:"Recording video on this device…",loading:"Loading the selected video clips…",open:"Open finished video",editor:"Advanced editor",startAgain:"New video",edit:"Change settings",note:"Uses approved existing MP4 footage, not newly AI-generated frames. Your text is not sent to an external AI service.",
   noteAi:"With your permission, the idea text and selected settings are sent to confirmed free AI. Photos and voice stay on your device.",
-  placeholder:"Describe a video or tell me what to change…",send:"Send",photo:"Add my photo",audio:"Set up voice, music and audio guide",promptChanged:"Updated the settings. Please confirm the story again.",chatHelp:"Describe your request in your own words. I can help select a goal, topic, story, idea and phrases. Try 'second option', 'choose for me', 'go back', 'no music', or edit any setting.",chatAmbiguous:"I found conflicting options. Which one do you prefer?",chatDuration:"Available lengths: 10, 15, 20, 30 or 60 seconds. Please choose one.",chatUnknown:"I'm not sure which option you meant. Try different words, tap a choice below, or say 'choose for me'.",chatAlternateMissing:"No other verified film edit is available yet. Try another idea or topic.",chatAudio:"Voice and audio-guide controls open separately. Music and on-screen phrases remain independent.",chatConfirmFirst:"Confirm the story first, then you can create the video.",
+  placeholder:"Describe a video or tell me what to change…",send:"Send",photo:"Add my photo",audio:"Set up voice, music and audio guide",promptChanged:"Updated the settings. Please confirm the story again.",chatHelp:"Describe your request in your own words. I can help select a goal, topic, story, idea and phrases. Try 'second option', 'choose for me', 'go back', 'no music', or edit any setting.",chatAmbiguous:"I found conflicting options. Which one do you prefer?",chatDuration:"Available lengths: 10, 15, 20, 30 or 60 seconds. Please choose one.",chatUnknown:"I'm not sure which option you meant. Try different words, tap a choice below, or say 'choose for me'.",chatAlternateMissing:"No other verified film edit is available yet. Try another idea or topic.",chatAudio:"Voice and audio-guide controls open separately. Music and on-screen phrases remain independent.",chatConfirmFirst:"Confirm the story first, then you can create the video.",chatPreserved:"Kept this setting unchanged.",chatUndoEmpty:"There is no previous edit to undo yet.",chatReject:"Understood. Choose another option or describe what to change.",chatSuggest:"I can suggest a suitable option automatically if you choose ‘Choose for me’.",aiUnderstanding:"Matching your reply with available options…",aiSemanticFound:"A likely matching option is: ",aiSemanticFallback:"I could not confidently match a choice. Please clarify or pick below.",
   aiConsent:"Allow free AI to ask one question and suggest a real film cut (send my goal and filters externally)",aiPlan:"AI: arrange real scenes",aiPlanBusy:"AI is planning the cut…",aiPlanReady:"AI suggested a verified cut. Review the scenes, then confirm.",aiPlanFailed:"AI edit was unavailable or invalid. Your local film plan is preserved.",planLocal:"Local director",planAi:"AI · validated cut",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
   assetTimeout:"Sources or recording permissions are not ready. Try another story or check settings.",
   auto:"Suggest settings for me",timeout:"Recording did not begin. Check the video sources and retry.",blocked:"Recording or playback verification failed. Adjust settings and retry.",stages:["Opening","Arriving","Exploring","Closing"],
@@ -78,7 +79,7 @@ const copy={
   unsupported:"Ese objeto específico no está en el catálogo de MP4. Puedo proponer una historia simbólica, pero no mostrará ese objeto.",
   missing:"No se encontraron escenas autorizadas compatibles. Cambia el tema o usa el editor.",symbolic:"Usar una historia simbólica",retryGoal:"Cambiar idea",alternate:"Otra historia",confirm:"Confirmar historia",create:"Crear vídeo",creating:"Grabando vídeo en este dispositivo…",loading:"Cargando las escenas…",open:"Abrir vídeo terminado",editor:"Editor avanzado",startAgain:"Nuevo vídeo",edit:"Cambiar ajustes",note:"Montaje de MP4 autorizados, no fotogramas nuevos generados por IA. Tu texto no se envía a un servicio IA externo.",
   noteAi:"Con tu permiso, el texto de la idea y los ajustes elegidos se envían a IA gratuita verificada. Fotos y voz permanecen en tu dispositivo.",
-  placeholder:"Describe el vídeo o lo que quieres cambiar…",send:"Enviar",photo:"Añadir mi foto",audio:"Configurar voz, música y audioguía",promptChanged:"Ajustes actualizados. Confirma la historia otra vez.",chatHelp:"Describe tu objetivo con tus palabras. Puedo ayudarte a elegir meta, tema, guion, idea y frases. Prueba 'segunda opción', 'elige tú', 'atrás', 'sin música' o cambia un ajuste.",chatAmbiguous:"Hay opciones contradictorias. ¿Cuál prefieres?",chatDuration:"Duraciones disponibles: 10, 15, 20, 30 o 60 segundos. Elige una.",chatUnknown:"No estoy seguro de qué opción quieres. Dilo de otra forma, toca una opción o escribe 'elige tú'.",chatAlternateMissing:"No hay otro montaje verificado disponible. Prueba otra idea o tema.",chatAudio:"La voz y la audioguía se configuran aparte. La música y las frases en pantalla son independientes.",chatConfirmFirst:"Primero confirma el guion; después podrás crear el vídeo.",
+  placeholder:"Describe el vídeo o lo que quieres cambiar…",send:"Enviar",photo:"Añadir mi foto",audio:"Configurar voz, música y audioguía",promptChanged:"Ajustes actualizados. Confirma la historia otra vez.",chatHelp:"Describe tu objetivo con tus palabras. Puedo ayudarte a elegir meta, tema, guion, idea y frases. Prueba 'segunda opción', 'elige tú', 'atrás', 'sin música' o cambia un ajuste.",chatAmbiguous:"Hay opciones contradictorias. ¿Cuál prefieres?",chatDuration:"Duraciones disponibles: 10, 15, 20, 30 o 60 segundos. Elige una.",chatUnknown:"No estoy seguro de qué opción quieres. Dilo de otra forma, toca una opción o escribe 'elige tú'.",chatAlternateMissing:"No hay otro montaje verificado disponible. Prueba otra idea o tema.",chatAudio:"La voz y la audioguía se configuran aparte. La música y las frases en pantalla son independientes.",chatConfirmFirst:"Primero confirma el guion; después podrás crear el vídeo.",chatPreserved:"He mantenido este ajuste.",chatUndoEmpty:"Aún no hay un cambio anterior para deshacer.",chatReject:"Entendido. Elige otra opción o explica el cambio.",chatSuggest:"Puedo sugerir una opción automáticamente si pulsas «Elige por mí».",aiUnderstanding:"Comparo tu respuesta con las opciones disponibles…",aiSemanticFound:"La opción más probable es: ",aiSemanticFallback:"No pude identificar una opción con seguridad. Aclara o elige abajo.",
   aiConsent:"Permitir que la IA gratuita formule una pregunta y proponga un montaje real (enviar idea y filtros)",aiPlan:"IA: ordenar escenas reales",aiPlanBusy:"IA prepara el montaje…",aiPlanReady:"La IA propuso un montaje verificado. Revísalo y confírmalo.",aiPlanFailed:"Montaje IA no disponible o no válido. Se mantiene el plan local.",planLocal:"Director local",planAi:"IA · montaje validado",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
   assetTimeout:"Las escenas o permisos aún no están disponibles. Prueba otra historia o revisa los ajustes.",
   auto:"Sugerir ajustes automáticamente",timeout:"No se inició la grabación. Comprueba las escenas y vuelve a intentarlo.",blocked:"Falló la grabación o verificación. Ajusta los parámetros e inténtalo otra vez.",stages:["Inicio","Entrada","Desarrollo","Cierre"],
@@ -94,7 +95,7 @@ const initial=(goal:string,locale:PublicLocale):Draft=>{
 };
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
- renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
+ renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,onOpenDelivery,
  onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
  const t=copy[locale];
  const [draft,setDraft]=useState<Draft>(()=>initial(goal,locale));
@@ -105,15 +106,22 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
  const [aiStatus,setAiStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
+ const [semanticStatus,setSemanticStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
+ const semanticAbortRef=useRef<AbortController|null>(null);
  const aiAskedKeyRef=useRef("");
  const currentStepRef=useRef<Step>(step);
  currentStepRef.current=step;
+ const semanticKey=(d:Draft,st:Step)=>JSON.stringify([st,d.goal,d.categoryId,
+   d.topicId,d.scenarioId,d.ideaId,d.phraseId,d.aspect,d.duration,d.music,d.phrases]);
+ const semanticKeyRef=useRef("");
+ semanticKeyRef.current=semanticKey(draft,step);
  const [alternative,setAlternative]=useState(0);
  const [aiCut,setAiCut]=useState<{key:string;value:{clipIds:string[];stageSeconds:number[]}}|null>(null);
  const [aiCutState,setAiCutState]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
  const cutAbortRef=useRef<AbortController|null>(null);
  const approvedPlanKeyRef=useRef("");
- useEffect(()=>()=>cutAbortRef.current?.abort(),[]);
+ const lastDraftRef=useRef<{draft:Draft;step:Step}|null>(null);
+ useEffect(()=>()=>{cutAbortRef.current?.abort();semanticAbortRef.current?.abort();},[]);
  const [captureStarted,setCaptureStarted]=useState(false);
  const [captureObserved,setCaptureObserved]=useState(false);
  const [assetWaitLong,setAssetWaitLong]=useState(false);
@@ -140,6 +148,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setStep(nextStep);addLine("assistant",question(nextStep));
    approvedPlanKeyRef.current="";cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setSymbolicAllowed(false);setAlternative(0);
+   semanticAbortRef.current?.abort();setSemanticStatus("idle");
    // A new goal entered outside the chat cannot inherit external-AI consent.
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
  // Avoid reacting to every local answer: identical text does not trigger changes.
@@ -311,6 +320,49 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    [[t.back,"назад"],[step==="phrase"?t.skipPhrase:t.skip,"пропусти"],
      [t.quickAuto,"выбери сам"]];
  const activeAssistantId=lines.reduce((id,line)=>line.role==="assistant"?line.id:id,-1);
+ const suggestSemantic=(utterance:string,requestedStep:Step,base:Draft):boolean=>{
+   if(!aiConsent||disabled||captureStarted||utterance.length>480||
+      !VIDEO_CHAT_TREE_STEPS.includes(requestedStep)||requestedStep==="phrase"||
+      videoChatTreeOptions(base,requestedStep,locale).length<2)return false;
+   semanticAbortRef.current?.abort();
+   const controller=new AbortController();
+   semanticAbortRef.current=controller;
+   const requestKey=semanticKey(base,requestedStep);
+   setSemanticStatus("loading");
+   void fetch("/api/holistic-support/video-chat-semantic",{
+     method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+     headers:{"Content-Type":"application/json","Accept":"application/json"},
+     signal:controller.signal,
+     body:JSON.stringify({consent:true,locale,stage:requestedStep,
+       utterance,path:{categoryId:base.categoryId,topicId:base.topicId,
+         scenarioId:base.scenarioId,ideaId:base.ideaId}}),
+   }).then(async response=>{
+     if(!response.ok)throw Error("SEMANTIC_UNAVAILABLE");
+     return response.json();
+   }).then(payload=>{
+     if(controller.signal.aborted||currentStepRef.current!==requestedStep||
+        semanticKeyRef.current!==requestKey)return;
+     if(!payload||typeof payload.optionId!=="string"||
+        typeof payload.confidence!=="number"||payload.confidence<.9)throw Error("UNTRUSTED_CHOICE");
+     const option=videoChatTreeOptions(base,requestedStep,locale).find(x=>x.id===payload.optionId);
+     if(!option)throw Error("INVALID_OPTION");
+     const next=chooseVideoChatTreeOption(base,requestedStep,option.id,locale) as Draft|null;
+     if(!next)throw Error("INVALID_OPTION");
+     const following=nextVideoChatTreeStep(next) as Step;
+     lastDraftRef.current={draft:{...base},step:requestedStep};
+     onInvalidate();cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+     setDraft(next);setStep(following);setSymbolicAllowed(false);setAlternative(0);
+     if(next.goal!==base.goal)onGoalChange(next.goal);
+     setSemanticStatus("ready");
+     addLine("assistant",t.aiSemanticFound+option.label+". "+question(following));
+   }).catch(()=>{
+     if(controller.signal.aborted||currentStepRef.current!==requestedStep||
+        semanticKeyRef.current!==requestKey)return;
+     setSemanticStatus("fallback");
+     addLine("assistant",t.aiSemanticFallback+" "+question(requestedStep));
+   }).finally(()=>{if(semanticAbortRef.current===controller)semanticAbortRef.current=null;});
+   return true;
+ };
  const answer=(raw:string)=>{
    if(disabled||captureStarted)return;
    const value=raw.trim().replace(/\s+/gu," ").slice(0,800);
@@ -318,10 +370,25 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const isTreeStep=VIDEO_CHAT_TREE_STEPS.includes(step);
    const displayed=[...choices,...commandChoices].find(([,id])=>id===value)?.[0];
    setInput("");addLine("user",displayed||value);
+   semanticAbortRef.current?.abort();setSemanticStatus("idle");
    const action=parseVideoChatAction(value,step);
    if(action==="confirm"){confirm();return;}
    if(action==="create"){start();return;}
-   if(action==="open"){onOpenResult();return;}
+   if(action==="open"){
+     if(/(?:скачать|сохранить|отправить|download|share|send|descargar|enviar)/iu.test(value))onOpenDelivery();
+     else onOpenResult();
+     return;
+   }
+   const faq=classifyVideoChatQuestion(value);
+   if(faq){
+     addLine("assistant",answerVideoChatQuestion(faq,{
+       locale,stage:step,
+       options:choices.map(([label])=>label),
+       selected:{topic:chosenTopic?.title,story:chosenNarrative?.title,
+         duration:draft.duration,aspect:draft.aspect,music:draft.music},
+     }));
+     return;
+   }
    const reply=understandVideoChatReply(value,step) as {
      kind:string;reason?:string;requested?:number;goal?:string;
      targetStep?:string;direction?:number;audioRequested?:boolean;
@@ -329,6 +396,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    };
    const commit=(next:Draft,target:Step,feedback:string)=>{
      if(JSON.stringify(next)!==JSON.stringify(draft)){
+       lastDraftRef.current={draft:{...draft},step};
        cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
        onInvalidate();
      }
@@ -353,6 +421,27 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      return next as Draft;
    };
    const nextQuestion=(next:Draft)=>nextVideoChatTreeStep(next) as Step;
+   if(reply.kind==="undo"){
+     const previous=lastDraftRef.current;
+     if(!previous){addLine("assistant",t.chatUndoEmpty);return;}
+     lastDraftRef.current=null;
+     cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+     onInvalidate();setDraft(previous.draft);setStep(previous.step);
+     if(previous.draft.goal!==draft.goal)onGoalChange(previous.draft.goal);
+     setCaptureStarted(false);setCaptureObserved(false);
+     addLine("assistant",t.promptChanged+" "+question(previous.step));return;
+   }
+   if(reply.kind==="reject"){
+     const destination=(reply.targetStep||step) as Step;
+     if(step==="ready"||step==="done")onInvalidate();
+     setStep(destination);addLine("assistant",t.chatReject+" "+question(destination));return;
+   }
+   if(reply.kind==="suggest"){
+     addLine("assistant",t.chatSuggest+" "+answerVideoChatQuestion("options",{
+       locale,stage:step,options:choices.map(([label])=>label),
+     }));return;
+   }
+   if(reply.kind==="preserve"){addLine("assistant",t.chatPreserved+" "+question(step));return;}
    if(reply.kind==="reset"){reset();return;}
    if(reply.kind==="help"){addLine("assistant",t.chatHelp);return;}
    if(reply.kind==="repeat"){addLine("assistant",question(step));return;}
@@ -452,12 +541,16 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        const base=step==="topic"?draft:initial("",locale);
        const resolved=resolveVideoChatTreeRequest(base,description,step,locale) as Draft|null;
        if(resolved){
-         const next=withFilters(mergeVideoChatPreferences({...draft,...resolved},value) as Draft,reply.filters);
+         const next=withFilters({...draft,...resolved} as Draft,reply.filters);
          const following=nextQuestion(next);
          commit(next,following,question(following));return;
        }
        if(step==="category"){
          const next=withFilters({...draft,goal:description},reply.filters);
+         if(suggestSemantic(description,"category",next)){
+           setDraft(next);if(next.goal!==draft.goal)onGoalChange(next.goal);
+           onInvalidate();addLine("assistant",t.aiUnderstanding);return;
+         }
          commit(next,"category",t.unknownGoal+" "+t.category);return;
        }
      }else{
@@ -481,11 +574,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const directFilter=!isTreeStep&&["mood","aspect","duration","music","phrases"].includes(step)?
      parseVideoChatStepChoice(step,value):null;
    if(reply.kind==="edit"||reply.kind==="settings_only"||directFilter!==null){
-     const picked=withFilters(mergeVideoChatPreferences(draft,value) as Draft,{
+     const picked=withFilters({...draft} as Draft,{
        ...(directFilter===null?{}:{[step]:directFilter}),...reply.filters,
      });
      const following=isTreeStep?step:nextQuestion(picked);
-     commit(picked,following,question(following));
+     commit(picked,following,t.promptChanged+" "+question(following));
      if(reply.audioRequested){onOpenAudio();addLine("assistant",t.chatAudio);}
      return;
    }
@@ -532,6 +625,10 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      const next=withFilters({...draft,goal:value} as Draft,reply.filters);
      commit(next,"category",t.unknownGoal+" "+t.category);return;
    }
+   if(isTreeStep&&step!=="phrase"&&reply.kind==="clarify"&&
+      reply.reason==="unknown"&&suggestSemantic(value,step,draft)){
+     addLine("assistant",t.aiUnderstanding);return;
+   }
    addLine("assistant",t.chatUnknown+" "+question(step));
  };
  const autoComplete=()=>{
@@ -544,6 +641,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const matched=tree.topicId?getVideoGoalTopic(tree.topicId,locale):null;
    const next=suggestVideoChatDefaults(tree,
      (matched?.legacyVideoTheme||theme) as VideoTheme) as Draft;
+   lastDraftRef.current={draft:{...draft},step};
    setDraft(next);
    if(next.goal!==draft.goal)onGoalChange(next.goal);
    setSymbolicAllowed(false);onInvalidate();
@@ -552,7 +650,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const reset=()=>{
    if(disabled)return;
    cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
-   approvedPlanKeyRef.current="";
+   semanticAbortRef.current?.abort();setSemanticStatus("idle");
+   approvedPlanKeyRef.current="";lastDraftRef.current=null;
    setDraft(initial("",locale));onGoalChange("");setStep("category");setSymbolicAllowed(false);
    aiAskedKeyRef.current="";setAiStatus("idle");setAiConsent(false);
    setAlternative(0);setCaptureStarted(false);setCaptureObserved(false);
@@ -786,11 +885,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          const allowed=event.currentTarget.checked;
          setAiConsent(allowed);
          if(!allowed){
+           semanticAbortRef.current?.abort();setSemanticStatus("idle");
            cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
            setAiStatus("idle");onInvalidate();setStep(current=>current==="ready"?"review":current);
          }
        }}/>
-     <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}</span>
+     <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}{semanticStatus==="loading"?" · "+t.aiUnderstanding:""}</span>
    </label>
    <div className={css.foot}><span>{aiConsent?t.noteAi:t.note}</span><button type="button" onClick={onOpenAudio} disabled={disabled}><Music2 size={14}/>{t.audio}</button></div>
  </section>;

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {telegramMarketingIntent,telegramMarketingActive,telegramMarketingNotice} from '../lib/crm/telegram-marketing.mjs'
+import {validateCampaignDraft,validateTelegramCampaignSender} from '../lib/crm/campaigns.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const optIn='2026-10-26T14:00:00Z'
 const optOut='2026-11-04T14:00:00Z'
@@ -78,4 +79,27 @@ test('marketing is owner-click only and provider cannot enter paid broadcast mod
   assert.match(ui,/confirmed\}/)
   assert.match(ui,/onClick=\{dispatch\}/)
   assert.doesNotMatch(route,/setInterval|setTimeout|sendBulk|allow_paid_broadcast:true/)
+})
+
+test('Telegram campaign sender identity is mandatory and publicly disclosed',()=>{
+  const valid={name:'Holistic House',postalAddress:'123 Sample Street, Toronto, Ontario, Canada',
+    addressConfirmed:true}
+  const draft={templateId:'course_update',locale:'ru',channel:'telegram',
+    segment:'all_opted_in'}
+  assert.throws(()=>validateCampaignDraft(draft),/SENDER_IDENTIFICATION_REQUIRED/)
+  assert.throws(()=>validateCampaignDraft({...draft,sender:{...valid,addressConfirmed:false}}),
+    /SENDER_IDENTIFICATION_REQUIRED/)
+  assert.deepEqual(validateTelegramCampaignSender(valid),valid)
+  assert.equal(validateCampaignDraft({...draft,sender:valid}).sender.name,'Holistic House')
+  const store=source('lib/crm/messenger-campaign-store.js')
+  assert.match(store,/validateTelegramCampaignSender\(sender\)/)
+  assert.match(store,/Почтовый адрес:/)
+  assert.match(store,/https:\/\/holistichouse\.vercel\.app/)
+  assert.match(store,/advisory_xact_lock/)
+  assert.match(store,/SENDER_IDENTIFICATION_REQUIRED/)
+  const route=source('app/api/app/crm/messenger/campaign/route.js')
+  assert.match(route,/sender:body\.payload\.sender/)
+  const ui=source('components/app/crm-telegram-campaigns.jsx')
+  assert.match(ui,/addressConfirmed/)
+  assert.match(ui,/postalAddress/)
 })

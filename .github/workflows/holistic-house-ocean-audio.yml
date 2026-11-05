@@ -16,7 +16,6 @@ on:
       - 'scripts/generate-soft-ocean-melody.mjs'
       - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:

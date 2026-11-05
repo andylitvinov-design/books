@@ -11,6 +11,51 @@ const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","ai","practice","master","profile"];
+
+// The fixed dock belongs to the ROOT shell, not to individual pages. Check
+// every user-reported route: guest public Studio/Practice/Master, public MyTube,
+// and the signed-out shell for protected AI Messenger/Profile. Authenticated
+// iPhone E2E is a separate acceptance requirement, never impersonated here.
+async function assertPinnedSixDock(page, id, active) {
+  const dock=page.locator("[data-hh-unified-dock]");
+  await dock.waitFor({state:"visible",timeout:30000});
+  await page.waitForFunction(expected=>{
+    const node=document.querySelector("[data-hh-unified-dock]");
+    return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
+  },active,{timeout:15000});
+  const buttons=await dock.locator("[data-unified-dock-item]").evaluateAll(
+    els=>els.map(el=>el.dataset.unifiedDockItem));
+  assert.deepEqual(buttons,ids,id+" one consistent six-item navigation");
+  const oldDock='[data-support-mobile-bottom-nav]:visible,'+
+    '[data-mandala-support-bottom-nav]:visible,.hh-mobile-app-nav:visible,'+
+    '.hh-practice-inner-dock:visible,[data-legacy-practice-bottom-nav]:visible,'+
+    '.mobile-bottom-navigation:visible';
+  assert.equal(await page.locator(oldDock).count(),0,id+" no duplicated legacy footer");
+  for(const point of ["top","middle","bottom","top"]){
+    await page.evaluate(async point=>{
+      const root=document.scrollingElement||document.documentElement;
+      const max=Math.max(0,root.scrollHeight-window.innerHeight);
+      const top=point==="bottom"?max:point==="middle"?max/2:0;
+      window.scrollTo({top,behavior:"instant"});
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    },point);
+    const position=await dock.evaluate(node=>{
+      const rect=node.getBoundingClientRect(),v=window.visualViewport;
+      const style=window.getComputedStyle(node);
+      return {css:style.position,bottom:style.bottom,rectBottom:rect.bottom,
+        visibleBottom:v?v.offsetTop+v.height:window.innerHeight,
+        staleInset:document.body.style.getPropertyValue("--hh-unified-viewport-inset"),
+        height:rect.height};
+    });
+    assert.equal(position.css,"fixed",id+" "+point+" dock is fixed");
+    assert.equal(position.bottom,"0px",id+" "+point+" no viewport offset");
+    assert.equal(position.staleInset,"",id+" "+point+" no stale JS correction");
+    assert.ok(position.height>=52,id+" "+point+" accessible dock height");
+    assert.ok(Math.abs(position.rectBottom-position.visibleBottom)<=3,
+      id+" "+point+" dock stays at the visual bottom: "+JSON.stringify(position));
+  }
+}
+
 async function inspect(browserType,locale,width){
  const browser=await browserType.launch({headless:true});
  const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,
@@ -31,9 +76,21 @@ async function inspect(browserType,locale,width){
   const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.match(dockBackground,/^rgba?\(15, 15, 15/,
     id+" dark dock applies only to MyTube");
-  const moreFilters=page.locator('button[aria-controls~="mytube-refine-controls"]');
+  const moreFilters=page.locator("[data-mytube-filter-toggle]");
+  const rail=page.locator("[data-mytube-category-rail]");
+  const refined=page.locator("#mytube-refine-controls");
+  const moreControls=page.locator("#mytube-more-controls");
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
-    id+" video-first feed starts with secondary filters collapsed");
+    id+" deeper filters are initially collapsed");
+  assert.equal(await rail.isVisible(),true,
+    id+" selected direction is always directly visible");
+  assert.equal(await refined.isVisible(),false,
+    id+" deeper taxonomy must not push videos down by default");
+  assert.equal(await page.locator("[data-mytube-duration-tabs] button").count(),3,
+    id+" All Shorts Study are visible");
+  const filterBounds=await moreFilters.boundingBox();
+  assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
+    id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
   const bounds=await links.evaluateAll(els=>els.map(el=>{
@@ -74,7 +131,12 @@ async function inspect(browserType,locale,width){
   // retired general-library four life-area filter. Wait for hydration so Safari
   // cannot swallow the real first click on a server-rendered category.
   const categories=page.locator('[data-mytube-categories] [data-mytube-category]:not([data-mytube-category="all"])');
-  assert.equal(await categories.count(),4,id+" four unique directions");
+  assert.equal(await categories.count(),4,id+" four unique swipeable directions");
+  assert.ok(await rail.evaluate(el=>el.scrollWidth>el.clientWidth),
+    id+" direction choices must be horizontally scrollable");
+  await rail.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  assert.ok(await rail.evaluate(el=>el.scrollLeft)>0,id+" swipe rail actually scrolls");
+  await rail.evaluate(el=>{el.scrollLeft=0;});
   await page.waitForFunction(()=>{
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
@@ -83,13 +145,25 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  const area=page.locator('[data-mytube-category="energy-confidence"]');
-  await area.click();
-  await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
-    ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
+  for(const mode of ["shorts","study","all"]){
+    const control=page.locator('[data-mytube-duration-mode="'+mode+'"]');
+    await control.click();
+    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
+  }
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
-    id+" visible refine action reveals secondary taxonomy");
+    id+" one filter action reveals additional filters");
+  await moreControls.waitFor({state:"visible",timeout:15000});
+  assert.ok(await moreControls.locator("select").count()>=2,
+    id+" language and sort controls are available after opening filters");
+  // Subcategory controls are intentionally empty until a direction is chosen.
+  assert.equal(await refined.isVisible(),false,
+    id+" no empty subcategory panel when all directions are selected");
+  const area=page.locator('[data-mytube-category="energy-confidence"]');
+  await area.click();
+  await refined.waitFor({state:"visible",timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
+    ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
   const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
@@ -104,6 +178,13 @@ async function inspect(browserType,locale,width){
   await page.locator('[data-mytube-category="all"]').click();
   await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
     null,{timeout:15000});
+  await moreFilters.click();
+  assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
+    id+" closing filters restores the compact video-first layout");
+  assert.equal(await refined.isVisible(),false,
+    id+" additional filters are hidden after collapse");
+  assert.equal(await rail.isVisible(),true,
+    id+" horizontal directions remain visible");
   const cards=page.locator('[data-video-layout="mytube"] article');
   const publishedCount=await cards.count();
   // A local CI server without approved database content must show an honest
@@ -141,6 +222,28 @@ async function inspect(browserType,locale,width){
    await page.screenshot({path:folder+"/mytube-webkit-ru-390-filtered.png",fullPage:false});
   results.push({id,bottom:geometry.bottom,visibleBottom:geometry.visibleBottom,
     overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
+  // Route matrix reuses the existing WebKit/Chromium context, avoiding another
+  // runner or browser launch. Exercise Safari scrolling at 320/390/430 in RU,
+  // and check EN/ES at 390. ES Profile intentionally uses the existing EN
+  // account route; never add an unauthorised new private locale.
+  if(locale==="ru" || width===390){
+    const prefix="/"+locale;
+    const routeCases=[
+      ["practice",prefix+"/holistic-support/mobile"],
+      ["video",prefix+"/holistic-support/mandala"],
+      ["ai",prefix+"/app/messages?section=ai"],
+      ["master",prefix+"/practice"],
+      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
+    ];
+    for(const [active,path] of routeCases){
+      const marker=id+":"+active;
+      await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
+      await assertPinnedSixDock(page,marker,active);
+      if(browserType===webkit && locale==="ru" && width===390)
+        await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
+      results.push({id:marker,pinned:true,route:path,authenticated:false});
+    }
+  }
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){

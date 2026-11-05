@@ -682,5 +682,226 @@
         "attributionRequired": true
       }
     ]
+  },
+  {
+    "id": "sun-trees-forest",
+    "theme": "health",
+    "label": {
+      "ru": "Солнечный зимний лес",
+      "en": "Sunlit snowy forest",
+      "es": "Bosque nevado al sol"
+    },
+    "symbol": "≋",
+    "tags": [
+      "forest",
+      "snow",
+      "winter",
+      "sunlight",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 2382205,
+    "sha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-trees-forest.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-trees-forest.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/sun-trees-forest/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Sunlit snowy forest",
+        "sourcePage": "https://dareful.com/sun-trees-forest/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "warm-clouds-sunset",
+    "theme": "relationships",
+    "label": {
+      "ru": "Тёплые облака на закате",
+      "en": "Warm sunset clouds",
+      "es": "Nubes cálidas al atardecer"
+    },
+    "symbol": "♡",
+    "tags": [
+      "sky",
+      "clouds",
+      "sunset",
+      "nature",
+      "calm"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 293260,
+    "sha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/warm-clouds-sunset/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Warm sunset clouds",
+        "sourcePage": "https://dareful.com/warm-clouds-sunset/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "fall-foliage-forest",
+    "theme": "life",
+    "label": {
+      "ru": "Осенний лес",
+      "en": "Autumn forest canopy",
+      "es": "Bosque otoñal"
+    },
+    "symbol": "♧",
+    "tags": [
+      "forest",
+      "trees",
+      "autumn",
+      "nature",
+      "renewal"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 733455,
+    "sha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/fall-foliage-forest/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn forest canopy",
+        "sourcePage": "https://dareful.com/fall-foliage-forest/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "snow-forest-winter",
+    "theme": "health",
+    "label": {
+      "ru": "Зимний лес",
+      "en": "Snowy winter forest",
+      "es": "Bosque invernal nevado"
+    },
+    "symbol": "≋",
+    "tags": [
+      "forest",
+      "water",
+      "snow",
+      "winter",
+      "nature",
+      "calm"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1007986,
+    "sha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/snow-forest-winter.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/snow-forest-winter.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/snow-forest-winter/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Snowy winter forest",
+        "sourcePage": "https://dareful.com/snow-forest-winter/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+        "attributionRequired": true
+      }
+    ]
   }
 ]

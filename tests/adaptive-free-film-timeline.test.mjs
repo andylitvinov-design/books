@@ -125,7 +125,7 @@ test("approved real catalogue replacement excludes wrong origins and unknown URL
     await import("../lib/mandala/video-montage-sources.mjs");
   const realCatalogue=JSON.parse(readFileSync(
     new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
-  assert.equal(realCatalogue.length,44,"do not invent source MP4 assets");
+  assert.equal(realCatalogue.length,48,"only physical licensed MP4 assets, including four screened portrait edits");
   assert.ok(realCatalogue.every(isApprovedMontageScene),
     "all published first-party / approved CC-BY masters have stable URLs and provenance");
   const firstFour=realCatalogue.slice(0,4);

@@ -13,7 +13,6 @@ on:
       - 'data/dao-hexagrams-editorial/**'
       - 'lib/dao-divination.*'
       - 'tests/dao-*.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

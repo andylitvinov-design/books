@@ -193,10 +193,14 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/disabled=\{!canGenerate\}/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
-  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  // Only these two bounded same-origin GETs are permitted: the original
+  // soundtrack and the explicitly selected approved music bed.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audio.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
-  assert.doesNotMatch((studio+audio).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
+  assert.equal((audio.match(approvedMusicBed)||[]).length,1,"one explicit first-party music-bed GET");
+  assert.doesNotMatch((studio+audio).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
 });
 
@@ -253,8 +257,8 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/studioMode==="therapy"/);
   // A selected four-shot cinematic timeline must display its actual first frame,
   // never the single-shot promotional poster above the shared preview.
-  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
-  assert.match(studio,/const activeFilm = cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
+  assert.match(studio,/data-hero-promo=\{creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
+  assert.match(studio,/const activeFilm = creationMode==="generated" \|\| cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-therapy-toggle/);
@@ -437,7 +441,10 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
   const studio=read("components/mandala-free-video-studio.tsx");
   const dock=read("components/holistic-support-mandala-dock.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} \/>/);
+  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} photoMode=\{photoMode\} \/>/);
+  assert.equal((route.match(/<HolisticSupportMandalaDock\b/g) ?? []).length, 1,
+    "The photo/video mode switch must not duplicate the support bottom dock");
+  assert.match(route, /const photoMode = query\?\.mode === "photo";/);
   assert.match(route, /<MandalaMeditationClient locale=\{locale\}/);
   assert.match(studio, /data-video-mandala-hero/);
   assert.match(studio, /data-video-support-layout/);
