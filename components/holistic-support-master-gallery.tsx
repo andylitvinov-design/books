@@ -8,6 +8,7 @@ import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { filterPublicReikiAcademyOffers, listPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
 import { HolisticReikiOfferShelf } from "@/components/holistic-reiki-offer-shelf";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
+import { readRemoteSupportPublicDraft, remoteSupportPublicServiceTitle } from "@/lib/practitioners/remote-energy-support";
 import type { PublicLocale } from "@/lib/public-locales";
 import { matchReikiVariants } from "@/lib/practitioners/reiki-offer.mjs";
 import styles from "./holistic-support-master-gallery.module.css";
@@ -356,8 +357,8 @@ function publishedPrice(price: number, currency: string, locale: PublicLocale) {
   catch { return null; }
 }
 
-export function HolisticSupportMasterGallery({ locale, kind }: {
-  locale: PublicLocale; kind: Kind;
+export function HolisticSupportMasterGallery({ locale, kind, resumePublicEnquiry = false }: {
+  locale: PublicLocale; kind: Kind; resumePublicEnquiry?: boolean;
 }) {
   const t = words[locale];
   const consultations = kind === "consultation";
@@ -408,18 +409,25 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     return () => controller.abort();
   }, [locale, consultations, kind, attempt]);
 
-  // Reopen the same approved master after the existing Google OAuth redirect.
-  // The OAuth marker contains only public service title/path, never a client's
-  // private intention or the signed-in account details.
+  // Resume only a previously staged, schema-validated public offer after
+  // Google returns. The SSR-selected healing view is mounted immediately;
+  // no private text, credential, contact or user ID is read or placed in a URL.
+  // Another contact widget may legitimately consume its one-use OAuth marker,
+  // so the public return flag plus an allowlisted same-service draft may
+  // restore the UI; it NEVER submits a lead without the user's new consent.
   useEffect(() => {
     if (consultations || !masters?.length) return;
     try {
-      const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
-      if (pending?.path !== window.location.pathname ||
-          typeof pending.service !== "string" ||
-          !pending.service.startsWith("Reiki support · ")) return;
-      const master = masters.find(item => pending.service.startsWith(
-        "Reiki support · " + item.name.slice(0, 72) + " · "));
+      const marker = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+      const markerValid = marker?.path === window.location.pathname &&
+        typeof marker.service === "string" && marker.service.startsWith("Reiki support · ");
+      if (!markerValid && !resumePublicEnquiry) return;
+      const master = masters.find(item => {
+        const draft = readRemoteSupportPublicDraft(window.sessionStorage, item.serviceId);
+        if (!draft || draft.practitioner !== item.name) return false;
+        const service = remoteSupportPublicServiceTitle(draft);
+        return markerValid ? marker.service === service : Boolean(resumePublicEnquiry);
+      });
       if (!master) return;
       if (kind === "healing") {
         const focus = REIKI_FOCI.find(value => master.methods.some(name =>
@@ -430,8 +438,8 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
       setMethod("");
       setSelectedId(master.serviceId);
       setOrderOpen(true);
-    } catch { /* Invalid session markers never expose account information. */ }
-  }, [masters, consultations, kind]);
+    } catch { /* Invalid or stale public draft can never authorize an enquiry. */ }
+  }, [masters, consultations, kind, resumePublicEnquiry]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -1003,6 +1011,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             ? {...selectedMaster, priceOptions: matchingPriceOptions} : selectedMaster]}
           preferredPractitioner={selectedMaster.slug}
           mode="inline" selectedKind="energy" initialGoal=""
+          resumePublicEnquiry={resumePublicEnquiry}
           initialIntention={kind === "healing" ? filteredRequest : ""} />}
       </dialog>
     </div>

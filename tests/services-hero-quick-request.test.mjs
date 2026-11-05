@@ -58,6 +58,6 @@ test("Quick contact form is consented, idempotent and reuses encrypted CRM-backe
   assert.match(api, /createPublicServiceEnquiry/);
   assert.match(writer, /insert into app\.public_service_enquiries/);
   assert.match(writer, /insert into app\.crm_contacts/);
-  assert.match(writer, /if \(contact && !crmEnabled\(\)\)/);
+  assert.match(writer, /if \(\(contact\|\|linkedTelegram\) && !crmEnabled\(\)\)/);
   assert.doesNotMatch(form, /contact: \{[^}]*sourcePath/);
 });

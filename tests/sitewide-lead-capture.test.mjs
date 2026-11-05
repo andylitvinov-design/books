@@ -100,7 +100,7 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(api, /createPublicServiceEnquiry/);
   assert.match(writer, /insert into app\.public_service_enquiries/);
   assert.match(writer, /insert into app\.crm_contacts/);
-  assert.match(writer, /if \(contact && !crmEnabled\(\)\)/);
+  assert.match(writer, /if \(\(contact\|\|linkedTelegram\) && !crmEnabled\(\)\)/);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /grid-template-columns:1fr/);
   assert.match(css, /:focus-visible/);

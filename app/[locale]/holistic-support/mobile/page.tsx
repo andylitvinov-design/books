@@ -10,7 +10,7 @@ import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord,
 import { metadataBaseFor } from "@/data/site-metadata";
 import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
 
-type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
+type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[]; hh_enquiry?: string | string[] }> };
 
 // These recordings are attributed to Andrey in the existing approved sources:
 // English guided meditations and the historical PsiMaster / Andrey archive.
@@ -111,6 +111,12 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
     ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
+  // Public OAuth return may only select a public support view; no account or
+  // contact details are delivered through the URL. Talisman selection may
+  // switch after the existing client-side validated cart marker is checked.
+  const resumePublicEnquiry = query.hh_enquiry === "google";
+  // A Talisman OAuth return must not prefetch the unrelated Reiki directory.
+  // The existing client-side one-use marker selects Talisman or Healing.
   const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
@@ -198,6 +204,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const guideTests = buildSupportGuideTestShortlists({ locale });
   return (
     <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
-      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests} />
+      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests}
+      resumePublicEnquiry={resumePublicEnquiry} />
   );
 }

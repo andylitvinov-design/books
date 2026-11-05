@@ -490,13 +490,14 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", initialTheme = "all", guideTests = {} }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", initialTheme = "all", guideTests = {}, resumePublicEnquiry = false }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
   initialChoice?: SupportMobileChoice;
   initialTheme?: Theme;
   guideTests?: Record<string, SupportGuideTest[]>;
+  resumePublicEnquiry?: boolean;
 }) {
   const t = copy[locale];
   const reikiText = reikiCourseCopy[locale];
@@ -1220,7 +1221,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
 
           ) : choice === "healing" || choice === "masters" ? (
             <div id="support-healing-panel" data-support-healing-panel>
-              <HolisticSupportMasterGallery locale={locale} kind={choice} />
+              <HolisticSupportMasterGallery locale={locale} kind={choice}
+                resumePublicEnquiry={resumePublicEnquiry && choice === "healing"} />
             </div>
           ) : (
             <div id="support-consultation-panel" data-support-consultation-panel>

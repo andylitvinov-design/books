@@ -261,3 +261,11 @@
 
 .optionalTime{display:inline-block;margin-left:5px;color:#527c73;font:700 11px/1.4 system-ui,sans-serif}
 @media(max-width:650px){.optionalTime{display:block;margin:5px 0 0;font-size:11px;line-height:1.45}}
+
+/* Guests may enquire without preselecting a schedule or leaving this page. */
+.timeGroup{min-width:0;border:1px solid #ccddd5;border-radius:11px;background:#fff;padding:0 11px}
+.timeToggle{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:7px;min-height:44px;list-style:none;cursor:pointer;color:#155964;font:800 12px/1.3 system-ui,sans-serif}
+.timeToggle::-webkit-details-marker{display:none}
+.timeToggle span{color:#597c77;font-size:17px}
+.timeGroup[open] .timeToggle span{transform:rotate(180deg)}
+.timeGroup .timeFields{padding-bottom:10px}

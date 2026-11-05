@@ -55,11 +55,11 @@ test("private intention is not in URLs, browser storage, analytics or public boo
   const jsx = read("components/remote-energy-support-booking.tsx");
   const bridge = read("lib/practitioners/remote-energy-support.js");
   const cabinet = read("components/app/app-workspace.jsx");
-  const block = jsx.slice(jsx.indexOf("const draft = {"), jsx.indexOf("window.sessionStorage.setItem(REMOTE_SUPPORT_DRAFT_KEY"));
-  assert.ok(block.startsWith("const draft = {"));
+  const block = jsx.slice(jsx.indexOf("const publicDraft = {"), jsx.indexOf("window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY"));
+  assert.ok(block.startsWith("const publicDraft = {"));
   assert.doesNotMatch(block, /intention|privateIntention/);
-  assert.match(jsx, /stageRemoteSupportPrivateIntention\(selected\.serviceId, intention\)/);
-  assert.match(jsx, /router\.push\("\/" \+ cabinetLocale \+ "\/app\/consultations\?service="/);
+  assert.doesNotMatch(jsx, /stageRemoteSupportPrivateIntention\(selected\.serviceId, intention\)|router\.push/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
   assert.match(bridge, /let pendingPrivateIntention = null/);
   assert.match(bridge, /pendingPrivateIntention = null\s*return staged\?\.serviceId/);
   const handoff = bridge.slice(bridge.indexOf("let pendingPrivateIntention = null"))
@@ -68,7 +68,7 @@ test("private intention is not in URLs, browser storage, analytics or public boo
   assert.match(cabinet, /takeRemoteSupportPrivateIntention\(service\.id\)/);
   assert.match(cabinet, /message: note/);
   assert.match(cabinet, /await appFetch\('requests', body\)/);
-  assert.match(jsx, /window\.sessionStorage\.setItem\(REMOTE_SUPPORT_DRAFT_KEY, JSON\.stringify\(draft\)\)/);
+  assert.match(jsx, /window\.sessionStorage\.setItem\(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON\.stringify\(publicDraft\)\)/);
 });
 
 test("expanded phone session compactness preserves truthful price and disclosure", () => {
@@ -111,4 +111,38 @@ test("one-screen EN/RU/ES finder has five approved categories, an optional note 
   assert.match(css, /\.focusChips button\{[^}]*min-height:44px/);
   assert.match(css, /\.findButton\{[^}]*min-height:48px/);
   assert.match(css, /\.results\[hidden\]\{display:none\}/);
+});
+
+test("public energy and talisman enquiries keep existing consented CRM without private redirects", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  const css = read("components/remote-energy-support-booking.module.css");
+  const contact = read("components/contact-channel-chooser.tsx");
+  assert.doesNotMatch(jsx, /router\.push|REMOTE_SUPPORT_DRAFT_KEY|TALISMAN_REQUEST_DRAFT_KEY/);
+  assert.match(jsx, /data-optional-session-time/);
+  assert.match(css, /\.timeToggle\{/);
+  assert.doesNotMatch(jsx, /required=\{mode !== "inline"\}/);
+  assert.match(jsx, /setTalismanRequested\(true\)/);
+  assert.match(jsx, /talismanRequested && \(/);
+  assert.match(jsx, /\{contactDraft\?\.serviceId === master\.serviceId && \(/);
+  assert.match(jsx, /quick cartContact stayAfterSave/);
+  assert.match(jsx, /setContactDraft\(publicDraft\)/);
+  assert.match(jsx, /Boolean\(day\) !== Boolean\(time\)/);
+  assert.match(contact, /fetch\("\/api\/service-enquiries"/);
+  assert.match(contact, /contactConsent: consent/);
+  assert.match(contact, /if \(!consent\) \{/);
+  assert.match(contact, /if \(!response\.ok \|\| data\.saved !== true/);
+  assert.match(contact, /onSaved\?\.\(data\.referenceCode\)/);
+  assert.match(contact, /telegramEnquiryUrlFromWhatsApp/);
+});
+
+test("guest talisman source stays catalog-grounded, localized, and consent-first", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  assert.match(jsx, /talismanFromCatalog\(catalogId\)\?\.goal === goal/);
+  assert.match(jsx, /publicTopic=\{talismanFromCatalog\(catalogId\)/);
+  for (const copy of ["Continue to contact", "Указать контакт", "Indicar contacto"]) {
+    assert.ok(jsx.includes(copy), "Missing public contact action " + copy);
+  }
+  assert.doesNotMatch(jsx, /Continue to private enquiry|Continuar a la solicitud privada|Перейти к личной заявке/);
+  assert.match(jsx, /setTalismanRequested\(true\)/);
+  assert.match(jsx, /setContactDraft\(null\)/);
 });

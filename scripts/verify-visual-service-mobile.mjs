@@ -82,6 +82,11 @@ for (const engine of [chromium, webkit]) {
           assert.ok(rect?.width && rect.width <= width + 2, label + ":" + id + " fits horizontally");
           // Hidden FAQ content and expandable detail text may grow on user demand.
           // The default closed state must remain within one ordinary mobile viewport.
+          // Save synthetic before/after evidence even if this strict guard fails.
+          if (id === "final-capture" && width === 320 && locale === "en" &&
+              slug === "imagery-therapy" && engine === chromium) {
+            await section.screenshot({ path: output + "/imagery-en-final-capture-320-chromium.png" });
+          }
           assert.ok(rect.height <= height - 25,
             label + ":" + id + " exceeds one visible screen: " + Math.round(rect.height));
           rows.push({ id, height: Math.round(rect.height) });
@@ -101,10 +106,11 @@ for (const engine of [chromium, webkit]) {
         assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
         assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
           label+" attribution is optional and separate");
-        // The current CRM-first capture uses an explicit messenger button, not
-        // a legacy form submit. Before consent it MUST NOT dispatch a POST.
-        assert.equal(await form.locator('button[type="submit"]').count(),0,
-          label+" no default form submission");
+        // Both explicit save-only and messenger actions remain available.
+        // No CRM write is allowed without unchecked reply-only consent.
+        const saveOnly = form.locator('button[type="submit"][data-compact-request-only]');
+        assert.equal(await saveOnly.count(), 1, label + " real first-party save control");
+        assert.equal(await saveOnly.isDisabled(), true, label + " save disabled without consent");
         const action=form.locator('button[data-compact-channel="whatsapp"]');
         await action.waitFor({state:"visible"});
         let unexpectedWrites=0;
