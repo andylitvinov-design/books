@@ -33,7 +33,7 @@ export type TimelineShot={
   startSeconds:number;
   durationSeconds:number;
 };
-export type TimelineAudioClip={label:string;startSeconds:number;durationSeconds:number};
+export type TimelineAudioClip={label:string;startSeconds:number;durationSeconds:number;peaks?:readonly number[]};
 type Props={
   locale:PublicLocale;
   seconds:number;
@@ -317,7 +317,11 @@ export function MandalaMultiTrackTimeline({
           style={{left:percent(audio.startSeconds),width:width(audio.durationSeconds)}}
           onPointerDown={e=>begin(e,"audio",audio.startSeconds)}
           onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
-          <span className={css.waveform} aria-hidden="true">▂▅▇▃▆▂▇▅▃▇▃▆</span>
+          {audio.peaks?.length?
+            <span className={css.waveformPeaks} data-video-timeline-real-waveform
+              aria-hidden="true">{audio.peaks.map((peak,i)=>
+                <i key={i} style={{height:Math.round(Math.max(0,Math.min(1,peak))*100)+"%"}}/>)}
+            </span>:null}
           <span>{audio.label}</span>
         </button>:<span className={css.placeholder}>{t.emptyAudio}</span>}
         <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>
@@ -330,7 +334,7 @@ export function MandalaMultiTrackTimeline({
           data-video-timeline-music-bed
           style={{left:percent(musicBed.startSeconds),width:width(musicBed.durationSeconds)}}
           title={musicBed.label} aria-label={musicBed.label}>
-          <span className={css.waveform} aria-hidden="true">▁▃▅▇▄▅▃▆▂▅▇▃</span>
+          {/* No fabricated waveform: music is a separately selected original master. */}
           <span>{musicBed.label}</span>
         </div>
         <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>

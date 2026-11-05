@@ -155,3 +155,14 @@
   background:#ece5fb;border-color:#b3a8d1;color:#503780;cursor:default;
   pointer-events:none}
 .musicBedBlock span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+/* Real client-local PCM peaks: no decorative or fabricated audio waveform. */
+.waveformPeaks{
+  position:absolute;inset:1px 2px;display:flex;align-items:center;
+  justify-content:space-around;gap:1px;overflow:hidden;opacity:.42;pointer-events:none
+}
+.waveformPeaks i{
+  display:block;flex:1 1 1px;min-width:1px;max-width:5px;
+  border-radius:2px;background:currentColor;box-shadow:none
+}
