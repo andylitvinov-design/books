@@ -397,3 +397,20 @@ test('Core gap report uses bounded real timeline hints but never asserts cause',
   assert.deepEqual(record.gaps[0].observed_intervening_events,['edited']);
   assert.equal(record.gaps[0].reason_confirmed,false);
 });
+
+
+test('Core CI-only install avoids optional ffmpeg-static fetch without weakening product checks',()=>{
+  const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const block=core.split('      - name: Install dependencies for verified Core route')[1]
+    ?.split('      # When full Mandala browser QA is advisory')[0];
+  assert.ok(block,'CI dependency install step missing');
+  assert.ok(block.includes('steps.diff.outputs.ci_only'),'must use narrow CI-only classifier');
+  assert.match(block,/GITHUB_EVENT_NAME/);
+  assert.match(block,/npm ci --ignore-scripts --no-audit --no-fund/);
+  assert.match(block,/npm ci --no-audit --no-fund/);
+  assert.match(block,/else[\s\S]*npm ci --no-audit --no-fund/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/name: Source Preflight — syntax and TypeScript before costly Next build/);
+  assert.match(core,/^  hh-specialist:/m);
+  assert.match(core,/^  hh-merge-check:/m);
+});

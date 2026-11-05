@@ -108,3 +108,16 @@ test('high-impact workflows still run their own domain validation on YAML edits'
       name + ': editing domain policy must trigger its genuine QA');
   }
 });
+
+
+test('Messages wellness specialists start on Ready after a stacked Draft is retargeted to production', () => {
+  for (const name of ['hh-messages-wellness-browser.yml', 'hh-messages-wellness-v2.yml']) {
+    const source = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+    assert.match(source, /^  pull_request:\n    types: \[opened, reopened, synchronize, ready_for_review\]\n    branches: \[codex\/public-book-library\]/m,
+      name + ': Ready must trigger the real independent PR specialist after base retargeting');
+    assert.match(source, /^      - 'components\/app\/messages-simple-inbox\.\*'$/m,
+      name + ': preserve changed Messages layout admission, not synthetic or bypassed checks');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/,
+      name + ': Specialist must still fail closed on a true product regression');
+  }
+});
