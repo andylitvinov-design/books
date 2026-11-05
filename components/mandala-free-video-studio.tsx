@@ -1756,6 +1756,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
+  // Montage is a preference-first wizard: detailed timeline is available only under Text.
+  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"audio">("settings");
+  const [montageTransition,setMontageTransition] = useState<TimelineTransition>("soft");
   // Real browser interactions are safe only after client event handlers hydrate.
   const [studioHydrated,setStudioHydrated] = useState(false);
   useEffect(()=>setStudioHydrated(true),[]);
@@ -3983,9 +3986,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       };
       const tab=destination[hash];if(!tab)return;
       setActiveWorkspace(tab);
-      if(hash==="video-audio")setBasicPanelTab("music");
-      if(hash==="video-settings")setMontageStyleSettingsOpen(true);
-      if(hash==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
+      if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
+      if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
+      if(hash==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
         setShowAdvancedVideo(true);
       setStudioMode(tab==="practices"?"therapy":"pump");
@@ -4012,9 +4015,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       anchor==="video-hypnocorrection-mobile"?"effects":
       anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
-    if(anchor==="video-audio")setBasicPanelTab("music");
-    if(anchor==="video-settings")setMontageStyleSettingsOpen(true);
-    if(anchor==="voice-studio"){setBasicPanelTab("voice");setVoiceStudioActivated(true);}
+    if(anchor==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
+    if(anchor==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
+    if(anchor==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
     // Make the *single* real audio editor visible before navigating to it.
     if(anchor==="video-audio"||anchor==="voice-studio"||anchor==="video-templates")
@@ -4751,6 +4754,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // A new workspace is explicit user intent: retire stale catalog jumps.
             quickNavTokenRef.current++;
             setActiveWorkspace(item.id);
+            if(item.id==="editor")setMontagePanel("settings");
             if(item.id!=="practices")setIntroPlaying(false);
             setStudioMode(item.id==="practices"?"therapy":"pump");
             setTherapyJumpRequested(false);
@@ -5925,7 +5929,108 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
 
-        {/* Fifth Montage: one scenario bar and original source-backed editor. */}
+        {/* Mobile-first montage: the first screen is for video preferences, not timeline editing. */}
+        <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
+          data-workspace-section="editor" data-video-basic-editor
+          data-montage-panel={montagePanel}
+          aria-label={locale==="ru"?"Настройки и инструменты монтажа":locale==="es"?"Opciones de montaje":"Montage options"}>
+          <nav className={videoStyles.montageQuickTools} data-video-montage-tools
+            aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
+            {([{id:"settings",Icon:SlidersHorizontal},{id:"effects",Icon:Sparkles},
+              {id:"text",Icon:Type},{id:"audio",Icon:Music2}] as const).map(item=>
+              <button type="button" key={item.id} data-video-montage-tab={item.id}
+                aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
+                disabled={recording||preparing}
+                onClick={()=>{
+                  setMontagePanel(item.id);
+                  if(item.id==="audio")setBasicPanelTab("music");
+                }}>
+                <item.Icon size={19} aria-hidden="true"/>
+                <span>{({
+                  settings:{ru:"Настройки",en:"Settings",es:"Ajustes"},
+                  effects:{ru:"Эффекты",en:"Effects",es:"Efectos"},
+                  text:{ru:"Текст",en:"Text",es:"Texto"},
+                  audio:{ru:"Аудио",en:"Audio",es:"Audio"}
+                } as const)[item.id][locale]}</span>
+              </button>)}
+          </nav>
+          <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
+          {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
+            <div className={videoStyles.montagePreferencesHeader}>
+              <SlidersHorizontal size={22} aria-hidden="true"/>
+              <div><h3>{locale==="ru"?"Настройки монтажа":locale==="es"?"Ajustes del vídeo":"Video settings"}</h3>
+              <p>{locale==="ru"?"Задайте основные пожелания к вашему видео":locale==="es"?"Elige cómo quieres tu vídeo":"Choose how your video should look"}</p></div>
+            </div>
+            <div className={videoStyles.montagePreferencesGrid}>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><Film size={18} aria-hidden="true"/>{ui.format}</span>
+                <select data-video-montage-preference="format" value={aspect}
+                  disabled={recording||preparing}
+                  onChange={event=>changeVideoAspect(event.currentTarget.value as Aspect)}>
+                  <option value="landscape">16:9 · {locale==="ru"?"горизонт.":locale==="es"?"horizontal":"landscape"}</option>
+                  <option value="portrait">9:16 · {locale==="ru"?"вертикал.":locale==="es"?"vertical":"portrait"}</option>
+                  <option value="square">1:1 · {locale==="ru"?"квадрат":locale==="es"?"cuadrado":"square"}</option>
+                </select>
+              </label>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><Clock3 size={18} aria-hidden="true"/>{ui.duration}</span>
+                <select data-video-montage-preference="duration" value={duration}
+                  disabled={recording||preparing}
+                  onChange={event=>changeVideoDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
+                  {durations.map(n=><option key={n} value={n}>{n} {ui.seconds}</option>)}
+                </select>
+              </label>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><RefreshCw size={18} aria-hidden="true"/>{locale==="ru"?"Переходы":locale==="es"?"Transiciones":"Transitions"}</span>
+                <select data-video-montage-preference="transitions" value={montageTransition}
+                  disabled={recording||preparing}
+                  onChange={event=>{
+                    const value=event.currentTarget.value as TimelineTransition;
+                    setMontageTransition(value);
+                    if(cinematicPlan?.shots.length&&cinematicPlan.shots.length>1){
+                      recordBeforeEditorChange("montage-transition");
+                      setCinematicPlan(plan=>plan?{...plan,shots:plan.shots.map((shot,index)=>
+                        index===0?shot:{...shot,transitionIn:value})} as CinematicStoryboard:plan);
+                    }
+                  }}>
+                  <option value="soft">{locale==="ru"?"Плавные":locale==="es"?"Suaves":"Smooth"}</option>
+                  <option value="cut">{locale==="ru"?"Без эффекта":locale==="es"?"Cortes":"Cuts"}</option>
+                  <option value="fade_black">{locale==="ru"?"Затемнение":locale==="es"?"Fundido":"Fade out"}</option>
+                </select>
+              </label>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><Zap size={18} aria-hidden="true"/>{locale==="ru"?"Темп":locale==="es"?"Ritmo":"Pace"}</span>
+                <select data-video-montage-preference="speed" value={speed}
+                  disabled={recording||preparing}
+                  onChange={event=>setSpeed(event.currentTarget.value as Speed)}>
+                  <option value="slow">{ui.slow}</option>
+                  <option value="dynamic">{ui.dynamic}</option>
+                </select>
+              </label>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><Film size={18} aria-hidden="true"/>{ui.quality}</span>
+                <select data-video-montage-preference="quality" value={quality}
+                  disabled={recording||preparing}
+                  onChange={event=>setQuality(event.currentTarget.value as Quality)}>
+                  <option value="hd">{locale==="ru"?"HD · 720p":locale==="es"?"HD · 720p":"HD · 720p"}</option>
+                  <option value="fullhd">{locale==="ru"?"Full HD · 1080p":locale==="es"?"Full HD · 1080p":"Full HD · 1080p"}</option>
+                </select>
+              </label>
+              <label className={videoStyles.montagePreferenceItem}>
+                <span><Sparkles size={18} aria-hidden="true"/>{locale==="ru"?"Стиль видео":locale==="es"?"Estilo":"Video style"}</span>
+                <select data-video-montage-preference="style" value={quickStyleIndex}
+                  disabled={recording||preparing}
+                  onChange={event=>quickPickStyle(Number(event.currentTarget.value))}>
+                  {quick.styles.map((name,index)=><option key={index} value={index}>{name}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className={videoStyles.montagePreferencesNote}>
+              <Sparkles size={17} aria-hidden="true"/>
+              {locale==="ru"?"Выберите параметры и нажмите «Сгенерировать видео». Переходы применяются к многосценным роликам.":locale==="es"?"Elige las opciones y pulsa «Generar vídeo». Las transiciones se aplican a los vídeos con varias escenas.":"Choose settings, then Generate video. Transitions apply to multi-scene films."}
+            </p>
+          </div> : null}
+          {montagePanel==="text" ? <div className={videoStyles.montagePane} data-video-montage-text>
         <div className={videoStyles.montageScenario}
           data-workspace-section="editor" data-video-editor-scenario>
             <label htmlFor="video-montage-scenario"><Film size={18} aria-hidden="true"/>
@@ -5967,9 +6072,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}><ArrowRight size={17} aria-hidden="true"/>
               {locale==="ru"?"Обновить сценарий":locale==="es"?"Actualizar guion":"Update script"}</button>
           </div>
-        <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}
-          data-workspace-section="editor" data-video-basic-editor
-          aria-label={locale==="ru"?"Монтажные дорожки":locale==="es"?"Pistas de montaje":"Editing tracks"}>
           <MandalaMultiTrackTimeline locale={locale} seconds={duration}
             disabled={recording||preparing}
             canUndo={usingFreeFilmCompilation&&editorHistoryAvailability.undo}
@@ -6036,7 +6138,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}
             onOpenAudio={()=>{
-              setBasicPanelTab("music");
+              setMontagePanel("audio");setBasicPanelTab("music");
               const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
               if(details)details.open=true;
               window.requestAnimationFrame(()=>document.querySelector("[data-video-music-editor]")
@@ -6048,59 +6150,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}/>
 
-          <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
-            <summary><Music2 size={17} aria-hidden="true"/>
-              {locale==="ru"?"Голос + фоновая музыка":locale==="es"?
-                "Voz y música de fondo":"Voice + background music"}
-            </summary>
-            <p className={videoStyles.audioBedInfo}>
-              {locale==="ru"
-                ?"Не заменяйте голос музыкой: добавьте одну из наших оригинальных мелодий отдельной дорожкой. Для работы сначала прикрепите аудиофайл."
-                :locale==="es"
-                ?"Mantén la voz y añade una melodía original como pista independiente. Primero adjunta un archivo de audio."
-                :"Keep the attached audio and add one of our original melodies on a separate track. Attach an audio file first."}
-            </p>
-            <div className={videoStyles.audioBedControls}>
-              <label>{locale==="ru"?"Мелодия":locale==="es"?"Melodía":"Melody"}
-                <select data-video-audio-bed-select value={musicBed.id}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||!audioRights}
-                  onChange={event=>changeMusicBed({
-                    id:event.currentTarget.value as MyTubeMusicBed["id"]
-                  })}>
-                  <option value="none">{locale==="ru"?"Без фона":locale==="es"?
-                    "Sin fondo":"No music bed"}</option>
-                  {MYTUBE_MUSIC_BEDS.map(id=><option key={id} value={id}>
-                    {MUSIC_BED_NAMES[id][locale]}
-                  </option>)}
-                </select>
-              </label>
-              <label>{locale==="ru"?"Громкость фона":locale==="es"?
-                "Volumen de fondo":"Music volume"}: {musicBed.volumePercent}%
-                <input type="range" min={0} max={60} step={5} data-video-audio-bed-volume
-                  value={musicBed.volumePercent}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
-                    !audioRights||musicBed.id==="none"}
-                  onChange={event=>changeMusicBed({volumePercent:Number(event.currentTarget.value)})}/>
-              </label>
-              <label>{locale==="ru"?"Плавное появление/затухание":locale==="es"?
-                "Fundido musical":"Music fade"}
-                <select data-video-audio-bed-fade value={musicBed.fadeSeconds}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
-                    !audioRights||musicBed.id==="none"}
-                  onChange={event=>changeMusicBed({fadeSeconds:Number(event.currentTarget.value)})}>
-                  {MYTUBE_BED_FADES.map(seconds=><option key={seconds} value={seconds}>
-                    {seconds===0?(locale==="ru"?"Без затухания":locale==="es"?
-                      "Sin fundido":"No fade"):seconds+"s"}
-                  </option>)}
-                </select>
-              </label>
-            </div>
-            <p className={videoStyles.audioBedInfo}>
-              {locale==="ru"?"В готовом видео уровни смешиваются точно. На некоторых iPhone громкость браузерного предпросмотра может отличаться."
-                :locale==="es"?"La mezcla final usa los niveles elegidos; la vista previa en iPhone puede sonar diferente."
-                :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
-            </p>
-          </details>
           <div className={videoStyles.editorDraftTools} data-video-editor-smart-tools>
             <button type="button" data-video-smart-audio-cut
               disabled={recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
@@ -6163,43 +6212,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Borrador local: guarda el montaje y los textos, no fotos ni audio."
                 :"Local draft: montage and captions are saved; original photos and audio are not."}
           </p>
-          <nav className={videoStyles.montageQuickTools} data-video-montage-tools
-            aria-label={locale==="ru"?"Инструменты монтажа":locale==="es"?"Herramientas de montaje":"Montage tools"}>
-            <button type="button" disabled={recording||preparing} onClick={()=>{
-              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
-              if(details)details.open=true;
-              window.requestAnimationFrame(()=>details?.scrollIntoView({behavior:"smooth",block:"nearest"}));
-            }}><SlidersHorizontal size={17} aria-hidden="true"/>{locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"}</button>
-            <button type="button" disabled={recording||preparing} onClick={()=>{
-              setActiveWorkspace("effects");setStudioMode("pump");
-            }}><Sparkles size={17} aria-hidden="true"/>{locale==="ru"?"Эффекты":locale==="es"?"Efectos":"Effects"}</button>
-            <button type="button" disabled={recording||preparing} onClick={()=>{
-              document.querySelector<HTMLTextAreaElement>("[data-video-montage-script]")?.focus();
-            }}><Film size={17} aria-hidden="true"/>{locale==="ru"?"Текст":locale==="es"?"Texto":"Text"}</button>
-            <button type="button" disabled={recording||preparing} onClick={()=>{
-              setBasicPanelTab("music");
-              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
-              if(details)details.open=true;
-              window.requestAnimationFrame(()=>document.querySelector("[data-video-music-editor]")
-                ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
-            }}><Music2 size={17} aria-hidden="true"/>{locale==="ru"?"Аудио":locale==="es"?"Audio":"Audio"}</button>
-            <button type="button" disabled={recording||preparing} onClick={()=>{
-              const details=document.querySelector<HTMLDetailsElement>("[data-video-montage-settings]");
-              if(details)details.open=true;
-              window.requestAnimationFrame(()=>document.querySelector("[data-video-basic-format]")
-                ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
-            }}><Film size={17} aria-hidden="true"/>{locale==="ru"?"Формат":locale==="es"?"Formato":"Format"}</button>
-          </nav>
-          <button type="button" className={videoStyles.montageExport} data-video-montage-export
-            disabled={!canGenerate||recording||preparing} onClick={()=>void createVideo()}>
-            <Download size={19} aria-hidden="true"/>
-            {locale==="ru"?"Экспортировать видео":locale==="es"?"Exportar vídeo":"Export video"}
-            <ArrowRight size={18} aria-hidden="true"/>
-          </button>
-          <details className={videoStyles.montageSettingsDisclosure} data-video-montage-settings>
-            <summary>{locale==="ru"?"Дополнительно: стиль, фото, голос и музыка"
-              :locale==="es"?"Opciones: estilo, foto, voz y música"
-              :"More controls: style, photo, voice and music"}</summary>
+          </div> : null}
+          {montagePanel==="effects" ? <div className={videoStyles.montagePane} data-video-montage-effects>
+            <h3>{locale==="ru"?"Эффекты и стиль":locale==="es"?"Efectos y estilo":"Effects and look"}</h3>
+            <div className={videoStyles.montageEffectsGrid}>
+              {quickStylePosters.map((poster,index)=>{
+                const sceneId=quickStyleSceneIds[theme][index];
+                const art=theme==="money"?getRealMoneyFilm(sceneId as MoneySceneId).poster:
+                  getThemedRealFilm(theme,sceneId as LocalSceneId)?.poster||quickCanvasPoster(sceneId as LocalSceneId);
+                return <button key={poster} type="button" data-video-montage-style={index}
+                  aria-pressed={quickStyleIndex===index} disabled={recording||preparing}
+                  onClick={()=>quickPickStyle(index)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={art} alt="" loading="lazy"/>
+                  <span>{quick.styles[index]}</span>
+                  {quickStyleIndex===index?<Check size={17} aria-hidden="true"/>:null}
+                </button>;
+              })}
+            </div>
+            <fieldset className={videoStyles.montageEffectBrightness} disabled={recording||preparing}>
+              <legend>{ui.brightness}</legend>
+              <button type="button" aria-pressed={brightness==="soft"} onClick={()=>setBrightness("soft")}>{ui.soft}</button>
+              <button type="button" aria-pressed={brightness==="bright"} onClick={()=>setBrightness("bright")}>{ui.bright}</button>
+            </fieldset>
+          </div> : null}
+          {montagePanel==="audio" ? <div className={videoStyles.montagePane} data-video-montage-audio>
+          <details className={videoStyles.montageSettingsDisclosure} data-video-montage-settings open>
+            <summary>{locale==="ru"?"Музыка, голос и другие инструменты"
+              :locale==="es"?"Música, voz y más herramientas"
+              :"Music, voice and more tools"}</summary>
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="video-basic-heading"><SlidersHorizontal size={21} aria-hidden="true"/>
               {locale==="ru"?"Основные настройки видео":locale==="es"?"Ajustes esenciales":"Essential video settings"}</h3>
@@ -6303,6 +6344,61 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {deepVideoPane}
           </details>
           </details>
+          <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
+            <summary><Music2 size={17} aria-hidden="true"/>
+              {locale==="ru"?"Голос + фоновая музыка":locale==="es"?
+                "Voz y música de fondo":"Voice + background music"}
+            </summary>
+            <p className={videoStyles.audioBedInfo}>
+              {locale==="ru"
+                ?"Не заменяйте голос музыкой: добавьте одну из наших оригинальных мелодий отдельной дорожкой. Для работы сначала прикрепите аудиофайл."
+                :locale==="es"
+                ?"Mantén la voz y añade una melodía original como pista independiente. Primero adjunta un archivo de audio."
+                :"Keep the attached audio and add one of our original melodies on a separate track. Attach an audio file first."}
+            </p>
+            <div className={videoStyles.audioBedControls}>
+              <label>{locale==="ru"?"Мелодия":locale==="es"?"Melodía":"Melody"}
+                <select data-video-audio-bed-select value={musicBed.id}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||!audioRights}
+                  onChange={event=>changeMusicBed({
+                    id:event.currentTarget.value as MyTubeMusicBed["id"]
+                  })}>
+                  <option value="none">{locale==="ru"?"Без фона":locale==="es"?
+                    "Sin fondo":"No music bed"}</option>
+                  {MYTUBE_MUSIC_BEDS.map(id=><option key={id} value={id}>
+                    {MUSIC_BED_NAMES[id][locale]}
+                  </option>)}
+                </select>
+              </label>
+              <label>{locale==="ru"?"Громкость фона":locale==="es"?
+                "Volumen de fondo":"Music volume"}: {musicBed.volumePercent}%
+                <input type="range" min={0} max={60} step={5} data-video-audio-bed-volume
+                  value={musicBed.volumePercent}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
+                    !audioRights||musicBed.id==="none"}
+                  onChange={event=>changeMusicBed({volumePercent:Number(event.currentTarget.value)})}/>
+              </label>
+              <label>{locale==="ru"?"Плавное появление/затухание":locale==="es"?
+                "Fundido musical":"Music fade"}
+                <select data-video-audio-bed-fade value={musicBed.fadeSeconds}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
+                    !audioRights||musicBed.id==="none"}
+                  onChange={event=>changeMusicBed({fadeSeconds:Number(event.currentTarget.value)})}>
+                  {MYTUBE_BED_FADES.map(seconds=><option key={seconds} value={seconds}>
+                    {seconds===0?(locale==="ru"?"Без затухания":locale==="es"?
+                      "Sin fundido":"No fade"):seconds+"s"}
+                  </option>)}
+                </select>
+              </label>
+            </div>
+            <p className={videoStyles.audioBedInfo}>
+              {locale==="ru"?"В готовом видео уровни смешиваются точно. На некоторых iPhone громкость браузерного предпросмотра может отличаться."
+                :locale==="es"?"La mezcla final usa los niveles elegidos; la vista previa en iPhone puede sonar diferente."
+                :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
+            </p>
+          </details>
+          </div> : null}
+          </div>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
@@ -6455,7 +6551,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
             disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmSourcesListed)||voiceGenerating||narrationInvalid||phrasePending} onClick={createQuickVideo}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-            {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
+            {recording||preparing?quick.creating:freeVideoSelected?(locale==="ru"?"Сгенерировать видео":locale==="es"?"Generar vídeo":"Generate video"):practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>
           {phrasePending&&<p role="status" className={videoStyles.quickStatus} data-video-phrase-approval-required>
             {locale==="ru"?"Новые фразы ещё не утверждены. Откройте вкладку «Фразы» и подтвердите выбор.":
