@@ -9,21 +9,21 @@ const COPY={
   google:'Google',telegram:'Telegram',linked:'Connected',connect:'Link',
   explanation:'A linked sign-in method is not a subscription or permission for the Telegram bot to contact you. Connect the messaging bot separately below.',
   error:'Could not check your sign-in methods.',linkError:'The secure link could not be started. Identity linking may still need to be enabled in Supabase Auth.',
-  success:'Login method linked to this Cabinet.',working:'Connecting…',
+  working:'Connecting…',
  },
  ru:{
   title:'Способы входа',intro:'Google и Telegram могут открывать ОДИН личный кабинет. Второй способ привязывайте только после входа в существующий аккаунт.',
   google:'Google',telegram:'Telegram',linked:'Привязан',connect:'Привязать',
   explanation:'Привязка способа входа не означает подписку на рассылки или согласие на сообщения от Telegram-бота. Бот для переписки подключается отдельно ниже.',
   error:'Не удалось проверить способы входа.',linkError:'Не удалось начать безопасную привязку. Возможно, в Supabase Auth ещё нужно включить связывание аккаунтов.',
-  success:'Способ входа привязан к этому кабинету.',working:'Подключаем…',
+  working:'Подключаем…',
  },
  es:{
   title:'Métodos de acceso',intro:'Google y Telegram pueden abrir el MISMO gabinete privado. Vincula otro método solo después de entrar en tu cuenta existente.',
   google:'Google',telegram:'Telegram',linked:'Vinculado',connect:'Vincular',
   explanation:'Vincular el acceso no suscribe a anuncios ni autoriza mensajes del bot. Conecta el bot de mensajería por separado más abajo.',
   error:'No se pudieron verificar los métodos de acceso.',linkError:'No se pudo iniciar el enlace seguro. Tal vez debas activar el enlace de identidades en Supabase Auth.',
-  success:'Método de acceso vinculado al gabinete.',working:'Conectando…',
+  working:'Conectando…',
  },
 }
 export default function AccountLoginMethods({locale='en',accountId}){
@@ -60,8 +60,6 @@ export default function AccountLoginMethods({locale='en',accountId}){
  if(!view && !error)return null
  if(!view)return <section className={styles.root}><p role="alert">{error}</p></section>
  if(!view.telegramAvailable&&!view.telegram)return null
- const linkedOnReturn=typeof window!=='undefined'&&
-  new URLSearchParams(window.location.search).get('identity')==='linked'
  return <section className={styles.root} aria-labelledby="hh-login-method-title">
   <h2 id="hh-login-method-title">{t.title}</h2>
   <p>{t.intro}</p>
@@ -77,7 +75,6 @@ export default function AccountLoginMethods({locale='en',accountId}){
    ))}
   </div>
   <p className={styles.note}>{t.explanation}</p>
-  {linkedOnReturn&&!error&&<p className={styles.status} role="status">{t.success}</p>}
   {error&&<p role="alert" className={styles.status}>{error}</p>}
  </section>
 }
