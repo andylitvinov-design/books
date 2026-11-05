@@ -552,6 +552,12 @@ jobs:
             test -f tests/curated-music-wave.test.mjs
             node --test tests/curated-music-wave.test.mjs
           fi
+      # Guest recording stays browser-local: test the fragment invitation,
+      # voluntary adult consent and zero cloud TTS POST on the existing Mac job.
+      - name: Guest voice consent and invitation contract (macOS gate)
+        run: |
+          node --check scripts/verify-affirmation-voice-browser.mjs
+          node --test tests/mandala-guest-voice-message.test.mjs
       - name: WebKit recorded movie contains video and audible consented voice
         run: |
           set -euo pipefail

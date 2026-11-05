@@ -36,3 +36,18 @@ test("WebKit always retains a single mocked voice route after the Sofia refusal"
  assert.doesNotMatch(source,/page\.unroute\(".*holistic-support\/voice"/);
  assert.doesNotMatch(source,/page\.route\(".*holistic-support\/voice",refuseSofia/);
 });
+
+
+test("actual browser route checks speaker consent, fragment invitation, and no provider submission",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(browser,/async function verifyGuestVoiceConsent\(browser,locale\)/);
+ assert.match(browser,/await verifyGuestVoiceConsent\(browser,locale\)/);
+ for(const selector of ["data-guest-voice-message","data-guest-message-start",
+  "data-guest-message-consent","data-guest-message-link",
+  "data-guest-message-phrase","data-guest-message-save"]){
+  assert.ok(browser.includes(selector),selector);
+ }
+ assert.match(browser,/assert\.equal\(uri\.search,""/);
+ assert.match(browser,/recipient\.locator\("\[data-guest-message-consent\]"/);
+ assert.match(browser,/assert\.deepEqual\(providerPosts,\[\]/);
+});

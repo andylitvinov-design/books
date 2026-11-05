@@ -53,6 +53,56 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
   }finally{release();await context.close();}
 }
+// Real guest route browser acceptance: the fragment carries only optional
+// user-approved text; a fresh recipient tab must not inherit consent. No
+// provider calls, personal audio upload, paid models or fake recorder output.
+async function verifyGuestVoiceConsent(browser,locale){
+  const context=await browser.newContext({
+    viewport:{width:390,height:840},isMobile:true,hasTouch:true,
+    acceptDownloads:true,serviceWorkers:"block",
+  });
+  const providerPosts=[];
+  try{
+    const page=await context.newPage();
+    page.on("request",request=>{
+      if(request.method()==="POST" &&
+        /\/api\/holistic-support\/(?:voice|loved-voices)(?:[/?]|$)/.test(request.url()))
+        providerPosts.push(request.url());
+    });
+    await page.goto(BASE+"/"+locale+"/holistic-support/voice-message",{
+      waitUntil:"domcontentloaded",timeout:90000,
+    });
+    await expect(page.locator("[data-guest-voice-message]")).toBeVisible({timeout:25000});
+    const start=page.locator("[data-guest-message-start]");
+    await expect(start).toBeDisabled();
+    await expect(page.locator("[data-guest-message-consent]")).not.toBeChecked();
+    const phrase=locale==="ru"?"Я рядом и поддерживаю тебя.":"I am here to support you.";
+    await page.locator("[data-guest-message-phrase]").fill(phrase);
+    const invitation=page.locator("[data-guest-message-link]");
+    await expect(invitation).toBeVisible();
+    const uri=new URL(await invitation.inputValue());
+    assert.equal(uri.origin,new URL(BASE).origin);
+    assert.equal(uri.search,"","the invited phrase must not enter server query or logs");
+    assert.equal(uri.hash,"#t="+encodeURIComponent(phrase));
+    await expect(page.locator("[data-guest-message-copy]")).toBeEnabled();
+    const recipient=await context.newPage();
+    try{
+      await recipient.goto(uri.href,{waitUntil:"domcontentloaded",timeout:90000});
+      await expect(recipient.locator("[data-guest-message-phrase]")).toHaveValue(phrase,{timeout:15000});
+      await expect(recipient.locator("[data-guest-message-consent]")).not.toBeChecked();
+      await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();
+    }finally{await recipient.close();}
+    await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
+    await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
+    await page.locator("[data-guest-message-phrase]").fill(phrase);
+    await page.locator("[data-guest-message-consent]").check();
+    await expect(start).toBeEnabled();
+    await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
+    await expect(page.locator("[data-guest-message-save]")).toHaveCount(0);
+    assert.deepEqual(providerPosts,[],"guest invitation or consent cannot call a cloud TTS API");
+  }finally{await context.close();}
+}
+
 // Linux WebKit often lacks Canvas capture codecs. Run the very same real
 // encoded video+audio acceptance on macOS WebKit and Linux Chromium.
 // The default still exercises BOTH engines for developer/manual runs.
@@ -91,6 +141,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     const locale=engine==="webkit"?"ru":"en";
     phase(engine,"workspace-hydration");
     await verifyWorkspaceHydration(browser,locale);
+    phase(engine,"guest-local-recording-invitation");
+    await verifyGuestVoiceConsent(browser,locale);
+    phase(engine,"guest-local-recording-invitation-passed");
     const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
     // Playwright has no default action timeout: an obscured iPhone control can
     // otherwise hang until the six-minute process watchdog with no locator.
