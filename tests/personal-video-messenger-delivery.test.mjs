@@ -31,6 +31,10 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  const migration=source('supabase/migrations/20261104230500_hh_personal_video_telegram_delivery.sql')
  const upload=source('components/mandala-video-delivery.tsx')
  assert.match(backend,/HH_VIDEO_TELEGRAM_DELIVERY_ENABLED==='true'/)
+ // Video bot pairing cannot silently opt users into the general messages/
+ // bookings/reports/courses notification defaults.
+ assert.match(backend,/select topics from app_private.notification_messenger_requests/)
+ assert.match(backend,/messages:false,booking:false,reports:false,courses:false,news:false/)
  assert.match(backend,/personalVideoCloudEnabled\(env\)/)
  assert.match(backend,/telegramClientSendReady\(env\)/)
  assert.match(backend,/videoId,actor.id/)
