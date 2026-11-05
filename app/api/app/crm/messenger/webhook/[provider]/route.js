@@ -7,8 +7,6 @@ import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnos
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
-import {receiveTelegramAiUpdate} from '@/lib/app/telegram-ai-queue'
-import {runTelegramAiQueues} from '@/lib/app/telegram-ai-worker'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -63,14 +61,17 @@ export async function POST(request,{params}){
             messageId:event.callbackMessageId})}catch{}
           continue
         }
-        // Opt-in assistant owns its own queue, never the six-step diagnostic.
-        // The signed webhook already verified the sender before this point.
-        if(event.type==='incoming'){
+        // Keep the legacy diagnostic route identical while the AI flag is OFF.
+        // Lazy imports avoid loading FFmpeg/queue modules for ordinary CRM tests.
+        if(event.type==='incoming'&&process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'){
+          const {receiveTelegramAiUpdate}=await import('@/lib/app/telegram-ai-queue')
           const ai=await receiveTelegramAiUpdate(config,event)
           if(ai.handled){
             if(ai.queued||ai.consented||ai.consentRequired)after(async()=>{
-              try{await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:3})}
-              catch{console.error('HH_AI_QUEUE_AFTER_FAILED')}
+              try{
+                const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
+                await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:3})
+              }catch{console.error('HH_AI_QUEUE_AFTER_FAILED')}
             })
             continue
           }

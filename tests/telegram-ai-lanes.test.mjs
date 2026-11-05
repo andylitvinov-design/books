@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {telegramAiIntent,aiCopy,classifyTelegramUpdate,AI_LANES} from '../lib/crm/telegram-ai-lanes.mjs'
+import {readFileSync} from 'node:fs'
 
 test('three independent worker lanes; friendly greetings do not become video orders',()=>{
  assert.deepEqual(AI_LANES,['message','video','delivery'])
@@ -27,4 +28,15 @@ test('language copy and input boundary',()=>{
  assert.equal(classifyTelegramUpdate({type:'incoming',userId:'12345',eventId:'tg:123',rawText:'hello',callbackId:'x'}),false)
  assert.equal(classifyTelegramUpdate({type:'incoming',userId:'12345',eventId:'tg:123',rawText:'hi'.repeat(601)}),false)
  assert.equal(classifyTelegramUpdate({type:'receipt',userId:'12345',eventId:'tg:123',rawText:'hello'}),false)
+})
+
+
+test('verified source catalogue only supports portrait, no false landscape source contract',()=>{
+ const catalogue=JSON.parse(readFileSync(new URL('../data/video-catalog/scene-taxonomy.json',import.meta.url),'utf8'))
+ assert.ok(catalogue.scenes.length>=4)
+ assert.ok(catalogue.scenes.every(scene=>scene.allowedAspects?.includes('portrait')))
+ const renderer=readFileSync(new URL('../lib/app/telegram-ai-video-render.js',import.meta.url),'utf8')
+ assert.match(renderer,/requireAspect:'portrait'/)
+ assert.match(renderer,/scale=360:640/)
+ assert.doesNotMatch(renderer,/requireAspect:'landscape'/)
 })
