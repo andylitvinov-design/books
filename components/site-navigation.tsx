@@ -120,6 +120,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
 
   // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
   extraMenuItems.push(
+    // Direct bridge from the marketing home to the approved six-tab Practice
+    // without replacing the existing Holistic Support catalogue.
+    { id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile', ariaLabel: text.practice, external: false },
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
     { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
   );
