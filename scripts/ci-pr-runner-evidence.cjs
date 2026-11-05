@@ -59,7 +59,10 @@ async function confirmRepairRunner({github,context,number,expectedSha,taskKey}){
     pr.head?.repo?.full_name!==REPO)
   return denied('EXACT_PR_HEAD_CHANGED');
  const task=taskFor(pr,priorityFor(pr,Date.now()));
- if(task?.task_key!==taskKey||task.lane!=='repair')
+ // Both ordinary source repairs and manually held read-only legacy preflights
+ // can prove a real runner. Task key + current SHA + source constraints
+ // remain mandatory; this is never a source-published receipt.
+ if(task?.task_key!==taskKey||!['repair','legacy'].includes(task.lane))
   return denied('TASK_IDENTITY_CHANGED');
  const runner={run_id,job_id:job.id,runner_id:job.runner_id,
   runner_name:job.runner_name,started_at:job.started_at};

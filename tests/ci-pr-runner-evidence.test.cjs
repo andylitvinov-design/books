@@ -63,3 +63,28 @@ test('untrusted run, changed PR head or wrong task never publishes runner receip
   taskKey:'f'.repeat(32)});
  assert.equal(out.status,'RUNNER_UNVERIFIED');assert.equal(f.calls.length,0);
 });
+
+
+test('old manually held legacy preflight confirms real runner without granting source publication',async()=>{
+ const f=fixture();
+ const old={...pr(),mergeable:false,mergeable_state:'dirty',
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]};
+ const legacy=taskFor(old,priorityFor(old,Date.now()));
+ assert.equal(legacy.lane,'legacy');
+ f.github.rest.pulls.get=async()=>({data:old});
+ const good=await confirmRepairRunner({github:f.github,context,number:NUMBER,
+  expectedSha:SHA,taskKey:legacy.task_key});
+ assert.equal(good.status,'RUNNER_CONFIRMED');
+ assert.equal(f.calls.length,1);
+ assert.match(f.calls[0].body,/RUNNER_STARTED/);
+ assert.match(f.calls[0].body,/NOT a source fix/);
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},body:f.calls[0].body};
+ assert.equal(verifiedRunnerReceipt([bot],legacy).runner.run_id,RUN);
+ assert.equal(verifiedRunnerReceipt([bot],f.task),null,
+  'source repair identity must not match the legacy task');
+ const wrong=await confirmRepairRunner({github:f.github,context,number:NUMBER,
+  expectedSha:SHA,taskKey:f.task.task_key});
+ assert.equal(wrong.status,'RUNNER_UNVERIFIED');
+ assert.equal(f.calls.length,1);
+});
