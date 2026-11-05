@@ -14,7 +14,13 @@ const MAX_DURATION=60;
 const MAX_BYTES=80*1024*1024;
 
 export type BrowserMovieAudio={
-  files: readonly ({file:File|Blob;loop:boolean;startSeconds?:number}|{preset:string;loop:true;startSeconds?:number})[];
+  files: readonly ({
+    file:File|Blob;loop:boolean;startSeconds?:number;gainPercent?:number;
+    fadeInSeconds?:number;fadeOutSeconds?:number
+  }|{
+    preset:string;loop:true;startSeconds?:number;gainPercent?:number;
+    fadeInSeconds?:number;fadeOutSeconds?:number
+  })[];
   volume:number;
 };
 export type BrowserMovieOptions={
@@ -55,8 +61,17 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
   if(!Number.isFinite(audio.volume)||audio.volume<0||audio.volume>100)
     throw new Error("invalid_audio_volume");
   const offline=new OfflineAudioContext(2,Math.ceil(SAMPLE_RATE*seconds),SAMPLE_RATE);
-  const gainValue=(audio.volume/100)/Math.sqrt(audio.files.length);
+  const baseGain=(audio.volume/100)/Math.sqrt(audio.files.length);
   for(const entry of audio.files){
+    // Independent voice/music lanes. Default paths preserve legacy volume.
+    const lanePercent=entry.gainPercent===undefined?100:entry.gainPercent;
+    if(!Number.isInteger(lanePercent)||lanePercent<0||lanePercent>100||
+       (entry.fadeInSeconds!==undefined&&
+        (!Number.isFinite(entry.fadeInSeconds)||entry.fadeInSeconds<0||entry.fadeInSeconds>2))||
+       (entry.fadeOutSeconds!==undefined&&
+        (!Number.isFinite(entry.fadeOutSeconds)||entry.fadeOutSeconds<0||entry.fadeOutSeconds>2)))
+      throw new Error("invalid_audio_lane");
+    const laneGain=baseGain*lanePercent/100;
     let file:File|Blob;
     if("preset" in entry){
       // First-party scored WAV only. No client text or external URL accepted.
@@ -87,12 +102,16 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     const gain=offline.createGain();
     // Smooth music edges; narration's short fade-in preserves first syllables.
     const available=seconds-startSeconds;
-    const fadeIn=Math.min(available,entry.loop?.25:.035),fadeOut=Math.min(available,entry.loop?.7:.10);
+    const fadeIn=Math.min(available,entry.fadeInSeconds??(entry.loop?.25:.035));
+    const fadeOut=Math.min(available,entry.fadeOutSeconds??(entry.loop?.7:.10));
     gain.gain.setValueAtTime(0,0);
     gain.gain.setValueAtTime(0,startSeconds);
-    gain.gain.linearRampToValueAtTime(gainValue,startSeconds+fadeIn);
-    gain.gain.setValueAtTime(gainValue,Math.max(startSeconds+fadeIn,seconds-fadeOut));
-    gain.gain.linearRampToValueAtTime(0,seconds);
+    if(fadeIn>0)gain.gain.linearRampToValueAtTime(laneGain,startSeconds+fadeIn);
+    else gain.gain.setValueAtTime(laneGain,startSeconds);
+    const fadeAt=Math.max(startSeconds+fadeIn,seconds-fadeOut);
+    gain.gain.setValueAtTime(laneGain,fadeAt);
+    if(fadeOut>0)gain.gain.linearRampToValueAtTime(0,seconds);
+    else gain.gain.setValueAtTime(0,seconds);
     source.connect(gain).connect(offline.destination);
     source.start(startSeconds);
   }

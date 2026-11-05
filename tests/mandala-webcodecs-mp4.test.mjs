@@ -52,7 +52,10 @@ test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(studio,/loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
   assert.match(helper,/source\.loop=entry\.loop/);
-  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(gainValue,startSeconds\+fadeIn\)/);
+  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(laneGain,startSeconds\+fadeIn\)/);
+  assert.match(helper,/const baseGain=\(audio\.volume\/100\)\/Math\.sqrt\(audio\.files\.length\)/);
+  assert.match(helper,/const laneGain=baseGain\*lanePercent\/100/);
+  assert.match(helper,/lanePercent<0\|\|lanePercent>100/);
   assert.match(helper,/const available=seconds-startSeconds/,"near-end audio fades remain within the remaining time");
   assert.match(helper,/narration_longer_than_video/);
   assert.match(helper,/offline\.startRendering\(\)/);
