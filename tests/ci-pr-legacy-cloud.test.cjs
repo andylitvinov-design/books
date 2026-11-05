@@ -145,3 +145,56 @@ test('legacy cloud preflight is finalized after fix; never early FAILED',async()
  assert.doesNotMatch(comments[0],/FIX_JOB_SKIPPED/);
  assert.deepEqual(changes,[],'manual and source labels are untouched');
 });
+
+
+const {safePath:legacySnapshotPath,treeEntry:legacyTreeEntry,
+  compareLegacySnapshot}=require('../scripts/ci-pr-legacy-snapshot.cjs');
+const snapBlob=(p,sha,mode='100644')=>({status:0,
+ stdout:mode+' blob '+sha+'\t'+p+'\0'});
+test('shallow legacy snapshot: identical blobs are not merge authorization',()=>{
+ const path='components/reiki-hero.tsx';
+ const x=compareLegacySnapshot({files:[path],read:(ref,p)=>snapBlob(p,HEAD)});
+ assert.equal(x.state,'ALL_PATHS_IDENTICAL_UNANCHORED');
+ assert.deepEqual(x.counts,{identical:1,divergent:0,only_legacy:0,
+  only_production:0,unknown:0});
+ assert.equal(x.merge_authorized,false);assert.equal(x.source_write_authorized,false);
+ assert.equal(x.ancestry_verified,false);
+});
+test('shallow legacy snapshot: changed/missing tracked paths require semantic review',()=>{
+ const files=['components/a.tsx','lib/b.js'];
+ const x=compareLegacySnapshot({files,read:(ref,p)=>p===files[0]?
+  snapBlob(p,ref==='HEAD'?HEAD:OLD):
+  ref==='HEAD'?snapBlob(p,HEAD):{status:0,stdout:''}});
+ assert.equal(x.counts.divergent,1);
+ assert.equal(x.counts.only_legacy,1);
+ assert.equal(x.state,'PATHS_DIVERGED_REQUIRE_SEMANTIC_REVIEW');
+});
+test('shallow legacy snapshot: unsafe path, symlink and timeout fail closed',()=>{
+ const path='components/a.tsx',bad='../unsafe.ts';
+ const x=compareLegacySnapshot({files:[path,bad],read:(ref,p)=>
+  snapBlob(p,HEAD,ref==='HEAD'?'120000':'100644')});
+ assert.equal(x.counts.unknown,2);
+ assert.equal(x.state,'INCOMPLETE_UNANCHORED_SNAPSHOT');
+ assert.equal(legacySnapshotPath('app/[locale]/page.tsx'),true);
+ assert.equal(legacySnapshotPath('lib/foo/../bar.js'),false);
+ assert.equal(legacyTreeEntry({status:1,stdout:''},path).state,
+  'UNVERIFIED_TREE_READ');
+});
+test('shallow legacy snapshot: empty on both sides is unknown',()=>{
+ const r=compareLegacySnapshot({files:['lib/missing.js'],
+  read:()=>({status:0,stdout:''})});
+ assert.equal(r.state,'INCOMPLETE_UNANCHORED_SNAPSHOT');
+ assert.equal(r.counts.unknown,1);
+});
+test('shallow legacy snapshot: bounded lookups and invalid duplicate source fail closed',()=>{
+ let now=0;
+ const r=compareLegacySnapshot({files:['lib/a.js'],now:()=>{now+=1000;return now;},
+  budgetMs:1000,read:()=>snapBlob('lib/a.js',HEAD)});
+ assert.equal(r.counts.unknown,1);
+ assert.throws(()=>compareLegacySnapshot({files:['lib/a.js','lib/a.js'],
+  read:()=>snapBlob('lib/a.js',HEAD)}),/INVALID/);
+ const yml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(yml,/compareLegacySnapshot\(\{files/);
+ assert.match(yml,/'ls-tree','-z',ref/);
+ assert.match(yml,/SHALLOW_ANCESTRY_UNAVAILABLE/);
+});
