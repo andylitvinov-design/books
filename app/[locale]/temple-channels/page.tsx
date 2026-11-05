@@ -25,7 +25,7 @@ const copy = {
     apply: "Показать настройки", clear: "Сбросить фильтры", result: (n: number) => `Найдено настроек: ${n}`,
     emptyTitle: "Подтверждённых настроек пока нет",
     empty: "Канал может присутствовать в каталоге, даже если его оригинальный авторский текст ещё не восстановлен. Мы не подменяем его выдуманным стихотворением.",
-    read: "Читать оригинальную настройку", original: "Оригинал на русском языке",
+    read: "Читать оригинальную настройку", readPractice: "Читать авторское описание настройки", cardLink: "Открыть отдельную карточку", original: "Оригинал на русском языке",
     provenance: "Авторский архив", location: "Место по авторской записи",
     uncertain: "Место указано так, как описано в источнике; историческая география отдельно не подтверждалась.",
     source: "Исходная методичка", archive: "К программе Temple Studies",
@@ -43,7 +43,7 @@ const copy = {
     apply: "Show attunements", clear: "Clear filters", result: (n: number) => `Attunements found: ${n}`,
     emptyTitle: "No verified original attunements yet",
     empty: "A channel may exist in the catalogue even when its original author-written text has not been recovered. We do not invent missing verses.",
-    read: "Read original attunement", original: "Original text in Russian",
+    read: "Read original attunement", readPractice: "Read original practice description", cardLink: "Open this card", original: "Original text in Russian",
     provenance: "Author's archive", location: "Place as described by the author",
     uncertain: "Place names follow the source record; historical geography is not independently verified.",
     source: "Source manual", archive: "Return to Temple Studies",
@@ -61,7 +61,7 @@ const copy = {
     apply: "Mostrar sintonizaciones", clear: "Borrar filtros", result: (n: number) => `Sintonizaciones: ${n}`,
     emptyTitle: "Todavía no hay textos originales verificados",
     empty: "El canal puede figurar en el catálogo aunque su texto original no se haya recuperado. No se inventan poemas.",
-    read: "Leer la sintonización original", original: "Texto original en ruso",
+    read: "Leer la sintonización original", readPractice: "Leer la descripción original", cardLink: "Abrir esta ficha", original: "Texto original en ruso",
     provenance: "Archivo del autor", location: "Lugar descrito por el autor",
     uncertain: "Los lugares proceden del texto original y no han sido verificados geográficamente.",
     source: "Manual de origen", archive: "Volver a Temple Studies",
@@ -249,12 +249,13 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
                   <div className={styles.cardBody}>
                     <p className={styles.meta}>{templeTraditions.find((item) => item.id === entry.traditionId)?.name[language]} · {getTempleChannel(entry.traditionId, entry.channelId)?.name[language]}</p>
                     <h3>{entry.title[language]}</h3>
+                    <Link className={styles.cardPermalink} prefetch={false} href={`${archivePageHref(language, entry.traditionId, entry.channelId, entry.id, 1)}#${entry.id}`}>{t.cardLink}</Link>
                     <p className={styles.place}><MapPin size={16} aria-hidden="true" />
                       <span>{[entry.place.city[language], entry.place.site[language], entry.place.country[language]].filter(Boolean).join(" · ")}</span>
                     </p>
                     {entry.place.note ? <p className={styles.provenanceNote}>{entry.place.note[language]}</p> : null}
                     <details className={styles.poem}>
-                      <summary>{t.read}</summary>
+                      <summary>{entry.format === "verse" ? t.read : t.readPractice}</summary>
                       <div>
                         <p className={styles.original}>{t.original}</p>
                         <blockquote lang="ru">{entry.textRu}</blockquote>

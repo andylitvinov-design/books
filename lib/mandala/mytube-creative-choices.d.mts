@@ -40,7 +40,7 @@ export function getMyTubeCreativeChoices(scenarioId:string,locale?:CreativeLocal
   plotChoicesUnaffected:true;sourceStatus:"editorial_not_bound_to_video";
 }|null;
 export function validateMyTubeCreativeSelection(options?:{
-  topicId?:string;scenarioId?:string;motifId?:string|null;styleId?:string|null;
+  topicId?:string;scenarioId?:string;motifId?:string|null;styleId?:string|null;meaningAxisId?:string|null;
 }):{ok:boolean;status:string};
 export function evaluateMyTubeSceneCreativeMatch(scene:CreativeScene,options?:{
   motifId?:string|null;styleId?:string|null;

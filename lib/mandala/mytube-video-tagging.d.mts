@@ -17,14 +17,14 @@ export declare function auditMyTubeSceneTagging(scenes:ReadonlyArray<{id:string;
 export type MyTubeSceneSource={id:string;status?:string;media?:string;collection?:string;rightsReference?:{kind:string};theme?:string;video?:string;tags?:readonly string[];motifs?:readonly string[];label?:Record<string,string>;poster?:string;allowedAspects?:readonly ("portrait"|"landscape"|"square")[]};
 export type MyTubeClipCandidate={sceneId:string;score:number;topicScore:number;scenarioVisualFit:number};
 export type MyTubeTopicClipSelection={
-  status:"unknown_topic"|"invalid_scenario"|"invalid_media"|"insufficient_topic_media"|"four_approved_scene_candidates"|"scenario_required_for_creative_filter"|"invalid_motif"|"invalid_style"|"insufficient_motif_media"|"insufficient_style_media"|"invalid_aspect";
+  status:"unknown_topic"|"invalid_scenario"|"invalid_media"|"insufficient_topic_media"|"four_approved_scene_candidates"|"scenario_required_for_creative_filter"|"invalid_motif"|"invalid_style"|"insufficient_motif_media"|"insufficient_style_media"|"invalid_aspect"|"invalid_meaning_axis"|"invalid_meaning_motif";
   topicId:string;scenarioId:string|null;candidateCount:number;clipIds:string[];
   candidates:MyTubeClipCandidate[];dedicatedFourSceneReady:boolean;verifiedFinishedScript?:false;
-  motifId?:string|null;styleId?:string|null;creativeEvidence?:{ok:boolean;status:string;motifMatches:number;styleMatches:number}|null;
+  motifId?:string|null;styleId?:string|null;meaningAxisId?:string|null;creativeEvidence?:{ok:boolean;status:string;motifMatches:number;styleMatches:number}|null;
 };
 export declare function recommendMyTubeTopicStoryClips(input:{
   topicId:string;scenarioId?:string|null;scenes?:ReadonlyArray<MyTubeSceneSource>;
   excludedMotifs?:readonly string[];minTopicScore?:number;
-  motifId?:string|null;styleId?:string|null;
+  motifId?:string|null;styleId?:string|null;meaningAxisId?:string|null;
   targetAspect?:"portrait"|"landscape"|"square"|null;
 }):MyTubeTopicClipSelection;
