@@ -165,7 +165,7 @@ test('synthetic Core association rejects any missing or false merge-parent evide
 test('synthetic Core source lease is checked on PR SHA, never synthetic merge SHA',async()=>{
  const synthetic='d'.repeat(40);
  const lease={user:{login:'existing-source-writer'},body:
-  '<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+JSON.stringify({
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
    schema:'HH_PR_SWEEP_LEASE_V1',owner:'active-writer',
    lease_id:'w1',head_sha:HEAD,state:'active'
   })};
