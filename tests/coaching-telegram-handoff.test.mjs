@@ -47,7 +47,7 @@ test('signed continuation never creates a second CRM contact and needs fresh STO
   assert.match(repo,/operationHash\(input, config\)/)
   assert.match(form,/new URLSearchParams\(url\.hash\.slice\(1\)\)/)
   assert.match(webhook,/'#handoff='\+encodeURIComponent\(opaque\)/)
-  assert.match(form,/contactConsent: true/)
+  assert.match(form,/contactConsent\s*:\s*true/)
   assert.match(migration,/create unique index if not exists public_service_telegram_handoff_once/)
   assert.match(migration,/for select to hh_app_backend/)
   assert.doesNotMatch(webhook,/sendOneMessengerMessage\(/)
