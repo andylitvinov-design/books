@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
+import { VOICE_STUDIO_MODEL, VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
+import {loadPublicVoiceSample,publicVoiceSampleKey,storePublicVoiceSample} from "@/lib/mandala/public-voice-sample-cache";
 import { affirmationNarrationForSelection, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
@@ -301,11 +302,27 @@ export function MandalaAffirmationVoice({
     if(!languageAvailable){setSampleMessage(t.unavailable);return;}
     const job=sampleJobRef.current;
     const cacheKey=language+":"+id;
+    const profile=VOICE_STUDIO_VOICES.find(voice=>voice.id===id);
+    const persistentKey=publicVoiceSampleKey(language,id,profile?.provider??"",
+      VOICE_STUDIO_MODEL,VOICE_STUDIO_SAMPLE[language]);
     setSampleBusyId(id);
     let timer:ReturnType<typeof setTimeout>|null=null;
     let timedOut=false;
     try{
       let uri=sampleCacheRef.current.get(cacheKey);
+      if(!uri){
+        // A previously heard fixed public Gemini demo survives reloads and
+        // free-tier 429 responses. Never persist personal affirmation audio.
+        const saved=await loadPublicVoiceSample(persistentKey);
+        if(job!==sampleJobRef.current)return;
+        if(saved){
+          const seconds=wavDurationFromHeader(await saved.slice(0,256).arrayBuffer());
+          if(seconds>=.2&&seconds<=60){
+            uri=URL.createObjectURL(saved);
+            sampleCacheRef.current.set(cacheKey,uri);
+          }
+        }
+      }
       if(!uri){
         const controller=new AbortController();
         sampleControllerRef.current=controller;
@@ -326,6 +343,11 @@ export function MandalaAffirmationVoice({
           ?wavDurationFromHeader(await audio.slice(0,256).arrayBuffer()):0;
         if(!seconds||seconds<.2||seconds>60)throw new Error("TTS");
         if(job!==sampleJobRef.current)return;
+        // Cache only an authentic Gemini voice matching the selected profile.
+        // Free English fallbacks may have different voices and must not be
+        // mislabeled as Sofia/Maya/Alisa across future visits.
+        if(reply.headers.get("x-hh-voice-provider")==="gemini")
+          void storePublicVoiceSample(persistentKey,audio);
         uri=URL.createObjectURL(audio);
         const cache=sampleCacheRef.current;
         cache.set(cacheKey,uri);
