@@ -213,39 +213,12 @@ export function MandalaAutoVideoDirector({
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
  }|null>(null);
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
- // Tab-scoped canonical IDs only. Never retain free-text emotions or profile data.
- const rememberSTSETopic=(topicId:string,scenarioId:string|null=null)=>{
-   if(!STSE_ENABLED)return;
-   try{
-     const k="hh-stse-v1-topic:"+locale;
-     if(!topicId)window.sessionStorage.removeItem(k);
-     else window.sessionStorage.setItem(k,JSON.stringify({topicId,scenarioId}));
-   }catch{/* Restricted browser storage: continue normally without persistence. */}
- };
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
    setRequestTarget(document.querySelector<HTMLElement>("[data-video-request-prompt]"));
    setProfileTarget(document.querySelector<HTMLElement>("[data-video-profile-picker]"));
  },[]);
- useEffect(()=>{
-   if(!STSE_ENABLED)return;
-   try{
-     const stored=JSON.parse(window.sessionStorage.getItem("hh-stse-v1-topic:"+locale)||"null");
-     const found=typeof stored?.topicId==="string"?getMyTubeTopic(stored.topicId):null;
-     if(!found)return;
-     const mapped=(Object.keys(taxonomyCategoryForGoal) as Array<keyof typeof popularTopicOrder>)
-       .find(id=>taxonomyCategoryForGoal[id]===found.category.id);
-     if(mapped)setSelectedCategoryId(mapped);
-     setSelectedSubcategoryId(found.subcategory.id);
-     setSelectedTopicId(found.topic.id);
-     // Restore only previously confirmed canonical editorial IDs. Draft IDs
-     // are never restored into a public video when expansion is disabled.
-     const scenarioId=stored.scenarioId;
-     if(typeof scenarioId==="string"&&found.topic.scenarios.some(x=>x.id===scenarioId))
-       setSelectedScenarioId(scenarioId);
-   }catch{/* A malformed or inaccessible tab record never blocks the editor. */}
- },[locale]);
  useEffect(()=>{
    if(!selectedScenarioId){setPlotData(null);setPlotsLoading(false);return;}
    if(STSE_DRAFTS_ENABLED&&/-s[5-8]$/.test(selectedScenarioId)){
@@ -411,7 +384,6 @@ export function MandalaAutoVideoDirector({
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
    if(disabled)return;
-   rememberSTSETopic("");
    const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(nextGoal!==goal)onGoalChange(nextGoal);
@@ -426,7 +398,6 @@ export function MandalaAutoVideoDirector({
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
    if(!item)return;
-   rememberSTSETopic("");
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
    onInvalidate?.();onCategoryChange?.(nextTheme);
    setSelectedGoalId(null);setSelectedGoalIds([]);
@@ -439,7 +410,6 @@ export function MandalaAutoVideoDirector({
  const chooseTaxonomyTopic=(topicId:string)=>{
    const found=getMyTubeTopic(topicId);if(!found)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
-   rememberSTSETopic(topicId);
    const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
@@ -453,7 +423,6 @@ export function MandalaAutoVideoDirector({
  };
  const chooseTaxonomyScenario=(scenarioId:string)=>{
    const scenario=taxonomyScenarios.find(item=>item.id===scenarioId);if(!scenario)return;
-   rememberSTSETopic(selectedTopicId,scenarioId);
    setSelectedScenarioId(scenarioId);setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
    const topicLabel=selectedTaxonomyTopic?.topic.label[locale]||goal;
    const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
