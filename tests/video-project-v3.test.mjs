@@ -167,7 +167,7 @@ test("V2 -> V3 migration retains approved scene/order, text and authorized audio
     legacyShots.map(x=>x.sceneId));
   assert.deepEqual(migrated.approvedPhrases,["Я могу выбирать"]);
   assert.equal(migrated.audioTracks[0].gainPercent,45);
-  assert.equal(migrated.export.status,"idle");
+  assert.equal(migrated.export.state,"idle");
   assert.equal(migrated.renderApproval.planHash,null);
   const unavailable=approvedAssets.filter(a=>a.id!=="original-melody");
   assert.throws(()=>migrateVideoProjectV2ToV3(p,{approvedAssets:unavailable}),
@@ -184,10 +184,10 @@ test("unapproved text cannot enter a final render and an old binary cannot be ce
  assert.throws(()=>validateVideoProjectV3(forged),/export_state/);
 });
 test("model has no server export, network, payment or new preview renderer",()=>{
- const module=readFileSync(new URL("../lib/mandala/video-project-v3.mjs",import.meta.url),"utf8");
- assert.doesNotMatch(module,/\bfetch\s*\(|createObjectURL\s*\(|navigator\.mediaDevices/);
- assert.match(module,/runnable:false/);
- assert.match(module,/pending_advanced_compositor/);
+ const sourceCode=readFileSync(new URL("../lib/mandala/video-project-v3.mjs",import.meta.url),"utf8");
+ assert.doesNotMatch(sourceCode,/\bfetch\s*\(|createObjectURL\s*\(|navigator\.mediaDevices/);
+ assert.match(sourceCode,/runnable:false/);
+ assert.match(sourceCode,/pending_advanced_compositor/);
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  assert.match(studio,/paintCinematicFrame\(/);
  assert.match(studio,/encodeLocalWebCodecsMp4\(/);
