@@ -4077,6 +4077,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(prefs.caption)setCustomCaption(captionFromWish(draft.wish));
     setPreviewPlaying(false);setSuggestion("");
   };
+  // Ideas is a selection step. Its main CTA advances to Montage, never starts an export.
+  const goToMontageFromIdeas = () => {
+    quickNavTokenRef.current++;
+    setActiveWorkspace("editor");
+    setMontagePanel("settings");
+    setStudioMode("pump");
+    setIntroPlaying(false);
+    setTherapyJumpRequested(false);
+    setNotice("");
+    // The Ideas page may be scrolled to its bottom CTA; show the third tab and player.
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      document.querySelector<HTMLElement>('[data-video-quick-controls]')?.scrollIntoView({behavior:"auto",block:"start"});
+    }));
+  };
+
   const createQuickVideo = () => {
     if(photoPending){
       setNotice(locale==="ru"?"Подготовка фото ещё не завершена.":locale==="es"?"La foto aún se está preparando.":"Photo preparation is still in progress.");
@@ -5257,10 +5272,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
           <MandalaVideoIdeas locale={locale} theme={theme}
             active={activeWorkspace==="phrases"} disabled={recording||preparing}
-            settings={affirmations} canGenerate={canGenerate&&freeVideoSelected&&!phrasePending}
+            settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
-            onCreate={createQuickVideo}/>
+            onCreate={goToMontageFromIdeas}/>
           {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
             {deepHypnoPane}
           </div> : null}
@@ -5326,7 +5341,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}/>
         </div> : null}
       </section>
-      <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
+      {activeWorkspace==="video" ? <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-music-heading"><Music2 size={18} aria-hidden="true"/>
             {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</h3>
@@ -5379,7 +5394,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <summary>{locale==="ru"?"Все мелодии и голос":locale==="es"?"Todos los sonidos y voz":"All soundtracks and voice"}</summary>
           {activeWorkspace==="video" ? deepAudioPane : null}
         </details>
-      </section>
+      </section> : null}
         <MandalaAutoVideoDirector
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}

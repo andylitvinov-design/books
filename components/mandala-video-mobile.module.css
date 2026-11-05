@@ -2573,8 +2573,6 @@
    padding:10px 9px;border-radius:16px;background:#fffdfa}
  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{
    display:none!important}
- .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-audio-choices]{
-   display:grid!important}
  .studio .quickBuilder>[data-video-order-bar]{order:18}
  .studio .quickBuilder>.quickHeader,
  .studio .quickBuilder>.quickBenefits,
@@ -2610,13 +2608,11 @@
  .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 7px!important}
 }
 
-/* The ONE music library is shared by Style (advanced) and Support Phrases.
-   Default entry stays short; a deliberate Advanced action reveals it. */
+/* The ONE quick music library belongs only to expanded Goal.
+   Ideas is selection-only; Montage retains the dedicated Audio panel. */
 @media(max-width:759px){
  .studio[data-active-workspace="video"][data-video-advanced-open="true"]
    .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:9}
- .studio[data-active-workspace="phrases"]
-   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:5}
  .studio[data-active-workspace="video"] .quickBuilder>.advancedVideoToggle{display:flex;order:8}
  .studio .quickBuilder>[data-video-topic-section]{scroll-margin-top:12px}
 }
