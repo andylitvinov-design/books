@@ -199,3 +199,22 @@ test("future project-original motion clips use exact canonical topic IDs only, n
   assert.equal(exactOriginalMotionTopicHint({...v10,id:"motion-goals-money-goal-setting-v11",video:"/videos/holistic-house/original-motion-v1/motion-goals-money-goal-setting-v11.mp4"},"goal-setting"),null);
 
 });
+
+test("MyTube source ranking refuses portrait-only masters for landscape and square",()=>{
+  const portraitIds=new Set(["sun-trees-forest","snow-forest-winter",
+    "fall-foliage-forest","warm-clouds-sunset"]);
+  const input={topicId:"recovery-after-load",scenarioId:"recovery-after-load-s2",scenes:master.scenes};
+  const vertical=recommendMyTubeTopicStoryClips({...input,targetAspect:"portrait"});
+  const landscape=recommendMyTubeTopicStoryClips({...input,targetAspect:"landscape"});
+  const square=recommendMyTubeTopicStoryClips({...input,targetAspect:"square"});
+  assert.ok(vertical.candidates.some(x=>x.sceneId==="sun-trees-forest"));
+  assert.ok(vertical.candidates.some(x=>x.sceneId==="snow-forest-winter"));
+  assert.ok(vertical.candidateCount>landscape.candidateCount);
+  for(const x of [landscape,square]){
+    assert.ok(x.candidates.every(row=>!portraitIds.has(row.sceneId)));
+    assert.ok(x.clipIds.every(id=>!portraitIds.has(id)));
+  }
+  const invalid=recommendMyTubeTopicStoryClips({...input,targetAspect:"ultrawide"});
+  assert.equal(invalid.status,"invalid_aspect");
+  assert.deepEqual(invalid.clipIds,[]);
+});
