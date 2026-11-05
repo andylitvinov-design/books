@@ -164,7 +164,7 @@ test("background-only reusable clip is the default, with an explicit photo check
 
 test("Safari failed render offers only a source-backed unedited MP4 without pretending it is customized", () => {
   const studio = read("components/mandala-free-video-studio.tsx");
-  assert.match(studio, /const originalFallbackCandidate=cinematicPlan\?\.shots\[0\]/);
+  assert.match(studio, /const originalFallbackCandidate=creationMode==="generated"\?null:cinematicPlan\?\.shots\[0\]/);
   assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
   assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
   assert.match(studio, /data-video-original-fallback-download/);
@@ -194,7 +194,8 @@ test("AI Video Create acknowledges only an actually accepted local render prefli
     studio.indexOf("  // This is a local, non-persistent preview."));
   const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
     studio.indexOf("  const deepAudioPane = ("));
-  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;"));
+  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
+    "never start a new render while a source photo is decoding or an encoder is active");
   assert.doesNotMatch(start,/\breturn\s*;/);
   assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
   assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);

@@ -148,3 +148,39 @@ for (const [phase, destination, otherPhase] of [
   for (const override of [{ engine: 'chromium' }, { readiness: 'loaded-history' }]) assert.equal(classifyCspNavigationCancellation(error, { ...info, ...override }), null);
   for (const stack of ['Error: ordinary failure', 'Refused to connect because it violates Content Security Policy']) assert.equal(classifyCspNavigationCancellation({ ...error, stack }, info), null);
 });
+
+test('WebKit rapid About-to-Tantra forward requires real old-document RSC provenance', () => {
+  const about = origin + '/en/about';
+  const tantra = origin + '/en/academy/reiki/tantra-reiki';
+  const forwardLife = [
+    { type:'init', time:1, documentProbe:'about', url:about },
+    { type:'navigate', time:95, documentProbe:'about', url:about, documentClass:'public-video', sameDocument:true, navigationType:'traverse', destination:tantra },
+    { type:'navigate', time:100, documentProbe:'about', url:tantra, documentClass:'public-video', sameDocument:false, navigationType:'replace', destination:tantra },
+    { type:'init', time:150, documentProbe:'tantra', url:tantra },
+    { type:'domcontentloaded', time:160, documentProbe:'tantra', url:tantra, documentClass:'tantra-media' },
+  ];
+  const seenFetch=[{ type:'fetch-start', path:'/', rsc:true, documentProbe:'about', time:121 }];
+  const err={ ...diagnostic(origin+'/?_rsc=probe', 125), phase:'forward-to-tantra' };
+  const info={ ...detail, lifecycle:forwardLife, fetchTelemetry:seenFetch };
+  assert.equal(classifyCspNavigationCancellation(err,info)?.kind, 'webkit-traced-forward-rsc-teardown');
+  for (const change of [
+    { fetchTelemetry:[] },
+    { fetchTelemetry:[{...seenFetch[0],documentProbe:'other'}] },
+    { fetchTelemetry:[{...seenFetch[0],time:99}] },
+    { fetchTelemetry:[{...seenFetch[0],path:'/en/client'}] },
+    { fetchTelemetry:[{...seenFetch[0],rsc:false}] },
+    { lifecycle:forwardLife.filter(x=>x.type!=='domcontentloaded') },
+    { lifecycle:forwardLife.filter(x=>!(x.type==='navigate' && x.sameDocument)) },
+    { lifecycle:forwardLife.map(x=>x.type==='init' && x.documentProbe==='tantra'?{...x,url:about}:x) },
+    { lifecycle:forwardLife.map(x=>x.type==='navigate' && !x.sameDocument?{...x,documentClass:'private'}:x) },
+    { lifecycle:[...forwardLife,{type:'policy-violation',documentProbe:'about',time:122}] },
+    { readiness:'loaded-history' },
+    { engine:'chromium' },
+  ]) assert.equal(classifyCspNavigationCancellation(err,{...info,...change}),null,
+    'Missing independent source, policy or navigation proof must remain fatal');
+  for (const change of [
+    {phase:'initial'}, {phase:'back-from-tantra'}, {time:99}, {time:150},
+    {stack:'Error: genuine CSP violation'},
+    {stack:'Fetch API cannot load https://other.test/?_rsc=probe due to access control checks.'},
+  ]) assert.equal(classifyCspNavigationCancellation({...err,...change},info),null);
+});

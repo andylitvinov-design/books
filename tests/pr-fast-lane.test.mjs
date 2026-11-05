@@ -299,7 +299,15 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       GIT_AUTHOR_NAME: 'Synthetic', GIT_AUTHOR_EMAIL: 'synthetic@example.invalid',
       GIT_COMMITTER_NAME: 'Synthetic', GIT_COMMITTER_EMAIL: 'synthetic@example.invalid' };
     const run = (command, args, extra = {}, allowFailure = false) => {
-      const result = spawnSync(command, args, { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 });
+      const options = { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 10_000, maxBuffer: 1024 * 1024 };
+      let result = spawnSync(command, args, options);
+      // On a busy ubuntu-slim runner, the first cold git init can time out.
+      // Retry only this idempotent fixture setup command, not classifier logic,
+      // failed Git commits, or negative safety assertions.
+      if (command === 'git' && args[2] === 'init' && result.error?.code === 'ETIMEDOUT') {
+        console.warn('Fast-lane fixture: cold git init timed out; retrying once');
+        result = spawnSync(command, args, { ...options, timeout: 30_000 });
+      }
       assert.ifError(result.error);
       if (allowFailure) return result;
       assert.equal(result.status, 0, `${command}: ${result.stderr}`);
@@ -1177,7 +1185,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
@@ -1458,7 +1466,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
@@ -1482,7 +1490,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
   assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
-  assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
+  assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
@@ -1502,7 +1510,7 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(gate, /Unified Core gate passed/);
@@ -1514,7 +1522,7 @@ test('required hh-merge-check uses ubuntu-slim and keeps fail-closed Core/Specia
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
@@ -1580,4 +1588,49 @@ test('seven costly PR workflows cancel obsolete first-attempt HEAD without push-
     assert.ok(match[2].includes("github.run_attempt == 1") && match[2].includes("github.event.action == 'synchronize'"), file + ': first-attempt synchronize only');
     assert.doesNotMatch(match[2], /github\.event\.(?:before|after)/, file + ': push-only fields never cancel PR runs');
   }
+});
+
+
+// CI-only planner and its deterministic contracts do not touch Next runtime.
+// Real production-path changes still route through full Core/Specialist checks.
+test('Public Services planner/source test stay in the narrow Core CI-only lane', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const scope = core.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0] || '';
+  for (const name of ['scripts/ci-public-services-plan.mjs', 'tests/ci-public-services-plan.test.mjs']) {
+    assert.ok(scope.includes(name + '|\\'), 'CI-only route missing for ' + name);
+  }
+  assert.match(core, /name: hh-merge-check/, 'required protected gate is not optional');
+  assert.match(core, /needs: \[scope, hh-specialist\]/, 'real Specialist remains mandatory');
+});
+
+test('App R1 banner matrix runs REAL preinstalled Playwright only when applicable, never repeated apt install',()=>{
+  const source=workflow('hh-app-r1.yml');
+  const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
+  assert.ok(section,'course-banner-browser must exist');
+  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/timeout-minutes: 15/);
+  assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);
+  assert.match(section,/if: needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(section,/mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(section,/docker run --rm --init --ipc=host --network none/);
+  assert.match(section,/-e HH_TEST_BROWSER="\$HH_TEST_BROWSER"/);
+  assert.match(section,/node tests\/course-banner\/browser\.mjs/);
+  assert.match(section,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.doesNotMatch(section,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(section,/continue-on-error:\s*true/);
+});
+test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Noble image',()=>{
+  const s=workflow('tantra-testimonials.yml');
+  assert.match(s,/runs-on: ubuntu-24\.04/);
+  assert.match(s,/image: mcr\.microsoft\.com\/playwright:v1\.64\.0-noble/);
+  assert.match(s,/defaults:\s*\n\s*run:\s*\n\s*shell: bash/);
+  assert.match(s,/@playwright\/test@1\.64\.0/);
+  assert.match(s,/PLAYWRIGHT_BROWSERS_PATH/);
+  assert.match(s,/for \(const \[name, engine\] of \[\['chromium', chromium\], \['webkit', webkit\]\]\)/);
+  assert.match(s,/await engine\.launch\(\{headless:true,timeout:15000\}\)/);
+  assert.match(s,/node scripts\/verify-tantra-testimonials\.mjs/);
+  assert.match(s,/npm run build/);
+  assert.doesNotMatch(s,/^\s+.*\/bin\/playwright install --with-deps/m);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });

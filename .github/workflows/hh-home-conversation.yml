@@ -13,7 +13,6 @@ on:
       - 'tests/home-conversation-browser.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'tests/home-diagnosis-messenger.test.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:

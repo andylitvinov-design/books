@@ -39,7 +39,6 @@ on:
       - 'app/api/reiki-course-reviews/**'
       - 'tests/reiki-course-reviews-public.test.mjs'
       - 'tests/reiki-review-owner-lifetime.test.mjs'
-      - '.github/workflows/hh-energywork-ai.yml'
       - 'supabase/migrations/20261019031800_hh_reiki_course_public_reviews.sql'
       - 'app/admin/reiki-leads/**'
       - 'tests/reiki-crm-leads.test.mjs'
@@ -74,7 +73,6 @@ on:
       - 'docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md'
       - 'public/images/holistic-house/reiki-practitioner-sunrise.webp'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   workflow_dispatch:
 
 permissions:
