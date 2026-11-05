@@ -126,11 +126,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });
 
-test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
+test("mobile six workspaces use Goals and Ideas localized tabs with real shared panels",()=>{
  const labels={
-  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","Монтаж","PRO"],
-  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","Montage","PRO"],
-  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Montaje","PRO"],
+  ru:["Цели","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
+  en:["Goals","Ideas","Hypno effect","Practice course","Montage","PRO"],
+  es:["Objetivos","Ideas","Efecto hipno","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -281,9 +281,9 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 });
 
 
-test("owner-approved second Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
+test("owner-approved third Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
+ assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);

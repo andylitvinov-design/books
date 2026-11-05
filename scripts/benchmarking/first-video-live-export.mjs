@@ -132,10 +132,24 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Compact Video hides its extended source editor until the visitor chooses
-  // "All stories". Exercise that REAL visible button, not a hidden DOM node
-  // or direct React state manipulation, before testing the actual export.
-  const allStories = page.locator('[data-auto-video-all-scenes]');
+  // Owner-approved Goals -> Ideas entry keeps the storyboard out of the
+  // first mobile screen. Follow the real visible Continue action, verify the
+  // Ideas tab, then return to Goals and use the original All stories control.
+  // Never click hidden elements or mutate React state to fake E2E readiness.
+  const continueButton=page.locator('[data-video-continue-ideas]');
+  await continueButton.waitFor({state:'visible',timeout:40000});
+  await continueButton.click();
+  const ideasTab=page.locator('[data-video-quick-control="phrases"]');
+  await ideasTab.waitFor({state:'visible',timeout:15000});
+  assert.equal(await ideasTab.getAttribute('aria-pressed'),'true',
+    'CONTINUE_MUST_OPEN_IDEAS');
+  assert.equal(await ideasTab.getAttribute('aria-label'),'Идеи',
+    'IDEAS_TAB_LABEL_MUST_MATCH_OWNER_DECISION');
+  const goalsTab=page.locator('[data-video-quick-control="video"]');
+  await goalsTab.click();
+  assert.equal(await goalsTab.getAttribute('aria-pressed'),'true',
+    'GOALS_MUST_REMAIN_ACCESSIBLE');
+  const allStories=page.locator('[data-auto-video-all-scenes]');
   await allStories.waitFor({state:'visible',timeout:40000});
   await allStories.click();
   await page.waitForFunction(() =>
