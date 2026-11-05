@@ -34,8 +34,11 @@ function admission(lane,capacity){
  // independently checked again immediately before dispatch.
  if(lane==='ci'&&capacity.inventoryConfidence==='BOUNDED_PARTIAL')
    return 'PARTIAL_CAPACITY_CI_BLOCKED';
- const workerLimit=lane==='repair'?LIMIT.maxRepairWorkerRuns:
-  lane==='legacy'?1:LIMIT.maxWorkerRuns;
+ // A legacy preflight is read-only and may occupy the SECOND EXISTING repair
+ // runner alongside one normal source repair. The shared workflow budget is
+ // still maxRepairWorkerRuns=2; this never adds a runner or bypasses Core.
+ const workerLimit=['repair','legacy'].includes(lane)?
+  LIMIT.maxRepairWorkerRuns:LIMIT.maxWorkerRuns;
  if(capacity.activeWorker[worker]>=workerLimit)return 'WORKER_BUSY';
  // Optional CI retains the strict 60-run global stop (and its own 6-run
  // limit). Admit at most TWO independently leased exact-head Repair Workers into a modest

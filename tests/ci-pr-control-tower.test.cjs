@@ -1557,3 +1557,19 @@ test('handled old PR is skipped and next legacy candidate dispatches once',async
  assert.equal(f.calls.dispatched[0].inputs.pr_number,String(second.pr_number));
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
 });
+
+test('one normal source repair and one manual preflight share the existing two worker slots',async()=>{
+ const source=pr(1,'repair');
+ const old=pr(204,'repair',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([source,old],{comments:{1:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,2);
+ assert.equal(r.repairDispatchAccepted,1);
+ assert.equal(r.legacyDispatchAccepted,1);
+ assert.deepEqual(new Set(f.calls.dispatched.map(x=>x.inputs.pr_number)),
+  new Set(['1','204']));
+ assert.ok(f.calls.dispatched.every(x=>x.workflow_id==='hh-pr-repair-worker.yml'));
+ assert.equal(f.calls.removed.length,0,'no manual hold is released by preflight');
+});
