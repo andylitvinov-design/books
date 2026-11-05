@@ -153,10 +153,13 @@ jobs:
   fix:
     needs: claim
     # Deterministic repair is always first, including verified Core/TypeScript failures.
-    if: needs.claim.outputs.strategy == 'lint' || needs.claim.outputs.strategy == 'code'
+    if: >-
+      needs.claim.outputs.strategy == 'lint' ||
+      needs.claim.outputs.strategy == 'code' ||
+      needs.claim.outputs.strategy == 'legacy'
     outputs:
-      candidate_status: ${{ steps.build_candidate.outputs.candidate_status }}
-      candidate_detail: ${{ steps.build_candidate.outputs.candidate_detail }}
+      candidate_status: ${{ steps.legacy_scan.outputs.candidate_status || steps.build_candidate.outputs.candidate_status }}
+      candidate_detail: ${{ steps.legacy_scan.outputs.candidate_detail || steps.build_candidate.outputs.candidate_detail }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
@@ -183,7 +186,64 @@ jobs:
           cache: npm
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - id: legacy_scan
+        name: Cloud-only legacy source comparison and focused test preflight
+        if: needs.claim.outputs.strategy == 'legacy'
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const cp=require('node:child_process');
+          const sha=process.env.REPAIR_SHA;
+          const files=JSON.parse(process.env.REPAIR_FILES_JSON||'[]');
+          if(!/^[a-f0-9]{40}$/i.test(sha)||!Array.isArray(files)||
+             files.length>8)throw Error('Invalid bounded legacy preflight');
+          const run=(cmd,args,timeout=120000)=>cp.spawnSync(cmd,args,{
+            encoding:'utf8',timeout,maxBuffer:512000,env:process.env});
+          const head=run('git',['rev-parse','HEAD'],10000);
+          if(head.status!==0||head.stdout.trim()!==sha)
+            throw Error('Legacy exact-HEAD checkout changed');
+          const safe=require('./.hh-trusted/scripts/ci-pr-repair-free-agent.cjs').safeSourcePath;
+          const allowlisted=files.filter(safe);
+          const report={schema:'HH_LEGACY_CLOUD_PREFLIGHT_V1',head_sha:sha,
+            source_files:files,source_safe_for_AI:allowlisted,
+            mode:'READ_ONLY_NO_SOURCE_PUBLICATION',base_compare:'UNKNOWN',
+            local_tests:'NOT_RUN',next:'SOURCE_SEMANTIC_REVIEW'};
+          const fetch=run('git',['fetch','--no-tags','--depth=1','--filter=blob:none',
+            'origin','codex/public-book-library'],45000);
+          if(fetch.status===0){
+            const base=run('git',['rev-parse','FETCH_HEAD'],10000);
+            if(base.status===0&&/^[a-f0-9]{40}$/i.test(base.stdout.trim()))
+              report.production_base_sha=base.stdout.trim();
+            const ancestor=run('git',['merge-base','HEAD','FETCH_HEAD'],10000);
+            if(ancestor.status===0){
+              const check=run('git',['merge-tree','--write-tree','HEAD','FETCH_HEAD'],25000);
+              report.base_compare=check.status===0?'GIT_TREE_MERGES_WITHOUT_CONFLICT':
+                check.status===1?'GIT_TREE_CONFLICT':'MERGE_TREE_NOT_VERIFIED';
+            }else report.base_compare='SHALLOW_ANCESTRY_UNAVAILABLE';
+          }else report.base_compare='PRODUCTION_FETCH_UNAVAILABLE';
+          // Run only the already trusted bounded test selector and never
+          // send source or any credential to an external model.
+          if(allowlisted.length){
+            const test=run(process.execPath,
+              ['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...allowlisted],130000);
+            report.local_tests=test.status===0?'FOCUSED_PASS':'FOCUSED_FAIL_OR_UNAVAILABLE';
+          }
+          fs.writeFileSync('legacy-prep.json',JSON.stringify(report,null,2));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            'candidate_status=prepared\n'+
+            'candidate_detail='+report.base_compare+'\n');
+          console.log('HH_LEGACY_PREPARED '+JSON.stringify(report));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: needs.claim.outputs.strategy == 'legacy'
+        with:
+          name: hh-legacy-preflight
+          path: legacy-prep.json
+          retention-days: 1
+          if-no-files-found: error
       - name: Apply trusted TypeScript type-only import codemods
+        if: needs.claim.outputs.strategy != 'legacy'
         env:
           REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
@@ -194,6 +254,7 @@ jobs:
         continue-on-error: true
         run: npx tsc --noEmit --incremental false
       - id: build_candidate
+        if: needs.claim.outputs.strategy != 'legacy'
         name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
         run: |
@@ -272,6 +333,7 @@ jobs:
             source_files:result.files.map(file=>file.path)}));
           NODE
       - uses: actions/upload-artifact@v4
+        if: needs.claim.outputs.strategy != 'legacy'
         with:
           name: hh-repair-candidate
           path: candidate.json
@@ -594,8 +656,10 @@ jobs:
       (
         ((needs.claim.result == 'failure' || needs.claim.result == 'cancelled') &&
          needs.claim.outputs.no_fix_finalized != 'success') ||
-        (needs.claim.outputs.strategy == 'lint' &&
-         needs.publish.outputs.finalization_status != 'success')
+        ((needs.claim.outputs.strategy == 'lint' &&
+          needs.publish.outputs.finalization_status != 'success') ||
+         (needs.claim.outputs.strategy == 'legacy' &&
+          needs.fix.result == 'success'))
       )
     runs-on: ubuntu-24.04
     timeout-minutes: 7

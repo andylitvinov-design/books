@@ -8,6 +8,7 @@ const PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const RULESET=26269892;
 const HOLDS=new Set([
+  // A successful preflight is not a source commit or a manual hold release.
   'hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed',
   'hh:direction-override:invalid'
 ]);
@@ -85,7 +86,8 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
   const identity={owner,repo,number,expectedHead,expectedBase};
   const first=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(!sameHead(first,identity))return deny('PR_HEAD_BASE_OR_STATE_CHANGED');
-  if(held(first))return deny('MANUAL_OR_OWNER_HOLD');
+  if(held(first))return deny(held(first)==='hh:repair-manual'?
+    'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'MANUAL_OR_OWNER_HOLD');
   if(!mergeable(first))return deny(first?.mergeable===false||first?.mergeable_state==='dirty'
     ?'MERGE_CONFLICT':'MERGEABILITY_NOT_READY');
   // Rules are read, not modified. GitHub is still the final merge authority.
@@ -119,7 +121,8 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
   // Last fresh read before GitHub's --match-head-commit atomic enforcement.
   const final=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(!sameHead(final,identity))return deny('PR_CHANGED_BEFORE_ARM');
-  if(held(final))return deny('HOLD_ADDED_BEFORE_ARM');
+  if(held(final))return deny(held(final)==='hh:repair-manual'?
+    'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'HOLD_ADDED_BEFORE_ARM');
   if(!mergeable(final))return deny('MERGEABILITY_CHANGED_BEFORE_ARM');
   return {ok:true,reason:'REVIEW_LEASE_CONFLICT_HEAD_VERIFIED'};
  }catch(error){

@@ -1,6 +1,6 @@
 'use strict';
 const CORE_WORKFLOW='HH PR core release gate';
-const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
+const WORKFLOWS={repair:'HH PR source Repair Worker',legacy:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
 const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:2,maxRepairWorkerRuns:2,
  maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
@@ -34,13 +34,15 @@ function admission(lane,capacity){
  // independently checked again immediately before dispatch.
  if(lane==='ci'&&capacity.inventoryConfidence==='BOUNDED_PARTIAL')
    return 'PARTIAL_CAPACITY_CI_BLOCKED';
- const workerLimit=lane==='repair'?LIMIT.maxRepairWorkerRuns:LIMIT.maxWorkerRuns;
+ const workerLimit=lane==='repair'?LIMIT.maxRepairWorkerRuns:
+  lane==='legacy'?1:LIMIT.maxWorkerRuns;
  if(capacity.activeWorker[worker]>=workerLimit)return 'WORKER_BUSY';
  // Optional CI retains the strict 60-run global stop (and its own 6-run
  // limit). Admit at most TWO independently leased exact-head Repair Workers into a modest
  // overflow window when most queued runs are unrelated/no-op wrappers.
  // Never infer a free runner or bypass a current Core result from this.
- const queueLimit=lane==='repair'?LIMIT.maxRepairQueuedRuns:LIMIT.maxQueuedRuns;
+ const queueLimit=['repair','legacy'].includes(lane)?
+  LIMIT.maxRepairQueuedRuns:LIMIT.maxQueuedRuns;
  if(capacity.activeRuns>=LIMIT.maxActiveRuns||capacity.queuedRuns>=queueLimit)
    return 'RUNNERS_SATURATED';
  if(lane==='repair'&&capacity.queuedRuns>=LIMIT.maxQueuedRuns&&

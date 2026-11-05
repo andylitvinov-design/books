@@ -7,6 +7,16 @@ const SHA=/^[0-9a-f]{40}$/i;
 const MARKER='<!-- HH_PR_TASK_V1 -->';
 const BLOCKED=new Set(['hh:hold','hh:repair-manual','hh:blocked','hh:worker-claimed']);
 function labels(pr){return new Set((pr?.labels||[]).map(x=>x.name||x).filter(x=>typeof x==='string'));}
+// Manual status blocks source writes, not bounded read-only legacy preparation.
+function validLegacyPrep(pr){
+ const ls=labels(pr);
+ return Boolean(pr&&pr.state==='open'&&!pr.draft&&
+  pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&
+  pr.user?.login===REPO.split('/')[0]&&SHA.test(pr.head?.sha||'')&&
+  ls.has('hh:repair-manual')&&
+  !['hh:hold','hh:blocked','hh:worker-claimed',
+    'hh:direction-override:invalid'].some(x=>ls.has(x)));
+}
 function validPR(pr){
  const ls=labels(pr);
  return Boolean(pr&&Number.isSafeInteger(pr.number)&&pr.number>0&&
@@ -17,6 +27,7 @@ function validPR(pr){
   !ls.has('hh:direction-override:invalid'));
 }
 function laneOf(pr){
+ if(validLegacyPrep(pr))return 'legacy';
  if(!validPR(pr))return null;
  const l=labels(pr);
  // Retain a recovery lane only while stale CI queue hint still exists.
@@ -33,12 +44,14 @@ function laneOf(pr){
 }
 function taskFor(pr,priority){
  const lane=laneOf(pr);if(!lane||priority?.conflicted)return null;
- const cause=lane==='repair'?'verified-source':lane==='ci'?'missing-core':'merge-conflict';
+ const cause=lane==='legacy'?'legacy-manual-preflight':
+  lane==='repair'?'verified-source':lane==='ci'?'missing-core':'merge-conflict';
  const key=crypto.createHash('sha256').update([REPO,pr.number,pr.head.sha,lane,cause].join(':')).digest('hex').slice(0,32);
  return {schema:'HH_PR_TASK_V1',task_key:key,pr_number:pr.number,
   head_sha:pr.head.sha,head_ref:pr.head.ref,base_ref:PROD,lane,
   reason_code:cause,priority:priority?.tier||'P5',direction:priority?.direction||'other',
-  next_action:lane==='ci'?'CI_BOOTSTRAP':lane==='conflict'?'CONFLICT_TRIAGE':'SOURCE_REPAIR'};
+  next_action:lane==='legacy'?'LEGACY_CLOUD_PREFLIGHT':
+   lane==='ci'?'CI_BOOTSTRAP':lane==='conflict'?'CONFLICT_TRIAGE':'SOURCE_REPAIR'};
 }
 function reservation(task,now,ownerRun){
  return {...task,state:'RESERVED',owner_run_id:String(ownerRun),
@@ -225,7 +238,7 @@ function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  // CLAIMED only establishes ownership; it is never evidence of a source write.
- if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE','FAILED',
+ if(matches.some(x=>['PREPARED','PUBLISHED','MANUAL','REPAIRED','DONE','FAILED',
   'REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))return 'ALREADY_HANDLED';
  if(matches.some(x=>['CI_CORE_CONFIRMED','CI_WAKE_UNDELIVERED'].includes(x.state)))
   return 'CI_WAKE_OUTCOME_RECORDED';
@@ -270,7 +283,9 @@ function reservationStatus(task,comments,now){
  }
  if(matches.length&&!released)return 'UNVERIFIED_HISTORY';
  // Never claim a source HEAD that a legacy Repair Worker already claimed.
- if((comments||[]).some(c=>String(c.body||'').includes('HH_PR_REPAIR_WORKER_V1 '+task.head_sha)))return 'ALREADY_HANDLED';
+ if(task.lane!=='legacy'&&
+  (comments||[]).some(c=>String(c.body||'').includes('HH_PR_REPAIR_WORKER_V1 '+task.head_sha)))
+  return 'ALREADY_HANDLED';
  const leaseStatus=externalOwnerLeaseStatus(comments,task.head_sha,now);
  if(leaseStatus!=='FREE')return leaseStatus;
  return 'FREE';
@@ -291,6 +306,6 @@ async function readCompleteIssueComments(github,owner,repo,issueNumber,limited){
  }
  return null;
 }
-module.exports={REPO,PROD,DEFAULT,SHA,MARKER,labels,validPR,laneOf,taskFor,
+module.exports={REPO,PROD,DEFAULT,SHA,MARKER,labels,validPR,validLegacyPrep,laneOf,taskFor,
  reservation,commentBody,parseRecords,reservationStatus,externalOwnerLeaseStatus,readCompleteIssueComments,
  DEFINITIVE_DISPATCH_DENIAL,trustedControlComment};
