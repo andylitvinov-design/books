@@ -87,7 +87,8 @@ test("existing video preview and export use identical overlays; frame mode reque
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
-  assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
+  // A changed approved music bed invalidates an exported voice/music film too.
+  assert.match(studio,/caption,affirmations,hypnoLight,\s*attachedAudio\?\.kind==="file"\?musicBed:null,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
   assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\s*,\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,currentFreeVideoPlan\?\.seed/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");

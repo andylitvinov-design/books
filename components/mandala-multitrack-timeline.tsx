@@ -40,6 +40,7 @@ type Props={
   shots:readonly TimelineShot[];
   captions:readonly TimelineTextClip[];
   audio:TimelineAudioClip|null;
+  musicBed?:TimelineAudioClip|null;
   playheadSeconds:number;
   playing:boolean;
   disabled:boolean;
@@ -96,7 +97,8 @@ const copy={
     endZoom:"Масштаб в конце",endPan:"Сдвиг в конце (X)",
     endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце",
     sourceTiming:"Монтаж исходника",sourcePhase:"Начальная позиция видео",
-    sourceSpeed:"Скорость видеокадров",sourceNote:"Длительность видео, звук и надписи не меняются."},
+    sourceSpeed:"Скорость видеокадров",sourceNote:"Длительность видео, звук и надписи не меняются.",
+    bedLane:"Фоновая музыка"},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -118,7 +120,8 @@ const copy={
     endZoom:"End zoom",endPan:"End horizontal pan",
     endPanY:"End vertical pan",endRotation:"End rotation",
     sourceTiming:"Source editing",sourcePhase:"Video starting position",
-    sourceSpeed:"Source playback speed",sourceNote:"Film length, soundtrack and captions stay unchanged."},
+    sourceSpeed:"Source playback speed",sourceNote:"Film length, soundtrack and captions stay unchanged.",
+    bedLane:"Music bed"},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -140,11 +143,12 @@ const copy={
     startZoom:"Zoom inicial",endZoom:"Zoom final",endPan:"Panorámica X final",
     endPanY:"Panorámica Y final",endRotation:"Rotación final",
     sourceTiming:"Editar origen",sourcePhase:"Posición inicial",
-    sourceSpeed:"Velocidad de la escena",sourceNote:"No cambia la duración, el audio ni los subtítulos."}
+    sourceSpeed:"Velocidad de la escena",sourceNote:"No cambia la duración, el audio ni los subtítulos.",
+    bedLane:"Música de fondo"}
 } as const;
 
 export function MandalaMultiTrackTimeline({
-  locale,seconds,shots,captions,audio,playheadSeconds,playing,disabled,
+  locale,seconds,shots,captions,audio,musicBed,playheadSeconds,playing,disabled,
   onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
   onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,onSetShotMotion,
   onSetShotSourceTiming,onOpenAudio,onChangeAudioStart
@@ -319,6 +323,19 @@ export function MandalaMultiTrackTimeline({
         <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>
       </div>
     </div>
+    {musicBed?<div className={css.trackRow} data-video-track="audio-bed">
+      <span className={css.laneName}><Music2 size={15} aria-hidden="true"/>{t.bedLane}</span>
+      <div className={css.lane}>
+        <div className={[css.block,css.audioBlock,css.musicBedBlock].join(" ")}
+          data-video-timeline-music-bed
+          style={{left:percent(musicBed.startSeconds),width:width(musicBed.durationSeconds)}}
+          title={musicBed.label} aria-label={musicBed.label}>
+          <span className={css.waveform} aria-hidden="true">▁▃▅▇▄▅▃▆▂▅▇▃</span>
+          <span>{musicBed.label}</span>
+        </div>
+        <span className={css.playhead} style={{left:percent(playheadSeconds)}} aria-hidden="true"/>
+      </div>
+    </div>:null}
     </div>
     </div>
     <div className={css.addBar}>
