@@ -129,17 +129,29 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+test("the published video therapy introduction uses the single original Studio hero and returns to Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('{/* Show the introductory film separately',start);
-  assert.ok(nav>0&&start>nav&&finish>start,
-    "tabs precede the Canvas; the informational YouTube overlay follows it");
-  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
-  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
-  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
+  const end=studio.indexOf('<aside className={videoStyles.heroRail}',start);
+  assert.ok(nav>0&&start>nav&&end>start,
+    "the workspace tabs precede the single Studio hero and its existing rail");
+  const hero=studio.slice(start,end);
+  assert.match(hero,/data-mandala-cinematic-canvas/,
+    "the native Canvas renderer remains in the same hero");
+  assert.match(hero,/showIntroHero \? <div className=\{videoStyles\.therapyHero\} data-video-therapy-info/,
+    "presentation is an intentional conditional state of that hero, not a second player");
+  assert.match(hero,/data-video-therapy-intro="ready"/,
+    "RU launch must require a deliberate Play gesture");
+  assert.match(hero,/data-video-therapy-intro="playing"/);
+  assert.match(hero,/data-video-therapy-intro-close/,
+    "Close returns from the presentation to the original editor");
+  assert.match(studio,/const introVideoId = locale==="ru" \? "P9Wvo3gEY6U" : null;/,
+    "EN and ES must never use the Russian spoken film");
+  assert.match(studio,/setIntroDismissed\(true\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.therapyIntroStandalone\}/,
+    "no standalone second presentation player");
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -278,4 +290,31 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
+});
+
+test("real WebKit voice hydration opens the compact film scenarios before clicking the advanced director",()=>{
+  const source = readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs", import.meta.url), "utf8");
+  const studio = readFileSync(new URL("../components/mandala-free-video-studio.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../components/mandala-video-mobile.module.css", import.meta.url), "utf8");
+  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
+  assert.match(studio,/data-video-continue-scenarios/);
+  assert.match(css,/\[data-video-scenario-open="false"\]/,
+    "the actual new compact design intentionally hides advanced scenarios");
+  const hydration = source.slice(source.indexOf("async function verifyWorkspaceHydration"),
+    source.indexOf("// Linux WebKit often lacks"));
+  const pieces = [
+    'await expect(openScenarios).toBeDisabled()',
+    'await expect(openScenarios).toBeEnabled()',
+    'await expect(openScenarios).toBeVisible()',
+    'await openScenarios.click()',
+    'await expect(studio).toHaveAttribute("data-video-scenario-open","true")',
+    'await expect(allStories).toBeVisible()',
+    'await allStories.click()',
+    'await expect(studio).toHaveAttribute("data-video-advanced-open","true")'
+  ];
+  for(const expected of pieces) assert.ok(hydration.includes(expected),expected);
+  assert.ok(hydration.indexOf('await openScenarios.click()')<
+    hydration.indexOf('await allStories.click()'),"user action must open the hidden director before interacting");
+  assert.doesNotMatch(hydration,/click\(\{\s*force:\s*true/,
+    "no forced click, no weakened physical WebKit E2E");
 });

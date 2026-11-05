@@ -39,10 +39,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
     const allStories=page.locator('[data-auto-video-all-scenes]');
+    const openScenarios=page.locator('[data-video-continue-scenarios]');
     await expect(allStories).toBeDisabled();
+    await expect(openScenarios).toBeDisabled();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    await expect(openScenarios).toBeEnabled();
+    await expect(openScenarios).toBeVisible();
+    // The owner-approved compact first screen intentionally hides the director.
+    // Use the real visitor's Continue gesture, never force-click a hidden control.
+    await openScenarios.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible();
     await expect(allStories).toBeEnabled();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
