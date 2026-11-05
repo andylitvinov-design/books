@@ -439,3 +439,19 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
  assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
 });
+
+test("macOS WebKit verification visits the real Montage Audio panel before checking music",()=>{
+ const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ const editor=script.indexOf('const editorTab=page.locator');
+ const audio=script.indexOf('const montageAudioTab=page.locator',editor);
+ const settings=script.indexOf('const montageSettings=page.locator',audio);
+ assert.ok(editor>0&&audio>editor&&settings>audio,"Audio must precede conditional music settings");
+ const journey=script.slice(audio,settings);
+ assert.match(journey,/\[data-video-montage-tab="audio"\]/);
+ assert.match(journey,/await montageAudioTab\.click\(\)/);
+ assert.match(journey,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"/);
+ const conditional=studio.indexOf('montagePanel==="audio" ? <div');
+ const music=studio.indexOf('data-video-montage-settings',conditional);
+ assert.ok(conditional>0&&music>conditional,"preserve rendered conditional Music settings");
+ assert.match(script,/await lengthButton\.click\(\)/,"retain actual music duration action");
+});

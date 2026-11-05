@@ -86,8 +86,8 @@ async function inspect(browserType,locale,width){
     id+" selected direction is always directly visible");
   assert.equal(await refined.isVisible(),false,
     id+" deeper taxonomy must not push videos down by default");
-  assert.equal(await page.locator("[data-mytube-duration-tabs] button").count(),3,
-    id+" All Shorts Study are visible");
+  assert.equal(await page.locator("[data-mytube-format-tabs] button").count(),3,
+    id+" three semantic learning shelves are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -147,9 +147,13 @@ async function inspect(browserType,locale,width){
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
   for(const mode of ["shorts","study","all"]){
-    const control=page.locator('[data-mytube-duration-mode="'+mode+'"]');
+    const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
+    if(locale==="en" && (mode==="shorts"||mode==="study")){
+      await page.waitForFunction(()=>Number(document.querySelector("[data-mytube-result-count]")?.textContent)>0,
+        null,{timeout:15000});
+    }
   }
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
