@@ -7,7 +7,7 @@ import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,l
 import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
-import {listMyTubeScenarioMotifs,listMyTubeStyles} from "@/lib/mandala/mytube-creative-choices.mjs";
+import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
@@ -208,11 +208,10 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         }
       }
 
-      // Never infer literal visual elements from general topic/title metadata.
-      if(mytubeMotifId!=="all"&&(item.mytubeVisualTagEvidence!=="explicit_human_review"||
-        !item.mytubeMotifIds?.includes(mytubeMotifId)))return false;
-      if(mytubeStyleId!=="all"&&(item.mytubeVisualTagEvidence!=="explicit_human_review"||
-        !item.mytubeStyleIds?.includes(mytubeStyleId)))return false;
+      if(!videoMatchesMyTubeVisualFilter(item,{
+        motifId:mytubeMotifId==="all"?null:mytubeMotifId,
+        styleId:mytubeStyleId==="all"?null:mytubeStyleId,
+      }))return false;
       if(period!=="all"){
         const date=item.publishedAt?Date.parse(item.publishedAt):NaN;
         if(!Number.isFinite(date))return false;
