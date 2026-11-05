@@ -1,0 +1,1053 @@
+"use client";
+
+import {useEffect,useMemo,useState} from "react";
+import {createPortal} from "react-dom";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
+import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
+import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
+import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
+import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
+import {listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {listMyTubeScenarioMotifs,listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
+import {listStateTransitionScenarios,getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
+import {motifDetails} from "@/lib/mandala/state-transition/state-catalog.mjs";
+import {StateTransitionSelector} from "./mandala-state-transition-selector";
+import {MandalaMeaningIdeaSelector,type ConfirmedMeaningHandoff} from "./mandala-meaning-idea-selector";
+import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
+import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
+import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
+import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
+import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
+import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
+import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import type {PublicLocale} from "@/lib/public-locales";
+import css from "./mandala-auto-video-director.module.css";
+
+// Explicit opt-in only; preserves the original Video Director until QA.
+// Safe public baseline: the owner explicitly requested release of Now → Want.
+// Set the existing build variable to "false" to roll back without affecting
+// editorial catalog records or existing saved videos.
+const STSE_ENABLED=process.env.NEXT_PUBLIC_HH_STSE_ENABLED!=="false";
+// A separate flag protects 256 unreviewed drafts from the public recommender.
+const STSE_DRAFTS_ENABLED=STSE_ENABLED&&process.env.NEXT_PUBLIC_HH_STSE_CONTENT_EXPANSION_ENABLED==="true";
+const MEANING_ENABLED=STSE_ENABLED&&process.env.NEXT_PUBLIC_HH_MEANING_IDEA_ENABLED==="true";
+
+type Preset={
+  id:string;theme:VideoTheme;
+  label:Record<PublicLocale,string>;clips:readonly string[];focusTags?:readonly string[];
+};
+type SceneMeta={id:string;theme:string;collection:string;status:string;media:string;
+  rightsReference:{kind:string};pace?:string;
+  video:string;poster?:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;
+  categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
+type Props={
+  locale:PublicLocale;goal:string;theme:VideoTheme;aspect:"landscape"|"portrait"|"square";presets:readonly Preset[];
+  scenes:readonly SceneMeta[];
+  disabled:boolean;activePresetId:string|null;
+  clipLabel:(id:string)=>string;
+  audioAttached?:boolean;audioTrackLabel?:string;onOpenAudio?:()=>void;
+  audioTrackId?:string|null;onPickAudio?:(id:string)=>void;
+  onGoalChange:(value:string)=>void;
+  onCategoryChange?:(theme:VideoTheme)=>void;
+  onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
+  onShowAll?:()=>void;
+  onInvalidate?:()=>void;
+  onApply:(presetId:string,durationSeconds:10|15|20|30|60,
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]})=>void|boolean;
+  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
+};
+const copy={
+ ru:{
+   title:"3. Выберите ваш сценарий (4 варианта)",
+   intro:"Четыре варианта из проверенных видео по вашей цели",
+   goalsTitle:"Что хотелось бы изменить?",
+   placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
+   suggest:"Подобрать сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
+   duration:"Длительность",variants:"Выберите один из сценариев",storyboard:"Четыре сцены выбранного сценария",topic:"Направление",edit:"Изменить детали (необязательно)",
+   stages:["Начало","Погружение","Развитие","Завершение"],
+   source:"4 настоящих MP4 · бесплатный монтаж",
+   accept:"Подтвердить сценарий",applied:"Сценарий выбран — нажмите «Создать видео».",
+   warning:"Новых персонажей и кадров здесь не генерируем: предложен символический монтаж.",
+   empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
+   safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
+   input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Создаём видео…",blocked:"Проверьте выбранный звук и разрешения для создания видео.",
+   selectedGoal:"Выбранная цель",
+   promptShotNotice:"Видеосцены подобраны отдельно под вашу цель из существующей библиотеки — без платной генерации.",
+   promptShotPartial:"Некоторые образы из запроса не найдены. Проверьте кадры перед подтверждением.",
+   melodyOptions:"Четыре мелодии для вашего сценария",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
+   captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
+   timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
+ },
+ en:{
+   title:"3. Choose your story (4 options)",
+   intro:"Four licensed film options based on your goal",
+   goalsTitle:"What would you like to change?",
+   placeholder:"For example: I want less anxiety and more calm",
+   suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
+   duration:"Duration",variants:"Choose a story",storyboard:"Four shots in the chosen story",topic:"Topic",edit:"Adjust details (optional)",
+   stages:["Opening","Arriving","Exploring","Closing"],
+   source:"4 genuine MP4 clips · free compilation",
+   accept:"Confirm this story",applied:"Story selected — choose Create video.",
+   warning:"New characters and footage are not generated here; this is a symbolic montage.",
+   empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
+   safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
+   input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Creating video…",blocked:"Check your selected audio and permissions before creating video.",
+   selectedGoal:"Selected goal",
+   promptShotNotice:"Each shot was selected from the existing film library for your goal; no paid generation.",
+   promptShotPartial:"Some requested imagery is unavailable. Please check each shot before confirming.",
+   melodyOptions:"Four melodies for your story",melodyHint:"Selected music is included in the video; you can change or mute it.",
+   captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
+   timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
+ },
+ es:{
+   title:"3. Elige tu historia (4 opciones)",
+   intro:"Cuatro películas con licencia adaptadas a tu objetivo",
+   goalsTitle:"¿Qué te gustaría cambiar?",
+   placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
+   suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
+   duration:"Duración",variants:"Elige una historia",storyboard:"Cuatro etapas del escenario elegida",topic:"Tema",edit:"Ajustar detalles (opcional)",
+   stages:["Inicio","Llegada","Desarrollo","Cierre"],
+   source:"4 clips MP4 reales · montaje gratuito",
+   accept:"Confirmar esta historia",applied:"Historia elegida; pulsa Crear vídeo.",
+   warning:"No se generan personajes ni escenas nuevas: es un montaje simbólico.",
+   empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
+   safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
+   input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Creando vídeo…",blocked:"Comprueba el audio y los permisos para crear el vídeo.",
+   selectedGoal:"Objetivo elegido",
+   promptShotNotice:"Cada escena se seleccionó de la biblioteca existente según tu objetivo, sin generación de pago.",
+   promptShotPartial:"Algunas imágenes solicitadas no están disponibles. Revisa las escenas antes de confirmar.",
+   melodyOptions:"Cuatro melodías para tu historia",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
+   captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
+   timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
+ }
+} as const;
+const videoGoalCategories=[
+ {id:"strength",theme:"energy",poster:"clear-morning",Icon:Zap,
+   label:{ru:"Сила",en:"Strength",es:"Fuerza"},
+   fullLabel:{ru:"Поддержка силы",en:"Strength & energy",es:"Fuerza y energía"}},
+ {id:"calm",theme:"health",poster:"gentle-falls",Icon:Leaf,
+   label:{ru:"Антистресс",en:"Calm",es:"Calma"},
+   fullLabel:{ru:"Антистресс и расслабление",en:"Stress relief & calm",es:"Calma y descanso"}},
+ {id:"love",theme:"relationships",poster:"partners",Icon:Heart,
+   label:{ru:"Любовь",en:"Love",es:"Amor"},
+   fullLabel:{ru:"Гармония и любовь",en:"Harmony & love",es:"Armonía y amor"}},
+ {id:"possibilities",theme:"money",poster:"wealth-sunrise",Icon:Coins,
+   label:{ru:"Деньги",en:"Money",es:"Dinero"},
+   fullLabel:{ru:"Деньги и возможности",en:"Money & opportunities",es:"Dinero y oportunidades"}},
+ {id:"growth",theme:"goals",poster:"clear-morning",Icon:Sparkles,
+   label:{ru:"Развитие",en:"Growth",es:"Crecer"},
+   fullLabel:{ru:"Развитие и новые возможности",en:"Personal growth",es:"Desarrollo personal"}}
+] as const;
+const popularTopicOrder={
+ strength:["confidence","connection","fresh-start","stability","calm","vitality"],
+ calm:["calm","vitality","confidence","fresh-start","connection","stability"],
+ love:["connection","fresh-start","confidence","calm","stability","vitality"],
+ possibilities:["stability","confidence","vitality","fresh-start","connection","calm"],
+ growth:["fresh-start","confidence","vitality","stability","connection","calm"]
+} as const;
+const popularTopicCopy={
+ ru:{confidence:"Обрести уверенность",connection:"Больше близости",
+   "fresh-start":"Начать новый этап",stability:"Опора в работе",
+   calm:"Спокойствие и сон",vitality:"Энергия и сила"},
+ en:{confidence:"Build confidence",connection:"More closeness",
+   "fresh-start":"Start a new chapter",stability:"Support at work",
+   calm:"Calm and sleep",vitality:"Energy and strength"},
+ es:{confidence:"Ganar confianza",connection:"Más cercanía",
+   "fresh-start":"Empezar nueva etapa",stability:"Apoyo en el trabajo",
+   calm:"Calma y sueño",vitality:"Energía y fuerza"}
+} as const;
+const legacyThemeForSubcategory:Record<string,VideoTheme>={
+ "purpose-development":"life","goal-achievement":"goals","money-abundance":"money","business-career":"money",
+ "loneliness-breakups":"relationships","finding-love":"relationships","couple-relationships":"relationships","intimacy-family":"relationships",
+ "stress-fatigue":"health","body-health":"health","vital-energy":"energy","confidence-calm":"goals",
+ "stress-burnout":"health","anxiety-fears":"health","psychological-trauma":"health","depression-apathy":"health",
+};
+const taxonomyCategoryForGoal={strength:"energy-confidence",calm:"stress-anxiety",love:"love-relationships",possibilities:"goals-money",growth:"goals-money"} as const;
+const allowedDurations=[10,15,20,30,60] as const;
+const allThemes=["energy","money","relationships","goals","life","health"] as const;
+const themeLabels={
+ ru:{energy:"Энергия",money:"Работа и деньги",relationships:"Отношения",goals:"Уверенность",life:"Развитие",health:"Спокойствие"},
+ en:{energy:"Energy",money:"Work and money",relationships:"Relationships",goals:"Confidence",life:"Growth",health:"Calm"},
+ es:{energy:"Energía",money:"Trabajo y dinero",relationships:"Relaciones",goals:"Confianza",life:"Desarrollo",health:"Calma"},
+} as const;
+
+export function MandalaAutoVideoDirector({
+ locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,onGoalChange,onCategoryChange,onContinue,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+}:Props){
+ const t=copy[locale];
+ // A licensed four-shot sample is visible before any click; no recording begins automatically.
+ const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(()=>
+   recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
+ const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>({goal,theme});
+ const [overrideId,setOverrideId]=useState<string|null>(null);
+ const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
+ const [selectedSubcategoryId,setSelectedSubcategoryId]=useState<string>("");
+ const [selectedTopicId,setSelectedTopicId]=useState<string>("");
+ const [selectedScenarioId,setSelectedScenarioId]=useState<string>("");
+ const [selectedPlotId,setSelectedPlotId]=useState<string>("");
+ const [selectedMotifId,setSelectedMotifId]=useState<string>("");
+ const [selectedStyleId,setSelectedStyleId]=useState<string>("");
+ const [symbolicPlotFallback,setSymbolicPlotFallback]=useState(false);
+ const [meaningHandoff,setMeaningHandoff]=useState<ConfirmedMeaningHandoff|null>(null);
+ const [includeMeaningCaption,setIncludeMeaningCaption]=useState(false);
+ const [plotData,setPlotData]=useState<{scenarioId:string;locale:PublicLocale;plots:MyTubePlot[]}|null>(null);
+ const [plotsLoading,setPlotsLoading]=useState(false);
+ const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const [selectedGoalIds,setSelectedGoalIds]=useState<string[]>([]);
+ const [subcategoriesOpen,setSubcategoriesOpen]=useState(true);
+ const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>(
+   ()=>videoGoalCategories.find(item=>item.theme===theme)?.id ?? "strength");
+ const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
+ const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
+ const [requestTarget,setRequestTarget]=useState<HTMLElement|null>(null);
+ const [profileTarget,setProfileTarget]=useState<HTMLElement|null>(null);
+ const [profileMode,setProfileMode]=useState<"short"|"extended"|null>(null);
+ const [profileCategory,setProfileCategory]=useState<keyof typeof popularTopicOrder>("strength");
+ const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
+ const [profileDetails,setProfileDetails]=useState("");
+ const [refineOpen,setRefineOpen]=useState(false);
+ const [refineText,setRefineText]=useState("");
+ const [timelineEdits,setTimelineEdits]=useState<{
+   presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
+ }|null>(null);
+ const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
+ useEffect(()=>{
+   setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
+   setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
+   setRequestTarget(document.querySelector<HTMLElement>("[data-video-request-prompt]"));
+   setProfileTarget(document.querySelector<HTMLElement>("[data-video-profile-picker]"));
+ },[]);
+ useEffect(()=>{
+   if(!selectedScenarioId){setPlotData(null);setPlotsLoading(false);return;}
+   if(STSE_DRAFTS_ENABLED&&/-s[5-8]$/.test(selectedScenarioId)){
+     setPlotData({scenarioId:selectedScenarioId,locale,plots:[]});setPlotsLoading(false);return;
+   }
+   let active=true;
+   setPlotsLoading(true);
+   // Download only the chosen category's plots, not the entire 1,024-plot catalog.
+   listMyTubePlots(selectedScenarioId,locale)
+     .then(plots=>{if(active){setPlotData({scenarioId:selectedScenarioId,locale,plots});setPlotsLoading(false);}})
+     .catch(()=>{if(active){setPlotData({scenarioId:selectedScenarioId,locale,plots:[]});setPlotsLoading(false);}});
+   return ()=>{active=false;};
+ },[selectedScenarioId,locale]);
+ const taxonomySubcategories=listMyTubeSubcategories(taxonomyCategoryForGoal[selectedCategoryId],locale);
+ const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(taxonomyCategoryForGoal[selectedCategoryId],selectedSubcategoryId,locale):[];
+ const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+ const taxonomyScenarios=selectedTopicId?(STSE_DRAFTS_ENABLED?
+   listStateTransitionScenarios(selectedTopicId,locale):listMyTubeScenarios(selectedTopicId,locale)):[];
+ const stseScenario=STSE_DRAFTS_ENABLED&&selectedScenarioId?
+   getStateTransitionScenario(selectedScenarioId,locale):null;
+ const suggestedVisualMotifs=selectedScenarioId?(stseScenario?.newExpansion?
+   stseScenario.motifIds.map((id:string)=>motifDetails(id,locale))
+     .filter((item):item is NonNullable<typeof item>=>Boolean(item))
+     .map((item,index)=>({...item,recommended:index===0,rank:index+1,status:"editorial_symbol_not_verified_footage"})):
+   listMyTubeScenarioMotifs(selectedScenarioId,locale)):[];
+ const availableVisualStyles=listMyTubeStyles(locale);
+ const taxonomyPlots=plotData?.scenarioId===selectedScenarioId&&plotData.locale===locale?plotData.plots:[];
+ const selectedTaxonomyPlot=taxonomyPlots.find(plot=>plot.id===selectedPlotId);
+ const selectedPlotMedia=useMemo(()=>selectedTaxonomyPlot?recommendMyTubePlotMontage({
+   plot:selectedTaxonomyPlot,scenes,excludedMotifs:proposal?.excludedMotifs||[],
+   motifId:selectedMotifId||null,styleId:selectedStyleId||null,targetAspect:aspect,
+ }):null,[selectedTaxonomyPlot,scenes,proposal?.excludedMotifs,selectedMotifId,selectedStyleId,aspect]);
+ const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
+ const fallbackSourcesValid=Boolean(selectedTaxonomyPlot&&!selectedPlotMedia?.hasFourApprovedSources&&
+   chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[],aspect)&&
+   !selectedMotifId&&!selectedStyleId);
+ const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
+ const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
+ const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
+ const sceneById=new Map(scenes.map(item=>[item.id,item]));
+ const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
+ const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
+ const length=seconds||proposal?.durationSeconds||30;
+ const activeTimelineEdits=chosen&&timelineEdits?.presetId===chosen.id&&
+   timelineEdits.totalSeconds===length?timelineEdits:null;
+ // One local licensed source is chosen for EACH storyboard beat, not merely
+ // the fixed four clips attached to the nearest old template. Switching to a
+ // different template is an intentional override; editing clips wins over both.
+ const promptShotPlan=useMemo(()=>recommendPromptShotPlan({
+   goal,theme:proposal?.theme||theme,scenes,
+   excludedMotifs:proposal?.excludedMotifs||[],baseClipIds:chosen?.clips||[],
+ }),[goal,theme,scenes,proposal,chosen]);
+ const personalizedShotIds=(!overrideId&&promptShotPlan.mode==="personalized"&&
+   promptShotPlan.canExport)?promptShotPlan.clipIds:null;
+ const stageClipIds=chosen?(activeTimelineEdits?.clipIds||personalizedShotIds||[...chosen.clips]):[];
+ const stageDurations=chosen?(activeTimelineEdits?.durations||
+   allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
+ const manualStageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
+ // Confirmed creative meaning is offered as an optional final caption.
+ // Client-authored captions, music, voice and physical footage always win.
+ const meaningCaption=meaningHandoff?.status==="editorial_only"&&includeMeaningCaption
+   ?meaningHandoff.ideaBrief?.ideaText||null:null;
+ const lastCaptionTaken=Boolean(manualStageCaptions[3]?.trim());
+ const meaningCaptionTooLong=Boolean(meaningCaption&&!lastCaptionTaken&&
+   Array.from(meaningCaption).length>STAGE_CAPTION_LIMIT);
+ const meaningCaptionUsed=Boolean(meaningCaption&&!lastCaptionTaken&&!meaningCaptionTooLong);
+ const stageCaptions=manualStageCaptions.map((caption,index)=>
+   index===3&&meaningCaptionUsed?meaningCaption!:caption);
+ const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,
+   stageCaptions,selectedMotifId,selectedStyleId,aspect,
+   meaningHandoff?.ideaBrief?.confirmedIdeaId||null,meaningHandoff?.ideaBrief?.ideaText||null]);
+ const topicMediaCoverage=selectedTopicId?recommendMyTubeTopicStoryClips({
+   topicId:selectedTopicId,scenarioId:selectedScenarioId||null,scenes,
+   excludedMotifs:proposal?.excludedMotifs||[],
+   motifId:selectedMotifId||null,styleId:selectedStyleId||null,targetAspect:aspect,
+ }):null;
+ const creativeMontageEvidence=evaluateMyTubeMontageCreativeMatch({
+   clipIds:stageClipIds,scenes,motifId:selectedMotifId||null,styleId:selectedStyleId||null,
+ });
+ const creativeSelectionUnavailable=Boolean(selectedScenarioId&&(selectedMotifId||selectedStyleId)&&
+   (!topicMediaCoverage?.dedicatedFourSceneReady||!activeTimelineEdits||!creativeMontageEvidence.ok));
+ const plotLacksApprovedClips=Boolean((STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
+   !selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
+ const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
+ const availableReplacements=stageClipIds.map(currentId=>
+   montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
+     excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
+     .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0))
+     .slice(0,6));
+ const editTimeline=(clipIds:readonly string[],durations:readonly number[],
+   captions:readonly string[]=stageCaptions)=>{
+   if(!chosen)return;
+   onInvalidate?.(); // An edited cut must not leave a stale downloadable movie.
+   setConfirmedTimelineKey(null);
+   setTimelineEdits({presetId:chosen.id,totalSeconds:length,
+     clipIds:[...clipIds],durations:[...durations],captions:[...captions]});
+ };
+ const shiftBoundary=(index:number,direction:-1|1)=>{
+   if(index<0||index>=3)return;
+   const next=shiftAdaptiveFilmBoundary(stageDurations,index,direction);
+   if(next.some((seconds,i)=>seconds!==stageDurations[i]))editTimeline(stageClipIds,next);
+ };
+ const swapScene=(index:number,direction:-1|1)=>{
+   const other=index+direction;
+   if(other<0||other>=stageClipIds.length)return;
+   const next=[...stageClipIds];
+   [next[index],next[other]]=[next[other],next[index]];
+   editTimeline(next,stageDurations);
+ };
+ const replaceStage=(index:number,nextId:string)=>{
+   if(!availableReplacements[index]?.some(scene=>scene.id===nextId))return;
+   const next=[...stageClipIds];next[index]=nextId;
+   editTimeline(next,stageDurations);
+ };
+ // A prompt changed in the other shared editor must not leave a stale confirmation.
+ const timelineForTopic=(topicId:string,scenarioId:string|null,
+   recommended:ReturnType<typeof recommendAutoVideo>,plot:MyTubePlot|null=null,
+   requestedSeconds?:10|15|20|30|60,presetOverride?:string,
+   motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null)=>{
+   if(!recommended.presetId)return null;
+   const clipIds=plot?recommendMyTubePlotMontage({
+     plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
+   }).clipIds:recommendMyTubeTopicStoryClips({
+     topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
+   }).clipIds;
+   if(clipIds.length!==4)return null;
+   const desiredSeconds=requestedSeconds||recommended.durationSeconds;
+   return {presetId:presetOverride||recommended.presetId,totalSeconds:desiredSeconds,
+     clipIds,durations:allocateAdaptiveFilmTimeline(desiredSeconds,clipIds)
+       .map(shot=>shot.durationSeconds),
+     captions:plot?plot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join("")):["","","",""]};
+ };
+ // A prompt changed in the other shared editor must not leave a stale confirmation.
+ const showProposal=Boolean(proposal&&proposalContext?.goal===goal&&
+   (proposalContext?.theme===theme||proposal.theme===theme||activePresetId===chosen?.id));
+ const alternatives=proposal?[proposal.presetId,...proposal.alternativePresetIds]
+   .filter((id):id is string=>Boolean(id)): [];
+ const choose=()=>{
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   setProposalContext({goal,theme});
+   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
+ };
+ const chooseReadyGoal=(goalId:string)=>{
+   const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
+   if(!item||disabled)return;
+   const nextIds=selectedGoalIds.includes(goalId)
+     ?selectedGoalIds.filter(id=>id!==goalId)
+     :selectedGoalIds.length<2?[...selectedGoalIds,goalId]:selectedGoalIds;
+   if(nextIds.length===selectedGoalIds.length&&nextIds.every((id,index)=>id===selectedGoalIds[index]))return;
+   const nextGoal=nextIds.map(id=>
+     popularTopicCopy[locale][id as keyof typeof popularTopicCopy.ru]||
+     AUTO_VIDEO_GOALS.find(entry=>entry.id===id)?.labels[locale]||id
+   ).join(" · ");
+   const selectedTheme=(videoGoalCategories.find(category=>category.id===selectedCategoryId)?.theme||theme) as VideoTheme;
+   onInvalidate?.();onGoalChange(nextGoal);
+   setSelectedGoalIds(nextIds);setSelectedGoalId(nextIds[0]||null);
+   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setProposalContext({goal:nextGoal,theme:selectedTheme});
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
+     fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
+ };
+ const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
+   if(disabled)return;
+   const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
+   onInvalidate?.();onCategoryChange?.(nextTheme);
+   if(nextGoal!==goal)onGoalChange(nextGoal);
+   setSelectedCategoryId(categoryId);setSubcategoriesOpen(true);
+   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setSelectedGoalId(null);setSelectedGoalIds([]);setOverrideId(null);setSeconds(null);
+   setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+ };
+ const chooseTaxonomySubcategory=(subcategoryId:string)=>{
+   const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
+   if(!item)return;
+   const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
+   onInvalidate?.();onCategoryChange?.(nextTheme);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   onGoalChange(item.label);
+   setProposalContext({goal:item.label,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:item.label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+ };
+ const chooseTaxonomyTopic=(topicId:string)=>{
+   const found=getMyTubeTopic(topicId);if(!found)return;
+   const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
+   const label=found.topic.label[locale];
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
+   const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes});
+   setSelectedTopicId(topicId);setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+   setProposalContext({goal:label,theme:nextTheme});
+   setProposal(recommended);
+   setTimelineEdits(timelineForTopic(topicId,null,recommended));
+ };
+ const chooseTaxonomyScenario=(scenarioId:string)=>{
+   const scenario=taxonomyScenarios.find(item=>item.id===scenarioId);if(!scenario)return;
+   setSelectedScenarioId(scenarioId);setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   const topicLabel=selectedTaxonomyTopic?.topic.label[locale]||goal;
+   const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
+   onInvalidate?.();onGoalChange(nextGoal);
+   const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic?.subcategory.id||""]||theme;
+   const recommended=recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes});
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommended);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+   setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,scenarioId,recommended):null);
+ };
+ const chooseTaxonomyPlot=(plotId:string)=>{
+   const plot=taxonomyPlots.find(item=>item.id===plotId);
+   if(!plot||plot.scenarioId!==selectedScenarioId||!selectedTaxonomyTopic)return;
+   setSelectedPlotId(plotId);setSymbolicPlotFallback(false);
+   const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic.subcategory.id]||theme;
+   const nextGoal=(selectedTaxonomyTopic.topic.label[locale]+" · "+plot.label).slice(0,160);
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
+   const recommended=recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes});
+   setProposalContext({goal:nextGoal,theme:nextTheme});setProposal(recommended);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+   // Scene matcher is scenario-level only; plot-level footage is NOT certified.
+   setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,selectedScenarioId,recommended,plot):null);
+ };
+ const chooseCreativeVisuals=(motifId:string,styleId:string)=>{
+   if(!selectedScenarioId||!selectedTopicId||!proposal)return;
+   onInvalidate?.();setConfirmedTimelineKey(null);setSymbolicPlotFallback(false);
+   setSelectedMotifId(motifId);setSelectedStyleId(styleId);
+   setTimelineEdits(timelineForTopic(selectedTopicId,selectedScenarioId,proposal,
+     selectedTaxonomyPlot||null,length as 10|15|20|30|60,chosen?.id,
+     motifId||null,styleId||null));
+ };
+ const enableSymbolicPlotFallback=()=>{
+   if(!selectedTaxonomyPlot||!chosen||!fallbackSourcesValid)return;
+   const clipIds=[...chosen.clips];
+   if(!validateMontageClips(clipIds,scenes,proposal?.excludedMotifs||[]))return;
+   const captions=selectedTaxonomyPlot.beats.map(text=>
+     Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""));
+   onInvalidate?.();setConfirmedTimelineKey(null);setSymbolicPlotFallback(true);
+   setTimelineEdits({presetId:chosen.id,totalSeconds:length,clipIds,
+     durations:allocateAdaptiveFilmTimeline(length,clipIds).map(shot=>shot.durationSeconds),
+     captions});
+ };
+ const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number],variant:"subcategory"|"popular"="subcategory")=>{
+   const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
+     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
+     item.id==="calm"?Moon:Star;
+   return <button key={item.id} type="button"
+       data-auto-video-goal={variant==="subcategory"?item.id:undefined}
+       data-auto-video-popular-topic={variant==="popular"?item.id:undefined}
+       aria-pressed={selectedGoalIds.includes(item.id)}
+       disabled={disabled||(!selectedGoalIds.includes(item.id)&&selectedGoalIds.length>=2)}
+       onClick={()=>chooseReadyGoal(item.id)}>
+       <Icon size={18} aria-hidden="true"/><span>{
+         popularTopicCopy[locale][item.id as keyof typeof popularTopicCopy.ru]||item.labels[locale]
+       }</span>
+     </button>;
+ };
+
+ // Device-only profile recommender. Never persists answers or contacts an external AI.
+ const applyProfile=()=>{
+   if(disabled)return;
+   const category=videoGoalCategories.find(item=>item.id===profileCategory);
+   if(!category)return;
+   const nextTheme=category.theme as VideoTheme;
+   const nextGoal=[category.fullLabel[locale],popularTopicCopy[locale][profileFocus],
+     ...(profileMode==="extended"&&profileDetails.trim()?[profileDetails.trim().slice(0,160)]:[])
+   ].join(" · ").slice(0,300);
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
+   setSelectedCategoryId(profileCategory);setSelectedGoalId(profileFocus);
+   setSelectedGoalIds([profileFocus]);setSubcategoriesOpen(true);
+   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:nextGoal,goalId:profileFocus,locale,
+     fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   setProfileMode(null);
+ };
+ const requestInput=<label className={css.topicInput} data-video-request-input>
+   <span className={css.srOnly}>{t.input}</span>
+   <input type="text" data-auto-video-input value={goal}
+     maxLength={160} disabled={disabled} placeholder={t.placeholder}
+     onChange={event=>{
+       const value=event.currentTarget.value;
+       onInvalidate?.();onGoalChange(value);
+       setProposalContext({goal:value,theme});
+       setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
+       setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
+       setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
+       setTimelineEdits(null);setConfirmedTimelineKey(null);
+     }}/>
+ </label>;
+ const profilePanel=<div className={css.profilePanel} data-video-profile-recommendation>
+   <div className={css.profileSummary}>
+     <span><Sparkles size={19} aria-hidden="true"/>
+       {locale==="ru"?"Совет по вашему профилю":locale==="es"?"Recomendación por perfil":"Profile-based suggestion"}
+     </span>
+     <div className={css.profileActions}>
+       <button type="button" data-video-profile-short aria-expanded={profileMode==="short"}
+         disabled={disabled} onClick={()=>setProfileMode(mode=>mode==="short"?null:"short")}>
+         {locale==="ru"?"Краткая · 1 мин":locale==="es"?"Breve · 1 min":"Quick · 1 min"}
+       </button>
+       <button type="button" data-video-profile-extended aria-expanded={profileMode==="extended"}
+         disabled={disabled} onClick={()=>setProfileMode(mode=>mode==="extended"?null:"extended")}>
+         {locale==="ru"?"Расширенная":locale==="es"?"Detallada":"Detailed"}
+       </button>
+     </div>
+   </div>
+   {profileMode?<div className={css.profileForm} data-video-profile-form role="group"
+     aria-label={locale==="ru"?"Анкета подбора видео":locale==="es"?"Cuestionario de vídeo":"Video questionnaire"}>
+     <label>{locale==="ru"?"Что сейчас важнее?":locale==="es"?"¿Qué te importa más?":"What matters most?"}
+       <select value={profileCategory} disabled={disabled}
+         onChange={event=>setProfileCategory(event.currentTarget.value as keyof typeof popularTopicOrder)}>
+         {videoGoalCategories.map(category=><option key={category.id} value={category.id}>
+           {category.fullLabel[locale]}</option>)}
+       </select>
+     </label>
+     <label>{locale==="ru"?"Что хочется почувствовать?":locale==="es"?"¿Cómo quieres sentirte?":"How would you like to feel?"}
+       <select value={profileFocus} disabled={disabled}
+         onChange={event=>setProfileFocus(event.currentTarget.value as keyof typeof popularTopicCopy.ru)}>
+         {popularTopicOrder.strength.map(id=><option key={id} value={id}>
+           {popularTopicCopy[locale][id]}</option>)}
+       </select>
+     </label>
+     {profileMode==="extended"?<label>
+       {locale==="ru"?"Какие образы и пожелания учесть?":locale==="es"?"¿Qué imágenes prefieres?":"Any imagery or preferences?"}
+       <textarea maxLength={160} rows={2} value={profileDetails} disabled={disabled}
+         onChange={event=>setProfileDetails(event.currentTarget.value)}
+         placeholder={locale==="ru"?"Например: природа, вода, мягкое движение":locale==="es"?"Naturaleza y agua":"Nature, water, gentle movement"}/>
+     </label>:null}
+     <button type="button" className={css.profileSubmit} data-video-profile-apply
+       disabled={disabled} onClick={applyProfile}>
+       {locale==="ru"?"Подобрать 4 сценария":locale==="es"?"Sugerir 4 historias":"Suggest 4 stories"}
+       <ArrowRight size={17} aria-hidden="true"/>
+     </button>
+     <small>{locale==="ru"?"Ответы остаются на этой странице. Подбор из существующих видео без передачи данных внешнему ИИ.":
+       locale==="es"?"Respuestas locales, sin enviarlas a una IA externa.":
+       "Answers stay on this page; no external AI transfer."}</small>
+   </div>:null}
+ </div>;
+ const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
+   <div className={css.goalChoices} role="group" aria-label={
+     locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
+     {videoGoalCategories.map(item=><button type="button" key={item.id}
+       data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
+       aria-label={item.fullLabel[locale]}
+              aria-pressed={selectedCategoryId===item.id} disabled={disabled}
+       onClick={()=>chooseCategory(item.theme,item.id)}>
+       <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
+       <strong>{item.label[locale]}</strong>
+       {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+         <Check size={15} strokeWidth={3}/></span>:null}
+     </button>)}
+   </div>
+   {subcategoriesOpen?<div className={css.subcategories} data-auto-video-subcategories>
+     <p className={css.popularHeading}>{locale==="ru"?"Подкатегории · выберите до двух":
+       locale==="es"?"Subcategorías · elige hasta dos":"Subcategories · choose up to two"}</p>
+     <div className={css.topicChoices} role="group" aria-label={
+       locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
+       {popularTopicOrder[selectedCategoryId].map(id=>{
+         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
+         return item?renderTopic(item):null;
+       })}
+     </div>
+   </div>:null}
+ </div>;
+ const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
+   <div className={css.topicHead}>
+     <h3><Leaf size={19} aria-hidden="true"/>
+       {locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}</h3>
+     <button type="button" data-auto-video-clarify
+       disabled={disabled} aria-expanded={onClarify?helpOpen:refineOpen}
+       onClick={()=>{
+         if(onClarify){onClarify();return;}
+         setRefineOpen(open=>!open);
+       }}>
+       <Sparkles size={16} aria-hidden="true"/>
+       <span>{locale==="ru"?"Я помогу: разберём проблему и определим запрос. Free.":
+         locale==="es"?"Te ayudo a aclarar tu petición. Gratis.":
+         "I'll help clarify your situation and goal. Free."}</span>
+       <ArrowRight size={16} aria-hidden="true"/>
+     </button>
+   </div>
+   <p className={css.popularHeading}>
+     {locale==="ru"?"Подкатегория — выберите одну из четырёх":
+       locale==="es"?"Subcategoría — elige una de cuatro":"Subcategory — choose one of four"}
+   </p>
+   <div className={css.topicChoices} role="group" aria-label={t.goalsTitle} data-mytube-subcategories>
+     {taxonomySubcategories.map(item=><button key={item.id} type="button" data-auto-video-subcategory={item.id}
+       aria-pressed={selectedSubcategoryId===item.id} disabled={disabled}
+       title={item.chooseWhen} onClick={()=>chooseTaxonomySubcategory(item.id)}>
+       <span>{item.label}</span>
+     </button>)}
+   </div>
+   {selectedSubcategoryId?<>
+     <p className={css.popularHeading}>{locale==="ru"?"Тема — выберите конкретный запрос":locale==="es"?"Tema — elige una necesidad concreta":"Theme — choose a specific need"}</p>
+     <div className={css.topicChoices} role="group" aria-label={locale==="ru"?"Темы подкатегории":"Subcategory themes"} data-auto-video-themes>
+       {taxonomyTopics.map(item=><button key={item.id} type="button" data-auto-video-topic={item.id}
+         aria-pressed={selectedTopicId===item.id} disabled={disabled} title={item.searchTerms.join(" · ")}
+         onClick={()=>chooseTaxonomyTopic(item.id)}><span>{item.label}</span></button>)}
+     </div>
+   </>:null}
+   {MEANING_ENABLED&&selectedTopicId?<MandalaMeaningIdeaSelector
+     key={selectedTopicId} locale={locale} topicId={selectedTopicId} disabled={disabled}
+     selectedScenarioId={selectedScenarioId}
+     onConfirmHandoff={(next,caption)=>{
+       setMeaningHandoff(next);setIncludeMeaningCaption(caption);setConfirmedTimelineKey(null);
+     }}
+     onChooseScenario={chooseTaxonomyScenario}/>:null}
+   {STSE_ENABLED&&!MEANING_ENABLED&&selectedTopicId?<StateTransitionSelector
+     key={selectedTopicId} locale={locale} topicId={selectedTopicId} disabled={disabled}
+     allowEditorialDrafts={STSE_DRAFTS_ENABLED}
+     selectedScenarioId={selectedScenarioId} onChooseScenario={chooseTaxonomyScenario}/>:null}
+   {selectedTopicId&&taxonomyScenarios.length>=4?<div className={css.storyChoices} data-mytube-scenario-concepts>
+     <p className={css.variantsTitle}>{STSE_DRAFTS_ENABLED?
+       (locale==="ru"?"Восемь сюжетов: четыре исходных и четыре новые редакционные концепции":
+         locale==="es"?"Ocho historias: cuatro originales y cuatro conceptos nuevos":
+           "Eight stories: four existing and four new editorial concepts"):
+       (locale==="ru"?"Четыре сценария для выбранной темы":locale==="es"?"Cuatro escenarios para este tema":"Four scenarios for this topic")}</p>
+     {taxonomyScenarios.map((scenario,index)=>{
+       const coverage=recommendMyTubeTopicStoryClips({topicId:selectedTopicId,
+         scenarioId:scenario.id,scenes,excludedMotifs:proposal?.excludedMotifs||[],targetAspect:aspect});
+       return <button key={scenario.id} type="button"
+       data-mytube-scenario={scenario.id} aria-pressed={selectedScenarioId===scenario.id}
+       disabled={disabled} onClick={()=>chooseTaxonomyScenario(scenario.id)}>
+       <span className={css.storyNumber}>{index+1}. {selectedScenarioId===scenario.id?<Check size={15} aria-hidden="true"/>:null}</span>
+       <strong>{scenario.label}</strong>
+       <small>{scenario.creativeBrief}</small>
+       <small data-scenario-source-coverage={coverage.candidateCount}>
+         {locale==="ru"?`Подходящих видеофрагментов: ${coverage.candidateCount}; для монтажа нужно минимум 4`:
+          locale==="es"?`Clips relacionados: ${coverage.candidateCount}; se necesitan al menos 4`:
+          `Matching clips: ${coverage.candidateCount}; at least 4 required`}
+       </small>
+       <small>{locale==="ru"?"Концепция сценария; готовый видеоряд проверяется отдельно.":locale==="es"?"Concepto del escenario; el material de vídeo se verifica por separado.":"Scenario concept; matching footage is verified separately."}</small>
+     </button>;
+     })}
+   </div>:null}
+   {selectedScenarioId&&taxonomyScenarios.some(item=>item.id===selectedScenarioId)?
+     <div className={css.notice} data-mytube-concept-storyboard>
+       <strong>{locale==="ru"?"Четыре смысловых этапа сценария":locale==="es"?"Cuatro etapas narrativas del escenario":"Four narrative beats of the scenario"}</strong>
+       <ol>{taxonomyScenarios.find(item=>item.id===selectedScenarioId)?.sceneOutline.map((beat,index)=>
+         <li key={index}>{index+1}. {beat}</li>)}</ol>
+       <small>{locale==="ru"?"Это творческая концепция; перед экспортом проверьте реальные кадры ниже.":
+         locale==="es"?"Este es un concepto creativo; revisa los clips reales antes de exportar.":
+         "This is a creative concept; review the actual clips below before export."}</small>
+     </div>:null}
+   {selectedScenarioId&&suggestedVisualMotifs.length===5?<div className={css.notice} data-mytube-creative-choices>
+     <strong>{locale==="ru"?"Мотив — главный образ сценария":locale==="es"?"Motivo — imagen central de la historia":"Motif — central story image"}</strong>
+     <p>{locale==="ru"?"Пять образов, подобранных по смыслу. Выберите один или оставьте автоматический подбор.":locale==="es"?"Cinco imágenes sugeridas; elige una o deja la selección automática.":"Five story-related images; choose one or keep automatic selection."}</p>
+     <div className={css.topicChoices} role="group" data-mytube-motif-choices
+       aria-label={locale==="ru"?"Мотив сценария":locale==="es"?"Motivo":"Story motif"}>
+       <button type="button" disabled={disabled} data-mytube-motif="auto"
+         aria-pressed={!selectedMotifId} onClick={()=>chooseCreativeVisuals("",selectedStyleId)}>
+         {locale==="ru"?"Авто":locale==="es"?"Automático":"Auto"}
+       </button>
+       {suggestedVisualMotifs.map(motif=><button type="button" key={motif.id}
+         data-mytube-motif={motif.id} aria-pressed={selectedMotifId===motif.id}
+         title={motif.meaning} disabled={disabled}
+         onClick={()=>chooseCreativeVisuals(motif.id===selectedMotifId?"":motif.id,selectedStyleId)}>
+         {motif.label}
+       </button>)}
+     </div>
+     <details data-mytube-style-filter className={css.storyboardDisclosure}>
+       <summary>{locale==="ru"?"Визуальный стиль (необязательно)":locale==="es"?"Estilo visual (opcional)":"Visual style (optional)"}{selectedStyleId?" · "+availableVisualStyles.find(item=>item.id===selectedStyleId)?.label:""}</summary>
+       <div className={css.topicChoices} role="group" data-mytube-style-choices
+         aria-label={locale==="ru"?"Стиль видео":locale==="es"?"Estilo visual":"Video style"}>
+         <button type="button" data-mytube-style="auto" aria-pressed={!selectedStyleId}
+           disabled={disabled} onClick={()=>chooseCreativeVisuals(selectedMotifId,"")}>
+           {locale==="ru"?"Авто":locale==="es"?"Automático":"Auto"}
+         </button>
+         {availableVisualStyles.map(style=><button key={style.id} type="button"
+           data-mytube-style={style.id} aria-pressed={selectedStyleId===style.id}
+           title={style.description} disabled={disabled}
+           onClick={()=>chooseCreativeVisuals(selectedMotifId,style.id===selectedStyleId?"":style.id)}>
+           {style.label}
+         </button>)}
+       </div>
+     </details>
+     {selectedMotifId||selectedStyleId?<p role="status" data-mytube-creative-availability
+       data-ready={creativeSelectionUnavailable?"false":"true"}>
+       {creativeSelectionUnavailable?
+         (locale==="ru"?"В библиотеке пока нет четырёх разрешённых сцен с подходящими тегами (мотив минимум в одной сцене, стиль минимум в трёх). Выберите другой образ/стиль или «Авто».":locale==="es"?"No hay suficientes clips aprobados para este motivo y estilo. Prueba otra opción o Automático.":"Not enough approved clips tagged for this motif/style. Choose another option or Auto."):
+         (locale==="ru"?"Подобраны тематические кандидаты по тегам. Проверьте, что мотив действительно виден в кадрах перед экспортом.":locale==="es"?"Coinciden las etiquetas; comprueba las imágenes antes de exportar.":"Catalog tags match; visually review the images before export.")}
+     </p>:null}
+   </div>:null}
+   {selectedScenarioId&&plotsLoading?<p className={css.notice} data-mytube-plots-loading aria-live="polite">
+     {locale==="ru"?"Открываем четыре сюжета сценария…":locale==="es"?"Cargando cuatro tramas del escenario…":"Loading four plots for this scenario…"}
+   </p>:null}
+   {selectedScenarioId&&!plotsLoading&&taxonomyPlots.length===4?
+     <div className={css.storyChoices} role="group" data-mytube-plot-choices
+       aria-label={locale==="ru"?"Четыре разных сюжета выбранного сценария":locale==="es"?"Cuatro tramas diferentes":"Four distinct plots"}>
+       <p className={css.variantsTitle}>
+         {locale==="ru"?"Сюжеты: выберите одну из четырёх самостоятельных историй":
+          locale==="es"?"Tramas: elige una de las cuatro historias":"Plots: choose one of four separate stories"}
+       </p>
+       {taxonomyPlots.map((plot,index)=><button type="button" key={plot.id} data-mytube-plot={plot.id}
+         aria-pressed={selectedPlotId===plot.id} disabled={disabled}
+         onClick={()=>chooseTaxonomyPlot(plot.id)}>
+         <span className={css.storyNumber}>{index+1}. {selectedPlotId===plot.id?<Check size={15} aria-hidden="true"/>:null}</span>
+         <strong>{plot.label}</strong>
+         <small>{plot.modeLabel}</small>
+         <small>{plot.synopsis}</small>
+       </button>)}
+     </div>:null}
+   {STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion?<p role="status" className={css.warning} data-stse-media-unbound>
+     {locale==="ru"?"Новый сценарий ожидает редакционной проверки и привязки реальных разрешённых видеосцен. Экспорт пока отключён.":
+       locale==="es"?"Este nuevo guion espera revisión editorial y vídeo autorizado. La exportación está desactivada.":
+         "This new script awaits editorial review and licensed footage binding. Export is disabled."}
+   </p>:null}
+   {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==4?
+     <p className={css.warning} data-mytube-plots-unavailable>
+       {locale==="ru"?"Четыре сюжета пока недоступны; сценарий остаётся без выбранного сюжета.":
+        locale==="es"?"Las cuatro tramas no están disponibles; no se ha elegido ninguna.":
+        "Four plots are unavailable; no plot has been selected."}
+     </p>:null}
+   {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
+     role="status" data-mytube-plot-media-status
+      data-mytube-plot-media-origin={selectedPlotMedia?.hasOriginalAbstractMotion?"includes-original-abstract-animation":"filmed-or-general"}
+     data-ready={selectedPlotMedia?.hasFourApprovedSources||fallbackEnabled?"true":"false"}
+     data-plot-media-mode={selectedPlotMedia?.hasFourApprovedSources?"topic-symbolic":
+       fallbackEnabled?"caption-symbolic":"insufficient"}>
+     {selectedPlotMedia?.hasFourApprovedSources
+       ?(locale==="ru"?`Для символического предпросмотра подобраны 4 проверенных MP4 из ${selectedPlotMedia.candidateCount} тематических кандидатов. ${selectedPlotMedia.hasOriginalAbstractMotion?"Включена оригинальная абстрактная анимация. ":""}События истории в кадрах не подтверждены.`:
+         locale==="es"?`Seleccionados 4 MP4 aprobados entre ${selectedPlotMedia.candidateCount} candidatos temáticos. ${selectedPlotMedia.hasOriginalAbstractMotion?"Incluyen animación abstracta original. ":""}Interpretación simbólica, no escenas exactas verificadas.`:
+         `4 approved MP4s selected from ${selectedPlotMedia.candidateCount} topic candidates. ${selectedPlotMedia.hasOriginalAbstractMotion?"Includes original abstract animation. ":""}Symbolic preview, not verified plot actions.`)
+       :fallbackEnabled?(locale==="ru"?
+          "Вы выбрали символический видеоряд с четырьмя сюжетными титрами. Фоновое видео лицензировано, но не изображает действия сюжета буквально.":
+          locale==="es"?"Elegiste un vídeo simbólico con cuatro subtítulos narrativos. Los clips están aprobados, pero no representan literalmente la trama.":
+          "You chose a symbolic licensed montage with four plot captions. Clips do not literally depict the story events.")
+       :(locale==="ru"?`Недостаточно проверенных тематических MP4: ${selectedPlotMedia?.candidateCount??0} из 4. Экспорт выбранного сюжета недоступен; можно снять его выбор и сделать общий символический ролик.`:
+         locale==="es"?`Solo hay ${selectedPlotMedia?.candidateCount??0} de 4 clips aprobados. Esta trama no se puede exportar; quita su selección para un vídeo simbólico general.`:
+         `Only ${selectedPlotMedia?.candidateCount??0} of 4 approved topic clips. Plot export is unavailable; deselect it for a general symbolic film.`)}
+     {!selectedPlotMedia?.hasFourApprovedSources?<button type="button"
+       data-mytube-symbolic-caption-fallback disabled={disabled||!fallbackSourcesValid}
+       aria-pressed={fallbackEnabled} onClick={enableSymbolicPlotFallback}>
+       {locale==="ru"?"Использовать символические кадры и титры сюжета":
+        locale==="es"?"Usar clips simbólicos con subtítulos de la trama":
+        "Use symbolic clips and plot captions"}
+     </button>:null}
+     <button type="button" data-mytube-clear-plot disabled={disabled}
+       onClick={()=>chooseTaxonomyScenario(selectedScenarioId)}>
+       {locale==="ru"?"Снять выбор сюжета":locale==="es"?"Quitar selección de trama":"Deselect plot"}
+     </button>
+   </div>:null}
+   {selectedTaxonomyPlot?<div className={css.notice} data-mytube-selected-plot-outline>
+     <strong>{locale==="ru"?"Сюжет и четыре события":locale==="es"?"Trama y cuatro acontecimientos":"Selected plot and four events"}: {selectedTaxonomyPlot.label}</strong>
+     <p>{selectedTaxonomyPlot.synopsis}</p>
+     <ol>{selectedTaxonomyPlot.beats.map((beat,index)=><li key={index}>{index+1}. {beat}</li>)}</ol>
+     <small>{locale==="ru"?"Вектор изменения: ":locale==="es"?"Vector de cambio: ":"Transformation vector: "}{selectedTaxonomyPlot.transformationIdea}</small>
+     <small data-mytube-plot-media-disclaimer>
+       {locale==="ru"?"Это сюжетная идея, а не готовое видео. MP4 подбираются по теме, сценарию и визуальным подсказкам сюжета; сами события в кадрах не подтверждены.":
+        locale==="es"?"Es una idea creativa, no un vídeo terminado. Los MP4 se eligen por tema, escenario y pistas visuales; los acontecimientos exactos no están verificados.":
+        "This is an editorial plot, not finished footage. Approved MP4s are ranked by topic, scenario and visual cues; the events themselves are not verified."}
+     </small>
+   </div>:null}
+   {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
+     <label htmlFor="auto-video-refine">{t.refine}</label>
+     <textarea id="auto-video-refine" rows={2} maxLength={120}
+       disabled={disabled} value={refineText} onChange={event=>setRefineText(event.currentTarget.value)}/>
+     <button type="button" disabled={disabled||!refineText.trim()} onClick={()=>{
+       const next=[goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160);
+       onInvalidate?.();onGoalChange(next);
+       setProposal(recommendAutoVideo({goal:next,locale,fallbackTheme:theme,presets,scenes}));
+       setProposalContext({goal:next,theme});
+       setSelectedTopicId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);setOverrideId(null);setRefineOpen(false);setRefineText("");
+       setTimelineEdits(null);setConfirmedTimelineKey(null);
+     }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
+   </div>:null}
+   <div className={css.popularRecommendations} data-auto-video-popular-topics>
+     <p className={css.popularHeading}>{locale==="ru"?"Популярные темы — выберите или напишите свою":
+       locale==="es"?"Temas populares: elige o escribe el tuyo":
+       "Popular themes — choose one or write your own"}</p>
+     <div className={css.popularTopics} role="group" aria-label={
+       locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular themes"}>
+       {popularTopicOrder.strength.map(id=>{
+         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
+         return item?renderTopic(item,"popular"):null;
+       })}
+     </div>
+   </div>
+ </div>;
+ return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
+   <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
+     <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
+     {onShowAll?<button type="button" className={css.allScenes}
+       data-auto-video-all-scenes disabled={disabled} onClick={onShowAll}>
+       {locale==="ru"?"Все сценарии":locale==="es"?"Todas las escenas":"All stories"}
+       <ArrowRight size={16} aria-hidden="true"/>
+     </button>:null}
+   </div>
+   {requestTarget?createPortal(requestInput,requestTarget):requestInput}
+   {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
+   {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
+   {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
+   {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
+     {!goal.trim()?<p className={css.demoNote} data-auto-video-preview-example>
+       {locale==="ru"?"Пример сценария · выберите тему или напишите цель":locale==="es"
+         ?"Historia de ejemplo · elige o escribe tu objetivo":"Sample storyboard · choose or write your goal"}
+     </p>:null}
+     {chosen?<div>
+       <h4>{t.reason}: {chosen.label[locale]}</h4>
+       <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
+       <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
+       {topicMediaCoverage?<p className={css.notice} data-auto-video-topic-coverage
+         data-coverage-ready={topicMediaCoverage.dedicatedFourSceneReady?"true":"false"}>
+         {topicMediaCoverage.dedicatedFourSceneReady?
+           (locale==="ru"?"Подобраны 4 проверенных видеофрагмента по выбранной теме (в том числе возможна абстрактная анимация). Сюжет и монтаж ещё требуют проверки.":
+             locale==="es"?"4 clips verificados seleccionados por tema (pueden incluir animación abstracta). Falta revisar la narrativa y el montaje.":
+               "4 verified clips selected for this topic (may include abstract animation). Story and edit still need review."):
+           (locale==="ru"?`По теме найдено ${topicMediaCoverage.candidateCount} из 4 нужных видеофрагментов. Показан общий символический монтаж, а не готовый тематический сюжет.`:
+             locale==="es"?`Encontrados ${topicMediaCoverage.candidateCount} de 4 clips. Vista previa de montaje simbólico general, no un guion temático terminado.`:
+               `${topicMediaCoverage.candidateCount} of 4 topic-matched clips. Showing general symbolic montage, not a finished topic-specific video.`)}
+       </p>:null}
+       {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
+       {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
+       {personalizedShotIds?<p className={css.meta} data-auto-video-per-shot>{t.promptShotNotice}
+         {promptShotPlan.missingSignals.length?<span className={css.warning}> {t.promptShotPartial}</span>:null}
+       </p>:null}
+       <div className={css.storyChoices} role="group" aria-label={t.variants} data-auto-video-story-options>
+         {alternatives.map((id,index)=>{
+           const option=presets.find(item=>item.id===id);
+           return option?<button key={id} type="button" data-auto-video-option={id}
+             aria-pressed={chosen.id===id} disabled={disabled}
+             onClick={()=>{if(chosen?.id!==id)onInvalidate?.();
+               setOverrideId(id===proposal.presetId?null:id);
+               const nextPreset=presets.find(item=>item.id===id);
+               const fallbackClips=fallbackEnabled&&selectedTaxonomyPlot&&nextPreset&&
+                 validateMontageClips([...nextPreset.clips],scenes,proposal.excludedMotifs);
+               setTimelineEdits(fallbackClips&&nextPreset&&selectedTaxonomyPlot?
+                 {presetId:id,totalSeconds:length,clipIds:[...nextPreset.clips],
+                  durations:allocateAdaptiveFilmTimeline(length,nextPreset.clips).map(shot=>shot.durationSeconds),
+                  captions:selectedTaxonomyPlot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""))}:
+                 selectedTaxonomyPlot&&selectedTopicId&&!fallbackEnabled?
+                 timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,
+                   length as 10|15|20|30|60,id):null);
+               setConfirmedTimelineKey(null);}}>
+             {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
+               alt="" loading="lazy" className={css.storyPoster}/>:null}
+             <span className={css.storyNumber}>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
+             <strong>{option.label[locale]}</strong>
+             <small>{sceneById.get(option.clips[0])?.description[locale]||""}</small>
+           </button>:null;
+         })}
+       </div>
+       <details className={css.storyboardDisclosure} data-auto-video-storyboard-details>
+         <summary>{locale==="ru"?"Предпросмотр 4 кадров и настройки монтажа":
+           locale==="es"?"Ver las 4 escenas y editar":"Preview 4 shots and edit"}</summary>
+       <p className={css.variantsTitle}>{t.storyboard}</p>
+       <ol className={css.shots} data-auto-video-storyboard>
+         {stageClipIds.map((clip,index)=>{
+           const scene=sceneById.get(clip);
+           return <li key={clip}>
+             {scenePoster(clip)?<img src={scenePoster(clip)!} alt="" loading="lazy" className={css.shotPoster}/>:null}
+             <b>{index+1}. {t.stages[index]} · {stageDurations[index]} s</b><span>{sceneLabel(clip)}</span>
+             {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
+             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
+           </li>;
+         })}
+       </ol>
+       {melodyOptions.length===4?<div className={css.melodyPanel} data-auto-video-melody-options>
+         <p className={css.variantsTitle}>{t.melodyOptions}</p>
+         <div className={css.melodyChoices} role="group" aria-label={t.melodyOptions}>
+           {melodyOptions.map(track=><button key={track.id} type="button" data-auto-video-melody={track.id}
+             disabled={disabled||!onPickAudio} aria-pressed={audioTrackId===track.id}
+             title={track.detail[locale]} onClick={()=>onPickAudio?.(track.id)}>
+             {audioTrackId===track.id?<Check size={14} aria-hidden="true"/>:null}{track.name[locale]}
+           </button>)}
+         </div>
+         <p className={css.melodyHint}>{t.melodyHint}</p>
+       </div>:null}
+       <div className={css.timelineTrack} data-auto-video-timeline-preview
+         role="list" aria-label={t.timeline}>
+         {stageClipIds.map((clip,index)=><div key={clip} role="listitem"
+           className={css.timelineSegment} style={{flexGrow:stageDurations[index]}}
+           title={sceneLabel(clip)+" · "+stageDurations[index]+" s"}>
+           <strong>{index+1}</strong><span>{stageDurations[index]} s</span>
+         </div>)}
+       </div>
+       <details className={css.montageDetails} data-auto-video-montage>
+         <summary>{t.openMontage}</summary>
+         <p className={css.notice}>{t.montageHelp}</p>
+         <div className={css.montageRows}>
+           {stageClipIds.map((clip,index)=><div className={css.montageRow} key={clip}>
+             <span className={css.montageName}>
+               <strong>{index+1}. {t.stages[index]} · {stageDurations[index]} s</strong>
+               <small>{sceneLabel(clip)}</small>
+             </span>
+             <label className={css.montageReplace}>
+               <span>{t.replaceScene}</span>
+               <select data-auto-video-stage-replace={index} value={clip}
+                 disabled={disabled||availableReplacements[index].length===0}
+                 onChange={event=>replaceStage(index,event.currentTarget.value)}>
+                 <option value={clip}>{sceneLabel(clip)}</option>
+                 {availableReplacements[index].map(item=>
+                   <option key={item.id} value={item.id}>{sceneLabel(item.id)}</option>)}
+               </select>
+             </label>
+             <div className={css.montageActions}>
+               <button type="button" disabled={disabled||index===0}
+                 aria-label={t.reorder+" ← "+sceneLabel(clip)}
+                 onClick={()=>swapScene(index,-1)}>←</button>
+               <button type="button" disabled={disabled||index===3}
+                 aria-label={t.reorder+" → "+sceneLabel(clip)}
+                 onClick={()=>swapScene(index,1)}>→</button>
+               {index<3?<button type="button" disabled={disabled||stageDurations[index]<=2}
+                 aria-label={t.less+" "+sceneLabel(clip)}
+                 onClick={()=>shiftBoundary(index,-1)}>−1s</button>:null}
+               {index<3?<button type="button" disabled={disabled||stageDurations[index+1]<=2}
+                 aria-label={t.more+" "+sceneLabel(clip)}
+                 onClick={()=>shiftBoundary(index,1)}>+1s</button>:null}
+             </div>
+           </div>)}
+         </div>
+         <div className={css.trackSection} data-auto-video-tracks>
+           <div className={css.trackLabel}>{t.captionTrack}</div>
+           <div className={css.textSegments} data-auto-video-text-track
+             role="list" aria-label={t.captionTrack}>
+             {stageCaptions.map((caption,index)=><div key={index} role="listitem"
+               data-caption-active={caption.trim()?"true":"false"}
+               title={caption||t.captionTrack}
+               className={css.textSegment} style={{flexGrow:stageDurations[index]}}>
+               <span>{caption?"Aa":"·"}</span>
+             </div>)}
+           </div>
+           <div className={css.stageCaptionFields} data-auto-video-caption-editor>
+             <p className={css.notice}>{t.captionHint}</p>
+             {stageClipIds.map((clip,index)=><label key={clip} className={css.captionInput}>
+               <span>{index+1}. {t.stages[index]} · {stageDurations[index]} s</span>
+               <input type="text" data-auto-video-stage-caption={index}
+                 maxLength={STAGE_CAPTION_LIMIT} disabled={disabled}
+                 value={stageCaptions[index]||""}
+                 onChange={event=>{
+                   const captions=[...stageCaptions];
+                   captions[index]=event.currentTarget.value;
+                   editTimeline(stageClipIds,stageDurations,captions);
+                 }}/>
+             </label>)}
+           </div>
+           <div className={css.soundTrack} data-auto-video-sound-track
+             data-attached={audioAttached?"true":"false"}>
+             <div className={css.soundTrackLabel}>
+               <strong>{t.soundTrack}</strong>
+               <small>{audioAttached?(audioTrackLabel||t.soundTrack):t.soundMissing}</small>
+             </div>
+             {onOpenAudio?<button type="button" disabled={disabled} onClick={onOpenAudio}>
+               {t.soundSettings}</button>:null}
+           </div>
+         </div>
+         <p className={css.notice}>{t.replacementHint} {t.audioHint}</p>
+       </details>
+       <details className={css.details} data-auto-video-adjust>
+         <summary>{t.edit}</summary>
+         <div className={css.adjust}><span>{t.topic}:</span>
+           {allThemes.map(value=><button type="button" key={value} disabled={disabled}
+             aria-pressed={proposal.theme===value}
+             onClick={()=>{
+               onInvalidate?.();setOverrideId(null);setTimelineEdits(null);
+               setConfirmedTimelineKey(null);
+               setProposalContext({goal,theme});
+               setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes,
+                 preferredTheme:value}));
+             }}>{themeLabels[locale][value]}</button>)}
+         </div>
+         <div className={css.adjust}><span>{t.duration}:</span>
+           {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
+             aria-pressed={length===n} onClick={()=>{if(length!==n)onInvalidate?.();
+               setSeconds(n);
+               setTimelineEdits(fallbackEnabled&&selectedTaxonomyPlot&&chosen?
+                 {presetId:chosen.id,totalSeconds:n,clipIds:[...chosen.clips],
+                  durations:allocateAdaptiveFilmTimeline(n,chosen.clips).map(shot=>shot.durationSeconds),
+                  captions:selectedTaxonomyPlot.beats.map(text=>Array.from(text).slice(0,STAGE_CAPTION_LIMIT).join(""))}:
+                 selectedTaxonomyPlot&&selectedTopicId&&proposal?
+                 timelineForTopic(selectedTopicId,selectedScenarioId,proposal,selectedTaxonomyPlot,n,
+                   chosen?.id):null);
+               setConfirmedTimelineKey(null);}}>{n} s</button>)}
+         </div>
+       </details>
+       </details>
+       {meaningHandoff?.status==="editorial_only"?<div className={css.notice}
+         data-meaning-idea-film-intent>
+         <strong>{locale==="ru"?"Подтверждённая идея":locale==="es"?"Idea confirmada":"Confirmed idea"}:</strong>
+         {" "+(meaningHandoff.ideaBrief?.ideaText||"")}
+         {meaningCaptionUsed?<p data-meaning-caption-preview>
+           {locale==="ru"?"Будет добавлен финальный титр":locale==="es"?"Se añadirá el subtítulo final":"Final caption to be added"}:
+           {" "+meaningCaption}</p>:null}
+         {lastCaptionTaken&&includeMeaningCaption?<p>
+           {locale==="ru"?"Ваш собственный финальный титр сохранён без изменений.":
+             locale==="es"?"Tu subtítulo final se conserva sin cambios.":
+               "Your existing final caption is preserved unchanged."}</p>:null}
+         {meaningCaptionTooLong?<p role="alert" data-meaning-caption-overflow className={css.warning}>
+           {locale==="ru"?"Смысловая идея слишком длинная для титра. Сократите формулировку или отключите титр.":
+             locale==="es"?"La idea es demasiado larga para el subtítulo. Acórtala o desactívalo.":
+               "The idea is too long for a caption. Shorten the wording or disable the caption."}</p>:null}
+       </div>:null}
+       <button type="button" data-auto-video-confirm className={css.confirm}
+         disabled={disabled||plotLacksApprovedClips} onClick={()=>{
+           if(meaningCaptionTooLong)return;
+           const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
+             clipIds:stageClipIds,durationSecondsByStage:stageDurations,
+             excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
+           if(accepted!==false){
+             setConfirmedTimelineKey(timelineKey);
+             onContinue?.(); // Changes only the active existing workspace.
+           }
+         }}>
+         <Heart size={19} aria-hidden="true"/>
+         <span>{locale==="ru"?"Подобрать слова поддержки, настроить аудиогид":
+           locale==="es"?"Elegir frases de apoyo y configurar el audio":
+           "Choose supportive phrases & set up audio guidance"}</span>
+         <ArrowRight size={18} aria-hidden="true"/>
+       </button>
+       {activePresetId===chosen.id&&confirmedTimelineKey===timelineKey?<div className={css.appliedActions}>
+         <p className={css.notice} role="status">{t.applied}</p>
+         {onCreate?<button type="button" className={css.create} data-auto-video-create
+           disabled={disabled||!canCreate||plotLacksApprovedClips} onClick={onCreate}>
+           <Play size={17} fill="currentColor" aria-hidden="true"/>
+           {rendering?t.waiting:t.create}
+         </button>:null}
+         {createFeedback?<p role="status" className={css.notice}>{createFeedback}</p>:null}
+         {!canCreate&&!disabled?<p className={css.notice}>{t.blocked}</p>:null}
+       </div>:null}
+       <p className={css.notice}>{t.safety}</p>
+     </div>:<p role="status" className={css.warning}>{t.empty}</p>}
+   </div>:null}
+ </section>;
+}

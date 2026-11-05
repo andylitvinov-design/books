@@ -84,7 +84,7 @@ test('CRM lifecycle updates are owner-scoped and suppression remains immutable',
  assert.match(practice,/isOwner&&<PracticeTile Icon=\{UsersRound\}/)
  assert.match(practice,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
  assert.match(practice,/<PractitionerClientProfiles items=\{requests\}/)
- assert.match(practice,/\{ownerTools && <details className="hh-practice-more-tools">/)
+ assert.match(practice,/\{ownerTools && !activePanel && <details className="hh-practice-more-tools">/)
  assert.match(migration,/OLD\.suppressed AND NOT NEW\.suppressed/)
  assert.match(migration,/force row level security/i)
  assert.doesNotMatch(route,/sendMail|sendMessage/)

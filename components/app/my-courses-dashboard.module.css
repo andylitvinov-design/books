@@ -117,3 +117,5 @@
 .tileRemoveButton:disabled{opacity:.55;cursor:not-allowed}
 .tileRemoveButton:focus-visible{outline:3px solid #83e8ea;outline-offset:2px}
 @media(max-width:370px){.cardControls{gap:3px}.mainCard .cardTop,.smallCard .cardTop{gap:5px}}
+
+

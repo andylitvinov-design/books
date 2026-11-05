@@ -231,6 +231,11 @@
    in that order, without shrinking the Services-page carousel. */
 @media (max-width: 760px) {
   .hero[data-home-section-carousel] { margin-top: 4px; }
+  /* The original first-slide artwork is already a 137 KB first-party WebP.
+     On slow mobile CPUs the inherited opacity/fade animation holds back the
+     visible LCP paint after the photo finishes loading. Remove that wait only
+     from Home on narrow screens; Services retains its separate slide motion. */
+  .hero[data-home-section-carousel] .slideMedia { animation: none; }
   .hero[data-home-section-carousel] .slider { height: clamp(302px, 39svh, 336px); min-height: 0; }
   .hero[data-home-section-carousel] .slideCopy { inset: auto 14px 55px 16px; }
   .hero[data-home-section-carousel] .slideCopy :is(h1,h2) { font-size: clamp(27px, 7.2vw, 34px); line-height: 1.04; }

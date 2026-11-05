@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {validClientBotUsername,telegramClientBotMode,telegramClientBotUsername,telegramClientLinkReady,telegramClientSendReady,
- interpretTelegramClientUpdate,telegramClientMessage} from '../lib/app/client-telegram-policy.js'
+ interpretTelegramClientUpdate,telegramClientMessage,telegramClientStartLink} from '../lib/app/client-telegram-policy.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('dedicated bot needs explicit setup and dispatch approval',()=>{
@@ -129,4 +129,22 @@ test('sharing never silently reassigns webhook or loses the paired master identi
  assert.match(ui,/t\.reuse/)
  assert.match(ui,/t\.reuseHelp/)
  assert.doesNotMatch(ui,/HH_PRACTICE_TG_BOT_TOKEN\s*=|HH_CLIENT_TG_BOT_TOKEN\s*=/)
+})
+
+
+test('Telegram /start URL always uses the verified bot mode, including shared practice',()=>{
+ const token='k'.repeat(32)
+ const env={HH_CLIENT_TG_LINK_ENABLED:'true',HH_CLIENT_TG_WEBHOOK_SECRET:'s'.repeat(48),
+  HH_PRACTICE_TG_ENABLED:'true',HH_PRACTICE_TG_BOT_TOKEN:'123456789:'+ 'a'.repeat(40),
+  HH_CLIENT_TG_USE_PRACTICE_BOT:'true'}
+ assert.equal(telegramClientStartLink(token,env),'https://t.me/andydotbot?start='+token)
+ assert.equal(telegramClientStartLink(token,{...env,HH_CLIENT_TG_BOT_TOKEN:'123456789:'+ 'b'.repeat(40),
+  HH_CLIENT_TG_BOT_USERNAME:'HolisticHouseNoticeBot'}),
+  'https://t.me/HolisticHouseNoticeBot?start='+token)
+ assert.throws(()=>telegramClientStartLink(token,{...env,HH_CLIENT_TG_USE_PRACTICE_BOT:'false'}))
+ assert.throws(()=>telegramClientStartLink('bad',env))
+ assert.throws(()=>telegramClientStartLink(token,{...env,HH_CLIENT_TG_BOT_USERNAME:'OtherNoticeBot'}))
+ const repository=read('lib/app/messenger-notification-repository.js')
+ assert.match(repository,/telegramClientStartLink\(token\)/)
+ assert.doesNotMatch(repository,/process\.env\.HH_CLIENT_TG_BOT_USERNAME\+'\?start='/)
 })

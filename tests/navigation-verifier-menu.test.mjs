@@ -187,7 +187,7 @@ test('featured mobile menu action names and links to the actual free written rev
       const detailNode = treeNodes(featured).find(node => node.props.className === 'site-main-menu-free__detail');
       assert.equal(titleNode?.props.children, title, locale + ': service title visible');
       assert.ok(detailNode?.props.children.includes(detail), locale + ': method and response visible');
-      assert.equal(anchors.filter(node => node.props.href === expected).length, 2, locale + ': no duplicate menu destinations');
+      assert.equal(anchors.filter(node => node.props.href === expected).length, 3, locale + ': header, featured CTA and analysis tab reuse one approved service');
     }
   } finally {
     pathname = savedPath;
@@ -203,7 +203,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -309,11 +309,11 @@ for (const fault of ['wrong free review route', 'wrong energy route', 'wrong Abo
   test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
 }
 
-test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
+test('library audit checks the menu active link while preserving exact seven-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
-  assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
+  assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(7\)/);
   assert.match(ia, /const cabinetEntry = header\.locator\('\.site-cabinet-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
 });

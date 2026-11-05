@@ -179,10 +179,80 @@ export function AcademyBackLink({ locale }: { locale: PublicLocale }) {
   return <Link className="library-back-link" href={"/" + locale + "/academy"}>← {academyCopy[locale].back}</Link>;
 }
 
+// Existing PsiMaster courses stay single-source records. These three links make the
+// historical Russian curricula discoverable without treating video excerpts as
+// complete new courses or duplicating the original source/media manifests.
+const restoredMysteryLinks = [
+  {
+    programId: "mysteries/maya-aztec/feathered-serpent",
+    videoIds: ["videos/maya-archetypes"],
+    description: "Мистерии Майя и Ацтеков: Пернатый Змей, Ицамна, Кинич Ахау и другие архетипы. Программа сохранена; доступны 6 оригинальных видео по архетипам Майя.",
+    videoCta: "Смотреть видео Майя",
+  },
+  {
+    programId: "mysteries/egypt/high-wisdom",
+    videoIds: ["videos/egypt-osiris"],
+    description: "Египетские мистерии: семь модулей о богах Египта — Осирис, Маат, Гор, Исида и другие. Видеоархив подтверждён для Осириса (7 уроков), остальные модули представлены программой.",
+    videoCta: "Смотреть видео Осириса",
+  },
+  {
+    programId: "mysteries/greece-rome/beauty-and-power",
+    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
+    description: "Греческие мистерии: шестимодульная программа «Красота и Сила Античности» о греческих архетипах. Оригинальные циклы Деметры (5 видео) и Диониса (7 видео) доступны отдельно.",
+    videoCta: "Смотреть цикл Деметры",
+  },
+] as const;
+
 export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale; view?: AcademyView }) {
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
   const hints = academyCourseHints[locale];
+  const psimasterRuPrograms = locale === "ru"
+    ? preferredAcademyRecords(locale, (record) =>
+      record.sourceProvider === "psimaster" && record.sourceLocale === "ru")
+    : [];
+  const availableMysteryVideos = new Map(
+    locale === "ru" ? videoRecords(locale).map((record) => [record.logicalId, record] as const) : [],
+  );
+  const restoredMysteryCards: AcademyCourseItem[] = locale === "ru"
+    ? restoredMysteryLinks.flatMap((entry, index) => {
+      const record = psimasterRuPrograms.find((item) => item.logicalId === entry.programId);
+      if (!record) return [];
+      const originalVideo = entry.videoIds
+        .map((id) => availableMysteryVideos.get(id))
+        .find((video) => video && mediaForRecord(video).some((media) => Boolean(youtubeIdFromUrl(media.mediaUrl))));
+      return [{
+        id: "academy-restored-" + entry.programId.replaceAll("/", "-"),
+        title: academyDisplayTitle(record, locale),
+        subtitle: "МИСТЕРИИ · ОРИГИНАЛ НА РУССКОМ",
+        description: entry.description,
+        href: "/" + locale + "/academy/" + record.routeKey,
+        courseHref: originalVideo ? "/" + locale + "/academy/" + originalVideo.routeKey : undefined,
+        takeLabel: originalVideo ? entry.videoCta : undefined,
+        actionLabel: originalVideo ? entry.videoCta : action.program,
+        image: originalVideo ? recordImage(originalVideo) : recordImage(record, index),
+        archiveKind: "course" as const,
+      }];
+    })
+    : [];
+  // Personal Coaching is a standalone service, excluded from the course count.
+  const coachingItem: AcademyCourseItem = {
+      id: "academy-free-personal-coaching",
+      detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "Compare self-guided models and personal coaching in the public lounge before deciding.",
+      title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
+      subtitle: locale === "ru" ? "ВОПРОС → 3 МОДЕЛИ · 10–30 МИН" : locale === "es" ? "PREGUNTA → 3 MODELOS" : "QUESTION → 3 MODELS · 10–30 MIN",
+      description: locale === "ru"
+        ? "Напишите ваш вопрос, сравните три модели коучинга и выберите одну. На каждом следующем экране — один простой вопрос."
+        : locale === "es"
+          ? "Escribe tu pregunta, elige entre tres modelos y avanza paso a paso. La sesión privada está disponible en inglés."
+          : "Enter your question, compare three suitable coaching models, then answer one simple question per screen.",
+      href: "/" + locale + "/coaching",
+      courseHref: "/" + locale + "/coaching",
+      image: "/images/holistic-house/report-lighthouse-coast.avif",
+      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "Elige entre modelos gratis" : "3 suggested models · at your pace",
+      free: true,
+      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Elegir sesión" : "Start session",
+    };
   const items: AcademyCourseItem[] = [
     {
       id: "academy-free-opora",
@@ -258,6 +328,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
           actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
         },
+        ...restoredMysteryCards,
         {
           id: "academy-featured-yggdrasil",
           detailsHint: hints.yggdrasilFull,
@@ -314,7 +385,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           image: "/academy/reiki-yggdrasil/source/temple-studies.png",
           actionLabel: action.program,
         },
-      ];
+      ].filter((item) => locale === "ru" || item.id !== "academy-featured-egypt-priesthood");
 
   // Historical PsiMaster content is already in the Academy catalogue. Link to
   // the existing native pages; never copy course records or create an enrollment.
@@ -332,27 +403,67 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
     const index = featuredLegacyIds.indexOf(id);
     return index < 0 ? featuredLegacyIds.length : index;
   };
-  const legacyCourses: AcademyArchiveButton[] = preferredAcademyRecords(locale, (record) =>
-    record.sourceProvider === "psimaster" && record.sourceLocale === "ru"
-  ).map((record) => ({
-    id: record.logicalId,
-    title: academyDisplayTitle(record, locale),
-    href: "/" + locale + "/academy/" + record.routeKey,
-    archived: record.status === "archive_only",
-  })).sort((a, b) => legacyRank(a.id) - legacyRank(b.id) || a.title.localeCompare(b.title, locale));
-  const psimasterVideoIds = new Set(psimasterMedia.map((item) => item.logicalId));
-  const legacyVideos: AcademyArchiveButton[] = videoRecords(locale)
-    .filter((record) => psimasterVideoIds.has(record.logicalId))
-    .map((record) => ({
+  // Preserve historical source routes, but never advertise a Russian-language
+  // lesson as if the English / Spanish catalogue offered an English recording.
+  const legacyCourses: AcademyArchiveButton[] = locale === "ru"
+    ? psimasterRuPrograms
+      .filter((record) => !restoredMysteryLinks.some((entry) => entry.programId === record.logicalId))
+      .map((record, index) => ({
       id: record.logicalId,
       title: academyDisplayTitle(record, locale),
+      subtitle: record.status === "archive_only" ? "ТОЛЬКО АРХИВ" : "ИСТОРИЧЕСКАЯ ПРОГРАММА · НА РУССКОМ",
+      description: "Описание прежней программы на русском языке. Актуальный набор и наличие видеоуроков не подтверждены.",
       href: "/" + locale + "/academy/" + record.routeKey,
-    }));
+      image: recordImage(record, index),
+      actionLabel: action.program,
+      archiveKind: "course" as const,
+      archived: record.status === "archive_only",
+    })).sort((a, b) => legacyRank(a.id) - legacyRank(b.id) || a.title.localeCompare(b.title, locale))
+    : [];
+  const psimasterVideoIds = new Set(psimasterMedia.map((item) => item.logicalId));
+  const legacyVideos: AcademyArchiveButton[] = locale === "ru"
+    ? videoRecords(locale)
+      .filter((record) => psimasterVideoIds.has(record.logicalId) && record.sourceLocale === "ru")
+      .map((record) => ({
+        id: record.logicalId,
+        title: academyDisplayTitle(record, locale),
+        subtitle: "ВИДЕОУРОКИ · НА РУССКОМ",
+        description: "Оригинальные русскоязычные видеоуроки в сохранённом порядке. Воспроизведение начинается только после вашего нажатия.",
+        href: "/" + locale + "/academy/" + record.routeKey,
+        image: recordImage(record),
+        actionLabel: action.video,
+        archiveKind: "video" as const,
+      }))
+    : [];
 
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <AcademyDiscovery locale={locale} view={view} items={items} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
+      <section data-academy-learning-path-entry style={{
+        maxWidth:1100,margin:'14px auto',padding:'13px 18px',border:'1px solid #e9dfd1',
+        borderRadius:20,background:'#fff9f3',display:'flex',alignItems:'center',
+        flexWrap:'wrap',gap:12,justifyContent:'space-between',
+      }}>
+        <div style={{flex:'1 1 240px'}}>
+          <strong style={{fontSize:17,color:'#143d3a'}}>
+            {locale === 'ru' ? 'Мой маршрут — персональный план обучения'
+              : locale === 'es' ? 'Mi ruta — plan de aprendizaje personal'
+              : 'My Learning Path — a personal study plan'}
+          </strong>
+          <p style={{fontSize:14,margin:'5px 0 0',color:'#5d6a71'}}>
+            {locale === 'ru' ? 'Пять настоящих уроков Reiki · 4–6 недель · бесплатно'
+              : locale === 'es' ? 'Cinco lecciones reales de Reiki · 4–6 semanas · gratis'
+              : 'Five real Reiki lessons · 4–6 weeks · free'}
+          </p>
+        </div>
+        <Link href={'/' + locale + '/academy/my-path'}
+          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',
+            minHeight:48,padding:'12px 18px',background:'#067a67',color:'white',
+            textDecoration:'none',fontWeight:700,borderRadius:14}}>
+          {locale === 'ru' ? 'Создать маршрут' : locale === 'es' ? 'Crear mi ruta' : 'Build my route'}
+        </Link>
+      </section>
+      <AcademyDiscovery locale={locale} view={view} items={items} coachingItem={coachingItem} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
           <AcademyVideoCourses locale={locale} />

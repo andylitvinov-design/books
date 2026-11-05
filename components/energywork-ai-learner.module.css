@@ -5543,3 +5543,8 @@
 @media (prefers-reduced-motion: reduce) {
   .page[data-reiki-cover="true"] .welcomeGift summary svg:last-child { transition: none; }
 }
+
+/* Private Reiki initiation photo receipt is visible when reopening My Courses. */
+.finalPhotoLink{display:flex;align-items:center;gap:8px;margin:8px 0;color:#684832}
+.finalPhotoLink button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;text-align:left;font:inherit;font-size:.89rem;padding:8px;min-height:44px}
+.finalPhotoLink button:focus-visible{outline:3px solid #b1814e;outline-offset:2px;border-radius:6px}

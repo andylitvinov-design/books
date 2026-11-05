@@ -8,11 +8,12 @@ export type ServiceFunnelEvent = "impression" | "order" | "whatsapp" | "telegram
 
 function recordServiceEvent(serviceId: string, event: ServiceFunnelEvent) {
   if (!serviceId) return;
-  // Counters only: no visitor identifier, referrer, query text or message content.
+  // Counts only; same-origin auth cookies let the server exclude owner clicks.
+  // No visitor identifier, referrer, query text or message content.
   // keepalive makes Order and messenger exits count despite immediate navigation.
   void fetch("/api/marketplace/service-event", {
     method: "POST",
-    credentials: "omit",
+    credentials: "same-origin",
     cache: "no-store",
     keepalive: true,
     headers: { "Content-Type": "application/json" },

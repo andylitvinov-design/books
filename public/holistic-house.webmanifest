@@ -3,7 +3,7 @@
   "short_name": "Holistic House",
   "description": "Your private Holistic House cabinet: messages, consultations, tests, reports and courses",
   "lang": "en",
-  "start_url": "/en/app/portrait",
+  "start_url": "/en/app/messages",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -33,7 +33,7 @@
     {
       "name": "Messages",
       "short_name": "Messages",
-      "url": "/en/app/consultations"
+      "url": "/en/app/messages"
     },
     {
       "name": "My tests",

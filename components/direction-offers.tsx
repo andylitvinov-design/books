@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search, Send, X } from 'lucide-react'
-import { useState, type KeyboardEvent } from 'react'
+import { useState, useSyncExternalStore, type KeyboardEvent } from 'react'
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -30,6 +30,11 @@ type ActionIntent = OfferKind | 'advice'
 type Localized = Record<PublicLocale, string>
 type CatalogOffer = { id: string; title: Localized; description: Localized; path: string; photo: string; note: Localized; action?: Localized }
 const tr = (en: string, ru: string, es: string): Localized => ({en, ru, es})
+// Do not advertise clickable controls until React has attached event handlers.
+// Server and pre-hydration snapshots are disabled even without JavaScript.
+const subscribeHydration = () => () => {}
+const browserHydrated = () => true
+const serverNotHydrated = () => false
 
 const photography = {
   test: '/images/holistic-house/report-lighthouse-coast.webp',
@@ -122,9 +127,9 @@ const directionCopy = {
     es: { name: 'Amor', title: 'Cercanía, confianza y conexión', course: 'OPORA · Apoyo interior', courseDetail: 'Prácticas de estabilidad antes de conversaciones difíciles, no un curso específico de relaciones.', service: 'Consulta sobre relaciones', serviceDetail: 'Explora la comunicación, los límites y tus patrones.' },
   },
   business: {
-    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: '90-day Business Development', courseDetail: 'A practical day-by-day development path in your private account.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
-    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Развитие бизнеса · 90 дней', courseDetail: 'Ежедневные шаги и дневник прогресса в личном кабинете.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
-    es: { name: 'Negocios', title: 'Desarrolla tu proyecto con claridad', course: 'Desarrollo de negocios · 90 días', courseDetail: 'Pasos diarios y progreso en tu área privada (en inglés).', service: 'Consulta de negocios y carrera', serviceDetail: 'Explora decisiones, objetivos profesionales o proyectos.' },
+    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: 'Personal Coaching Session', courseDetail: 'Enter your question, choose one of three matching coaching approaches and save your private session.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
+    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Личная коуч-сессия', courseDetail: 'Опишите свой вопрос, выберите подходящую модель из трёх и сохраните личную сессию.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
+    es: { name: 'Negocios', title: 'Desarrolla tu proyecto con claridad', course: 'Sesión personal de coaching', courseDetail: 'Siete preguntas y tus respuestas privadas (en inglés).', service: 'Consulta de negocios y carrera', serviceDetail: 'Explora decisiones, objetivos profesionales o proyectos.' },
   },
 } as const
 
@@ -474,6 +479,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   journey: Journey
   suggestions: Record<string, SuggestedTest[]>
 }) {
+  const hydrated = useSyncExternalStore(subscribeHydration, browserHydrated, serverNotHydrated)
   const [topicId, setTopicId] = useState('')
   const [intent, setIntent] = useState<ActionIntent | null>(null)
   const [question, setQuestion] = useState('')
@@ -496,7 +502,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const selected = journey.topics.find(item => item.id === topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
-    ? '/' + appLocale + '/app/business'
+    ? '/' + locale + '/coaching'
     : '/' + locale + '/courses/antistress'
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
@@ -743,7 +749,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     {!dialogUrgent && <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
         <h2 id="hh-direction-focus-label">{c.pick}</h2>
-        <button type="button" className={styles.reset} data-direction-filter="all"
+        <button type="button" className={styles.reset} data-direction-filter="all" disabled={!hydrated}
           aria-pressed={!topicId} aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           onClick={()=>selectTopic('')}>{c.all}</button>
       </div>
@@ -751,7 +757,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       <div className={styles.topicChips} role="group"
         aria-labelledby="hh-direction-focus-label" aria-describedby="hh-direction-focus-hint">
         {journey.topics.map(topic=><button type="button" className={styles.chip} key={topic.id}
-          data-direction-filter={topic.id} aria-label={topic.title[locale]}
+          data-direction-filter={topic.id} aria-label={topic.title[locale]} disabled={!hydrated}
           aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>
           {quickTopicLabels[topic.id]?.[locale] ?? topic.title[locale]}

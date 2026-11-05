@@ -43,7 +43,7 @@ test('public client CTA is a labeled visual preview until existing moderation, n
  assert.match(editor,/onPause\(item\)/)
  assert.doesNotMatch(editor,/<a[^>]*href=\{.*previewCta/)
  assert.match(dashboard,/data-status=\{item\.status\}/)
- assert.match(workspace,/serviceQuota=\{serviceQuota\}/)
+ assert.match(workspace,/quota=\{serviceQuota\}/)
  assert.equal(getHobbyServiceQuota(Array(10).fill({status:'draft'})).canAdd,false)
 })
 
@@ -56,7 +56,7 @@ test('the real photo uploader is used in the first card and blocks save during m
  assert.match(photo,/fetch\('\/api\/app\/practice\/photos'/)
  assert.match(photo,/Public only after approval/)
  assert.match(editor,/data-service-photo-tools/)
- assert.match(editor,/value=\{draft\.videoPresentation\}/)
+ assert.match(editor,/<PracticeVideoField locale=\{locale\} introductions=\{draft\.serviceIntroductions\|\|\[\]\}/)
  assert.match(editor,/onBusyChange=\{value=>\{setVideoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
 })
 

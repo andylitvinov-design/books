@@ -75,9 +75,8 @@ test("EN/RU/ES books now start with Ideas while retaining book catalogs and cano
   assert.match(spanish, /<SpanishBookShowcase books=\{books\}/);
   assert.match(localized, /canonical: "\/" \+ locale \+ "\/books"/);
   for (const locale of ["en", "ru", "es"]) {
-    const books = getCompactNavigation(locale).find(item => item.id === "books");
-    assert.equal(books.href, "/" + locale + "/books");
-    assert.equal(navigationCopy[locale].books, locale === "ru" ? "Идеи" : "Ideas");
+    assert.ok(!getCompactNavigation(locale).some(item => item.id === "books"), "Books is available in the expanded menu, not fixed bottom");
+    assert.equal(navigationCopy[locale].books, { en: "Tests & Coaching", ru: "Тесты и коучинг", es: "Tests y coaching" }[locale]);
     assert.equal(getSiteNavigation(locale).find(item => item.id === "library").href, "/" + locale + "/library");
   }
 });
@@ -94,7 +93,7 @@ test("Personal guidance is one accessible editorial list, not three giant cards 
   assert.match(css, /\.guidanceList li \{/);
   assert.match(css, /\.guidanceLink:focus-visible/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /\.actions \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: 6px; \}/);
+  assert.match(css, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   for (const localized of ["guidanceIntro", "guidanceMatch", "guidanceOther"]) {

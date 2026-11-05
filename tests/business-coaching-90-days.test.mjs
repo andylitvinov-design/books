@@ -10,6 +10,7 @@ import {
   BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule,
   businessDayResult, businessWeekProgress, BUSINESS_TRACK_EXAMPLES, businessTrackExample, BUSINESS_WEEK_SKILLS, businessWeekSkill,
 } from '../lib/business-coaching/week-modules.js'
+
 import { BUSINESS_ONE_TAP_VERSION, BUSINESS_ONE_TAP_DAYS, BUSINESS_GOAL_CHOICES, BUSINESS_DAY_CHOICES, BUSINESS_WEEK_REVIEW_CHOICES, businessTinyAction, businessGoalLabel, businessOneTapResult, businessChoiceLabel, businessWeekReviewNote, businessWeekReviewChoice, businessWeekReviewLabel } from '../lib/business-coaching/closed-questions.js'
 
 test('90-day track is complete, bilingual, stable, nonduplicated and bounded',()=>{
@@ -87,14 +88,14 @@ test('private API contract: account header, auth and revision, encrypted state, 
   assert.match(sql,/using \(account_id=\(select auth\.uid\(\)\)/)
   assert.doesNotMatch(sql,/grant .* to anon/i)
 })
-test('integration: business journey appears in My Courses and Development programme without mislabeling OPORA',()=>{
+test('legacy 90-day player stays accessible privately while promoted cards use short coaching',()=>{
   const workspace=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
   const panel=readFileSync(new URL('../components/app/development-program.jsx',import.meta.url),'utf8')
   const courses=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   assert.match(workspace,/page === 'business'/)
-  assert.match(panel,/data-development-business-course/)
-  assert.match(courses,/data-business-coaching-course-link/)
+  assert.match(panel,/data-development-personal-coaching-course/)
+  assert.match(courses,/data-personal-coaching-course-link/)
   assert.match(ui,/data-business-coaching/)
   assert.match(ui,/\bconsent\b/)
   assert.match(ui,/\bwindow\.print\(\)/)
@@ -135,12 +136,13 @@ test('formative survey changes are raw same-version mean deltas, never fake norm
   assert.deepEqual(businessSurveyChanges(first,{...last,referenceDays:30}),[])
   assert.deepEqual(businessSurveyChanges(first,{...last,recordedAt:'2026-08-31T00:00:00Z'}),[])
 })
-test('approved public business page and auth page point to a real allowed and private account route',()=>{
+test('business public entry offers current personal coaching while paused 90-day legacy stays private',()=>{
   const page=readFileSync(new URL('../app/[locale]/explore/[theme]/page.tsx',import.meta.url),'utf8')
+  const direction=readFileSync(new URL('../components/direction-offers.tsx',import.meta.url),'utf8')
   const cabinet=readFileSync(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
   assert.match(cabinet,/['"]business['"].*\.includes\(path\[0\]\)/)
-  assert.match(page,/<DirectionOffers/)
-  assert.match(page,/<DirectionExtras/)
+  assert.match(page,/<DirectionOffers locale=\{locale as PublicLocale\}/)
+  assert.match(direction,/const courseHref = direction === 'business'[\s\S]*?'\/coaching'/)
   assert.match(cabinet,/robots: \{ index: false, follow: false \}/)
 })
 
@@ -227,7 +229,6 @@ test('server validates one-tap choice and retains legacy freeform records in enc
   assert.ok(source.includes('transaction(config,actor,async db=>'))
   assert.ok(source.includes('select payload_ciphertext,revision,updated_at from app_private.business_coaching_programs'))
 })
-
 test('mobile learning UI uses daily bilingual micro-actions and preserves reports',()=>{
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
@@ -339,11 +340,10 @@ test('Wood redesign has complete CSS Module bindings without impacting other cou
   const publicPage=readFileSync(new URL('../app/[locale]/explore/[theme]/page.tsx',import.meta.url),'utf8')
   const promoCss=readFileSync(new URL('../components/business-coaching-promo.module.css',import.meta.url),'utf8')
   const courseListCss=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
-  // Public theme page now delegates to shared direction cards, not a one-off promo.
-  assert.ok(publicPage.includes('<DirectionOffers'))
-  assert.ok(publicPage.includes('<DirectionExtras'))
-  assert.ok(publicPage.includes("theme === 'business'"))
-  assert.ok(publicPage.includes("locale as PublicLocale"))
+  assert.ok(publicPage.includes('DirectionOffers'))
+  assert.ok(publicPage.includes('GoalSupportOffers'))
+  assert.ok(publicPage.includes('BUSINESS_SEO'))
+  assert.ok(publicPage.includes("['ru','en','es']"))
   assert.ok(promoCss.includes('linear-gradient(105deg,#67462f,#483023)'))
   assert.ok(courseListCss.includes('.businessTrack'))
   assert.ok(courseListCss.includes('background:linear-gradient(118deg,#1c4e61,#1a314b')) // #1407 photo-left navy card.
@@ -506,12 +506,12 @@ test('real-world coaching examples are contextual, bilingual, voluntary and cove
 test('business promotion matches the saved course photo-left design at phone widths',()=>{
   const component=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
-  assert.match(component,/data-business-coaching-course-link/)
+  assert.match(component,/data-personal-coaching-course-link/)
   assert.match(component,/className=\{styles\.businessTrackPhoto\}/)
-  assert.match(component,/\/images\/holistic-house\/books-library\.webp/)
+  assert.match(component,/\/images\/holistic-house\/report-lighthouse-coast\.avif/)
   assert.match(component,/className=\{styles\.businessTrackAction\}/)
-  assert.match(component,/Start free plan/)
-  assert.match(component,/Создать бесплатный план/)
+  assert.match(component,/Start my session/)
+  assert.match(component,/Начать сессию/)
   assert.match(css,/\.businessTrack\{[\s\S]*?grid-template-columns:clamp\(112px,19vw,162px\) minmax\(0,1fr\)/)
   assert.match(css,/\.businessTrack\{[\s\S]*?background:linear-gradient\(118deg,#1c4e61,#1a314b\)/)
   assert.match(css,/\.businessTrackAction\{[\s\S]*?background:#0b9fa8/)

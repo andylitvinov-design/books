@@ -1,7 +1,7 @@
 'use client'
 import styles from './test-finish-actions.module.css'
 
-export function TestFinishActions({ locale = 'en', disabled = false, onReport, onNext, temporary = false, courseMode = false, guestScaleOnly = false }) {
+export function TestFinishActions({ locale = 'en', disabled = false, onReport, onNext, onDiscuss = null, temporary = false, courseMode = false, guestScaleOnly = false }) {
   const ru = locale === 'ru'
   return (
     <div className={styles.wrap} role="group" aria-label={ru ? 'Завершить тест' : 'Finish assessment'} data-test-finish-actions>
@@ -15,6 +15,12 @@ export function TestFinishActions({ locale = 'en', disabled = false, onReport, o
         <span>{courseMode
           ? (ru ? 'Сохранить и продолжить тестирование курса' : 'Save and continue my course tests')
           : (ru ? 'Сохранить результат и перейти к следующему тесту' : 'Save results and continue to the next test')}</span>
+        <span aria-hidden="true">→</span>
+      </button>}
+      {!guestScaleOnly && !courseMode && typeof onDiscuss === 'function' && <button type="button"
+        className={styles.discuss} data-finish-discuss-test disabled={disabled} onClick={onDiscuss}>
+        <span className={styles.icon} aria-hidden="true">✦</span>
+        <span>{locale === 'ru' ? 'Обсудить этот тест' : locale === 'es' ? 'Comentar esta prueba' : 'Discuss this test'}</span>
         <span aria-hidden="true">→</span>
       </button>}
       {temporary && !guestScaleOnly && <p className={styles.note}>{ru

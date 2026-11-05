@@ -39,8 +39,10 @@ function fixture(direction,locale,suggestions={}){
     'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:({children})=>children},
     'next/image':{__esModule:true,default:props=>jsx('img',props)},
     'next/link':{__esModule:true,default:props=>jsx('a',props)},
+    '@/components/home-free-diagnosis-banner':{HomeFreeDiagnosisBanner:props=>jsx('aside',props)},
     'lucide-react':new Proxy({}, {get:()=>()=>null}),
-    react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
+    react:{useSyncExternalStore:(_subscribe,getSnapshot)=>getSnapshot(),
+      useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
       return [state[i],next=>{state[i]=typeof next==='function'?next(state[i]):next}] }},
     '@/lib/assessments/topic-journeys':{journeyFocusForTopics:(j,selected)=>
       j.topics.find(t=>t.id===selected[0])?.focus || j.focus},
@@ -80,7 +82,7 @@ test('the single page shows hero then filter then three separate topic-specific 
         assert.equal(by(tree,'data-direction-all',kind).length,0)
       }
       assert.match(by(tree,'data-offer-action','test')[0].props.href,/\/client\/tests\?focus=/)
-      const actualCourse=direction==='business'?'/'+(locale==='es'?'en':locale)+'/app/business':'/'+locale+'/courses/antistress'
+      const actualCourse=direction==='business'?'/'+locale+'/coaching':'/'+locale+'/courses/antistress'
       assert.equal(by(tree,'data-offer-action','course')[0].props.href,actualCourse)
       const service={energy:'alchemy-of-soul',relationships:'systemic-constellations',business:'business-consulting'}[direction]
       assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)
@@ -525,3 +527,13 @@ test('closing urgent safety guide restores ordinary browsing and clears unsafe q
   assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-section']).length,3)
   assert.equal(nodes(tree).find(n=>n.props?.id==='hh-direction-wish').props.value,'')
 })
+
+test('business focus selection is not falsely clickable before hydration',()=>{
+ assert.match(source,/useSyncExternalStore\(subscribeHydration, browserHydrated, serverNotHydrated\)/);
+ assert.match(source,/const serverNotHydrated = \(\) => false/);
+ assert.match(source,/data-direction-filter="all" disabled=\{!hydrated\}/);
+ assert.match(source,/data-direction-filter=\{topic\.id\} aria-label=\{topic\.title\[locale\]\} disabled=\{!hydrated\}/);
+ const hydrated=fixture('business','en').render();
+ assert.equal(by(hydrated,'data-direction-filter','work-stress')[0].props.disabled,false,
+   'after real hydration the business filter stays usable');
+});

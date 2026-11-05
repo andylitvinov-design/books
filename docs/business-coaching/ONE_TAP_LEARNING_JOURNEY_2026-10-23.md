@@ -1,6 +1,10 @@
 # Business & Career 90 Days — one-tap learning journey v1
 2026-10-23 · owner-driven redesign · applies to existing private course in `/en/app/business` and `/ru/app/business`.
 
+## Rollout safeguard (5 November 2026)
+
+The current production business-course intake is **paused** via `BUSINESS_COURSE_INTAKE_PAUSED`. This implementation does **not** reopen enrolment or remove account, consent, privacy or payment gates. One-tap daily learning is available only to users who already hold an active private 90-day course record. The enrolment outline below describes the intended flow when the separately controlled intake pause is lifted.
+
 ## Change and rationale
 The former first practice demanded "Write down three observable facts", the five-step slide flow demanded a typed result (>5 characters), and onboarding required a written 90-day goal. These are cognitively expensive on a phone. The reviewed replacement uses **closed choices only** in the primary learner path; no client must type a journal response to proceed.
 
