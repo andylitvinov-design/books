@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs'
+import {telegramPersonalVideoSendReady,telegramClientSendReady} from '../lib/app/client-telegram-policy.js'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -30,13 +31,12 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  const backend=source('lib/app/personal-video-messenger.js')
  const migration=source('supabase/migrations/20261104230500_hh_personal_video_telegram_delivery.sql')
  const upload=source('components/mandala-video-delivery.tsx')
- assert.match(backend,/HH_VIDEO_TELEGRAM_DELIVERY_ENABLED==='true'/)
+ assert.match(source('lib/app/client-telegram-policy.js'),/HH_VIDEO_TELEGRAM_DELIVERY_ENABLED==='true'/)
  // Video bot pairing cannot silently opt users into the general messages/
  // bookings/reports/courses notification defaults.
  assert.match(backend,/select topics from app_private.notification_messenger_requests/)
  assert.match(backend,/messages:false,booking:false,reports:false,courses:false,news:false/)
- assert.match(backend,/personalVideoCloudEnabled\(env\)/)
- assert.match(backend,/telegramClientSendReady\(env\)/)
+ assert.match(backend,/telegramPersonalVideoSendReady\(env\)/)
  assert.match(backend,/videoId,actor.id/)
  assert.match(backend,/status='ready'/)
  assert.match(backend,/l.chat_hash=d.chat_hash/)
@@ -81,3 +81,24 @@ test('UI has EN RU ES copy and never claims WhatsApp background delivery',()=>{
  assert.match(ui,/noShare/)
  assert.match(ui,/signed_in|guest/) // distinguish account-bound and local guest paths
 })
+
+test('video-only permission remains independent from general Telegram alerts',()=>{
+ const env={
+  HH_CLIENT_TG_LINK_ENABLED:'true',
+  HH_CLIENT_TG_USE_PRACTICE_BOT:'true',
+  HH_PRACTICE_TG_ENABLED:'true',
+  HH_PRACTICE_TG_BOT_TOKEN:['123456','A'.repeat(30)].join(':'),
+  HH_CLIENT_TG_WEBHOOK_SECRET:'S'.repeat(48),
+  HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true',
+  HH_VIDEO_TELEGRAM_DELIVERY_ENABLED:'true',
+  HH_CLIENT_TG_SEND_APPROVED:'false'
+ };
+ assert.equal(telegramPersonalVideoSendReady(env),true);
+ assert.equal(telegramClientSendReady(env),false);
+ assert.equal(telegramPersonalVideoSendReady({...env,HH_VIDEO_TELEGRAM_DELIVERY_ENABLED:'false'}),false);
+ assert.equal(telegramPersonalVideoSendReady({...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'false'}),false);
+ assert.equal(telegramPersonalVideoSendReady({...env,HH_CLIENT_TG_LINK_ENABLED:'false'}),false);
+ assert.equal(telegramPersonalVideoSendReady({...env,HH_CLIENT_TG_WEBHOOK_SECRET:''}),false);
+ const ui=source('components/mandala-video-delivery.tsx');
+ assert.match(ui,/!state.telegram.sendingAvailable&&!state.telegram.automatic/);
+});

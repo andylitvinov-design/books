@@ -240,9 +240,10 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
      <button type="button" onClick={()=>void sendViaBot(false)} disabled={busy} data-video-telegram-bot-send>
       <Send size={17} aria-hidden="true"/>{t.direct}
      </button>:null}
-    {state.telegram.linked&&state.telegram.sendingAvailable&&readyMp4?
+    {state.telegram.linked?
      <label className={css.consent}>
-      <input type="checkbox" checked={state.telegram.automatic} disabled={busy}
+      <input type="checkbox" checked={state.telegram.automatic}
+       disabled={busy||(!state.telegram.sendingAvailable&&!state.telegram.automatic)}
        onChange={e=>void changeAutomatic(e.target.checked)}/>
       <span><strong>{t.automatic}</strong><small>{t.consent}</small></span>
      </label>:null}
