@@ -7,7 +7,7 @@ const repo='andylitvinov-design/books', head='a'.repeat(40), base='b'.repeat(40)
 const data=()=>({
   pr:{number:99,state:'open',draft:false,head:{sha:head,ref:'repair/99',repo:{full_name:repo}},
     base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}},
-  run:{id:701,event:'pull_request',status:'completed',conclusion:'failure',head_sha:head,
+  run:{id:701,name:'HH PR core release gate',created_at:new Date(Date.now()-60_000).toISOString(),event:'pull_request',status:'completed',conclusion:'failure',head_sha:head,
     head_branch:'repair/99',head_repository:{full_name:repo},
     pull_requests:[{number:99,head:{sha:head},base:{ref:'codex/public-book-library'}}]},
   jobs:{total_count:1,jobs:[{id:711,conclusion:'failure',completed_at:new Date().toISOString()}]},
@@ -16,6 +16,11 @@ const data=()=>({
       owner:'repair-agent',head_sha:head,base_sha:base,
       expires_at:new Date(Date.now()+10*60_000).toISOString(),last_action:'claimed'})}]
 });
+const defaultCoreRuns=d=>({total_count:1,workflow_runs:[{
+  id:701,name:'HH PR core release gate',event:'pull_request',status:'completed',
+  conclusion:'failure',head_sha:head,head_branch:'repair/99',
+  head_repository:{full_name:repo},created_at:d.run.created_at
+}]});
 const driver=(d)=>{
   const posts=[];
   return {posts,api:async(path,options={})=>{
@@ -23,6 +28,7 @@ const driver=(d)=>{
     if(path==='/issues/99/comments?per_page=100&page=1')return d.comments;
     if(path==='/actions/runs/701')return d.run;
     if(path==='/actions/runs/701/jobs?per_page=100&page=1')return d.jobs;
+    if(path.startsWith('/actions/workflows/hh-pr-core-release.yml/runs?'))return d.coreRuns||defaultCoreRuns(d);
     if(path==='/issues/99/comments'&&options.method==='POST'){
       posts.push(options.body.body);
       return {id:990,created_at:new Date().toISOString()};
@@ -72,6 +78,34 @@ test('exact failed-run and HEAD receipt is idempotent without repeat POST',async
   const d=driver(input),result=await recordRepairStart(d.api,params);
   assert.equal(result.duplicate,true);
   assert.equal(result.comment_id,997);
+  assert.deepEqual(d.posts,[]);
+});
+test('repair start waits for queued/running Core, including an older HEAD, without posting',async()=>{
+  for(const status of ['queued','in_progress']){
+    const input=data(),row=defaultCoreRuns(input).workflow_runs[0];
+    input.coreRuns={total_count:2,workflow_runs:[row,{
+      ...row,id:702,head_sha:'c'.repeat(40),status,conclusion:null,
+      created_at:new Date().toISOString()
+    }]};
+    const d=driver(input);
+    await assert.rejects(()=>recordRepairStart(d.api,params),/COMPETING_CORE_WAVE_ACTIVE/);
+    assert.deepEqual(d.posts,[]);
+  }
+});
+test('a newer completed Core attempt supersedes an old failed-run repair plan',async()=>{
+  const input=data(),row=defaultCoreRuns(input).workflow_runs[0];
+  input.coreRuns={total_count:2,workflow_runs:[row,{
+    ...row,id:702,conclusion:'success',created_at:new Date().toISOString()
+  }]};
+  const d=driver(input);
+  await assert.rejects(()=>recordRepairStart(d.api,params),/FAILED_CORE_WAVE_SUPERSEDED/);
+  assert.deepEqual(d.posts,[]);
+});
+test('repair start fails closed on incomplete Core run pagination',async()=>{
+  const input=data();
+  input.coreRuns={total_count:101,workflow_runs:defaultCoreRuns(input).workflow_runs};
+  const d=driver(input);
+  await assert.rejects(()=>recordRepairStart(d.api,params),/CORE_WAVE_INDEX_INCOMPLETE/);
   assert.deepEqual(d.posts,[]);
 });
 test('untrusted repository and unsafe paths never produce GitHub API calls',async()=>{
