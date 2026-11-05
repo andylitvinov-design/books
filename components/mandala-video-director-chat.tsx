@@ -37,7 +37,7 @@ type Props={
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
  onGoalChange:(text:string)=>void;onInvalidate:()=>void;
  onConfirm:(selection:{scenario:ReturnType<typeof compileExecutableVideoScenario>})=>boolean;
- onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
+ onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenDelivery:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
 const copy={
  ru:{title:"AI-видеорежиссёр",subtitle:"Подбираю реальные видеосюжеты · бесплатно",intro:"Привет! Создадим ваше видео: выберем цель, тему, сценарий, идею и слова поддержки. Нажимайте готовые ответы прямо в чате или пишите своими словами.",
@@ -94,7 +94,7 @@ const initial=(goal:string,locale:PublicLocale):Draft=>{
 };
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
- renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
+ renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,onOpenDelivery,
  onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
  const t=copy[locale];
  const [draft,setDraft]=useState<Draft>(()=>initial(goal,locale));
@@ -321,7 +321,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const action=parseVideoChatAction(value,step);
    if(action==="confirm"){confirm();return;}
    if(action==="create"){start();return;}
-   if(action==="open"){onOpenResult();return;}
+   if(action==="open"){
+     if(/(?:скачать|сохранить|отправить|download|share|send|descargar|enviar)/iu.test(value))onOpenDelivery();
+     else onOpenResult();
+     return;
+   }
    const reply=understandVideoChatReply(value,step) as {
      kind:string;reason?:string;requested?:number;goal?:string;
      targetStep?:string;direction?:number;audioRequested?:boolean;
