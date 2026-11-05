@@ -9,7 +9,7 @@ import css from "./mandala-video-delivery.module.css";
 
 type State={
  cloudAvailable:boolean;
- telegram:{linkAvailable:boolean;linked:boolean;sendingAvailable:boolean;automatic:boolean};
+ telegram:{linkAvailable:boolean;linked:boolean;sendingAvailable:boolean;automatic:boolean;consentSaved:boolean};
  whatsapp:{manualShare:boolean;automatic:boolean};
 };
 type Props={
