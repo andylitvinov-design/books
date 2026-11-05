@@ -1,6 +1,6 @@
 {
   "schemaVersion": "hh-stse-coverage-v1",
-  "status": "generated_pre_review",
+  "status": "proposed_storylines_rewritten_and_curated_for_review; existing_public_scenarios_preserved",
   "parentTaxonomyVersion": "mytube-content-taxonomy-4x4x4-v4",
   "sourceOfTruth": "state-transition-scenarios-v1.json",
   "summary": {
@@ -14,7 +14,12 @@
     "newScenarioAvailableStyles": 3,
     "approvedNewScenarios": 0,
     "newScenariosPendingHumanReview": 256,
-    "verifiedNewMediaBindings": 0
+    "verifiedNewMediaBindings": 0,
+    "creativeDraftsRewritten": 256,
+    "uniqueDraftMotifProfiles": 256,
+    "editorialApprovedNewScenarios": 0,
+    "publicRecommenderEligibleScenarios": 256,
+    "draftPreviewEligibleScenarios": 256
   },
   "topics": [
     {

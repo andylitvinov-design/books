@@ -63,3 +63,13 @@ test("legacy licensed collection metadata is ranked without an invented personal
   assert.equal(hd.weight,1);
   assert.notEqual(full.tier,"editorially_reviewed_fullhd");
 });
+
+test("reviewed portrait HD edit is technically 720p but not native portrait film",()=>{
+ const x={id:"sun-trees-forest",theme:"health",status:"approved",collection:"film-collection-v3",media:"licensed_mp4",
+  video:"/videos/holistic-house/film-collection-v3/sun-trees-forest.mp4",width:720,height:1280,fps:24,
+  rightsReference:{kind:"dareful_cc_by_4_0"},technicalQuality:{score:100,sha256:"a".repeat(64),decodedFrame:true,editorialApproved:true,sourceOriginalLandscapeCrop:true}};
+ const result=videoQualityEvidence(x);
+ assert.equal(result.tier,"editorially_reviewed_encoded_portrait_hd");
+ assert.equal(result.weight,4);
+ assert.match(result.reason,/not_native/);
+});

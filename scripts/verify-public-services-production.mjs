@@ -25,6 +25,22 @@ try {
   // fail closed rather than reaching any configured provider or database.
   await context.route('**/api/**', route =>
     ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+  // Third-party YouTube thumbnails are not part of our public service API.
+  // Unreliable outbound connectivity in the isolated runner can close a
+  // perfectly valid img request. Use one inert image fixture ONLY for these
+  // external thumbnails; never mask first-party browser errors or APIs.
+  const youtubeThumbnail=/^https:\/\/(?:i\.ytimg\.com|img\.youtube\.com)\/vi\/[A-Za-z0-9_-]{11}\/hqdefault\.jpg(?:\?.*)?$/;
+  // A first-party request, arbitrary host or non-thumbnail must never be stubbed.
+  assert.ok(youtubeThumbnail.test('https://i.ytimg.com/vi/m9RfDgK76PU/hqdefault.jpg'));
+  assert.equal(youtubeThumbnail.test(origin + '/vi/m9RfDgK76PU/hqdefault.jpg'), false);
+  assert.equal(youtubeThumbnail.test('https://example.com/vi/m9RfDgK76PU/hqdefault.jpg'), false);
+  await context.route(youtubeThumbnail, route => {
+    if (route.request().resourceType() !== 'image') return route.continue();
+    return route.fulfill({
+      status: 200, contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#e1e4e6"/></svg>',
+    });
+  });
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
