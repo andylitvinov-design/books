@@ -45,6 +45,8 @@ import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyT
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
 import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
+import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
+  MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
 import {MYTUBE_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
 import type {MyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
 import {paintMyTubeMotion,validateMyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
@@ -1922,6 +1924,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
+  const [audioWaveform,setAudioWaveform]=useState<readonly number[]|null>(null);
+  const waveformFile=attachedAudio?.kind==="file"&&audioRights?attachedAudio.file:null;
+  useEffect(()=>{
+    let active=true;
+    setAudioWaveform(null);
+    if(!waveformFile||waveformFile.size<44||
+       waveformFile.size>MYTUBE_WAVEFORM_MAX_FILE_BYTES)
+      return ()=>{active=false};
+    // Read-only offline decode; neither audio playback nor uploaded media.
+    // Only normalized peaks survive; decoded PCM is discarded.
+    const analyze=async()=>{
+      try{
+        if(typeof OfflineAudioContext==="undefined")return;
+        const context=new OfflineAudioContext(1,1,44100);
+        const decoded=await context.decodeAudioData(await waveformFile.arrayBuffer());
+        if(!active||!decoded.length||!Number.isFinite(decoded.duration)||
+           decoded.duration>MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS)return;
+        const peaks=extractMyTubeWaveform(decoded.getChannelData(0));
+        if(active)setAudioWaveform(peaks);
+      }catch{if(active)setAudioWaveform(null);}
+    };
+    void analyze();
+    return ()=>{active=false};
+  },[waveformFile]);
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
@@ -5926,7 +5952,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             captions={timelineCaptions}
             audio={attachedAudio&&!audioNeedsAttachment?{
               label:appliedAudioName,startSeconds:effectiveAudioStartSeconds,
-              durationSeconds:duration-effectiveAudioStartSeconds
+              durationSeconds:duration-effectiveAudioStartSeconds,
+              peaks:audioWaveform??undefined
             }:null}
             musicBed={attachedAudio?.kind==="file"&&audioRights&&
               musicBed.id!=="none"&&!audioNeedsAttachment?{
