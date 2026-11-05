@@ -42,3 +42,48 @@ The four weak-metric sources are **review candidates, not automatically deleted 
 
 ## Final release scope (4 Nov 2026)
 Four selected moving H.264 HD-encoded portrait excerpts were approved through direct user instruction to complete and release this PR, following assistant editorial review of all 120 frames per five-second clip and confirmation of four individual official Dareful CC BY 4.0 source pages. The user did not separately watch each clip, and this is not represented as per-clip owner review. Four other technically passing candidates and eight unsuccessful technical candidates stay unpublished. Live source count is 48 licensed + 684 procedural MP4s = 732 after verified merge and deployment. The four new master crops must only be used for 9:16 portrait export, and are NOT native portrait Full HD. Visible credits: /videos/holistic-house/film-collection-v3/hd-credits-20261105.html.
+
+## MyTube × motif coverage and curated upload priorities (5 November 2026)
+
+Once four source-credited, portrait-only licensed H.264 excerpts are published, the
+local first-party catalog becomes **48** physical MP4s (44 prior plus four new).
+The separate **684** original-motion clips remain procedural visual art, not 684
+independent film sources. Portrait clips do not qualify for square/landscape
+compositions or native portrait Full HD: encoded video is 720×1280 / 24fps.
+
+Every new approved master receives a **reviewed editorial topic ranking** in
+`data/video-catalog/mytube-scene-rankings-v1.json`. The four films are
+mapped to 3 topic candidates each without pretending they depict people,
+relationships, clinical recovery, or all four events of a scripted film.
+
+The new offline coverage auditor gives a **real basis for further sourcing**:
+
+```bash
+node scripts/audit-mytube-media-coverage.mjs --strict
+node scripts/audit-mytube-media-coverage.mjs --queue --aspect=portrait
+node scripts/audit-mytube-media-coverage.mjs --json --aspect=landscape
+node scripts/audit-mytube-media-coverage.mjs --csv
+```
+
+It reports the **256 scenarios × 5 motifs = 1,280 decisions**, 46 motifs and
+10 styles, topic-tagged four-shot feasibility, per-motif coverage and a
+prioritized manual-review queue. Four topic-tagged candidates mean **source
+suggestions**, not a literal finished story; exact visible object, releases,
+attribution, cinematic quality and actual encoding need independent review.
+The tool never labels 0/500 R2 uploads as completed, counts source-page URLs
+as downloaded footage, or adds procedural graphics to filmed inventory.
+
+The CC BY 4.0 notices must remain visible as actual attribution with source
+links and the explicit landscape-to-portrait crop modification. Four author
+pages were individually verified; there are no recognizable persons or
+misleading relationship acting in the displayed four preview posters.
+This is an **editorial source quality check**, not a claim of owner viewing
+each moving video on an iPhone. Final Safari playback/export remains an
+independent LIVE acceptance gate.
+
+**R2 500:** The empty Supabase/R2 staged components do not provide a licensed
+cloud inventory. Cloudflare account-wide cost and billing proof, an existing
+private bucket, scoped credentials and professionally reviewed distinct sources
+are still absent. Maintain `COST_GATE=HOLD`; do not auto-upload a batch or
+turn on vault feature flags. Quantity milestones (20/100/250/500) cannot be
+marked achieved until physical independent originals pass the same safeguards.
