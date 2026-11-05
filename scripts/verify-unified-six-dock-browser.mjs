@@ -320,6 +320,24 @@ try{
    "the Practice route switches to the single six-item app dock");
  results.push({journey:"Public homepage seven links → explicit Practice → single six-tab dock",passed:true});
 
+ // Profile unification: the seven-item legacy entry and the six-item dock
+ // lead to the SAME hub; create reuses the real free public builder.
+ await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
+ const editorialProfile=page.locator('.mobile-bottom-navigation [data-nav-item="profile"]');
+ await editorialProfile.waitFor({state:"visible",timeout:30000});
+ assert.equal(await editorialProfile.getAttribute("href"),"/ru/app/portrait");
+ await editorialProfile.click();
+ await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="view"][aria-current="page"]').count(),1);
+ await page.locator('[data-profile-tab="create"]').click();
+ await page.waitForURL(/\/ru\/personality-profiles\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs][data-profile-active="create"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
+ assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
+ assert.equal(await page.locator('[data-profile-tab]').count(),4);
+ results.push({journey:"Public Profile → private guest hub → existing four-area creator with one six-tab dock",passed:true});
+
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
 console.log("Unified six-dock browser acceptance passed",results.length);
