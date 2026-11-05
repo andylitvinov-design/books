@@ -294,3 +294,15 @@
  .captureContent :global([data-inline-offer-form] [data-enquiry-attribution-choice]){font-size:11px!important;line-height:1.25!important;margin:0!important}
  .captureContent :global([data-inline-offer-form] [role="group"]:has([data-compact-channel])){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 }
+
+/* Keep 320px final capture within an ordinary mobile viewport.
+ * No required fields, consent, source copy or 44px tap targets are removed. */
+@media(max-width:350px) {
+ .page[data-personal-service] .captureScreen .captureContent{padding:6px 8px}
+ .page[data-personal-service] .captureContent .smallEyebrow{font-size:9px;margin-bottom:2px}
+ .page[data-personal-service] .captureContent h2{font-size:23px;line-height:1.08;margin-bottom:4px}
+ .page[data-personal-service] .captureContent .captureIntro{font-size:11px;line-height:1.24;margin-bottom:4px}
+ .page[data-personal-service] .captureContent :global([data-inline-offer-form]){padding:5px 6px}
+ .page[data-personal-service] .captureContent :global([data-inline-offer-form] form){gap:3px}
+ .page[data-personal-service] .captureContent :global([data-inline-offer-form] .field){gap:3px}
+}

@@ -90,6 +90,10 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   assert.match(jsx, /setContactDraft\(publicDraft\)/);
   assert.match(jsx, /Boolean\(day\) !== Boolean\(time\)/);
   assert.match(jsx, /data-remote-public-order-contact/);
+  const browserQa = read("scripts/verify-reiki-mobile-order-browser.mjs");
+  assert.match(browserQa, /locator\("\[data-optional-session-time\]"\)/);
+  assert.match(browserQa, /schedule\.locator\("summary"\)\.click\(\)/);
+  assert.match(browserQa, /schedule\.evaluate\(el => el\.open\)/);
   assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
   assert.match(jsx, /onSaved=\{\(\) => \{/);
   assert.match(jsx, /readRemoteSupportPublicDraft\(window\.sessionStorage, selected\.serviceId\)/);

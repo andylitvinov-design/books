@@ -70,6 +70,14 @@ try {
       // A contact enquiry is valid even without date or time. For a chosen
       // time, both fields must be present and the preference must be future.
       if (locale === "en" || locale === "ru") {
+        const schedule = dialog.locator("[data-optional-session-time]");
+        assert.equal(await schedule.count(), 1, locale + ": optional time disclosure");
+        assert.equal(await schedule.evaluate(el => el.open), false,
+          locale + ": schedule closed by default");
+        await schedule.locator("summary").click();
+        assert.equal(await schedule.evaluate(el => el.open), true,
+          locale + ": user explicitly opened schedule");
+        await dialog.locator("#remote-date").waitFor({state:"visible"});
         const date = await page.evaluate(() => {
           const d = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
           return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
