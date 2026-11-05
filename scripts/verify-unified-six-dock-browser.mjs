@@ -251,6 +251,12 @@ async function inspect(browserType,locale,width){
     }));
     await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
     await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
+    // The root dock is server-rendered; wait until React owns the click
+    // before testing same-document navigation (no pre-hydration hard link).
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-unified-dock-item="video"]');
+      return link && Object.keys(link).some(key=>key.startsWith("__reactProps$"));
+    },null,{timeout:15000});
     const initialDocument=await page.evaluate(()=>performance.timeOrigin);
     let popups=0;
     page.on("popup",()=>{popups++});

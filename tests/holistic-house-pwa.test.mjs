@@ -31,9 +31,9 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
         icon.sizes===size+'x'+size&&icon.src==='/holistic-house-icon/'+size))
     assert.ok(manifest.shortcuts.some(s=>s.url.endsWith('/app/messages')))
   }
-  assert.equal(en.start_url,'/en')
-  assert.equal(ru.start_url,'/ru')
-  assert.equal(es.start_url,'/es')
+  assert.equal(en.start_url,'/en/app/messages')
+  assert.equal(ru.start_url,'/ru/app/messages')
+  assert.equal(es.start_url,'/es/app/messages')
   assert.match(page,/query.program === 'stress'/)
   assert.match(page,/holistic-house-app-ru\.webmanifest/)
   assert.match(page,/holistic-house-app\.webmanifest/)
