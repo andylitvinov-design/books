@@ -929,3 +929,20 @@ test('Dot story command and private deep link select story workflow without repl
  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>
    x.url==='https://t.me/Andydotbot?start=video_story'));
 });
+
+test('owner-video pinned runner still performs real ffmpeg ffprobe and media acceptance',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
+  assert.match(workflow,/owner-video:\s*\n(?:\s*#[^\n]*\n)*\s*runs-on: ubuntu-24\.04\s*\n\s*timeout-minutes: 25/,
+    'Do not inherit the changing ubuntu-latest image or increase the job cap')
+  assert.match(workflow,/if ! command -v ffmpeg[^\n]*\|\| ! command -v ffprobe[^\n]*;/,
+    'Real ffmpeg AND ffprobe must be present before native media QA')
+  assert.match(workflow,/sudo apt-get update -qq/)
+  assert.match(workflow,/sudo apt-get install -y -qq ffmpeg/)
+  assert.match(workflow,/ffmpeg -version >\/dev\/null/)
+  assert.match(workflow,/ffprobe -version >\/dev\/null/)
+  assert.match(workflow,/node --test tests\/owner-telegram-youtube-visibility\.test\.mjs/)
+  assert.match(workflow,/node scripts\/verify-telegram-owner-video-media\.mjs/)
+  assert.match(workflow,/node scripts\/ensure-owner-video-renderer\.mjs --verify-trace/)
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/,
+    'Never permit media release checks to pass after a failed install')
+});
