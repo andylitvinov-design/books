@@ -9,6 +9,7 @@ import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs"
 import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
 import {listMyTubeMeaningAxes,listMyTubeMeaningMotifs,listMyTubeMotifScenarios} from "@/lib/mandala/mytube-meaning-hierarchy.mjs";
 import {listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
 import {getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
@@ -211,6 +212,8 @@ export function MandalaAutoVideoDirector({
  const [profileDetails,setProfileDetails]=useState("");
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
+ const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
+ const [promptDesignedFor,setPromptDesignedFor]=useState<string|null>(null);
  const [timelineEdits,setTimelineEdits]=useState<{
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
  }|null>(null);
@@ -337,13 +340,14 @@ export function MandalaAutoVideoDirector({
  const timelineForTopic=(topicId:string,scenarioId:string|null,
    recommended:ReturnType<typeof recommendAutoVideo>,plot:MyTubePlot|null=null,
    requestedSeconds?:10|15|20|30|60,presetOverride?:string,
-   motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null)=>{
+   motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null,
+   meaningAxisId:string|null=selectedMeaningAxisId||null)=>{
    if(!recommended.presetId)return null;
    const clipIds=plot?recommendMyTubePlotMontage({
      plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
    }).clipIds:recommendMyTubeTopicStoryClips({
      topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,
-     meaningAxisId:selectedMeaningAxisId||null,targetAspect:aspect,
+     meaningAxisId,targetAspect:aspect,
    }).clipIds;
    if(clipIds.length!==4)return null;
    const desiredSeconds=requestedSeconds||recommended.durationSeconds;
@@ -364,6 +368,7 @@ export function MandalaAutoVideoDirector({
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
    if(!item||disabled)return;
    const nextIds=selectedGoalIds.includes(goalId)
@@ -384,6 +389,7 @@ export function MandalaAutoVideoDirector({
      fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
    onInvalidate?.();onCategoryChange?.(nextTheme);
@@ -397,6 +403,7 @@ export function MandalaAutoVideoDirector({
      preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
    if(!item)return;
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
@@ -409,6 +416,7 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:item.label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomyTopic=(topicId:string)=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    const found=getMyTubeTopic(topicId);if(!found)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    const label=found.topic.label[locale];
@@ -500,6 +508,7 @@ export function MandalaAutoVideoDirector({
 
  // Device-only profile recommender. Never persists answers or contacts an external AI.
  const applyProfile=()=>{
+   setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    const category=videoGoalCategories.find(item=>item.id===profileCategory);
    if(!category)return;
@@ -517,13 +526,47 @@ export function MandalaAutoVideoDirector({
      fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
    setProfileMode(null);
  };
- const requestInput=<label className={css.topicInput} data-video-request-input>
+ // Interpret only when the visitor explicitly presses Design. Reuse existing
+ // canonical category/topic UI and the same verified four-shot film renderer.
+ const designFromRequest=()=>{
+  if(disabled||!goal.trim())return;
+  const classification=classifyMyTubeRequest(goal,locale);
+  onInvalidate?.();
+  setPromptClassification(classification);setPromptDesignedFor(goal);
+  setSelectedGoalId(null);setSelectedGoalIds([]);
+  setSelectedSubcategoryId(classification?.subcategoryId||"");
+  setSelectedTopicId(classification?.topicId||"");
+  setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+  setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+  setMeaningHandoff(null);setIncludeMeaningCaption(false);
+  setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+  const nextTheme=(classification?legacyThemeForSubcategory[classification.subcategoryId]:null)||theme;
+  if(classification){
+   const nextCategory:keyof typeof popularTopicOrder=
+    classification.categoryId==="stress-anxiety"?"calm":
+    classification.categoryId==="energy-confidence"?"strength":
+    classification.categoryId==="love-relationships"?"love":
+    nextTheme==="money"?"possibilities":"growth";
+   setSelectedCategoryId(nextCategory);setSubcategoriesOpen(true);
+   onCategoryChange?.(nextTheme);
+  }
+  const recommended=recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
+   preferredTheme:classification?nextTheme:null,presets,scenes});
+  setProposalContext({goal,theme:nextTheme});setProposal(recommended);
+  setTimelineEdits(classification?timelineForTopic(
+   classification.topicId,null,recommended,null,undefined,undefined,null,null,null
+  ):null);
+ };
+ const analyzedPath=promptClassification?getMyTubeTopic(promptClassification.topicId):null;
+ const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
    <input type="text" data-auto-video-input value={goal}
      maxLength={160} disabled={disabled} placeholder={t.placeholder}
+     onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
        const value=event.currentTarget.value;
        onInvalidate?.();onGoalChange(value);
+    setPromptDesignedFor(null);setPromptClassification(null);
        setProposalContext({goal:value,theme});
        setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
        setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
@@ -531,6 +574,38 @@ export function MandalaAutoVideoDirector({
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}/>
  </label>;
+ const requestInput=<div className={css.requestComposer} data-video-request-composer>
+  {requestField}
+  <button type="button" data-video-request-design className={css.designRequest}
+   disabled={disabled||!goal.trim()} onClick={designFromRequest}>
+   <Sparkles size={17} aria-hidden="true"/>
+   <span>{locale==="ru"?"Спроектировать видео":locale==="es"?"Diseñar mi vídeo":"Design my video"}</span>
+   <ArrowRight size={17} aria-hidden="true"/>
+  </button>
+  {promptDesignedFor===goal?<div className={css.requestAnalysis}
+   data-video-request-analysis data-confidence={promptClassification?.confidence||"unresolved"}
+   role="status" aria-live="polite">
+   {promptClassification&&analyzedPath?<>
+    <strong>{promptClassification.confidence==="low"?
+      (locale==="ru"?"Предварительный вариант — проверьте":locale==="es"?"Propuesta preliminar — compruébala":"Provisional suggestion — please check"):
+      (locale==="ru"?"Запрос разобран":locale==="es"?"Solicitud interpretada":"Request interpreted")}</strong>
+    <span data-video-request-taxonomy>
+     {analyzedPath.category.label[locale]} → {analyzedPath.subcategory.label[locale]} → {analyzedPath.topic.label[locale]}
+    </span>
+    <button type="button" className={css.requestJump} data-video-request-open-plan
+     onClick={()=>document.querySelector<HTMLElement>("[data-auto-video-proposal]")?.scrollIntoView({
+      behavior:"smooth",block:"start"
+     })}>
+     {locale==="ru"?"Посмотреть план из 4 сцен":locale==="es"?"Ver plan de 4 escenas":"See the 4-shot plan"}
+     <ArrowRight size={14} aria-hidden="true"/>
+    </button>
+   </>:<p>{locale==="ru"?
+    "Пока недостаточно данных для определения темы. Уточните запрос или выберите тему ниже.":
+    locale==="es"?"No se puede determinar el tema. Aclara la petición o selecciona el tema.":
+    "Unable to match a reliable topic. Refine your request or select a topic below."}</p>}
+  </div>:null}
+ </div>;
+ 
  const profilePanel=<div className={css.profilePanel} data-video-profile-recommendation>
    <div className={css.profileSummary}>
      <span><Sparkles size={19} aria-hidden="true"/>
