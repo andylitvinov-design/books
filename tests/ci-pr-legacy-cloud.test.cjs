@@ -135,12 +135,17 @@ test('legacy cloud preflight is finalized after fix; never early FAILED',async()
   claimStatus:'claimed',claimResult:'success',strategy:'legacy',
   fixResult:'success',candidateStatus:'prepared',
   candidateDetail:'SHALLOW_ANCESTRY_UNAVAILABLE',
+  candidateSnapshot:'3,0,2,1,0,0',
   publishResult:'skipped'});
  assert.equal(result.state,'PREPARED');
  assert.equal(result.lane,'legacy');
  assert.equal(result.source_published,false);
  assert.equal(result.detail_code,'SHALLOW_ANCESTRY_UNAVAILABLE');
+ assert.deepEqual(result.legacy_snapshot_summary?.counts,
+  {identical:0,divergent:2,only_legacy:1,only_production:0,unknown:0});
+ assert.equal(result.legacy_snapshot_summary?.merge_authorized,false);
  assert.equal(comments.length,1);
+ assert.match(comments[0],/"legacy_snapshot_summary"/);
  assert.match(comments[0],/"state":"PREPARED"/);
  assert.doesNotMatch(comments[0],/FIX_JOB_SKIPPED/);
  assert.deepEqual(changes,[],'manual and source labels are untouched');
@@ -217,4 +222,21 @@ test('legacy worker skips npm only when no safe focused tests exist',()=>{
   'components/auth/private.tsx'].some(safeSourcePath),false);
  assert.equal(['components/reiki-hero.tsx',
   'scripts/verify-remote-inline-order-browser.mjs'].some(safeSourcePath),true);
+});
+
+test('trusted legacy snapshot summary is bounded and cannot authorize merge',()=>{
+ const parse=worker.parseLegacySnapshotSummary;
+ const good=parse('3,0,2,1,0,0');
+ assert.equal(good.paths,3);
+ assert.equal(good.counts.divergent,2);
+ for(const key of ['ancestry_verified','source_write_authorized','merge_authorized'])
+   assert.equal(good[key],false);
+ for(const wrong of ['0,0,0,0,0,0','3,0,2,8,0,0','1,0,0,0,0,0',
+   '3,0,2,1,0,0,0','3,0,02,1,0,0','3,0,2,1,0,0\\nleak',
+   '9,0,0,0,0,9'])assert.equal(parse(wrong),null);
+ const yml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(yml.includes('candidate_snapshot: ${{ steps.legacy_scan.outputs.candidate_snapshot }}'));
+ assert.ok(yml.includes('HH_CANDIDATE_SNAPSHOT: ${{ needs.fix.outputs.candidate_snapshot }}'));
+ assert.ok(yml.includes('candidateSnapshot:process.env.HH_CANDIDATE_SNAPSHOT'));
+ assert.ok(yml.includes('summaryNumbers.slice(1).reduce'));
 });

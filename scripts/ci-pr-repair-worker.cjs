@@ -554,11 +554,24 @@ async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=D
 const SAFE_NO_CLAIM_REASONS=new Set([
  'NO_UNCLAIMED_OWNER_PR','INCOMPLETE_QUEUE','GITHUB_API_BUDGET_PAUSE','GITHUB_API_RESERVE'
 ]);
+// Shallow Git checkouts cannot establish ancestry. Accept only bounded
+// counts from the trusted legacy runner, never source/merge authorization.
+function parseLegacySnapshotSummary(value){
+  if(typeof value!=='string'||!/^[1-8](?:,[0-8]){5}$/.test(value))return null;
+  const [paths,identical,divergent,onlyLegacy,onlyProduction,unknown]=
+    value.split(',').map(Number);
+  if(identical+divergent+onlyLegacy+onlyProduction+unknown!==paths)return null;
+  return {schema:'HH_LEGACY_BLOB_COUNTS_V1',paths,
+    counts:{identical,divergent,only_legacy:onlyLegacy,
+      only_production:onlyProduction,unknown},
+    ancestry_verified:false,source_write_authorized:false,merge_authorized:false};
+}
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
-  publishStatus='',publishSha='',candidateStatus='',candidateDetail='',dryRun=false}) {
+  publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
+  candidateSnapshot='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -701,6 +714,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
+    legacy_snapshot_summary:state==='PREPARED'&&strategy==='legacy'&&
+      detailCode==='SHALLOW_ANCESTRY_UNAVAILABLE'?
+      parseLegacySnapshotSummary(candidateSnapshot):null,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
     code_agent_configured:codeAvailable,code_provider:codeAvailable?'opencode/glm-5.3-flash-free':null,
@@ -752,4 +768,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
