@@ -15,10 +15,11 @@ const scenes=Array.from({length:6},(_,i)=>({
   media:'licensed_mp4',video:'/videos/holistic-house/film-collection-v3/nature-scene-'+i+'.mp4',
   motifs:['nature','light'],tags:['landscape'],durationSeconds:5,
 }));
-test('3 minute audio maps to 15 exact contiguous 12-second cuts and four stages',()=>{
+test('3 minute audio uses 36 contiguous five-second non-looping cuts in four stages',()=>{
   const result=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,scenes});
   assert.equal(result.ok,true);
-  assert.equal(result.cutCount,15);
+  assert.equal(result.cutCount,36);
+  assert.ok(result.shots.every(x=>x.durationMs<=x.sourceDurationMs&&!x.loopRequired));
   assert.equal(result.uniqueSceneCount,6);
   assert.equal(result.shots[0].startMs,0);
   assert.equal(result.shots.at(-1).startMs+result.shots.at(-1).durationMs,180000);
@@ -28,8 +29,9 @@ test('3 minute audio maps to 15 exact contiguous 12-second cuts and four stages'
   assert.ok(result.shots.every(x=>x.relevance>0));
   assert.ok(result.shots.every((x,i)=>i===0||x.startMs===result.shots[i-1].startMs+result.shots[i-1].durationMs));
 });
-test('30 minute soundtrack is bounded, with exact last millisecond',()=>{
-  const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:1800000,scenes});
+test('30 minute soundtrack is bounded when verified masters are long enough',()=>{
+  const longerMasters=scenes.map(scene=>({...scene,durationSeconds:20}));
+  const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:1800000,scenes:longerMasters});
   assert.equal(r.ok,true);
   assert.equal(r.cutCount,150);
   assert.equal(r.shots.at(-1).startMs+r.shots.at(-1).durationMs,1800000);
@@ -74,4 +76,28 @@ test('four story beats never repeat a clip at the beat boundary',()=>{
    scenes:scenes.slice(0,4),stageClipIds:ids});
  assert.equal(result.ok,true);
  assert.ok(result.shots.every((shot,i)=>i===0||shot.sceneId!==result.shots[i-1].sceneId));
+});
+
+test('short licensed masters cannot be silently looped to fill 30 minutes',()=>{
+  const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:1800000,scenes});
+  assert.equal(r.code,'NON_LOOPING_SOURCE_COVERAGE_INSUFFICIENT');
+  assert.ok(r.requiredCuts>r.maxCuts);
+});
+test('under-three-second footage is excluded from real non-looping cuts',()=>{
+  const short=scenes.map(x=>({...x,durationSeconds:1}));
+  assert.equal(compileDotStoryCutPlan({
+    plotId:plot.id,audioDurationMs:180000,scenes:short,
+  }).code,'VERIFIED_SCENE_COVERAGE_INSUFFICIENT');
+});
+test('four editorial anchors retain all six relevant vetted sources',()=>{
+  const ids=scenes.slice(0,4).map(scene=>scene.id);
+  const r=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,
+    scenes,stageClipIds:ids});
+  assert.equal(r.ok,true);
+  assert.equal(r.uniqueSceneCount,6);
+  assert.deepEqual([0,1,2,3].map(stage=>
+    r.shots.find(shot=>shot.stage===stage).sceneId),ids);
+  assert.ok(r.shots.every((shot,i)=>
+    !shot.loopRequired&&shot.durationMs<=shot.sourceDurationMs&&
+    (!i||shot.sceneId!==r.shots[i-1].sceneId)));
 });
