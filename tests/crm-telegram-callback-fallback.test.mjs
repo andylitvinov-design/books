@@ -34,6 +34,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',pr
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
    receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
+   // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
+   whatsappExpressReviewLocale:()=>null,
    ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++}});
  if(diagnostic==='off'){
   const begin=sources.hook.indexOf('export async function processTelegramDiagnostic'),end=sources.hook.indexOf('  if(!/^',begin);
