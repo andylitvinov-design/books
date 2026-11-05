@@ -96,12 +96,52 @@ const wording={
  tryAnother:"Elige otro eje o transición emocional."},
 } as const;
 
+// Narrow the pure JS bridge at the React boundary. Never trust arbitrary
+// browser JSON as an authentication, therapy or rendered-media decision.
+const objectOf=(x:unknown):Record<string,unknown>|null=>
+ x!==null&&typeof x==="object"&&!Array.isArray(x)?x as Record<string,unknown>:null;
+const stringsOf=(x:unknown):string[]=>
+ Array.isArray(x)?x.filter((v):v is string=>typeof v==="string"):[];
+function parsedHandoff(value:unknown):ConfirmedMeaningHandoff|null{
+ const src=objectOf(value);
+ if(!src||!["editorial_only","neutral_supportive"].includes(String(src.status)))return null;
+ const idea=objectOf(src.ideaBrief),mind=objectOf(src.psychologistMind),
+   emotion=objectOf(src.emotionalScenario),film=objectOf(src.filmScenario),
+   transition=objectOf(idea?.emotionalTransition);
+ if(!idea||!mind||!emotion||!["confirmed","neutral_confirmed"].includes(String(idea.status)))
+   return null;
+ if(src.renderReady!==false||src.mayPublishVideo!==false||mind.clinicalTreatment!==false)
+   return null; // never promote a future unverified/clinical bridge into the UI
+ const confirmed=String(idea.status);
+ if(confirmed==="confirmed"&&!film)return null;
+ return {
+   schemaVersion:String(src.schemaVersion),status:String(src.status),
+   ideaBrief:{status:confirmed,topicId:String(idea.topicId),
+     ideaText:typeof idea.ideaText==="string"?idea.ideaText:null,
+     confirmedIdeaId:typeof idea.confirmedIdeaId==="string"?idea.confirmedIdeaId:null,
+     meaningAxisId:typeof idea.meaningAxisId==="string"?idea.meaningAxisId:null,
+     userEdited:idea.userEdited===true,
+     editorialReviewStatus:typeof idea.editorialReviewStatus==="string"?idea.editorialReviewStatus:undefined,
+     ownerEditorialApproved:idea.ownerEditorialApproved===true,
+     emotionalTransition:transition?{
+       from:String(transition.from),to:String(transition.to),vectorId:String(transition.vectorId)
+     }:undefined},
+   psychologistMind:{status:String(mind.status),clinicalTreatment:false,
+     processCodes:stringsOf(mind.processCodes)},
+   emotionalScenario:{status:String(emotion.status),stages:stringsOf(emotion.stages),
+     pace:String(emotion.pace)},
+   filmScenario:film?{scenarioId:String(film.scenarioId),label:String(film.label),
+     narrativeBeats:stringsOf(film.narrativeBeats),
+     centralIdea:String(film.centralIdea)}:null,
+   mayPublishVideo:false,renderReady:false,
+ };
+}
 const storageKey=(topicId:string)=>"hh-meaning-idea-v1-session:"+topicId;
 const digitOrNull=(value:string)=>value===""?null:Number(value);
 export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScenarioId,
  onConfirmHandoff,onChooseScenario}:Props){
  const t=wording[locale];
- const states=useMemo<StateOption[]>(()=>listStates(locale),[locale]);
+ const states=useMemo<StateOption[]>(()=>listStates(locale).map(x=>({id:String(x.id),label:String(x.label)})),[locale]);
  const axes=useMemo<MeaningAxisOption[]>(()=>listMeaningAxes(locale),[locale]);
  const vectors=useMemo<VectorOption[]>(()=>listEmotionalVectors(locale),[locale]);
  const validIds=useMemo(()=>new Set(states.map(x=>x.id)),[states]);
@@ -157,8 +197,8 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
              {neutral:true}:{ideaId:saved.ideaId,
                customIdeaText:typeof saved.customText==="string"?saved.customText:undefined});
            if(!idea)return;
-           const adapted=bridge.buildMeaningFilmHandoff(idea,{locale});
-           if(!["editorial_only","neutral_supportive"].includes(adapted.status))return;
+           const adapted=parsedHandoff(bridge.buildMeaningFilmHandoff(idea,{locale}));
+           if(!adapted)return;
            setResponse(suggestion);setSelectedId(saved.ideaId||"");
            setCustomText(typeof saved.customText==="string"?saved.customText:"");
            setIncludeCaption(saved.includeCaption===true);setHandoff(adapted);
@@ -209,8 +249,8 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
      const brief=confirmMeaningIdea(makeRequest(),neutral?{neutral:true}:
        {ideaId:selectedId,customIdeaText:custom});
      if(!brief){setError(t.error);return}
-     const next:ConfirmedMeaningHandoff=buildMeaningFilmHandoff(brief,{locale});
-     if(!["editorial_only","neutral_supportive"].includes(next.status)){
+     const next=parsedHandoff(buildMeaningFilmHandoff(brief,{locale}));
+     if(!next){
        setError(t.mismatch);return;
      }
      setHandoff(next);onConfirmRef.current(next,includeCaption&&!neutral);

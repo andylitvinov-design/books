@@ -271,19 +271,19 @@ export function MandalaAutoVideoDirector({
  const stageClipIds=chosen?(activeTimelineEdits?.clipIds||personalizedShotIds||[...chosen.clips]):[];
  const stageDurations=chosen?(activeTimelineEdits?.durations||
    allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
- const stageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
+ const manualStageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
  // Confirmed creative meaning is offered as an optional final caption.
  // Client-authored captions, music, voice and physical footage always win.
  const meaningCaption=meaningHandoff?.status==="editorial_only"&&includeMeaningCaption
    ?meaningHandoff.ideaBrief?.ideaText||null:null;
- const lastCaptionTaken=Boolean(stageCaptions[3]?.trim());
+ const lastCaptionTaken=Boolean(manualStageCaptions[3]?.trim());
  const meaningCaptionTooLong=Boolean(meaningCaption&&!lastCaptionTaken&&
    Array.from(meaningCaption).length>STAGE_CAPTION_LIMIT);
  const meaningCaptionUsed=Boolean(meaningCaption&&!lastCaptionTaken&&!meaningCaptionTooLong);
- const effectiveStageCaptions=stageCaptions.map((caption,index)=>
+ const stageCaptions=manualStageCaptions.map((caption,index)=>
    index===3&&meaningCaptionUsed?meaningCaption!:caption);
  const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,
-   effectiveStageCaptions,selectedMotifId,selectedStyleId,
+   stageCaptions,selectedMotifId,selectedStyleId,
    meaningHandoff?.ideaBrief?.confirmedIdeaId||null,meaningHandoff?.ideaBrief?.ideaText||null]);
  const topicMediaCoverage=selectedTopicId?recommendMyTubeTopicStoryClips({
    topicId:selectedTopicId,scenarioId:selectedScenarioId||null,scenes,
@@ -1017,7 +1017,7 @@ export function MandalaAutoVideoDirector({
          disabled={disabled||plotLacksApprovedClips||meaningCaptionTooLong} onClick={()=>{
            const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
              clipIds:stageClipIds,durationSecondsByStage:stageDurations,
-             excludedMotifs:proposal.excludedMotifs,captionTexts:effectiveStageCaptions});
+             excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
            if(accepted!==false){
              setConfirmedTimelineKey(timelineKey);
              onContinue?.(); // Changes only the active existing workspace.

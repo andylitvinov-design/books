@@ -246,8 +246,9 @@ test("director wires one flagged inline selector to original four-MP4 render, pr
  assert.match(director,/NEXT_PUBLIC_HH_MEANING_IDEA_ENABLED==="true"/);
  assert.match(director,/MEANING_ENABLED&&selectedTopicId/);
  assert.match(director,/onConfirmHandoff=/);
- assert.match(director,/const effectiveStageCaptions/);
- assert.match(director,/captionTexts:effectiveStageCaptions/);
+ assert.match(director,/const stageCaptions=manualStageCaptions\.map/);
+ assert.match(director,/captionTexts:stageCaptions/);
+ assert.match(director,/lastCaptionTaken/);
  assert.match(director,/const meaningCaptionTooLong/);
  assert.match(director,/lastCaptionTaken/);
  assert.match(director,/data-meaning-caption-preview/);
