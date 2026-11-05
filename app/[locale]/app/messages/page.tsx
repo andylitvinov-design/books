@@ -3,7 +3,6 @@ import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import MessagesHub from '@/components/app/messages-hub'
 import MessagesOrdersClients from '@/components/app/messages-orders-clients'
-import MessagesBottomNavigation from '@/components/app/messages-bottom-navigation'
 import '../[[...path]]/workspace.css'
 import './messages-page.css'
 export const metadata:Metadata={
@@ -33,6 +32,5 @@ export default async function MemberMessages({params,searchParams}:{
       <MessagesHub locale={locale} embedded/>
     </MessagesOrdersClients>
 
-    <MessagesBottomNavigation locale={locale}/>
   </main>
 }

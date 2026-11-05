@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {readFileSync} from "node:fs";
 import {affirmationNarrationText} from "../lib/mandala/affirmation-voice.mjs";
-import {VOICE_STUDIO_VOICES,validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
+import {VOICE_STUDIO_VOICES,VOICE_STUDIO_SAMPLE,validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -24,6 +24,52 @@ test("all six selected voices synthesize exactly the approved phrase through dis
       voiceId:voice.id,language:"ru",text:phrase,consent:false}));
   }
   assert.equal(names.size,6);
+});
+
+test("six real sample buttons remain usable, with bounded cancellation and iPhone tap replay",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.match(ui,/timer=setTimeout\(\(\)=>\{timedOut=true;controller\.abort\(\);\},27000\)/,
+    "a slow provider must not trap all voice previews in Loading forever");
+  assert.ok(ui.includes("if(sampleBusyId===id)"),"tapping active Loading cancels it");
+  assert.ok(ui.includes("if(!sampleBusyId && sampleVoiceId===id && sampleUrl && sampleAudioRef.current)"),
+    "replay must re-use a real cached WAV");
+  assert.ok(ui.includes("await player.play()"),"iPhone replay must be invoked during a real tap");
+  assert.ok(ui.includes("disabled={busy||disabled||!languageAvailable}"),
+    "other sample buttons must remain usable during one network request");
+  assert.ok(ui.includes("if(timer!==null)clearTimeout(timer)"),
+    "no orphan timeout after network success/failure");
+  assert.ok(ui.includes('sampleBusyId?t.sampleBusyHelp:sampleMessage'),
+    "spinner must explain progress and cancellation");
+  assert.ok(ui.includes('onError={()=>setSampleMessage(t.sampleAudioError)}'),
+    "native audio decode failures must be visible rather than silent");
+  for(const language of ["ru","en","es"]){
+    const txt=VOICE_STUDIO_SAMPLE[language];
+    assert.ok(txt.length>=35&&txt.length<=85,"short public sample in "+language);
+    const checked=validateStudioRequest({mode:"sample",voiceId:"sofia",language});
+    assert.equal(checked.text,txt);
+    assert.equal(checked.consent,false);
+  }
+});
+
+test("guest can explicitly hear a labeled device-voice text example without burning free Gemini quota",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.ok(ui.includes("function previewDeviceSample()"));
+  assert.ok(ui.includes("new SpeechSynthesisUtterance(VOICE_STUDIO_SAMPLE[language])"),
+    "device preview must narrate ONLY the fixed public sample, not client or medical text");
+  assert.ok(ui.includes("data-video-affirmation-device-voice"));
+  assert.ok(ui.includes("window.speechSynthesis.speak(utterance)"));
+  assert.ok(ui.includes("deviceSpeechAvailable"),"unsupported Safari must not show an inert fallback");
+  assert.ok(ui.includes("deviceUtteranceRef.current"),"old speech must stop on mode/voice change");
+  assert.ok(ui.includes("НЕ выбранный голос Софии, Майи или Алисы"),
+    "Russian disclosure must not misrepresent a device voice as the Gemini preset");
+  assert.ok(ui.includes("NOT the selected Sofia, Maya or Alisa"),
+    "English device fallback must be explicitly distinct from exact premium voices");
+  assert.ok(ui.includes("NO la voz seleccionada"),
+    "Spanish device fallback must identify its actual audio provenance");
+  assert.ok(!ui.includes("body:JSON.stringify({mode:\"device_sample\""),
+    "device-only narration may not invoke a cloud provider");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  assert.ok(css.includes(".deviceSampleButton{"));
 });
 
 test("previewing a voice selects it for the actual phrase and WAV filename",()=>{

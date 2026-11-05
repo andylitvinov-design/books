@@ -12,7 +12,6 @@ on:
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
-      - 'tests/ci-pr-selective-workflows.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:

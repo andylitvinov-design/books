@@ -12,7 +12,7 @@ body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
 body:has([data-hh-unified-dock]) .hh-app.hh-messages-page,
 body:has([data-hh-unified-dock]) .hh-app,
 body:has([data-hh-unified-dock]) [data-practice-showcase]{
- padding-bottom:calc(var(--hh-unified-nav-height,77px) + var(--hh-unified-viewport-inset,0px) + 22px)!important;
+ padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px)!important;
 }
 body:has([data-hh-unified-dock]) [data-hh-unified-dock][data-keyboard-open="true"]{display:none}
 body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 20px)}
@@ -38,3 +38,14 @@ body:has([data-mytube-page]) [data-unified-dock-item]:hover{color:#f1f1f1}
 body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
   outline:2px solid #fff;outline-offset:-2px
 }
+
+/* On iOS a real keyboard replaces the global dock. Do not keep its bottom
+   reservation beneath the Messenger composer while the dock is hidden. */
+@media(max-width:760px){
+ body:has([data-hh-unified-dock][data-keyboard-open="true"]) .hh-app.hh-messages-page{
+  padding-bottom:0!important
+ }
+}
+/* Keep AI chat mounted so switching Orders/Clients does not discard a draft.
+   Explicitly hide the inactive panel even under legacy CSS overrides. */
+.hh-app.hh-messages-page [data-hh-messenger-ai][hidden]{display:none!important}

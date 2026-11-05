@@ -57,19 +57,17 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
- // iOS Safari moves the visual viewport when its URL bar appears/dismisses;
- // keep the six buttons on the visible bottom WITHOUT replacing left centering.
+ // Keep the iPhone dock anchored to the viewport; Safari's native bottom
+ // controls must never cause an extra JS-computed vertical offset.
  assert.match(css,/translate3d\(-50%,0,0\)/);
- assert.match(css,/bottom:var\(--hh-unified-viewport-inset,0px\)/);
- assert.doesNotMatch(css,/100vh\s*-\s*100dvh|bottom:max\(/);
- assert.match(dock,/viewport\.offsetTop \+ viewport\.height/);
- assert.match(dock,/visualDockBottomCorrection\(/);
- assert.doesNotMatch(dock,/mobileVisualBottomGap\(/);
- assert.match(dock,/--hh-unified-viewport-inset/);
- assert.match(hide,/--hh-unified-viewport-inset/);
- assert.match(dock,/resetDockCorrection/);
- assert.match(dock,/window\.addEventListener\("scroll", update/);
- assert.match(dock,/window\.removeEventListener\("scroll", update/);
+ assert.match(css,/position:fixed;z-index:58;bottom:0;/);
+ assert.doesNotMatch(css,/--hh-unified-viewport-inset|100vh\s*-\s*100dvh|bottom:max\(/);
+ assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
+ assert.match(dock,/visualKeyboardOpen\(/);
+ assert.doesNotMatch(dock,/visualDockBottomCorrection\(|mobileVisualBottomGap\(|--hh-unified-viewport-inset/);
+ assert.doesNotMatch(hide,/--hh-unified-viewport-inset/);
+ assert.doesNotMatch(dock,/addEventListener\("scroll", update/);
+ assert.doesNotMatch(dock,/removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
  assert.match(css,/min-height:52px/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
@@ -178,25 +176,37 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube is black with a single slim collapsed filter bar containing the canonical category tree",()=>{
+test("MyTube stays dark with a swipeable direction rail and expandable deeper filters",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
- const pageStyle=read("app/[locale]/mytube/mytube.module.css");
+ const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
- const discoveryStyle=read("components/video-discovery.module.css");
- const acceptance=read("scripts/verify-unified-six-dock-browser.mjs");
+ const css=read("components/video-discovery.module.css");
+ const browser=read("scripts/verify-unified-six-dock-browser.mjs");
  assert.match(page,/themeColor:"#0f0f0f"/);
- assert.match(pageStyle,/--mytube-bg:#0f0f0f/);
+ assert.match(style,/--mytube-bg:#0f0f0f/);
+ assert.match(discovery,/data-mytube-category-rail/);
  assert.match(discovery,/data-mytube-filter-toggle/);
- assert.match(discovery,/aria-controls="mytube-primary-controls mytube-refine-controls mytube-more-controls"/);
+ assert.match(discovery,/aria-controls="mytube-refine-controls mytube-more-controls"/);
  assert.match(discovery,/hidden=\{variant==="mytube"&&!filtersOpen\}/);
- assert.match(discovery,/filterSelection/);
  assert.match(discovery,/listMyTubeScenarios\(mytubeTopicId,locale\)/);
- for(const marker of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
-   assert.match(discovery,new RegExp(marker));
- assert.match(discoveryStyle,/\.mytube \.filterToggle\{/);
- assert.match(discoveryStyle,/min-height:44px/);
- assert.match(discoveryStyle,/\.mytube \.taxonomyPrimary\[hidden\]\{display:none!important\}/);
- assert.match(acceptance,/primaryTree\.isVisible\(\),false/);
- assert.match(acceptance,/filterBounds\.height<=60/);
- assert.match(acceptance,/moreFilters\.click\(\)/);
+ for(const name of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
+  assert.match(discovery,new RegExp(name));
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{/);
+ assert.match(css,/overflow-x:auto/);
+ assert.match(css,/\.mytube \.compactMoreButton\{/);
+ assert.match(discovery,/data-mytube-duration-mode=\{mode\}/);
+ assert.match(browser,/rail\.evaluate\(el=>el\.scrollLeft\)/);
+ assert.match(browser,/refined\.isVisible\(\),false/);
 });
+test("Shorts / Study are exclusive and do not invent lengths for unverified videos",async()=>{
+ const {matchesMyTubeDuration,MYTUBE_STUDY_MIN_SECONDS}=await import("../lib/video-discovery/mytube-duration.mjs");
+ assert.equal(MYTUBE_STUDY_MIN_SECONDS,600);
+ assert.equal(matchesMyTubeDuration(599,"shorts"),true);
+ assert.equal(matchesMyTubeDuration(600,"shorts"),false);
+ assert.equal(matchesMyTubeDuration(600,"study"),true);
+ assert.equal(matchesMyTubeDuration(601,"study"),true);
+ assert.equal(matchesMyTubeDuration(undefined,"all"),true);
+ assert.equal(matchesMyTubeDuration(undefined,"shorts"),false);
+ assert.equal(matchesMyTubeDuration(null,"study"),false);
+});
+

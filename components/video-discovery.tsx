@@ -7,9 +7,12 @@ import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,l
 import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
+import {matchesMyTubeDuration} from "@/lib/video-discovery/mytube-duration.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
+type MyTubeDuration="all"|"shorts"|"study";
 const STORAGE_KEY="hh-public-video-favorites-v1";
 const labels={
   ru:{
@@ -20,7 +23,7 @@ const labels={
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
-    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",
+    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",durationAll:"Все",shortsHint:"меньше 10 минут",studyHint:"от 10 минут",durationUnknown:"В этом разделе пока нет видео с подтверждённой длительностью. Ролики без проверки времени доступны во вкладке «Все».",
     contentTitle:"Тип видео",directionTitle:"Направление",traditionTitle:"Традиция",
     types:["Мягкая медитация","Практика-подкачка","Объяснение","Урок курса"],
     directions:["Магическое","Храмовое","Психологическое","Рейки / энергия","Телесное"],
@@ -40,7 +43,7 @@ const labels={
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
-    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",
+    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",durationAll:"All",shortsHint:"under 10 min",studyHint:"10 min or longer",durationUnknown:"No videos have a verified duration in this selection. Videos without reviewed timing remain in All.",
     contentTitle:"Video type",directionTitle:"Approach",traditionTitle:"Tradition",
     types:["Soft meditation","Energy practice","Explanation","Course lesson"],
     directions:["Symbolic / magical","Temple practice","Psychological","Reiki / energy","Somatic"],
@@ -60,7 +63,7 @@ const labels={
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
-    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",
+    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",durationAll:"Todos",shortsHint:"menos de 10 min",studyHint:"desde 10 min",durationUnknown:"No hay vídeos con duración verificada en esta selección. Los vídeos sin duración comprobada siguen disponibles en Todos.",
     contentTitle:"Tipo de vídeo",directionTitle:"Enfoque",traditionTitle:"Tradición",
     types:["Meditación suave","Práctica energética","Explicación","Lección de curso"],
     directions:["Simbólico / mágico","Práctica del templo","Psicológico","Reiki / energía","Somático"],
@@ -91,14 +94,25 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const [source,setSource]=useState("all");
   const [period,setPeriod]=useState("all");
   const [durationRange,setDurationRange]=useState("all");
+  const [durationMode,setDurationMode]=useState<MyTubeDuration>("all");
   const [mytubeCategoryId,setMyTubeCategoryId]=useState("all");
   const [mytubeSubcategoryId,setMyTubeSubcategoryId]=useState("all");
   const [mytubeTopicId,setMyTubeTopicId]=useState("all");
   const [mytubeScenarioId,setMyTubeScenarioId]=useState("all");
+  const [mytubeMotifId,setMyTubeMotifId]=useState("all");
+  const [mytubeStyleId,setMyTubeStyleId]=useState("all");
   const mytubeCategories=listMyTubeCategories(locale);
   const mytubeSubcategories=mytubeCategoryId==="all"?[]:listMyTubeSubcategories(mytubeCategoryId,locale);
   const mytubeTopics=mytubeCategoryId==="all"||mytubeSubcategoryId==="all"?[]:listMyTubeTopics(mytubeCategoryId,mytubeSubcategoryId,locale);
   const mytubeScenarios=mytubeTopicId==="all"?[]:listMyTubeScenarios(mytubeTopicId,locale);
+  const mytubeMotifs=mytubeScenarioId==="all"?[]:listMyTubeScenarioMotifs(mytubeScenarioId,locale);
+  const mytubeStyles=mytubeScenarioId==="all"?[]:listMyTubeStyles(locale);
+  const motifCoverage=Object.fromEntries(mytubeMotifs.map(motif=>[
+    motif.id,videos.filter(video=>video.mytubeVisualTagEvidence==="explicit_human_review"&&
+      video.mytubeMotifIds?.includes(motif.id)).length]));
+  const styleCoverage=Object.fromEntries(mytubeStyles.map(style=>[
+    style.id,videos.filter(video=>video.mytubeVisualTagEvidence==="explicit_human_review"&&
+      video.mytubeStyleIds?.includes(style.id)).length]));
   const activeMyTubeSubcategory=mytubeCategoryId!=="all"&&mytubeSubcategoryId!=="all"?mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId):null;
   useEffect(()=>{
     try{
@@ -131,6 +145,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     const needle=search.trim().toLocaleLowerCase(locale);
     const cutoff=Date.now()-365*24*60*60*1000;
     return videos.filter(item=>{
+      // All is truly all approved videos; Shorts and Study rely solely on
+      // verified duration metadata, never episode numbering or title guesses.
+      if(variant==="mytube"&&!matchesMyTubeDuration(item.durationVerifiedSeconds,durationMode))return false;
       if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||""]
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
@@ -197,6 +214,10 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         }
       }
 
+      if(!videoMatchesMyTubeVisualFilter(item,{
+        motifId:mytubeMotifId==="all"?null:mytubeMotifId,
+        styleId:mytubeStyleId==="all"?null:mytubeStyleId,
+      }))return false;
       if(period!=="all"){
         const date=item.publishedAt?Date.parse(item.publishedAt):NaN;
         if(!Number.isFinite(date))return false;
@@ -216,7 +237,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId]);
+  },[videos,search,source,period,durationRange,durationMode,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
   const ordered=useMemo(()=>{
     const matches=rankDiscoveryVideos(sourceVideos,{
       goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
@@ -241,6 +262,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId)?.label,
     mytubeTopics.find(item=>item.id===mytubeTopicId)?.label,
     mytubeScenarios.find(item=>item.id===mytubeScenarioId)?.label,
+    mytubeMotifs.find(item=>item.id===mytubeMotifId)?.label,
+    mytubeStyles.find(item=>item.id===mytubeStyleId)?.label,
   ].filter(Boolean).join(" › ")||t.mytubeAny;
   const index=VIDEO_GOALS.indexOf(goal);
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
@@ -251,45 +274,63 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         placeholder={t.searchPlaceholder} onChange={event=>setSearch(event.target.value)}/>
       {search && <button type="button" onClick={()=>setSearch("")} aria-label={t.resetFilters}>×</button>}
     </label>}
+    {variant==="mytube"&&<>
+      <div className={styles.mytubeToolbar} data-mytube-toolbar>
+        <div className={styles.mytubeCategoryRail} data-mytube-category-rail
+          data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
+          <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
+            onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAny}</button>
+          {mytubeCategories.map(item=><button type="button" key={item.id}
+            data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
+            onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
+        </div>
+        <button type="button" data-mytube-filter-toggle className={styles.compactMoreButton}
+          aria-label={t.advanced+" · "+activeMyTubePath}
+          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
+          onClick={()=>setFiltersOpen(open=>!open)}>
+          <SlidersHorizontal size={17} aria-hidden="true"/>
+          <span>{t.refine}</span>
+          <ChevronDown size={15} aria-hidden="true"/>
+        </button>
+      </div>
+      <div className={styles.mytubeDurationTabs} data-mytube-duration-tabs role="group"
+        aria-label={t.durationTitle}>
+        {(["all","shorts","study"] as const).map(mode=><button type="button" key={mode}
+          data-mytube-duration-mode={mode} aria-pressed={durationMode===mode}
+          title={mode==="shorts"?t.shortsHint:mode==="study"?t.studyHint:t.durationAll}
+          onClick={()=>{setDurationMode(mode);setDurationRange("all");}}>
+          {mode==="all"?t.durationAll:mode==="shorts"?"Shorts":"Study"}
+        </button>)}
+      </div>
+    </>}
     <section className={styles.panel} aria-label={t.title}>
       {variant!=="mytube"&&<div className={styles.intro}>
         <h2><Sparkles size={23} aria-hidden="true"/>{t.title}</h2>
         <p>{t.lead}</p>
       </div>}
       <div className={styles.areaSection} data-mytube-taxonomy="v2">
-        {variant==="mytube"&&<button type="button" data-mytube-filter-toggle
-          className={styles.filterToggle} aria-expanded={filtersOpen}
-          aria-controls="mytube-primary-controls mytube-refine-controls mytube-more-controls"
-          onClick={()=>setFiltersOpen(value=>!value)}>
-          <SlidersHorizontal size={17} aria-hidden="true"/>
-          <span className={styles.filterToggleText}>
-            <strong>{t.refine}</strong>
-            <span className={styles.filterSelection} title={activeMyTubePath}>{activeMyTubePath}</span>
-          </span>
-          <ChevronDown size={17} aria-hidden="true"/>
-        </button>}
-        <div className={styles.taxonomyPrimary}
-          id={variant==="mytube"?"mytube-primary-controls":undefined}
-          hidden={variant==="mytube"&&!filtersOpen}>
-        <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
-        <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
-          <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
-            onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAny}</button>
-          {mytubeCategories.map(item=><button type="button" key={item.id} data-mytube-category={item.id}
-            aria-pressed={mytubeCategoryId===item.id}
-            onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
-        </div>
-        </div>
+        {variant!=="mytube"&&<>
+          <div className={styles.groupHeading}><strong>{t.mytubeCategoryTitle}</strong></div>
+          <div className={styles.taxonomyPrimary}>
+            <div className={styles.lifeAreas} data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
+              <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
+                onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAny}</button>
+              {mytubeCategories.map(item=><button type="button" key={item.id} data-mytube-category={item.id}
+                aria-pressed={mytubeCategoryId===item.id}
+                onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
+            </div>
+          </div>
+        </>}
         <div id={variant==="mytube"?"mytube-refine-controls":undefined}
           className={styles.refine} hidden={variant==="mytube"&&!filtersOpen}>
         {mytubeCategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeSubcategoryTitle}</strong></div>
           <div className={styles.goals} data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
             <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
-              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAllSubcategories}</button>
+              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAllSubcategories}</button>
             {mytubeSubcategories.map(item=><button type="button" key={item.id} data-mytube-subcategory={item.id}
               aria-pressed={mytubeSubcategoryId===item.id} title={item.chooseWhen}
-              onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{item.label}</button>)}
+              onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
           </div>
           {activeMyTubeSubcategory?<p className={styles.note} data-mytube-choice-hint>{activeMyTubeSubcategory.chooseWhen}</p>:null}
         </>:null}
@@ -297,21 +338,50 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           <div className={styles.groupHeading}><strong>{t.mytubeTopicTitle}</strong></div>
           <div className={styles.goals} data-mytube-topics role="group" aria-label={t.mytubeTopicTitle}>
             <button type="button" data-mytube-topic="all" aria-pressed={mytubeTopicId==="all"}
-              onClick={()=>{setMyTubeTopicId("all");setMyTubeScenarioId("all");}}>{t.mytubeAllTopics}</button>
+              onClick={()=>{setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAllTopics}</button>
             {mytubeTopics.map(item=><button type="button" key={item.id} data-mytube-topic={item.id}
-              aria-pressed={mytubeTopicId===item.id} onClick={()=>{setMyTubeTopicId(item.id);setMyTubeScenarioId("all");}}>{item.label}</button>)}
+              aria-pressed={mytubeTopicId===item.id} onClick={()=>{setMyTubeTopicId(item.id);setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
           </div>
         </>:null}
         {mytubeTopicId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeScenarioTitle}</strong></div>
           <div className={styles.goals} data-mytube-scenarios role="group" aria-label={t.mytubeScenarioTitle}>
             <button type="button" data-mytube-scenario="all" aria-pressed={mytubeScenarioId==="all"}
-              onClick={()=>setMyTubeScenarioId("all")}>{t.mytubeAllScenarios}</button>
+              onClick={()=>{setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAllScenarios}</button>
             {mytubeScenarios.map(item=><button type="button" key={item.id} data-mytube-scenario={item.id}
               aria-pressed={mytubeScenarioId===item.id} title={item.creativeBrief}
-              onClick={()=>setMyTubeScenarioId(item.id)}>{item.label}</button>)}
+              onClick={()=>{setMyTubeScenarioId(item.id);setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
           </div>
         </>:null}
+        {mytubeScenarioId!=="all"&&mytubeMotifs.length===5?<div data-mytube-visual-filter-extension>
+          <div className={styles.groupHeading}><strong>{locale==="ru"?"Мотив — центральный образ":locale==="es"?"Motivo — imagen central":"Motif — central image"}</strong></div>
+          <div className={styles.goals} data-mytube-motifs role="group"
+            aria-label={locale==="ru"?"Мотив сценария":locale==="es"?"Motivo de la historia":"Story motif"}>
+            <button type="button" data-mytube-motif="all" aria-pressed={mytubeMotifId==="all"}
+              onClick={()=>setMyTubeMotifId("all")}>{t.all}</button>
+            {mytubeMotifs.map(motif=><button type="button" key={motif.id}
+              data-mytube-motif={motif.id} aria-pressed={mytubeMotifId===motif.id}
+              disabled={!motifCoverage[motif.id]}
+              title={motif.meaning} onClick={()=>setMyTubeMotifId(motif.id)}>
+              {motif.label} ({motifCoverage[motif.id]||0})
+            </button>)}
+          </div>
+          <div className={styles.groupHeading}><strong>{locale==="ru"?"Визуальный стиль (необязательно)":locale==="es"?"Estilo visual (opcional)":"Visual style (optional)"}</strong></div>
+          <div className={styles.goals} data-mytube-styles role="group"
+            aria-label={locale==="ru"?"Визуальный стиль":locale==="es"?"Estilo visual":"Visual style"}>
+            <button type="button" data-mytube-style="all" aria-pressed={mytubeStyleId==="all"}
+              onClick={()=>setMyTubeStyleId("all")}>{t.all}</button>
+            {mytubeStyles.map(style=><button type="button" key={style.id}
+              data-mytube-style={style.id} aria-pressed={mytubeStyleId===style.id}
+              disabled={!styleCoverage[style.id]} title={style.description}
+              onClick={()=>setMyTubeStyleId(style.id)}>{style.label} ({styleCoverage[style.id]||0})</button>)}
+          </div>
+          <p className={styles.note} data-mytube-visual-media-warning>{
+            locale==="ru"?"Здесь показаны только видео с проверенной визуальной разметкой. Редакционные мотивы не означают, что подходящие MP4 уже есть.":
+            locale==="es"?"Solo vídeos con etiquetas visuales revisadas; los motivos no garantizan que existan MP4 adecuados.":
+            "Only videos with reviewed visual annotations are filterable; editorial motifs do not imply available MP4."
+          }</p>
+        </div>:null}
         </div>
       </div>
       <div className={styles.moreControls} id={variant==="mytube"?"mytube-more-controls":undefined}
@@ -372,7 +442,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
             </select>
           </label>}
           {variant==="mytube" && durationsAvailable && <label>{t.durationTitle}
-            <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
+            <select data-mytube-duration value={durationRange} onChange={event=>{setDurationRange(event.target.value);setDurationMode("all");}}>
               <option value="all">{t.all}</option>
               {["under4","4to20","20to60","over60"].map((id,i)=>
                 <option key={id} value={id}>{t.durationOptions[i]}</option>)}
@@ -387,9 +457,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         {savedIds.length>0&&<button type="button" onClick={reset}>{t.reset}</button>}
       </div>}
       {variant==="mytube" && <button type="button" className={styles.clearFilters}
-        onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setContentType("all");setDirection("all");
+        onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");setContentType("all");setDirection("all");
           setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
-          setDurationRange("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
+          setDurationRange("all");setDurationMode("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
@@ -398,7 +468,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     <div className={styles.results} aria-live="polite">
       <span>{area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span>{ordered.length}</span>
     </div>
-    {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>{t.empty}</p>:
+    {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>
+      {variant==="mytube"&&durationMode!=="all"?t.durationUnknown:t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
         videoLayout={variant==="mytube"?"mytube":"default"}
         mytubeFocus={variant==="mytube"?{
