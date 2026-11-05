@@ -10,7 +10,7 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","ai","practice","master","profile"];
+const ids=["mytube","video","ai","practice","master","profile","analysis"];
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
 // every user-reported route: guest public Studio/Practice/Master, public MyTube,
@@ -25,7 +25,7 @@ async function assertPinnedSixDock(page, id, active) {
   },active,{timeout:15000});
   const buttons=await dock.locator("[data-unified-dock-item]").evaluateAll(
     els=>els.map(el=>el.dataset.unifiedDockItem));
-  assert.deepEqual(buttons,ids,id+" one consistent six-item navigation");
+  assert.deepEqual(buttons,ids,id+" one consistent seven-item navigation");
   const oldDock='[data-support-mobile-bottom-nav]:visible,'+
     '[data-mandala-support-bottom-nav]:visible,.hh-mobile-app-nav:visible,'+
     '.hh-practice-inner-dock:visible,[data-legacy-practice-bottom-nav]:visible,'+
@@ -96,7 +96,8 @@ async function inspect(browserType,locale,width){
   const bounds=await links.evaluateAll(els=>els.map(el=>{
    const r=el.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height};
   }));
-  assert.ok(bounds.every(b=>b.height>=44),id+" 44px touch targets");
+  assert.ok(bounds.every(b=>b.height>=44),id+" 44px touch height");
+  assert.ok(bounds.every(b=>b.right-b.left>=44),id+" 44px touch width even with seven tabs");
   assert.ok(bounds.every((b,i)=>i===0||b.left>=bounds[i-1].right-1),id+" no dock overlap");
   const geometry=await dock.evaluate(el=>{
    const r=el.getBoundingClientRect(),v=window.visualViewport;
@@ -234,6 +235,7 @@ async function inspect(browserType,locale,width){
       ["ai",prefix+"/app/messages?section=ai"],
       ["master",prefix+"/practice"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
+      ["analysis",prefix+"/services/free-situation-review"],
     ];
     for(const [active,path] of routeCases){
       const marker=id+":"+active;
@@ -264,6 +266,7 @@ async function inspect(browserType,locale,width){
       ["video","/ru/holistic-support/mandala"],
       ["mytube","/ru/mytube"],
       ["master","/ru/practice"],
+      ["analysis","/ru/services/free-situation-review"],
       ["practice","/ru/holistic-support/mobile"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
@@ -272,7 +275,7 @@ async function inspect(browserType,locale,width){
         tab+" standalone public navigation must stay in the same document");
     }
     assert.equal(popups,0,"standalone public tabs must not open another page");
-    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Practice",sameDocument:true});
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Free Analysis → Practice",sameDocument:true});
   }
  }finally{await context.close();await browser.close();}
 }
@@ -336,34 +339,49 @@ try{
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → Messenger AI rail → private Orders/Clients → Practice",passed:true});
- // The regular marketing homepage keeps seven visitor links in browsers,
- // while the existing hamburger supplies a direct Practice bridge.
+ // Both Home and Practice now share the original Practice visual dock,
+ // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
- const editorial=page.locator(".mobile-bottom-navigation");
- await editorial.waitFor({state:"visible",timeout:30000});
- assert.equal(await editorial.locator("[data-nav-item]").count(),7,
-   "ordinary browser homepage retains seven editorial destinations");
- assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),0,
-   "browser homepage does not display an extra six-item app dock");
- await page.locator(".site-main-menu-trigger").click();
- const practiceLink=page.locator('.site-main-menu-more a[data-nav-item="practice"]');
- await practiceLink.waitFor({state:"visible",timeout:15000});
- assert.equal(await practiceLink.getAttribute("href"),"/ru/holistic-support/mobile");
- await practiceLink.click();
- await page.waitForURL(new RegExp("/ru/holistic-support/mobile/?$"),{timeout:45000});
- await page.locator("[data-hh-unified-dock]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ const homeDock=page.locator("[data-hh-unified-dock]");
+ await homeDock.waitFor({state:"visible",timeout:30000});
+ assert.deepEqual(await homeDock.locator("[data-unified-dock-item]").evaluateAll(
+   els=>els.map(el=>el.dataset.unifiedDockItem)),ids,
+   "ordinary iPhone homepage has the same seven destinations as Practice");
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0,
-   "the Practice route switches to the single six-item app dock");
- results.push({journey:"Public homepage seven links → explicit Practice → single six-tab dock",passed:true});
+   "homepage does not mount a second old editorial footer");
+ for(const at of ["bottom","top"]){
+   await page.evaluate(value=>{
+     const root=document.scrollingElement||document.documentElement;
+     window.scrollTo({top:value==="bottom"?root.scrollHeight:0,behavior:"instant"});
+   },at);
+   await page.waitForFunction(()=>{
+     const nav=document.querySelector("[data-hh-unified-dock]");
+     const v=window.visualViewport;
+     return nav && getComputedStyle(nav).position==="fixed" &&
+       Math.abs(nav.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
+   },null,{timeout:15000});
+ }
 
- // Profile unification: the seven-item legacy entry and the six-item dock
- // lead to the SAME hub; create reuses the real free public builder.
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ await homeDock.locator('[data-unified-dock-item="analysis"]').click();
+ await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
+ await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-unified-dock-item="analysis"][aria-current="page"]').count(),1);
+ assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
+ await homeDock.locator('[data-unified-dock-item="practice"]').click();
+ await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
+ await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
+ results.push({journey:"Holistic House Home → original Free Analysis → Practice with one seven-tab dock",passed:true});
+
+ // Profile unification: both Home and Practice open the existing private hub.
+ // The protected CSP transition must remain a full server-authorized reload.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
- const editorialProfile=page.locator('.mobile-bottom-navigation [data-nav-item="profile"]');
- await editorialProfile.waitFor({state:"visible",timeout:30000});
- assert.equal(await editorialProfile.getAttribute("href"),"/ru/app/portrait");
- await editorialProfile.click();
+ const unifiedProfile=page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]');
+ await unifiedProfile.waitFor({state:"visible",timeout:30000});
+ assert.equal(await unifiedProfile.getAttribute("href"),"/ru/app/portrait");
+ await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
  assert.equal(await page.locator('[data-profile-tab="view"][aria-current="page"]').count(),1);
@@ -373,7 +391,7 @@ try{
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  assert.equal(await page.locator('[data-profile-tab]').count(),4);
- results.push({journey:"Public Profile → private guest hub → existing four-area creator with one six-tab dock",passed:true});
+ results.push({journey:"Public Profile → private guest hub → existing four-area creator with one seven-tab dock",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
