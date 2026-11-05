@@ -6,10 +6,10 @@ import {
   MYTUBE_VISUAL_MOTIFS,MYTUBE_VISUAL_STYLES,listMyTubeScenarioMotifs,
   listMyTubeMotifs,listMyTubeStyles,getMyTubeCreativeChoices,
   validateMyTubeCreativeSelection,evaluateMyTubeSceneCreativeMatch,
-  evaluateMyTubeMontageCreativeMatch,auditMyTubeCreativeChoices,
+  evaluateMyTubeMontageCreativeMatch,videoMatchesMyTubeVisualFilter,auditMyTubeCreativeChoices,
 } from "../lib/mandala/mytube-creative-choices.mjs";
 import {getMyTubeTaxonomy} from "../lib/mandala/mytube-content-taxonomy.mjs";
-import {recommendMyTubeTopicStoryClips} from "../lib/mandala/mytube-video-tagging.mjs";
+import {recommendMyTubeTopicStoryClips,rankPublicMyTubeVideo} from "../lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "../lib/mandala/mytube-plot-montage.mjs";
 import {listMyTubePlots} from "../lib/mandala/mytube-scenario-plots.mjs";
 
@@ -86,15 +86,21 @@ test("motif and style apply to actual four-clip selections and fail closed on in
   assert.equal(invalid.ok,false);
   assert.equal(invalid.status,"insufficient_motif_media");
   const passed=base.map((row,i)=>({
-    ...row,motifs:i===0?["key"]:[],visualStyles:i<=1?["nature"]:[],
+    ...row,motifs:i===0?["key"]:[],visualStyles:i<=2?["nature"]:[],
   }));
   const result=evaluateMyTubeMontageCreativeMatch({
     clipIds:base.map(x=>x.id),scenes:passed,motifId:"key",styleId:"nature",
   });
   assert.equal(result.ok,true);
   assert.equal(result.motifMatches,1);
-  assert.equal(result.styleMatches,2);
+  assert.equal(result.styleMatches,3);
   assert.equal(result.visualMatchOnly,true);
+  const twoStyles=evaluateMyTubeMontageCreativeMatch({
+    clipIds:base.map(x=>x.id),scenes:passed.map((row,i)=>i===2?{...row,visualStyles:[]}:row),
+    motifId:"key",styleId:"nature",
+  });
+  assert.equal(twoStyles.ok,false);
+  assert.equal(twoStyles.status,"insufficient_style_media");
   const duplicate=evaluateMyTubeMontageCreativeMatch({
     clipIds:["one","two","three","three"],scenes:passed,motifId:"key",
   });
@@ -135,6 +141,33 @@ test("plot-specific suggestions retain four narrative beats but reject unsupport
   const invalidStyle=recommendMyTubePlotMontage({plot,scenes:master.scenes,styleId:"nope"});
   assert.equal(invalidStyle.hasFourApprovedSources,false);
   assert.equal(invalidStyle.status,"invalid_style");
+});
+
+test("public MyTube facet selection requires explicitly reviewed literal visual annotations",()=>{
+  const candidate={title:"Ключ к изменениям",topicTags:["stress"],visualMotifsVerified:["key"],visualStylesVerified:["nature"]};
+  const unreviewed=rankPublicMyTubeVideo(candidate);
+  assert.deepEqual(unreviewed.mytubeMotifIds,[]);
+  assert.equal(unreviewed.mytubeVisualTagEvidence,"not_verified");
+  assert.equal(videoMatchesMyTubeVisualFilter(unreviewed,{motifId:"key"}),false);
+  const reviewed=rankPublicMyTubeVideo({...candidate,visualReviewStatus:"human_reviewed"});
+  assert.deepEqual(reviewed.mytubeMotifIds,["key"]);
+  assert.deepEqual(reviewed.mytubeStyleIds,["nature"]);
+  assert.equal(videoMatchesMyTubeVisualFilter(reviewed,{motifId:"key",styleId:"nature"}),true);
+  assert.equal(videoMatchesMyTubeVisualFilter(reviewed,{motifId:"stream"}),false);
+  assert.equal(videoMatchesMyTubeVisualFilter(reviewed,{styleId:"cinematic"}),false);
+  assert.equal(videoMatchesMyTubeVisualFilter(reviewed,{styleId:"unknown"}),false);
+  assert.equal(videoMatchesMyTubeVisualFilter(unreviewed),true);
+});
+
+test("existing public MyTube tree also displays verified motif/style facets after scenario",()=>{
+  const ui=readFileSync(new URL("../components/video-discovery.tsx",import.meta.url),"utf8");
+  for(const token of [
+    "listMyTubeScenarioMotifs","listMyTubeStyles","videoMatchesMyTubeVisualFilter",
+    "data-mytube-visual-filter-extension","data-mytube-motifs","data-mytube-motif=",
+    "data-mytube-styles","data-mytube-style=","explicit_human_review",
+  ])assert.ok(ui.includes(token),token);
+  assert.match(ui,/setMyTubeMotifId\("all"\)/);
+  assert.match(ui,/setMyTubeStyleId\("all"\)/);
 });
 
 test("existing mobile director exposes five motifs & collapsible styles without losing plots or montage",()=>{
