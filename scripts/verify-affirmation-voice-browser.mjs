@@ -335,8 +335,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await ownCreate.click();
         const ownDownload=page.locator("[data-mandala-video-download]");
         await ownDownload.waitFor({state:"visible",timeout:45000});
+        // Primary Save opens the real choice of Files / Telegram / WhatsApp.
+        // The download event belongs to the next explicit Files choice.
+        await ownDownload.click();
+        const ownDelivery=page.locator("[data-video-messenger-delivery]");
+        await expect(ownDelivery).toBeVisible({timeout:10000});
+        await expect(ownDelivery.locator("[data-video-telegram-share]")).toBeVisible();
+        await expect(ownDelivery.locator("[data-video-whatsapp-share]")).toBeVisible();
         const [ownFile]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),ownDownload.click(),
+          page.waitForEvent("download",{timeout:20000}),
+          ownDelivery.locator("[data-video-save-direct-choice]").click(),
         ]);
         const ownBytes=[];
         for await(const chunk of await ownFile.createReadStream())
@@ -547,8 +555,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
         phase(engine,"download-control-ready");
+        // The main Save action now shows a delivery chooser, it no longer
+        // downloads directly. Verify that real production UX, then use the
+        // explicit device File path before checking encoded movie + audio.
+        await output.click();
+        const delivery=page.locator("[data-video-messenger-delivery]");
+        await expect(delivery).toBeVisible({timeout:10000});
+        await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
+        await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
+        phase(engine,"delivery-chooser-open");
         const [download]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),output.click(),
+          page.waitForEvent("download",{timeout:20000}),
+          delivery.locator("[data-video-save-direct-choice]").click(),
         ]);
         phase(engine,"download-started");
         const parts=[];
