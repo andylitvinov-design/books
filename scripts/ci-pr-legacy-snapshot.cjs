@@ -66,4 +66,15 @@ function compareLegacySnapshot({files,read,now=Date.now,budgetMs=MAX_TIME_MS}={}
   source_write_authorized:false,merge_authorized:false,ancestry_verified:false,
   paths:rows.length,counts,rows};
 }
-module.exports={safePath,treeEntry,compareLegacySnapshot};
+// Authenticate the compare result to this exact PR HEAD and protected production.
+// This is evidence for a read-only shallow Git merge-tree, not a write lease.
+function verifiedLegacyMergeBase({prSha,production,compare}={}){
+ const live=production?.commit?.sha,root=compare?.merge_base_commit?.sha;
+ if(!SHA.test(prSha||'')||!SHA.test(live||'')||!SHA.test(root||'')||
+    production?.protected!==true||live.toLowerCase()===prSha.toLowerCase()||
+    compare?.base_commit?.sha?.toLowerCase()!==prSha.toLowerCase()||
+    !['ahead','behind','diverged'].includes(compare?.status))return null;
+ return {production_sha:live.toLowerCase(),merge_base_sha:root.toLowerCase(),
+   source_write_authorized:false,merge_authorized:false};
+}
+module.exports={safePath,treeEntry,compareLegacySnapshot,verifiedLegacyMergeBase};

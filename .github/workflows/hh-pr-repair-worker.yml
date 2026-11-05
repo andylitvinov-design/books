@@ -50,6 +50,8 @@ jobs:
       code_available: ${{ steps.select.outputs.code_available }}
       no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
       audit_only: ${{ steps.select.outputs.audit_only }}
+      legacy_production_sha: ${{ steps.select.outputs.legacy_production_sha }}
+      legacy_base_sha: ${{ steps.select.outputs.legacy_base_sha }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -98,6 +100,28 @@ jobs:
               reservationRunId:String(context.payload.inputs?.reservation_run_id || ''),dryRun,
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
+            // One signed REST comparison, only after a real legacy claim.
+            // Read-only provenance; cannot authorize a source patch or merge.
+            if(result.status==='claimed'&&result.strategy==='legacy'&&!dryRun){
+              try{
+                const {owner,repo}=context.repo;
+                const production=(await github.rest.repos.getBranch({
+                  owner,repo,branch:'codex/public-book-library'})).data;
+                if(production?.protected===true&&
+                   /^[a-f0-9]{40}$/i.test(production.commit?.sha||'')){
+                  const compare=(await github.rest.repos.compareCommits({
+                    owner,repo,base:result.sha,head:production.commit.sha,per_page:1})).data;
+                  const proof=require(process.env.GITHUB_WORKSPACE+
+                    '/scripts/ci-pr-legacy-snapshot.cjs').verifiedLegacyMergeBase({
+                      prSha:result.sha,production,compare});
+                  if(proof){
+                    core.setOutput('legacy_production_sha',proof.production_sha);
+                    core.setOutput('legacy_base_sha',proof.merge_base_sha);
+                    core.info('HH_LEGACY_MERGE_BASE_PROOF READ_ONLY_VERIFIED');
+                  }
+                }
+              }catch(_){core.warning('HH_LEGACY_MERGE_BASE_PROOF_UNAVAILABLE');}
+            }
             if(result.status==='claimed'&&!dryRun){
               const {confirmRepairRunner}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-runner-evidence.cjs');
@@ -171,6 +195,8 @@ jobs:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
       REPAIR_STRATEGY: ${{ needs.claim.outputs.strategy }}
+      LEGACY_PRODUCTION_SHA: ${{ needs.claim.outputs.legacy_production_sha }}
+      LEGACY_MERGE_BASE_SHA: ${{ needs.claim.outputs.legacy_base_sha }}
     steps:
       - name: Checkout untrusted PR HEAD without any write credentials or secrets
         uses: actions/checkout@v4
@@ -243,7 +269,28 @@ jobs:
               const check=run('git',['merge-tree','--write-tree','HEAD','FETCH_HEAD'],25000);
               report.base_compare=check.status===0?'GIT_TREE_MERGES_WITHOUT_CONFLICT':
                 check.status===1?'GIT_TREE_CONFLICT':'MERGE_TREE_NOT_VERIFIED';
-            }else report.base_compare='SHALLOW_ANCESTRY_UNAVAILABLE';
+            }else{
+              report.base_compare='SHALLOW_ANCESTRY_UNAVAILABLE';
+              const prod=process.env.LEGACY_PRODUCTION_SHA;
+              const base=process.env.LEGACY_MERGE_BASE_SHA;
+              // A claimed, SHA-bound GitHub compare may prove the ancestor
+              // even though both shallow checkouts have no connected history.
+              if(/^[a-f0-9]{40}$/i.test(prod||'')&&
+                 /^[a-f0-9]{40}$/i.test(base||'')&&
+                 report.production_base_sha===prod){
+                const fetchBase=run('git',['fetch','--no-tags','--depth=1',
+                  '--filter=blob:none','origin',base],30000);
+                if(fetchBase.status===0){
+                  const check=run('git',['merge-tree','--write-tree',
+                    '--merge-base='+base,'HEAD',prod],25000);
+                  if(check.status===0||check.status===1){
+                    report.base_compare=check.status===0?
+                      'GIT_TREE_MERGES_WITHOUT_CONFLICT':'GIT_TREE_CONFLICT';
+                    report.base_compare_source='GITHUB_VERIFIED_MERGE_BASE';
+                  }
+                }
+              }
+            }
             if(report.base_compare==='SHALLOW_ANCESTRY_UNAVAILABLE'){
               // Shallow checkouts cannot prove ancestry. Compare bounded Git
               // tree/blob OIDs instead, without source reads or authorization.
@@ -251,7 +298,7 @@ jobs:
                 './.hh-trusted/scripts/ci-pr-legacy-snapshot.cjs');
               report.source_snapshot=compareLegacySnapshot({files,
                 read:(ref,path,timeout)=>run('git',
-                  ['ls-tree','-z',ref,'--',':(literal)'+path],timeout)});
+                  ['ls-tree','-z',ref==='FETCH_HEAD'&&report.production_base_sha?report.production_base_sha:ref,'--',':(literal)'+path],timeout)});
             }
           }else report.base_compare='PRODUCTION_FETCH_UNAVAILABLE';
           // Run only the already trusted bounded test selector and never
