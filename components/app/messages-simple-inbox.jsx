@@ -381,7 +381,7 @@ export default function MessagesSimpleInbox({
             onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
         </div>
         {crmEnabled&&(embedded||tab==='requests')&&
-          <MessagesLeadMetrics locale={locale} requests={requests}
+          <MessagesLeadMetrics locale={locale} accountId={accountId} requests={requests}
             businessEnquiries={businessEnquiries}/>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
