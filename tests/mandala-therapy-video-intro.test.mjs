@@ -45,3 +45,22 @@ test("EN never plays RU soundtrack or unverified English source; locale reset an
   assert.doesNotMatch(studio,/locale==="es" \? null : "P9Wvo3gEY6U"/);
   assert.doesNotMatch(studio,/Russian audio/i);
 });
+test("real macOS WebKit export selects Montage Audio before requiring conditional music controls",()=>{
+  const script=read("scripts/verify-affirmation-voice-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const editor=script.indexOf('const editorTab=page.locator');
+  const audio=script.indexOf('const montageAudioTab=page.locator',editor);
+  const settings=script.indexOf('const montageSettings=page.locator',audio);
+  assert.ok(editor>0&&audio>editor&&settings>audio,
+    "do not wait for a conditional music pane while Montage still shows Settings");
+  const journey=script.slice(audio,settings);
+  assert.match(journey,/\[data-video-montage-tab="audio"\]/);
+  assert.match(journey,/await montageAudioTab\.click\(\)/);
+  assert.match(journey,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  const conditional=studio.indexOf('montagePanel==="audio" ? <div');
+  const music=studio.indexOf('data-video-montage-settings',conditional);
+  assert.ok(conditional>0&&music>conditional,
+    "music settings must remain conditional on the real Audio panel");
+  assert.match(script,/await lengthButton\.click\(\)/,
+    "retain actual duration selection before Safari video/AAC export");
+});
