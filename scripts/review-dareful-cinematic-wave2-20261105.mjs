@@ -14,7 +14,16 @@ import {fileURLToPath} from "node:url";
 
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
-const output=resolve(root,"artifacts/cinematic-dareful-wave2-20261105");
+const retryMode=process.env.HH_CINEMATIC_RETRY_ZERO==="1";
+const retryIds=new Set([
+ "tropical-forest-aerial","fall-autumn-landscape-2","ocean-beach-sunset",
+ "stream-water-nature","heavenly-sky-landscape","koolau-mountains-aerial",
+ "crashing-waves-sea","coastal-aerial-ocean","beach-sand-waves",
+ "flying-over-field"
+]);
+const output=resolve(root,retryMode
+ ?"artifacts/cinematic-dareful-wave2-retry-20261105"
+ :"artifacts/cinematic-dareful-wave2-20261105");
 const allowed=new Set(["--check","--json"]);
 if(process.argv.slice(2).some(a=>!allowed.has(a)))throw Error("unexpected_review_option");
 const license="https://creativecommons.org/licenses/by/4.0/";
@@ -119,13 +128,14 @@ function distance(a,b){
 mkdirSync(output,{recursive:true});
 const reviews=[],signatures=[];
 for(const source of candidates){
+ if(retryMode&&!retryIds.has(source.id))continue;
  const mp4=join(output,source.id+".mp4");
  const jpg=join(output,source.id+".jpg");
  const contact=join(output,source.id+"-contact.jpg");
  const landscape=join(output,source.id+"-landscape.mp4");
  const landscapeContact=join(output,source.id+"-landscape-contact.jpg");
  try{
-   const start=clamp(Math.floor((source.durationSeconds-5)*0.28),0,Math.max(0,source.durationSeconds-6));
+   const start=retryMode?0:clamp(Math.floor((source.durationSeconds-5)*0.28),0,Math.max(0,source.durationSeconds-6));
    cli("ffmpeg",["-hide_banner","-loglevel","error","-nostdin","-y",
      "-rw_timeout","25000000","-ss",String(start),"-i",source.mediaUrl,
      "-vf","fps=24,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=yuv420p",
@@ -183,7 +193,8 @@ for(const source of candidates){
 }
 const ok=reviews.filter(x=>x.qualityStatus==="technical_pass_needs_editor").length;
 const report={schemaVersion:"hh-cinematic-hd-wave2-review-v1",
-  reviewedSourceCandidates:25,technicalPass:ok,blockedOrNeedsReshoot:25-ok,
+  reviewedSourceCandidates:reviews.length,technicalPass:ok,blockedOrNeedsReshoot:reviews.length-ok,
+  runMode:retryMode?"retry_only_failed_ten_from_seek_zero":"initial_25",
   publicationStatus:"ALL_UNAPPROVED_REVIEW_ONLY",
   addedToProduction:0,individualReviewStillMandatory:true,license,
   criteria:"actual decoded H264/720x1280/24fps/5s, measurable motion, tonal contrast, edges, SHA256 and dHash deduplication",
@@ -196,5 +207,5 @@ writeFileSync(join(output,"README.md"),
   "Only visually approved technically verified real footage can be considered for later import; score alone grants NO publication approval.\n"+
   "Contact sheets plus actual MP4 are mandatory to assess cropping, semantic suitability and quality.\n"+
   "Credit Joel Holland / Dareful, source URL, CC BY 4.0 and note crop/changes.\n");
-process.stdout.write(JSON.stringify({status:report.publicationStatus,technicalPass:ok,needsReview:25},null,2)+"\n");
+process.stdout.write(JSON.stringify({status:report.publicationStatus,technicalPass:ok,needsReview:reviews.length},null,2)+"\n");
 if(ok===0)process.exitCode=1;
