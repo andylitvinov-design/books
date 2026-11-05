@@ -240,3 +240,39 @@ test('trusted legacy snapshot summary is bounded and cannot authorize merge',()=
  assert.ok(yml.includes('candidateSnapshot:process.env.HH_CANDIDATE_SNAPSHOT'));
  assert.ok(yml.includes('summaryNumbers.slice(1).reduce'));
 });
+
+test('legacy verified merge base is evidence-only and requires protected exact SHA',()=>{
+ const {verifiedLegacyMergeBase}=require('../scripts/ci-pr-legacy-snapshot.cjs');
+ const prod={protected:true,commit:{sha:OLD}};
+ const cmp={status:'diverged',base_commit:{sha:HEAD},
+  merge_base_commit:{sha:'c'.repeat(40)}};
+ assert.deepEqual(verifiedLegacyMergeBase({prSha:HEAD,production:prod,compare:cmp}),{
+  production_sha:OLD,merge_base_sha:'c'.repeat(40),
+  source_write_authorized:false,merge_authorized:false});
+ assert.equal(verifiedLegacyMergeBase({prSha:HEAD,production:{...prod,protected:false},compare:cmp}),null);
+ assert.equal(verifiedLegacyMergeBase({prSha:HEAD,production:prod,
+  compare:{...cmp,base_commit:{sha:OLD}}}),null);
+ assert.equal(verifiedLegacyMergeBase({prSha:HEAD,production:prod,
+  compare:{...cmp,merge_base_commit:{sha:'bad'}}}),null);
+ assert.equal(verifiedLegacyMergeBase({prSha:HEAD,production:prod,
+  compare:{...cmp,status:'unknown'}}),null);
+ assert.equal(verifiedLegacyMergeBase({prSha:OLD,production:prod,
+  compare:{...cmp,base_commit:{sha:OLD}}}),null);
+});
+test('legacy shallow merge-tree uses authenticated ancestor without releasing manual hold',()=>{
+ const yml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ for(const proof of [
+  "legacy_production_sha: ${{ steps.select.outputs.legacy_production_sha }}",
+  "legacy_base_sha: ${{ steps.select.outputs.legacy_base_sha }}",
+  'github.rest.repos.compareCommits({',
+  'verifiedLegacyMergeBase({',
+  'LEGACY_PRODUCTION_SHA',
+  'LEGACY_MERGE_BASE_SHA',
+  "'--merge-base='+base",
+  "base_compare_source='GITHUB_VERIFIED_MERGE_BASE'",
+  "mode:'READ_ONLY_NO_SOURCE_PUBLICATION'"
+ ])assert.ok(yml.includes(proof),proof);
+ assert.ok(yml.includes("ref==='FETCH_HEAD'&&report.production_base_sha"),
+  'snapshot must retain production SHA after extra fetch replaces FETCH_HEAD');
+ assert.match(yml,/needs.claim.outputs.strategy == 'legacy'/);
+});
