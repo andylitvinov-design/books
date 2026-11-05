@@ -55,7 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     [...coreServicePaths.map(slug => "/" + locale + "/services/" + slug), "/" + locale + "/shop"]);
   const topicJourneys = (['en','ru','es'] as const).flatMap(locale => TOPIC_JOURNEYS.map(journey => `/${locale}/explore/${journey.id}`));
   const personalityProfileUrls = (['en','ru','es'] as const).map(locale => `/${locale}/personality-profiles`);
-  const addedVisitorJourneys = (['en','ru','es'] as const).flatMap(locale => [`/${locale}/temple-insights`, `/${locale}/tests`]);
+  const addedVisitorJourneys = (['en','ru','es'] as const).flatMap(locale => [`/${locale}/temple-insights`, `/${locale}/tests`, `/${locale}/mytube`]);
   const verifiedEventPages = (['en', 'ru', 'es'] as const).flatMap(locale =>
     PUBLIC_EVENTS.filter(event => event.status === 'published'
       && Number.isFinite(Date.parse(event.startsAt))

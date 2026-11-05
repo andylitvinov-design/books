@@ -70,7 +70,16 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
+  // The scenic player remains a source-backed viewer with no persistence or
+  // network calls. Photo-to-Cabinet is a separate, explicit private action.
+  assert.doesNotMatch(client, /localStorage|sessionStorage/);
+  const playerStart = client.indexOf('data-support-player');
+  const galleryStart = client.indexOf('id="support-meditation-gallery"', playerStart);
+  assert.ok(playerStart >= 0 && galleryStart > playerStart, "scenic player boundary is present");
+  assert.doesNotMatch(client.slice(playerStart, galleryStart), /fetch\s*\(/,
+    "playing a meditation must not upload or persist anything");
+  assert.match(client, /fetch\("\/api\/app\/support-photo"/,
+    "only the separate user-invoked Cabinet photo save may call the private API");
 });
 
 test("progress is derived from opens and four self-ratings, never fake streaks", () => {
@@ -100,4 +109,16 @@ test("approved screenshot uses scenic video first; every category has matching t
   assert.match(masters, /data-support-offer-request/);
   assert.match(talisman, /data-support-talisman-rail/);
   assert.match(talismanCss, /\.rail\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
+
+test("mobile screenshot acceptance runs all 18 isolated cases with bounded concurrency", () => {
+  const script = read("scripts/verify-holistic-support-mock-fidelity.mjs");
+  assert.match(script, /supportCases = \["ru", "en", "es"\]\.flatMap/);
+  assert.match(script, /\[320, 390, 430\]\.map\(width/);
+  assert.match(script, /\[chromium, webkit\]/);
+  assert.match(script, /Promise\.allSettled\(supportCases\.slice\(from, from \+ 2\)/);
+  assert.match(script, /if \(rejected\) throw rejected\.reason/);
+  assert.match(script, /assert\.equal\(evidence\.length, 18/);
+  assert.match(script, /await page\.close\(\)/);
+  assert.match(script, /serviceWorkers: "block"/);
 });

@@ -52,8 +52,14 @@ try {
       assert.equal(response?.status(),200,locale+": first party route HTTP");
       await page.locator('[data-support-tool="healing"]').click();
       const gallery = page.locator('[data-support-master-viewer][data-support-directory-kind="healing"]');
-      await gallery.locator("[data-support-master-request]").waitFor();
-      await gallery.locator("[data-support-master-request]").click();
+      await gallery.waitFor({state:"visible",timeout:12000});
+      // Current Reiki shelf's actual published offer CTA, not the retired
+      // hero-only request button; all consent/CRM tests below remain required.
+      const offer = gallery.locator('[data-support-reiki-offer-shelf] [data-reiki-service-card="' + master.serviceId + '"]');
+      await offer.waitFor({state:"visible",timeout:12000});
+      const request = offer.locator('button').last();
+      await request.waitFor({state:"visible",timeout:8000});
+      await request.click();
       const dialog = page.locator('dialog[open][aria-labelledby="support-master-order-title"]');
       await dialog.waitFor();
       const focus = dialog.locator("[data-remote-focus-chip]").first();

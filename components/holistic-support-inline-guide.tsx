@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Clock3, HandHeart, Play, Sparkles, X } from "lucide-react";
 import { goalSectorFocus, summarizeGoalSelection, type GoalSelection, type GoalSector } from "@/components/holistic-support-goal-filter";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { HolisticLanguageConversation } from "@/components/holistic-language-conversation";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-inline-guide.module.css";
 
@@ -37,8 +38,8 @@ const formats: { id: Format; filter: string; choice?: Choice }[] = [
 const copy = {
   en: {
     title: "Your personal guide", close: "Close guide", step: "Step",
-    areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning" },
-    ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
+    areas: { energy: "Body & energy", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Confidence & harmony" },
+    ratings: { energy: "Body & energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Confidence" },
     editedIntro: "You changed your self-rating for",
     noData: "You have not changed your ratings or filled in the goal filter yet. Which area matters most today?",
     filterIntro: "From your goal filter, your chosen focus is",
@@ -54,7 +55,7 @@ const copy = {
       money: ["Clear decisions", "Confidence", "Next step"],
       love: ["More connection", "Better communication", "Boundaries"],
       goals: ["Focus", "Motivation", "A simple plan"],
-      meaning: ["Find direction", "Explore values", "Make a choice"],
+      meaning: ["Manage stress", "Build confidence", "Find harmony and purpose"],
     },
     otherNeed: "Describe it in your words", otherPlaceholder: "One short sentence",
     timeQuestion: "How much time do you have right now?", later: "Plan for later",
@@ -84,8 +85,8 @@ const copy = {
   },
   ru: {
     title: "Ваш проводник", close: "Закрыть проводника", step: "Шаг",
-    areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы" },
-    ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
+    areas: { energy: "Тело и энергия", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Уверенность и гармония" },
+    ratings: { energy: "Тело и энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Уверенность" },
     editedIntro: "Вы изменили показатель",
     noData: "Вы пока не изменяли оценки и не заполняли фильтр целей. Какая тема вам сейчас важнее?",
     filterIntro: "По заполненному фильтру целей вы выделили тему",
@@ -101,7 +102,7 @@ const copy = {
       money: ["Ясность решений", "Уверенность", "Следующий шаг"],
       love: ["Больше близости", "Общение", "Личные границы"],
       goals: ["Концентрация", "Мотивация", "Понятный план"],
-      meaning: ["Найти направление", "Прояснить ценности", "Принять решение"],
+      meaning: ["Справиться со стрессом", "Укрепить уверенность", "Найти гармонию и смысл"],
     },
     otherNeed: "Уточнить своими словами", otherPlaceholder: "Коротко опишите свой запрос",
     timeQuestion: "Сколько у вас времени сейчас?", later: "Позже",
@@ -131,8 +132,8 @@ const copy = {
   },
   es: {
     title: "Tu guía personal", close: "Cerrar guía", step: "Paso",
-    areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
-    ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
+    areas: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Confianza y armonía" },
+    ratings: { energy: "Cuerpo y energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Confianza" },
     editedIntro: "Has cambiado tu puntuación de",
     noData: "Aún no has cambiado las puntuaciones ni completado el filtro de objetivos. ¿Qué tema es más importante hoy?",
     filterIntro: "Según tu filtro de objetivos, el tema elegido es",
@@ -148,7 +149,7 @@ const copy = {
       money: ["Decisiones claras", "Confianza", "Siguiente paso"],
       love: ["Más cercanía", "Comunicación", "Límites"],
       goals: ["Concentración", "Motivación", "Un plan simple"],
-      meaning: ["Encontrar rumbo", "Aclarar valores", "Tomar una decisión"],
+      meaning: ["Gestionar el estrés", "Ganar confianza", "Encontrar armonía y sentido"],
     },
     otherNeed: "Explicar con mis palabras", otherPlaceholder: "Una frase breve",
     timeQuestion: "¿Cuánto tiempo tienes ahora?", later: "Más tarde",
@@ -214,7 +215,7 @@ const conversation = {
       money: ["Unclear next step", "Fear of making a mistake", "Not enough time"],
       love: ["Hard to talk about it", "Not enough connection", "Unclear expectations"],
       goals: ["Too many priorities", "I keep postponing", "I need a simple start"],
-      meaning: ["Unsure of direction", "My priorities changed", "I'd like to explore"],
+      meaning: ["Stress is overwhelming", "I doubt myself", "My goals feel unclear"],
     },
     skip: "Not sure yet", detailAck: "Thanks, I'll keep that in mind:",
     timeAck: "We can make the first step manageable.",
@@ -259,7 +260,7 @@ const conversation = {
       money: ["Неясен следующий шаг", "Боюсь ошибиться", "Не хватает времени"],
       love: ["Сложно поговорить", "Мало близости", "Неясные ожидания"],
       goals: ["Слишком много задач", "Часто откладываю", "Трудно начать"],
-      meaning: ["Неясно направление", "Изменились приоритеты", "Хочу исследовать"],
+      meaning: ["Стресс мешает жить", "Сомневаюсь в себе", "Неясны мои цели"],
     },
     skip: "Пока не знаю", detailAck: "Спасибо, учту:",
     timeAck: "Начнём с посильного шага.",
@@ -305,7 +306,7 @@ const conversation = {
       money: ["No sé por dónde empezar", "Temo equivocarme", "Falta de tiempo"],
       love: ["Cuesta hablarlo", "Falta de cercanía", "Expectativas confusas"],
       goals: ["Demasiadas prioridades", "Lo aplazo", "Me cuesta empezar"],
-      meaning: ["Rumbo poco claro", "Cambian mis prioridades", "Quiero explorar"],
+      meaning: ["El estrés me supera", "Dudo de mí", "Mis metas no están claras"],
     },
     skip: "Aún no lo sé", detailAck: "Gracias, lo tendré en cuenta:",
     timeAck: "Empecemos con algo manejable.",
@@ -484,6 +485,7 @@ export function HolisticSupportInlineGuide({
   const [phase,setPhase] = useState<Phase>(initial.phase);
   const [topic,setTopic] = useState<GoalSector>(initial.topic);
   const [draft,setDraft] = useState("");
+  const [freeMode,setFreeMode] = useState(false);
   const [need,setNeed] = useState("");
   const [minutes,setMinutes] = useState<number | null>(null);
   const [format,setFormat] = useState<Format>("meditation");
@@ -662,6 +664,9 @@ export function HolisticSupportInlineGuide({
       <span>{kind==="healing"?talk.supportAction:talk.sessionAction}</span><ArrowRight size={17} aria-hidden="true"/>
     </button>;
   }
+  const languageFormats = goalSelection
+    ? [...new Set(allowed.map(row => ({meditation:"video",tests:"test",courses:"course",consultation:"service",healing:"service",mandala:""} as Record<Format,string>)[row.id]).filter(Boolean))]
+    : ["video","audio","test","course","service"];
   const alternatives=allowed.filter(row=>row.id!==format).slice(0,2);
   const stageSummary=t.areas[topic]+(need?" · "+need:"")+(selectedTest?" · "+selectedTest.title:"")+
     (primaryVideo&&selectedVideoId?" · "+primaryVideo.title:"");
@@ -669,9 +674,21 @@ export function HolisticSupportInlineGuide({
     <section id="support-goal-results" className={styles.card} data-support-inline-guide aria-labelledby="support-guide-heading">
       <header className={styles.header}>
         <span className={styles.title} id="support-guide-heading"><Sparkles size={18} aria-hidden="true"/>{t.title}</span>
-        <span className={styles.progress}>{t.step} {stageStep}/4</span>
-        <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
+        <button type="button" className={styles.modeToggle} data-support-guide-mode-toggle
+          aria-pressed={freeMode} onClick={()=>setFreeMode(previous=>!previous)}>
+          {freeMode ? (locale==="ru"?"Пошагово":locale==="es"?"Por pasos":"Guided steps")
+            : (locale==="ru"?"Свободный диалог":locale==="es"?"Conversación libre":"Free conversation")}
+        </button>
+        {!freeMode ? <span className={styles.progress}>{t.step} {stageStep}/4</span> : null}
+        <button className={styles.close} type="button" data-support-guide-close onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
+      <div hidden={!freeMode} aria-hidden={!freeMode}>
+        <HolisticLanguageConversation locale={locale}
+          seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)}
+          videos={videos} tests={guideTests} enabledFormats={languageFormats}
+          onVideo={onVideo} active={freeMode}/>
+      </div>
+      {!freeMode ? <>
       <div className={styles.dialogue}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
           <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={128} height={160}
@@ -793,6 +810,7 @@ export function HolisticSupportInlineGuide({
         <button type="button" className={styles.textLink} onClick={()=>say(talk.returnToChat,journey.practiceInvite,"practice-invite")}>{talk.returnToChat}</button>
       </section>:null}
       <p className={styles.privacy}>{t.private} {journey.noPersonalData}</p>
+      </> : null}
     </section>
   );
 }

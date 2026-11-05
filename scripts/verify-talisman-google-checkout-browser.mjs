@@ -88,6 +88,14 @@ const run = async (locale, width) => {
     await page.locator('[data-support-tool="talisman"]').click();
     const viewer = page.locator("[data-support-talisman-viewer]");
     await viewer.waitFor({state:"visible"});
+    // Published catalog ratings load only after the full catalog opens.
+    const ratingsRequest = page.waitForRequest(req => {
+      const url = new URL(req.url());
+      return req.method() === "GET" && url.origin === origin &&
+        url.pathname === "/api/catalog/ratings" && url.searchParams.get("kind") === "talisman";
+    }, {timeout:15000});
+    await viewer.locator('button[aria-controls="support-talisman-full-catalog"]').click();
+    await ratingsRequest;
     await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
     await viewer.locator("[data-support-talisman-request]").click();
     const modal = page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]');

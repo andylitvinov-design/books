@@ -6,36 +6,57 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
-const workflow = read('.github/workflows/native-ci.yml')
+const workflow = read('.github/workflows/holistic-house-native.yml')
 const plist = read('ios/App/HHCourseWidget/Info.plist')
 const project = read('ios/App/App.xcodeproj/project.pbxproj')
 
 function pipelineContract(source) {
-  const shell = source.match(/^defaults:\n  run:\n    shell: (.+)$/m)?.[1]
-  assert.equal(shell, 'bash --noprofile --norc -eo pipefail {0}', 'Every logged native command must propagate pipeline failures')
-  assert.equal((source.match(/^\s+(?:-\s+)?shell:/gm) || []).length, 1, 'No weaker job or step shell override')
-  assert.doesNotMatch(source, /continue-on-error:\s*true|\|\|\s*true|set\s+\+e|set\s+\+o\s+pipefail/)
-  const lines = source.split('\n'), commands = []
-  for (let index = 0; index < lines.length; index++) {
-    const run = lines[index].match(/^        run: (.+)$/)
-    if (!run) continue
-    let command = run[1]
-    if (command === '>-') {
-      const folded = []
-      while (/^          \S/.test(lines[index + 1] || '')) folded.push(lines[++index].trim())
-      command = folded.join(' ')
-    }
-    if (command.includes('| tee ')) commands.push(command)
+  const shell=source.match(/^defaults:\n  run:\n    shell: (.+)$/m)?.[1];
+  assert.equal(shell,'bash --noprofile --norc -eo pipefail {0}',
+    'All native log pipelines must preserve upstream failure status');
+  assert.equal((source.match(/^\s+(?:-\s+)?shell:/gm)||[]).length,1,
+    'No weaker per-job or per-step shell overrides');
+  assert.doesNotMatch(source,/continue-on-error:\s*true|\|\|\s*true|set\s+\+e|set\s+\+o\s+pipefail/);
+  assert.match(source,/permissions:\n  contents: read/);
+  assert.match(source,/actions\/upload-artifact@v4/);
+  assert.ok(source.includes("always() && github.event_name != 'pull_request'"),
+    'Real build diagnostics must stay available after failures');
+
+  const stepCommand=name=>{
+    const marker='      - name: '+name+'\n';
+    const start=source.indexOf(marker);
+    assert.notEqual(start,-1,'Missing native build step: '+name);
+    const end=source.indexOf('\n      - ',start+marker.length);
+    const section=source.slice(start,end<0?undefined:end);
+    assert.ok(section.includes("github.event_name != 'pull_request'"),
+      'Expensive native builds must be production/manual only: '+name);
+    const match=section.match(/^        run: ([^\n]+)(?:\n([\s\S]*))?/m);
+    assert.ok(match,'Missing runnable native command: '+name);
+    const kind=match[1].trim();
+    const command=(kind==='|' || kind==='>-')
+      ? (match[2]||'').split('\n').filter(line=>line.startsWith('          '))
+          .map(line=>line.slice(10)).join(kind==='|'?'\n':' ').trim()
+      :kind;
+    assert.match(command,/2>&1\s*\|\s*tee\s+\S+\.log/,
+      'Must retain upstream stderr and artifact logs: '+name);
+    return command;
+  };
+  const commands=[
+    stepCommand('Sync Android Capacitor project'),
+    stepCommand('Build Android debug APK (not a production release)'),
+    stepCommand('Sync iOS Capacitor project'),
+    stepCommand('Build unsigned iOS simulator app (not installable on physical iPhone)'),
+    stepCommand('Build unsigned iPhone arm64 bundle for owner personal signing'),
+  ];
+  assert.match(commands[0],/^npx cap sync android /);
+  assert.match(commands[1],/^\.\/gradlew assembleDebug --stacktrace /);
+  assert.match(commands[2],/^npx cap sync ios /);
+  for(const command of commands.slice(3)){
+    assert.match(command,/^xcodebuild -workspace ios\/App\/App\.xcworkspace/);
+    assert.match(command,/CODE_SIGNING_ALLOWED=NO build 2>&1 \| tee /,
+      'Unsigned native candidates must never silently become signed');
   }
-  assert.equal(commands.length, 4, 'Both platform syncs and both builds retain logged pipelines')
-  assert.match(commands[0], /^npm run native:sync -- ios /)
-  assert.match(commands[1], /^xcodebuild .*CODE_SIGNING_ALLOWED=NO build /)
-  assert.match(commands[2], /^npm run native:sync -- android /)
-  assert.match(commands[3], /^\.\/gradlew assembleDebug --stacktrace /)
-  for (const command of commands) assert.match(command, /2>&1 \| tee \S+\.log$/)
-  assert.equal((source.match(/if: always\(\)/g) || []).length, 2, 'Failure logs remain uploadable')
-  assert.match(source, /permissions:\n  contents: read/)
-  return { shell, commands }
+  return {shell,commands};
 }
 
 // Execute the actual workflow commands with local stand-ins. Never invoke an
@@ -46,7 +67,7 @@ function runPipeline(command, shell, upstreamStatus) {
     const bin = path.join(root, 'bin'), android = path.join(root, 'android')
     mkdirSync(bin); mkdirSync(android)
     const stub = '#!/bin/sh\nprintf "native fixture stdout\\n"\nprintf "native fixture stderr\\n" >&2\nexit "$NATIVE_FIXTURE_STATUS"\n'
-    for (const file of [path.join(bin, 'npm'), path.join(bin, 'xcodebuild'), path.join(android, 'gradlew')]) {
+    for (const file of [path.join(bin, 'npx'), path.join(bin, 'xcodebuild'), path.join(android, 'gradlew')]) {
       writeFileSync(file, stub, { mode: 0o755 })
     }
     const script = path.join(root, 'step.sh')
@@ -73,7 +94,7 @@ function assertWidgetIdentifier(info, pbx) {
   assert.match(info, /<key>NSExtensionPointIdentifier<\/key><string>com\.apple\.widgetkit-extension<\/string>/)
 }
 
-test('all four logged native commands use strict pipeline status without changing unsigned builds', () => {
+test('all five successor native pipelines use strict status without changing unsigned builds', () => {
   pipelineContract(workflow)
 })
 
@@ -102,7 +123,7 @@ test('removing pipefail reproduces the original false green and fails the source
   const weakened = shell.replace('-eo pipefail', '-e')
   for (const command of commands) assert.equal(runPipeline(command, weakened, 65).status, 0)
   assert.throws(() => pipelineContract(workflow.replace(shell, weakened)))
-  assert.throws(() => pipelineContract(workflow.replace('      - name: Build unsigned simulator target', '      - shell: bash -e {0}\n        name: Build unsigned simulator target')))
+  assert.throws(() => pipelineContract(workflow.replace('      - name: Build unsigned iOS simulator app (not installable on physical iPhone)', '      - shell: bash -e {0}\n        name: Build unsigned iOS simulator app (not installable on physical iPhone)')))
   assert.throws(() => pipelineContract(workflow.replace('CODE_SIGNING_ALLOWED=NO', 'CODE_SIGNING_ALLOWED=YES')))
 })
 

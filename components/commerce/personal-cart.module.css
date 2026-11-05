@@ -130,3 +130,15 @@
   .methodChoices label{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.orderButton{scroll-behavior:auto}}
+
+/* Consent remains mandatory. On a 320px iPhone, the public bottom dock must
+   not cover the real checkbox or Register button when scrolling to the form.
+   The user can swipe normally; no click/consent is synthesized in application code. */
+@media(max-width:640px){
+  .cart :global([data-cart-contact-form] label:has(input[type="checkbox"][required])){
+    min-height:44px;scroll-margin-block:24px calc(var(--ia222-bottom-height,72px) + 28px);
+  }
+  .cart :global([data-cart-contact-form] button[type="submit"]){
+    scroll-margin-block:24px calc(var(--ia222-bottom-height,72px) + 28px);
+  }
+}

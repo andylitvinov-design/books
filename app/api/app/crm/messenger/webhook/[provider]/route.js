@@ -2,6 +2,8 @@ import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
+import { operationHash } from '@/lib/app/crypto'
+import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
@@ -71,10 +73,19 @@ export async function POST(request,{params}){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
-              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale,
+                webAppUrl:intake.webAppUrl||null})}catch(error){
+              // Never repeat a prompt after an unknown Telegram result.
+              // Log only allowlisted reason and server-secret HMAC correlation.
+              const evidence=telegramPromptFailureEvidence(event.eventId,error,
+                value=>operationHash(value,config))
+              console.error('HH_CRM_TG_PROMPT_SEND_FAILED',evidence)
+            }
           }
           continue
         }
+        // Diagnostic buttons must never fall through to ordinary CRM ingestion.
+        if(event.callbackId)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }

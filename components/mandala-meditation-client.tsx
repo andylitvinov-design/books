@@ -4,11 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ArrowLeft, Download, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Expand, Headphones, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
 import { renderMandalaPng } from "@/lib/mandala/export-png";
+import { prepareBrowserPhoto, SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -29,6 +30,17 @@ const templates = [
   { id: "stone", names: { en: "Stone mosaic", ru: "Каменная мозаика", es: "Mosaico de piedra" }, back: "#e5d9cb", ink: "#423d35", soft: "#b6a899" },
 ] as const;
 
+export type MandalaProfessionalSource = {
+  publicOffer: {
+    id:string;kind:string;published:boolean;publicSnapshot:boolean;
+    practitionerId:string;locale:string;title:string;
+    publicDescription:string;href:string;
+  };
+  publicPractitioner: {
+    id:string;practitionerId:string;published:boolean;publicSnapshot:boolean;
+    displayName:string;professionalTitle:string;credentialVerified:boolean;
+  };
+};
 type Template = (typeof templates)[number];
 type Topic = MeditationTopic | "all";
 const topics: Topic[] = ["all", "business", "love", "energy", "health"];
@@ -42,7 +54,7 @@ const copy = {
     intro: "Choose an existing mandala, place your own photo or a picture of your goal in the centre, then listen to an original video meditation.",
     upload: "Add your photo or goal", change: "Replace image", remove: "Remove",
     privacy: "Your picture stays on this device while this page is open. No upload, account or CRM entry.",
-    invalid: "Please choose a JPG, PNG or WebP image up to 10 MB.",
+    invalid: "Please select a JPG, PNG, WebP or HEIC photo up to 25 MB.",
     intent: "Your intention (optional)", intentPlaceholder: "What would you like to give attention to?",
     photoAlt: "Your chosen photo or goal", empty: "Your image or intention",
     selection: "Choose your mandala", imageAdjust: "Adjust image", advanced: "Mandala settings and original guided meditations",
@@ -62,7 +74,7 @@ const copy = {
     intro: "Выберите готовую мандалу, поместите внутрь своё фото или образ цели и слушайте оригинальную авторскую видеомедитацию.",
     upload: "Загрузить фото или цель", change: "Заменить изображение", remove: "Удалить",
     privacy: "Фото остаётся на этом устройстве, пока открыта страница. Нет загрузки на сервер, регистрации или записи в CRM.",
-    invalid: "Выберите JPG, PNG или WebP размером до 10 МБ.",
+    invalid: "Выберите фото JPG, PNG, WebP или HEIC до 25 МБ.",
     intent: "Ваше намерение (необязательно)", intentPlaceholder: "Чему вы хотите уделить внимание?",
     photoAlt: "Ваше фото или изображение цели", empty: "Ваш образ или цель",
     selection: "Выберите мандалу", imageAdjust: "Настроить изображение", advanced: "Дополнительно: мандала и авторские медитации",
@@ -82,7 +94,7 @@ const copy = {
     intro: "Elige un mandala, coloca una foto tuya o de tu meta en el centro y escucha una videomeditación original.",
     upload: "Añadir foto u objetivo", change: "Cambiar imagen", remove: "Quitar",
     privacy: "Tu foto permanece en este dispositivo mientras la página esté abierta. Sin subirla al servidor ni guardarla en el CRM.",
-    invalid: "Elige una imagen JPG, PNG o WebP de hasta 10 MB.",
+    invalid: "Elige una foto JPG, PNG, WebP o HEIC de hasta 25 MB.",
     intent: "Tu intención (opcional)", intentPlaceholder: "¿A qué quieres prestar atención?",
     photoAlt: "Tu foto o imagen del objetivo", empty: "Tu imagen u objetivo",
     selection: "Elige un mandala", imageAdjust: "Ajustar imagen", advanced: "Más opciones: mandala y meditaciones originales",
@@ -177,7 +189,11 @@ function MandalaArt({ option }: { option: Template }) {
   );
 }
 
-export function MandalaMeditationClient({ locale, videos }: { locale: PublicLocale; videos: MeditationVideo[] }) {
+export function MandalaMeditationClient({ locale, videos, professionalSource = null, professionalMode = false }: {
+  locale: PublicLocale; videos: MeditationVideo[];
+  professionalSource?: MandalaProfessionalSource | null;
+  professionalMode?: boolean;
+}) {
   const t = copy[locale];
   const [templateId, setTemplateId] = useState<Template["id"]>("client");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -195,6 +211,9 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const [preparedPng, setPreparedPng] = useState<{signature: string; url: string} | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  // Latest selected photo wins even if an earlier HEIC takes longer to decode.
+  const photoChoiceEpoch = useRef(0);
+  const [photoPending,setPhotoPending] = useState(false);
   const closeButton = useRef<HTMLButtonElement | null>(null);
   // Let the native button click represent one activation for mouse, touch,
   // keyboard and assistive technology. Toggling on pointerup can re-layout the
@@ -202,6 +221,8 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   function toggleFocusMode() { setFocusMode(value => !value); }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
+  // Drop delayed local HEIC decodes after this editor unmounts, without leaking object URLs.
+  useEffect(() => () => { photoChoiceEpoch.current++; }, []);
 
   useEffect(() => {
     if (!focusMode) return;
@@ -270,20 +291,36 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
     }
   }
 
+  async function handleImageFile(image?: File) {
+    if (!image) return;
+    const choice = ++photoChoiceEpoch.current;
+    // Invalidate the old source and exported PNG before decoding a new photo.
+    // A failed iPhone HEIC replacement must not leave the old portrait selected.
+    setImageUrl(null);
+    setPreparedPng(null);
+    setPhotoPending(true);
+    setImageError("");
+    try {
+      // Real Safari/HEIC decoding, EXIF-free JPEG normalized on this device.
+      // No private image bytes are sent to a network or retained on the server.
+      const prepared = await prepareBrowserPhoto(image);
+      if (choice !== photoChoiceEpoch.current) return;
+      setImageUrl(URL.createObjectURL(prepared));
+      setPreparedPng(null);
+      setZoom(1);
+      setOffsetX(50);
+      setOffsetY(50);
+    } catch {
+      if (choice === photoChoiceEpoch.current) setImageError(t.invalid);
+    } finally {
+      if (choice === photoChoiceEpoch.current) setPhotoPending(false);
+    }
+  }
+
   function handleImage(event: ChangeEvent<HTMLInputElement>) {
     const image = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
-    if (!image) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(image.type) || image.size > 10 * 1024 * 1024 || !image.size) {
-      setImageError(t.invalid);
-      return;
-    }
-    setImageError("");
-    setImageUrl(URL.createObjectURL(image));
-    setZoom(1);
-    setOffsetX(50);
-    setOffsetY(50);
+    void handleImageFile(image);
   }
 
   function selectTopic(topic: Topic) {
@@ -296,10 +333,16 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       data-mandala-meditation data-mandala-focus={focusMode ? "true" : "false"}
       role={focusMode ? "dialog" : undefined} aria-modal={focusMode ? true : undefined}
       aria-label={focusMode ? t.focus : undefined}>
-      <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
+      <input ref={fileInput} id="mandala-photo" type="file" accept={SUPPORT_PHOTO_ACCEPT}
         className={styles.hiddenPhotoInput} onChange={handleImage}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
-        onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
+        onPickPhoto={() => fileInput.current?.click()}
+        onPhotoFileSelected={photo => { void handleImageFile(photo); }} photoError={imageError} photoPending={photoPending}
+        professionalSource={professionalSource} professionalMode={professionalMode} />
+      <Link className={styles.voiceStudioLink} href={'/'+locale+'/holistic-support/voice-studio'} prefetch={false}>
+        <Headphones size={18} aria-hidden="true" />
+        {locale==='ru'?'Выбрать голос · 6 голосов RU/EN':locale==='es'?'Elegir voz · 6 voces en ruso e inglés':'Choose a voice · 6 RU/EN voices'}
+      </Link>
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
@@ -365,7 +408,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
                   {imageUrl ? t.change : t.upload}
                 </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
-                  onClick={() => { setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
+                  onClick={() => { photoChoiceEpoch.current++; setPhotoPending(false); setImageUrl(null); setPreparedPng(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
                 </button> : null}
               </div>

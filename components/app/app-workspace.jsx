@@ -56,6 +56,8 @@ import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import AccountLoginMethods from '@/components/app/account-login-methods'
+import AccountMessagingEntry from '@/components/app/account-messaging-entry'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
 import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
@@ -64,6 +66,7 @@ import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
+import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
 import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -142,6 +145,15 @@ export default function AppWorkspace({ locale, path = [] }) {
     [nativeApp,setNativeApp] = useState(false),
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
   const [savedInstallContext,setSavedInstallContext]=useState(false)
+  const [telegramAvailable,setTelegramAvailable]=useState(false)
+  useEffect(()=>{
+    if(state==='loading'||state==='ready'||state==='unavailable')return
+    const controller=new AbortController()
+    appFetch('auth/providers',undefined,undefined,{signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setTelegramAvailable(value.telegram===true)})
+      .catch(()=>{/* Fail closed: retain Google when Telegram is unavailable. */})
+    return ()=>controller.abort()
+  },[state])
   // Ephemeral account-scoped handoff: no private Save or report URL in storage.
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
@@ -250,7 +262,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     savedExitDestination.current=null
     if(destination)router.replace(destination)
   }
-  async function signin() {
+  async function signin(providerChoice = 'google') {
     signinAttempted.current = true
     setBusy(true)
     setError(null)
@@ -274,6 +286,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
+        ...(providerChoice === 'telegram' ? { provider: 'telegram' } : {}),
+        ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
@@ -518,6 +532,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     return (
       <main className="hh-app hh-app--course-guest">
         <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+          onTelegramStart={()=>signin('telegram')} telegramAvailable={telegramAvailable}
           errorMessage={error ? message(error, c) : undefined}
           onRetry={state === 'error' ? load : undefined}
           legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
@@ -529,8 +544,10 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
       <main className="hh-app hh-app--cabinet-guest">
+        <ProfileHubTabs locale={locale} active="view" />
         <CabinetGuestOverview
-          locale={locale} busy={busy} onSignin={signin}
+          locale={locale} busy={busy} onSignin={()=>signin('google')}
+          onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
           unavailable={state === 'unavailable'}
           onRetry={state === 'error' ? load : undefined}
           sessionNotice={state === 'error'}
@@ -541,6 +558,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready')
     return (
       <main className="hh-app">
+        {['portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : 'results'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
@@ -557,13 +575,24 @@ export default function AppWorkspace({ locale, path = [] }) {
               ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
                 : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : page === 'progress'
                 ? (locale === 'ru'
-                  ? 'Ваши сохранённые тесты, курсы, видео, мандалы и заявки откроются здесь после входа с Google.'
-                  : 'Sign in with Google to see your saved tests, courses, videos, mandalas and orders together.') : c.intro}</p>
+                  ? 'Ваши сохранённые тесты, курсы, видео, мандалы и заявки откроются здесь после входа.'
+                  : 'Sign in to see your saved tests, courses, videos, mandalas and orders together.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
-            <button className="hh-primary" onClick={signin} disabled={busy}>
-              {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
-            </button>
+            <>
+              {telegramAvailable && <button className="hh-primary" data-telegram-auth="login"
+                onClick={()=>signin('telegram')} disabled={busy}>
+                {locale==='ru'?'Войти через Telegram':locale==='es'?'Entrar con Telegram':'Continue with Telegram'}
+              </button>}
+              <button className="hh-primary" onClick={()=>signin('google')} disabled={busy}>
+                {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
+              </button>
+              {telegramAvailable && <p className="hh-muted">
+                {locale==='ru'?'Уже есть Google-кабинет? Войдите через Google и привяжите Telegram в настройках.':
+                  locale==='es'?'¿Ya usas Google? Entra con Google y vincula Telegram en Ajustes.':
+                  'Existing Google Cabinet? Sign in with Google first and link Telegram in Settings.'}
+              </p>}
+            </>
           )}
           {page === 'course' && (stressSignup
             ? <Course14DayOverview locale={locale} programId="stress" compact />
@@ -678,13 +707,16 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
+          {['portrait','portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? 'view' : 'results'} resultCount={page === 'portrait' ? (data.results || []).length : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
             <>
+              <ProfileResultsArchive locale={locale} results={data.results || []} />
               <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
               <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+              <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
             </>
@@ -802,6 +834,8 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                accountId={data.account.id} locale={locale}/>}
               <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />

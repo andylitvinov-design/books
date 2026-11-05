@@ -6,6 +6,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/internal/direct-message-push",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/internal/revenue-ideas-telegram",
       "schedule": "0 13,14 * * *"
     },
