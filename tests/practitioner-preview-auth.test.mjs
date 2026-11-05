@@ -54,11 +54,16 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(showcase.includes('TOOLS.map('))
 })
 
-test('approved practice keeps functional internal actions but adopts one shared six-tab mobile dock', () => {
+test('approved practice keeps actions while seven app destinations replace legacy dock', () => {
   assert.ok(promoBanner.includes('The standalone practitioner mockup'))
   assert.ok(promoBanner.includes('/practice'))
-  assert.ok(siteBottomNavigation.includes('The public practitioner showcase'))
+  // The unified app dock, not the old public footer, owns Practice on mobile.
+  const sharedDock = read('lib/unified-mobile-dock.mjs')
+  assert.ok(siteBottomNavigation.includes('The shared seven-destination app dock owns Home'))
+  assert.ok(siteBottomNavigation.includes('const hidden = isUnifiedMobileDockPath(pathname)'))
   assert.ok(siteBottomNavigation.includes('practice|mytube|temple-insights'))
+  assert.ok(sharedDock.includes('UNIFIED_DOCK_IDS=Object.freeze(["mytube","video","ai","practice","master","profile","analysis"])'))
+  assert.ok(sharedDock.includes('return isUnifiedMobileDockHomePath(pathname)'))
   assert.ok(rootLayout.includes('<UnifiedMobileDock initialLocale={lang} />'))
   assert.ok(read('app/unified-mobile-dock.css').includes('data-legacy-practice-bottom-nav'))
   assert.ok(showcase.includes('data-legacy-practice-bottom-nav'))

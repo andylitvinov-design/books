@@ -946,3 +946,16 @@ test('owner-video pinned runner still performs real ffmpeg ffprobe and media acc
   assert.doesNotMatch(workflow,/continue-on-error:\s*true/,
     'Never permit media release checks to pass after a failed install')
 });
+
+test('GitHub FFmpeg fallback remains official, bounded, checksum-pinned and fail-closed',()=>{
+  const source=readFileSync(new URL('../.github/actions/ci-ffmpeg-static/action.yml',import.meta.url),'utf8');
+  assert.match(source,/if ! curl --fail --show-error --silent --location/);
+  assert.match(source,/api\.github\.com\/repos\/eugeneware\/ffmpeg-static\/releases\/assets\/316528626/);
+  assert.match(source,/github\.com\/eugeneware\/ffmpeg-static\/releases\/download\/b6\.1\.1\/ffmpeg-linux-x64\.gz/);
+  assert.match(source,/Both official FFmpeg sources unavailable; refusing to bypass SHA-256 verification/);
+  assert.match(source,/bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa/);
+  assert.match(source,/e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99/);
+  assert.equal((source.match(/sha256sum --check --status/g)||[]).length,4);
+  assert.match(source,/install -m 755 "\$FFMPEG_BIN" node_modules\/ffmpeg-static\/ffmpeg/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true|skip-hash|untrusted-mirror/i);
+});
