@@ -67,3 +67,11 @@ test('four canonically ranked MyTube stage sources survive entire audio edit',()
    audioDurationMs:60000,scenes,stageClipIds:[ids[0],ids[1],ids[2],'unlicensed']}).code,
   'PLOT_STAGE_SOURCE_INVALID');
 });
+
+test('four story beats never repeat a clip at the beat boundary',()=>{
+ const ids=scenes.slice(0,4).map(s=>s.id);
+ const result=compileDotStoryCutPlan({plotId:plot.id,audioDurationMs:180000,
+   scenes:scenes.slice(0,4),stageClipIds:ids});
+ assert.equal(result.ok,true);
+ assert.ok(result.shots.every((shot,i)=>i===0||shot.sceneId!==result.shots[i-1].sceneId));
+});
