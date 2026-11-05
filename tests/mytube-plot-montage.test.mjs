@@ -124,5 +124,5 @@ test("plot recommendation enforces aspect before storyboard assembly",async()=>{
 test("mobile director forwards aspect and invalidates a confirmed cut on format change",()=>{
   const source=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
   assert.match(source,/targetAspect:aspect/);
-  assert.match(source,/stageCaptions,selectedMotifId,selectedStyleId,aspect,/);
+  assert.match(source,/stageCaptions,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,/);
 });

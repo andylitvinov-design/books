@@ -28,6 +28,7 @@ export type ConfirmedMeaningHandoff={
  renderReady:boolean;mayPublishVideo:boolean;
 };
 type Props={locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;
+ initialAxisId?:string;canChooseScenario?:boolean;
  onConfirmHandoff:(handoff:ConfirmedMeaningHandoff|null,includeCaption:boolean)=>void;
  onChooseScenario:(scenarioId:string)=>void};
 const wording={
@@ -35,8 +36,8 @@ const wording={
  current:"Сейчас",desired:"Хочу",empty:"Выберите кластер",vectors:"Примеры переходов",
  refine:"Уточнить конкретную эмоцию",precise:"Уточнение",valence:"Ощущение: −3 неприятно … +3 приятно",
  charge:"Эмоциональный заряд",resourceScore:"Ресурсный ориентир",suggestion:"Валентность предложена каталогом — её можно изменить",
- partialCoverage:"Часть уточнённых сочетаний имеет подготовленные идеи",missingCoverage:"Для этого направления смысловые идеи ещё не подготовлены",
- uncurated:"Для этой точной пары нет редакционных идей. Можно выбрать другое сочетание или нейтральное видео.",
+ partialCoverage:"Часть уточнённых сочетаний имеет подготовленные идеи",missingCoverage:"Для этой пары доступны три авторские идеи на каждую смысловую ось; вы можете изменить или отклонить их",
+ uncurated:"Для этого сочетания не нашлось подходящей безопасной идеи. Выберите другое направление или нейтральное видео.",
  intensity:"Сила переживания (0–10, необязательно)",energy:"Энергия сейчас (0–10, необязательно)",
  optional:"Дополнительные настройки",unknown:"Не указано",axis:"Что для вас сейчас важнее?",
  axisAuto:"Предложите варианты",discover:"Показать смысловые идеи",
@@ -62,8 +63,8 @@ const wording={
  current:"Now",desired:"Want",empty:"Choose a cluster",vectors:"Suggested transitions",
  refine:"Refine the exact feeling",precise:"Specific feeling",valence:"Feeling: −3 unpleasant … +3 pleasant",
  charge:"Emotional charge",resourceScore:"Resource orientation",suggestion:"Valence suggested by catalog — you may change it",
- partialCoverage:"Some refined pairs have curated ideas",missingCoverage:"No curated meaning ideas for this direction yet",
- uncurated:"No curated ideas for this exact pair. Choose another or a neutral video.",
+ partialCoverage:"Some refined pairs have curated ideas",missingCoverage:"Three original ideas are available for each meaning axis; you may edit or decline them",
+ uncurated:"No suitable safe idea for this pair. Choose another or a neutral video.",
  intensity:"Intensity (0–10, optional)",energy:"Energy now (0–10, optional)",
  optional:"Optional settings",unknown:"Not specified",axis:"What matters most to you?",
  axisAuto:"Suggest directions",discover:"Explore meaning ideas",
@@ -88,8 +89,8 @@ const wording={
  current:"Ahora",desired:"Quiero",empty:"Elige un grupo",vectors:"Transiciones sugeridas",
  refine:"Precisar la emoción",precise:"Emoción concreta",valence:"Sensación: −3 desagradable … +3 agradable",
  charge:"Carga emocional",resourceScore:"Recurso orientativo",suggestion:"Valencia sugerida por catálogo — puedes cambiarla",
- partialCoverage:"Algunos pares precisos tienen ideas revisadas",missingCoverage:"Aún no hay ideas editoriales para esta dirección",
- uncurated:"No hay ideas revisadas para este par exacto. Elige otro o un vídeo neutro.",
+ partialCoverage:"Algunos pares precisos tienen ideas revisadas",missingCoverage:"Hay tres ideas originales para cada eje de sentido; puedes editarlas o rechazarlas",
+ uncurated:"No hay una idea segura para este par. Elige otra opción o un vídeo neutro.",
  intensity:"Intensidad (0–10, opcional)",energy:"Energía actual (0–10, opcional)",
  optional:"Ajustes opcionales",unknown:"No indicado",axis:"¿Qué es más importante para ti?",
  axisAuto:"Sugerir direcciones",discover:"Explorar ideas",
@@ -155,7 +156,7 @@ function parsedHandoff(value:unknown):ConfirmedMeaningHandoff|null{
 const storageKey=(topicId:string)=>"hh-meaning-idea-v1-session:"+topicId;
 const digitOrNull=(value:string)=>value===""?null:Number(value);
 export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScenarioId,
- onConfirmHandoff,onChooseScenario}:Props){
+ initialAxisId="",canChooseScenario=true,onConfirmHandoff,onChooseScenario}:Props){
  const t=wording[locale];
  const states=useMemo<StateOption[]>(()=>listStates(locale).map(x=>({id:String(x.id),label:String(x.label)})),[locale]);
  const axes=useMemo<MeaningAxisOption[]>(()=>listMeaningAxes(locale),[locale]);
@@ -168,7 +169,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  const [intensity,setIntensity]=useState("");
  const [energy,setEnergy]=useState("");
  const [valence,setValence]=useState("");
- const [axis,setAxis]=useState("");
+ const [axis,setAxis]=useState(initialAxisId);
  const [response,setResponse]=useState<Response|null>(null);
  const [selectedId,setSelectedId]=useState("");
  const [customText,setCustomText]=useState("");
@@ -191,14 +192,14 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  useEffect(()=>{
    let active=true;
    requestSerial.current++;
-   setCurrent("");setDesired("");setAxis("");setIntensity("");setEnergy("");setValence("");
+   setCurrent("");setDesired("");setAxis(initialAxisId);setIntensity("");setEnergy("");setValence("");
    setResponse(null);setSelectedId("");setCustomText("");setEditing(false);setError("");
    setHandoff(null);setBusy(false);
    try{
      const saved=JSON.parse(window.sessionStorage.getItem(storageKey(topicId))||"null");
      if(saved&&saved.locale===locale&&validIds.has(saved.current)&&validIds.has(saved.desired)&&
-       (saved.axis===""||axes.some(x=>x.id===saved.axis))){
-       setCurrent(saved.current);setDesired(saved.desired);setAxis(saved.axis);
+       (saved.axis===""||axes.some(x=>x.id===saved.axis))&&(!initialAxisId||saved.axis===initialAxisId)){
+       setCurrent(saved.current);setDesired(saved.desired);setAxis(initialAxisId||saved.axis);
        const strong=Number.isInteger(saved.intensity)&&saved.intensity>=0&&saved.intensity<=10?
          String(saved.intensity):"";
        const fuel=Number.isInteger(saved.energy)&&saved.energy>=0&&saved.energy<=10?
@@ -212,7 +213,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
            import("@/lib/mandala/meaning-emotion/idea-film-handoff.mjs")
          ]).then(([engine,bridge])=>{
            if(!active)return;
-           const req=makeRequest(saved.current,saved.desired,saved.axis,
+           const req=makeRequest(saved.current,saved.desired,initialAxisId||saved.axis,
              digitOrNull(strong),digitOrNull(fuel),digitOrNull(feeling));
            const suggestion=engine.recommendMeaningIdeas(req);
            const idea=engine.confirmMeaningIdea(req,saved.neutral===true?
@@ -232,7 +233,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
    return ()=>{active=false;requestSerial.current++};
  // Intentionally reset only when topic/locale changes, not on callback re-render.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[topicId,locale,validIds,axes]);
+ },[topicId,locale,validIds,axes,initialAxisId]);
  const invalidate=()=>{
    requestSerial.current++;
    setResponse(null);setSelectedId("");setCustomText("");setEditing(false);
@@ -344,7 +345,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
          onClick={()=>chooseStates(x.currentStateId,x.desiredStateId)}>{x.label}</button>)}
      </div>
    </details>
-   <p className={css.legend}>{t.axis}</p>
+   {!initialAxisId?<><p className={css.legend}>{t.axis}</p>
    <div className={css.axes} role="group" aria-label={t.axis}>
      <button type="button" className={css.chip} data-meaning-axis="auto"
        disabled={disabled||busy} aria-pressed={!axis} onClick={()=>{invalidate();setAxis("")}}>
@@ -356,7 +357,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
        aria-pressed={axis===item.id} onClick={()=>{invalidate();setAxis(item.id)}}>
        {item.label}
      </button>)}
-   </div>
+   </div></>:null}
    <details className={css.compact}><summary>{t.optional}</summary>
      <div className={css.fields}>
        <label className={css.field}>{t.intensity}
@@ -450,7 +451,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
         <ol>{handoff.filmScenario.narrativeBeats.map((beat,i)=><li key={i}>{beat}</li>)}</ol>
         {selectedScenarioId?<p>{t.existing}</p>:
          <button type="button" className={css.secondary} data-meaning-choose-scenario
-           disabled={disabled||busy}
+           disabled={disabled||busy||!canChooseScenario}
            onClick={()=>onChooseScenario(handoff.filmScenario!.scenarioId)}>{t.apply}</button>}
        </div>:null}
      </div>:null}

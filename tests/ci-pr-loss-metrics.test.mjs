@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected} from '../lib/ci/pr-loss-metrics.mjs';
+import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected,analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
@@ -349,4 +349,68 @@ test('P1 collector reattaches bounded merged Core history using complete indepen
   assert.equal(Date.parse(result.timestamps.final_pass_at),Date.parse(at('11:10')));
   assert.equal(Date.parse(result.timestamps.vercel_build_ignored_at),Date.parse(at('12:20')));
   assert.match(formatSummary(report),/Vercel skipped/);
+});
+
+
+test('Core waves keep same-HEAD repeat separate from new-HEAD repair and runner wait',()=>{
+  const before=run(501,at('10:01'),at('10:11'),{conclusion:'failure',head_sha:old,
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(502,at('10:24'),at('10:30'));
+  const repeat=run(503,at('10:40'),at('10:45'));
+  const jobs={
+    501:{total_count:1,jobs:[job(5011,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure')]},
+    502:{total_count:1,jobs:[job(5021,'core-lint-types-build',at('10:24'),at('10:25'),at('10:30'))]},
+    503:{total_count:1,jobs:[job(5031,'core-lint-types-build',at('10:40'),at('10:41'),at('10:45'))]}
+  };
+  const record=analyzeCoreWaveGaps(pr(),[before,after,repeat],jobs,[],{runHistoryComplete:true});
+  assert.equal(record.run_history_complete,true);
+  assert.equal(record.observed_core_runs,3);
+  assert.equal(record.new_head_runs,1);
+  assert.equal(record.same_head_repeat_runs,1);
+  assert.equal(record.new_head_gaps.mean_minutes,13);
+  assert.equal(record.same_head_gaps.mean_minutes,10);
+  assert.equal(record.gaps_measured.n,2);
+  assert.equal(record.core_job_work.n,3);
+  assert.equal(record.first_runner_wait.n,3);
+  assert.equal(record.gaps[0].reason_confirmed,false);
+});
+
+test('Core gap report never converts overlapping, incomplete or wrong-PR evidence to zero',()=>{
+  const first=run(601,at('10:01'),at('10:24'));
+  const overlap=run(602,at('10:20'),at('10:31'));
+  const wrong=run(603,at('10:40'),at('10:45'),{
+    pull_requests:[{number:777,base:{ref:'codex/public-book-library'},head:{sha:head}}]});
+  const actual=analyzeCoreWaveGaps(pr(),[first,overlap,wrong],{},null,{runHistoryComplete:false});
+  assert.equal(actual.observed_core_runs,2);
+  assert.equal(actual.gaps_measured.n,0);
+  assert.equal(actual.gaps_measured.mean_minutes,null);
+  assert.equal(actual.gaps[0].minutes,null);
+  assert.equal(actual.run_history_complete,false);
+  assert.equal(actual.core_job_work.n,0);
+});
+
+test('Core gap report uses bounded real timeline hints but never asserts cause',()=>{
+  const first=run(701,at('10:01'),at('10:10'));
+  const next=run(702,at('10:20'),at('10:30'));
+  const timeline=[{event:'edited',created_at:at('10:15')}];
+  const record=analyzeCoreWaveGaps(pr(),[first,next],{},timeline,{runHistoryComplete:true});
+  assert.deepEqual(record.gaps[0].observed_intervening_events,['edited']);
+  assert.equal(record.gaps[0].reason_confirmed,false);
+});
+
+
+test('Core CI-only install avoids optional ffmpeg-static fetch without weakening product checks',()=>{
+  const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const block=core.split('      - name: Install dependencies for verified Core route')[1]
+    ?.split('      # When full Mandala browser QA is advisory')[0];
+  assert.ok(block,'CI dependency install step missing');
+  assert.ok(block.includes('steps.diff.outputs.ci_only'),'must use narrow CI-only classifier');
+  assert.match(block,/GITHUB_EVENT_NAME/);
+  assert.match(block,/npm ci --ignore-scripts --no-audit --no-fund/);
+  assert.match(block,/npm ci --no-audit --no-fund/);
+  assert.match(block,/else[\s\S]*npm ci --no-audit --no-fund/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/name: Source Preflight — syntax and TypeScript before costly Next build/);
+  assert.match(core,/^  hh-specialist:/m);
+  assert.match(core,/^  hh-merge-check:/m);
 });
