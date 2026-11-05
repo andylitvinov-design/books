@@ -192,8 +192,16 @@ try {
   await save.waitFor({state: 'visible', timeout: 80000});
   assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
     'rendered', 'CATALOG_CLIP_IS_NOT_PERSONALIZED_OUTPUT');
+  // Primary Save opens the real Files / Telegram / WhatsApp delivery chooser.
+  // Wait for that user-visible state before requesting the genuine file download.
+  await save.click();
+  const delivery = page.locator('[data-video-messenger-delivery]');
+  await delivery.waitFor({state: 'visible', timeout: 10000});
+  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
+  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
   const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 25000}), save.click(),
+    page.waitForEvent('download', {timeout: 25000}),
+    delivery.locator('[data-video-save-direct-choice]').click(),
   ]);
   const bytes = await downloadBytes(download);
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
