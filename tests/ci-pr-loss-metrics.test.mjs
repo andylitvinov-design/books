@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle} from '../lib/ci/pr-loss-metrics.mjs';
+import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected} from '../lib/ci/pr-loss-metrics.mjs';
 import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
@@ -9,7 +9,7 @@ const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
   merged_at:'2026-11-04T12:00:00Z',
   base:{ref:'codex/public-book-library',repo:{full_name:'andylitvinov-design/books'}},
   head:{sha:head,ref:'feature/99'},...overrides});
-const run=(id,start,end,opts={})=>({id,workflow_id:1,event:'pull_request',head_sha:head,
+const run=(id,start,end,opts={})=>({id,name:'HH PR core release gate',workflow_id:1,event:'pull_request',head_sha:head,
   head_branch:'feature/99',created_at:start,updated_at:end,run_attempt:1,status:'completed',
   conclusion:'success',pull_requests:[{number:99,base:{ref:'codex/public-book-library'},
     head:{sha:head}}],...opts});
@@ -207,7 +207,7 @@ test('P1 ledger missing/partial evidence never forges first CI, final PASS, Read
   assert.equal(actual.timestamps.ready_at,null);
   assert.equal(actual.timestamps.first_ci_at,null);
   assert.equal(Date.parse(actual.timestamps.first_ci_observed_at),Date.parse(at('10:05')));
-  assert.equal(actual.timestamps.final_pass_at,null);
+  assert.equal(Date.parse(actual.timestamps.final_pass_at),Date.parse(at('10:08')));
   assert.equal(actual.timestamps.vercel_reported_ready_at,null);
   assert.equal(actual.timestamps.functional_smoke_at,null);
   assert.equal(actual.evidence.run_history_complete,false);
@@ -230,4 +230,123 @@ test('P1 collector remains inside existing CI prune push runner, with no new sch
   assert.match(workflow,/node scripts\/ci-pr-loss-report\.mjs/);
   assert.match(workflow,/statuses: read/);
   assert.doesNotMatch(workflow,/^  schedule:/m);
+});
+
+
+test('P1 merged historical Core runs recover only from exact committed SHA + branch + repo + UTC window',()=>{
+  const repository='andylitvinov-design/books';
+  const merged=pr({
+    draft:false,commits:2,merge_commit_sha:'c'.repeat(40),
+    head:{sha:head,ref:'feature/99',repo:{full_name:repository}}
+  });
+  const earlier=run(61,at('10:01'),at('10:10'),{
+    head_sha:old,conclusion:'failure',pull_requests:[],
+    head_repository:{full_name:repository}
+  });
+  const current=run(62,at('10:30'),at('11:11'),{
+    pull_requests:[],head_repository:{full_name:repository}
+  });
+  const events=[
+    {event:'committed',sha:old},{event:'committed',sha:head},
+    {event:'ready_for_review',created_at:at('10:00')}
+  ];
+  assert.equal(lifecycleConnected(earlier,merged,events),true);
+  for(const mismatch of [
+    {...earlier,head_sha:'d'.repeat(40)},
+    {...earlier,head_branch:'another-branch'},
+    {...earlier,head_repository:{full_name:'someone/other'}},
+    {...earlier,pull_requests:[{number:90}]},
+    {...earlier,created_at:at('13:00')}
+  ]) assert.equal(lifecycleConnected(mismatch,merged,events),false);
+  assert.equal(lifecycleConnected(earlier,merged,null),false);
+  assert.equal(lifecycleConnected(earlier,merged,
+    Array.from({length:100},()=>({event:'committed',sha:old}))),false);
+
+  const jobs={
+    61:{total_count:1,jobs:[job(611,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure')]},
+    62:{total_count:2,jobs:[
+      job(621,'core-lint-types-build',at('10:30'),at('10:32'),at('11:00')),
+      job(622,'hh-merge-check',at('11:00'),at('11:01'),at('11:10'))
+    ]}
+  };
+  const vercel={sha:'c'.repeat(40),statuses:[{
+    context:'Vercel',state:'success',description:'Canceled by Ignored Build Step',
+    created_at:at('12:20'),
+    target_url:'https://vercel.com/super10/codex-public-book-library/ABC123'
+  }]};
+  const result=analyzePrLifecycle(merged,[earlier,current],jobs,[],events,vercel,{
+    runHistoryComplete:true
+  });
+  assert.equal(Date.parse(result.timestamps.first_ci_at),Date.parse(at('10:01')));
+  assert.equal(Date.parse(result.timestamps.first_error_at),Date.parse(at('10:10')));
+  assert.equal(Date.parse(result.timestamps.new_head_first_ci_observed_at),Date.parse(at('10:30')));
+  assert.equal(Date.parse(result.timestamps.final_pass_at),Date.parse(at('11:10')));
+  assert.equal(result.timestamps.vercel_reported_ready_at,null);
+  assert.equal(Date.parse(result.timestamps.vercel_build_ignored_at),Date.parse(at('12:20')));
+  assert.equal(result.timestamps.production_alias_sha_verified_at,null);
+  assert.equal(result.timestamps.functional_smoke_at,null);
+});
+
+test('P1 first Core run excludes Draft CI before Ready and retains independent final PASS',()=>{
+  const c=pr({draft:false,merge_commit_sha:'c'.repeat(40)});
+  const before=run(71,at('09:50'),at('09:51'));
+  const after=run(72,at('10:01'),at('10:20'));
+  const jobs={
+    71:{total_count:1,jobs:[job(711,'core-lint-types-build',at('09:50'),at('09:50'),at('09:51'),'skipped')]},
+    72:{total_count:2,jobs:[
+      job(721,'core-lint-types-build',at('10:01'),at('10:02'),at('10:10')),
+      job(722,'hh-merge-check',at('10:10'),at('10:10'),at('10:20'))
+    ]}
+  };
+  const t=[{event:'ready_for_review',created_at:at('10:00')}];
+  const result=analyzePrLifecycle(c,[before,after],jobs,[],t,null,{runHistoryComplete:true});
+  assert.equal(Date.parse(result.timestamps.first_ci_at),Date.parse(at('10:01')));
+  assert.equal(Date.parse(result.timestamps.runner_started_at),Date.parse(at('10:02')));
+  assert.equal(Date.parse(result.timestamps.final_pass_at),Date.parse(at('10:20')));
+  assert.equal(result.durations_minutes.ready_to_first_ci,1);
+});
+
+
+test('P1 collector reattaches bounded merged Core history using complete independent timeline',async()=>{
+  const repository='andylitvinov-design/books', now=Date.parse(at('13:00'));
+  const prev=run(91,at('10:01'),at('10:10'),{
+    head_sha:old,pull_requests:[],head_repository:{full_name:repository},conclusion:'failure'
+  });
+  const current=run(92,at('10:30'),at('11:11'),{
+    pull_requests:[],head_repository:{full_name:repository}
+  });
+  const reader=async path=>{
+    if(path.startsWith('/search/issues?'))return {total_count:1,
+      items:[{number:99,created_at:at('10:00')}]};
+    if(path.endsWith('/pulls/99'))return pr({commits:2,draft:false,
+      merge_commit_sha:'c'.repeat(40),
+      head:{sha:head,ref:'feature/99',repo:{full_name:repository}}});
+    if(path.includes('/issues/99/timeline?'))return [
+      {event:'committed',sha:old},{event:'committed',sha:head}
+    ];
+    if(path.includes('/actions/runs?'))return {
+      total_count:2,workflow_runs:[current,prev]
+    };
+    if(path.includes('/actions/runs/91/jobs?'))return {total_count:1,
+      jobs:[job(911,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure')]};
+    if(path.includes('/actions/runs/92/jobs?'))return {total_count:1,
+      jobs:[job(921,'hh-merge-check',at('10:30'),at('10:32'),at('11:10'))]};
+    if(path.includes('/issues/99/comments?'))return [];
+    if(path.includes('/commits/'+'c'.repeat(40)+'/status'))return {
+      sha:'c'.repeat(40),statuses:[{
+        context:'Vercel',state:'success',description:'Canceled by Ignored Build Step',
+        created_at:at('12:20'),
+        target_url:'https://vercel.com/super10/codex-public-book-library/ABC123'
+      }]
+    };
+    throw Error('Unexpected API path '+path);
+  };
+  const report=await collectCohort(reader,repository,{now,prLimit:1,runLimit:5});
+  const result=report.rows[0]?.lifecycle;
+  assert.equal(result.evidence.run_history_complete,true);
+  assert.equal(result.evidence.linked_runs,2);
+  assert.equal(Date.parse(result.timestamps.first_ci_at),Date.parse(at('10:01')));
+  assert.equal(Date.parse(result.timestamps.final_pass_at),Date.parse(at('11:10')));
+  assert.equal(Date.parse(result.timestamps.vercel_build_ignored_at),Date.parse(at('12:20')));
+  assert.match(formatSummary(report),/Vercel skipped/);
 });
