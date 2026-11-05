@@ -95,3 +95,15 @@ test('cloud worker records PREPARED without demanding a fake source SHA',()=>{
  assert.match(yml,/runs-on: ubuntu-24.04/);
  assert.doesNotMatch(yml,/runs-on: (?:self-hosted|ubuntu-latest-large)/);
 });
+
+test('legacy cloud preflight must not be finalized early on claim runner',()=>{
+ const yaml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const start=yaml.indexOf('      - name: Finalize no-fix task on claim runner');
+ const end=yaml.indexOf('        uses: actions/github-script@v7',start);
+ assert.ok(start>=0 && end>start,'claim terminal step must remain explicit');
+ const guard=yaml.slice(start,end);
+ assert.match(guard,/steps\.select\.outputs\.strategy != 'legacy'/,
+  'legacy strategy must reach cloud preflight and finalizer before any terminal receipt');
+ assert.match(yaml,/needs\.claim\.outputs\.strategy == 'legacy'/,
+  'legacy fix job still runs with its existing no-credentials boundary');
+});
