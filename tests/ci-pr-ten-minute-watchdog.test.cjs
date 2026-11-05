@@ -95,6 +95,8 @@ test('retry only first-attempt infrastructure failures after cooldown',()=>{
   assert.equal(transientFailure(r,[{conclusion:'failure',steps:[{name:'TypeScript build',conclusion:'failure'}]}],NOW),false);
   assert.equal(transientFailure(r,[{conclusion:'failure',steps:[{name:'Install dependencies',conclusion:'failure'}]}],NOW),true);
   assert.equal(transientFailure({...r,run_attempt:2},[{conclusion:'timed_out'}],NOW),false);
+  assert.equal(transientFailure({...r,updated_at:new Date(NOW-7*60000).toISOString()},[{conclusion:'timed_out'}],NOW),false);
+  assert.equal(transientFailure({...r,updated_at:new Date(NOW-8*60000).toISOString()},[{conclusion:'timed_out'}],NOW),true);
   assert.equal(transientFailure({...r,updated_at:new Date(NOW-5*60000).toISOString()},[{conclusion:'timed_out'}],NOW),false);
 });
 test('green unarmed PR dispatches existing protected coordinator, not a direct merge',async()=>{

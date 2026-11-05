@@ -175,7 +175,7 @@ function canDispatchRepair(active, queued) {
 }
 function transientFailure(run, jobs, now) {
   if (!run || run.status !== 'completed' || run.run_attempt !== 1 ||
-      now - Date.parse(run.updated_at || run.created_at || 0) < 15 * MINUTE ||
+      now - Date.parse(run.updated_at || run.created_at || 0) < 8 * MINUTE ||
       now - Date.parse(run.created_at || 0) > 30 * 24 * 60 * MINUTE) return false;
   if (['timed_out','startup_failure'].includes(run.conclusion)) return true;
   if (run.conclusion !== 'failure' || !Array.isArray(jobs)) return false;
