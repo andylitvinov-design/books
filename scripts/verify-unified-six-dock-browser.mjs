@@ -299,6 +299,27 @@ try{
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → Messenger AI rail → private Orders/Clients → Practice",passed:true});
+ // The regular marketing homepage keeps seven visitor links in browsers,
+ // while the existing hamburger supplies a direct Practice bridge.
+ await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
+ const editorial=page.locator(".mobile-bottom-navigation");
+ await editorial.waitFor({state:"visible",timeout:30000});
+ assert.equal(await editorial.locator("[data-nav-item]").count(),7,
+   "ordinary browser homepage retains seven editorial destinations");
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),0,
+   "browser homepage does not display an extra six-item app dock");
+ await page.locator(".site-main-menu-trigger").click();
+ const practiceLink=page.locator('.site-main-menu-more a[data-nav-item="practice"]');
+ await practiceLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await practiceLink.getAttribute("href"),"/ru/holistic-support/mobile");
+ await practiceLink.click();
+ await page.waitForURL(/\\/ru\\/holistic-support\\/mobile\\/?$/,{timeout:45000});
+ await page.locator("[data-hh-unified-dock]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0,
+   "the Practice route switches to the single six-item app dock");
+ results.push({journey:"Public homepage seven links → explicit Practice → single six-tab dock",passed:true});
+
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
 console.log("Unified six-dock browser acceptance passed",results.length);
