@@ -1,0 +1,55 @@
+name: HH Real Video Vault wave 3 - one-time free source QA
+on:
+  push:
+    branches: [codex/cinematic-hd-footage-wave3-20261105]
+    paths:
+      - '.github/workflows/hh-real-video-vault-wave3-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-real-video-vault-wave3-once
+  cancel-in-progress: false
+jobs:
+  screen-17-real-filmed-candidates:
+    if: github.ref == 'refs/heads/codex/cinematic-hd-footage-wave3-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate source identities and safety gate
+        run: |
+          node --check scripts/review-dareful-cinematic-wave3-20261105.mjs
+          node --test tests/cinematic-hd-footage-wave3-contract.test.mjs
+      - name: Inspect real moving licensed video with free local FFmpeg
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          node scripts/review-dareful-cinematic-wave3-20261105.mjs
+      - name: Verify no release or public MP4 update
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const r=JSON.parse(readFileSync("artifacts/cinematic-dareful-wave3-20261105/report.json","utf8"));
+            if(r.reviewedSourceCandidates!==17||r.publicationStatus!=="ALL_UNAPPROVED_REVIEW_ONLY"||
+               r.sources.some(s=>s.editorialApproval!==false||s.readyForPublication!==false))
+              process.exit(1);
+          '
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json data/video-catalog/free-stock-scenes.json
+      - name: Keep short-lived technical video review evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-real-video-wave3-technical-preview
+          path: |
+            artifacts/cinematic-dareful-wave3-20261105/*.mp4
+            artifacts/cinematic-dareful-wave3-20261105/*.jpg
+            artifacts/cinematic-dareful-wave3-20261105/report.json
+            artifacts/cinematic-dareful-wave3-20261105/README.md
+          retention-days: 1
+          compression-level: 7
+          if-no-files-found: warn

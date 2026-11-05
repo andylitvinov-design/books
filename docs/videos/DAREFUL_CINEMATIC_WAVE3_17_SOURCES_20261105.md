@@ -1,0 +1,7 @@
+# HH Video Vault — free Dareful sourcing wave 3 (17 independent source pages)
+
+This discovery wave adds seventeen independently named Dareful/Joel Holland CC BY 4.0 filmed source-page candidates not in released stock/three earlier waves or wave 2 PR #3575 (53 prior pages total). No candidate is counted as a new LIVE video. The official pages report landscape 1920×1080; 9:16 edit is a crop and cannot count as native portrait footage.
+
+The one-time Ubuntu standard runner (free on the public repository) checks real moving five-second H.264 clips, nine-frame preview contact sheets, actual ffprobe resolution/FPS, motion, contrast, sharpness, per-file SHA256 and dHash near duplicates. It does not deploy, upload to R2 or expose stock to clients. The artifact is technical-only, retained for one day and must not substitute for real artistic playback.
+
+After screening: require score ≥4/5 from actual video playback, accurate subject/style tags, per-item rights and people/property/trademark release evidence, publication decision, original identity and attribution (Joel Holland, source URL, CC BY 4.0, change notice). Use only previously implemented private R2 ingest after verified account-wide no-extra-spend quota; run HEAD/GET/SHA and iOS Safari export, then count generator-eligible. Any failure remains research candidate. Published #3576 and existing draft #3575/#3597 are independent and unchanged.

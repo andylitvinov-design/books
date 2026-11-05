@@ -1,0 +1,501 @@
+{
+  "schemaVersion": "hh-dareful-cinematic-wave3-v1",
+  "reviewedAt": "2026-11-05",
+  "sourceCount": 17,
+  "approvedForPublication": false,
+  "editorialStatus": "SOURCE_PAGE_VERIFIED_MOTION_QA_REQUIRED",
+  "creator": "Joel Holland",
+  "publisher": "Dareful",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "usage": "editorial screening only, never live videos",
+  "requiresIndividualOwnerApproval": true,
+  "noPaidServices": true,
+  "priorWave2SourcePages": [
+    "https://dareful.com/free-4k-time-lapse-nature-stock-video-mountain-lake-sunrise/",
+    "https://dareful.com/river-forest-landscape/",
+    "https://dareful.com/tropical-forest-aerial/",
+    "https://dareful.com/flower-dew-droplets/",
+    "https://dareful.com/dusk-dawn-ocean/",
+    "https://dareful.com/fall-autumn-landscape-2/",
+    "https://dareful.com/ocean-beach-sunset/",
+    "https://dareful.com/stream-water-nature/",
+    "https://dareful.com/heavenly-sky-landscape/",
+    "https://dareful.com/free-4k-time-lapse-astro-stock-video-milky-way-star-trails/",
+    "https://dareful.com/koolau-mountains-aerial/",
+    "https://dareful.com/crashing-waves-sea/",
+    "https://dareful.com/green-grass-nature/",
+    "https://dareful.com/autumn-mountain-landscape/",
+    "https://dareful.com/coastal-aerial-ocean/",
+    "https://dareful.com/rapid-water-waves/",
+    "https://dareful.com/trees-looking-up/",
+    "https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+    "https://dareful.com/flying-over-snow-covered-pine-trees-4k-stock-video/",
+    "https://dareful.com/scenic-lake-view/",
+    "https://dareful.com/free-4k-stock-video-of-redwood-national-park-stock-footage/",
+    "https://dareful.com/evening-lake-landscape/",
+    "https://dareful.com/beach-sand-waves/",
+    "https://dareful.com/flying-over-field/",
+    "https://dareful.com/beach-ocean-waves/"
+  ],
+  "sources": [
+    {
+      "id": "snow-covered-rooftops",
+      "sourcePage": "https://dareful.com/snow-covered-rooftops/",
+      "mediaUrl": "https://stream.mux.com/n7jpLXFkiAtzU9LFXXdapZ00E35ZpugiNmi6YpKLN4oU.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 21,
+      "visualTags": [
+        "city",
+        "winter",
+        "rooftops",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "snow covered rooftops",
+        "ru": "Крыши зимнего города",
+        "es": "Tejados nevados"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "winter-town-aerial",
+      "sourcePage": "https://dareful.com/winter-town-aerial/",
+      "mediaUrl": "https://stream.mux.com/yfMtNs7sY01NebSKft79RIOq3nbD5A02LIw2kIp41p3x4.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 25,
+      "visualTags": [
+        "city",
+        "snow",
+        "street",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "winter town aerial",
+        "ru": "Зимний город с высоты",
+        "es": "Ciudad invernal desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "tokyo-japan-sunrise-4k",
+      "sourcePage": "https://dareful.com/free-4k-time-lapse-stock-video-tokyo-japan-sunrise/",
+      "mediaUrl": "https://stream.mux.com/Hp00UBA102gDBEjHqQt6MQBJhocikNvDypttpfo7zakBE.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 18,
+      "visualTags": [
+        "city",
+        "tokyo",
+        "sunrise",
+        "timelapse"
+      ],
+      "suggestedNames": {
+        "en": "tokyo japan sunrise 4k",
+        "ru": "Рассвет над Токио",
+        "es": "Amanecer en Tokio"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "coastal-homes-architecture",
+      "sourcePage": "https://dareful.com/coastal-homes-architecture/",
+      "mediaUrl": "https://stream.mux.com/8pc6P9cGUxiQhiBgeoDw8v00JkzCER6gFb6zsgoaSeMo.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 18,
+      "visualTags": [
+        "architecture",
+        "coast",
+        "houses",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "coastal homes architecture",
+        "ru": "Дома на побережье",
+        "es": "Casas en la costa"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "coastal-homes-sunset",
+      "sourcePage": "https://dareful.com/coastal-homes-sunset/",
+      "mediaUrl": "https://stream.mux.com/Ch9W00NmKt2ND5jGzYMaE01021Uu5IV1u4s1RyokcqzqU00.m3u8",
+      "suggestedTheme": "relationships",
+      "durationSeconds": 35,
+      "visualTags": [
+        "architecture",
+        "houses",
+        "sunset",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "coastal homes sunset",
+        "ru": "Прибрежные дома на закате",
+        "es": "Casas costeras al atardecer"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "old-sailing-ship",
+      "sourcePage": "https://dareful.com/old-sailing-ship/",
+      "mediaUrl": "https://stream.mux.com/MDUDGJBKURS3kE9rrpm59TaglDa83cAWBLjfWpCCFUE.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 42,
+      "visualTags": [
+        "sailing",
+        "ship",
+        "sea",
+        "landmark"
+      ],
+      "suggestedNames": {
+        "en": "old sailing ship",
+        "ru": "Старинный парусник",
+        "es": "Antiguo velero"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "water-bridge-structure",
+      "sourcePage": "https://dareful.com/water-bridge-structure/",
+      "mediaUrl": "https://stream.mux.com/IW01ExzbiXaxvx7NDIdNEyrd200wHgdm8i4OHiIb7Px4g.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 22,
+      "visualTags": [
+        "architecture",
+        "bridge",
+        "water",
+        "road"
+      ],
+      "suggestedNames": {
+        "en": "water bridge structure",
+        "ru": "Мост над водой",
+        "es": "Puente sobre el agua"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "industrial-factory-building",
+      "sourcePage": "https://dareful.com/industrial-factory-building/",
+      "mediaUrl": "https://stream.mux.com/L42BetdAum8Owkt4Jckf5AkVVz8jWoi2ki0100pmOntcI.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 31,
+      "visualTags": [
+        "industrial",
+        "factory",
+        "steam",
+        "night"
+      ],
+      "suggestedNames": {
+        "en": "industrial factory building",
+        "ru": "Промышленное здание",
+        "es": "Edificio industrial"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "christmas-house-winter",
+      "sourcePage": "https://dareful.com/free-cozy-christmas-house-full-of-holiday-happiness-4k-stock-video/",
+      "mediaUrl": "https://stream.mux.com/fx97CWk3w9Pauh7YbguobU1EcEV2TPoa8sCImhCrNZc.m3u8",
+      "suggestedTheme": "relationships",
+      "durationSeconds": 26,
+      "visualTags": [
+        "house",
+        "christmas",
+        "winter",
+        "lights"
+      ],
+      "suggestedNames": {
+        "en": "christmas house winter",
+        "ru": "Праздничный зимний дом",
+        "es": "Casa festiva de invierno"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "winter-forest-hike",
+      "sourcePage": "https://dareful.com/winter-forest-hike/",
+      "mediaUrl": "https://stream.mux.com/HAOWt8ZRHuXVBLRbBQlR64cKmYz0002fBrUuSITWg1154.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 16,
+      "visualTags": [
+        "forest",
+        "snow",
+        "winter",
+        "trail"
+      ],
+      "suggestedNames": {
+        "en": "winter forest hike",
+        "ru": "Зимняя лесная тропа",
+        "es": "Sendero de bosque invernal"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "snow-water-stream",
+      "sourcePage": "https://dareful.com/snow-water-stream/",
+      "mediaUrl": "https://stream.mux.com/N3CVZsnQSsSlJL02Nzlhwr334p5Y00iSpaBNf5GFwkEbI.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 72,
+      "visualTags": [
+        "stream",
+        "snow",
+        "ice",
+        "forest"
+      ],
+      "suggestedNames": {
+        "en": "snow water stream",
+        "ru": "Снежный лесной ручей",
+        "es": "Arroyo nevado"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "winter-river-landscape",
+      "sourcePage": "https://dareful.com/winter-river-landscape/",
+      "mediaUrl": "https://stream.mux.com/02O01ckqFUb100XfeiaFmSkUzccjXqvUdFUDd00Py67QlwM.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 26,
+      "visualTags": [
+        "river",
+        "winter",
+        "aerial",
+        "forest"
+      ],
+      "suggestedNames": {
+        "en": "winter river landscape",
+        "ru": "Зимняя река с высоты",
+        "es": "Río invernal desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "all-terrain-vehicle",
+      "sourcePage": "https://dareful.com/all-terrain-vehicle/",
+      "mediaUrl": "https://stream.mux.com/02S01SOfvChFwZ41Q02Y01Krh8g8BqZlCocAZvaPZJXrDss.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 50,
+      "visualTags": [
+        "vehicle",
+        "exploration",
+        "desert",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "all terrain vehicle",
+        "ru": "Вездеход на пересечённой местности",
+        "es": "Vehículo todoterreno"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "meadow-field-landscape",
+      "sourcePage": "https://dareful.com/meadow-field-landscape/",
+      "mediaUrl": "https://stream.mux.com/hre003hRtuiGljXDLhNZEqFM19B8B5lhObNB85wTfOls.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 30,
+      "visualTags": [
+        "meadow",
+        "wetlands",
+        "sky",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "meadow field landscape",
+        "ru": "Луга и водно-болотные угодья",
+        "es": "Praderas y humedales"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "moving-trees-countryside",
+      "sourcePage": "https://dareful.com/moving-trees-countryside/",
+      "mediaUrl": "https://stream.mux.com/7vpwWog12wiJ01zaY2jBb6tvbVhSUXwv02ObB601upACJg.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 37,
+      "visualTags": [
+        "forest",
+        "trees",
+        "motion",
+        "countryside"
+      ],
+      "suggestedNames": {
+        "en": "moving trees countryside",
+        "ru": "Движение деревьев",
+        "es": "Árboles en movimiento"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "rocky-mountains-autumn-snow",
+      "sourcePage": "https://dareful.com/free-4k-uhd-nature-stock-video-autumn-snow-in-the-rocky-mountains/",
+      "mediaUrl": "https://stream.mux.com/iYly9eMkr02RzosOwUnEGRti9HOUJtqqNPcM3s86mA9U.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 28,
+      "visualTags": [
+        "mountains",
+        "autumn",
+        "snow",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "en": "rocky mountains autumn snow",
+        "ru": "Осенние горы под снегом",
+        "es": "Montañas con nieve otoñal"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    },
+    {
+      "id": "ocean-sunrise-4k",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-clip-of-a-bright-sunrise-over-the-ocean-stock-footage/",
+      "mediaUrl": "https://stream.mux.com/uPavNUmOf4ilmnVoe6Pl9FK4g7Y8jWqYTiImKGc101OY.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 16,
+      "visualTags": [
+        "ocean",
+        "sunrise",
+        "water",
+        "light"
+      ],
+      "suggestedNames": {
+        "en": "ocean sunrise 4k",
+        "ru": "Рассвет над океаном",
+        "es": "Amanecer sobre el océano"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "approvedForPublication": false,
+      "status": "source_metadata_verified_motion_quality_pending"
+    }
+  ]
+}
