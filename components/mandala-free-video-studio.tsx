@@ -3814,21 +3814,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
-
       const actual=plan.shots.map(shot=>verifiedCategorySource(
-
         FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)));
-
       if(actual.length!==4||actual.some((scene,index)=>!scene||
-
          !verifiedSceneAspect(scene,outputAspect)||
-
          scene.durationSeconds<plan.shots[index].durationSeconds)||
-
          new Set(actual.map(scene=>canonicalSourceMasterKey(scene))).size!==4)
-
         throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
-
       resetEditorHistory();
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);

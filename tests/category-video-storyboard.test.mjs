@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import catalog from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
+import moneyManifest from "../public/videos/holistic-house/money-films-v1/manifest.json" with {type:"json"};
+import v2Manifest from "../public/videos/holistic-house/film-collection-v2/manifest.json" with {type:"json"};
+import stockManifest from "../data/video-catalog/free-stock-scenes.json" with {type:"json"};
 import {
   planMyTubeCategory,verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey
 } from "../lib/mandala/category-video-storyboard.mjs";
@@ -19,15 +22,19 @@ test("four narrative stages have localized titles and visual tags in all categor
     assert.equal(new Set(names).size,3);
   }
 });
-test("48 real catalogue MP4s are portrait; no 9:16 file is 16:9 by default",()=>{
-  assert.equal(catalog.scenes.length,48);
-  for(const scene of catalog.scenes){
-    const verified=verifiedCategorySource(scene);
-    assert.ok(verified,scene.id);
+test("the original 48 verified MP4 masters stay portrait even as the catalog expands",()=>{
+  const original=[...moneyManifest.scenes,...v2Manifest.scenes,...stockManifest];
+  assert.equal(original.length,48); // immutable 2026-11-05 baseline, not the entire future catalog
+  assert.ok(catalog.scenes.length>=original.length);
+  const byId=new Map(catalog.scenes.map(x=>[x.id,x]));
+  const legacy=original.map(x=>byId.get(x.id));
+  for(let i=0;i<legacy.length;i++){
+    const verified=verifiedCategorySource(legacy[i]);
+    assert.ok(verified,original[i].id);
     assert.ok(verifiedSceneAspect(verified,"portrait"));
     assert.equal(verifiedSceneAspect(verified,"landscape"),false);
   }
-  const plan=planMyTubeCategory({categoryId:"goals-money",scenes:catalog.scenes});
+  const plan=planMyTubeCategory({categoryId:"goals-money",scenes:legacy});
   assert.equal(plan.aspect,"landscape");
   assert.equal(plan.status,"INSUFFICIENT_UNIQUE_MEDIA");
   assert.equal(plan.availableUniqueMasters,0);
