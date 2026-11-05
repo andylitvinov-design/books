@@ -249,3 +249,16 @@
 /* Voice Studio is an optional next step, not an added promotional banner. */
 .voiceStudioLink{display:flex;justify-content:center;align-items:center;gap:8px;min-height:48px;margin:12px auto 15px;max-width:420px;padding:9px 14px;border:1px solid #a9d3be;border-radius:13px;background:#edf8ef;color:#14664a;text-align:center;text-decoration:none;font-size:13px;font-weight:800}
 .voiceStudioLink:focus-visible{outline:3px solid #3fb588;outline-offset:3px}
+
+/* Video-only iPhone first step. The full Video/Photo toggle remains on the
+   photo page and desktop; a visible Photo link is in the Video Studio header.
+   Removing the redundant top toggle gives the initial action usable space
+   above the fixed shared dock, without clipping the page or its keyboard. */
+@media(max-width:759px){
+  .page[data-mandala-mode="video"] :global([data-mentalica-studio-mode]){
+    display:none!important;
+  }
+  .page[data-mandala-mode="video"] .workshop{
+    padding-top:0!important;
+  }
+}

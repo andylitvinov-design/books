@@ -49,7 +49,11 @@ test("portrait-only clips are never selected in landscape or square montage expo
   assert.ok(item?.portraitClips,name);
   assert.equal(new Set(item.portraitClips).size,4);
   assert.equal(item.portraitClips.filter(id=>ids.includes(id)).length,1);
-  assert.equal(validateMontageClips(item.clips,catalog.scenes,[],"landscape"),true);
+  // These existing published masters are native portrait. A horizontal
+  // CANVAS is not a native horizontal MP4; assert real aspect eligibility.
+  assert.equal(validateMontageClips(item.clips,catalog.scenes,[],"portrait"),true);
+  assert.equal(validateMontageClips(item.clips,catalog.scenes,[],"landscape"),false);
+  assert.equal(validateMontageClips(item.clips,catalog.scenes,[],"square"),false);
   assert.equal(validateMontageClips(item.portraitClips,catalog.scenes,[],"portrait"),true);
   assert.equal(validateMontageClips(item.portraitClips,catalog.scenes,[],"landscape"),false);
   assert.equal(validateMontageClips(item.portraitClips,catalog.scenes,[],"square"),false);

@@ -365,6 +365,8 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
   });
   assert.equal(optionalProfileWriterSkip(files(source),branch),true);
   assert.equal(optionalProfileWriterSkip(files(source),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  assert.equal(optionalProfileWriterSkip(files(source),'fix/ci-ffmpeg-verified-github-asset-20261105'),false,
+    'the CI-fix branch really executes writer, so a skipped writer cannot count as success');
   assert.equal(optionalProfileWriterSkip(files(source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')),branch),false);
   assert.equal(optionalProfileWriterSkip(files(source),''),false);
   const primary = {name:'axis-unit-types-build',status:'completed',conclusion:'success'};
@@ -383,10 +385,12 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
     'branch-specific writer skips only while actual axis suite succeeds');
   for (const scenario of [
     {headRef:'feat/meditation-writer-device-voice-v1-20261030'},
+    {headRef:'fix/ci-ffmpeg-verified-github-asset-20261105'},
     {rows:[{...primary,conclusion:'failure'},writer]},
     {rows:[{...primary,conclusion:'skipped'},writer]},
     {rows:[primary,{...writer,conclusion:'failure'}]},
     {candidate:source.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'")},
+    {candidate:source.replace(" || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105'",'')},
     {candidate:source.replace('runs-on: ubuntu-24.04','runs-on: ubuntu-latest')},
   ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB|NO_EXECUTED_REQUIRED_SPECIALIST_JOB|SPECIALIST_FAILED|MISSING/,
     'own-branch skips, edited workflow, and any failed required job are not accepted');
@@ -405,6 +409,7 @@ test('profile-axis writer skip stays branch-conditional after exact one-line sel
   assert.equal(optionalProfileWriterSkip(current(migrated),branch),true,
     'unchanged immutable writer condition permits skipped job only on unrelated branch');
   assert.equal(optionalProfileWriterSkip(current(migrated),'feat/meditation-writer-device-voice-v1-20261030'),false);
+  assert.equal(optionalProfileWriterSkip(current(migrated),'fix/ci-ffmpeg-verified-github-asset-20261105'),false);
   const actual=[
     {name:'axis-unit-types-build',status:'completed',conclusion:'success'},
     {name:'writer-practical-focused',status:'completed',conclusion:'skipped'},
@@ -416,6 +421,7 @@ test('profile-axis writer skip stays branch-conditional after exact one-line sel
     base.replace(oldPath,''),
     migrated.replace('runs-on: ubuntu-24.04','runs-on: self-hosted'),
     migrated.replace("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'","github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030'"),
+    migrated.replace(" || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105'",''),
     migrated.replace('permissions:\n  contents: read','permissions:\n  contents: write'),
     migrated.replace("branches: ['codex/public-book-library', 'codex/holistic-intelligence-core-20261029']", "branches: ['main']"),
     migrated.replace(contract,"      - 'tests/unapproved.test.mjs'"),

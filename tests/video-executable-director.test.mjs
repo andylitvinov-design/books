@@ -61,8 +61,13 @@ test("negated visuals are not scored as positive subjects",()=>{
   assert.equal(visualSignalsFromGoal("Сделайте видео про еду")[0],"food");
 });
 test("requested silence and no captions remain silent and caption-free",()=>{
+  // Keep the no-sound/no-caption behavior under compatible native portrait.
   const script=compileExecutableVideoScenario({...base,
-    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}});
+    draft:{...draft,duration:10,aspect:"portrait",music:"none",phrases:false}});
+  // A square output must not be manufactured from portrait-only MP4 files.
+  assert.throws(()=>compileExecutableVideoScenario({...base,
+    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}}),
+    /unlicensed_or_excluded_video_scene/);
   assert.equal(script.audio.kind,"silent");
   assert.equal(script.audio.trackId,"none");
   assert.ok(script.edit.captionTexts.every(x=>x===""));
