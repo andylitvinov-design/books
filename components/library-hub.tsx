@@ -80,19 +80,19 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
     en: {
       title: "All books & guides",
       subtitle: "Browse by collection",
-      description: "Choose Alchemy of the Soul, Daoist or Maya books first, then open the titles you need. Search is available across the catalog.",
+      description: "Choose a tradition — Alchemy, Dao, Maya, Egypt, Greece, Rome, or Zoroastrian studies — or search the catalog.",
       action: "Open book catalog",
     },
     ru: {
       title: "Все книги и методички",
       subtitle: "Книги по категориям",
-      description: "Выберите Алхимию души, Даосскую традицию или Майя и откройте книги по теме. Поиск доступен по всему каталогу.",
+      description: "Выберите направление: Алхимия души, Дао, Майя, Египет, Греция, Рим или Зороастризм. Поиск работает по всему каталогу.",
       action: "Открыть каталог книг",
     },
     es: {
       title: "Todos los libros y guías",
       subtitle: "Libros por categoría",
-      description: "Elige Alquimia del Alma, la tradición taoísta o maya y encuentra los libros de esa colección.",
+      description: "Elige Alquimia, Tao, Maya, Egipto, Grecia, Roma o Zoroastrismo, o busca en todo el catálogo.",
       action: "Abrir catálogo",
     },
   } as const;

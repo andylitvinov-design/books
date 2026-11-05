@@ -8,6 +8,14 @@ type LocalizedBookText = {
 };
 
 const en: Record<string, LocalizedBookText> = {
+  "egypt-osiris-temple-magic": { title: "Egypt · Osiris and temple-magic foundations", description: "Archived original manual on Osiris, Ma'at, symbolic bodies and temple practices.", category: "Egyptian tradition" },
+  "egypt-maat-isis-attunements": { title: "Egypt · Ma'at, Isis and original attunements", description: "Original Egyptian tradition notes, Ma'at and Isis attunements, plus the Serapis source.", category: "Egyptian tradition" },
+  "greek-temple-attunements": { title: "Greek mysteries · deities and temple attunements", description: "Original site-based Greek mystery and temple attunements with place context.", category: "Greek mysteries" },
+  "greek-metaphysics-planning": { title: "Greek tradition · metaphysics and goal planning", description: "Two original guides: an ancient-world symbolic model and a stepwise goal-planning worksheet.", category: "Greek mysteries" },
+  "greek-dionysus-asclepius-course": { title: "Greek tradition · Asclepius and Dionysus course modules", description: "An original course-manual edition for Asclepius and Dionysus, distinct from the site-notes archive.", category: "Greek mysteries" },
+  "roman-imperial-temples": { title: "Roman tradition · imperial archetypes and temples", description: "Original Roman imperial and site-based notes separated from the Greek corpus.", category: "Roman tradition" },
+  "zoroastrian-tradition-notes": { title: "Zoroastrian tradition · Asha, Vohu Manah and Spenta Armaiti", description: "Original notes about stages and attunements within the author's Zoroastrian studies.", category: "Zoroastrianism & Mithra" },
+  "mithra-mysteries": { title: "Mithra mysteries · Persian and Roman traditions", description: "Original field notes on Mithraic symbolism, Persian and Roman strands, and initiation stages.", category: "Zoroastrianism & Mithra" },
   "alchemy-homeopathy-foundations": { title: "Book 01. Homeopathy: foundations and method", description: "A foundational Alchemy of the Soul volume introducing the framework, core principles, and starting logic of the method.", category: "Alchemy of the Soul" },
   "alchemy-homeopathy-remedies": { title: "Book 02. Homeopathic remedies and profiles", description: "A practical continuation focused on remedies, profiles, and applied navigation through the material.", category: "Alchemy of the Soul" },
   "alchemy-naturopathy-hormones": { title: "Book 03. Naturopathy: supplements, minerals, and hormonal support", description: "A naturopathic volume focused on support, supplements, and broader systemic accompaniment.", category: "Alchemy of the Soul" },
