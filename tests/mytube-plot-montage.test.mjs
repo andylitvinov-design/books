@@ -102,3 +102,27 @@ test("insufficient plot media offers only explicitly opted-in, rights-validated 
   assert.match(ui,/captions:selectedTaxonomyPlot\.beats\.map/);
   assert.match(ui,/role="status" data-mytube-plot-media-status/);
 });
+
+test("plot recommendation enforces aspect before storyboard assembly",async()=>{
+  const [plot]=await listMyTubePlots("recovery-after-load-s2","en");
+  const portrait=recommendMyTubePlotMontage({plot,scenes:stock.scenes,targetAspect:"portrait"});
+  const landscape=recommendMyTubePlotMontage({plot,scenes:stock.scenes,targetAspect:"landscape"});
+  const portraitOnly=new Set(["sun-trees-forest","snow-forest-winter",
+    "fall-foliage-forest","warm-clouds-sunset"]);
+  assert.ok(portrait.candidateCount>landscape.candidateCount);
+  assert.ok(landscape.clipIds.every(id=>!portraitOnly.has(id)));
+  assert.ok(portrait.clipIds.every(id=>stock.scenes.some(x=>x.id===id)));
+  if(portrait.hasFourApprovedSources)
+    assert.equal(validateMontageClips(portrait.clipIds,stock.scenes,[],"portrait"),true);
+  if(landscape.hasFourApprovedSources)
+    assert.equal(validateMontageClips(landscape.clipIds,stock.scenes,[],"landscape"),true);
+  const invalid=recommendMyTubePlotMontage({plot,scenes:stock.scenes,targetAspect:"cinema"});
+  assert.equal(invalid.status,"invalid_aspect");
+  assert.deepEqual(invalid.clipIds,[]);
+});
+
+test("mobile director forwards aspect and invalidates a confirmed cut on format change",()=>{
+  const source=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  assert.match(source,/targetAspect:aspect/);
+  assert.match(source,/stageCaptions,selectedMotifId,selectedStyleId,aspect,/);
+});
