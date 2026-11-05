@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+// The download intent and video-only Telegram permission ship as one user journey.
+import './personal-video-messenger-delivery.test.mjs';
 import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, goalFirstVideoChatDraft, hasVideoChatFilter, isGenericVideoRequest, parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs';
 
 test('RU composite prompt fills known filters but leaves optional questions', () => {
