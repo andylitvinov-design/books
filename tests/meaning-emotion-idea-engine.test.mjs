@@ -125,7 +125,7 @@ test("user absence of measurements stays null; ranking is deterministic and tran
  assert.equal(energy.ideas[0].intensityGuidance.pace,"gentle");
  assert.equal(energy.ideas[0].intensityGuidance.activationLimit,"low");
 });
-test("no-axis, uncurated pairs, unknown text and excluded candidates fail closed",()=>{
+test("no-axis, composed pairs, unknown text and excluded candidates fail closed",()=>{
  const v=EMOTIONAL_VECTORS[0];
  const choose=recommendMeaningIdeas(req(v,null,"ru"));
  assert.equal(choose.status,"choose_axis");
@@ -133,9 +133,10 @@ test("no-axis, uncurated pairs, unknown text and excluded candidates fail closed
  assert.equal(choose.ideas.length,0);
  const unknown=recommendMeaningIdeas(req(v,"anchor","ru",{
    current:{stateId:"shame",intensity:null},desired:{stateId:"confidence"}}));
- assert.equal(unknown.status,"no_safe_idea");
- assert.equal(unknown.ideas.length,0);
- assert.ok(unknown.safetyNotes.includes("uncurated_transition"));
+ assert.equal(unknown.status,"ok");
+ assert.equal(unknown.ideas.length,3);
+ assert.ok(unknown.ideas.every(x=>x.editorReviewStatus==="editorial_composed_preview"));
+ assert.equal(unknown.normalizedInputs.vectorId,null);
  assert.equal(recommendMeaningIdeas(req(v,"anchor","ru",{
    current:{text:"совсем непонятное чувство"}})).status,"clarify");
  assert.equal(recommendMeaningIdeas(req(v,"fake")).status,"clarify");

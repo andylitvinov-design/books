@@ -20,7 +20,7 @@
  box-shadow:inset 0 0 0 1px #158366}
 .compact{color:#496258;font-size:13px}
 .compact summary{cursor:pointer;min-height:36px;display:flex;align-items:center}
-.compact>.fields{margin-top:9px}
+.compact>.fields{margin-top:9px}.panel [data-meaning-relief]{font-variant-numeric:tabular-nums}
 .presetRow{display:flex;gap:6px;overflow-x:auto;padding:6px 1px 10px;
  scroll-snap-type:x proximity;max-width:100%}
 .presetRow .chip{flex:none;scroll-snap-align:start;white-space:normal;max-width:190px}
