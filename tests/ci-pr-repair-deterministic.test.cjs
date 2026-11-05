@@ -108,3 +108,41 @@ test('real deterministic worker handles mixed JS/TS PR scope and preserves JS so
   assert.deepEqual(git('diff','--name-only').split('\n'),['components/typed.ts']);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('oversized source stays untouched while an independent small TS import is safely repaired',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hh-oversize-repair-'));
+ const git=(...args)=>cp.execFileSync('git',args,{cwd:dir,encoding:'utf8'}).trim();
+ try{
+  fs.mkdirSync(path.join(dir,'components'));
+  const oversized=path.join(dir,'components/oversized.tsx');
+  const small=path.join(dir,'components/small.ts');
+  const largeSource='/*'+('safe'.repeat(40000))+'*/\n';
+  assert.ok(Buffer.byteLength(largeSource,'utf8')>150000);
+  fs.writeFileSync(oversized,largeSource);
+  fs.writeFileSync(small,
+   "import { Shape } from './shapes';\ntype Current = Shape;\n");
+  git('init','-q');git('add','.');
+  git('-c','user.email=repair-smoke@example.invalid','-c','user.name=Repair Smoke',
+    'commit','-qm','bounded fixture');
+  const sha=git('rev-parse','HEAD');
+  const result=cp.spawnSync(process.execPath,
+   [path.resolve(__dirname,'../scripts/ci-pr-repair-deterministic.cjs')],
+   {cwd:dir,encoding:'utf8',timeout:30000,env:{...process.env,REPAIR_SHA:sha,
+    REPAIR_FILES_JSON:JSON.stringify(['components/oversized.tsx','components/small.ts'])}});
+  assert.equal(result.status,0,result.stderr);
+  const marker='HH_DETERMINISTIC_REPAIR ';
+  const line=result.stdout.split('\n').find(line=>line.startsWith(marker));
+  assert.ok(line,'explicit deterministic receipt is required');
+  const receipt=JSON.parse(line.slice(marker.length));
+  assert.equal(receipt.head_sha,sha);
+  assert.deepEqual(receipt.skipped,
+   [{path:'components/oversized.tsx',reason:'SOURCE_FILE_TOO_LARGE'}]);
+  assert.deepEqual(receipt.changed,
+   [{path:'components/small.ts',edits:1,detail:'TYPE_ONLY_IMPORTS_FIXED'}]);
+  assert.equal(fs.readFileSync(oversized,'utf8'),largeSource);
+  assert.match(fs.readFileSync(small,'utf8'),/import \{ type Shape \} from/);
+  assert.deepEqual(git('diff','--name-only').split('\n'),['components/small.ts']);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});

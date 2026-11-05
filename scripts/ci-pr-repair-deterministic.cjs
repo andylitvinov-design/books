@@ -119,7 +119,7 @@ function main(){
  const root=fs.realpathSync(process.cwd());
  const head=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  if(head!==sha)throw Error('REPAIR_CHECKOUT_HEAD_MISMATCH');
- const changed=[];
+ const changed=[],skipped=[];
  for(const file of files){
   // No JS/JSX transformation is approved here. The later ESLint/free-only
   // path retains those source files under its separate strict allowlist.
@@ -128,14 +128,19 @@ function main(){
   if(!abs.startsWith(root+path.sep)||fs.realpathSync(abs)!==abs||!fs.lstatSync(abs).isFile())
    throw Error('UNSAFE_REPAIR_PATH');
   const before=fs.readFileSync(abs,'utf8');
-  if(Buffer.byteLength(before,'utf8')>MAX_BYTES)throw Error('SOURCE_FILE_TOO_LARGE');
+  // Refuse to parse or modify an oversized source, but preserve safe independent
+  // sibling repairs. The existing 150KB verified-patch limit is unchanged.
+  if(Buffer.byteLength(before,'utf8')>MAX_BYTES){
+   skipped.push({path:file,reason:'SOURCE_FILE_TOO_LARGE'});
+   continue;
+  }
   const result=repairTypeOnlyImports(before,file);
   if(result.changed){
    fs.writeFileSync(abs,result.code,{mode:fs.statSync(abs).mode});
    changed.push({path:file,edits:result.edits,detail:result.detail});
   }
  }
- console.log('HH_DETERMINISTIC_REPAIR '+JSON.stringify({head_sha:sha,changed}));
+ console.log('HH_DETERMINISTIC_REPAIR '+JSON.stringify({head_sha:sha,changed,skipped}));
 }
 if(require.main===module){try{main()}catch(error){console.error('HH_DETERMINISTIC_REPAIR_BLOCKED '+error.message);process.exitCode=1;}}
 module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope};
