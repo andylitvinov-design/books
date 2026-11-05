@@ -11,6 +11,15 @@ export interface VerifiedCategorySource {
  readonly height:number;
  readonly durationSeconds:number;
  readonly aspectPhysicallyVerified:true;
+ // Source catalog editorial metadata is passed through verbatim, not
+ // established as literal visual/event verification by this type.
+ readonly tags?:readonly string[];
+ readonly motifs?:readonly string[];
+ readonly categories?:readonly string[];
+ readonly label?:Partial<Record<CategoryVideoLocale,string>>;
+ readonly description?:Partial<Record<CategoryVideoLocale,string>>;
+ readonly originMasterKeys?:readonly string[];
+ readonly perceptualGroupId?:string|null;
 }
 export interface CategoryStoryboardStage {
  readonly stage:number;

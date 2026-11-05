@@ -198,7 +198,10 @@ export function MandalaAutoVideoDirector({
  const [selectedPlotId,setSelectedPlotId]=useState<string>("");
  const [selectedMotifId,setSelectedMotifId]=useState<string>("");
  const [selectedStyleId,setSelectedStyleId]=useState<string>("");
- const [transitionSelection,setTransitionSelection]=useState<{scenarioId:string;currentStateId:string;desiredStateId:string;intensity?:string;energy?:string}|null>(null);
+ const [transitionSelection,setTransitionSelection]=useState<{
+   scenarioId:string;currentStateId:string;desiredStateId:string;
+   intensity?:"low"|"medium"|"high";energy?:"low"|"moderate"|"high"
+ }|null>(null);
  const [symbolicPlotFallback,setSymbolicPlotFallback]=useState(false);
  const [meaningHandoff,setMeaningHandoff]=useState<ConfirmedMeaningHandoff|null>(null);
  const [includeMeaningCaption,setIncludeMeaningCaption]=useState(false);
@@ -294,7 +297,8 @@ export function MandalaAutoVideoDirector({
  // becomes a tagged scene script. Four narrative beats are split into the
  // physically required 4 / 6 / 12 distinct, source-backed MP4 cuts.
  const confirmedTransition=useMemo<{
-   currentStateId:string;desiredStateId:string;intensity?:string;energy?:string
+   currentStateId:string;desiredStateId:string;
+   intensity?:"low"|"medium"|"high";energy?:"low"|"moderate"|"high"
  }|null>(()=>meaningHandoff?.ideaBrief?.confirmedIdeaId&&
    meaningHandoff.ideaBrief.emotionalTransition
    ?{currentStateId:meaningHandoff.ideaBrief.emotionalTransition.from,

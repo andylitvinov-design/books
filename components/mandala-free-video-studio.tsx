@@ -982,7 +982,7 @@ function compileFreeFilmPreset(
         !Number.isInteger(shot.beatIndex)||shot.beatIndex<1||shot.beatIndex>4||
         !/^S0[1-8]$/.test(shot.strategyId)||
         !Array.isArray(shot.requiredTags)||shot.requiredTags.length===0||
-        shot.requiredTags.length>12||shot.requiredTags.some(tag=>typeof tag!=="string"||
+        shot.requiredTags.length>12||shot.requiredTags.some((tag:string)=>typeof tag!=="string"||
           !/^[a-z][a-z0-9-]{1,32}$/.test(tag))))
       throw Error("invalid_emotional_video_scene_script");
   }

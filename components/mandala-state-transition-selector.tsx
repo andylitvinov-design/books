@@ -19,7 +19,10 @@ type Response={
 };
 type Props={
  locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;allowEditorialDrafts?:boolean;
- onChooseScenario:(scenarioId:string,context?:{currentStateId:string;desiredStateId:string;intensity:string;energy:string})=>void;
+ onChooseScenario:(scenarioId:string,context?:{
+   currentStateId:string;desiredStateId:string;
+   intensity:"low"|"medium"|"high";energy:"low"|"moderate"|"high"
+ })=>void;
 };
 const language={
  ru:{title:"Путь от состояния «Сейчас» к «Хочу»",hint:"Два коротких выбора помогут предложить бережный сюжет для вашей темы.",
