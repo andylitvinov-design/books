@@ -25,7 +25,12 @@ import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
 
 // Explicit opt-in only; preserves the original Video Director until QA.
-const STSE_ENABLED=process.env.NEXT_PUBLIC_HH_STSE_ENABLED==="true";
+// Safe public baseline: the owner explicitly requested release of Now → Want.
+// Set the existing build variable to "false" to roll back without affecting
+// editorial catalog records or existing saved videos.
+const STSE_ENABLED=process.env.NEXT_PUBLIC_HH_STSE_ENABLED!=="false";
+// A separate flag protects 256 unreviewed drafts from the public recommender.
+const STSE_DRAFTS_ENABLED=STSE_ENABLED&&process.env.NEXT_PUBLIC_HH_STSE_CONTENT_EXPANSION_ENABLED==="true";
 const MEANING_ENABLED=STSE_ENABLED&&process.env.NEXT_PUBLIC_HH_MEANING_IDEA_ENABLED==="true";
 
 type Preset={
@@ -208,6 +213,15 @@ export function MandalaAutoVideoDirector({
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
  }|null>(null);
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
+ // Tab-scoped canonical IDs only. Never retain free-text emotions or profile data.
+ const rememberSTSETopic=(topicId:string,scenarioId:string|null=null)=>{
+   if(!STSE_ENABLED)return;
+   try{
+     const k="hh-stse-v1-topic:"+locale;
+     if(!topicId)window.sessionStorage.removeItem(k);
+     else window.sessionStorage.setItem(k,JSON.stringify({topicId,scenarioId}));
+   }catch{/* Restricted browser storage: continue normally without persistence. */}
+ };
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
@@ -215,8 +229,26 @@ export function MandalaAutoVideoDirector({
    setProfileTarget(document.querySelector<HTMLElement>("[data-video-profile-picker]"));
  },[]);
  useEffect(()=>{
+   if(!STSE_ENABLED)return;
+   try{
+     const stored=JSON.parse(window.sessionStorage.getItem("hh-stse-v1-topic:"+locale)||"null");
+     const found=typeof stored?.topicId==="string"?getMyTubeTopic(stored.topicId):null;
+     if(!found)return;
+     const mapped=(Object.keys(taxonomyCategoryForGoal) as Array<keyof typeof popularTopicOrder>)
+       .find(id=>taxonomyCategoryForGoal[id]===found.category.id);
+     if(mapped)setSelectedCategoryId(mapped);
+     setSelectedSubcategoryId(found.subcategory.id);
+     setSelectedTopicId(found.topic.id);
+     // Restore only previously confirmed canonical editorial IDs. Draft IDs
+     // are never restored into a public video when expansion is disabled.
+     const scenarioId=stored.scenarioId;
+     if(typeof scenarioId==="string"&&found.topic.scenarios.some(x=>x.id===scenarioId))
+       setSelectedScenarioId(scenarioId);
+   }catch{/* A malformed or inaccessible tab record never blocks the editor. */}
+ },[locale]);
+ useEffect(()=>{
    if(!selectedScenarioId){setPlotData(null);setPlotsLoading(false);return;}
-   if(STSE_ENABLED&&/-s[5-8]$/.test(selectedScenarioId)){
+   if(STSE_DRAFTS_ENABLED&&/-s[5-8]$/.test(selectedScenarioId)){
      setPlotData({scenarioId:selectedScenarioId,locale,plots:[]});setPlotsLoading(false);return;
    }
    let active=true;
@@ -230,9 +262,9 @@ export function MandalaAutoVideoDirector({
  const taxonomySubcategories=listMyTubeSubcategories(taxonomyCategoryForGoal[selectedCategoryId],locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(taxonomyCategoryForGoal[selectedCategoryId],selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
- const taxonomyScenarios=selectedTopicId?(STSE_ENABLED?
+ const taxonomyScenarios=selectedTopicId?(STSE_DRAFTS_ENABLED?
    listStateTransitionScenarios(selectedTopicId,locale):listMyTubeScenarios(selectedTopicId,locale)):[];
- const stseScenario=STSE_ENABLED&&selectedScenarioId?
+ const stseScenario=STSE_DRAFTS_ENABLED&&selectedScenarioId?
    getStateTransitionScenario(selectedScenarioId,locale):null;
  const suggestedVisualMotifs=selectedScenarioId?(stseScenario?.newExpansion?
    stseScenario.motifIds.map((id:string)=>motifDetails(id,locale))
@@ -295,7 +327,7 @@ export function MandalaAutoVideoDirector({
  });
  const creativeSelectionUnavailable=Boolean(selectedScenarioId&&(selectedMotifId||selectedStyleId)&&
    (!topicMediaCoverage?.dedicatedFourSceneReady||!activeTimelineEdits||!creativeMontageEvidence.ok));
- const plotLacksApprovedClips=Boolean((STSE_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
+ const plotLacksApprovedClips=Boolean((STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
    !selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
  const availableReplacements=stageClipIds.map(currentId=>
@@ -379,6 +411,7 @@ export function MandalaAutoVideoDirector({
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
    if(disabled)return;
+   rememberSTSETopic("");
    const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(nextGoal!==goal)onGoalChange(nextGoal);
@@ -393,6 +426,7 @@ export function MandalaAutoVideoDirector({
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
    if(!item)return;
+   rememberSTSETopic("");
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
    onInvalidate?.();onCategoryChange?.(nextTheme);
    setSelectedGoalId(null);setSelectedGoalIds([]);
@@ -405,6 +439,7 @@ export function MandalaAutoVideoDirector({
  const chooseTaxonomyTopic=(topicId:string)=>{
    const found=getMyTubeTopic(topicId);if(!found)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
+   rememberSTSETopic(topicId);
    const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
@@ -418,6 +453,7 @@ export function MandalaAutoVideoDirector({
  };
  const chooseTaxonomyScenario=(scenarioId:string)=>{
    const scenario=taxonomyScenarios.find(item=>item.id===scenarioId);if(!scenario)return;
+   rememberSTSETopic(selectedTopicId,scenarioId);
    setSelectedScenarioId(scenarioId);setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
    const topicLabel=selectedTaxonomyTopic?.topic.label[locale]||goal;
    const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
@@ -631,9 +667,10 @@ export function MandalaAutoVideoDirector({
      onChooseScenario={chooseTaxonomyScenario}/>:null}
    {STSE_ENABLED&&!MEANING_ENABLED&&selectedTopicId?<StateTransitionSelector
      key={selectedTopicId} locale={locale} topicId={selectedTopicId} disabled={disabled}
+     allowEditorialDrafts={STSE_DRAFTS_ENABLED}
      selectedScenarioId={selectedScenarioId} onChooseScenario={chooseTaxonomyScenario}/>:null}
    {selectedTopicId&&taxonomyScenarios.length>=4?<div className={css.storyChoices} data-mytube-scenario-concepts>
-     <p className={css.variantsTitle}>{STSE_ENABLED?
+     <p className={css.variantsTitle}>{STSE_DRAFTS_ENABLED?
        (locale==="ru"?"Восемь сюжетов: четыре исходных и четыре новые редакционные концепции":
          locale==="es"?"Ocho historias: cuatro originales y cuatro conceptos nuevos":
            "Eight stories: four existing and four new editorial concepts"):
@@ -723,7 +760,7 @@ export function MandalaAutoVideoDirector({
          <small>{plot.synopsis}</small>
        </button>)}
      </div>:null}
-   {STSE_ENABLED&&stseScenario?.newExpansion?<p role="status" className={css.warning} data-stse-media-unbound>
+   {STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion?<p role="status" className={css.warning} data-stse-media-unbound>
      {locale==="ru"?"Новый сценарий ожидает редакционной проверки и привязки реальных разрешённых видеосцен. Экспорт пока отключён.":
        locale==="es"?"Este nuevo guion espera revisión editorial y vídeo autorizado. La exportación está desactivada.":
          "This new script awaits editorial review and licensed footage binding. Export is disabled."}
