@@ -118,6 +118,11 @@ jobs:
         if: needs.impact.outputs.profile == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.profile == 'true'
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.profile == 'true'
+        with:
+          stage: materialize
       - name: Check-in evidence, scoring and report-priority regressions
         if: needs.impact.outputs.full_app == 'true'
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
@@ -191,6 +196,11 @@ jobs:
         if: needs.impact.outputs.banner == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.banner == 'true'
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.banner == 'true'
+        with:
+          stage: materialize
       - name: Install isolated exact-version Playwright test tools (without browser downloads)
         if: needs.impact.outputs.banner == 'true'
         run: |
@@ -270,6 +280,11 @@ jobs:
         if: needs.impact.outputs.database == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.database == 'true'
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.database == 'true'
+        with:
+          stage: materialize
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         if: needs.impact.outputs.database == 'true'
         run: npm run test:app:db

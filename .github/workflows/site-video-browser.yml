@@ -182,6 +182,10 @@ jobs:
       - name: Load original checksum-verified FFmpeg for npm ci
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Route exact tested-merge Site Video risk
         id: impact
         env:
@@ -322,6 +326,10 @@ jobs:
       - name: Load original checksum-verified FFmpeg for npm ci
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Route exact tested-merge Site Video risk
         id: impact
         env:

@@ -48,6 +48,10 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked application dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Focused auth, layout and regression source tests
         run: |
           node --check scripts/verify-practice-post-google-browser.mjs

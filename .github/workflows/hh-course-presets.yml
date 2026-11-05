@@ -73,6 +73,10 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked dependencies
         run: npm ci
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify Core reuse and domain scope
         run: node --test tests/ci-growth-course-core-reuse.test.mjs
       - name: Test exact five-test fixed curricula, old R3 and multicourse

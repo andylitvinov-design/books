@@ -76,6 +76,10 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
       - name: Install existing project dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Check screenshot comparator, source flow and browser script
         run: |
           node --check scripts/verify-practice-visual-browser.mjs
