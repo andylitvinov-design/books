@@ -182,11 +182,31 @@ jobs:
           ref: ${{ github.sha }}
           path: .hh-trusted
           persist-credentials: false
+      # No safe scoped tests in a legacy PR = no need for a full npm install.
+      # This shortens a metadata-only preflight without changing any repair gate.
+      - id: legacy_deps
+        name: Identify whether legacy focused tests need npm dependencies
+        if: needs.claim.outputs.strategy == 'legacy'
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const safe=require('./.hh-trusted/scripts/ci-pr-repair-free-agent.cjs').safeSourcePath;
+          const files=JSON.parse(process.env.REPAIR_FILES_JSON||'[]');
+          if(!Array.isArray(files)||files.length>8||
+             files.some(x=>typeof x!=='string'))
+            throw Error('Invalid legacy dependency scope');
+          const needed=files.some(safe);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'needed='+String(needed)+'\n');
+          console.log('HH_LEGACY_DEPENDENCY_SCOPE '+JSON.stringify({needed,files:files.length}));
+          NODE
       - uses: actions/setup-node@v4
+        if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies without running lifecycle scripts
+        if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'
         run: npm ci --ignore-scripts --no-audit --no-fund
       - id: legacy_scan
         name: Cloud-only legacy source comparison and focused test preflight

@@ -198,3 +198,23 @@ test('shallow legacy snapshot: bounded lookups and invalid duplicate source fail
  assert.match(yml,/'ls-tree','-z',ref/);
  assert.match(yml,/SHALLOW_ANCESTRY_UNAVAILABLE/);
 });
+
+
+test('legacy worker skips npm only when no safe focused tests exist',()=>{
+ const yml=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const fix=yml.split('  fix:\n')[1]?.split('  code_fix:\n')[0]||'';
+ assert.match(fix,/id: legacy_deps/);
+ assert.match(fix,/HH_LEGACY_DEPENDENCY_SCOPE/);
+ assert.ok(fix.includes('.hh-trusted/scripts/ci-pr-repair-free-agent.cjs'));
+ const gating="if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'";
+ assert.equal(fix.split(gating).length-1,2,
+  'Node setup and npm ci must share the same conservative condition');
+ assert.ok(fix.includes('if(allowlisted.length)'),
+  'existing focused legacy tests must still run when allowed source exists');
+ assert.match(fix,/npm ci --ignore-scripts --no-audit --no-fund/);
+ const {safeSourcePath}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ assert.equal(['components/remote-support-enquiry-contact.tsx',
+  'components/auth/private.tsx'].some(safeSourcePath),false);
+ assert.equal(['components/reiki-hero.tsx',
+  'scripts/verify-remote-inline-order-browser.mjs'].some(safeSourcePath),true);
+});
