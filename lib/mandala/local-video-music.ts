@@ -599,3 +599,145 @@ export async function startPresetMixAudio(
     restoreSession();return null;
   }
 }
+
+
+/**
+ * Independent voice/audio-file + original soundtrack for native MediaRecorder.
+ * Both are mixed into ONE AudioContext destination track; never two competing
+ * media-recorder tracks, never an external upload, and no paid TTS provider.
+ * The Safari WebCodecs path uses the same per-lane gains with OfflineAudioContext.
+ */
+export async function startLayeredVideoAudio(
+  file:File,bedId:OriginalMelodyPreset,masterVolume=80,bedVolumePercent=30,
+  options:{seconds:number;startSeconds?:number;loop?:boolean;
+    fadeSeconds?:number;deferStart?:boolean}={seconds:30},
+):Promise<AmbientSession|null>{
+  // Keep this module's existing import-free CommonJS test interface and avoid
+  // a new iOS user-gesture await before AudioContext.resume(). The public
+  // project draft uses the same five first-party names and exact bounds.
+  const names:readonly OriginalMelodyPreset[]=[
+    "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"
+  ];
+  const fadeSeconds=options.fadeSeconds??1;
+  if(typeof window==="undefined"||!isSupportedLocalAudio(file)||
+     !names.includes(bedId)||
+     !Number.isFinite(options.seconds)||options.seconds<3||options.seconds>60||
+     !Number.isFinite(options.startSeconds??0)||(options.startSeconds??0)<0||
+     (options.startSeconds??0)>=options.seconds||
+     !Number.isFinite(masterVolume)||masterVolume<0||masterVolume>100||
+     !Number.isInteger(bedVolumePercent)||bedVolumePercent<0||
+     bedVolumePercent>60||bedVolumePercent%5!==0||
+     ![0,.5,1,2].includes(fadeSeconds))return null;
+  const myTubeAudioLaneGains=(volume:number)=>{
+    const primary=volume/100/Math.sqrt(2);
+    return {primary,bed:primary*bedVolumePercent/100};
+  };
+  const safe={volumePercent:bedVolumePercent,fadeSeconds};
+  const AudioCtor=window.AudioContext||
+    (window as typeof window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
+  if(!AudioCtor)return null;
+  const restoreSession=acquirePlaybackSession();
+  let context:AudioContext;
+  try{context=new AudioCtor();}catch{restoreSession();return null;}
+  const sources:AudioBufferSourceNode[]=[];
+  const gains:GainNode[]=[];
+  let destination:MediaStreamAudioDestinationNode|null=null;
+  try{
+    // Prime iOS AudioContext inside the actual Create tap, before all awaits.
+    const resumed=context.resume();
+    const [voiceBytes,musicResponse]=await Promise.all([
+      file.arrayBuffer(),
+      fetch(presetAudioUrl(bedId),{credentials:"same-origin",cache:"force-cache"}),
+    ]);
+    if(!musicResponse.ok)throw Error("first_party_audio_unavailable");
+    const [voice,music]=await Promise.all([
+      context.decodeAudioData(voiceBytes),
+      context.decodeAudioData(await musicResponse.arrayBuffer()),
+    ]);
+    await resumed;
+    if(context.state!=="running")await context.resume();
+    if(context.state!=="running"||!voice.length||!music.length||
+       voice.duration>180||music.duration>180)
+      throw Error("local_audio_decode_invalid");
+    const offset=options.startSeconds??0;
+    if(options.loop===false&&voice.duration>options.seconds-offset+.10)
+      throw Error("narration_longer_than_video");
+    destination=context.createMediaStreamDestination();
+    const track=destination.stream.getAudioTracks()[0];
+    if(!track)throw Error("mixed_audio_track_unavailable");
+    for(const [index,buffer] of [voice,music].entries()){
+      const source=context.createBufferSource();
+      source.buffer=buffer;
+      source.loop=index===1||options.loop!==false;
+      const gain=context.createGain();gain.gain.value=0;
+      source.connect(gain);gain.connect(destination);
+      sources.push(source);gains.push(gain);
+    }
+    let closed=false,started=false,faded=false,lastMaster=masterVolume;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const now=context.currentTime,finish=now+options.seconds;
+      const voiceStart=now+offset;
+      const levels=myTubeAudioLaneGains(lastMaster);
+      const gainPlan=[
+        {node:gains[0],value:levels.primary,start:voiceStart,
+          inSeconds:.035,outSeconds:.1},
+        {node:gains[1],value:levels.bed,start:now,
+          inSeconds:safe.fadeSeconds,outSeconds:safe.fadeSeconds},
+      ];
+      for(const {node,value,start,inSeconds,outSeconds} of gainPlan){
+        const available=finish-start;
+        const fadeIn=Math.min(inSeconds,available);
+        const fadeOut=Math.min(outSeconds,available);
+        node.gain.setValueAtTime(0,now);
+        node.gain.setValueAtTime(0,start);
+        if(fadeIn>0)node.gain.linearRampToValueAtTime(value,start+fadeIn);
+        else node.gain.setValueAtTime(value,start);
+        node.gain.setValueAtTime(value,Math.max(start+fadeIn,finish-fadeOut));
+        if(fadeOut>0)node.gain.linearRampToValueAtTime(0,finish);
+        else node.gain.setValueAtTime(0,finish);
+      }
+      sources[0].start(voiceStart);
+      sources[1].start(now);
+    };
+    if(!options.deferStart)begin();
+    return {
+      track,begin,
+      setVolume(value:number){
+        if(closed||faded||!Number.isFinite(value)||value<0||value>100)return;
+        lastMaster=value;
+        const current=myTubeAudioLaneGains(value);
+        const now=context.currentTime;
+        for(const [i,level] of [current.primary,current.bed].entries()){
+          const gain=gains[i].gain;
+          gain.cancelScheduledValues(now);
+          gain.setTargetAtTime(level,now,.05);
+        }
+      },
+      fadeOut(){
+        if(closed||faded)return;faded=true;
+        const now=context.currentTime;
+        for(const node of gains){
+          node.gain.cancelScheduledValues(now);
+          node.gain.setValueAtTime(node.gain.value,now);
+          node.gain.linearRampToValueAtTime(0,now+.7);
+        }
+      },
+      close(){
+        if(closed)return;closed=true;
+        sources.forEach(source=>{try{source.stop()}catch{}source.disconnect()});
+        gains.forEach(gain=>gain.disconnect());
+        track.stop();void context.close().catch(()=>{});
+        restoreSession();
+      },
+    };
+  }catch{
+    sources.forEach(source=>{try{source.stop()}catch{}source.disconnect()});
+    gains.forEach(gain=>gain.disconnect());
+    destination?.stream.getTracks().forEach(track=>track.stop());
+    void context.close().catch(()=>{});
+    restoreSession();
+    return null;
+  }
+}

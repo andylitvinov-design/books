@@ -165,10 +165,14 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }
-  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  // No arbitrary network upload. A second exact same-origin GET is allowed
+  // solely for the user-selected original music bed, never for private audio.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
-  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
+  assert.equal((audioSource.match(approvedMusicBed)||[]).length,1,"one explicit approved music-bed GET");
+  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });
 
 
