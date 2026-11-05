@@ -115,7 +115,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
   assert.match(backend,/on conflict do nothing/i)
   assert.match(backend,/contactConsent|replyConsent/)
   assert.match(backend,/seal\(\{\s*displayName: contact\.displayName/)
-  assert.match(backend,/contactProvenance: manuallyRecorded\?\.submittedByVisitor/)
+  assert.match(backend,/contactProvenance: row\.telegram_thread_id\?'consented_telegram_thread':\s*manuallyRecorded\?\.submittedByVisitor/)
   assert.match(backend,/enquiry: \{ referenceCode, serviceTitle, sourcePath \}/)
   assert.match(endpoint,/requireSameOrigin\(request, config\)/)
   assert.match(endpoint,/consumeRate/)
