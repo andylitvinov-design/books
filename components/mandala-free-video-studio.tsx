@@ -14,6 +14,7 @@ import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
+import { MandalaVideoDelivery } from "./mandala-video-delivery";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
 import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
@@ -1905,6 +1906,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [notice, setNotice] = useState("");
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  const [deliveryChooserOpen,setDeliveryChooserOpen] = useState(false);
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
   const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
@@ -4756,6 +4758,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}
           onCreate={createQuickVideo}
           onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
+          onOpenDelivery={()=>{setDeliveryChooserOpen(true);document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"});}}
           onOpenEditor={()=>openQuickDetailed("video-settings")}
           onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
           onOpenAudio={()=>openQuickDetailed("video-audio")}/>
@@ -5410,13 +5413,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 onClick={event=>{
-                  if(result.mode==="catalog" || !/iPad|iPhone|iPod/.test(navigator.userAgent))return;
-                  const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
-                  if(typeof navigator.share==="function" &&
-                    (typeof navigator.canShare!=="function"||navigator.canShare({files:[file]}))){
-                    event.preventDefault();
-                    void shareVideo();
-                  }
+                  if(result.mode==="catalog")return;
+                  event.preventDefault();
+                  setDeliveryChooserOpen(true);
                 }}
                 data-mandala-video-download>
                 <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
@@ -5445,6 +5444,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   :"Direct file download (if Share did not open)"}
               </a> : null}
             </div>
+            {result.mode!=="catalog" ? <MandalaVideoDelivery
+              key={result.url} locale={locale} open={deliveryChooserOpen}
+              onClose={()=>setDeliveryChooserOpen(false)}
+              blob={result.blob} url={result.url} extension={result.extension}
+              mime={result.mime} bytes={result.bytes} theme={theme}
+              aspect={aspect} duration={duration}/> : null}
             <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
               aria-labelledby="video-post-support-title">
               <h4 id="video-post-support-title">{postSupport.title}</h4>
