@@ -55,6 +55,9 @@ export function evaluateMyTubeMontageCreativeMatch(options?:{
   ok:boolean;status:string;motifMatches:number;styleMatches:number;
   literalMotifVerified?:boolean;visualMatchOnly?:true;
 };
+export function videoMatchesMyTubeVisualFilter(video:{
+  mytubeVisualTagEvidence?:string;mytubeMotifIds?:readonly string[];mytubeStyleIds?:readonly string[];
+},filters?:{motifId?:string|null;styleId?:string|null}):boolean;
 export function auditMyTubeCreativeChoices():{
   ok:boolean;counts:{scenarios:number;motifs:number;styles:number;suggestions:number};
   errors:string[];
